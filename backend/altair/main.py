@@ -19,7 +19,7 @@ Usage:
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from altair.api import tasks
+from altair.api import auth, tasks
 from altair.models import base
 from altair.database import get_engine
 
@@ -64,6 +64,7 @@ app.add_middleware(
 )
 
 # Register route handlers
+app.include_router(auth.router)
 app.include_router(tasks.router, prefix="/api/tasks", tags=["tasks"])
 
 

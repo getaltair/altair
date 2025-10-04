@@ -23,6 +23,7 @@ class Settings(BaseSettings):
         SECRET_KEY: JWT secret key for token signing (MUST be changed in production)
         ALGORITHM: JWT signing algorithm
         ACCESS_TOKEN_EXPIRE_MINUTES: JWT token expiration time in minutes
+        REFRESH_TOKEN_EXPIRE_DAYS: Refresh token expiration time in days
         APP_NAME: Application name used in API documentation
         DEBUG: Enable debug mode (disable in production)
     """
@@ -35,6 +36,7 @@ class Settings(BaseSettings):
     SECRET_KEY: str = FAKE_KEY
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
     # Application settings
     APP_NAME: str = "Altair"
