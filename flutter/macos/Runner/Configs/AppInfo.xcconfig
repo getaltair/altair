@@ -5,10 +5,10 @@
 // 'flutter create' template.
 
 // The application's name. By default this is also the title of the Flutter window.
-PRODUCT_NAME = polaris
+PRODUCT_NAME = altair
 
 // The application's bundle identifier
-PRODUCT_BUNDLE_IDENTIFIER = com.rghsoftware.polaris
+PRODUCT_BUNDLE_IDENTIFIER = com.getaltair.altair
 
 // The copyright displayed in application information
-PRODUCT_COPYRIGHT = Copyright © 2025 com.rghsoftware. All rights reserved.
+PRODUCT_COPYRIGHT = Copyright © 2025 Altair. All rights reserved.

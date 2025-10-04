@@ -1,4 +1,4 @@
-"""Task schema definitions for the Polaris ADHD-friendly task manager.
+"""Task schema definitions for the Altair ADHD-friendly task manager.
 
 This module contains Pydantic models for task data validation and serialization,
 specifically designed to support ADHD users with cognitive load tracking and
@@ -16,7 +16,7 @@ from typing import Optional
 from uuid import UUID
 from pydantic import BaseModel, ConfigDict, field_validator
 
-from polaris.models.task import TaskState
+from altair.models.task import TaskState
 
 
 class TaskBase(BaseModel):

@@ -1,4 +1,4 @@
-# Polaris Full-Stack Integration Guide
+# Altair Full-Stack Integration Guide
 
 ## Overview
 
@@ -54,7 +54,7 @@ This guide shows how to integrate the Flutter frontend with the Python/FastAPI b
 ## File Organization
 
 ```
-polaris/
+altair/
 ├── backend/               # Python/FastAPI
 │   ├── app/
 │   ├── alembic/
@@ -71,7 +71,7 @@ polaris/
 │   └── flutter.Dockerfile
 ├── docs/                 # Documentation
 │   ├── CLAUDE.md        # Claude Code instructions
-│   ├── POLARIS_PYTHON_CONTEXT.md
+│   ├── ALTAIR_PYTHON_CONTEXT.md
 │   └── FLUTTER_FRONTEND.md
 ├── .env.example         # Environment variables
 ├── .gitignore
@@ -86,7 +86,7 @@ Create `.env` files for both backend and frontend:
 
 ```bash
 # backend/.env
-DATABASE_URL=postgresql://polaris:polaris@localhost:5432/polaris
+DATABASE_URL=postgresql://altair:altair@localhost:5432/altair
 REDIS_URL=redis://localhost:6379
 SECRET_KEY=your-secret-key-change-this-in-production
 API_URL=http://localhost:8000
@@ -110,7 +110,7 @@ SENTRY_DSN=optional-for-error-tracking
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-app = FastAPI(title="Polaris API")
+app = FastAPI(title="Altair API")
 
 # Configure CORS for Flutter development
 app.add_middleware(
@@ -119,7 +119,7 @@ app.add_middleware(
         "http://localhost:3000",      # Flutter web dev
         "http://localhost:8080",      # Flutter web alternative
         "http://localhost:*",         # Any localhost port
-        "polaris://app",             # Mobile deep linking
+        "altair://app",             # Mobile deep linking
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -644,9 +644,9 @@ services:
   postgres:
     image: postgres:15-alpine
     environment:
-      POSTGRES_USER: polaris
-      POSTGRES_PASSWORD: polaris
-      POSTGRES_DB: polaris
+      POSTGRES_USER: altair
+      POSTGRES_PASSWORD: altair
+      POSTGRES_DB: altair
     ports:
       - "5432:5432"
     volumes:
@@ -666,7 +666,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      DATABASE_URL: postgresql://polaris:polaris@postgres:5432/polaris
+      DATABASE_URL: postgresql://altair:altair@postgres:5432/altair
       REDIS_URL: redis://redis:6379
       SECRET_KEY: development-secret-key
     depends_on:
@@ -836,7 +836,7 @@ async def test_full_task_flow():
 // flutter/integration_test/app_test.dart
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:polaris/main.dart' as app;
+import 'package:altair/main.dart' as app;
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -905,7 +905,7 @@ void main() async {
       options.dsn = const String.fromEnvironment('SENTRY_DSN');
       options.environment = kDebugMode ? 'development' : 'production';
     },
-    appRunner: () => runApp(PolarisApp()),
+    appRunner: () => runApp(AltairApp()),
   );
 }
 ```

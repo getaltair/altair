@@ -1,4 +1,4 @@
-# Polaris Python/FastAPI Context
+# Altair Python/FastAPI Context
 
 ## Current Implementation Status
 
@@ -284,6 +284,6 @@ Every feature should:
 The goal isn't perfection - it's progress. Ship early, iterate often, and learn from real usage.
 
 ---
-*Context for: Python/FastAPI implementation of Polaris*
+*Context for: Python/FastAPI implementation of Altair*
 *Updated: [Current Date]*
 *Status: Actively developing MVP*

@@ -1,4 +1,4 @@
-"""Database configuration and session management for Polaris.
+"""Database configuration and session management for Altair.
 
 This module sets up the SQLAlchemy engine, session factory, and declarative base
 for database operations. It provides dependency injection support for FastAPI
@@ -12,7 +12,7 @@ Key components:
 
 Usage:
     Import Base for model definitions:
-        from polaris.database import Base
+        from altair.database import Base
 
         class User(Base):
             __tablename__ = "users"
@@ -27,7 +27,7 @@ Usage:
 from collections.abc import Iterator
 from sqlalchemy import create_engine, Engine
 from sqlalchemy.orm import Session, sessionmaker, DeclarativeBase
-from polaris.config import settings
+from altair.config import settings
 
 # Declarative base for ORM model definitions
 class Base(DeclarativeBase):

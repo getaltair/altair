@@ -1,6 +1,6 @@
-"""Polaris API - ADHD-friendly project management system.
+"""Altair API - ADHD-friendly project management system.
 
-This module serves as the main entry point for the Polaris FastAPI application.
+This module serves as the main entry point for the Altair FastAPI application.
 It configures the application instance, middleware, database initialization,
 and route handlers for an ADHD-friendly task management system.
 
@@ -13,15 +13,15 @@ Key components:
 
 Usage:
     Run the application using uvicorn:
-        $ uvicorn polaris.main:app --reload
+        $ uvicorn altair.main:app --reload
 """
 
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from polaris.api import tasks
-from polaris.models import base
-from polaris.database import get_engine
+from altair.api import tasks
+from altair.models import base
+from altair.database import get_engine
 
 
 @asynccontextmanager
@@ -44,8 +44,8 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Polaris",
-    description="ADHD-friendly project management",
+    title="Altair",
+    description="Where focus takes flight",
     version="0.1.0",
     lifespan=lifespan,
 )
@@ -74,7 +74,7 @@ def root() -> dict[str, str]:
     Returns:
         dict: API name and version information.
     """
-    return {"message": "Polaris API", "version": "0.1.0"}
+    return {"message": "Altair API", "version": "0.1.0"}
 
 
 @app.get("/health")

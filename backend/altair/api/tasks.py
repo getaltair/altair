@@ -1,4 +1,4 @@
-"""Task management API endpoints for Polaris.
+"""Task management API endpoints for Altair.
 
 This module provides RESTful API routes for ADHD-friendly task management,
 including quick capture functionality, CRUD operations, and task state transitions.
@@ -17,9 +17,9 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
-from polaris.database import get_db
-from polaris.models.task import TaskState, Task
-from polaris.schemas.task import TaskCreate, TaskResponse, TaskUpdate
+from altair.database import get_db
+from altair.models.task import TaskState, Task
+from altair.schemas.task import TaskCreate, TaskResponse, TaskUpdate
 
 router = APIRouter()
 

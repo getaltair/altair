@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Altair Favicon Generator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-950 text-white p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-4xl font-bold mb-3">🎯 Altair Favicon Generator</h1>
+        <p class="text-slate-400 mb-8">Create favicons for your website in all required sizes</p>
+
+        <!-- Preview Section -->
+        <div class="bg-white/10 backdrop-blur rounded-2xl p-8 border border-white/20 mb-8">
+            <h2 class="text-xl font-semibold mb-6">Preview at Different Sizes</h2>
+            
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                <div class="text-center">
+                    <div class="bg-slate-800 rounded-lg p-4 mb-2 inline-block">
+                        <svg id="favicon-16" viewBox="0 0 100 100" class="w-4 h-4" xmlns="http://www.w3.org/2000/svg">
+                            <defs>
+                                <linearGradient id="grad-16" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" style="stop-color:#60A5FA;stop-opacity:1" />
+                                    <stop offset="50%" style="stop-color:#3B82F6;stop-opacity:1" />
+                                    <stop offset="100%" style="stop-color:#1E40AF;stop-opacity:1" />
+                                </linearGradient>
+                            </defs>
+                            <circle cx="50" cy="50" r="45" fill="#0F172A"/>
+                            <path d="M 50 25 L 60 50 L 50 75 L 40 50 Z" fill="url(#grad-16)"/>
+                        </svg>
+                    </div>
+                    <p class="text-sm text-slate-400">16×16px</p>
+                    <p class="text-xs text-slate-500">Browser tabs</p>
+                </div>
+
+                <div class="text-center">
+                    <div class="bg-slate-800 rounded-lg p-4 mb-2 inline-block">
+                        <svg viewBox="0 0 100 100" class="w-8 h-8" xmlns="http://www.w3.org/2000/svg">
+                            <defs>
+                                <linearGradient id="grad-32" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" style="stop-color:#60A5FA;stop-opacity:1" />
+                                    <stop offset="50%" style="stop-color:#3B82F6;stop-opacity:1" />
+                                    <stop offset="100%" style="stop-color:#1E40AF;stop-opacity:1" />
+                                </linearGradient>
+                            </defs>
+                            <circle cx="50" cy="50" r="45" fill="#0F172A"/>
+                            <path d="M 50 25 L 60 50 L 50 75 L 40 50 Z" fill="url(#grad-32)"/>
+                            <path d="M 50 25 L 60 50 L 50 45 Z" fill="#60A5FA" opacity="0.5"/>
+                            <path d="M 60 50 L 50 75 L 55 50 Z" fill="#1E40AF" opacity="0.3"/>
+                        </svg>
+                    </div>
+                    <p class="text-sm text-slate-400">32×32px</p>
+                    <p class="text-xs text-slate-500">Taskbar</p>
+                </div>
+
+                <div class="text-center">
+                    <div class="bg-slate-800 rounded-lg p-4 mb-2 inline-block">
+                        <svg viewBox="0 0 100 100" class="w-12 h-12" xmlns="http://www.w3.org/2000/svg">
+                            <defs>
+                                <linearGradient id="grad-48" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" style="stop-color:#60A5FA;stop-opacity:1" />
+                                    <stop offset="50%" style="stop-color:#3B82F6;stop-opacity:1" />
+                                    <stop offset="100%" style="stop-color:#1E40AF;stop-opacity:1" />
+                                </linearGradient>
+                            </defs>
+                            <circle cx="50" cy="50" r="45" fill="#0F172A"/>
+                            <path d="M 50 25 L 60 50 L 50 75 L 40 50 Z" fill="url(#grad-48)"/>
+                            <path d="M 50 25 L 60 50 L 50 45 Z" fill="#60A5FA" opacity="0.5"/>
+                            <path d="M 60 50 L 50 75 L 55 50 Z" fill="#1E40AF" opacity="0.3"/>
+                        </svg>
+                    </div>
+                    <p class="text-sm text-slate-400">48×48px</p>
+                    <p class="text-xs text-slate-500">Desktop</p>
+                </div>
+
+                <div class="text-center">
+                    <div class="bg-slate-800 rounded-lg p-4 mb-2 inline-block">
+                        <svg viewBox="0 0 100 100" class="w-16 h-16" xmlns="http://www.w3.org/2000/svg">
+                            <defs>
+                                <linearGradient id="grad-64" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" style="stop-color:#60A5FA;stop-opacity:1" />
+                                    <stop offset="50%" style="stop-color:#3B82F6;stop-opacity:1" />
+                                    <stop offset="100%" style="stop-color:#1E40AF;stop-opacity:1" />
+                                </linearGradient>
+                            </defs>
+                            <circle cx="50" cy="50" r="45" fill="#0F172A"/>
+                            <path d="M 50 25 L 60 50 L 50 75 L 40 50 Z" fill="url(#grad-64)"/>
+                            <path d="M 50 25 L 60 50 L 50 45 Z" fill="#60A5FA" opacity="0.5"/>
+                            <path d="M 60 50 L 50 75 L 55 50 Z" fill="#1E40AF" opacity="0.3"/>
+                        </svg>
+                    </div>
+                    <p class="text-sm text-slate-400">64×64px</p>
+                    <p class="text-xs text-slate-500">High-res</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Instructions -->
+        <div class="bg-white/10 backdrop-blur rounded-2xl p-8 border border-white/20 mb-8">
+            <h2 class="text-xl font-semibold mb-6">📋 How to Create Your Favicon</h2>
+
+            <div class="space-y-6">
+                <div>
+                    <h3 class="text-lg font-semibold text-blue-400 mb-3">Option 1: Use an Online Generator (Easiest)</h3>
+                    <ol class="list-decimal list-inside space-y-2 text-slate-300">
+                        <li>Download the diamond-star.svg file</li>
+                        <li>Go to <a href="https://favicon.io/favicon-converter/" target="_blank" class="text-blue-400 hover:text-blue-300 underline">favicon.io/favicon-converter</a></li>
+                        <li>Upload your SVG</li>
+                        <li>Click "Download" to get a complete favicon package</li>
+                        <li>Extract the files and add them to your website's root directory</li>
+                    </ol>
+                </div>
+
+                <div>
+                    <h3 class="text-lg font-semibold text-blue-400 mb-3">Option 2: Modern SVG Favicon (Recommended)</h3>
+                    <p class="text-slate-300 mb-3">Most modern browsers support SVG favicons directly. Just add this to your HTML:</p>
+                    <pre class="bg-slate-900 p-4 rounded-lg overflow-x-auto"><code class="text-sm text-blue-300">&lt;link rel="icon" type="image/svg+xml" href="/favicon.svg"&gt;</code></pre>
+                    <p class="text-slate-400 text-sm mt-2">✅ Scales perfectly, smaller file size, works in Chrome, Firefox, Edge</p>
+                </div>
+
+                <div>
+                    <h3 class="text-lg font-semibold text-blue-400 mb-3">Option 3: Complete Favicon Set (Best Compatibility)</h3>
+                    <p class="text-slate-300 mb-3">For maximum browser compatibility, use multiple sizes:</p>
+                    <pre class="bg-slate-900 p-4 rounded-lg overflow-x-auto text-sm"><code class="text-blue-300">&lt;!-- ICO format for older browsers --&gt;
+&lt;link rel="icon" type="image/x-icon" href="/favicon.ico"&gt;
+
+&lt;!-- PNG format for various sizes --&gt;
+&lt;link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"&gt;
+&lt;link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png"&gt;
+
+&lt;!-- Apple Touch Icon --&gt;
+&lt;link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"&gt;
+
+&lt;!-- Android Chrome --&gt;
+&lt;link rel="icon" type="image/png" sizes="192x192" href="/android-chrome-192x192.png"&gt;
+&lt;link rel="icon" type="image/png" sizes="512x512" href="/android-chrome-512x512.png"&gt;</code></pre>
+                </div>
+
+                <div>
+                    <h3 class="text-lg font-semibold text-blue-400 mb-3">Option 4: Use ImageMagick (Command Line)</h3>
+                    <p class="text-slate-300 mb-3">If you have ImageMagick installed:</p>
+                    <pre class="bg-slate-900 p-4 rounded-lg overflow-x-auto"><code class="text-sm text-green-400"># Install ImageMagick first
+# macOS: brew install imagemagick
+# Ubuntu: sudo apt-get install imagemagick
+
+# Convert SVG to multi-size ICO
+convert diamond-star.svg -define icon:auto-resize=64,48,32,16 favicon.ico</code></pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Tips -->
+        <div class="bg-blue-500/10 backdrop-blur rounded-2xl p-6 border border-blue-500/20 mb-8">
+            <h3 class="text-lg font-semibold text-blue-300 mb-3">💡 Quick Tips</h3>
+            <ul class="space-y-2 text-slate-300">
+                <li class="flex items-start gap-2">
+                    <span class="text-blue-400">•</span>
+                    <span><strong>File placement:</strong> Put favicon files in your website's root directory</span>
+                </li>
+                <li class="flex items-start gap-2">
+                    <span class="text-blue-400">•</span>
+                    <span><strong>Cache clearing:</strong> Hard refresh (Ctrl+Shift+R) to see changes</span>
+                </li>
+                <li class="flex items-start gap-2">
+                    <span class="text-blue-400">•</span>
+                    <span><strong>Testing:</strong> Check <a href="https://realfavicongenerator.net/favicon_checker" class="text-blue-400 underline" target="_blank">realfavicongenerator.net/favicon_checker</a></span>
+                </li>
+                <li class="flex items-start gap-2">
+                    <span class="text-blue-400">•</span>
+                    <span><strong>SVG wins:</strong> For modern sites, a single SVG favicon is often enough</span>
+                </li>
+            </ul>
+        </div>
+
+        <!-- PWA Icons -->
+        <div class="bg-white/10 backdrop-blur rounded-2xl p-8 border border-white/20">
+            <h2 class="text-xl font-semibold mb-4">📱 Progressive Web App (PWA) Icons</h2>
+            <p class="text-slate-300 mb-4">If you're building a PWA, you'll also need these sizes:</p>
+            
+            <div class="grid md:grid-cols-2 gap-4 text-sm">
+                <div class="bg-slate-900 p-4 rounded-lg">
+                    <p class="font-semibold text-white mb-2">iOS</p>
+                    <ul class="text-slate-400 space-y-1">
+                        <li>• 180×180px - Apple Touch Icon</li>
+                        <li>• 167×167px - iPad Pro</li>
+                        <li>• 152×152px - iPad</li>
+                        <li>• 120×120px - iPhone</li>
+                    </ul>
+                </div>
+                <div class="bg-slate-900 p-4 rounded-lg">
+                    <p class="font-semibold text-white mb-2">Android</p>
+                    <ul class="text-slate-400 space-y-1">
+                        <li>• 512×512px - High-res</li>
+                        <li>• 192×192px - Standard</li>
+                        <li>• 144×144px - Legacy</li>
+                        <li>• 96×96px - Low-res</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="mt-6 p-4 bg-blue-500/10 rounded-lg">
+                <p class="text-sm text-blue-200">
+                    <strong>Pro tip:</strong> Use <a href="https://realfavicongenerator.net/" target="_blank" class="underline">realfavicongenerator.net</a> 
+                    to generate all sizes at once from your SVG file. It creates optimized files and gives you all the HTML code you need.
+                </p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

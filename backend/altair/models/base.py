@@ -1,7 +1,7 @@
-"""Base model class for all Polaris database models.
+"""Base model class for all Altair database models.
 
 This module provides the BaseModel abstract class that serves as the foundation
-for all SQLAlchemy ORM models in Polaris. It includes common fields that every
+for all SQLAlchemy ORM models in Altair. It includes common fields that every
 entity needs: a UUID primary key and timestamp tracking for creation and updates.
 
 Key features:
@@ -13,7 +13,7 @@ Key features:
 Usage:
     Inherit from BaseModel for all database models:
 
-        from polaris.models.base import BaseModel
+        from altair.models.base import BaseModel
 
         class Task(BaseModel):
             __tablename__ = "tasks"
@@ -28,13 +28,13 @@ import uuid
 from sqlalchemy import Column, DateTime
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
-from polaris.database import Base
+from altair.database import Base
 
 
 class BaseModel(Base):
     """Abstract base model providing common fields for all database entities.
 
-    This class serves as the parent for all ORM models in Polaris, providing
+    This class serves as the parent for all ORM models in Altair, providing
     standard fields that every entity requires. It uses UUIDs for primary keys
     to support distributed systems and avoid collision issues with auto-incrementing
     integers.

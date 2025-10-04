@@ -1,4 +1,4 @@
-# Claude Code Instructions for Polaris Development (Python/FastAPI Edition)
+# Claude Code Instructions for Altair Development (Python/FastAPI Edition)
 
 ## Quick Reference
 **Current Stack**: Python 3.12+ / FastAPI / PostgreSQL / Redis / Flutter  
@@ -56,7 +56,7 @@ Bad response: "Here's the code: [proceeds to write implementation]"
 ### Core Dependencies (pyproject.toml)
 ```toml
 [project]
-name = "polaris"
+name = "altair"
 version = "0.1.0"
 requires-python = ">=3.12"
 
@@ -87,7 +87,7 @@ dev-dependencies = [
 
 ### Project Structure
 ```
-polaris/
+altair/
 ├── backend/
 │   ├── app/
 │   │   ├── __init__.py
@@ -186,7 +186,7 @@ docker-compose up --build
 
 # Production build
 uv run pip freeze > requirements.txt
-docker build -t polaris:latest .
+docker build -t altair:latest .
 
 # Deploy to Railway (automatic from GitHub push)
 git push origin main
@@ -418,7 +418,7 @@ A: When the same expensive query runs multiple times per minute, or for session 
 
 ## Remember: Core Mission
 
-Polaris transforms project management from a source of anxiety into a supportive external brain that celebrates neurodivergent strengths while providing essential executive function scaffolding.
+Altair transforms project management from a source of anxiety into a supportive external brain that celebrates neurodivergent strengths while providing essential executive function scaffolding.
 
 Every decision should:
 - Reduce cognitive load

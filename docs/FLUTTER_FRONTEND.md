@@ -1,8 +1,8 @@
-# Polaris Flutter Frontend Documentation
+# Altair Flutter Frontend Documentation
 
 ## Overview
 
-Flutter frontend for Polaris providing native mobile, web (PWA), and desktop experiences optimized for ADHD users. Focuses on instant response, offline-first operation, and dopamine-triggering micro-interactions.
+Flutter frontend for Altair providing native mobile, web (PWA), and desktop experiences optimized for ADHD users. Focuses on instant response, offline-first operation, and dopamine-triggering micro-interactions.
 
 ## Tech Stack
 
@@ -150,7 +150,7 @@ void main() async {
   
   runApp(
     const ProviderScope(
-      child: PolarisApp(),
+      child: AltairApp(),
     ),
   );
 }
@@ -747,7 +747,7 @@ class AppDatabase extends _$AppDatabase {
 LazyDatabase _openConnection() {
   return LazyDatabase(() async {
     final dbFolder = await getApplicationDocumentsDirectory();
-    final file = File(p.join(dbFolder.path, 'polaris.sqlite'));
+    final file = File(p.join(dbFolder.path, 'altair.sqlite'));
     return NativeDatabase(file);
   });
 }
@@ -842,14 +842,14 @@ class SyncService {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Polaris - ADHD Project Management</title>
+  <title>Altair - ADHD Project Management</title>
   
   <!-- PWA Meta Tags -->
   <meta name="theme-color" content="#00CC88">
   <link rel="manifest" href="manifest.json">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="Polaris">
+  <meta name="apple-mobile-web-app-title" content="Altair">
   
   <!-- Icons -->
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
@@ -873,7 +873,7 @@ class SyncService {
   </style>
 </head>
 <body>
-  <div class="loading">Loading Polaris...</div>
+  <div class="loading">Loading Altair...</div>
   
   <script>
     // Register service worker for offline support
@@ -892,8 +892,8 @@ class SyncService {
 ```json
 // web/manifest.json
 {
-  "name": "Polaris - ADHD Project Management",
-  "short_name": "Polaris",
+  "name": "Altair - ADHD Project Management",
+  "short_name": "Altair",
   "description": "ADHD-friendly project management with focus timers and quick capture",
   "start_url": "/",
   "display": "standalone",
@@ -936,7 +936,7 @@ class SyncService {
 ### 1. Initialize Flutter Project
 ```bash
 # Create Flutter project
-flutter create --org com.yourname --project-name polaris flutter
+flutter create --org com.yourname --project-name altair flutter
 cd flutter
 
 # Add dependencies
@@ -997,7 +997,7 @@ flutter pub run build_runner watch
 ```dart
 // test/quick_capture_test.dart
 import 'package:flutter_test/flutter_test.dart';
-import 'package:polaris/features/quick_capture/quick_capture.dart';
+import 'package:altair/features/quick_capture/quick_capture.dart';
 
 void main() {
   testWidgets('Quick capture saves task immediately', (tester) async {

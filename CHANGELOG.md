@@ -1,15 +1,31 @@
 # Changelog
 
-All notable changes to the Polaris project will be documented in this file.
+All notable changes to the Altair project will be documented in this file.
 
 ## [Current] - 2025-10-04
+
+### refactor(brand): rebrand from Polaris to Altair
+
+- Rename all Python packages from `polaris` to `altair` throughout backend
+- Update project name, tagline ("Where focus takes flight"), and branding across all docs
+- Add comprehensive brand assets: diamond star logo/icon, social media banners, favicon generator
+- Add brand guidelines (434-line comprehensive manual with colors, typography, voice, accessibility)
+- Add brand assets guide with platform-specific usage instructions
+- Add landing page template with email signup and ADHD-friendly design
+- Update README with Altair branding, new tagline, and getaltair.app links
+- Rename POLARIS_PYTHON_CONTEXT.md to ALTAIR_PYTHON_CONTEXT.md
+- Rename docs: POLARIS_DOGFOODING.md → ALTAIR_DOGFOODING.md, POLARIS_QUICKSTART.md → ALTAIR_QUICKSTART.md
+- Update Flutter app configuration: package name com.rghsoftware.polaris → com.getaltair.altair
+- Add JWT authentication implementation plan documentation
+- Update all import statements, configuration, and Docker files with new naming
+- Update CLAUDE.md development guidelines with Altair branding
 
 ### build(railway): migrate from Nixpacks to Dockerfile for deployment
 
 - Add multi-stage Dockerfile with UV package manager support
 - Add .dockerignore to optimize Docker build context
 - Update railway.json to use DOCKERFILE builder instead of NIXPACKS
-- Fix start command to use correct polaris.main:app module path
+- Fix start command to use correct altair.main:app module path
 - Optimize for production with non-root user and minimal runtime image
 
 ### build(railway): add Railway deployment configuration and dependencies
@@ -33,7 +49,7 @@ All notable changes to the Polaris project will be documented in this file.
 - Add project structure with backend Python package layout
 - Add FastAPI dependencies and development tools in pyproject.toml
 - Add comprehensive CLAUDE.md with development guidelines and patterns
-- Add POLARIS_PYTHON_CONTEXT.md with architecture decisions and MVP roadmap
+- Add ALTAIR_PYTHON_CONTEXT.md with architecture decisions and MVP roadmap
 - Add extensive documentation for Flutter frontend, fullstack integration, dogfooding strategy, and quickstart guide
 - Add custom Claude Code /commit command for conventional commits
 - Add .gitignore for Python, UV, Docker, Flutter, and development artifacts

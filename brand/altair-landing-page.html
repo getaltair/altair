@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Altair - ADHD-Friendly Project Management</title>
+    <meta name="description" content="Navigate your projects with an ADHD-friendly task management system designed for neurodivergent minds.">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        .gradient-text {
+            background: linear-gradient(135deg, #60A5FA 0%, #3B82F6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .glow {
+            box-shadow: 0 0 40px rgba(96, 165, 250, 0.3);
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-white">
+    <!-- Hero Section -->
+    <div class="min-h-screen flex flex-col items-center justify-center px-6 py-20">
+        <div class="max-w-4xl mx-auto text-center">
+            <!-- Logo -->
+            <div class="mb-8 flex justify-center">
+                <svg viewBox="0 0 100 100" class="w-32 h-32 glow" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#60A5FA;stop-opacity:1" />
+                            <stop offset="50%" style="stop-color:#3B82F6;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#1E40AF;stop-opacity:1" />
+                        </linearGradient>
+                    </defs>
+                    <circle cx="50" cy="50" r="45" fill="#0F172A"/>
+                    <path d="M 50 25 L 60 50 L 50 75 L 40 50 Z" fill="url(#grad)"/>
+                    <path d="M 50 25 L 60 50 L 50 45 Z" fill="#60A5FA" opacity="0.5"/>
+                    <path d="M 60 50 L 50 75 L 55 50 Z" fill="#1E40AF" opacity="0.3"/>
+                </svg>
+            </div>
+
+            <!-- Title -->
+            <h1 class="text-6xl md:text-7xl font-bold mb-6">
+                <span class="gradient-text">Altair</span>
+            </h1>
+
+            <!-- Tagline -->
+            <p class="text-2xl md:text-3xl text-blue-200 mb-8 font-medium">
+                Where focus takes flight
+            </p>
+
+            <!-- Description -->
+            <p class="text-xl text-slate-300 mb-12 max-w-2xl mx-auto leading-relaxed">
+                ADHD-friendly project management that works <em>with</em> your brain, not against it. 
+                Find clarity in the chaos. Stay oriented. Make progress.
+            </p>
+
+            <!-- Email Signup -->
+            <div class="mb-12">
+                <form class="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
+                    <input 
+                        type="email" 
+                        placeholder="your@email.com" 
+                        class="flex-1 px-6 py-4 rounded-xl bg-white/10 border border-white/20 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        required
+                    >
+                    <button 
+                        type="submit"
+                        class="px-8 py-4 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 rounded-xl font-semibold transition-all transform hover:scale-105"
+                    >
+                        Get Early Access
+                    </button>
+                </form>
+                <p class="text-sm text-slate-400 mt-3">Join the waitlist. Launching 2025.</p>
+            </div>
+
+            <!-- Features -->
+            <div class="grid md:grid-cols-3 gap-8 mt-20 text-left">
+                <div class="bg-white/5 p-6 rounded-2xl border border-white/10">
+                    <div class="text-3xl mb-3">🎯</div>
+                    <h3 class="text-lg font-semibold mb-2 text-blue-200">Quick Capture</h3>
+                    <p class="text-slate-400 text-sm">Capture tasks instantly before they disappear. No friction, no decisions, just save it.</p>
+                </div>
+
+                <div class="bg-white/5 p-6 rounded-2xl border border-white/10">
+                    <div class="text-3xl mb-3">⏱️</div>
+                    <h3 class="text-lg font-semibold mb-2 text-blue-200">Time Awareness</h3>
+                    <p class="text-slate-400 text-sm">Visual time tracking designed for time blindness. See progress, not just deadlines.</p>
+                </div>
+
+                <div class="bg-white/5 p-6 rounded-2xl border border-white/10">
+                    <div class="text-3xl mb-3">🧩</div>
+                    <h3 class="text-lg font-semibold mb-2 text-blue-200">Smart Breakdown</h3>
+                    <p class="text-slate-400 text-sm">AI-powered task decomposition. Turn overwhelming projects into manageable 15-minute chunks.</p>
+                </div>
+            </div>
+
+            <!-- Open Source Badge -->
+            <div class="mt-16 pt-8 border-t border-white/10">
+                <p class="text-slate-400 text-sm">
+                    <span class="text-blue-400 font-semibold">Open Source</span> • Built by the ADHD community, for the ADHD community
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="py-8 border-t border-white/10">
+        <div class="max-w-4xl mx-auto px-6 text-center">
+            <div class="flex justify-center gap-6 mb-4">
+                <a href="https://github.com/getaltair" class="text-slate-400 hover:text-blue-400 transition-colors">GitHub</a>
+                <a href="https://twitter.com/getaltair" class="text-slate-400 hover:text-blue-400 transition-colors">Twitter</a>
+                <a href="mailto:hello@getaltair.app" class="text-slate-400 hover:text-blue-400 transition-colors">Contact</a>
+            </div>
+            <p class="text-slate-500 text-sm">© 2025 Altair. AGPL-3.0 License.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Simple form handling (you'll replace this with your actual email service)
+        document.querySelector('form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const email = this.querySelector('input[type="email"]').value;
+            alert('Thanks for your interest! We\'ll notify you at ' + email + ' when Altair launches.');
+            this.reset();
+        });
+    </script>
+</body>
+</html>

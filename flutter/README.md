@@ -1,6 +1,6 @@
-# polaris
+# Altair
 
-A new Flutter project.
+Where focus takes flight - An ADHD-friendly task manager built with Flutter.
 
 ## Getting Started
 

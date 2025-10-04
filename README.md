@@ -1,14 +1,14 @@
-# Polaris ⭐
+# Altair ⭐
 
-> An ADHD-friendly task manager that works with your brain, not against it.
+> Where focus takes flight
 
-Polaris transforms project management from a source of anxiety into a supportive external brain that celebrates neurodivergent strengths while providing essential executive function scaffolding.
+Altair transforms project management from a source of anxiety into a supportive external brain that celebrates neurodivergent strengths while providing essential executive function scaffolding.
 
 ## 🎯 Philosophy
 
 **ADHD users don't need to be fixed; they need tools that work with their brains.**
 
-Polaris is designed around core principles:
+Altair is designed around core principles:
 - **Reduce cognitive load** - Minimize decisions at every step
 - **Minimize decision fatigue** - Smart defaults and natural language input
 - **Provide immediate feedback** - Real-time updates and confirmations
@@ -91,8 +91,8 @@ ARCHIVED (automatic after 30 days)
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # Clone the repository
-git clone https://github.com/yourusername/polaris.git
-cd polaris
+git clone https://github.com/getaltair/altair.git
+cd altair
 
 # Create virtual environment and install dependencies
 uv venv
@@ -127,7 +127,7 @@ flutter run
 ## 📁 Project Structure
 
 ```
-polaris/
+altair/
 ├── backend/
 │   ├── app/
 │   │   ├── main.py              # FastAPI application
@@ -269,11 +269,11 @@ We believe in open source software that stays open. The AGPL-3.0 ensures that:
 
 ## 🌟 Roadmap
 
-### Phase 1: MVP (Weeks 1-2) ✅
+### Phase 1: MVP (Weeks 1-2) 🚧
 - [x] Project initialization
 - [x] Flutter scaffolding
-- [ ] Quick capture functionality
-- [ ] Basic task CRUD
+- [x] Quick capture functionality
+- [x] Basic task CRUD
 - [ ] Focus timer
 
 ### Phase 2: Core Features (Month 1)
@@ -299,9 +299,9 @@ We believe in open source software that stays open. The AGPL-3.0 ensures that:
 
 ## 💬 Community
 
-- **Issues:** [GitHub Issues](https://github.com/yourusername/polaris/issues)
-- **Discussions:** [GitHub Discussions](https://github.com/yourusername/polaris/discussions)
-- **Discord:** [Coming Soon]
+- **Issues:** [GitHub Issues](https://github.com/getaltair/altair/issues)
+- **Discussions:** [GitHub Discussions](https://github.com/getaltair/altair/discussions)
+- **Discord:** [discord.gg/altair](https://discord.gg/altair)
 
 ## 🙏 Acknowledgments
 
@@ -321,4 +321,8 @@ Special thanks to:
 
 ---
 
-**Made with ☕ and hyperfocus by neurodivergent developers, for neurodivergent users.**
+**Where focus takes flight ⭐**
+
+Made with ☕ and hyperfocus by neurodivergent developers, for neurodivergent users.
+
+Learn more at [getaltair.app](https://getaltair.app)

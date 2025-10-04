@@ -1,7 +1,7 @@
 """Task model for ADHD-friendly task management.
 
 This module defines the Task model and TaskState enum, which form the core of
-Polaris's task management system. The design prioritizes ADHD-friendly workflows
+Altair's task management system. The design prioritizes ADHD-friendly workflows
 by minimizing decision fatigue through a structured state machine and cognitive
 load tracking.
 
@@ -18,7 +18,7 @@ import enum
 
 from sqlalchemy import Column, Enum, Integer, String, Text
 
-from polaris.models.base import BaseModel
+from altair.models.base import BaseModel
 
 
 class TaskState(enum.Enum):

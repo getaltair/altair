@@ -1,0 +1,42 @@
+<svg id="reddit-mobile" viewBox="0 0 1600 480" xmlns="http://www.w3.org/2000/svg" class="w-full border border-slate-700 rounded-lg">
+                <defs>
+                    <linearGradient id="grad-reddit-m" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#60A5FA;stop-opacity:1"/>
+                        <stop offset="50%" style="stop-color:#3B82F6;stop-opacity:1"/>
+                        <stop offset="100%" style="stop-color:#1E40AF;stop-opacity:1"/>
+                    </linearGradient>
+                    <radialGradient id="glow-reddit-m">
+                        <stop offset="0%" style="stop-color:#60A5FA;stop-opacity:0.4"/>
+                        <stop offset="100%" style="stop-color:#60A5FA;stop-opacity:0"/>
+                    </radialGradient>
+                </defs>
+                
+                <!-- Background -->
+                <rect width="1600" height="480" fill="#0F172A"/>
+                
+                <!-- Grid -->
+                <g opacity="0.03">
+                    <line x1="0" y1="120" x2="1600" y2="120" stroke="#60A5FA" stroke-width="1"/>
+                    <line x1="0" y1="240" x2="1600" y2="240" stroke="#60A5FA" stroke-width="1"/>
+                    <line x1="0" y1="360" x2="1600" y2="360" stroke="#60A5FA" stroke-width="1"/>
+                    <line x1="400" y1="0" x2="400" y2="480" stroke="#60A5FA" stroke-width="1"/>
+                    <line x1="800" y1="0" x2="800" y2="480" stroke="#60A5FA" stroke-width="1"/>
+                    <line x1="1200" y1="0" x2="1200" y2="480" stroke="#60A5FA" stroke-width="1"/>
+                </g>
+                
+                <!-- Center glow -->
+                <circle cx="800" cy="240" r="220" fill="url(#glow-reddit-m)"/>
+                
+                <!-- Icon -->
+                <g transform="translate(650, 65)">
+                    <circle cx="150" cy="175" r="140" fill="#0A0F1E"/>
+                    <path d="M 150 100 L 182 175 L 150 250 L 118 175 Z" fill="url(#grad-reddit-m)"/>
+                    <path d="M 150 100 L 182 175 L 150 162.5 Z" fill="#60A5FA" opacity="0.5"/>
+                    <path d="M 182 175 L 150 250 L 166 175 Z" fill="#1E40AF" opacity="0.3"/>
+                </g>
+                
+                <!-- Text -->
+                <text x="800" y="330" font-size="70" font-weight="800" fill="#FFFFFF" text-anchor="middle">r/Altair</text>
+                <text x="800" y="385" font-size="26" font-weight="600" fill="#60A5FA" text-anchor="middle">ADHD-Friendly Project Management Community</text>
+                <text x="800" y="425" font-size="22" font-weight="500" fill="#94A3B8" text-anchor="middle">Where focus takes flight</text>
+            </svg>

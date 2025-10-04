@@ -1,4 +1,4 @@
-# Polaris Public Dogfooding Implementation Guide
+# Altair Public Dogfooding Implementation Guide
 
 ## Overview
 
@@ -313,9 +313,9 @@ async def public_dashboard(
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ username }} - Polaris Public Dashboard</title>
+    <title>{{ username }} - Altair Public Dashboard</title>
     <meta property="og:title" content="{{ username }}'s Development Progress">
-    <meta property="og:description" content="Building in public with Polaris - ADHD-friendly project management">
+    <meta property="og:description" content="Building in public with Altair - ADHD-friendly project management">
     <meta property="og:image" content="/api/public/og-image/{{ username }}">
     <meta name="twitter:card" content="summary_large_image">
     <style>
@@ -609,14 +609,14 @@ class SocialShareService:
     def format_daily_update(stats: dict) -> str:
         """Format daily stats for social media"""
         return f"""
-🎯 Daily Polaris Update
+🎯 Daily Altair Update
 
 ✅ Completed: {stats['tasks_completed']} tasks
 ⏱️ Focused: {stats['focus_minutes']} minutes  
 🔥 Streak: {stats['current_streak']} days
 📈 Level: {stats['level']}
 
-Building in public with #Polaris #ADHD #BuildInPublic
+Building in public with #Altair #ADHD #BuildInPublic
         """.strip()
     
     @staticmethod
@@ -628,7 +628,7 @@ Building in public with #Polaris #ADHD #BuildInPublic
 {milestone['title']}
 {milestone['description']}
 
-#Polaris #ADHD #BuildInPublic
+#Altair #ADHD #BuildInPublic
         """.strip()
 ```
 
@@ -644,7 +644,7 @@ from ..models.user import User
 from ..models.task import Task, TaskState
 from ..services.social_share import SocialShareService
 
-celery_app = Celery('polaris', broker=settings.REDIS_URL)
+celery_app = Celery('altair', broker=settings.REDIS_URL)
 
 @celery_app.task
 def generate_daily_summaries():
@@ -728,15 +728,15 @@ async def stats_widget(
     """Embeddable stats widget for blogs/websites"""
     
     html = f"""
-    <div id="polaris-widget-{username}" style="width: 300px; padding: 20px; background: #1a1a2e; border-radius: 8px; color: #ccc; font-family: system-ui;">
+    <div id="altair-widget-{username}" style="width: 300px; padding: 20px; background: #1a1a2e; border-radius: 8px; color: #ccc; font-family: system-ui;">
         <h3 style="margin-top: 0;">Loading...</h3>
     </div>
     <script>
         (function() {{
-            fetch('https://polaris.app/api/public/stats/{username}')
+            fetch('https://altair.app/api/public/stats/{username}')
                 .then(r => r.json())
                 .then(data => {{
-                    const widget = document.getElementById('polaris-widget-{username}');
+                    const widget = document.getElementById('altair-widget-{username}');
                     widget.innerHTML = `
                         <h3 style="margin-top: 0;">${{data.display_name}}'s Stats</h3>
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
@@ -750,9 +750,9 @@ async def stats_widget(
                             </div>
                         </div>
                         <div style="margin-top: 15px; font-size: 0.9em;">
-                            <em>${{data.status_message || 'Building with Polaris'}}</em>
+                            <em>${{data.status_message || 'Building with Altair'}}</em>
                         </div>
-                        <a href="https://polaris.app/${{data.username}}" style="color: #00cc00; text-decoration: none; font-size: 0.9em;">View Full Dashboard →</a>
+                        <a href="https://altair.app/${{data.username}}" style="color: #00cc00; text-decoration: none; font-size: 0.9em;">View Full Dashboard →</a>
                     `;
                 }});
         }})();
@@ -767,13 +767,13 @@ async def focus_widget(username: str):
     
     # Return JavaScript that polls for focus session updates
     html = f"""
-    <div id="polaris-focus-{username}" style="padding: 10px; background: #1a1a2e; border-radius: 8px; color: #ccc;">
+    <div id="altair-focus-{username}" style="padding: 10px; background: #1a1a2e; border-radius: 8px; color: #ccc;">
         <div id="focus-status">Checking focus status...</div>
     </div>
     <script>
         (function() {{
             function updateFocus() {{
-                fetch('https://polaris.app/api/public/current/{username}')
+                fetch('https://altair.app/api/public/current/{username}')
                     .then(r => r.json())
                     .then(data => {{
                         const status = document.getElementById('focus-status');
@@ -800,13 +800,13 @@ async def focus_widget(username: str):
 
 ```markdown
 <!-- README.md template for users -->
-# Building Polaris in Public 🚀
+# Building Altair in Public 🚀
 
-[![Polaris Stats](https://polaris.app/api/public/badge/YOUR_USERNAME)](https://polaris.app/YOUR_USERNAME)
+[![Altair Stats](https://altair.app/api/public/badge/YOUR_USERNAME)](https://altair.app/YOUR_USERNAME)
 
 ## Current Status
 
-<!-- Polaris:START -->
+<!-- Altair:START -->
 🔥 **7 Day Streak**  
 📊 **Level 5** (2,340 XP)  
 ✅ **42 tasks** completed this week  
@@ -815,25 +815,25 @@ async def focus_widget(username: str):
 **Currently working on:** Implementing authentication system
 
 **Last update:** 2 hours ago
-<!-- Polaris:END -->
+<!-- Altair:END -->
 
 ## Today's Progress
 
-Follow my daily progress building Polaris, an ADHD-friendly project management tool:
+Follow my daily progress building Altair, an ADHD-friendly project management tool:
 
-- 🌐 [Live Dashboard](https://polaris.app/YOUR_USERNAME)
+- 🌐 [Live Dashboard](https://altair.app/YOUR_USERNAME)
 - 🐦 [Twitter Updates](https://twitter.com/YOUR_TWITTER)
 - 📝 [Dev Blog](https://your-blog.com)
 
 ---
-*Stats update automatically via [Polaris](https://polaris.app)*
+*Stats update automatically via [Altair](https://altair.app)*
 ```
 
 ### 10. GitHub Action for README Updates
 
 ```yaml
 # .github/workflows/update-readme.yml
-name: Update README with Polaris Stats
+name: Update README with Altair Stats
 
 on:
   schedule:
@@ -846,10 +846,10 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       
-      - name: Fetch Polaris Stats
+      - name: Fetch Altair Stats
         id: stats
         run: |
-          STATS=$(curl -s https://polaris.app/api/public/stats/${{ secrets.POLARIS_USERNAME }})
+          STATS=$(curl -s https://altair.app/api/public/stats/${{ secrets.ALTAIR_USERNAME }})
           echo "::set-output name=stats::$STATS"
       
       - name: Update README
@@ -858,10 +858,10 @@ jobs:
       
       - name: Commit and Push
         run: |
-          git config --global user.name 'Polaris Bot'
-          git config --global user.email 'bot@polaris.app'
+          git config --global user.name 'Altair Bot'
+          git config --global user.email 'bot@altair.app'
           git add README.md
-          git commit -m "Update Polaris stats" || exit 0
+          git commit -m "Update Altair stats" || exit 0
           git push
 ```
 
@@ -909,15 +909,15 @@ async def celebrate_milestone(user_id: UUID, milestone: dict):
 ```html
 <!-- Add to your blog or website -->
 <iframe 
-    src="https://polaris.app/api/widgets/stats/YOUR_USERNAME" 
+    src="https://altair.app/api/widgets/stats/YOUR_USERNAME" 
     width="320" 
     height="200" 
     frameborder="0">
 </iframe>
 
 <!-- Or use the JavaScript widget -->
-<div id="polaris-stats"></div>
-<script src="https://polaris.app/api/widgets/js/YOUR_USERNAME"></script>
+<div id="altair-stats"></div>
+<script src="https://altair.app/api/widgets/js/YOUR_USERNAME"></script>
 ```
 
 ## Marketing Benefits

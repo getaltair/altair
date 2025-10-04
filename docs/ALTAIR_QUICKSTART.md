@@ -1,4 +1,4 @@
-# Polaris Python/FastAPI Quick Start Guide
+# Altair Python/FastAPI Quick Start Guide
 
 ## Prerequisites
 
@@ -22,7 +22,7 @@ powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
 ### Clone and Setup Project
 ```bash
 # Create project structure
-mkdir polaris && cd polaris
+mkdir altair && cd altair
 git init
 
 # Create backend structure
@@ -38,7 +38,7 @@ cd backend
 ### Create pyproject.toml
 ```toml
 [project]
-name = "polaris"
+name = "altair"
 version = "0.1.0"
 requires-python = ">=3.12"
 description = "ADHD-friendly project management"
@@ -94,16 +94,16 @@ uv sync
 ```bash
 # Quick PostgreSQL setup
 docker run -d \
-  --name polaris-db \
-  -e POSTGRES_USER=polaris \
-  -e POSTGRES_PASSWORD=polaris \
-  -e POSTGRES_DB=polaris \
+  --name altair-db \
+  -e POSTGRES_USER=altair \
+  -e POSTGRES_PASSWORD=altair \
+  -e POSTGRES_DB=altair \
   -p 5432:5432 \
   postgres:15-alpine
 
 # Redis for caching/sessions
 docker run -d \
-  --name polaris-redis \
+  --name altair-redis \
   -p 6379:6379 \
   redis:7-alpine
 ```
@@ -126,7 +126,7 @@ from typing import Optional
 
 class Settings(BaseSettings):
     # Database
-    DATABASE_URL: str = "postgresql://polaris:polaris@localhost/polaris"
+    DATABASE_URL: str = "postgresql://altair:altair@localhost/altair"
     REDIS_URL: str = "redis://localhost:6379"
     
     # Security
@@ -135,7 +135,7 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     
     # App
-    APP_NAME: str = "Polaris"
+    APP_NAME: str = "Altair"
     DEBUG: bool = True
     
     class Config:
@@ -325,7 +325,7 @@ from .models import base
 base.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
-    title="Polaris",
+    title="Altair",
     description="ADHD-friendly project management",
     version="0.1.0"
 )
@@ -344,7 +344,7 @@ app.include_router(tasks.router, prefix="/api/tasks", tags=["tasks"])
 
 @app.get("/")
 async def root():
-    return {"message": "Polaris API", "version": "0.1.0"}
+    return {"message": "Altair API", "version": "0.1.0"}
 
 @app.get("/health")
 async def health():
@@ -442,7 +442,7 @@ SECRET_KEY=your-secret-key-here
 ```bash
 # Push to GitHub
 git add .
-git commit -m "Initial Polaris MVP"
+git commit -m "Initial Altair MVP"
 git push origin main
 
 # In Railway:
@@ -491,7 +491,7 @@ uv run pytest
 # Check PostgreSQL is running
 docker ps
 # Restart if needed
-docker start polaris-db
+docker start altair-db
 ```
 
 ### Issue: Port already in use

@@ -5,8 +5,8 @@ from sqlalchemy import pool
 
 from alembic import context
 
-from polaris.models.base import Base
-from polaris.config import settings
+from altair.models.base import Base
+from altair.config import settings
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

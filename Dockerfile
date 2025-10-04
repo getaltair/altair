@@ -18,18 +18,18 @@ RUN uv sync --frozen --no-dev --no-install-project
 FROM python:3.12-slim
 
 # Create non-root user for security
-RUN useradd -m -u 1000 polaris
+RUN useradd -m -u 1000 altair
 
 # Set working directory
 WORKDIR /app
 
 # Copy virtual environment from builder
-COPY --from=builder --chown=polaris:polaris /app/.venv /app/.venv
+COPY --from=builder --chown=altair:altair /app/.venv /app/.venv
 
 # Copy application code
-COPY --chown=polaris:polaris backend/polaris ./polaris
-COPY --chown=polaris:polaris backend/alembic ./alembic
-COPY --chown=polaris:polaris backend/alembic.ini ./alembic.ini
+COPY --chown=altair:altair backend/altair ./altair
+COPY --chown=altair:altair backend/alembic ./alembic
+COPY --chown=altair:altair backend/alembic.ini ./alembic.ini
 
 # Set environment variables
 ENV PATH="/app/.venv/bin:$PATH" \
@@ -37,10 +37,10 @@ ENV PATH="/app/.venv/bin:$PATH" \
     PYTHONDONTWRITEBYTECODE=1
 
 # Switch to non-root user
-USER polaris
+USER altair
 
 # Expose port (Railway will override with $PORT)
 EXPOSE 8000
 
 # Start command (Railway overrides via railway.json)
-CMD ["uvicorn", "polaris.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "altair.main:app", "--host", "0.0.0.0", "--port", "8000"]

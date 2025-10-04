@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     """
 
     # Database connections
-    DATABASE_URL: str = "postgresql://polaris:polaris@localhost/polaris"
+    DATABASE_URL: str = "postgresql://altair:altair@localhost/altair"
     REDIS_URL: str = "redis://localhost:6379"
 
     # Security settings
@@ -37,7 +37,7 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 
     # Application settings
-    APP_NAME: str = "Polaris"
+    APP_NAME: str = "Altair"
     DEBUG: bool = True
 
     model_config = SettingsConfigDict(env_file=".env")

@@ -1,8 +1,8 @@
 [project]
-name = "polaris"
+name = "altair"
 version = "0.1.0"
 requires-python = ">=3.12"
-description = "ADHD-friendly project management"
+description = "Altair - Where focus takes flight"
 
 dependencies = [
   "fastapi>=0.104.0",
