@@ -18,14 +18,17 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from altair.database import get_db
-from altair.models.task import TaskState, Task
+from altair.dependencies import get_current_user
+from altair.models import TaskState, Task, User
 from altair.schemas.task import TaskCreate, TaskResponse, TaskUpdate
 
 router = APIRouter()
 
 
 @router.post("/quick-capture", response_model=TaskResponse)
-def quick_capture(text: str, db: Session = Depends(get_db)):
+def quick_capture(
+    text: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)
+):
     """Quickly capture a task with minimal friction - ADHD-friendly endpoint.
 
     This endpoint prioritizes speed and simplicity over structure. Tasks are

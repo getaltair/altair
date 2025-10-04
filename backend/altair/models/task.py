@@ -16,9 +16,10 @@ then triage when executive function is available.
 
 import enum
 from typing import Optional
+from uuid import UUID
 
-from sqlalchemy import Enum, Integer, String, Text
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import Enum, ForeignKey, Integer, String, Text
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from altair.models.base import BaseModel
 
@@ -72,6 +73,8 @@ class Task(BaseModel):
         cognitive_load (int): Subjective mental effort rating 1-10, defaults to 5
             (used to help users choose tasks matching current energy levels)
         estimated_minutes (int): User's time estimate in minutes, optional
+        user_id (UUID): Foreign key to users table, required, indexed
+        user (User): Relationship to the User who owns this task
 
     Inherited Attributes:
         id (UUID): Unique identifier from BaseModel
@@ -80,7 +83,7 @@ class Task(BaseModel):
 
     Example:
         # Quick capture - minimal fields required
-        task = Task(title="Review PR #123")
+        task = Task(title="Review PR #123", user_id=user.id)
         # task.state automatically set to INBOX
         # task.cognitive_load defaults to 5
 
@@ -89,12 +92,16 @@ class Task(BaseModel):
             title="Implement user authentication",
             description="Add JWT-based auth with refresh tokens",
             cognitive_load=8,  # High mental effort
-            estimated_minutes=120  # 2 hours estimate
+            estimated_minutes=120,  # 2 hours estimate
+            user_id=user.id
         )
 
+        # Access task owner
+        print(f"Task owned by: {task.user.email}")
+
     Note:
-        Future migrations will add user_id and project_id foreign keys for
-        multi-user support and task organization.
+        All tasks must belong to a user. Future migrations will add project_id
+        for task organization within projects.
     """
 
     __tablename__ = "tasks"
@@ -106,7 +113,9 @@ class Task(BaseModel):
     description: Mapped[Optional[str]] = mapped_column(Text)
 
     # State machine for ADHD-friendly workflow, starts at INBOX
-    state: Mapped[TaskState] = mapped_column(Enum(TaskState), default=TaskState.INBOX, index=True)
+    state: Mapped[TaskState] = mapped_column(
+        Enum(TaskState), default=TaskState.INBOX, index=True
+    )
 
     # Mental effort rating (1-10) to match tasks with current energy
     cognitive_load: Mapped[int] = mapped_column(Integer, default=5)
@@ -114,4 +123,9 @@ class Task(BaseModel):
     # User's time estimate in minutes
     estimated_minutes: Mapped[Optional[int]] = mapped_column(Integer)
 
-    # TODO: Add user and project IDs
+    user_id: Mapped[UUID] = mapped_column(
+        ForeignKey("users.id"), nullable=False, index=True
+    )
+    user: Mapped["User"] = relationship("User", back_populates="tasks")
+
+    # TODO: Add project IDs

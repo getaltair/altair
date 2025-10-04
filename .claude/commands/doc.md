@@ -4,11 +4,11 @@ argument-hint: [file_path]
 allowed-tools: Read, Edit
 ---
 
-Please add comprehensive documentation to the currently open file following Python best practices and PEP 257 conventions.
+Please add or update comprehensive documentation to the currently open file or the files that have been modified following Python best practices and PEP 257 conventions.
 
 Arguments provided: $ARGUMENTS
 
-If a file path is provided as an argument, use that file. Otherwise, ask the user which file they want documented.
+If a file path is provided as an argument, use that file. Otherwise, use all files that have changed.
 
 For Python files, add:
 
@@ -41,6 +41,7 @@ Follow these guidelines:
 - Use proper type hints in function signatures when possible
 
 Example format:
+
 ```python
 """Module description here.
 
