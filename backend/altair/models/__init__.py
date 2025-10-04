@@ -10,9 +10,12 @@ import this module in alembic/env.py to ensure all models are discovered.
 
 from altair.models.base import Base, BaseModel
 from altair.models.user import User
+from altair.models.task import Task, TaskState
 
 __all__ = [
     "Base",
     "BaseModel",
     "User",
+    "Task",
+    "TaskState",
 ]
