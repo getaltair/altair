@@ -15,8 +15,10 @@ then triage when executive function is available.
 """
 
 import enum
+from typing import Optional
 
-from sqlalchemy import Column, Enum, Integer, String, Text
+from sqlalchemy import Enum, Integer, String, Text
+from sqlalchemy.orm import Mapped, mapped_column
 
 from altair.models.base import BaseModel
 
@@ -98,18 +100,18 @@ class Task(BaseModel):
     __tablename__ = "tasks"
 
     # Brief task title, required for all tasks
-    title = Column(String(255), nullable=False)
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
 
     # Optional detailed description for context
-    description = Column(Text)
+    description: Mapped[Optional[str]] = mapped_column(Text)
 
     # State machine for ADHD-friendly workflow, starts at INBOX
-    state = Column(Enum(TaskState), default=TaskState.INBOX, index=True)
+    state: Mapped[TaskState] = mapped_column(Enum(TaskState), default=TaskState.INBOX, index=True)
 
     # Mental effort rating (1-10) to match tasks with current energy
-    cognitive_load = Column(Integer, default=5)
+    cognitive_load: Mapped[int] = mapped_column(Integer, default=5)
 
     # User's time estimate in minutes
-    estimated_minutes = Column(Integer)
+    estimated_minutes: Mapped[Optional[int]] = mapped_column(Integer)
 
     # TODO: Add user and project IDs

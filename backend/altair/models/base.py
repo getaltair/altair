@@ -25,8 +25,10 @@ Usage:
 """
 
 import uuid
-from sqlalchemy import Column, DateTime
+from datetime import datetime
+from sqlalchemy import DateTime
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
 from altair.database import Base
 
@@ -55,8 +57,8 @@ class BaseModel(Base):
         class User(BaseModel):
             __tablename__ = "users"
 
-            email = Column(String, unique=True, nullable=False)
-            name = Column(String, nullable=False)
+            email: Mapped[str] = mapped_column(String, unique=True, nullable=False)
+            name: Mapped[str] = mapped_column(String, nullable=False)
 
         # When creating a new user, id and timestamps are handled automatically
         user = User(email="user@example.com", name="John Doe")
@@ -67,12 +69,12 @@ class BaseModel(Base):
     __abstract__ = True
 
     # UUID primary key for distributed system compatibility and global uniqueness
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
     # Timestamp set by database server when record is created
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)
 
     # Timestamp automatically updated by database on each modification
-    updated_at = Column(
+    updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
