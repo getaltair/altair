@@ -2,7 +2,17 @@
 
 All notable changes to the Altair project will be documented in this file.
 
-## [Current] - 2025-10-04
+## [Current] - 2025-10-05
+
+### ci(github): add issue templates and pull request template
+
+- Add ADHD-specific feedback issue template for user experience insights
+- Add bug report template with ADHD-friendly note
+- Add feature request template with ADHD context section
+- Add pull request template with comprehensive checklist
+- Update CLAUDE.md to always sign commits
+
+## [2025-10-04]
 
 ### fix(diagrams): correct Mermaid syntax errors for GitHub rendering
 
