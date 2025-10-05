@@ -15,13 +15,16 @@ then triage when executive function is available.
 """
 
 import enum
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 from uuid import UUID
 
 from sqlalchemy import Enum, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from altair.models.base import BaseModel
+
+if TYPE_CHECKING:
+    from altair.models.user import User
 
 
 class TaskState(enum.Enum):

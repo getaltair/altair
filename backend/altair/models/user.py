@@ -5,11 +5,14 @@ authentication credentials, and ADHD-specific preferences. The model supports
 the authentication system and personalized ADHD-friendly features.
 """
 
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 from sqlalchemy import Boolean, String
 from sqlalchemy.dialects.postgresql import JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from altair.models.base import BaseModel
+
+if TYPE_CHECKING:
+    from altair.models.task import Task
 
 
 class User(BaseModel):

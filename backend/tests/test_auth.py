@@ -5,7 +5,6 @@ flows. Tests cover both success and failure scenarios, including duplicate
 email handling, invalid credentials, and token validation.
 """
 
-import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
