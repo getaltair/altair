@@ -4,6 +4,11 @@ All notable changes to the Altair project will be documented in this file.
 
 ## [Current] - 2025-10-04
 
+### fix(landing): center status badge in hero section
+
+- Add `justify-content: center` to status badge for proper alignment
+- Change margin from `margin-bottom: 32px` to `margin: 0 auto 32px auto` for horizontal centering
+
 ### feat(landing): build production-ready landing page with newsletter signup
 
 - Transform index.html from placeholder to full-featured landing page
