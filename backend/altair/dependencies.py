@@ -48,8 +48,7 @@ async def get_current_user(
     # Check if token has been blacklisted (revoked)
     if is_token_blacklisted(token):
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token has been revoked"
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Token has been revoked"
         )
 
     payload = verify_token(token, expected_type="access")

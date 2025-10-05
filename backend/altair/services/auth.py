@@ -24,7 +24,9 @@ def hash_password(plain_password: str) -> str:
     return pwd_context.hash(plain_password)
 
 
-def create_access_token(data: dict[str, Any], expires_delta: timedelta | None = None) -> str:
+def create_access_token(
+    data: dict[str, Any], expires_delta: timedelta | None = None
+) -> str:
     """Create a JWT access token.
 
     Args:
@@ -39,12 +41,13 @@ def create_access_token(data: dict[str, Any], expires_delta: timedelta | None = 
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta
     else:
-        expire = datetime.now(timezone.utc) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+        expire = datetime.now(timezone.utc) + timedelta(
+            minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
+        )
 
-    to_encode.update({
-        "exp": expire,
-        "type": "access"  # Distinguish from refresh tokens
-    })
+    to_encode.update(
+        {"exp": expire, "type": "access"}  # Distinguish from refresh tokens
+    )
 
     return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
@@ -59,12 +62,11 @@ def create_refresh_token(data: dict[str, Any]) -> str:
         Encoded JWT refresh token string
     """
     to_encode = data.copy()
-    expire = datetime.now(timezone.utc) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+    expire = datetime.now(timezone.utc) + timedelta(
+        days=settings.REFRESH_TOKEN_EXPIRE_DAYS
+    )
 
-    to_encode.update({
-        "exp": expire,
-        "type": "refresh"
-    })
+    to_encode.update({"exp": expire, "type": "refresh"})
 
     return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
@@ -78,7 +80,9 @@ def create_token_pair(email: str) -> dict[str, Any]:
     Returns:
         Dictionary containing access_token, refresh_token, token_type, and expires_in
     """
-    token_data = {"sub": email}  # "sub" is JWT standard claim for subject (user identifier)
+    token_data = {
+        "sub": email
+    }  # "sub" is JWT standard claim for subject (user identifier)
 
     access_token = create_access_token(token_data)
     refresh_token = create_refresh_token(token_data)
@@ -87,7 +91,7 @@ def create_token_pair(email: str) -> dict[str, Any]:
         "access_token": access_token,
         "refresh_token": refresh_token,
         "token_type": "bearer",
-        "expires_in": settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60  # Convert to seconds
+        "expires_in": settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,  # Convert to seconds
     }
 
 
@@ -111,7 +115,9 @@ def verify_token(token: str, expected_type: str = "access") -> dict[str, Any]:
     )
 
     try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        payload = jwt.decode(
+            token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
+        )
         email: str | None = payload.get("sub")
         token_type: str | None = payload.get("type")
 
@@ -139,7 +145,9 @@ def blacklist_token(token: str, token_type: str = "access") -> None:
     """
     try:
         redis_client = get_redis_client()
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        payload = jwt.decode(
+            token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
+        )
 
         # Calculate time until token expires
         exp_timestamp = payload.get("exp")
@@ -149,11 +157,7 @@ def blacklist_token(token: str, token_type: str = "access") -> None:
 
             if ttl > 0:
                 # Store token in blacklist with expiration
-                redis_client.setex(
-                    f"blacklist:{token}",
-                    ttl,
-                    token_type
-                )
+                redis_client.setex(f"blacklist:{token}", ttl, token_type)
     except (JWTError, Exception):
         # If token is invalid or Redis fails, it's not critical
         # The token will fail validation anyway

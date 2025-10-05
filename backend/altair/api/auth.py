@@ -27,12 +27,12 @@ router = APIRouter(prefix="/api/auth", tags=["auth"])
 limiter = Limiter(key_func=get_remote_address)
 
 
-@router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED
+)
 @limiter.limit("3/minute")
 async def register(
-    request: Request,
-    user_data: UserCreate,
-    db: Annotated[Session, Depends(get_db)]
+    request: Request, user_data: UserCreate, db: Annotated[Session, Depends(get_db)]
 ) -> User:
     """Register a new user account.
 
@@ -53,17 +53,17 @@ async def register(
     existing_user = db.query(User).filter(User.email == user_data.email).first()
     if existing_user:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already registered"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered"
         )
 
     # Check username uniqueness if provided
     if user_data.username:
-        existing_username = db.query(User).filter(User.username == user_data.username).first()
+        existing_username = (
+            db.query(User).filter(User.username == user_data.username).first()
+        )
         if existing_username:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Username already taken"
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Username already taken"
             )
 
     # Create new user
@@ -71,7 +71,7 @@ async def register(
         email=user_data.email,
         username=user_data.username,
         hashed_password=hash_password(user_data.password),
-        is_active=True
+        is_active=True,
     )
 
     db.add(new_user)
@@ -86,7 +86,7 @@ async def register(
 async def login(
     request: Request,
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
-    db: Annotated[Session, Depends(get_db)]
+    db: Annotated[Session, Depends(get_db)],
 ) -> dict:
     """Login and receive access + refresh tokens.
 
@@ -116,8 +116,7 @@ async def login(
 
     if not user.is_active:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Inactive user"
+            status_code=status.HTTP_403_FORBIDDEN, detail="Inactive user"
         )
 
     # Generate token pair
@@ -127,6 +126,7 @@ async def login(
 
 class RefreshRequest(BaseModel):
     """Request schema for token refresh endpoint."""
+
     refresh_token: str
 
 
@@ -135,7 +135,7 @@ class RefreshRequest(BaseModel):
 async def refresh_tokens(
     request_obj: Request,
     request: RefreshRequest,
-    db: Annotated[Session, Depends(get_db)]
+    db: Annotated[Session, Depends(get_db)],
 ) -> dict:
     """Exchange refresh token for new access token.
 
@@ -160,8 +160,7 @@ async def refresh_tokens(
     user = db.query(User).filter(User.email == email).first()
     if not user or not user.is_active:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid refresh token"
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token"
         )
 
     # Generate new token pair (implements token rotation)
@@ -171,7 +170,7 @@ async def refresh_tokens(
 
 @router.get("/me", response_model=UserResponse)
 async def get_current_user_info(
-    current_user: Annotated[User, Depends(get_current_user)]
+    current_user: Annotated[User, Depends(get_current_user)],
 ) -> User:
     """Get current authenticated user information.
 

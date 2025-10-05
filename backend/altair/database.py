@@ -29,6 +29,7 @@ from sqlalchemy import create_engine, Engine
 from sqlalchemy.orm import Session, sessionmaker, DeclarativeBase
 from altair.config import settings
 
+
 # Declarative base for ORM model definitions
 class Base(DeclarativeBase):
     pass

@@ -160,9 +160,7 @@ def get_task(
     Example:
         GET /tasks/550e8400-e29b-41d4-a716-446655440000
     """
-    task = (
-        db.query(Task).where(Task.user_id == user.id, Task.id == task_id).first()
-    )
+    task = db.query(Task).where(Task.user_id == user.id, Task.id == task_id).first()
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
     return task
@@ -201,9 +199,7 @@ def update_task(
 
         Only updates the state field, leaving other fields unchanged
     """
-    task = (
-        db.query(Task).where(Task.user_id == user.id, Task.id == task_id).first()
-    )
+    task = db.query(Task).where(Task.user_id == user.id, Task.id == task_id).first()
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
 

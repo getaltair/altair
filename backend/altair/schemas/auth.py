@@ -20,6 +20,7 @@ class UserBase(BaseModel):
     Attributes:
         email: User's email address (validated format)
     """
+
     email: EmailStr
 
 
@@ -38,6 +39,7 @@ class UserCreate(UserBase):
         Password complexity rules are currently basic (min length only).
         TODO: Make password complexity rules configurable.
     """
+
     # TODO: Make password complexity rules a configurable setting
     password: str = Field(min_length=8)
     username: Optional[str] = Field(default=None, min_length=3, max_length=50)
@@ -53,6 +55,7 @@ class UserLogin(UserBase):
         email: User's email address (inherited from UserBase)
         password: Plain text password for verification
     """
+
     password: str  # No validation since already exists
 
 
@@ -75,6 +78,7 @@ class UserUpdate(BaseModel):
             "best_focus_times": ["morning", "late_night"]
         }
     """
+
     username: Optional[str] = Field(default=None, min_length=3, max_length=50)
     password: Optional[str] = Field(default=None, min_length=8)
     adhd_profile: Optional[dict] = None
@@ -95,6 +99,7 @@ class UserResponse(UserBase):
     Configuration:
         from_attributes=True enables automatic conversion from ORM models
     """
+
     id: UUID
     username: Optional[str]
     created_at: datetime
@@ -122,6 +127,7 @@ class Token(BaseModel):
             "expires_in": 1800
         }
     """
+
     access_token: str
     refresh_token: str
     token_type: str
@@ -137,4 +143,5 @@ class TokenData(BaseModel):
     Attributes:
         email: User's email extracted from token, None if invalid
     """
+
     email: Optional[EmailStr] = None

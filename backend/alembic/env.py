@@ -6,6 +6,7 @@ from sqlalchemy import pool
 from alembic import context
 
 from altair.config import settings
+
 # Import all models through central import to ensure Alembic discovers them
 import altair.models  # noqa: F401
 from altair.models import Base

@@ -159,7 +159,9 @@ class TestLogin:
         from jose import jwt
         from altair.config import settings
 
-        payload = jwt.decode(auth_token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        payload = jwt.decode(
+            auth_token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
+        )
         assert payload["sub"] == test_user.email
 
 

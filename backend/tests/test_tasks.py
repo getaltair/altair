@@ -97,7 +97,11 @@ class TestQuickCapture:
     """Test quick capture endpoint for friction-free task creation."""
 
     def test_quick_capture_success(
-        self, client: TestClient, auth_headers: dict, test_user: User, db_session: Session
+        self,
+        client: TestClient,
+        auth_headers: dict,
+        test_user: User,
+        db_session: Session,
     ):
         """Test quick capture creates task successfully."""
         response = client.post(
@@ -118,7 +122,11 @@ class TestQuickCapture:
         assert task.user_id == test_user.id
 
     def test_quick_capture_assigns_to_current_user(
-        self, client: TestClient, auth_headers: dict, test_user: User, db_session: Session
+        self,
+        client: TestClient,
+        auth_headers: dict,
+        test_user: User,
+        db_session: Session,
     ):
         """Test quick capture assigns task to authenticated user."""
         response = client.post(
@@ -137,7 +145,11 @@ class TestTaskCreation:
     """Test full task creation endpoint."""
 
     def test_create_task_with_all_fields(
-        self, client: TestClient, auth_headers: dict, test_user: User, db_session: Session
+        self,
+        client: TestClient,
+        auth_headers: dict,
+        test_user: User,
+        db_session: Session,
     ):
         """Test creating task with all fields populated."""
         task_data = {
@@ -166,9 +178,7 @@ class TestTaskCreation:
         task = db_session.query(Task).filter_by(id=UUID(data["id"])).first()
         assert task.user_id == test_user.id
 
-    def test_create_task_minimal_fields(
-        self, client: TestClient, auth_headers: dict
-    ):
+    def test_create_task_minimal_fields(self, client: TestClient, auth_headers: dict):
         """Test creating task with only required fields."""
         response = client.post(
             "/api/tasks",
@@ -250,9 +260,7 @@ class TestTaskRetrieval:
 
         assert response.status_code == 404
 
-    def test_get_nonexistent_task(
-        self, client: TestClient, auth_headers: dict
-    ):
+    def test_get_nonexistent_task(self, client: TestClient, auth_headers: dict):
         """Test retrieving a task that doesn't exist."""
         fake_uuid = "550e8400-e29b-41d4-a716-446655440000"
         response = client.get(
@@ -267,7 +275,11 @@ class TestTaskUpdates:
     """Test task update functionality."""
 
     def test_update_task_success(
-        self, client: TestClient, auth_headers: dict, sample_task: Task, db_session: Session
+        self,
+        client: TestClient,
+        auth_headers: dict,
+        sample_task: Task,
+        db_session: Session,
     ):
         """Test updating a task successfully."""
         update_data = {
@@ -292,7 +304,11 @@ class TestTaskUpdates:
         assert sample_task.state == TaskState.ACTIVE
 
     def test_update_task_partial(
-        self, client: TestClient, auth_headers: dict, sample_task: Task, db_session: Session
+        self,
+        client: TestClient,
+        auth_headers: dict,
+        sample_task: Task,
+        db_session: Session,
     ):
         """Test partial task update only changes specified fields."""
         original_title = sample_task.title
@@ -323,9 +339,7 @@ class TestTaskUpdates:
 
         assert response.status_code == 404
 
-    def test_update_nonexistent_task(
-        self, client: TestClient, auth_headers: dict
-    ):
+    def test_update_nonexistent_task(self, client: TestClient, auth_headers: dict):
         """Test updating a task that doesn't exist."""
         fake_uuid = "550e8400-e29b-41d4-a716-446655440000"
         response = client.put(
@@ -341,7 +355,11 @@ class TestTaskPagination:
     """Test task list pagination."""
 
     def test_list_tasks_with_limit(
-        self, client: TestClient, auth_headers: dict, test_user: User, db_session: Session
+        self,
+        client: TestClient,
+        auth_headers: dict,
+        test_user: User,
+        db_session: Session,
     ):
         """Test limiting the number of tasks returned."""
         # Create 10 tasks
@@ -358,7 +376,11 @@ class TestTaskPagination:
         assert len(tasks) == 5
 
     def test_list_tasks_with_skip(
-        self, client: TestClient, auth_headers: dict, test_user: User, db_session: Session
+        self,
+        client: TestClient,
+        auth_headers: dict,
+        test_user: User,
+        db_session: Session,
     ):
         """Test skipping tasks for pagination."""
         # Create 5 tasks
