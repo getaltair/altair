@@ -4,6 +4,10 @@ All notable changes to the Altair project will be documented in this file.
 
 ## [Current] - 2025-10-04
 
+### chore: rename LICENSE.md to LICENSE
+
+- Rename license file from LICENSE.md to LICENSE for standard naming convention
+
 ### fix(landing): make hero icon block element for proper stacking
 
 - Add `display: block` to hero icon to prevent inline alignment issues with status badge
