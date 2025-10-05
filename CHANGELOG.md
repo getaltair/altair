@@ -4,6 +4,20 @@ All notable changes to the Altair project will be documented in this file.
 
 ## [Current] - 2025-10-04
 
+### docs: restructure documentation with comprehensive root-level guides
+
+- Add ARCHITECTURE.md with detailed system design, tech stack, and deployment strategies
+- Add CONTRIBUTING.md with comprehensive contribution guidelines and ADHD-friendly tips
+- Add DOCUMENTATION_INDEX.md as central navigation hub for all documentation
+- Add FEATURES.md with in-depth ADHD-specific feature explanations and design principles
+- Add ROADMAP.md with development phases, milestones, and future vision
+- Add SECURITY.md with security policy, vulnerability reporting, and best practices
+- Move JWT_AUTH_IMPLEMENTATION_PLAN.md from docs/ to root level for better visibility
+- Streamline README.md to focus on quick start and project overview (reduced from 384+ lines)
+- Remove outdated docs: ALTAIR_DOGFOODING.md, ALTAIR_QUICKSTART.md, FLUTTER_FRONTEND.md, FULLSTACK_INTEGRATION.md
+- Remove backend/README.md (consolidated into main documentation)
+- Add index.html landing page placeholder
+
 ### feat(auth): implement logout endpoint with token blacklisting and rate limiting
 
 - Add logout endpoint that revokes access tokens via Redis blacklist
