@@ -4,6 +4,10 @@ All notable changes to the Altair project will be documented in this file.
 
 ## [Current] - 2025-10-04
 
+### fix(landing): make hero icon block element for proper stacking
+
+- Add `display: block` to hero icon to prevent inline alignment issues with status badge
+
 ### fix(landing): center status badge in hero section
 
 - Add `justify-content: center` to status badge for proper alignment
