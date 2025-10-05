@@ -201,7 +201,7 @@ Each service is responsible for specific domain logic:
   - Time entries
   - Notes and documents
   - Sync metadata
-  
+
 - **Redis (Optional):** Performance optimization
   - Session storage
   - Rate limiting counters
@@ -240,31 +240,31 @@ CREATE TABLE tasks (
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     project_id UUID REFERENCES projects(id) ON DELETE SET NULL,
     parent_task_id UUID REFERENCES tasks(id) ON DELETE CASCADE,
-    
+
     title VARCHAR(500) NOT NULL,
     description TEXT,
     status VARCHAR(50) DEFAULT 'todo', -- todo, in_progress, done, archived
     priority VARCHAR(20) DEFAULT 'medium', -- low, medium, high, urgent
-    
+
     -- ADHD-specific fields
     estimated_duration INTEGER, -- minutes
     actual_duration INTEGER, -- minutes
     energy_level VARCHAR(20), -- low, medium, high
     focus_required VARCHAR(20), -- low, medium, high
     context VARCHAR(100), -- tags for context switching
-    
+
     -- Time tracking
     started_at TIMESTAMP,
     completed_at TIMESTAMP,
     due_date TIMESTAMP,
-    
+
     -- Metadata
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW(),
-    
+
     -- Soft delete
     deleted_at TIMESTAMP,
-    
+
     -- Sync support
     sync_version INTEGER DEFAULT 1,
     last_synced_at TIMESTAMP
@@ -277,18 +277,18 @@ CREATE TABLE projects (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     parent_project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
-    
+
     name VARCHAR(255) NOT NULL,
     description TEXT,
     color VARCHAR(7), -- hex color
     icon VARCHAR(50), -- icon identifier
-    
+
     status VARCHAR(50) DEFAULT 'active',
-    
+
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW(),
     deleted_at TIMESTAMP,
-    
+
     sync_version INTEGER DEFAULT 1,
     last_synced_at TIMESTAMP
 );
@@ -598,11 +598,11 @@ async def sync_data(
         user_id=current_user.id,
         last_sync=request.last_sync_timestamp
     )
-    
+
     # Apply client changes
     for change in request.changes:
         await apply_change(change, current_user.id, db)
-    
+
     # Return server changes
     return SyncResponse(
         changes=server_changes,
@@ -769,7 +769,7 @@ services:
     environment:
       DATABASE_URL: postgresql://altair:changeme@postgres/altair
       REDIS_URL: redis://redis:6379
-      
+
   nginx:
     image: nginx:latest
     ports:
@@ -958,8 +958,8 @@ For architectural questions or discussions:
 
 ---
 
-**Last Updated:** October 2025  
-**Author:** Altair Development Team  
+**Last Updated:** October 2025
+**Author:** Altair Development Team
 **Status:** Living Document
 
 ---

@@ -3,9 +3,9 @@
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
+from fastapi import HTTPException, status
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-from fastapi import HTTPException, status
 
 from altair.config import settings
 from altair.redis import get_redis_client
@@ -31,7 +31,8 @@ def create_access_token(
 
     Args:
         data: Payload data to encode in the token (typically {"sub": email})
-        expires_delta: Optional custom expiration time, defaults to ACCESS_TOKEN_EXPIRE_MINUTES
+        expires_delta: Optional custom expiration time, defaults to
+            ACCESS_TOKEN_EXPIRE_MINUTES
 
     Returns:
         Encoded JWT access token string

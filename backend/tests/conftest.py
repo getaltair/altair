@@ -12,17 +12,17 @@ Key fixtures:
     - auth_token: Provides valid JWT token for authenticated requests
 """
 
-import pytest
 from collections.abc import Iterator
-from sqlalchemy import create_engine, StaticPool
-from sqlalchemy.orm import Session, sessionmaker
+
+import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import StaticPool, create_engine
+from sqlalchemy.orm import Session, sessionmaker
 
+from altair.database import Base, get_db
 from altair.main import app
-from altair.database import get_db, Base
 from altair.models.user import User
-from altair.services.auth import hash_password, create_access_token
-
+from altair.services.auth import create_access_token, hash_password
 
 # Use in-memory SQLite for fast, isolated tests
 TEST_DATABASE_URL = "sqlite:///:memory:"
@@ -64,8 +64,8 @@ def db_session(engine) -> Iterator[Session]:
     Yields:
         Session: SQLAlchemy database session
     """
-    TestSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-    session = TestSessionLocal()
+    test_session_local = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    session = test_session_local()
     try:
         yield session
     finally:

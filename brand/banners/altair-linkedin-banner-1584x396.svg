@@ -10,13 +10,13 @@
                         <stop offset="100%" style="stop-color:#60A5FA;stop-opacity:0"/>
                     </radialGradient>
                 </defs>
-                
+
                 <!-- Background -->
                 <rect width="1584" height="396" fill="#0F172A"/>
-                
+
                 <!-- Glow -->
                 <circle cx="400" cy="198" r="180" fill="url(#glow3)"/>
-                
+
                 <!-- Icon -->
                 <g transform="translate(250, 48)">
                     <circle cx="150" cy="150" r="135" fill="#0A0F1E"/>
@@ -24,7 +24,7 @@
                     <path d="M 150 75 L 180 150 L 150 135 Z" fill="#60A5FA" opacity="0.5"/>
                     <path d="M 180 150 L 150 225 L 165 150 Z" fill="#1E40AF" opacity="0.3"/>
                 </g>
-                
+
                 <!-- Text -->
                 <text x="650" y="175" font-size="90" font-weight="800" fill="#FFFFFF">Altair</text>
                 <text x="650" y="240" font-size="28" font-weight="600" fill="#60A5FA">Where focus takes flight</text>

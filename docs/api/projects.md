@@ -1,6 +1,6 @@
 # Projects API
 
-**Status:** 📝 TODO - Phase 1 (Q4 2025 - Q1 2026)  
+**Status:** 📝 TODO - Phase 1 (Q4 2025 - Q1 2026)
 **Priority:** Medium
 
 ---
@@ -23,5 +23,5 @@ Standard CRUD operations for projects resource.
 
 ---
 
-**Write this:** Phase 1-2  
+**Write this:** Phase 1-2
 **Related:** Task API (tasks belong to projects)

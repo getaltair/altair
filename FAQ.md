@@ -1,6 +1,6 @@
 # Frequently Asked Questions
 
-**Status:** 📝 TODO - Phase 2 (Q2 2026)  
+**Status:** 📝 TODO - Phase 2 (Q2 2026)
 **Priority:** Medium
 
 ---
@@ -129,5 +129,5 @@ Why wait?
 
 ---
 
-**Last Updated:** October 2025  
+**Last Updated:** October 2025
 **Status:** Placeholder - Waiting for real user questions

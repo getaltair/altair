@@ -9,6 +9,7 @@ Key components:
 """
 
 import redis
+
 from altair.config import settings
 
 _redis_client: redis.Redis | None = None

@@ -25,8 +25,10 @@ Usage:
 """
 
 from collections.abc import Iterator
-from sqlalchemy import create_engine, Engine
-from sqlalchemy.orm import Session, sessionmaker, DeclarativeBase
+
+from sqlalchemy import Engine, create_engine
+from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
+
 from altair.config import settings
 
 

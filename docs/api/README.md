@@ -1,7 +1,7 @@
 # Altair API Documentation
 
-**Status:** 📝 TODO - To be written during Phase 1 (Q4 2025 - Q1 2026)  
-**Priority:** Medium-High  
+**Status:** 📝 TODO - To be written during Phase 1 (Q4 2025 - Q1 2026)
+**Priority:** Medium-High
 **Target Audience:** Developers integrating with Altair API
 
 ---
@@ -155,5 +155,5 @@ Create a new task.
 
 ---
 
-**Last Updated:** October 2025  
+**Last Updated:** October 2025
 **Status:** Placeholder - To be written alongside API development

@@ -427,10 +427,10 @@
 
 ## External Resources
 
-**Website:** [getaltair.app](https://getaltair.app)  
-**GitHub:** [github.com/getaltair/altair](https://github.com/getaltair/altair)  
-**Discord:** [discord.gg/altair](https://discord.gg/altair)  
-**Twitter:** [@getaltair](https://twitter.com/getaltair)  
+**Website:** [getaltair.app](https://getaltair.app)
+**GitHub:** [github.com/getaltair/altair](https://github.com/getaltair/altair)
+**Discord:** [discord.gg/altair](https://discord.gg/altair)
+**Twitter:** [@getaltair](https://twitter.com/getaltair)
 **Email:** <hello@getaltair.app>
 
 ---
@@ -447,8 +447,8 @@
 
 ---
 
-**Last Updated:** October 2025  
-**Maintained by:** Altair Development Team  
+**Last Updated:** October 2025
+**Maintained by:** Altair Development Team
 **Status:** Living Document
 
 ---

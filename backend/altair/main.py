@@ -17,14 +17,16 @@ Usage:
 """
 
 from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
+
 from altair.api import auth, tasks
-from altair.models import base
 from altair.database import get_engine
+from altair.models import base
 
 
 @asynccontextmanager

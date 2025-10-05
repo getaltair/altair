@@ -5,8 +5,9 @@ importantly, user scoping to ensure tasks are properly isolated between users.
 Tests verify that authentication is required and users can only access their own tasks.
 """
 
-import pytest
 from uuid import UUID
+
+import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 

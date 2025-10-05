@@ -10,13 +10,13 @@
                         <stop offset="100%" style="stop-color:#60A5FA;stop-opacity:0"/>
                     </radialGradient>
                 </defs>
-                
+
                 <!-- Background -->
                 <rect width="960" height="540" fill="#0F172A"/>
-                
+
                 <!-- Center glow -->
                 <circle cx="480" cy="270" r="250" fill="url(#glow4)"/>
-                
+
                 <!-- Icon -->
                 <g transform="translate(330, 90)">
                     <circle cx="150" cy="180" r="140" fill="#0A0F1E"/>
@@ -24,7 +24,7 @@
                     <path d="M 150 105 L 182 180 L 150 167.5 Z" fill="#60A5FA" opacity="0.5"/>
                     <path d="M 182 180 L 150 255 L 166 180 Z" fill="#1E40AF" opacity="0.3"/>
                 </g>
-                
+
                 <!-- Text -->
                 <text x="480" y="380" font-size="80" font-weight="800" fill="#FFFFFF" text-anchor="middle">Altair</text>
                 <text x="480" y="440" font-size="28" font-weight="600" fill="#60A5FA" text-anchor="middle">ADHD-Friendly Project Management</text>

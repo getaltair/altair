@@ -14,12 +14,13 @@ Example:
 
 from typing import List
 from uuid import UUID
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from altair.database import get_db
 from altair.dependencies import get_current_user
-from altair.models import TaskState, Task, User
+from altair.models import Task, TaskState, User
 from altair.schemas.task import TaskCreate, TaskResponse, TaskUpdate
 
 router = APIRouter()

@@ -51,8 +51,8 @@ jobs:
       - name: Run Ruff linter
         run: uv run ruff check .
 
-      - name: Run Black formatter check
-        run: uv run black --check --diff .
+      - name: Run Ruff formatter check
+        run: uv run ruff format --check --diff .
 
   test:
     name: Test (Python ${{ matrix.python-version }})

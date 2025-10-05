@@ -172,9 +172,9 @@ All documentation must follow these principles:
 
 ## Priority Levels Explained
 
-**High:** Needed for users to be successful  
-**Medium:** Improves experience significantly  
-**Low:** Nice to have, not essential  
+**High:** Needed for users to be successful
+**Medium:** Improves experience significantly
+**Low:** Nice to have, not essential
 
 ---
 
@@ -206,7 +206,7 @@ All documentation must follow these principles:
 
 ---
 
-**Last Updated:** October 2025  
+**Last Updated:** October 2025
 **Maintained By:** Altair Development Team
 
 ---

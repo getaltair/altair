@@ -14,6 +14,7 @@ Key components:
 from datetime import datetime
 from typing import Optional
 from uuid import UUID
+
 from pydantic import BaseModel, ConfigDict, field_validator
 
 from altair.models.task import TaskState
@@ -28,7 +29,8 @@ class TaskBase(BaseModel):
     Attributes:
         title: The task title or brief description
         description: Optional detailed description or notes about the task
-        cognitive_load: Mental effort scale from 1-10, validated to ensure reasonable values
+        cognitive_load: Mental effort scale from 1-10, validated to ensure
+            reasonable values
         estimated_minutes: User's estimate of time needed in minutes
     """
 

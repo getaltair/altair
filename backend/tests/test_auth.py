@@ -5,12 +5,13 @@ flows. Tests cover both success and failure scenarios, including duplicate
 email handling, invalid credentials, and token validation.
 """
 
+from datetime import timedelta
+
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from altair.models.user import User
 from altair.services.auth import create_access_token, verify_password
-from datetime import timedelta
 
 
 class TestRegistration:
@@ -157,6 +158,7 @@ class TestLogin:
     ):
         """Test that generated token can be decoded and contains user email."""
         from jose import jwt
+
         from altair.config import settings
 
         payload = jwt.decode(

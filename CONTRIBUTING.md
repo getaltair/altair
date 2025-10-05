@@ -185,7 +185,7 @@ cp .env.example .env
 python main.py
 ```
 
-Backend runs at: http://localhost:8000  
+Backend runs at: http://localhost:8000
 API docs at: http://localhost:8000/docs
 
 **3. Frontend setup:**
@@ -326,15 +326,15 @@ async def get_user_tasks(
 ) -> List[Task]:
     """
     Retrieve tasks for a specific user.
-    
+
     Args:
         user_id: UUID of the user
         project_id: Optional project filter
         status: Optional status filter (todo/in_progress/done)
-    
+
     Returns:
         List of Task objects
-        
+
     Raises:
         UserNotFound: If user_id doesn't exist
     """
@@ -372,20 +372,20 @@ Future<List<Task>> getUserTasks({
   TaskStatus? status,
 }) async {
   final queryParams = <String, String>{};
-  
+
   if (projectId != null) {
     queryParams['project_id'] = projectId;
   }
-  
+
   if (status != null) {
     queryParams['status'] = status.value;
   }
-  
+
   final response = await _dio.get(
     '/api/v1/tasks',
     queryParameters: queryParams,
   );
-  
+
   return (response.data as List)
       .map((json) => Task.fromJson(json))
       .toList();
@@ -929,7 +929,7 @@ Every bug report, feature suggestion, doc improvement, and line of code helps ma
 
 ---
 
-**Last Updated:** October 2025  
+**Last Updated:** October 2025
 **Questions?** Ask on [Discord](https://discord.gg/altair) or [GitHub Discussions](https://github.com/getaltair/altair/discussions)
 
 ---

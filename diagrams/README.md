@@ -1,7 +1,7 @@
 # Altair Visual Diagrams - Complete Index
 
-**Version:** 1.0  
-**Last Updated:** October 2025  
+**Version:** 1.0
+**Last Updated:** October 2025
 **Format:** Mermaid Markdown
 
 ---
@@ -355,7 +355,7 @@ mmdc -i diagram.mmd -o diagram.svg
 graph TD
     %% Main flow
     A[Start] --> B[Process]
-    
+
     %% Optional path
     B -.Optional.-> C[Optional Step]
 ```
@@ -458,6 +458,6 @@ These visual aids are here to make Altair easier to understand, build, and use. 
 
 ---
 
-**Last Updated:** October 2025  
-**Diagrams:** 80+ across 6 files  
+**Last Updated:** October 2025
+**Diagrams:** 80+ across 6 files
 **Lines of Mermaid Code:** ~3,000

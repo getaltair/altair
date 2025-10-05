@@ -8,6 +8,7 @@ validation, response serialization, and automatic API documentation.
 from datetime import datetime
 from typing import Optional
 from uuid import UUID
+
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 

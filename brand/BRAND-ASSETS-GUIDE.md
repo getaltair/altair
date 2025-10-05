@@ -1,6 +1,6 @@
 # Altair Brand Assets - Complete Package
 
-**Generated:** October 2025  
+**Generated:** October 2025
 **Version:** 1.0
 
 ---
@@ -205,13 +205,13 @@ Interactive tool and instructions for creating favicons in all required formats.
       favicon.ico
       favicon.svg
       (generated files)
-  
+
   /website/
     index.html (landing page)
     /assets/
       /icons/
         diamond-star.svg
-  
+
   README.md
 ```
 

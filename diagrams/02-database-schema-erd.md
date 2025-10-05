@@ -19,7 +19,7 @@ erDiagram
         boolean email_verified
         string timezone
     }
-    
+
     WORKSPACE ||--|{ WORKSPACE_MEMBER : "has"
     WORKSPACE ||--|{ PROJECT : "contains"
     WORKSPACE {
@@ -31,7 +31,7 @@ erDiagram
         timestamp created_at
         timestamp updated_at
     }
-    
+
     WORKSPACE_MEMBER {
         uuid id PK
         uuid workspace_id FK
@@ -40,7 +40,7 @@ erDiagram
         jsonb permissions
         timestamp joined_at
     }
-    
+
     PROJECT ||--|{ TASK : "contains"
     PROJECT ||--o{ NOTE : "has"
     PROJECT {
@@ -55,7 +55,7 @@ erDiagram
         timestamp archived_at
         integer sort_order
     }
-    
+
     TASK ||--o{ TASK : "parent_child"
     TASK ||--o{ TIME_ENTRY : "tracked"
     TASK ||--o{ NOTE : "annotates"
@@ -82,7 +82,7 @@ erDiagram
         jsonb ai_breakdown
         integer sort_order
     }
-    
+
     TASK_DEPENDENCY {
         uuid id PK
         uuid task_id FK
@@ -90,7 +90,7 @@ erDiagram
         enum dependency_type
         timestamp created_at
     }
-    
+
     NOTE {
         uuid id PK
         uuid task_id FK
@@ -103,7 +103,7 @@ erDiagram
         timestamp updated_at
         boolean pinned
     }
-    
+
     TIME_ENTRY {
         uuid id PK
         uuid task_id FK
@@ -115,7 +115,7 @@ erDiagram
         jsonb metadata
         timestamp created_at
     }
-    
+
     TAG ||--o{ TASK_TAG : "categorizes"
     TAG {
         uuid id PK
@@ -124,7 +124,7 @@ erDiagram
         string color
         timestamp created_at
     }
-    
+
     TASK ||--o{ TASK_TAG : "tagged_with"
     TASK_TAG {
         uuid id PK
@@ -132,7 +132,7 @@ erDiagram
         uuid tag_id FK
         timestamp created_at
     }
-    
+
     SYNC_QUEUE {
         uuid id PK
         uuid user_id FK
@@ -145,7 +145,7 @@ erDiagram
         integer retry_count
         text error_message
     }
-    
+
     AUDIT_LOG {
         uuid id PK
         uuid user_id FK
@@ -176,7 +176,7 @@ classDiagram
         +get_workspaces()
         +get_assigned_tasks()
     }
-    
+
     class Workspace {
         +UUID id
         +UUID owner_id
@@ -189,7 +189,7 @@ classDiagram
         +remove_member()
         +get_projects()
     }
-    
+
     class Project {
         +UUID id
         +UUID workspace_id
@@ -205,7 +205,7 @@ classDiagram
         +get_progress()
         +archive()
     }
-    
+
     class Task {
         +UUID id
         +UUID project_id
@@ -228,7 +228,7 @@ classDiagram
         +add_subtask()
         +start_timer()
     }
-    
+
     class TimeEntry {
         +UUID id
         +UUID task_id
@@ -240,7 +240,7 @@ classDiagram
         +stop_timer()
         +calculate_duration()
     }
-    
+
     class Note {
         +UUID id
         +UUID task_id
@@ -252,7 +252,7 @@ classDiagram
         +to_markdown()
         +to_html()
     }
-    
+
     User "1" --> "*" Workspace : owns
     User "1" --> "*" Task : assigned
     Workspace "1" --> "*" Project : contains
@@ -272,7 +272,7 @@ graph TD
         U3[UNIQUE: username]
         U4[INDEX: created_at]
     end
-    
+
     subgraph "Task Table Indexes"
         T1[PRIMARY: id]
         T2[INDEX: project_id]
@@ -284,14 +284,14 @@ graph TD
         T8[COMPOSITE: assigned_to, status]
         T9[GIN: metadata jsonb_path_ops]
     end
-    
+
     subgraph "Project Table Indexes"
         P1[PRIMARY: id]
         P2[INDEX: workspace_id]
         P3[INDEX: status]
         P4[COMPOSITE: workspace_id, archived_at]
     end
-    
+
     subgraph "TimeEntry Table Indexes"
         TE1[PRIMARY: id]
         TE2[INDEX: task_id]
@@ -299,7 +299,7 @@ graph TD
         TE4[INDEX: start_time]
         TE5[COMPOSITE: user_id, start_time]
     end
-    
+
     style T1 fill:#14B8A6,stroke:#0D9488,color:#fff
     style T7 fill:#FB923C,stroke:#EA580C,color:#fff
     style T9 fill:#FB923C,stroke:#EA580C,color:#fff
@@ -354,7 +354,7 @@ graph TD
         P1[Project: Altair Dev<br/>Status: Active]
         P2[Project: Blog Posts<br/>Status: Active]
     end
-    
+
     subgraph "Altair Dev Tasks"
         T1[Task: Setup Backend<br/>Status: Complete]
         T1_1[Subtask: Install FastAPI<br/>Complete]
@@ -362,13 +362,13 @@ graph TD
         T2[Task: Build Frontend<br/>Status: In Progress]
         T2_1[Subtask: Create UI Components<br/>In Progress]
     end
-    
+
     subgraph "Time Tracking"
         TIME1[TimeEntry: 2h 30m<br/>Setup Backend]
         TIME2[TimeEntry: 1h 15m<br/>Install FastAPI]
         TIME3[TimeEntry: 45m<br/>Create UI Components]
     end
-    
+
     U --> W
     W --> P1
     W --> P2
@@ -377,14 +377,14 @@ graph TD
     T1 --> T1_1
     T1 --> T1_2
     T2 --> T2_1
-    
+
     T1 --> TIME1
     T1_1 --> TIME2
     T2_1 --> TIME3
-    
+
     U -.assigned.-> T2
     U -.assigned.-> T2_1
-    
+
     style U fill:#60A5FA,stroke:#3B82F6,color:#fff
     style P1 fill:#14B8A6,stroke:#0D9488,color:#fff
     style T1 fill:#6EE7B7,stroke:#14B8A6,color:#000
@@ -397,27 +397,27 @@ graph TD
 sequenceDiagram
     participant App
     participant DB
-    
+
     Note over App,DB: Get User's Active Tasks
     App->>DB: SELECT * FROM tasks
     DB->>DB: WHERE assigned_to = user_id
     DB->>DB: AND status != 'completed'
     DB->>DB: ORDER BY priority DESC, due_date ASC
     DB-->>App: Return tasks (with indexes)
-    
+
     Note over App,DB: Get Project Progress
     App->>DB: SELECT COUNT(*), SUM(CASE...)
     DB->>DB: FROM tasks
     DB->>DB: WHERE project_id = ?
     DB->>DB: GROUP BY status
     DB-->>App: Return counts by status
-    
+
     Note over App,DB: Search Tasks (Full Text)
     App->>DB: SELECT * FROM tasks
     DB->>DB: WHERE to_tsvector('english', title || description)
     DB->>DB: @@ plainto_tsquery('search terms')
     DB-->>App: Return matching tasks
-    
+
     Note over App,DB: Get Task with Hierarchy
     App->>DB: WITH RECURSIVE task_tree AS (...)
     DB->>DB: Recursive CTE for parent/children
@@ -432,18 +432,18 @@ graph LR
     V2 --> V3[Version 1.2<br/>Add Time Entries]
     V3 --> V4[Version 1.3<br/>ADHD Metadata]
     V4 --> V5[Version 2.0<br/>Team Features]
-    
+
     subgraph "Alembic Migrations"
         ALM[alembic revision]
         ALM --> UP[alembic upgrade head]
         ALM --> DOWN[alembic downgrade -1]
     end
-    
+
     V1 -.-> ALM
     V2 -.-> ALM
     V3 -.-> ALM
     V4 -.-> ALM
-    
+
     style V1 fill:#94A3B8,stroke:#64748B,color:#fff
     style V4 fill:#60A5FA,stroke:#3B82F6,color:#fff
     style V5 fill:#FB923C,stroke:#EA580C,color:#fff
@@ -460,29 +460,29 @@ stateDiagram-v2
     Archived --> SoftDeleted: User Deletes
     SoftDeleted --> HardDeleted: 30 Days Old
     HardDeleted --> [*]
-    
+
     Active --> Active: Updated
     Completed --> Active: Reopened
     Archived --> Active: Restored
     SoftDeleted --> Archived: Restored
-    
+
     note right of Active
         Visible in main views
         Fully searchable
     end note
-    
+
     note right of Completed
         Hidden from active views
         Searchable
         Can be reopened
     end note
-    
+
     note right of Archived
         Not in main views
         Searchable in archive
         Can be restored
     end note
-    
+
     note right of SoftDeleted
         Not visible
         Recoverable

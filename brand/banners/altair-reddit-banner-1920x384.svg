@@ -10,10 +10,10 @@
                         <stop offset="100%" style="stop-color:#60A5FA;stop-opacity:0"/>
                     </radialGradient>
                 </defs>
-                
+
                 <!-- Background -->
                 <rect width="1920" height="384" fill="#0F172A"/>
-                
+
                 <!-- Grid -->
                 <g opacity="0.03">
                     <line x1="0" y1="96" x2="1920" y2="96" stroke="#60A5FA" stroke-width="1"/>
@@ -23,10 +23,10 @@
                     <line x1="960" y1="0" x2="960" y2="384" stroke="#60A5FA" stroke-width="1"/>
                     <line x1="1440" y1="0" x2="1440" y2="384" stroke="#60A5FA" stroke-width="1"/>
                 </g>
-                
+
                 <!-- Left glow -->
                 <circle cx="480" cy="192" r="180" fill="url(#glow-reddit)"/>
-                
+
                 <!-- Icon -->
                 <g transform="translate(300, 42)">
                     <circle cx="180" cy="150" r="135" fill="#0A0F1E"/>
@@ -34,12 +34,12 @@
                     <path d="M 180 75 L 210 150 L 180 137.5 Z" fill="#60A5FA" opacity="0.5"/>
                     <path d="M 210 150 L 180 225 L 195 150 Z" fill="#1E40AF" opacity="0.3"/>
                 </g>
-                
+
                 <!-- Text -->
                 <text x="780" y="175" font-size="88" font-weight="800" fill="#FFFFFF">r/Altair</text>
                 <text x="780" y="240" font-size="28" font-weight="600" fill="#60A5FA">Where focus takes flight</text>
                 <text x="780" y="280" font-size="22" font-weight="500" fill="#94A3B8">ADHD-Friendly Project Management Community</text>
-                
+
                 <!-- Right stars -->
                 <circle cx="1800" cy="120" r="3" fill="#60A5FA" opacity="0.6"/>
                 <circle cx="1850" cy="90" r="2" fill="#60A5FA" opacity="0.4"/>

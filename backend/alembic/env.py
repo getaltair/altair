@@ -1,14 +1,11 @@
 from logging.config import fileConfig
 
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
-
-from alembic import context
-
-from altair.config import settings
+from sqlalchemy import engine_from_config, pool
 
 # Import all models through central import to ensure Alembic discovers them
 import altair.models  # noqa: F401
+from alembic import context
+from altair.config import settings
 from altair.models import Base
 
 # this is the Alembic Config object, which provides
