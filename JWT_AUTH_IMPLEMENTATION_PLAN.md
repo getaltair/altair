@@ -18,6 +18,7 @@ Implement JWT-based authentication to secure the Altair API endpoints while main
 ## Technical Decisions
 
 ### Authentication Strategy
+
 - **Token Type:** JWT (JSON Web Tokens)
 - **Token Storage:** Client-side (localStorage for web, secure storage for mobile)
 - **Token Expiration:** 7 days (adjustable via config)
@@ -25,6 +26,7 @@ Implement JWT-based authentication to secure the Altair API endpoints while main
 - **Password Hashing:** bcrypt via passlib
 
 ### User Model
+
 ```python
 User:
   - id: UUID (primary key)
@@ -36,6 +38,7 @@ User:
 ```
 
 ### Security Configuration
+
 - **Algorithm:** HS256
 - **Secret Key:** From environment variable (SECRET_KEY)
 - **Password Requirements:** Minimum 8 characters (can enhance later)
@@ -46,7 +49,9 @@ User:
 ### Phase 1: Database & Models (30 min)
 
 #### Step 1.1: Create User Model
+
 **File:** `backend/altair/models/user.py`
+
 - [ ] Create User SQLAlchemy model
 - [ ] Add email column with unique constraint
 - [ ] Add hashed_password column
@@ -54,15 +59,19 @@ User:
 - [ ] Inherit from Base for timestamps
 
 #### Step 1.2: Update Models Index
+
 **File:** `backend/altair/models/__init__.py`
+
 - [ ] Export User model for Alembic discovery
 
 #### Step 1.3: Create Alembic Migration
+
 ```bash
 cd backend
 uv run alembic revision --autogenerate -m "Add users table"
 uv run alembic upgrade head
 ```
+
 - [ ] Review generated migration
 - [ ] Verify indexes on email column
 - [ ] Run migration locally
@@ -71,7 +80,9 @@ uv run alembic upgrade head
 ### Phase 2: Pydantic Schemas (15 min)
 
 #### Step 2.1: Create Auth Schemas
+
 **File:** `backend/altair/schemas/auth.py`
+
 - [ ] UserBase (email)
 - [ ] UserCreate (email, password) with validation
 - [ ] UserResponse (id, email, created_at) - no password
@@ -79,13 +90,17 @@ uv run alembic upgrade head
 - [ ] TokenData (email or None)
 
 #### Step 2.2: Update Schemas Index
+
 **File:** `backend/altair/schemas/__init__.py`
+
 - [ ] Export auth schemas
 
 ### Phase 3: Authentication Utilities (20 min)
 
 #### Step 3.1: Create Auth Utilities
+
 **File:** `backend/altair/services/auth.py`
+
 - [ ] `verify_password(plain_password, hashed_password)` - compare passwords
 - [ ] `get_password_hash(password)` - hash new passwords
 - [ ] `create_access_token(data: dict, expires_delta)` - generate JWT
@@ -96,9 +111,11 @@ uv run alembic upgrade head
 ### Phase 4: Authentication Endpoints (30 min)
 
 #### Step 4.1: Create Auth Router
+
 **File:** `backend/altair/api/auth.py`
 
 **Endpoints:**
+
 - [ ] `POST /api/auth/register` - Create new user
   - Validate email format
   - Check if user already exists
@@ -118,14 +135,18 @@ uv run alembic upgrade head
   - Returns current user details
 
 #### Step 4.2: Register Auth Router
+
 **File:** `backend/altair/main.py`
+
 - [ ] Import auth router
 - [ ] Add to app with `/api/auth` prefix
 
 ### Phase 5: Authentication Dependency (15 min)
 
 #### Step 5.1: Create Auth Dependency
+
 **File:** `backend/altair/dependencies.py`
+
 - [ ] `get_current_user(token: str)` - extract and verify JWT
 - [ ] Decode token
 - [ ] Extract user email from token
@@ -134,7 +155,9 @@ uv run alembic upgrade head
 - [ ] Return User object
 
 #### Step 5.2: Optional Active User Dependency
+
 **File:** `backend/altair/dependencies.py`
+
 - [ ] `get_current_active_user` - checks is_active flag
 - [ ] Wraps get_current_user
 - [ ] Raises 403 if user not active
@@ -142,7 +165,9 @@ uv run alembic upgrade head
 ### Phase 6: Protect Existing Endpoints (20 min)
 
 #### Step 6.1: Update Task Endpoints
+
 **File:** `backend/altair/api/tasks.py`
+
 - [ ] Add `current_user: User = Depends(get_current_active_user)` to all endpoints
 - [ ] Update task creation to include user_id
 - [ ] Filter task queries by user_id
@@ -153,19 +178,24 @@ uv run alembic upgrade head
 - [ ] Update update task endpoint
 
 #### Step 6.2: Add user_id to Task Model
+
 **File:** `backend/altair/models/task.py`
+
 - [ ] Add user_id column with ForeignKey to users table
 - [ ] Add relationship to User model
 - [ ] Create migration for schema change
 
 #### Step 6.3: Update Task Schemas
+
 **File:** `backend/altair/schemas/task.py`
+
 - [ ] Add user_id to TaskResponse (optional for now)
 - [ ] Consider whether to expose user_id in API
 
 ### Phase 7: Testing & Validation (30 min)
 
 #### Step 7.1: Manual Testing Flow
+
 - [ ] Test user registration with valid email
 - [ ] Test registration with duplicate email (should fail)
 - [ ] Test login with correct credentials
@@ -177,11 +207,13 @@ uv run alembic upgrade head
 - [ ] Test listing tasks shows only current user's tasks
 
 #### Step 7.2: API Documentation
+
 - [ ] Verify Swagger UI shows auth endpoints
 - [ ] Test "Authorize" button in Swagger UI
 - [ ] Verify protected endpoints show lock icon
 
 #### Step 7.3: Database Verification
+
 - [ ] Check users table created correctly
 - [ ] Verify password is hashed (not plaintext)
 - [ ] Verify user_id foreign key on tasks table
@@ -190,13 +222,17 @@ uv run alembic upgrade head
 ### Phase 8: Configuration & Security (15 min)
 
 #### Step 8.1: Verify Environment Variables
+
 **Railway Configuration:**
+
 - [ ] SECRET_KEY is set (use `openssl rand -hex 32`)
 - [ ] DATABASE_URL is set
 - [ ] REDIS_URL is set (for future use)
 
 #### Step 8.2: Update Config Validation
+
 **File:** `backend/altair/config.py`
+
 - [ ] Ensure SECRET_KEY validator works
 - [ ] Set DEBUG=False in Railway
 - [ ] Add ACCESS_TOKEN_EXPIRE_DAYS setting
@@ -204,17 +240,20 @@ uv run alembic upgrade head
 ### Phase 9: Documentation (15 min)
 
 #### Step 9.1: Update API Documentation
+
 - [ ] Add authentication section to README
 - [ ] Document registration flow
 - [ ] Document login flow
 - [ ] Document how to use bearer tokens
 
 #### Step 9.2: Update CHANGELOG
+
 - [ ] Add entry for JWT authentication feature
 
 ## File Checklist
 
 ### New Files to Create
+
 - [ ] `backend/altair/models/user.py`
 - [ ] `backend/altair/schemas/auth.py`
 - [ ] `backend/altair/services/auth.py`
@@ -222,6 +261,7 @@ uv run alembic upgrade head
 - [ ] `backend/altair/dependencies.py` (if not exists)
 
 ### Files to Modify
+
 - [ ] `backend/altair/models/__init__.py`
 - [ ] `backend/altair/models/task.py`
 - [ ] `backend/altair/schemas/__init__.py`
@@ -231,12 +271,14 @@ uv run alembic upgrade head
 - [ ] `backend/altair/config.py`
 
 ### Migrations to Create
+
 - [ ] Add users table
 - [ ] Add user_id to tasks table
 
 ## Testing Checklist
 
 ### Registration
+
 ```bash
 curl -X POST "http://localhost:8000/api/auth/register" \
   -H "Content-Type: application/json" \
@@ -244,6 +286,7 @@ curl -X POST "http://localhost:8000/api/auth/register" \
 ```
 
 ### Login
+
 ```bash
 curl -X POST "http://localhost:8000/api/auth/login" \
   -H "Content-Type: application/x-www-form-urlencoded" \
@@ -251,6 +294,7 @@ curl -X POST "http://localhost:8000/api/auth/login" \
 ```
 
 ### Access Protected Endpoint
+
 ```bash
 TOKEN="your-token-here"
 curl -X GET "http://localhost:8000/api/tasks" \
@@ -258,6 +302,7 @@ curl -X GET "http://localhost:8000/api/tasks" \
 ```
 
 ### Quick Capture with Auth
+
 ```bash
 curl -X POST "http://localhost:8000/api/tasks/quick-capture?text=Test%20task" \
   -H "Authorization: Bearer $TOKEN"
@@ -266,6 +311,7 @@ curl -X POST "http://localhost:8000/api/tasks/quick-capture?text=Test%20task" \
 ## Public Endpoints (No Auth Required)
 
 These endpoints should remain publicly accessible:
+
 - `GET /` - API info
 - `GET /health` - Health check
 - `GET /api/public/stats/{username}` - Public dogfooding stats (future)
@@ -273,12 +319,14 @@ These endpoints should remain publicly accessible:
 ## Security Considerations
 
 ### Immediate
+
 - [x] Use environment variable for SECRET_KEY (already configured)
 - [ ] Hash passwords with bcrypt
 - [ ] Validate email format
 - [ ] Use HTTPS in production (Railway handles this)
 
 ### Future Enhancements
+
 - [ ] Add refresh tokens for better UX
 - [ ] Implement rate limiting on auth endpoints
 - [ ] Add password strength requirements
@@ -291,17 +339,20 @@ These endpoints should remain publicly accessible:
 ## Rollout Plan
 
 ### Development
+
 1. Implement all features locally
 2. Test with local PostgreSQL
 3. Verify migrations work correctly
 
 ### Staging (Railway)
+
 1. Deploy to Railway
 2. Run migrations on Railway database
 3. Create test user account
 4. Verify all endpoints work
 
 ### Production
+
 1. Same as staging (Railway is production for MVP)
 2. Create your personal user account
 3. Update Flutter app to use auth tokens
@@ -337,6 +388,7 @@ These endpoints should remain publicly accessible:
 ## Next Steps After Auth
 
 Once JWT authentication is complete:
+
 1. Implement task state transitions
 2. Build public stats endpoint
 3. Add focus timer with WebSocket

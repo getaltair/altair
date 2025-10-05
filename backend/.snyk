@@ -1,0 +1,37 @@
+# Snyk (https://snyk.io) policy file
+# Learn more: https://docs.snyk.io/snyk-cli/test-for-vulnerabilities/the-.snyk-file
+
+# Configuration for Snyk security scanning
+version: v1.25.0
+
+# Language settings
+language-settings:
+  python: '3.12'
+
+# Ignore specific vulnerabilities (with justification)
+# Format:
+# ignore:
+#   SNYK-PYTHON-PACKAGE-ID:
+#     - '*':
+#         reason: Justification for ignoring this vulnerability
+#         expires: 2024-12-31T00:00:00.000Z
+#         created: 2024-01-01T00:00:00.000Z
+
+ignore: {}
+
+# Patch vulnerabilities where patches are available
+patch: {}
+
+# Exclude directories from scanning
+exclude:
+  code:
+    - tests/
+    - htmlcov/
+    - .venv/
+    - venv/
+    - .pytest_cache/
+    - alembic/versions/
+  dependencies:
+    - '**/tests/**'
+    - '**/.venv/**'
+    - '**/htmlcov/**'

@@ -7,6 +7,12 @@
 [![Python 3.11+](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![Flutter](https://img.shields.io/badge/Flutter-Latest-blue.svg)](https://flutter.dev/)
 
+[![CI](https://github.com/getaltair/altair/actions/workflows/ci.yml/badge.svg)](https://github.com/getaltair/altair/actions/workflows/ci.yml)
+[![Security](https://github.com/getaltair/altair/actions/workflows/security.yml/badge.svg)](https://github.com/getaltair/altair/actions/workflows/security.yml)
+[![codecov](https://codecov.io/gh/getaltair/altair/branch/main/graph/badge.svg)](https://codecov.io/gh/getaltair/altair)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+
 > ADHD-friendly project management designed for neurodivergent minds. Open source, privacy-first, built by the community.
 
 📊 **[View System Architecture Diagram](diagrams/01-system-architecture.md#high-level-system-architecture)**

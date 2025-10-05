@@ -169,6 +169,27 @@ async def refresh_tokens(
     return tokens
 
 
+@router.get("/me", response_model=UserResponse)
+async def get_current_user_info(
+    current_user: Annotated[User, Depends(get_current_user)]
+) -> User:
+    """Get current authenticated user information.
+
+    Returns the profile information for the currently authenticated user
+    based on the JWT token provided in the Authorization header.
+
+    Args:
+        current_user: Current authenticated user from JWT token
+
+    Returns:
+        Current user object (without password)
+
+    Raises:
+        HTTPException 401: If token is invalid or user not found
+    """
+    return current_user
+
+
 @router.post("/logout")
 @limiter.limit("10/minute")
 async def logout(

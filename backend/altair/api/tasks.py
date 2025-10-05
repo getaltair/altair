@@ -89,9 +89,9 @@ def list_tasks(
     tasks = (
         db.query(Task)
         .where(Task.user_id == user.id)
+        .order_by(Task.created_at.desc())
         .offset(skip)
         .limit(limit)
-        .order_by(Task.created_at.desc())
         .all()
     )
     return tasks
@@ -123,12 +123,18 @@ def create_task(
         POST /tasks
         {
             "title": "Review Q4 budget",
-            "state": "ACTIVE",
+            "state": "active",
             "priority": 2,
             "estimated_minutes": 45
         }
     """
-    db_task = Task(**task.model_dump(), user_id=user.id)
+    task_data = task.model_dump(exclude_unset=True)
+
+    # Convert state string to TaskState enum if provided
+    if "state" in task_data and task_data["state"]:
+        task_data["state"] = TaskState(task_data["state"])
+
+    db_task = Task(**task_data, user_id=user.id)
     db.add(db_task)
     db.commit()
     db.refresh(db_task)
@@ -203,6 +209,11 @@ def update_task(
 
     # Only update fields that were explicitly provided
     update_data = task_update.model_dump(exclude_unset=True)
+
+    # Convert state string to TaskState enum if provided
+    if "state" in update_data and update_data["state"]:
+        update_data["state"] = TaskState(update_data["state"])
+
     for field, value in update_data.items():
         setattr(task, field, value)
 
