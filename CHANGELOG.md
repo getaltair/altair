@@ -4,6 +4,15 @@ All notable changes to the Altair project will be documented in this file.
 
 ## [Current] - 2025-10-04
 
+### fix(diagrams): correct Mermaid syntax errors for GitHub rendering
+
+- Fix quadrant chart labels in 04-roadmap-planning.md to remove special characters
+  - Change "Quick Wins (DO FIRST!)" to "Quick Wins - Do First"
+  - Change "Avoid/Defer" to "Avoid or Defer"
+- Fix flowchart node label in 03-user-flows.md to remove nested quotes
+  - Change 'Show "Working Offline" Badge' to "Show Working Offline Badge"
+- Ensures all Mermaid diagrams render correctly on GitHub
+
 ### docs: create comprehensive documentation system with diagrams and guides
 
 - **Core Documentation Updates:**

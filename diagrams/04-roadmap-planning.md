@@ -41,8 +41,8 @@ quadrantChart
     x-axis Low Effort --> High Effort
     y-axis Low Impact --> High Impact
     quadrant-1 Plan Carefully
-    quadrant-2 Quick Wins (DO FIRST!)
-    quadrant-3 Avoid/Defer
+    quadrant-2 Quick Wins - Do First
+    quadrant-3 Avoid or Defer
     quadrant-4 Major Projects
     
     Quick Capture: [0.2, 0.9]

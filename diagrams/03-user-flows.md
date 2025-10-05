@@ -410,7 +410,7 @@ flowchart TD
     
     NET_ERR --> OFFLINE[Switch to Offline Mode]
     OFFLINE --> QUEUE[Queue Actions]
-    QUEUE --> NOTIFY[Show "Working Offline" Badge]
+    QUEUE --> NOTIFY[Show Working Offline Badge]
     NOTIFY --> CONTINUE[User Continues Working]
     CONTINUE --> CHECK{Connection<br/>Restored?}
     CHECK -->|Yes| SYNC[Auto-sync Queue]
