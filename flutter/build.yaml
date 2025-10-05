@@ -1,0 +1,35 @@
+# Build configuration for code generation
+targets:
+  $default:
+    builders:
+      # Riverpod generator configuration
+      riverpod_generator:
+        generate_for:
+          - lib/**/*.dart
+        options:
+          # Generate @riverpod annotation code
+          generate_riverpod: true
+
+      # Freezed configuration
+      freezed:
+        generate_for:
+          - lib/**/*.dart
+
+      # JSON serialization
+      json_serializable:
+        generate_for:
+          - lib/**/*.dart
+        options:
+          # Generate both toJson and fromJson
+          any_map: false
+          checked: true
+          create_to_json: true
+          disallow_unrecognized_keys: false
+          explicit_to_json: true
+
+      # Drift database
+      drift_dev:
+        options:
+          # SQLite platform
+          store_date_time_values_as_text: true
+          generate_connect_constructor: true
