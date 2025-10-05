@@ -15,6 +15,9 @@ analyzer:
 
   errors:
     invalid_annotation_target: ignore
+    # Suppress false positives from Freezed with Dart 3.8.1
+    # The generated code is correct, but the analyzer reports missing implementations
+    non_abstract_class_inherits_abstract_member: ignore
 
   exclude:
     - "**/*.g.dart"
