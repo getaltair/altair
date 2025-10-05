@@ -14,6 +14,7 @@ Key components:
 from datetime import datetime
 from typing import Optional
 from uuid import UUID
+
 from pydantic import BaseModel, ConfigDict, field_validator
 
 from altair.models.task import TaskState
@@ -28,7 +29,8 @@ class TaskBase(BaseModel):
     Attributes:
         title: The task title or brief description
         description: Optional detailed description or notes about the task
-        cognitive_load: Mental effort scale from 1-10, validated to ensure reasonable values
+        cognitive_load: Mental effort scale from 1-10, validated to ensure
+            reasonable values
         estimated_minutes: User's estimate of time needed in minutes
     """
 
@@ -49,9 +51,12 @@ class TaskBase(BaseModel):
 class TaskCreate(TaskBase):
     """Schema for creating new tasks via the API.
 
-    Inherits all fields from TaskBase without modifications. Tasks are created
-    in the INBOX state by default (handled by the service layer), requiring no
-    immediate decisions from the user to reduce decision fatigue.
+    Inherits all fields from TaskBase and allows optional state specification.
+    Tasks default to INBOX state if not specified, requiring no immediate
+    decisions from the user to reduce decision fatigue.
+
+    Attributes:
+        state: Optional task state (defaults to INBOX in model)
 
     Example:
         ```python
@@ -63,7 +68,15 @@ class TaskCreate(TaskBase):
         ```
     """
 
-    pass
+    state: Optional[str] = None
+
+    @field_validator("state")
+    @classmethod
+    def validate_state(cls, v: str | None) -> str | None:
+        """Validate state is a valid TaskState enum value."""
+        if v and v not in [s.value for s in TaskState]:
+            raise ValueError(f"Invalid state: {v}")
+        return v
 
 
 class TaskUpdate(BaseModel):

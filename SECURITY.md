@@ -10,7 +10,7 @@ The Altair team takes security seriously. We appreciate your efforts to responsi
 
 Instead, please report them via email to:
 
-📧 **<security@getaltair.app>** (preferred)  
+📧 **<security@getaltair.app>** (preferred)
 📧 **<hello@getaltair.app>** (alternative)
 
 ### What to Include
@@ -277,5 +277,5 @@ The security policy does not create any legal obligations or warranties beyond t
 
 ---
 
-**Last Updated:** October 2025  
+**Last Updated:** October 2025
 **Version:** 1.0

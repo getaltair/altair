@@ -29,23 +29,23 @@
 
 Traditional productivity tools are built for neurotypical brains. They assume:
 
-❌ **Linear thinking** - ADHD brains jump between thoughts  
-❌ **Sustained attention** - ADHD attention is inconsistent  
-❌ **Working memory** - ADHD working memory is limited  
-❌ **Time perception** - ADHD experiences time blindness  
-❌ **Executive function** - ADHD has executive dysfunction  
-❌ **Intrinsic motivation** - ADHD needs external structure  
+❌ **Linear thinking** - ADHD brains jump between thoughts
+❌ **Sustained attention** - ADHD attention is inconsistent
+❌ **Working memory** - ADHD working memory is limited
+❌ **Time perception** - ADHD experiences time blindness
+❌ **Executive function** - ADHD has executive dysfunction
+❌ **Intrinsic motivation** - ADHD needs external structure
 
 ### The Altair Approach
 
 Altair doesn't try to "fix" ADHD. Instead, it **works with** neurodivergent thinking patterns:
 
-✅ **Capture thoughts instantly** before they vanish  
-✅ **Visual representations** over abstract concepts  
-✅ **Flexible structure** that adapts to your brain  
-✅ **Forgiving UX** that allows mistakes and changes  
-✅ **External reminders** that don't rely on memory  
-✅ **Gentle guidance** without pressure or shame  
+✅ **Capture thoughts instantly** before they vanish
+✅ **Visual representations** over abstract concepts
+✅ **Flexible structure** that adapts to your brain
+✅ **Forgiving UX** that allows mistakes and changes
+✅ **External reminders** that don't rely on memory
+✅ **Gentle guidance** without pressure or shame
 
 **[View ADHD-Optimized Design Principles](diagrams/04-roadmap-planning.md#adhd-features-mindmap)**
 
@@ -55,10 +55,10 @@ Altair doesn't try to "fix" ADHD. Instead, it **works with** neurodivergent thin
 
 ### 1. Quick Task Capture
 
-**The Problem:**  
+**The Problem:**
 ADHD brains experience thoughts fleetingly. By the time you open a traditional app, navigate to the right place, and start typing—the thought is gone.
 
-**The Solution:**  
+**The Solution:**
 Ultra-fast task capture accessible from anywhere.
 
 **How it Works:**
@@ -92,10 +92,10 @@ User presses Ctrl+N
 
 ### 2. AI-Powered Task Breakdown
 
-**The Problem:**  
+**The Problem:**
 ADHD brains struggle to break large projects into actionable steps. "Clean the house" feels impossible, but "wipe kitchen counter" is doable.
 
-**The Solution:**  
+**The Solution:**
 AI analyzes your task and suggests specific, manageable subtasks.
 
 **How it Works:**
@@ -146,10 +146,10 @@ Suggested Subtasks:
 
 ### 3. Visual Time Awareness
 
-**The Problem:**  
+**The Problem:**
 Time blindness is a core ADHD symptom. "5 more minutes" turns into 2 hours. Tasks feel infinite or instantaneous.
 
-**The Solution:**  
+**The Solution:**
 Visual, tangible time representations that make time *visible*.
 
 **Visual Elements:**
@@ -194,10 +194,10 @@ Today's Time Budget: 4 hours
 
 ### 4. Focus Mode
 
-**The Problem:**  
+**The Problem:**
 ADHD brains are easily distracted. Notifications, sidebar clutter, and "just checking" other tasks derail focus.
 
-**The Solution:**  
+**The Solution:**
 Single-task view that eliminates all distractions.
 
 **How it Works:**
@@ -233,10 +233,10 @@ User clicks "Focus on this task"
 
 ### 5. Gentle Gamification
 
-**The Problem:**  
+**The Problem:**
 ADHD responds to novel stimuli and immediate rewards, but exploitative gamification (streaks, infinite scrolling) is harmful.
 
-**The Solution:**  
+**The Solution:**
 Progress tracking that celebrates wins without creating anxiety or addiction.
 
 **Design Principles:**
@@ -299,10 +299,10 @@ No matter how small.
 
 ### 6. Automatic Documentation
 
-**The Problem:**  
+**The Problem:**
 ADHD brains generate insights during work, but stopping to document them breaks flow. Those insights are then lost forever.
 
-**The Solution:**  
+**The Solution:**
 Capture notes, decisions, and learnings without leaving your flow state.
 
 **How it Works:**
@@ -642,7 +642,7 @@ All UI elements properly labeled:
 - 📅 Browser extensions
 - 📅 Email integration
 
-**[View Full Roadmap](ROADMAP.md)**  
+**[View Full Roadmap](ROADMAP.md)**
 **[View Development Timeline](diagrams/04-roadmap-planning.md#development-timeline-gantt-chart)**
 
 ---
@@ -659,8 +659,8 @@ All UI elements properly labeled:
 
 ---
 
-**Last Updated:** October 2025  
-**Status:** Pre-Alpha Development  
+**Last Updated:** October 2025
+**Status:** Pre-Alpha Development
 **Next:** [Read the Roadmap →](ROADMAP.md)
 
 ---

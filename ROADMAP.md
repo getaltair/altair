@@ -14,9 +14,9 @@
 
 ## Current Status
 
-**Phase:** Pre-Alpha Development  
-**Version:** 0.1.0-dev  
-**Start Date:** October 2025  
+**Phase:** Pre-Alpha Development
+**Version:** 0.1.0-dev
+**Start Date:** October 2025
 **Target MVP:** Q1 2026 (March 2026)
 
 **[View Current Sprint Plan](diagrams/04-roadmap-planning.md#sprint-1-planning)**
@@ -56,8 +56,8 @@ Our process accommodates neurodivergent developers:
 
 **Goal:** Build usable core that solves the #1 ADHD problem: task capture
 
-**Duration:** 3-4 months  
-**Status:** In Progress  
+**Duration:** 3-4 months
+**Status:** In Progress
 **Target:** March 2026
 
 **[View Phase 1 Timeline](diagrams/04-roadmap-planning.md#development-timeline-gantt-chart)**
@@ -113,7 +113,7 @@ Our process accommodates neurodivergent developers:
 
 **Goal:** Add features that make Altair uniquely ADHD-friendly
 
-**Duration:** 3 months  
+**Duration:** 3 months
 **Target:** June 2026
 
 **[View Phase 2 Feature Matrix](diagrams/04-roadmap-planning.md#feature-priority-matrix)**
@@ -176,7 +176,7 @@ Our process accommodates neurodivergent developers:
 
 **Goal:** Polish the experience and optimize performance
 
-**Duration:** 3 months  
+**Duration:** 3 months
 **Target:** September 2026
 
 **[View Phase 3 Architecture](diagrams/05-component-architecture.md#performance-optimization)**
@@ -233,7 +233,7 @@ Our process accommodates neurodivergent developers:
 
 **Goal:** Grow the community and prepare for public launch
 
-**Duration:** 3 months  
+**Duration:** 3 months
 **Target:** December 2026
 
 #### Community Building:
@@ -286,7 +286,7 @@ Our process accommodates neurodivergent developers:
 
 **Goal:** Make Altair sustainable and scale to serve more users
 
-**Duration:** Ongoing  
+**Duration:** Ongoing
 **Target:** Throughout 2027
 
 #### Sustainability:
@@ -449,14 +449,14 @@ Last Friday of each month:
 
 These are our commitments to the community:
 
-**November 2025:** Backend foundation complete ✅  
-**December 2025:** Flutter app functional 🚧  
-**January 2026:** Personal dogfooding in production 📅  
-**March 2026:** Private beta with 10-20 testers 📅  
-**June 2026:** ADHD features complete 📅  
-**October 2026:** Public beta launch 📅  
-**December 2026:** App stores + plugins 📅  
-**March 2027:** Managed hosting available 📅  
+**November 2025:** Backend foundation complete ✅
+**December 2025:** Flutter app functional 🚧
+**January 2026:** Personal dogfooding in production 📅
+**March 2026:** Private beta with 10-20 testers 📅
+**June 2026:** ADHD features complete 📅
+**October 2026:** Public beta launch 📅
+**December 2026:** App stores + plugins 📅
+**March 2027:** Managed hosting available 📅
 
 ---
 
@@ -468,8 +468,8 @@ These are our commitments to the community:
 
 ---
 
-**Last Updated:** October 2025  
-**Next Review:** November 2025  
+**Last Updated:** October 2025
+**Next Review:** November 2025
 **Status:** Living Document
 
 ---

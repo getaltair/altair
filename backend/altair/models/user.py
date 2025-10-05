@@ -5,11 +5,16 @@ authentication credentials, and ADHD-specific preferences. The model supports
 the authentication system and personalized ADHD-friendly features.
 """
 
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
+
 from sqlalchemy import Boolean, String
 from sqlalchemy.dialects.postgresql import JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from altair.models.base import BaseModel
+
+if TYPE_CHECKING:
+    from altair.models.task import Task
 
 
 class User(BaseModel):
@@ -23,7 +28,8 @@ class User(BaseModel):
         email (str): User's email address, unique identifier for login, indexed
         username (str): Optional display name, unique if provided, indexed
         hashed_password (str): Argon2 hashed password, never returned in API responses
-        is_active (bool): Account status flag, defaults to True (inactive users can't login)
+        is_active (bool): Account status flag, defaults to True
+            (inactive users can't login)
         adhd_profile (dict): JSONB field storing user preferences like:
             - preferred_focus_duration: Minutes for Pomodoro sessions
             - break_duration: Minutes for break periods

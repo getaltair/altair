@@ -1,6 +1,6 @@
 # Troubleshooting Guide
 
-**Status:** 📝 TODO - Phase 3 (Q3 2026)  
+**Status:** 📝 TODO - Phase 3 (Q3 2026)
 **Priority:** Medium
 
 ---
@@ -93,5 +93,5 @@ Need to collect:
 
 ---
 
-**Last Updated:** October 2025  
+**Last Updated:** October 2025
 **Status:** Placeholder - Will be written based on real user issues

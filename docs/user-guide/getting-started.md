@@ -1,7 +1,7 @@
 # Getting Started with Altair
 
-**Status:** 📝 TODO - To be written after MVP (Phase 2: Q2 2026)  
-**Priority:** High  
+**Status:** 📝 TODO - To be written after MVP (Phase 2: Q2 2026)
+**Priority:** High
 **Target Audience:** End users (ADHD individuals using Altair)
 
 ---
@@ -131,6 +131,6 @@ First-time user guide to help people get started with Altair quickly and success
 
 ---
 
-**Last Updated:** October 2025  
-**Author:** TBD  
+**Last Updated:** October 2025
+**Author:** TBD
 **Status:** Placeholder - Ready to be written

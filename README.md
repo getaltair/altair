@@ -7,6 +7,12 @@
 [![Python 3.11+](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![Flutter](https://img.shields.io/badge/Flutter-Latest-blue.svg)](https://flutter.dev/)
 
+[![CI](https://github.com/getaltair/altair/actions/workflows/ci.yml/badge.svg)](https://github.com/getaltair/altair/actions/workflows/ci.yml)
+[![Security](https://github.com/getaltair/altair/actions/workflows/security.yml/badge.svg)](https://github.com/getaltair/altair/actions/workflows/security.yml)
+[![codecov](https://codecov.io/gh/getaltair/altair/branch/main/graph/badge.svg)](https://codecov.io/gh/getaltair/altair)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+
 > ADHD-friendly project management designed for neurodivergent minds. Open source, privacy-first, built by the community.
 
 📊 **[View System Architecture Diagram](diagrams/01-system-architecture.md#high-level-system-architecture)**
@@ -34,13 +40,13 @@ Traditional project management tools assume neurotypical brain patterns: linear 
 - **Traditional tools** assume you have executive function you don't
 
 ### The Altair Solution
-✨ **Instant Capture** - Save tasks before they disappear  
-🧩 **Smart Breakdown** - AI-powered project decomposition  
-⏱️ **Visual Time Tracking** - Built for time blindness  
-🎯 **Focus Mode** - Single-task clarity, minimize distractions  
-🎮 **Gentle Gamification** - Progress without exploitation  
-📝 **Auto Documentation** - Capture insights without interrupting flow  
-🔒 **Privacy-First** - Your data stays yours, always  
+✨ **Instant Capture** - Save tasks before they disappear
+🧩 **Smart Breakdown** - AI-powered project decomposition
+⏱️ **Visual Time Tracking** - Built for time blindness
+🎯 **Focus Mode** - Single-task clarity, minimize distractions
+🎮 **Gentle Gamification** - Progress without exploitation
+📝 **Auto Documentation** - Capture insights without interrupting flow
+🔒 **Privacy-First** - Your data stays yours, always
 📱 **Offline-First** - Works everywhere, syncs when connected
 
 🚀 **[See Quick Task Capture Flow](diagrams/03-user-flows.md#quick-task-capture-flow)**
@@ -49,8 +55,8 @@ Traditional project management tools assume neurotypical brain patterns: linear 
 
 ## Current Status
 
-**Phase:** Pre-Alpha Development  
-**Version:** 0.1.0-dev  
+**Phase:** Pre-Alpha Development
+**Version:** 0.1.0-dev
 **Timeline:** MVP targeting Q1 2026
 
 We're building in public and dogfooding from day one. Follow our progress:
@@ -90,8 +96,8 @@ flutter pub get
 flutter run -d chrome  # or: flutter run (for mobile)
 ```
 
-📖 **[See Complete Quick Start Guide](QUICK_START.md)**  
-🏗️ **[View System Architecture](diagrams/01-system-architecture.md)**  
+📖 **[See Complete Quick Start Guide](QUICK_START.md)**
+🏗️ **[View System Architecture](diagrams/01-system-architecture.md)**
 💾 **[Explore Database Schema](diagrams/02-database-schema-erd.md)**
 
 ---
@@ -114,7 +120,7 @@ flutter run -d chrome  # or: flutter run (for mobile)
 - **Flexible Organization** - Multiple ways to view and organize
 - **Gentle Notifications** - Non-intrusive, user-controlled
 
-📋 **[Read Detailed Features Documentation](FEATURES.md)**  
+📋 **[Read Detailed Features Documentation](FEATURES.md)**
 👤 **[See User Flow Diagrams](diagrams/03-user-flows.md)**
 
 ---
@@ -141,7 +147,7 @@ flutter run -d chrome  # or: flutter run (for mobile)
 - **CI/CD:** GitHub Actions
 - **Monitoring:** TBD
 
-🔧 **[View Architecture Documentation](ARCHITECTURE.md)**  
+🔧 **[View Architecture Documentation](ARCHITECTURE.md)**
 🏢 **[See Deployment Diagrams](diagrams/06-deployment-operations.md)**
 
 ---
@@ -230,7 +236,7 @@ We welcome contributions from everyone! Whether you have ADHD, build tools for n
 - Advanced AI capabilities
 - International expansion
 
-📆 **[View Full Roadmap with Priorities](ROADMAP.md)**  
+📆 **[View Full Roadmap with Priorities](ROADMAP.md)**
 📈 **[See Sprint Planning Diagrams](diagrams/04-roadmap-planning.md#sprint-1-planning)**
 
 ---
@@ -311,6 +317,6 @@ Special thanks to everyone who has contributed ideas, code, feedback, and encour
 
 ---
 
-**Last Updated:** October 2025  
-**Version:** 0.1.0-dev  
+**Last Updated:** October 2025
+**Version:** 0.1.0-dev
 **Status:** Pre-Alpha Development

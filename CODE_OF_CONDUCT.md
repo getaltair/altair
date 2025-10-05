@@ -232,16 +232,16 @@ still requires accountability and change.
 
 ### Common ADHD-Related Scenarios
 
-**Scenario:** Someone misses deadlines or forgets commitments  
+**Scenario:** Someone misses deadlines or forgets commitments
 **Response:** Gentle reminder, offer tools/support, no shame
 
-**Scenario:** Someone asks the same question multiple times  
+**Scenario:** Someone asks the same question multiple times
 **Response:** Patient re-explanation, consider documentation improvement
 
-**Scenario:** Someone hyperfocuses and over-contributes feedback  
+**Scenario:** Someone hyperfocuses and over-contributes feedback
 **Response:** Appreciate enthusiasm, gently guide toward focused input
 
-**Scenario:** Someone's communication seems blunt or direct  
+**Scenario:** Someone's communication seems blunt or direct
 **Response:** Don't assume rudeness, ask for clarification if unsure
 
 ## Additional Resources
@@ -275,5 +275,5 @@ to the community.
 
 ---
 
-**Last Updated:** October 2025  
+**Last Updated:** October 2025
 **Version:** 1.0

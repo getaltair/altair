@@ -26,10 +26,12 @@ Usage:
 
 import uuid
 from datetime import datetime
+
 from sqlalchemy import DateTime
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
+
 from altair.database import Base
 
 
@@ -69,10 +71,14 @@ class BaseModel(Base):
     __abstract__ = True
 
     # UUID primary key for distributed system compatibility and global uniqueness
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
 
     # Timestamp set by database server when record is created
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), index=True
+    )
 
     # Timestamp automatically updated by database on each modification
     updated_at: Mapped[datetime] = mapped_column(

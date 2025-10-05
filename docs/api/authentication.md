@@ -1,6 +1,6 @@
 # Authentication API
 
-**Status:** 📝 TODO - Phase 1 (Q4 2025 - Q1 2026)  
+**Status:** 📝 TODO - Phase 1 (Q4 2025 - Q1 2026)
 **Priority:** High
 
 ---
@@ -53,5 +53,5 @@ This document should cover:
 
 ---
 
-**Write this alongside:** Backend authentication implementation  
+**Write this alongside:** Backend authentication implementation
 **Related:** ARCHITECTURE.md security section

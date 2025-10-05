@@ -10,10 +10,10 @@
                         <stop offset="100%" style="stop-color:#60A5FA;stop-opacity:0"/>
                     </radialGradient>
                 </defs>
-                
+
                 <!-- Background -->
                 <rect width="1640" height="856" fill="#0F172A"/>
-                
+
                 <!-- Grid -->
                 <g opacity="0.03">
                     <line x1="0" y1="214" x2="1640" y2="214" stroke="#60A5FA" stroke-width="1"/>
@@ -23,10 +23,10 @@
                     <line x1="820" y1="0" x2="820" y2="856" stroke="#60A5FA" stroke-width="1"/>
                     <line x1="1230" y1="0" x2="1230" y2="856" stroke="#60A5FA" stroke-width="1"/>
                 </g>
-                
+
                 <!-- Center glow -->
                 <circle cx="820" cy="428" r="350" fill="url(#glow-fbg)"/>
-                
+
                 <!-- Icon -->
                 <g transform="translate(630, 178)">
                     <circle cx="190" cy="250" r="180" fill="#0A0F1E"/>
@@ -34,12 +34,12 @@
                     <path d="M 190 115 L 235 250 L 190 217.5 Z" fill="#60A5FA" opacity="0.5"/>
                     <path d="M 235 250 L 190 385 L 212.5 250 Z" fill="#1E40AF" opacity="0.3"/>
                 </g>
-                
+
                 <!-- Text -->
                 <text x="820" y="540" font-size="110" font-weight="800" fill="#FFFFFF" text-anchor="middle">Altair Community</text>
                 <text x="820" y="620" font-size="36" font-weight="600" fill="#60A5FA" text-anchor="middle">Where focus takes flight together</text>
                 <text x="820" y="680" font-size="28" font-weight="500" fill="#94A3B8" text-anchor="middle">ADHD-Friendly Project Management • Built by the Community</text>
-                
+
                 <!-- Corner stars -->
                 <circle cx="1550" cy="120" r="3" fill="#60A5FA" opacity="0.6"/>
                 <circle cx="1590" cy="90" r="2" fill="#60A5FA" opacity="0.4"/>

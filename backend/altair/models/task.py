@@ -15,13 +15,16 @@ then triage when executive function is available.
 """
 
 import enum
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 from uuid import UUID
 
 from sqlalchemy import Enum, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from altair.models.base import BaseModel
+
+if TYPE_CHECKING:
+    from altair.models.user import User
 
 
 class TaskState(enum.Enum):
@@ -69,7 +72,8 @@ class Task(BaseModel):
     Attributes:
         title (str): Brief task description, max 255 characters, required
         description (str): Detailed task information, optional long text
-        state (TaskState): Current task state, defaults to INBOX for quick capture, indexed
+        state (TaskState): Current task state, defaults to INBOX for quick
+            capture, indexed
         cognitive_load (int): Subjective mental effort rating 1-10, defaults to 5
             (used to help users choose tasks matching current energy levels)
         estimated_minutes (int): User's time estimate in minutes, optional

@@ -1,10 +1,10 @@
 # Claude Code Instructions for Altair Development (Python/FastAPI Edition)
 
 ## Quick Reference
-**Current Stack**: Python 3.12+ / FastAPI / PostgreSQL / Redis / Flutter  
-**Package Manager**: UV  
-**Deployment Target**: Railway → Docker → Kubernetes  
-**Development Phase**: MVP Week 1-2 (Dogfooding Focus)  
+**Current Stack**: Python 3.12+ / FastAPI / PostgreSQL / Redis / Flutter
+**Package Manager**: UV
+**Deployment Target**: Railway → Docker → Kubernetes
+**Development Phase**: MVP Week 1-2 (Dogfooding Focus)
 
 ## Claude Code Interaction Style
 
@@ -32,7 +32,7 @@ Example:
 ```
 User: "How should I implement the task state machine in FastAPI?"
 
-Good response: "For the task state machine in FastAPI, consider using Python Enums with SQLAlchemy. 
+Good response: "For the task state machine in FastAPI, consider using Python Enums with SQLAlchemy.
 You'll want to:
 - Define states as an Enum class
 - Use SQLAlchemy's Enum type for the database column
@@ -212,8 +212,8 @@ git push origin main
 ### Task State Machine
 ```python
 # States flow for ADHD-friendly progression:
-# INBOX (no decisions) → 
-# TRIAGE (when ready) → 
+# INBOX (no decisions) →
+# TRIAGE (when ready) →
 # ACTIVE/BLOCKED/SOMEDAY →
 # DONE (celebrate!) →
 # ARCHIVED (after 30 days)
@@ -243,7 +243,7 @@ git push origin main
 ```python
 # Public stats endpoint design:
 # - Daily coding streak
-# - Focus time metrics  
+# - Focus time metrics
 # - Tasks completed
 # - Current project status
 # - Learning log entries

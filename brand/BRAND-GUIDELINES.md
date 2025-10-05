@@ -405,17 +405,17 @@ When featuring Altair:
     altair-icon-64.png           (Favicon size)
     altair-icon-white.svg        (Monochrome light)
     altair-icon-black.svg        (Monochrome dark)
-  
+
   /banners/
     altair-twitter-1500x500.svg  (Twitter/X header)
     altair-github-1280x640.svg   (GitHub social preview)
     altair-linkedin-1584x396.svg (LinkedIn banner)
     altair-discord-960x540.svg   (Discord server)
-  
+
   /colors/
     colors.json                  (Color values)
     colors.css                   (CSS variables)
-    
+
   /fonts/
     Inter/                       (Font files)
 ```

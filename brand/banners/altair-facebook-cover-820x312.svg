@@ -10,10 +10,10 @@
                         <stop offset="100%" style="stop-color:#60A5FA;stop-opacity:0"/>
                     </radialGradient>
                 </defs>
-                
+
                 <!-- Background -->
                 <rect width="820" height="312" fill="#0F172A"/>
-                
+
                 <!-- Subtle grid pattern -->
                 <g opacity="0.03">
                     <line x1="0" y1="78" x2="820" y2="78" stroke="#60A5FA" stroke-width="1"/>
@@ -23,10 +23,10 @@
                     <line x1="410" y1="0" x2="410" y2="312" stroke="#60A5FA" stroke-width="1"/>
                     <line x1="615" y1="0" x2="615" y2="312" stroke="#60A5FA" stroke-width="1"/>
                 </g>
-                
+
                 <!-- Glow effect -->
                 <circle cx="250" cy="156" r="140" fill="url(#glow-fb)"/>
-                
+
                 <!-- Icon -->
                 <g transform="translate(150, 31)">
                     <circle cx="100" cy="125" r="90" fill="#0A0F1E"/>
@@ -34,12 +34,12 @@
                     <path d="M 100 70 L 120 125 L 100 112.5 Z" fill="#60A5FA" opacity="0.5"/>
                     <path d="M 120 125 L 100 180 L 110 125 Z" fill="#1E40AF" opacity="0.3"/>
                 </g>
-                
+
                 <!-- Text -->
                 <text x="420" y="145" font-size="64" font-weight="800" fill="#FFFFFF">Altair</text>
                 <text x="420" y="190" font-size="22" font-weight="600" fill="#60A5FA">Where focus takes flight</text>
                 <text x="420" y="220" font-size="16" font-weight="500" fill="#94A3B8">ADHD-Friendly Project Management</text>
-                
+
                 <!-- Small stars decoration -->
                 <circle cx="750" cy="80" r="2" fill="#60A5FA" opacity="0.6"/>
                 <circle cx="780" cy="60" r="1.5" fill="#60A5FA" opacity="0.4"/>
