@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Altair Visual Diagrams - Interactive Index</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-900 text-white">
+    <!-- Header -->
+    <header class="bg-slate-800 border-b border-slate-700">
+        <div class="max-w-7xl mx-auto px-6 py-8">
+            <h1 class="text-4xl font-bold mb-2">
+                <span class="text-blue-400">Altair</span> Visual Diagrams
+            </h1>
+            <p class="text-slate-400">80+ diagrams covering system architecture, user flows, database design, and more</p>
+        </div>
+    </header>
+
+    <!-- Quick Stats -->
+    <div class="max-w-7xl mx-auto px-6 py-8">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <div class="bg-slate-800 rounded-lg p-6 border border-slate-700">
+                <div class="text-3xl font-bold text-blue-400">7</div>
+                <div class="text-slate-400 text-sm">Diagram Files</div>
+            </div>
+            <div class="bg-slate-800 rounded-lg p-6 border border-slate-700">
+                <div class="text-3xl font-bold text-green-400">80+</div>
+                <div class="text-slate-400 text-sm">Total Diagrams</div>
+            </div>
+            <div class="bg-slate-800 rounded-lg p-6 border border-slate-700">
+                <div class="text-3xl font-bold text-orange-400">10</div>
+                <div class="text-slate-400 text-sm">Diagram Types</div>
+            </div>
+            <div class="bg-slate-800 rounded-lg p-6 border border-slate-700">
+                <div class="text-3xl font-bold text-purple-400">~3k</div>
+                <div class="text-slate-400 text-sm">Lines of Code</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="max-w-7xl mx-auto px-6">
+        <div class="border-b border-slate-700 mb-8">
+            <nav class="flex space-x-8">
+                <button onclick="showTab('by-file')" id="tab-by-file" class="tab-button active">
+                    By File
+                </button>
+                <button onclick="showTab('by-type')" id="tab-by-type" class="tab-button">
+                    By Type
+                </button>
+                <button onclick="showTab('by-role')" id="tab-by-role" class="tab-button">
+                    By Role
+                </button>
+                <button onclick="showTab('quick-start')" id="tab-quick-start" class="tab-button">
+                    Quick Start
+                </button>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Tab Content -->
+    <div class="max-w-7xl mx-auto px-6 pb-16">
+        
+        <!-- By File Tab -->
+        <div id="content-by-file" class="tab-content">
+            <div class="grid md:grid-cols-2 gap-6">
+                
+                <!-- File 1 -->
+                <div class="bg-slate-800 rounded-xl p-6 border border-slate-700 hover:border-blue-500 transition-colors">
+                    <h3 class="text-xl font-bold mb-2 text-blue-400">📐 System Architecture</h3>
+                    <p class="text-slate-400 text-sm mb-4">High-level design and component interactions</p>
+                    <div class="space-y-2 mb-4">
+                        <div class="flex items-center text-sm">
+                            <span class="text-slate-500 w-24">Diagrams:</span>
+                            <span class="text-white">10</span>
+                        </div>
+                        <div class="flex items-center text-sm">
+                            <span class="text-slate-500 w-24">File:</span>
+                            <code class="text-xs text-blue-400">01-system-architecture.md</code>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap gap-2 mb-4">
+                        <span class="px-2 py-1 bg-blue-900/30 text-blue-400 text-xs rounded">Component</span>
+                        <span class="px-2 py-1 bg-blue-900/30 text-blue-400 text-xs rounded">Sequence</span>
+                        <span class="px-2 py-1 bg-blue-900/30 text-blue-400 text-xs rounded">Flowchart</span>
+                    </div>
+                    <ul class="space-y-2 text-sm text-slate-300 mb-4">
+                        <li>• High-level system architecture</li>
+                        <li>• Network flow & communication</li>
+                        <li>• Authentication flow</li>
+                        <li>• Technology stack visual</li>
+                    </ul>
+                    <a href="01-system-architecture.md" class="inline-block px-4 py-2 bg-blue-500 hover:bg-blue-600 rounded-lg text-sm font-medium">
+                        View Diagrams →
+                    </a>
+                </div>
+
+                <!-- File 2 -->
+                <div class="bg-slate-800 rounded-xl p-6 border border-slate-700 hover:border-green-500 transition-colors">
+                    <h3 class="text-xl font-bold mb-2 text-green-400">🗄️ Database Schema</h3>
+                    <p class="text-slate-400 text-sm mb-4">Data models and relationships</p>
+                    <div class="space-y-2 mb-4">
+                        <div class="flex items-center text-sm">
+                            <span class="text-slate-500 w-24">Diagrams:</span>
+                            <span class="text-white">8</span>
+                        </div>
+                        <div class="flex items-center text-sm">
+                            <span class="text-slate-500 w-24">File:</span>
+                            <code class="text-xs text-green-400">02-database-schema-erd.md</code>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap gap-2 mb-4">
+                        <span class="px-2 py-1 bg-green-900/30 text-green-400 text-xs rounded">ERD</span>
+                        <span class="px-2 py-1 bg-green-900/30 text-green-400 text-xs rounded">Class</span>
+                        <span class="px-2 py-1 bg-green-900/30 text-green-400 text-xs rounded">State</span>
+                    </div>
+                    <ul class="space-y-2 text-sm text-slate-300 mb-4">
+                        <li>• Complete ERD</li>
+                        <li>• ADHD-specific fields</li>
+                        <li>• Query patterns</li>
+                        <li>• Migration strategy</li>
+                    </ul>
+                    <a href="02-database-schema-erd.md" class="inline-block px-4 py-2 bg-green-500 hover:bg-green-600 rounded-lg text-sm font-medium">
+                        View Diagrams →
+                    </a>
+                </div>
+
+                <!-- File 3 -->
+                <div class="bg-slate-800 rounded-xl p-6 border border-slate-700 hover:border-purple-500 transition-colors">
+                    <h3 class="text-xl font-bold mb-2 text-purple-400">👤 User Flows</h3>
+                    <p class="text-slate-400 text-sm mb-4">User journeys and interactions</p>
+                    <div class="space-y-2 mb-4">
+                        <div class="flex items-center text-sm">
+                            <span class="text-slate-500 w-24">Diagrams:</span>
+                            <span class="text-white">10</span>
+                        </div>
+                        <div class="flex items-center text-sm">
+                            <span class="text-slate-500 w-24">File:</span>
+                            <code class="text-xs text-purple-400">03-user-flows.md</code>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap gap-2 mb-4">
+                        <span class="px-2 py-1 bg-purple-900/30 text-purple-400 text-xs rounded">Flowchart</span>
+                        <span class="px-2 py-1 bg-purple-900/30 text-purple-400 text-xs rounded">State</span>
+                        <span class="px-2 py-1 bg-purple-900/30 text-purple-400 text-xs rounded">Sequence</span>
+                    </div>
+                    <ul class="space-y-2 text-sm text-slate-300 mb-4">
+                        <li>• Quick task capture flow</li>
+                        <li>• AI breakdown journey</li>
+                        <li>• Focus mode sessions</li>
+                        <li>• Error recovery</li>
+                    </ul>
+                    <a href="03-user-flows.md" class="inline-block px-4 py-2 bg-purple-500 hover:bg-purple-600 rounded-lg text-sm font-medium">
+                        View Diagrams →
+                    </a>
+                </div>
+
+                <!-- File 4 -->
+                <div class="bg-slate-800 rounded-xl p-6 border border-slate-700 hover:border-orange-500 transition-colors">
+                    <h3 class="text-xl font-bold mb-2 text-orange-400">📅 Roadmap & Planning</h3>
+                    <p class="text-slate-400 text-sm mb-4">Timeline and feature priorities</p>
+                    <div class="space-y-2 mb-4">
+                        <div class="flex items-center text-sm">
+                            <span class="text-slate-500 w-24">Diagrams:</span>
+                            <span class="text-white">11</span>
+                        </div>
+                        <div class="flex items-center text-sm">
+                            <span class="text-slate-500 w-24">File:</span>
+                            <code class="text-xs text-orange-400">04-roadmap-planning.md</code>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap gap-2 mb-4">
+                        <span class="px-2 py-1 bg-orange-900/30 text-orange-400 text-xs rounded">Gantt</span>
+                        <span class="px-2 py-1 bg-orange-900/30 text-orange-400 text-xs rounded">Mindmap</span>
+                        <span class="px-2 py-1 bg-orange-900/30 text-orange-400 text-xs rounded">Graph</span>
+                    </div>
+                    <ul class="space-y-2 text-sm text-slate-300 mb-4">
+                        <li>• Development timeline</li>
+                        <li>• Feature priority matrix</li>
+                        <li>• ADHD features mindmap</li>
+                        <li>• Sprint planning</li>
+                    </ul>
+                    <a href="04-roadmap-planning.md" class="inline-block px-4 py-2 bg-orange-500 hover:bg-orange-600 rounded-lg text-sm font-medium">
+                        View Diagrams →
+                    </a>
+                </div>
+
+                <!-- File 5 -->
+                <div class="bg-slate-800 rounded-xl p-6 border border-slate-700 hover:border-cyan-500 transition-colors">
+                    <h3 class="text-xl font-bold mb-2 text-cyan-400">🏗️ Component Architecture</h3>
+                    <p class="text-slate-400 text-sm mb-4">Technical implementation details</p>
+                    <div class="space-y-2 mb-4">
+                        <div class="flex items-center text-sm">
+                            <span class="text-slate-500 w-24">Diagrams:</span>
+                            <span class="text-white">12</span>
+                        </div>
+                        <div class="flex items-center text-sm">
+                            <span class="text-slate-500 w-24">File:</span>
+                            <code class="text-xs text-cyan-400">05-component-architecture.md</code>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap gap-2 mb-4">
+                        <span class="px-2 py-1 bg-cyan-900/30 text-cyan-400 text-xs rounded">Component</span>
+                        <span class="px-2 py-1 bg-cyan-900/30 text-cyan-400 text-xs rounded">Sequence</span>
+                        <span class="px-2 py-1 bg-cyan-900/30 text-cyan-400 text-xs rounded">Flowchart</span>
+                    </div>
+                    <ul class="space-y-2 text-sm text-slate-300 mb-4">
+                        <li>• Frontend component hierarchy</li>
+                        <li>• Backend request lifecycle</li>
+                        <li>• Offline-first sync</li>
+                        <li>• AI task breakdown</li>
+                    </ul>
+                    <a href="05-component-architecture.md" class="inline-block px-4 py-2 bg-cyan-500 hover:bg-cyan-600 rounded-lg text-sm font-medium">
+                        View Diagrams →
+                    </a>
+                </div>
+
+                <!-- File 6 -->
+                <div class="bg-slate-800 rounded-xl p-6 border border-slate-700 hover:border-red-500 transition-colors">
+                    <h3 class="text-xl font-bold mb-2 text-red-400">🚀 Deployment & Operations</h3>
+                    <p class="text-slate-400 text-sm mb-4">DevOps and production</p>
+                    <div class="space-y-2 mb-4">
+                        <div class="flex items-center text-sm">
+                            <span class="text-slate-500 w-24">Diagrams:</span>
+                            <span class="text-white">11</span>
+                        </div>
+                        <div class="flex items-center text-sm">
+                            <span class="text-slate-500 w-24">File:</span>
+                            <code class="text-xs text-red-400">06-deployment-operations.md</code>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap gap-2 mb-4">
+                        <span class="px-2 py-1 bg-red-900/30 text-red-400 text-xs rounded">Architecture</span>
+                        <span class="px-2 py-1 bg-red-900/30 text-red-400 text-xs rounded">Flowchart</span>
+                        <span class="px-2 py-1 bg-red-900/30 text-red-400 text-xs rounded">Mindmap</span>
+                    </div>
+                    <ul class="space-y-2 text-sm text-slate-300 mb-4">
+                        <li>• Deployment options</li>
+                        <li>• Monitoring stack</li>
+                        <li>• Backup strategy</li>
+                        <li>• Incident response</li>
+                    </ul>
+                    <a href="06-deployment-operations.md" class="inline-block px-4 py-2 bg-red-500 hover:bg-red-600 rounded-lg text-sm font-medium">
+                        View Diagrams →
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- By Type Tab -->
+        <div id="content-by-type" class="tab-content hidden">
+            <div class="grid md:grid-cols-3 gap-6">
+                <div class="bg-slate-800 rounded-lg p-6 border border-slate-700">
+                    <h4 class="font-bold mb-4 text-blue-400">Flowcharts (14)</h4>
+                    <p class="text-sm text-slate-400">Processes, workflows, decision trees</p>
+                </div>
+                <div class="bg-slate-800 rounded-lg p-6 border border-slate-700">
+                    <h4 class="font-bold mb-4 text-green-400">Sequence Diagrams (6)</h4>
+                    <p class="text-sm text-slate-400">Time-based interactions, API calls</p>
+                </div>
+                <div class="bg-slate-800 rounded-lg p-6 border border-slate-700">
+                    <h4 class="font-bold mb-4 text-purple-400">State Diagrams (8)</h4>
+                    <p class="text-sm text-slate-400">State machines, lifecycles</p>
+                </div>
+                <div class="bg-slate-800 rounded-lg p-6 border border-slate-700">
+                    <h4 class="font-bold mb-4 text-orange-400">Architecture (15)</h4>
+                    <p class="text-sm text-slate-400">System design, components</p>
+                </div>
+                <div class="bg-slate-800 rounded-lg p-6 border border-slate-700">
+                    <h4 class="font-bold mb-4 text-cyan-400">Mind Maps (6)</h4>
+                    <p class="text-sm text-slate-400">Hierarchical concepts, features</p>
+                </div>
+                <div class="bg-slate-800 rounded-lg p-6 border border-slate-700">
+                    <h4 class="font-bold mb-4 text-red-400">ERD (8)</h4>
+                    <p class="text-sm text-slate-400">Database schemas, relationships</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- By Role Tab -->
+        <div id="content-by-role" class="tab-content hidden">
+            <div class="space-y-8">
+                
+                <!-- Developer -->
+                <div class="bg-slate-800 rounded-xl p-8 border border-slate-700">
+                    <h3 class="text-2xl font-bold mb-4 text-blue-400">👨‍💻 For Developers</h3>
+                    <p class="text-slate-400 mb-6">Start here to understand the codebase and architecture</p>
+                    <div class="grid md:grid-cols-3 gap-4">
+                        <a href="01-system-architecture.md" class="block p-4 bg-slate-700 rounded-lg hover:bg-slate-600">
+                            <div class="font-semibold mb-1">System Architecture</div>
+                            <div class="text-sm text-slate-400">Understand the stack</div>
+                        </a>
+                        <a href="02-database-schema-erd.md" class="block p-4 bg-slate-700 rounded-lg hover:bg-slate-600">
+                            <div class="font-semibold mb-1">Database Schema</div>
+                            <div class="text-sm text-slate-400">See data models</div>
+                        </a>
+                        <a href="05-component-architecture.md" class="block p-4 bg-slate-700 rounded-lg hover:bg-slate-600">
+                            <div class="font-semibold mb-1">Component Architecture</div>
+                            <div class="text-sm text-slate-400">Code structure</div>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Project Manager -->
+                <div class="bg-slate-800 rounded-xl p-8 border border-slate-700">
+                    <h3 class="text-2xl font-bold mb-4 text-green-400">📊 For Project Managers</h3>
+                    <p class="text-slate-400 mb-6">Plan sprints and track progress</p>
+                    <div class="grid md:grid-cols-3 gap-4">
+                        <a href="04-roadmap-planning.md" class="block p-4 bg-slate-700 rounded-lg hover:bg-slate-600">
+                            <div class="font-semibold mb-1">Roadmap Timeline</div>
+                            <div class="text-sm text-slate-400">See the big picture</div>
+                        </a>
+                        <a href="03-user-flows.md" class="block p-4 bg-slate-700 rounded-lg hover:bg-slate-600">
+                            <div class="font-semibold mb-1">User Flows</div>
+                            <div class="text-sm text-slate-400">Understand UX</div>
+                        </a>
+                        <a href="04-roadmap-planning.md#feature-dependency-graph" class="block p-4 bg-slate-700 rounded-lg hover:bg-slate-600">
+                            <div class="font-semibold mb-1">Dependencies</div>
+                            <div class="text-sm text-slate-400">Plan sprints</div>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Designer -->
+                <div class="bg-slate-800 rounded-xl p-8 border border-slate-700">
+                    <h3 class="text-2xl font-bold mb-4 text-purple-400">🎨 For Designers</h3>
+                    <p class="text-slate-400 mb-6">See user journeys and design principles</p>
+                    <div class="grid md:grid-cols-3 gap-4">
+                        <a href="03-user-flows.md" class="block p-4 bg-slate-700 rounded-lg hover:bg-slate-600">
+                            <div class="font-semibold mb-1">All User Flows</div>
+                            <div class="text-sm text-slate-400">Every interaction</div>
+                        </a>
+                        <a href="04-roadmap-planning.md#adhd-features-mindmap" class="block p-4 bg-slate-700 rounded-lg hover:bg-slate-600">
+                            <div class="font-semibold mb-1">ADHD Features</div>
+                            <div class="text-sm text-slate-400">Design principles</div>
+                        </a>
+                        <a href="05-component-architecture.md#frontend-component-hierarchy" class="block p-4 bg-slate-700 rounded-lg hover:bg-slate-600">
+                            <div class="font-semibold mb-1">Component Hierarchy</div>
+                            <div class="text-sm text-slate-400">UI structure</div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Start Tab -->
+        <div id="content-quick-start" class="tab-content hidden">
+            <div class="bg-slate-800 rounded-xl p-8 border border-slate-700">
+                <h3 class="text-2xl font-bold mb-6">🚀 Quick Start Path</h3>
+                <div class="space-y-4">
+                    <div class="flex items-start space-x-4 p-4 bg-slate-700 rounded-lg">
+                        <div class="flex-shrink-0 w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center font-bold">1</div>
+                        <div class="flex-1">
+                            <h4 class="font-semibold mb-1">High-Level System Architecture</h4>
+                            <p class="text-sm text-slate-400 mb-2">Understand the whole system in one view</p>
+                            <a href="01-system-architecture.md#high-level-system-architecture" class="text-blue-400 hover:text-blue-300 text-sm">View diagram →</a>
+                        </div>
+                    </div>
+
+                    <div class="flex items-start space-x-4 p-4 bg-slate-700 rounded-lg">
+                        <div class="flex-shrink-0 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center font-bold">2</div>
+                        <div class="flex-1">
+                            <h4 class="font-semibold mb-1">ADHD Features Mindmap</h4>
+                            <p class="text-sm text-slate-400 mb-2">See what makes Altair special</p>
+                            <a href="04-roadmap-planning.md#adhd-features-mindmap" class="text-green-400 hover:text-green-300 text-sm">View diagram →</a>
+                        </div>
+                    </div>
+
+                    <div class="flex items-start space-x-4 p-4 bg-slate-700 rounded-lg">
+                        <div class="flex-shrink-0 w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center font-bold">3</div>
+                        <div class="flex-1">
+                            <h4 class="font-semibold mb-1">Quick Task Capture Flow</h4>
+                            <p class="text-sm text-slate-400 mb-2">Core feature - ADHD-optimized</p>
+                            <a href="03-user-flows.md#quick-task-capture-flow-adhd-optimized" class="text-purple-400 hover:text-purple-300 text-sm">View diagram →</a>
+                        </div>
+                    </div>
+
+                    <div class="flex items-start space-x-4 p-4 bg-slate-700 rounded-lg">
+                        <div class="flex-shrink-0 w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center font-bold">4</div>
+                        <div class="flex-1">
+                            <h4 class="font-semibold mb-1">Database ERD</h4>
+                            <p class="text-sm text-slate-400 mb-2">Complete database schema</p>
+                            <a href="02-database-schema-erd.md#entity-relationship-diagram" class="text-orange-400 hover:text-orange-300 text-sm">View diagram →</a>
+                        </div>
+                    </div>
+
+                    <div class="flex items-start space-x-4 p-4 bg-slate-700 rounded-lg">
+                        <div class="flex-shrink-0 w-8 h-8 bg-cyan-500 rounded-full flex items-center justify-center font-bold">5</div>
+                        <div class="flex-1">
+                            <h4 class="font-semibold mb-1">Development Timeline</h4>
+                            <p class="text-sm text-slate-400 mb-2">See the 1.5 year roadmap</p>
+                            <a href="04-roadmap-planning.md#development-timeline-gantt-chart" class="text-cyan-400 hover:text-cyan-300 text-sm">View diagram →</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-slate-800 border-t border-slate-700 mt-16">
+        <div class="max-w-7xl mx-auto px-6 py-8">
+            <div class="grid md:grid-cols-3 gap-8">
+                <div>
+                    <h4 class="font-semibold mb-3">Resources</h4>
+                    <ul class="space-y-2 text-sm text-slate-400">
+                        <li><a href="README.md" class="hover:text-blue-400">Diagram Index</a></li>
+                        <li><a href="SUMMARY.md" class="hover:text-blue-400">What Was Created</a></li>
+                        <li><a href="https://mermaid.live" class="hover:text-blue-400">Mermaid Live Editor</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-3">Documentation</h4>
+                    <ul class="space-y-2 text-sm text-slate-400">
+                        <li><a href="../README.md" class="hover:text-blue-400">Main README</a></li>
+                        <li><a href="../ARCHITECTURE.md" class="hover:text-blue-400">Architecture Docs</a></li>
+                        <li><a href="../CONTRIBUTING.md" class="hover:text-blue-400">Contributing Guide</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-3">Altair</h4>
+                    <ul class="space-y-2 text-sm text-slate-400">
+                        <li><a href="https://getaltair.app" class="hover:text-blue-400">Website</a></li>
+                        <li><a href="https://github.com/getaltair/altair" class="hover:text-blue-400">GitHub</a></li>
+                        <li class="text-slate-500">Where focus takes flight ✨</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="mt-8 pt-8 border-t border-slate-700 text-center text-sm text-slate-500">
+                Created October 2025 • 80+ diagrams • Made with Mermaid
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        function showTab(tabName) {
+            // Hide all content
+            document.querySelectorAll('.tab-content').forEach(el => {
+                el.classList.add('hidden');
+            });
+            
+            // Remove active class from all buttons
+            document.querySelectorAll('.tab-button').forEach(el => {
+                el.classList.remove('active');
+            });
+            
+            // Show selected content
+            document.getElementById('content-' + tabName).classList.remove('hidden');
+            
+            // Add active class to selected button
+            document.getElementById('tab-' + tabName).classList.add('active');
+        }
+    </script>
+
+    <style>
+        .tab-button {
+            padding: 0.75rem 0;
+            color: #94a3b8;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        
+        .tab-button:hover {
+            color: #60a5fa;
+        }
+        
+        .tab-button.active {
+            color: #60a5fa;
+            border-bottom-color: #60a5fa;
+        }
+    </style>
+</body>
+</html>

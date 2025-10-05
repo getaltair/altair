@@ -1,421 +1,456 @@
 # Altair Documentation Index
 
-**Where focus takes flight**
+**Complete navigation guide for all Altair documentation**
 
-Welcome to Altair's documentation! This index will help you find what you need quickly.
-
----
-
-## 📚 Quick Navigation
-
-### New to Altair? Start Here
-
-1. [README.md](README.md) - Project overview and quick start
-2. [FEATURES.md](FEATURES.md) - What makes Altair special for ADHD
-3. [ROADMAP.md](ROADMAP.md) - Where we're going
-
-### Want to Contribute?
-
-1. [CONTRIBUTING.md](CONTRIBUTING.md) - How to help build Altair
-2. [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) - Community guidelines
-3. [ARCHITECTURE.md](ARCHITECTURE.md) - Technical design
-
-### Technical Reference
-
-1. [ARCHITECTURE.md](ARCHITECTURE.md) - System design & tech stack
-2. [SECURITY.md](SECURITY.md) - Security policy & best practices
-3. [LICENSE](LICENSE) - AGPL-3.0 license information
+📊 **NEW:** All documentation now includes links to [visual diagrams](diagrams/README.md)!
 
 ---
 
-## 📖 Complete Documentation
+## Quick Start
 
-### Core Documentation
+**New to Altair?** Start here:
 
-#### [README.md](README.md)
+1. **[README](README.md)** - Project overview and quick introduction
+   - 📊 Includes: System architecture, ADHD features mindmap, user flows
+2. **[FEATURES](FEATURES.md)** - What makes Altair ADHD-friendly
+   - 📊 Includes: User flow diagrams, UI components, feature visualizations
+3. **[QUICK_START](QUICK_START.md)** - Get running in 10 minutes
+   - 📊 Includes: Setup diagrams, environment configuration
 
-**What it is:** The front door to Altair  
-**Read this if you want to:**
+**Want to contribute?**
 
-- Understand what Altair does
-- See the tech stack
-- Get started quickly
-- Find community links
-
-**Key sections:**
-
-- About Altair
-- Why Altair?
-- Current status
-- Tech stack
-- Quick start
-- Philosophy
-
-**Time to read:** 5 minutes
+4. **[CONTRIBUTING](CONTRIBUTING.md)** - How to help build Altair
+   - 📊 Includes: Contribution workflow, PR process, testing strategy
+5. **[CODE_OF_CONDUCT](CODE_OF_CONDUCT.md)** - Community guidelines
 
 ---
 
-#### [FEATURES.md](FEATURES.md)
+## Core Documentation
 
-**What it is:** Detailed explanation of ADHD-friendly features  
-**Read this if you want to:**
+### Project Overview
 
-- Understand ADHD-specific design decisions
-- See all current and planned features
-- Learn about accessibility
-- Compare Altair to other tools
+**[README.md](README.md)**
 
-**Key sections:**
+- What is Altair?
+- Why Altair exists
+- Current status and roadmap overview
+- Quick start guide
+- Tech stack overview
+- Community links
 
-- Design philosophy
-- Core features (task capture, time awareness, AI breakdown, etc.)
+📊 **Diagrams:** System architecture, ADHD features, quick capture flow, roadmap timeline
+
+---
+
+### Features & Design
+
+**[FEATURES.md](FEATURES.md)**
+
+- Design philosophy (why we're different)
+- Core features:
+  - Quick task capture
+  - AI-powered task breakdown
+  - Visual time awareness
+  - Focus mode
+  - Gentle gamification
+  - Automatic documentation
 - ADHD-specific features
 - UX principles
-- Accessibility
+- Accessibility standards
 - Privacy & security
+- Comparison with traditional tools
 
-**Time to read:** 15-20 minutes
-
----
-
-#### [ROADMAP.md](ROADMAP.md)
-
-**What it is:** Development timeline and priorities  
-**Read this if you want to:**
-
-- See what's being built and when
-- Understand the dogfooding approach
-- Track progress
-- Know when features will be available
-
-**Key sections:**
-
-- Current status
-- Phase 1: Foundation (Q4 2025)
-- Phase 2: ADHD features (Q4 2025)
-- Phase 3: Enhanced UX (Q1 2026)
-- Phase 4: Collaboration (Q2 2026)
-- Phase 5: Managed services (2027)
-
-**Time to read:** 10-15 minutes
+📊 **Diagrams:** User flows for all features, UI component hierarchy, time tracking components
 
 ---
 
-### Contribution Documentation
+### Development Roadmap
 
-#### [CONTRIBUTING.md](CONTRIBUTING.md)
+**[ROADMAP.md](ROADMAP.md)**
 
-**What it is:** Complete guide for contributors  
-**Read this if you want to:**
+- Current status (Phase 1: Pre-Alpha)
+- Phase 1: Foundation & MVP (Q4 2025 - Q1 2026)
+- Phase 2: ADHD Features (Q2 2026)
+- Phase 3: Enhanced UX (Q3 2026)
+- Phase 4: Community & Growth (Q4 2026)
+- Phase 5: Sustainability (2027+)
+- Feature prioritization framework
+- Risks and mitigation
+- Community involvement
 
-- Contribute code
-- Report bugs
-- Suggest features
-- Improve documentation
-- Join the community
-
-**Key sections:**
-
-- How to contribute
-- Development setup
-- Development workflow
-- Style guidelines
-- Pull request process
-- ADHD-friendly tips
-
-**Time to read:** 20 minutes (skim first, reference later)
+📊 **Diagrams:** Gantt chart timeline, priority matrices, sprint planning, dependency graphs
 
 ---
 
-#### [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
+### Technical Architecture
 
-**What it is:** Community behavior standards  
-**Read this if you want to:**
+**[ARCHITECTURE.md](ARCHITECTURE.md)**
 
-- Understand community values
-- Know what behavior is expected
-- Learn about enforcement
-- Report violations
-
-**Key sections:**
-
-- Our pledge (neurodiversity commitment)
-- Standards of behavior
-- Enforcement guidelines
-- ADHD-specific guidelines
-- Reporting process
-
-**Time to read:** 10 minutes
-
----
-
-### Technical Documentation
-
-#### [ARCHITECTURE.md](ARCHITECTURE.md)
-
-**What it is:** System design and technical decisions  
-**Read this if you want to:**
-
-- Understand the tech stack
-- See the system architecture
-- Learn about technical decisions
-- Plan integrations or extensions
-
-**Key sections:**
-
-- Tech stack (FastAPI, Flutter, PostgreSQL)
-- System architecture diagram
-- Data model
-- API design
+- System architecture overview
+- Technology stack decisions
+- Backend architecture (FastAPI)
+- Frontend architecture (Flutter)
+- Database design (PostgreSQL)
+- API design principles
 - Offline-first strategy
-- Security & privacy
+- Sync mechanism
+- Security architecture
+- Performance optimization
 - Deployment options
-- Future considerations
+- Future scalability considerations
 
-**Time to read:** 25-30 minutes (technical)
-
----
-
-#### [SECURITY.md](SECURITY.md)
-
-**What it is:** Security policy and vulnerability reporting  
-**Read this if you want to:**
-
-- Report a security vulnerability
-- Learn about security best practices
-- Understand current security status
-- See the security roadmap
-
-**Key sections:**
-
-- How to report vulnerabilities
-- Supported versions
-- Self-hosting security checklist
-- Security roadmap
-- Privacy & data protection
-
-**Time to read:** 10 minutes
+📊 **Diagrams:** System architecture, ERD, component hierarchies, deployment diagrams, sync flows
 
 ---
 
-#### [LICENSE](LICENSE)
-
-**What it is:** Legal terms (AGPL-3.0)  
-**Read this if you want to:**
-
-- Understand usage rights
-- Know redistribution terms
-- Learn why we chose AGPL-3.0
-
-**Time to read:** 5 minutes (or just know it's AGPL-3.0)
-
----
-
-## 🎯 Documentation by Role
-
-### I'm a User
-
-**Want to use Altair:**
-
-1. [README.md](README.md) - Overview
-2. [FEATURES.md](FEATURES.md) - What it can do
-3. [ROADMAP.md](ROADMAP.md) - What's coming
-
-### I'm a Contributor
-
-**Want to help build Altair:**
-
-1. [CONTRIBUTING.md](CONTRIBUTING.md) - How to contribute
-2. [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) - Community guidelines
-3. [ARCHITECTURE.md](ARCHITECTURE.md) - Technical details
-
-### I'm a Developer
-
-**Want to understand the code:**
-
-1. [ARCHITECTURE.md](ARCHITECTURE.md) - System design
-2. [CONTRIBUTING.md](CONTRIBUTING.md) - Development setup
-3. [SECURITY.md](SECURITY.md) - Security practices
-
-### I'm a Self-Hoster
-
-**Want to run your own instance:**
-
-1. [README.md](README.md) - Quick start
-2. [SECURITY.md](SECURITY.md) - Security checklist
-3. [ARCHITECTURE.md](ARCHITECTURE.md) - Deployment options
-
-### I'm a Security Researcher
-
-**Want to help improve security:**
-
-1. [SECURITY.md](SECURITY.md) - Reporting process
-2. [ARCHITECTURE.md](ARCHITECTURE.md) - Technical details
-
----
-
-## 📝 Documentation by Task
-
-### Understanding Altair
-
-| Task | Document | Section |
-|------|----------|---------|
-| What is Altair? | [README.md](README.md) | About Altair |
-| Why Altair for ADHD? | [FEATURES.md](FEATURES.md) | Design Philosophy |
-| What's the tech stack? | [ARCHITECTURE.md](ARCHITECTURE.md) | Tech Stack |
-| When will X feature be ready? | [ROADMAP.md](ROADMAP.md) | Phase sections |
-| Is it secure? | [SECURITY.md](SECURITY.md) | Current Status |
+## Contributor Documentation
 
 ### Getting Started
 
-| Task | Document | Section |
-|------|----------|---------|
-| Install Altair | [README.md](README.md) | Quick Start |
-| Set up development | [CONTRIBUTING.md](CONTRIBUTING.md) | Development Setup |
-| Self-host Altair | [ARCHITECTURE.md](ARCHITECTURE.md) | Deployment |
-| Configure security | [SECURITY.md](SECURITY.md) | Best Practices |
+**[CONTRIBUTING.md](CONTRIBUTING.md)**
 
-### Contributing
+- How to contribute (bugs, features, docs, code)
+- Development setup (local and Docker)
+- Development workflow
+- Style guidelines (Python/Dart)
+- Commit message format
+- Pull request process
+- ADHD-friendly contributing tips
+- Community guidelines
 
-| Task | Document | Section |
-|------|----------|---------|
-| Report a bug | [CONTRIBUTING.md](CONTRIBUTING.md) | Reporting Bugs |
-| Suggest a feature | [CONTRIBUTING.md](CONTRIBUTING.md) | Suggesting Features |
-| Submit code | [CONTRIBUTING.md](CONTRIBUTING.md) | Development Workflow |
-| Improve docs | [CONTRIBUTING.md](CONTRIBUTING.md) | Improving Documentation |
-| Report security issue | [SECURITY.md](SECURITY.md) | Reporting Vulnerabilities |
-
-### Technical Details
-
-| Task | Document | Section |
-|------|----------|---------|
-| Understand architecture | [ARCHITECTURE.md](ARCHITECTURE.md) | System Architecture |
-| See data model | [ARCHITECTURE.md](ARCHITECTURE.md) | Data Model |
-| Review API design | [ARCHITECTURE.md](ARCHITECTURE.md) | API Design |
-| Learn about offline-first | [ARCHITECTURE.md](ARCHITECTURE.md) | Offline-First Strategy |
+📊 **Diagrams:** Contribution workflow, development environment, PR process, Git workflow
 
 ---
 
-## 🔍 Find Information About
+**[QUICK_START.md](QUICK_START.md)**
 
-### Features
+- Prerequisites and tools
+- Backend setup (10 minutes)
+- Frontend setup
+- Docker setup (alternative)
+- Common issues and solutions
+- Next steps
 
-- **Task capture:** [FEATURES.md](FEATURES.md) → Instant Task Capture
-- **Time tracking:** [FEATURES.md](FEATURES.md) → Visual Time Awareness
-- **AI breakdown:** [FEATURES.md](FEATURES.md) → AI-Powered Task Breakdown
-- **Focus mode:** [FEATURES.md](FEATURES.md) → Focus Mode
-- **Gamification:** [FEATURES.md](FEATURES.md) → Gentle Gamification
-
-### Development
-
-- **Setup:** [CONTRIBUTING.md](CONTRIBUTING.md) → Development Setup
-- **Workflow:** [CONTRIBUTING.md](CONTRIBUTING.md) → Development Workflow
-- **Style guide:** [CONTRIBUTING.md](CONTRIBUTING.md) → Style Guidelines
-- **Testing:** [CONTRIBUTING.md](CONTRIBUTING.md) → Testing section
-
-### Community
-
-- **Code of conduct:** [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
-- **How to help:** [CONTRIBUTING.md](CONTRIBUTING.md) → How Can I Contribute
-- **ADHD support:** [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) → ADHD-Specific Guidelines
-
-### Technical
-
-- **Architecture:** [ARCHITECTURE.md](ARCHITECTURE.md) → System Architecture
-- **Database:** [ARCHITECTURE.md](ARCHITECTURE.md) → Data Model
-- **Security:** [SECURITY.md](SECURITY.md)
-- **API:** [ARCHITECTURE.md](ARCHITECTURE.md) → API Design
-
-### Project Info
-
-- **License:** [LICENSE](LICENSE)
-- **Roadmap:** [ROADMAP.md](ROADMAP.md)
-- **Philosophy:** [README.md](README.md) → Philosophy
-- **Status:** [ROADMAP.md](ROADMAP.md) → Current Status
+📊 **Diagrams:** Environment setup, Docker architecture
 
 ---
 
-## 📚 Additional Resources
+**[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)**
 
-### External Links
-
-- **Website:** [getaltair.app](https://getaltair.app)
-- **Repository:** [github.com/getaltair/altair](https://github.com/getaltair/altair)
-- **Discussions:** [GitHub Discussions](https://github.com/getaltair/altair/discussions)
-- **Issues:** [GitHub Issues](https://github.com/getaltair/altair/issues)
-
-### Technology Documentation
-
-- [FastAPI Documentation](https://fastapi.tiangolo.com/)
-- [Flutter Documentation](https://docs.flutter.dev/)
-- [PostgreSQL Documentation](https://www.postgresql.org/docs/)
-
-### ADHD Resources
-
-- [CHADD (Children and Adults with ADHD)](https://chadd.org)
-- [ADDitude Magazine](https://www.additudemag.com/)
-- [How to ADHD (YouTube)](https://www.youtube.com/howtoadhd)
+- Neurodiversity pledge
+- Standards of behavior
+- ADHD-specific accommodations
+- Enforcement guidelines
+- Reporting process
+- Scope and attribution
 
 ---
 
-## 🆘 Still Can't Find What You Need?
+### Technical Reference
 
-### Ask Questions
+**[API Documentation](docs/api/)** *(Coming Soon)*
 
-- **GitHub Discussions:** For general questions
-- **GitHub Issues:** For specific bugs or features
-- **Email:** <hello@getaltair.app>
+- REST API endpoints
+- Request/response formats
+- Authentication
+- Rate limiting
+- WebSocket API (future)
 
-### Common Questions
+**[Database Documentation](diagrams/02-database-schema-erd.md)**
 
-**Q: Where do I start?**  
-A: [README.md](README.md) → [FEATURES.md](FEATURES.md) → [CONTRIBUTING.md](CONTRIBUTING.md)
+- Complete ERD
+- Schema details
+- Relationships
+- Indexes
+- Migration strategy
 
-**Q: How do I contribute?**  
-A: [CONTRIBUTING.md](CONTRIBUTING.md) has everything you need
-
-**Q: When will X feature be ready?**  
-A: Check [ROADMAP.md](ROADMAP.md) for our timeline
-
-**Q: Is Altair secure?**  
-A: See [SECURITY.md](SECURITY.md) for current status and roadmap
-
-**Q: What license is Altair?**  
-A: AGPL-3.0 - see [LICENSE](LICENSE)
-
-**Q: How can I self-host Altair?**  
-A: See [ARCHITECTURE.md](ARCHITECTURE.md) → Deployment
+📊 **See:** Database diagrams for visual schema
 
 ---
 
-## 📄 Document Status
+## Visual Documentation
 
-| Document | Status | Last Updated |
-|----------|--------|--------------|
-| README.md | ✅ Current | October 2025 |
-| FEATURES.md | ✅ Current | October 2025 |
-| ROADMAP.md | ✅ Current | October 2025 |
-| CONTRIBUTING.md | ✅ Current | October 2025 |
-| CODE_OF_CONDUCT.md | ✅ Current | October 2025 |
-| ARCHITECTURE.md | ✅ Current | October 2025 |
-| SECURITY.md | ✅ Current | October 2025 |
-| LICENSE | ✅ Current | October 2025 |
+### Diagrams Overview
 
----
+**[diagrams/README.md](diagrams/README.md)**
 
-## 🔄 Keeping Documentation Updated
+- Complete navigation for all 80+ diagrams
+- Organized by type and use case
+- How to use diagrams
+- Export and embedding guide
 
-We strive to keep all documentation current. If you notice outdated information:
-
-1. Open an issue on GitHub
-2. Submit a PR with corrections
-3. Email <hello@getaltair.app>
+📊 **80+ diagrams across 6 categories**
 
 ---
 
-**Happy exploring!** 🚀
+### Diagram Categories
+
+**[System Architecture](diagrams/01-system-architecture.md)**
+
+- High-level architecture
+- Detailed components
+- API request flows
+- Sync architecture
+- Authentication flow
+- Service layer design
+
+---
+
+**[Database Schema & ERD](diagrams/02-database-schema-erd.md)**
+
+- Complete ERD
+- Schema with details
+- Relationship diagrams
+- Index strategy
+- Query patterns
+
+---
+
+**[User Flows](diagrams/03-user-flows.md)**
+
+- Quick task capture
+- AI task breakdown
+- Time tracking session
+- Focus mode
+- Documentation capture
+- Onboarding flow
+- Error recovery
+
+---
+
+**[Roadmap & Planning](diagrams/04-roadmap-planning.md)**
+
+- Development timeline (Gantt)
+- Feature priority matrix
+- ADHD features mindmap
+- Sprint planning
+- Dependency graphs
+- Risk mitigation
+
+---
+
+**[Component Architecture](diagrams/05-component-architecture.md)**
+
+- Backend component hierarchy
+- Flutter app architecture
+- State management (Riverpod)
+- UI component hierarchy
+- Service layer
+- Performance optimization
+- Future microservices
+
+---
+
+**[Deployment & Operations](diagrams/06-deployment-operations.md)**
+
+- Development environment
+- Docker deployment
+- Self-hosted setup
+- Managed hosting (cloud)
+- Security layers
+- Testing strategy
+- Contribution workflow
+- PR process
+- Bug reporting
+- Incident response
+
+---
+
+## Policy Documentation
+
+**[SECURITY.md](SECURITY.md)**
+
+- Reporting vulnerabilities
+- Security best practices
+- Supported versions
+- Security roadmap
+- Privacy commitments
+- Contact information
+
+---
+
+**[LICENSE](LICENSE)**
+
+- AGPL-3.0 license details
+- Why AGPL-3.0?
+- Usage permissions
+- Modification requirements
+- Distribution terms
+
+---
+
+## User Documentation
+
+*(Coming Soon - after MVP)*
+
+**User Guide**
+
+- Getting started
+- Creating tasks and projects
+- Time tracking
+- Focus mode usage
+- Customization options
+- Keyboard shortcuts
+- Mobile app guide
+
+**FAQ**
+
+- Common questions
+- Troubleshooting
+- ADHD-specific tips
+- Privacy and security
+- Self-hosting guide
+
+---
+
+## Project Meta
+
+**[UPDATE_SUMMARY.md](UPDATE_SUMMARY.md)**
+
+- Latest documentation updates
+- Diagram integration details
+- What changed and why
+- Benefits of updates
+
+---
+
+**[DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md)** *(This file)*
+
+- Complete documentation navigation
+- Organized by audience and purpose
+- Quick reference guide
+
+---
+
+## Documentation by Audience
+
+### For Users
+
+1. [README](README.md) - Start here!
+2. [FEATURES](FEATURES.md) - What can Altair do?
+3. User Guide (coming soon)
+4. FAQ (coming soon)
+
+### For Contributors
+
+1. [CONTRIBUTING](CONTRIBUTING.md) - How to help
+2. [CODE_OF_CONDUCT](CODE_OF_CONDUCT.md) - Community guidelines
+3. [QUICK_START](QUICK_START.md) - Setup in 10 minutes
+4. [Visual Diagrams](diagrams/README.md) - Understand the architecture
+5. [ARCHITECTURE](ARCHITECTURE.md) - Technical deep dive
+
+### For Developers
+
+1. [ARCHITECTURE](ARCHITECTURE.md) - System design
+2. [Database Schema](diagrams/02-database-schema-erd.md) - Data model
+3. [API Documentation](docs/api/) (coming soon)
+4. [Component Diagrams](diagrams/05-component-architecture.md) - Code structure
+5. [CONTRIBUTING](CONTRIBUTING.md) - Development workflow
+
+### For Stakeholders
+
+1. [README](README.md) - Project overview
+2. [FEATURES](FEATURES.md) - What we're building
+3. [ROADMAP](ROADMAP.md) - Timeline and priorities
+4. [Timeline Diagram](diagrams/04-roadmap-planning.md) - Visual roadmap
+
+### For Security Researchers
+
+1. [SECURITY.md](SECURITY.md) - Vulnerability reporting
+2. [Security Diagrams](diagrams/06-deployment-operations.md#security-layers) - Security architecture
+3. [ARCHITECTURE](ARCHITECTURE.md) - Technical details
+
+---
+
+## Documentation Standards
+
+### Writing Guidelines
+
+**For all documentation:**
+
+- ✅ Short sentences (15-20 words max)
+- ✅ Active voice
+- ✅ Clear headings and structure
+- ✅ Bullet points over paragraphs
+- ✅ Examples for complex concepts
+- ✅ Visual diagrams where helpful
+- ✅ Link to related docs
+- ✅ Keep it scannable
+
+**ADHD-Friendly:**
+
+- ✅ TL;DR at top of long docs
+- ✅ Clear visual hierarchy
+- ✅ Frequent headings
+- ✅ No walls of text
+- ✅ Emojis for visual anchors
+- ✅ Consistent formatting
+
+### Maintenance
+
+**Keeping docs up to date:**
+
+- Review quarterly
+- Update with code changes
+- Keep diagrams in sync
+- Fix broken links
+- Add new features to FEATURES.md
+- Update ROADMAP.md progress
+
+**Contributing to docs:**
+
+- Follow CONTRIBUTING.md guidelines
+- Test all links
+- Run spell check
+- Preview before committing
+- Request review for major changes
+
+---
+
+## Quick Reference
+
+| I want to... | Read this... |
+|--------------|--------------|
+| Understand Altair | [README](README.md) |
+| See what it can do | [FEATURES](FEATURES.md) |
+| Know when features ship | [ROADMAP](ROADMAP.md) |
+| Set up development | [QUICK_START](QUICK_START.md) |
+| Understand architecture | [ARCHITECTURE](ARCHITECTURE.md) |
+| Contribute code | [CONTRIBUTING](CONTRIBUTING.md) |
+| Report security issue | [SECURITY.md](SECURITY.md) |
+| See visual diagrams | [diagrams/README.md](diagrams/README.md) |
+| View database schema | [Database ERD](diagrams/02-database-schema-erd.md) |
+| Understand user flows | [User Flows](diagrams/03-user-flows.md) |
+| See deployment options | [Deployment Diagrams](diagrams/06-deployment-operations.md) |
+
+---
+
+## External Resources
+
+**Website:** [getaltair.app](https://getaltair.app)  
+**GitHub:** [github.com/getaltair/altair](https://github.com/getaltair/altair)  
+**Discord:** [discord.gg/altair](https://discord.gg/altair)  
+**Twitter:** [@getaltair](https://twitter.com/getaltair)  
+**Email:** <hello@getaltair.app>
+
+---
+
+## Questions?
+
+**Can't find what you need?**
+
+1. Search this index
+2. Check the [diagrams](diagrams/README.md)
+3. Browse [GitHub issues](https://github.com/getaltair/altair/issues)
+4. Ask on [Discord](https://discord.gg/altair)
+5. Email us: <hello@getaltair.app>
 
 ---
 
 **Last Updated:** October 2025  
-**Questions?** <hello@getaltair.app>
+**Maintained by:** Altair Development Team  
+**Status:** Living Document
+
+---
+
+*Where focus takes flight* ✨

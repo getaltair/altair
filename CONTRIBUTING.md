@@ -1,324 +1,265 @@
 # Contributing to Altair
 
-**Thank you for your interest in contributing to Altair!**
+**Welcome!** We're excited you want to help build ADHD-friendly project management tools.
 
-We're building an ADHD-friendly project management platform by and for the neurodivergent community. Whether you have ADHD or simply care about inclusive tools, your contributions are welcome.
+📊 **Visual References:**
+- [Contribution Workflow](diagrams/06-deployment-operations.md#contribution-workflow)
+- [Development Environment Setup](diagrams/06-deployment-operations.md#development-environment)
+- [Component Architecture](diagrams/05-component-architecture.md)
+- [Testing Strategy](diagrams/06-deployment-operations.md#testing-strategy)
 
 ---
 
 ## Table of Contents
 
-- [Code of Conduct](#code-of-conduct)
-- [How Can I Contribute?](#how-can-i-contribute)
-- [Getting Started](#getting-started)
-- [Development Setup](#development-setup)
-- [Development Workflow](#development-workflow)
-- [Style Guidelines](#style-guidelines)
-- [Commit Guidelines](#commit-guidelines)
-- [Pull Request Process](#pull-request-process)
-- [Community](#community)
+1. [Code of Conduct](#code-of-conduct)
+2. [How Can I Contribute?](#how-can-i-contribute)
+3. [Development Setup](#development-setup)
+4. [Development Workflow](#development-workflow)
+5. [Style Guidelines](#style-guidelines)
+6. [Commit Messages](#commit-messages)
+7. [Pull Request Process](#pull-request-process)
+8. [ADHD-Friendly Contributing Tips](#adhd-friendly-contributing-tips)
 
 ---
 
 ## Code of Conduct
 
-### Our Pledge
+This project follows our [Code of Conduct](CODE_OF_CONDUCT.md). By participating, you agree to uphold this code.
 
-We are committed to providing a welcoming, inclusive, and harassment-free experience for everyone, regardless of:
-
-- Neurodiversity status
-- Gender identity and expression
-- Sexual orientation
-- Disability
-- Physical appearance
-- Age
-- Race
-- Ethnicity
-- Religion
-- Technology choices
-
-### Our Standards
-
-**Positive behaviors:**
-
-- Using welcoming and inclusive language
-- Being respectful of differing viewpoints and experiences
-- Gracefully accepting constructive criticism
-- Focusing on what's best for the community
-- Showing empathy towards community members
-- Understanding that ADHD brains work differently—be patient
-
-**Unacceptable behaviors:**
-
-- Harassment, trolling, or insulting/derogatory comments
-- Personal or political attacks
-- Publishing others' private information
-- Ableist language or assumptions
-- Any conduct that could reasonably be considered inappropriate
-
-### Enforcement
-
-Violations of the Code of Conduct can be reported to <hello@getaltair.app>. All complaints will be reviewed and investigated promptly and fairly.
+**TL;DR:**
+- Be kind and respectful
+- Use neurodiversity-affirming language
+- Assume good intent
+- Help create a supportive environment
 
 ---
 
 ## How Can I Contribute?
 
-### 🐛 Reporting Bugs
+There are many ways to help, regardless of your technical skills!
 
-**Before submitting a bug report:**
+### 🐛 Report Bugs
 
-1. Check the [existing issues](https://github.com/getaltair/altair/issues) to avoid duplicates
-2. Try to reproduce the issue in the latest version
-3. Gather relevant information (browser, OS, steps to reproduce)
+Found something broken? Help us fix it!
 
-**When submitting a bug report, include:**
+**Before submitting:**
+1. Check [existing issues](https://github.com/getaltair/altair/issues)
+2. Make sure you're on the latest version
+3. Try to reproduce the bug
 
-- Clear, descriptive title
-- Detailed description of the issue
-- Steps to reproduce
-- Expected vs. actual behavior
-- Screenshots (if applicable)
-- Environment details (OS, browser, version)
-- Relevant logs or error messages
+**When submitting:**
+- Use the bug report template
+- Describe what you expected vs what happened
+- Include steps to reproduce
+- Add screenshots if applicable
+- Mention your OS/browser/app version
 
-**Template:**
+**[View Bug Report Flow](diagrams/06-deployment-operations.md#bug-reporting-process)**
 
-```markdown
-### Description
-[Clear description of the bug]
+### 💡 Suggest Features
 
-### Steps to Reproduce
-1. Go to '...'
-2. Click on '...'
-3. See error
+Have an idea? We'd love to hear it!
 
-### Expected Behavior
-[What should happen]
+**Before suggesting:**
+1. Check [existing feature requests](https://github.com/getaltair/altair/discussions)
+2. Consider if it's ADHD-specific or general
+3. Think about implementation complexity
 
-### Actual Behavior
-[What actually happens]
+**When suggesting:**
+- Explain the ADHD pain point it solves
+- Describe your proposed solution
+- Consider alternative approaches
+- Add mockups if you can!
 
-### Environment
-- OS: [e.g., macOS 13.0]
-- Browser: [e.g., Chrome 120]
-- Altair Version: [e.g., 0.1.0]
+**Prioritization Criteria:**
+- ADHD impact (high priority)
+- Dogfooding value (can we use it now?)
+- Effort vs value
+- Fits project philosophy
 
-### Additional Context
-[Screenshots, logs, etc.]
-```
+**[View Feature Priority Matrix](diagrams/04-roadmap-planning.md#feature-priority-matrix)**
 
-### 💡 Suggesting Features
+### 📝 Improve Documentation
 
-We love feature ideas, especially those informed by ADHD experiences!
+Documentation is crucial for ADHD users!
 
-**Before suggesting a feature:**
+**Ways to help:**
+- Fix typos and grammar
+- Clarify confusing sections
+- Add examples and screenshots
+- Improve ADHD-friendliness (shorter sentences, clearer structure)
+- Translate to other languages (future)
 
-1. Check [existing feature requests](https://github.com/getaltair/altair/labels/enhancement)
-2. Consider whether it aligns with Altair's [core philosophy](README.md#philosophy)
-3. Think about how it specifically helps ADHD users
+**Documentation Guidelines:**
+- Short sentences (15-20 words max)
+- Active voice
+- Bullet points over paragraphs
+- Examples for complex concepts
+- Visual diagrams where helpful
 
-**When suggesting a feature, include:**
+**[View Documentation Structure](diagrams/README.md)**
 
-- Clear, descriptive title
-- Problem it solves (especially ADHD-related challenges)
-- Proposed solution
-- Alternative solutions considered
-- How it fits into [roadmap](ROADMAP.md)
+### 💻 Write Code
 
-**Template:**
+Ready to code? Awesome!
 
-```markdown
-### Problem Statement
-[What challenge does this address? How does it affect ADHD users?]
+**Good First Issues:**
+Look for issues labeled [`good first issue`](https://github.com/getaltair/altair/labels/good%20first%20issue)
 
-### Proposed Solution
-[Your idea for solving the problem]
-
-### Alternatives Considered
-[Other approaches you've thought about]
-
-### Additional Context
-[Screenshots, mockups, references]
-```
-
-### 📖 Improving Documentation
-
-Documentation improvements are incredibly valuable:
-
-- Fix typos or unclear explanations
-- Add examples or tutorials
-- Improve setup instructions
-- Translate documentation
-- Add ADHD-friendly tips or warnings
-
-### 💻 Contributing Code
-
-See [Development Setup](#development-setup) and [Development Workflow](#development-workflow) below.
-
-### 🧪 Testing
-
-- Test new features and report bugs
-- Write automated tests
-- Improve test coverage
-- Test accessibility features
-
-### 🎨 Design Contributions
-
+**Areas needing help:**
+- Backend (Python/FastAPI)
+- Frontend (Flutter/Dart)
 - UI/UX improvements
-- Accessibility enhancements
-- Icon or illustration contributions
-- Color scheme suggestions (ADHD-friendly)
+- Testing
+- Performance optimization
 
----
+**[View Component Architecture](diagrams/05-component-architecture.md)**
 
-## Getting Started
+### 🎨 Design & UX
 
-### Prerequisites
+Design skills? Perfect!
 
-**Required:**
+**We need help with:**
+- UI mockups and prototypes
+- Icon design
+- ADHD-friendly UX patterns
+- Accessibility improvements
+- Marketing materials
 
-- Git
-- Docker & Docker Compose (for easiest setup)
-- Text editor or IDE (VS Code recommended)
-
-**Alternative (without Docker):**
-
-- Python 3.11+
-- Node.js 18+ (for Flutter web)
-- Flutter SDK 3.16+
-- PostgreSQL 15+
-
-### Fork the Repository
-
-1. Fork the [Altair repository](https://github.com/getaltair/altair)
-2. Clone your fork:
-
-   ```bash
-   git clone https://github.com/YOUR_USERNAME/altair.git
-   cd altair
-   ```
-
-3. Add upstream remote:
-
-   ```bash
-   git remote add upstream https://github.com/getaltair/altair.git
-   ```
+**Design Principles:**
+- Minimal cognitive load
+- Instant feedback
+- Forgiving interface
+- Multiple pathways to goals
+- Sensory considerations
 
 ---
 
 ## Development Setup
 
-### Option 1: Docker (Recommended)
+### Prerequisites
 
+- **Python:** 3.11 or higher
+- **Flutter:** 3.16 or higher
+- **PostgreSQL:** 15 or higher
+- **Git:** Latest version
+- **Docker:** (Optional but recommended)
+
+**[View Detailed Setup Diagram](diagrams/06-deployment-operations.md#development-environment)**
+
+### Quick Start (10 minutes)
+
+**1. Clone the repository:**
 ```bash
-# Clone the repository
-git clone https://github.com/YOUR_USERNAME/altair.git
+git clone https://github.com/getaltair/altair.git
 cd altair
-
-# Copy environment variables
-cp .env.example .env
-
-# Start all services
-docker-compose up -d
-
-# View logs
-docker-compose logs -f
-
-# Backend will be at: http://localhost:8000
-# Frontend will be at: http://localhost:3000
-# API docs at: http://localhost:8000/docs
 ```
 
-### Option 2: Manual Setup
-
-**Backend (FastAPI):**
-
+**2. Backend setup:**
 ```bash
 cd backend
 
 # Create virtual environment
 python -m venv venv
+
+# Activate it
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 
 # Install dependencies
 pip install -r requirements.txt
+pip install -r requirements-dev.txt  # Testing tools
 
 # Set up database
-# (Ensure PostgreSQL is running)
-cp .env.example .env
-# Edit .env with your database credentials
+createdb altair  # Or use Docker Compose
 
 # Run migrations
 alembic upgrade head
+
+# Create .env file
+cp .env.example .env
+# Edit .env with your settings
 
 # Start development server
-uvicorn app.main:app --reload --port 8000
+python main.py
 ```
 
-**Frontend (Flutter):**
+Backend runs at: http://localhost:8000  
+API docs at: http://localhost:8000/docs
 
+**3. Frontend setup:**
 ```bash
-cd frontend
+cd ../frontend
 
-# Get dependencies
+# Install dependencies
 flutter pub get
 
-# Run web app
+# Run on web
 flutter run -d chrome
 
-# Or build for web
-flutter build web
+# Or run on mobile emulator
+flutter run  # Choose your device
 ```
 
-### Database Setup
+**[View Complete Setup Guide](QUICK_START.md)**
+
+### Docker Setup (Alternative)
+
+**Easier for some, but slower iteration:**
 
 ```bash
-# Start PostgreSQL (if not using Docker)
-# macOS with Homebrew:
-brew services start postgresql@15
+# Start all services
+docker-compose up -d
 
-# Create database
-createdb altair_dev
+# Backend at: http://localhost:8000
+# Frontend: Build manually (see frontend/README.md)
 
-# Run migrations
-cd backend
-alembic upgrade head
+# View logs
+docker-compose logs -f backend
+
+# Stop all services
+docker-compose down
 ```
+
+**[View Docker Architecture](diagrams/06-deployment-operations.md#docker-deployment)**
 
 ---
 
 ## Development Workflow
 
-### 1. Pick an Issue
+### 1. Create a Branch
 
-- Check [good first issue](https://github.com/getaltair/altair/labels/good%20first%20issue) label
-- Comment on the issue to claim it
-- Ask questions if anything is unclear
-
-### 2. Create a Branch
+**[View Git Workflow Diagram](diagrams/06-deployment-operations.md#git-workflow)**
 
 ```bash
-# Update your fork
+# Update main
 git checkout main
-git pull upstream main
+git pull origin main
 
 # Create feature branch
-git checkout -b feature/your-feature-name
-# or
-git checkout -b fix/bug-description
+git checkout -b feature/quick-capture-hotkey
+
+# Or for bug fix
+git checkout -b fix/sync-conflict-resolution
 ```
 
-### 3. Make Changes
+**Branch naming:**
+- `feature/` - New features
+- `fix/` - Bug fixes
+- `docs/` - Documentation
+- `refactor/` - Code refactoring
+- `test/` - Adding tests
+- `chore/` - Maintenance tasks
 
-- Write clean, readable code
-- Follow [style guidelines](#style-guidelines)
-- Add tests for new functionality
-- Update documentation as needed
-- Keep commits focused and atomic
+### 2. Make Changes
 
-### 4. Test Your Changes
+**ADHD-Friendly Tips:**
+- 🎯 One feature per branch
+- ⏱️ Commit frequently (don't lose work!)
+- 🧪 Test as you go
+- 📝 Update docs alongside code
 
+**Testing:**
 ```bash
 # Backend tests
 cd backend
@@ -328,27 +269,37 @@ pytest
 cd frontend
 flutter test
 
-# Run linters
-cd backend
-ruff check .
-black --check .
-
-cd frontend
-flutter analyze
+# Run specific test
+pytest tests/test_tasks.py::test_quick_capture
 ```
 
-### 5. Commit Your Changes
+**[View Testing Strategy](diagrams/06-deployment-operations.md#testing-strategy)**
 
-See [Commit Guidelines](#commit-guidelines) below.
-
-### 6. Push and Create Pull Request
+### 3. Commit Your Changes
 
 ```bash
-# Push to your fork
-git push origin feature/your-feature-name
+# Stage changes
+git add .
 
-# Create PR via GitHub UI
+# Commit with good message (see below)
+git commit -m "feat: add keyboard shortcut for quick capture"
+
+# Push to your fork
+git push origin feature/quick-capture-hotkey
 ```
+
+**[See Commit Message Guidelines](#commit-messages)**
+
+### 4. Create Pull Request
+
+1. Go to GitHub
+2. Click "New Pull Request"
+3. Fill out PR template
+4. Request review
+5. Respond to feedback
+6. Celebrate when merged! 🎉
+
+**[View PR Process Diagram](diagrams/06-deployment-operations.md#pull-request-process)**
 
 ---
 
@@ -356,109 +307,121 @@ git push origin feature/your-feature-name
 
 ### Python (Backend)
 
-We follow PEP 8 with some modifications:
-
-- **Line length:** 88 characters (Black default)
-- **Formatter:** Black
+**We use:**
+- **Formatter:** Black (line length: 88)
 - **Linter:** Ruff
-- **Type hints:** Required for all functions
-- **Docstrings:** Required for public functions
+- **Type Hints:** Required for all functions
+- **Docstrings:** Google style
 
 **Example:**
-
 ```python
-from typing import Optional
-from pydantic import BaseModel
+from typing import List, Optional
+from datetime import datetime
 
-
-class Task(BaseModel):
-    """Represents a task in the system.
-    
-    Attributes:
-        id: Unique identifier
-        title: Task title
-        description: Detailed description
+async def get_user_tasks(
+    user_id: str,
+    project_id: Optional[str] = None,
+    status: Optional[str] = None
+) -> List[Task]:
     """
+    Retrieve tasks for a specific user.
     
-    id: str
-    title: str
-    description: Optional[str] = None
+    Args:
+        user_id: UUID of the user
+        project_id: Optional project filter
+        status: Optional status filter (todo/in_progress/done)
     
-    def mark_complete(self) -> None:
-        """Mark this task as complete."""
-        self.status = "completed"
-        self.completed_at = datetime.now()
+    Returns:
+        List of Task objects
+        
+    Raises:
+        UserNotFound: If user_id doesn't exist
+    """
+    # Implementation here
+    pass
 ```
 
 **Run formatters:**
-
 ```bash
 # Format code
 black .
 
-# Check with linter
+# Check linting
 ruff check .
+
+# Type checking
+mypy .
 ```
 
 ### Dart (Frontend)
 
-We follow [Effective Dart](https://dart.dev/guides/language/effective-dart):
-
+**We use:**
 - **Formatter:** `dart format`
-- **Analyzer:** `flutter analyze`
-- **Naming:** camelCase for variables, PascalCase for classes
-- **Comments:** Document public APIs
+- **Linter:** `flutter analyze`
+- **Style:** Effective Dart
 
 **Example:**
-
 ```dart
-/// Represents a task in the application.
-class Task {
-  /// Creates a new task.
-  Task({
-    required this.id,
-    required this.title,
-    this.description,
-  });
-
-  /// Unique identifier for this task.
-  final String id;
+/// Fetches tasks for the current user.
+///
+/// Returns a [List] of [Task] objects, filtered by [projectId]
+/// if provided. Throws [NetworkException] if the request fails.
+Future<List<Task>> getUserTasks({
+  String? projectId,
+  TaskStatus? status,
+}) async {
+  final queryParams = <String, String>{};
   
-  /// The task's title.
-  final String title;
-  
-  /// Optional detailed description.
-  final String? description;
-  
-  /// Marks this task as complete.
-  void markComplete() {
-    status = TaskStatus.completed;
-    completedAt = DateTime.now();
+  if (projectId != null) {
+    queryParams['project_id'] = projectId;
   }
+  
+  if (status != null) {
+    queryParams['status'] = status.value;
+  }
+  
+  final response = await _dio.get(
+    '/api/v1/tasks',
+    queryParameters: queryParams,
+  );
+  
+  return (response.data as List)
+      .map((json) => Task.fromJson(json))
+      .toList();
 }
 ```
 
 **Run formatters:**
-
 ```bash
 # Format code
 dart format .
 
 # Analyze
 flutter analyze
+
+# Fix auto-fixable issues
+dart fix --apply
 ```
 
 ### General Guidelines
 
-- **Comments:** Explain *why*, not *what*
-- **Variable names:** Descriptive and clear
-- **Functions:** Do one thing well
-- **File length:** Keep files under 500 lines when possible
-- **ADHD-friendly:** Clear structure, good spacing, descriptive names
+**Code Quality:**
+- ✅ Self-documenting code (clear variable names)
+- ✅ Single responsibility principle
+- ✅ DRY (Don't Repeat Yourself)
+- ✅ KISS (Keep It Simple, Stupid)
+- ✅ Comments explain *why*, not *what*
+
+**ADHD-Friendly Code:**
+- ✅ Small functions (<50 lines)
+- ✅ Clear naming (no abbreviations)
+- ✅ Obvious control flow
+- ✅ Fail fast with clear errors
+- ✅ Helpful error messages
 
 ---
 
-## Commit Guidelines
+## Commit Messages
 
 We follow [Conventional Commits](https://www.conventionalcommits.org/):
 
@@ -472,189 +435,304 @@ We follow [Conventional Commits](https://www.conventionalcommits.org/):
 <footer>
 ```
 
-### Types
+### Type
 
-- **feat:** New feature
-- **fix:** Bug fix
-- **docs:** Documentation changes
-- **style:** Code style changes (formatting, no logic change)
-- **refactor:** Code refactoring
-- **test:** Adding or updating tests
-- **chore:** Maintenance tasks (dependencies, build, etc.)
-- **perf:** Performance improvements
+- `feat:` New feature
+- `fix:` Bug fix
+- `docs:` Documentation only
+- `style:` Formatting (no code change)
+- `refactor:` Code restructuring
+- `test:` Adding tests
+- `chore:` Maintenance tasks
+- `perf:` Performance improvement
 
 ### Examples
 
-```bash
-# Feature
-feat(tasks): add quick capture input
+**Good:**
+```
+feat(tasks): add keyboard shortcut for quick capture
 
-# Bug fix
-fix(auth): resolve token refresh issue
-
-# Documentation
-docs(readme): update installation instructions
-
-# Multiple paragraphs
-feat(tasks): implement AI task breakdown
-
-Integrates with local LLM to decompose complex tasks
-into smaller, manageable subtasks. Uses Ollama for
-self-hosted inference.
+Implements Ctrl+N/Cmd+N to open quick capture dialog from anywhere
+in the app. Includes tests and documentation.
 
 Closes #42
 ```
 
-### Best Practices
+**Good:**
+```
+fix(sync): resolve conflict resolution bug
 
-- Use imperative mood ("add" not "added")
-- Keep subject line under 72 characters
-- Capitalize first letter of subject
-- No period at end of subject
-- Reference issues in footer
+Fixed issue where concurrent edits to the same task would cause
+data loss. Now properly implements last-write-wins strategy.
+
+Fixes #123
+```
+
+**Good:**
+```
+docs(readme): update setup instructions for M1 Macs
+
+Added specific steps for installing PostgreSQL on Apple Silicon.
+Clarified Python version requirements.
+```
+
+**Bad:**
+```
+fixed stuff
+```
+
+**Bad:**
+```
+WIP
+```
+
+**Bad:**
+```
+Updated files
+```
 
 ---
 
 ## Pull Request Process
 
+**[View Detailed PR Flow](diagrams/06-deployment-operations.md#pull-request-process)**
+
 ### Before Submitting
 
 - [ ] Code follows style guidelines
-- [ ] All tests pass
-- [ ] New tests added for new features
-- [ ] Documentation updated
-- [ ] Commits follow commit guidelines
-- [ ] Branch is up to date with main
+- [ ] Tests pass locally
+- [ ] Documentation updated (if needed)
+- [ ] Self-review completed
+- [ ] No unintended changes
+- [ ] Commit messages are clear
 
 ### PR Template
 
 ```markdown
 ## Description
-[Clear description of what this PR does]
-
-## Related Issues
-Closes #[issue number]
+Brief description of changes
 
 ## Type of Change
 - [ ] Bug fix
 - [ ] New feature
+- [ ] Breaking change
 - [ ] Documentation update
-- [ ] Refactoring
-- [ ] Performance improvement
+
+## ADHD Impact
+How does this help ADHD users specifically?
 
 ## Testing
-[How you tested these changes]
+How has this been tested?
 
-## Screenshots (if applicable)
-[Add screenshots]
+## Screenshots
+If applicable
 
 ## Checklist
 - [ ] Code follows style guidelines
-- [ ] Tests pass
+- [ ] Self-reviewed
+- [ ] Comments added for complex code
 - [ ] Documentation updated
-- [ ] No breaking changes (or documented)
+- [ ] Tests added/updated
+- [ ] No new warnings
 ```
 
 ### Review Process
 
-1. **Automated Checks:** CI must pass
-2. **Code Review:** At least one maintainer approval
-3. **Testing:** Reviewer verifies functionality
-4. **Feedback:** Address comments and suggestions
-5. **Merge:** Squash and merge (usually)
+1. **Automated Checks**
+   - Linting
+   - Tests
+   - Build verification
 
-### After Merge
+2. **Code Review**
+   - At least 1 maintainer approval required
+   - Reviewers provide constructive feedback
+   - You respond to comments and make changes
 
-- Delete your feature branch
-- Update your fork's main branch
-- Close related issues (if not auto-closed)
+3. **Merge**
+   - Maintainer merges when approved
+   - Branch automatically deleted
+   - Changes deployed to development
+
+**Timeline:**
+- Initial review: 2-3 days
+- Follow-up reviews: 1-2 days
+- Emergency fixes: Same day
+
+---
+
+## ADHD-Friendly Contributing Tips
+
+### For Contributors with ADHD
+
+**Working on a contribution:**
+
+**🎯 Start Small**
+- Don't try to fix everything at once
+- Pick ONE issue
+- Break it into tiny steps
+- Celebrate each commit!
+
+**⏱️ Time-box Your Work**
+- Set a timer (25 minutes)
+- Focus on one thing
+- Take breaks between sessions
+- Don't hyperfocus past meals!
+
+**📝 Track Your Progress**
+- Keep notes of what you're doing
+- Write down thoughts immediately
+- Use Altair to manage your contribution! (dogfooding)
+- Document blockers
+
+**🤝 Ask for Help**
+- Stuck? Ask on Discord
+- No question is too basic
+- We're all learning
+- Maintainers want to help!
+
+**💾 Commit Often**
+- Don't wait for "perfect"
+- Commit small changes frequently
+- Push regularly (don't lose work!)
+- Amend commits if needed
+
+**✅ Use Checklists**
+```markdown
+## My contribution checklist
+- [x] Found issue to work on
+- [x] Set up development environment
+- [x] Created feature branch
+- [ ] Written code
+- [ ] Added tests
+- [ ] Updated docs
+- [ ] Created PR
+```
+
+### For Reviewers
+
+**When reviewing ADHD contributors:**
+
+**✅ DO:**
+- Be encouraging and specific
+- Celebrate effort and progress
+- Break feedback into clear action items
+- Respond promptly (reduce anxiety)
+- Offer pair programming for complex issues
+
+**❌ DON'T:**
+- Use vague feedback ("needs work")
+- Pile on lots of nitpicks at once
+- Make assumptions about skill level
+- Ghost contributors
+
+**Example Feedback:**
+
+**Good:**
+```
+Great work on the quick capture feature! A few suggestions:
+
+1. Line 45: Move this validation to a helper function
+   - Example: `validate_task_title(title)`
+   - Makes it reusable and testable
+
+2. Tests needed:
+   - Test with empty title
+   - Test with very long title
+   - Test with special characters
+
+3. Documentation:
+   - Add docstring to main function
+   - Update README with new shortcut
+
+Let me know if you need help with any of these!
+```
+
+**Bad:**
+```
+Needs refactoring. Too much logic in the controller.
+Also needs tests and docs. Fix the linting errors too.
+```
 
 ---
 
 ## Community
 
-### Where to Ask Questions
+### Where to Connect
 
-- **GitHub Discussions:** General questions, ideas
-- **GitHub Issues:** Bug reports, feature requests
-- **Discord:** Real-time chat (coming soon)
+- **Discord:** [discord.gg/altair](https://discord.gg/altair) - Daily chat
+- **GitHub Discussions:** Feature ideas and questions
+- **Twitter:** [@getaltair](https://twitter.com/getaltair) - Updates
+- **Email:** hello@getaltair.app - Direct contact
 
-### Getting Help
+### Development Meetings
 
-Don't hesitate to ask for help! We're all learning, and questions are always welcome:
+**Weekly Sync** (Optional)
+- **When:** Fridays, 3 PM UTC
+- **Where:** Discord voice channel
+- **What:** Progress updates, blockers, celebrations
+- **Recording:** Yes (for async participation)
 
-- Comment on the issue you're working on
-- Tag maintainers in discussions
-- Join community calls (schedule TBD)
-
-### ADHD-Friendly Contribution Tips
-
-We understand contributing to open source can be overwhelming, especially with ADHD. Here are some tips:
-
-**For getting started:**
-
-- Pick small, well-defined issues first
-- "Good first issue" label is your friend
-- Ask for clarification—no question is too small
-- Take breaks! Work in focused bursts
-
-**For staying on track:**
-
-- Set timer for focused work sessions
-- Use the project's own task management (once available!)
-- Don't try to fix everything at once
-- Celebrate small wins
-
-**If you get stuck:**
-
-- Ask for help early
-- It's okay to hand off an issue
-- No judgment for incomplete work
-- Your attempt helps others learn
-
-### Recognition
-
-We value all contributions! Contributors will be:
-
-- Listed in CONTRIBUTORS.md
-- Mentioned in release notes
-- Celebrated in community channels
-- Given credit in relevant documentation
+**Monthly Community Call**
+- **When:** Last Friday of month, 3 PM UTC
+- **Where:** Discord voice channel
+- **What:** Roadmap review, demos, Q&A
+- **Everyone welcome!**
 
 ---
 
-## Development Resources
+## Recognition
 
-### Helpful Documentation
+We value all contributions! Contributors are recognized:
 
-- [FastAPI Documentation](https://fastapi.tiangolo.com/)
-- [Flutter Documentation](https://docs.flutter.dev/)
-- [PostgreSQL Documentation](https://www.postgresql.org/docs/)
-- [Riverpod Documentation](https://riverpod.dev/)
+- Listed in CONTRIBUTORS.md
+- Mentioned in release notes
+- Invited to contributor Discord channel
+- Profile badge (future)
+- Our endless gratitude! 💙
 
-### Project-Specific Docs
-
-- [Architecture Overview](ARCHITECTURE.md)
-- [Feature Details](FEATURES.md)
-- [Project Roadmap](ROADMAP.md)
-
-### Learning Resources
-
-- [ADHD-Friendly Design Patterns](FEATURES.md#design-principles)
-- [API Documentation](http://localhost:8000/docs) (when running locally)
+**Significant contributors** may be invited to join the core team.
 
 ---
 
 ## Questions?
 
-If you have any questions about contributing, please:
+**Before you ask:**
+1. Check [documentation](DOCUMENTATION_INDEX.md)
+2. Search [existing issues](https://github.com/getaltair/altair/issues)
+3. Look through [Discord history](https://discord.gg/altair)
 
-- Check [GitHub Discussions](https://github.com/getaltair/altair/discussions)
-- Open an issue with the "question" label
-- Email: <hello@getaltair.app>
-
-**Thank you for contributing to Altair!** Your work helps make project management accessible to the ADHD community. 💙
+**Then ask away!**
+- **Quick questions:** Discord #development channel
+- **Complex topics:** GitHub Discussions
+- **Private matters:** Email dev@getaltair.app
 
 ---
 
-**Last Updated:** October 2025
+## License
+
+By contributing to Altair, you agree that your contributions will be licensed under the same **AGPL-3.0** license that covers the project.
+
+This ensures Altair remains open source forever and all improvements benefit the entire community.
+
+---
+
+**Thank you for contributing to Altair!** 🎉
+
+Every bug report, feature suggestion, doc improvement, and line of code helps make project management more accessible for ADHD brains everywhere.
+
+**Where focus takes flight.** ✨
+
+---
+
+**Last Updated:** October 2025  
+**Questions?** Ask on [Discord](https://discord.gg/altair) or [GitHub Discussions](https://github.com/getaltair/altair/discussions)
+
+---
+
+## Related Documentation
+
+- [Code of Conduct](CODE_OF_CONDUCT.md) - Community guidelines
+- [Architecture](ARCHITECTURE.md) - Technical details and diagrams
+- [Features](FEATURES.md) - What we're building
+- [Roadmap](ROADMAP.md) - When we're building it
+- [Quick Start](QUICK_START.md) - Fast development setup

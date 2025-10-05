@@ -1,543 +1,530 @@
 # Altair Features
 
-**ADHD-Friendly Design Principles & Feature Details**
+**ADHD-Friendly Project Management by Design**
+
+> This document details Altair's features and explains why they're specifically designed for ADHD brains.
+
+📊 **Visual References:**
+- [ADHD Features Mindmap](diagrams/04-roadmap-planning.md#adhd-features-mindmap)
+- [User Flow Diagrams](diagrams/03-user-flows.md)
+- [UI Component Architecture](diagrams/05-component-architecture.md#ui-component-hierarchy)
 
 ---
 
 ## Table of Contents
 
-- [Design Philosophy](#design-philosophy)
-- [Core Features](#core-features)
-- [ADHD-Specific Features](#adhd-specific-features)
-- [User Experience Principles](#user-experience-principles)
-- [Accessibility](#accessibility)
-- [Privacy & Security](#privacy--security)
-- [Future Features](#future-features)
+1. [Design Philosophy](#design-philosophy)
+2. [Core Features](#core-features)
+3. [ADHD-Specific Features](#adhd-specific-features)
+4. [User Experience Principles](#user-experience-principles)
+5. [Accessibility](#accessibility)
+6. [Privacy & Security](#privacy--security)
+7. [Comparison with Traditional Tools](#comparison-with-traditional-tools)
 
 ---
 
 ## Design Philosophy
 
-Altair is designed from the ground up to work *with* ADHD brains, not against them.
-Every feature addresses specific challenges faced by people with ADHD.
+### The ADHD Challenge
 
-### Key Principles
+Traditional productivity tools are built for neurotypical brains. They assume:
 
-**1. Reduce Cognitive Load**
+❌ **Linear thinking** - ADHD brains jump between thoughts  
+❌ **Sustained attention** - ADHD attention is inconsistent  
+❌ **Working memory** - ADHD working memory is limited  
+❌ **Time perception** - ADHD experiences time blindness  
+❌ **Executive function** - ADHD has executive dysfunction  
+❌ **Intrinsic motivation** - ADHD needs external structure  
 
-- Minimize decisions required
-- Clear visual hierarchy
-- Progressive disclosure of complexity
-- Sensible defaults
+### The Altair Approach
 
-**2. Fight Executive Dysfunction**
+Altair doesn't try to "fix" ADHD. Instead, it **works with** neurodivergent thinking patterns:
 
-- Quick capture without friction
-- AI-assisted task breakdown
-- Visual progress indicators
-- Gentle nudges, not nagging
+✅ **Capture thoughts instantly** before they vanish  
+✅ **Visual representations** over abstract concepts  
+✅ **Flexible structure** that adapts to your brain  
+✅ **Forgiving UX** that allows mistakes and changes  
+✅ **External reminders** that don't rely on memory  
+✅ **Gentle guidance** without pressure or shame  
 
-**3. Combat Time Blindness**
-
-- Visual time representations
-- Duration estimates
-- Time tracking built-in
-- Calendar integration
-
-**4. Support Hyperfocus**
-
-- Focus mode
-- Context preservation
-- Distraction blockers
-- Flow state protection
-
-**5. Celebrate Progress**
-
-- Visual completion feedback
-- Gentle gamification
-- Streak tracking (with forgiveness)
-- Non-judgmental analytics
-
-**6. Respect Privacy**
-
-- Data ownership
-- No surveillance
-- Optional anonymous analytics
-- Full data export
+**[View ADHD-Optimized Design Principles](diagrams/04-roadmap-planning.md#adhd-features-mindmap)**
 
 ---
 
 ## Core Features
 
-### Instant Task Capture
+### 1. Quick Task Capture
 
-**The Problem:** Tasks vanish from working memory before you can write them down.
+**The Problem:**  
+ADHD brains experience thoughts fleetingly. By the time you open a traditional app, navigate to the right place, and start typing—the thought is gone.
 
-**Altair's Solution:**
+**The Solution:**  
+Ultra-fast task capture accessible from anywhere.
 
-- **Always-visible quick capture** - Input field always present, no modal required
-- **Keyboard shortcuts** - `Ctrl/Cmd + K` for instant capture from anywhere
-- **Voice input** (future) - Speak tasks instead of typing
-- **Mobile widget** - Add tasks from home screen
-- **Zero friction** - Save with just title, add details later
+**How it Works:**
+- Global keyboard shortcut (Ctrl+N / Cmd+N)
+- Floating action button always visible
+- Voice input option (future)
+- Browser extension for web capture (future)
+- Email forwarding to create tasks (future)
 
-**How It Works:**
-
+**Technical Implementation:**
 ```
-1. Press Ctrl+K (or click always-visible input)
-2. Type task title
-3. Press Enter
-4. Done! Task saved with smart defaults
-5. Optionally add details later
-```
-
-**ADHD Benefit:** Captures the thought before it disappears.
-No context switching required.
-
----
-
-### Visual Time Awareness
-
-**The Problem:** Time blindness makes it impossible to estimate duration or track time spent.
-
-**Altair's Solution:**
-
-**Time Estimation:**
-
-- Visual duration blocks (not just numbers)
-- Comparative sizing ("like washing dishes" = 15 min)
-- Historical data for similar tasks
-- AI-suggested estimates
-
-**Time Tracking:**
-
-- One-click start/stop timers
-- Automatic time logging
-- Visual time budget for day/week
-- Color-coded time spent vs. estimated
-
-**Time Visualization:**
-
-- Clock face showing "time left in day"
-- Bar graphs of time allocation
-- Heat maps of productive periods
-- Gentle time passage indicators
-
-**ADHD Benefit:** Makes invisible time visible and tangible.
-
----
-
-### AI-Powered Task Breakdown
-
-**The Problem:** Large, vague tasks cause analysis paralysis and overwhelm.
-
-**Altair's Solution:**
-
-**Smart Decomposition:**
-
-- AI analyzes task complexity
-- Suggests concrete, actionable subtasks
-- Estimates effort for each subtask
-- Orders by logical sequence
-
-**Open-Source First:**
-
-- Self-hosted LLM (Ollama/LocalAI)
-- Privacy-preserving processing
-- No data leaves your server
-- Optional cloud API for non-technical users
-
-**Example:**
-
-```text
-Original task: "Plan vacation"
-↓ AI breakdown ↓
-1. Decide on destination (15 min)
-2. Check budget constraints (10 min)
-3. Research best travel dates (20 min)
-4. Find flights (30 min)
-5. Book accommodation (30 min)
-6. Plan daily activities (1 hour)
+User presses Ctrl+N
+  → Overlay appears instantly (<50ms)
+  → User types title
+  → Presses Enter
+  → Task saved to local storage immediately
+  → Syncs to server in background
+  → Confirmation shown
 ```
 
-**ADHD Benefit:** Transforms overwhelming projects into manageable steps.
+**Design Details:**
+- Minimal required fields (just title)
+- All other fields optional
+- Auto-save while typing
+- Optimistic UI (feels instant)
+- Works offline
+
+**[View Quick Capture Flow Diagram](diagrams/03-user-flows.md#quick-task-capture-flow)**
 
 ---
 
-### Focus Mode
+### 2. AI-Powered Task Breakdown
 
-**The Problem:** Distractions constantly derail deep work. Context switching is expensive.
+**The Problem:**  
+ADHD brains struggle to break large projects into actionable steps. "Clean the house" feels impossible, but "wipe kitchen counter" is doable.
 
-**Altair's Solution:**
+**The Solution:**  
+AI analyzes your task and suggests specific, manageable subtasks.
 
-**Focus Sessions:**
+**How it Works:**
 
-- Pomodoro-style timer (customizable)
-- Single task emphasis
-- Distraction blocking reminders
-- Gentle break notifications
+**[View Task Breakdown Flow](diagrams/03-user-flows.md#ai-task-breakdown-flow)**
 
-**Context Preservation:**
+```
+User creates task: "Prepare presentation"
+  → User clicks "Break it down"
+  → AI analyzes task
+  → Suggests subtasks:
+    • Research topic (30 min, medium focus)
+    • Create outline (15 min, low focus)
+    • Design slides (45 min, high focus)
+    • Practice delivery (20 min, medium energy)
+  → User accepts/modifies suggestions
+  → Subtasks created
+```
 
-- Saves current state when switching
-- Quick resume from interruptions
-- "Parking lot" for intrusive thoughts
-- Protected flow state
+**AI Considerations:**
+- Estimates time required
+- Considers focus level needed
+- Suggests order of completion
+- Accounts for context switching
+- Includes break recommendations
 
-**Focus Analytics:**
+**Example Breakdown:**
 
-- Track deep work periods
-- Identify best focus times
-- Measure interruption patterns
-- Celebrate focus achievements
+```
+Original: "Write blog post about ADHD productivity"
 
-**ADHD Benefit:** Protects hyperfocus and manages inevitable interruptions.
+Suggested Subtasks:
+1. Brainstorm 5 key points (10min, low focus)
+2. Research each point (30min, high focus) [morning recommended]
+3. Write rough draft (45min, high focus) [morning recommended]
+4. Take 15min break ☕
+5. Edit for clarity (20min, medium focus)
+6. Add examples (15min, low focus)
+7. Proofread (10min, low focus) [can do anytime]
+8. Find/create images (20min, low focus)
+9. Format for publishing (10min, low focus)
+10. Final review (5min, low focus)
+```
 
----
-
-### Flexible Organization
-
-**The Problem:** ADHD brains don't fit rigid organizational systems.
-
-**Altair's Solution:**
-
-**Multiple Views:**
-
-- List view (simple, scannable)
-- Kanban board (visual workflow)
-- Calendar view (time-based)
-- Matrix view (Eisenhower priority)
-- Custom views (future)
-
-**Smart Filters:**
-
-- Quick filters (today, this week, high priority)
-- Custom filters saved for reuse
-- Tag-based organization
-- Full-text search
-
-**Project Hierarchy:**
-
-- Projects → Tasks → Subtasks
-- Flexible depth (avoid over-nesting)
-- Visual indentation
-- Collapse/expand controls
-
-**ADHD Benefit:** Find what works for your brain, not someone else's system.
+**[View AI Breakdown Architecture](diagrams/01-system-architecture.md#ai-task-breakdown-service)**
 
 ---
 
-### Gentle Gamification
+### 3. Visual Time Awareness
 
-**The Problem:** Need dopamine boosts, but exploitative gamification is harmful.
+**The Problem:**  
+Time blindness is a core ADHD symptom. "5 more minutes" turns into 2 hours. Tasks feel infinite or instantaneous.
 
-**Altair's Ethical Approach:**
+**The Solution:**  
+Visual, tangible time representations that make time *visible*.
 
-**What We DO:**
+**Visual Elements:**
 
-- Celebrate real accomplishments
-- Visual progress indicators
-- Achievement badges for milestones
-- Personalized statistics
-- Streak tracking with forgiveness
+**[View Time Tracking UI Components](diagrams/05-component-architecture.md#time-tracking-components)**
 
-**What We DON'T Do:**
+**Progress Bars:**
+```
+Task: Write email (estimated 10 min)
+───────────────────────────────────────
+[████████████████·············] 60% (6 min)
+└─ Green: On track
+```
 
-- Create artificial urgency
-- Use FOMO mechanics
-- Compare users to each other
-- Punish for "failures"
-- Manipulate with variable rewards
+**Time Buckets:**
+```
+Today's Time Budget: 4 hours
+╔════════════════════════════════╗
+║ Work          ████████░░  2.5h ║
+║ Personal      ███░░░░░░░  1.0h ║
+║ Available     █░░░░░░░░░  0.5h ║
+╚════════════════════════════════╝
+```
+
+**Visual Timer:**
+```
+     ╭───────╮
+     │ 15:00 │  ← Large, impossible to miss
+     ╰───────╯
+     ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░░░░░░  75% elapsed
+```
+
+**Color Coding:**
+- 🟢 Green: Plenty of time left
+- 🟡 Yellow: Halfway through estimate
+- 🟠 Orange: 80% of estimated time used
+- 🔴 Red: Over estimate (not a failure!)
+
+**[View Time Awareness Flow](diagrams/03-user-flows.md#time-tracking-session)**
+
+---
+
+### 4. Focus Mode
+
+**The Problem:**  
+ADHD brains are easily distracted. Notifications, sidebar clutter, and "just checking" other tasks derail focus.
+
+**The Solution:**  
+Single-task view that eliminates all distractions.
+
+**How it Works:**
+
+**[View Focus Mode Diagram](diagrams/03-user-flows.md#focus-mode-session)**
+
+```
+User clicks "Focus on this task"
+  → App transitions to fullscreen mode
+  → Only current task visible
+  → All notifications muted
+  → Timer starts automatically
+  → Gentle background music option
+  → Exit requires confirmation (avoid accidental switching)
+```
+
+**Focus Mode Features:**
+- Fullscreen single task
+- Built-in Pomodoro timer
+- Break reminders
+- "Can't focus?" button (suggests alternative tasks)
+- Distraction log (record what pulled you away)
+- Ambient sounds/music integration
+
+**Customization:**
+- Duration preferences (20/25/45/60 min)
+- Break length
+- Background sounds
+- Dark mode intensity
+- Minimal vs. guided mode
+
+---
+
+### 5. Gentle Gamification
+
+**The Problem:**  
+ADHD responds to novel stimuli and immediate rewards, but exploitative gamification (streaks, infinite scrolling) is harmful.
+
+**The Solution:**  
+Progress tracking that celebrates wins without creating anxiety or addiction.
+
+**Design Principles:**
+
+**[View Gamification Philosophy](diagrams/04-roadmap-planning.md#feature-priority-matrix)**
+
+✅ **DO:**
+- Celebrate task completion
+- Show daily progress
+- Offer achievement badges
+- Provide visual progress indicators
+- Acknowledge effort and improvement
+
+❌ **DON'T:**
+- Create streaks that cause anxiety when broken
+- Use infinite scroll feeds
+- Punish for missing days
+- Create FOMO mechanics
+- Encourage overwork
 
 **Examples:**
 
-- "7-day focus streak!" (with 1-day grace period)
-- "First project completed! 🎉"
-- "10 hours of deep work this week"
-- Level-up animations (satisfying, not addictive)
+**Daily Completion:**
+```
+╔═══════════════════════════════╗
+║     Today's Wins! 🎉          ║
+║                                ║
+║  ✓ Morning routine            ║
+║  ✓ Reply to 3 emails          ║
+║  ✓ 30min focus session        ║
+║                                ║
+║  You completed 5 of 7 tasks!  ║
+║  Great work. Rest now. 💙     ║
+╚═══════════════════════════════╝
+```
 
-**ADHD Benefit:** Dopamine boost without exploitation or shame.
+**Weekly Review:**
+```
+This Week: October 1-7, 2025
+────────────────────────────────
+• 12 tasks completed
+• 8.5 hours of focused time
+• 3 projects moved forward
+• Longest focus session: 45 min
+
+Progress is progress! 🚀
+No matter how small.
+```
+
+**Achievements (Optional):**
+- "First Focus Session" - Tried focus mode
+- "Week Warrior" - Completed tasks 5+ days
+- "Deep Diver" - 2+ hours focused in one day
+- "Breaker of Tasks" - Used AI breakdown 10 times
+- "Time Tracker" - Tracked time for 7 consecutive days
+
+**Critical:** All gamification is **opt-in** and can be disabled entirely.
 
 ---
 
-### Documentation Integration
+### 6. Automatic Documentation
 
-**The Problem:** Insights get lost. Context disappears. Knowledge isn't captured.
+**The Problem:**  
+ADHD brains generate insights during work, but stopping to document them breaks flow. Those insights are then lost forever.
 
-**Altair's Solution:**
+**The Solution:**  
+Capture notes, decisions, and learnings without leaving your flow state.
 
-**Seamless Note-Taking:**
+**How it Works:**
 
-- Quick notes attached to tasks
-- Project documentation
-- Decision logs
-- Learning captures
+**[View Documentation Flow](diagrams/03-user-flows.md#documentation-capture)**
 
-**Markdown Support:**
+**Quick Notes:**
+```
+While working on task
+  → User has insight
+  → Presses hotkey (Ctrl+/)
+  → Mini-note panel slides in
+  → User types thought
+  → Presses Enter
+  → Note saved, linked to task
+  → Panel slides out
+  → User continues working
+```
 
-- Simple formatting
-- Code blocks
-- Checklists
-- Links and references
+**Auto-Capture:**
+- Time when task was started/stopped
+- Duration of focus sessions
+- Tasks completed in session
+- Any files opened/created
+- Decisions made (prompted at end of session)
 
-**Smart Linking:**
+**Review & Reflection:**
+```
+End of day prompt:
+┌─────────────────────────────────────┐
+│ Today you:                          │
+│ • Completed 5 tasks                 │
+│ • Focused for 3.5 hours             │
+│ • Added 7 quick notes               │
+│                                     │
+│ Want to add anything before         │
+│ wrapping up?                        │
+│                                     │
+│ [Add reflection]  [Skip for today] │
+└─────────────────────────────────────┘
+```
 
-- Link tasks to notes
-- Reference other tasks
-- Automatic backlinks
-- Knowledge graph (future)
-
-**ADHD Benefit:** Capture insights in the moment without disrupting flow.
+**[View Documentation Architecture](diagrams/05-component-architecture.md#documentation-service)**
 
 ---
 
 ## ADHD-Specific Features
 
-### Executive Function Support
+### Working Memory Support
 
-**Task Templates:**
+**Short-Term Task List:**
+```
+Right Now:
+1. Reply to Sarah's email
+2. Call dentist
+3. Review pull request
 
-- Pre-built task sequences for common workflows
-- Reduce decision fatigue
-- Ensure nothing is forgotten
-- Customizable for personal routines
+Later (saved for you):
+• 23 other tasks safely stored
+• You won't forget them
+• Focus on now
+```
 
-**Smart Defaults:**
+### Context Switching
 
-- Learn from your patterns
-- Auto-categorize tasks
-- Suggest project assignments
-- Pre-fill common fields
+**Tag-Based Context:**
+```
+Contexts:
+• @computer 💻 (12 tasks)
+• @phone ☎️ (3 tasks)
+• @errands 🚗 (5 tasks)
+• @home 🏠 (8 tasks)
+• @high-energy ⚡ (6 tasks)
+• @low-energy 🍃 (9 tasks)
+```
 
-**Habit Stacking:**
+**Smart Filtering:**
+- Show only tasks for current context
+- "What can I do right now?" mode
+- Energy-level aware suggestions
+- Location-based filtering (future)
 
-- Attach tasks to existing habits
-- Trigger-based reminders
-- Routine building
-- Consistency support
+### Time Blindness Accommodations
 
----
+**Estimated vs Actual:**
+```
+Task: Write documentation
+──────────────────────────
+Estimated: 30 minutes
+Actual:    2 hours
 
-### Energy & Capacity Management
+Learning: Writing takes 4x estimate
+Next time: Auto-suggest 2 hour estimate
+```
 
-**Energy Level Tracking:**
+**Time Budget Warnings:**
+```
+⚠️  You have 3 tasks scheduled for today
+    totaling 5 hours.
 
-- Tag tasks by required energy
-- Match tasks to current energy
-- Visualize energy patterns
-- Plan around energy cycles
+    You have 2 hours available.
 
-**Capacity Indicators:**
+    Want help reprioritizing?
+    [Yes, help me]  [I know, it's fine]
+```
 
-- "How much can I do today?"
-- Visual capacity remaining
-- Overcommitment warnings
-- Realistic scheduling
+### Rejection Sensitivity
 
-**Spoon Theory Integration:**
+**Gentle Language:**
+```
+❌ "You failed to complete your tasks"
+✅ "You completed 3 of 5 tasks. Progress!"
 
-- Daily "spoons" allocation
-- Task cost in spoons
-- Gentle capacity reminders
-- Self-care prioritization
+❌ "Task overdue by 3 days"
+✅ "Task from Monday. Still relevant?"
 
----
+❌ "You broke your 7-day streak"
+✅ "Welcome back! Ready to start fresh?"
+```
 
-### Emotional Regulation
+### Hyperfocus Protection
 
-**Non-Judgmental Feedback:**
+**Hyperfocus Mode:**
+```
+You've been focused for 3 hours straight!
+────────────────────────────────────────
+Consider taking a break:
+• Stand and stretch
+• Drink water
+• Eat something
+• Check the time
 
-- No shame for incomplete tasks
-- Celebrate effort, not just completion
-- Reframe "failures" as data
-- Compassionate analytics
-
-**Overwhelm Detection:**
-
-- Identify task pile-up patterns
-- Suggest simplification
-- Offer breakdown assistance
-- Gentle urgency management
-
-**Anxiety Reduction:**
-
-- Clear next actions
-- Uncertainty management
-- Progress visibility
-- Control and predictability
-
----
-
-### Hyperfocus Management
-
-**Hyperfocus Protection:**
-
-- "Do not disturb" mode
-- Defer non-urgent notifications
-- Protect deep work sessions
-- Save context on exit
-
-**Hyperfocus Recovery:**
-
-- Gentle transition reminders
-- "What was I working on?" recall
-- Context restoration
-- Re-orientation assistance
-
-**Hyperfocus Analytics:**
-
-- Identify hyperfocus triggers
-- Optimize environment
-- Schedule around natural patterns
-- Maximize productive periods
+[5 more minutes]  [Yes, break time]
+```
 
 ---
 
 ## User Experience Principles
 
-### Visual Design
+### 1. Instant Feedback
 
-**Color Strategy:**
+Every action gets immediate visual confirmation:
+- Button press → visual feedback
+- Task created → appears immediately
+- Time tracked → timer updates live
+- Sync happening → subtle indicator
 
-- High contrast for readability
-- Colorblind-friendly palette
-- Meaningful color coding
-- Dark mode support
+### 2. Forgiving Interface
 
-**Typography:**
+Mistakes are expected and easy to fix:
+- Undo available for all actions
+- "Are you sure?" for destructive actions
+- Deleted tasks in trash (not permanent)
+- Auto-save prevents data loss
+- Confirmation dialogs are clear
 
-- Large, readable fonts (minimum 14px)
-- Clear font hierarchy
-- Adequate line spacing
-- Dyslexia-friendly options
+### 3. Multiple Pathways
 
-**Layout:**
+Different brains work differently:
+- Keyboard shortcuts for power users
+- Visual click-through for explorers
+- Voice commands (future)
+- Drag-and-drop for organizers
+- Text-based quick commands
 
-- Generous white space
+### 4. Reduce Cognitive Load
+
+**[View UI Simplification Strategy](diagrams/05-component-architecture.md#ui-component-hierarchy)**
+
+- Progressive disclosure (advanced features hidden until needed)
+- Sane defaults that work for most people
+- Smart suggestions based on patterns
+- Minimal required decisions
 - Clear visual hierarchy
-- Consistent spacing
-- Scannable structure
 
-**Animation:**
+### 5. Sensory Considerations
 
-- Smooth transitions
-- Progress feedback
-- Satisfying interactions
-- No motion sickness triggers
+**[View Accessibility Options](diagrams/05-component-architecture.md#accessibility-features)**
 
----
-
-### Interaction Design
-
-**Keyboard-First:**
-
-- Comprehensive keyboard shortcuts
-- Vim-style navigation (optional)
-- No mouse required
-- Quick access to everything
-
-**Mobile-Optimized:**
-
-- Touch-friendly targets (minimum 44×44px)
-- Swipe gestures
-- One-handed operation
-- Offline-first
-
-**Error Prevention:**
-
-- Confirmation for destructive actions
-- Auto-save everywhere
-- Undo/redo support
-- Forgiving interactions
-
----
-
-### Cognitive Support
-
-**Progressive Disclosure:**
-
-- Show basics first
-- Expand for details
-- Hide complexity until needed
-- Gradual learning curve
-
-**Clear Affordances:**
-
-- Obvious clickable elements
-- Descriptive labels
-- No mystery meat navigation
-- Predictable behavior
-
-**Reduced Choice:**
-
-- Smart defaults
-- Reasonable limits
-- Curated options
-- Decision support
+- **Reduce motion** option (no animations)
+- **High contrast** mode
+- **Large text** option
+- **Color-blind** friendly palette
+- **Dark mode** (OLED-friendly)
+- **Sound notifications** optional
 
 ---
 
 ## Accessibility
 
-### WCAG Compliance
+### WCAG 2.1 Level AA Compliance
 
-**Level AA Minimum:**
+- ✅ All functionality available via keyboard
+- ✅ 4.5:1 color contrast minimum
+- ✅ Screen reader compatible
+- ✅ Resizable text up to 200%
+- ✅ Clear focus indicators
+- ✅ No time limits (or user-controlled)
 
-- Keyboard navigation
-- Screen reader support
-- Sufficient color contrast
-- Resizable text
-- Clear focus indicators
+### ADHD-Specific Accessibility
 
-**Level AAA Goals:**
+- ✅ Ultra-fast task capture
+- ✅ Minimal required fields
+- ✅ Auto-save (never lose work)
+- ✅ Multiple organization methods
+- ✅ Flexible navigation
+- ✅ Customizable notifications
+- ✅ Reduce motion option
+- ✅ Forgiveness (undo everything)
 
-- Enhanced contrast options
-- Extended color schemes
-- Advanced keyboard features
-- Comprehensive ARIA labels
+### Screen Reader Support
 
----
+All UI elements properly labeled:
+```html
+<button aria-label="Quick capture task (Ctrl+N)">
+  <PlusIcon aria-hidden="true" />
+</button>
 
-### Neurodiversity Support
-
-**ADHD-Specific:**
-
-- Distraction reduction
-- Time awareness tools
-- Executive function aids
-- Hyperfocus support
-
-**Autism-Friendly:**
-
-- Predictable interactions
-- Clear patterns
-- Reduced sensory overload
-- Routine support
-
-**Dyslexia Support:**
-
-- OpenDyslexic font option
-- Line height adjustment
-- Reading guides
-- Text-to-speech (future)
-
----
-
-### Assistive Technology
-
-**Screen Readers:**
-
-- Semantic HTML
-- ARIA landmarks
-- Descriptive labels
-- Keyboard-accessible
-
-**Voice Control:**
-
-- Voice input for tasks
-- Voice commands (future)
-- Dictation support
-- Hands-free operation
+<div role="timer" aria-live="polite">
+  15 minutes remaining
+</div>
+```
 
 ---
 
@@ -545,165 +532,137 @@ Original task: "Plan vacation"
 
 ### Data Ownership
 
-**Your Data, Your Control:**
+**You own your data. Always.**
 
-- Full data export (JSON, CSV)
-- Import from other tools
-- Delete account completely
-- Portable data format
+- ✅ Export all data anytime (JSON, CSV)
+- ✅ Delete account = data deleted (GDPR right to erasure)
+- ✅ Self-hosting option (complete control)
+- ✅ No selling data ever
+- ✅ No tracking for advertising
 
-**Self-Hosting:**
+### Privacy Features
 
-- Run on your own server
-- Complete control
-- No vendor lock-in
-- Open source forever
+- ✅ End-to-end encryption (future)
+- ✅ Local-first architecture (data stored on device)
+- ✅ Optional cloud sync (user choice)
+- ✅ Anonymous analytics (opt-in only)
+- ✅ No third-party trackers
+- ✅ Open source (audit the code)
 
----
+### Security Measures
 
-### Privacy-First
+- ✅ HTTPS everywhere (TLS 1.3)
+- ✅ JWT authentication
+- ✅ Password hashing (bcrypt)
+- ✅ Rate limiting
+- ✅ SQL injection protection
+- ✅ XSS prevention
+- ✅ CSRF protection
 
-**What We Don't Do:**
-
-- No tracking without consent
-- No selling your data
-- No surveillance features
-- No invasive analytics
-
-**What We Do:**
-
-- Optional anonymous usage stats
-- Transparent data practices
-- GDPR compliant
-- Privacy by design
+**[View Security Architecture](diagrams/06-deployment-operations.md#security-layers)**
 
 ---
 
-### Security
+## Comparison with Traditional Tools
 
-**Best Practices:**
+### vs. Generic Task Managers
 
-- Encrypted connections (HTTPS)
-- Secure password hashing
-- Rate limiting
-- Regular security audits
-
-**Future Enhancements:**
-
-- End-to-end encryption
-- Two-factor authentication
-- Session management
-- Security headers
-
----
-
-## Future Features
-
-### Planned (See Roadmap)
-
-**Phase 2:**
-
-- Advanced AI features
-- Mobile apps
-- Real-time sync
-- Enhanced analytics
-
-**Phase 3:**
-
-- Team collaboration
-- Template marketplace
-- Plugin system
-- Advanced integrations
-
-**Phase 4:**
-
-- Voice input
-- Smart scheduling
-- Habit tracking
-- Calendar sync
-
----
-
-### Community Requests
-
-We're always listening to the ADHD community. Feature requests can be submitted via:
-
-- [GitHub Issues](https://github.com/getaltair/altair/issues)
-- [GitHub Discussions](https://github.com/getaltair/altair/discussions)
-
----
-
-## Feature Comparison
-
-### vs. Traditional Project Management
-
-| Feature | Traditional Tools | Altair |
+| Feature | Todoist/TickTick | Altair |
 |---------|------------------|--------|
-| Task capture | Multiple clicks, forms | One keyboard shortcut |
-| Time estimation | Manual numbers | Visual + AI assistance |
-| Organization | Rigid hierarchies | Flexible, multiple views |
-| Progress | Percentages | Visual + gamification |
-| Learning curve | Steep | Gradual, ADHD-friendly |
-| Overwhelm | Common | Actively prevented |
+| Quick capture | 3-5 seconds | <1 second |
+| Task breakdown | Manual | AI-assisted |
+| Time blindness | Basic timers | Visual time awareness |
+| Working memory | Rely on memory | External support |
+| Offline-first | Limited | Full functionality |
+| ADHD-optimized | No | Yes |
+| Open source | No | Yes |
 
-### vs. ADHD-Specific Tools
+### vs. Project Management Tools
 
-| Feature | Other ADHD Tools | Altair |
+| Feature | Asana/Trello | Altair |
+|---------|--------------|--------|
+| Setup time | 30+ minutes | 2 minutes |
+| Learning curve | Steep | Gentle |
+| Complexity | High | Appropriate |
+| ADHD features | None | Core design |
+| Mobile experience | Poor | Excellent |
+| Offline mode | No | Yes |
+| Price | $10-15/month | Free (self-host) |
+
+### vs. ADHD Apps
+
+| Feature | Forest/Habitica | Altair |
 |---------|-----------------|--------|
-| Open source | Often proprietary | AGPL-3.0 |
-| Self-hosting | Rare | Primary option |
-| Privacy | Variable | Privacy-first |
-| Offline support | Limited | Full offline mode |
-| Customization | Limited | Highly flexible |
-| Cost | Often expensive | Free forever |
+| Gamification | Exploitative | Gentle |
+| Streaks | Anxiety-inducing | Optional |
+| Task management | Basic | Comprehensive |
+| Privacy | Poor | Excellent |
+| Customization | Limited | Extensive |
+| Open source | No | Yes |
 
 ---
 
-## Design Research
+## Feature Roadmap
 
-Altair's features are based on:
+### Phase 1: Foundation (Q4 2025 - Q1 2026) 🚧
 
-**ADHD Research:**
+- ✅ Quick task capture
+- ✅ Basic task management (CRUD)
+- ✅ Simple time tracking
+- ✅ Offline-first storage
+- 🚧 Basic Flutter app
+- 🚧 FastAPI backend
+- 📅 PostgreSQL integration
+- 📅 JWT authentication
 
-- Executive function studies
-- Time perception research
-- Working memory limitations
-- Dopamine system understanding
+### Phase 2: ADHD Features (Q2 2026)
 
-**User Research:**
+- 📅 AI task breakdown
+- 📅 Visual time awareness
+- 📅 Focus mode
+- 📅 Gentle gamification
+- 📅 Auto documentation
+- 📅 Context switching support
 
-- ADHD community feedback
-- Real-world usage patterns
-- Pain point identification
-- Continuous iteration
+### Phase 3: Enhanced UX (Q3 2026)
 
-**Industry Best Practices:**
+- 📅 Cross-device sync
+- 📅 Customizable UI
+- 📅 Keyboard shortcuts
+- 📅 Voice input
+- 📅 Collaboration (shared projects)
+- 📅 Advanced analytics
 
-- Accessibility standards
-- UX design principles
-- Privacy guidelines
-- Security protocols
+### Phase 4: Community & Polish (Q4 2026)
+
+- 📅 Plugin system
+- 📅 Themes and customization
+- 📅 Import from other tools
+- 📅 Mobile app stores (iOS/Android)
+- 📅 Browser extensions
+- 📅 Email integration
+
+**[View Full Roadmap](ROADMAP.md)**  
+**[View Development Timeline](diagrams/04-roadmap-planning.md#development-timeline-gantt-chart)**
 
 ---
 
-## Feedback & Iteration
+## Questions?
 
-This is a living document. Features evolve based on:
+**Feature Requests:**
+- Open an issue: [github.com/getaltair/altair/issues](https://github.com/getaltair/altair/issues)
+- Discuss on Discord: [discord.gg/altair](https://discord.gg/altair)
 
-- Community feedback
-- Usage data (opt-in)
-- ADHD research
-- Technical constraints
-
-**Share your thoughts:**
-
-- What features help most?
-- What's missing?
-- What could be better?
-
-**Contact:** <hello@getaltair.app>
+**General Questions:**
+- Email: hello@getaltair.app
+- Twitter: [@getaltair](https://twitter.com/getaltair)
 
 ---
 
 **Last Updated:** October 2025  
-**Version:** 0.1.0 (Pre-Alpha)
+**Status:** Pre-Alpha Development  
+**Next:** [Read the Roadmap →](ROADMAP.md)
+
+---
+
+*Built with 💙 by people who understand the ADHD struggle*

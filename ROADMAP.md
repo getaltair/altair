@@ -1,390 +1,486 @@
-# Altair Project Roadmap
+# Altair Roadmap
 
-**Where focus takes flight**
+**Where focus takes flight** - Development Timeline & Priorities
 
----
+> This document outlines Altair's development phases, priorities, and timeline from pre-alpha to stable release.
 
-## Overview
-
-This roadmap outlines Altair's development journey.
-We're building in public and dogfooding from day one—using Altair to manage
-Altair's development.
-This ensures features actually work for ADHD brains.
-
-### Guiding Principles
-
-1. **Dogfooding First** - Build what we need to manage this project
-2. **Open Source Primary** - Self-hosted options before managed services
-3. **Progressive Enhancement** - Start simple, add complexity only when needed
-4. **Public Advertising** - Host live demos of features as we build them
-5. **ADHD-Friendly Pace** - Sustainable development without burnout
+📊 **Visual References:**
+- [Development Timeline (Gantt Chart)](diagrams/04-roadmap-planning.md#development-timeline-gantt-chart)
+- [Feature Priority Matrix](diagrams/04-roadmap-planning.md#feature-priority-matrix)
+- [Sprint Planning Diagrams](diagrams/04-roadmap-planning.md#sprint-1-planning)
+- [Dependency Graph](diagrams/04-roadmap-planning.md#feature-dependency-graph)
 
 ---
 
 ## Current Status
 
 **Phase:** Pre-Alpha Development  
-**Focus:** Foundation & Core Task Management  
-**Started:** October 2025  
-**Next Milestone:** Dogfooding-Ready MVP (Q4 2025)
+**Version:** 0.1.0-dev  
+**Start Date:** October 2025  
+**Target MVP:** Q1 2026 (March 2026)
+
+**[View Current Sprint Plan](diagrams/04-roadmap-planning.md#sprint-1-planning)**
 
 ---
 
-## Phase 1: Foundation & Dogfooding MVP (Q4 2025 - Q1 2026)
+## Development Philosophy
 
-**Goal:** Build enough functionality to manage Altair's own development
+### Build in Public
+We're developing Altair transparently:
+- Weekly progress updates on Twitter/Discord
+- Open GitHub project board
+- Public roadmap (this document)
+- Community input on feature priorities
 
-### Milestone 1.1: Project Setup (Q4 2025)
+### Dogfooding First
+We use Altair to build Altair:
+- Test features with real ADHD users (ourselves)
+- Identify pain points early
+- Iterate based on actual use
+- Ship when genuinely useful
 
-**Status:** 🔄 In Progress
+### ADHD-Friendly Development
+Our process accommodates neurodivergent developers:
+- Flexible deadlines (no crunch)
+- Clear, achievable milestones
+- Celebrate small wins
+- Transparent about blockers
 
-- [x] Domain registration (getaltair.app)
-- [x] Repository structure (github.com/getaltair/altair)
-- [ ] Development environment setup
-  - [ ] Docker Compose configuration
-  - [ ] Local PostgreSQL setup
-  - [ ] FastAPI project scaffolding
-  - [ ] Flutter project initialization
-- [ ] Basic CI/CD pipeline
-  - [ ] GitHub Actions for backend tests
-  - [ ] Flutter web build pipeline
-  - [ ] Docker image builds
-- [ ] Documentation foundation
-  - [x] README.md
-  - [x] ARCHITECTURE.md
-  - [x] ROADMAP.md
-  - [x] CONTRIBUTING.md
-  - [x] FEATURES.md
-
-### Milestone 1.2: Authentication & User Management (Q4 2025)
-
-**Status:** ⏳ Planned
-
-- [ ] User registration and login
-- [ ] JWT-based authentication
-- [ ] Password reset flow
-- [ ] User profile management
-- [ ] Basic settings page
-
-**Dogfooding:** Single-user mode for project creator
-
-### Milestone 1.3: Core Task Management (Q4 2025)
-
-**Status:** ⏳ Planned
-
-**Backend:**
-
-- [ ] Task CRUD operations
-- [ ] Project organization
-- [ ] Task hierarchy (parent/child tasks)
-- [ ] Task status and priority
-- [ ] Basic search and filtering
-
-**Frontend:**
-
-- [ ] Task list view
-- [ ] Task creation/editing modal
-- [ ] Quick capture input (always visible)
-- [ ] Keyboard shortcuts for rapid entry
-- [ ] Project sidebar navigation
-
-**Dogfooding:** Start managing Altair development in Altair  
-**Public Demo:** Host live instance showing task management
-
-### Milestone 1.4: Documentation System (Q4 2025)
-
-**Status:** ⏳ Planned
-
-- [ ] Note/document creation
-- [ ] Link notes to tasks/projects
-- [ ] Markdown support
-- [ ] Quick note capture
-- [ ] Search across notes
-
-**Dogfooding:** Document architecture decisions and feature specs in Altair  
-**Public Demo:** Share public documentation workspace
-
-### Milestone 1.5: Web Deployment (Q4 2025)
-
-**Status:** ⏳ Planned
-
-- [ ] Production Docker setup
-- [ ] Nginx configuration
-- [ ] SSL/HTTPS setup
-- [ ] Database backup strategy
-- [ ] Basic monitoring (uptime, errors)
-- [ ] Self-hosting documentation
-
-**Dogfooding:** Deploy personal instance  
-**Public Demo:** Public-facing demo instance at demo.getaltair.app
+**[View ADHD Features Mindmap](diagrams/04-roadmap-planning.md#adhd-features-mindmap)**
 
 ---
 
-## Phase 2: ADHD-Specific Features (Q1 2026)
+## Release Timeline
 
-**Goal:** Implement features that make Altair uniquely helpful for ADHD users
+### Phase 1: Foundation & MVP (Q4 2025 - Q1 2026) 🚧 **Current**
 
-### Milestone 2.1: Visual Time Awareness (Q1 2026)
+**Goal:** Build usable core that solves the #1 ADHD problem: task capture
 
-**Status:** ⏳ Planned
+**Duration:** 3-4 months  
+**Status:** In Progress  
+**Target:** March 2026
 
-- [ ] Time estimation for tasks
-- [ ] Visual duration indicators
-- [ ] Time tracking integration
-  - [ ] Start/stop timers
-  - [ ] Automatic time logging
-  - [ ] Time analytics
-- [ ] Visual "time budget" for day/week
-- [ ] "Time blindness" mode - extra visual cues
+**[View Phase 1 Timeline](diagrams/04-roadmap-planning.md#development-timeline-gantt-chart)**
 
-**Dogfooding:** Track time spent on development tasks  
-**Impact:** Critical for ADHD users struggling with time perception
+#### Milestones:
 
-### Milestone 2.2: AI-Powered Task Breakdown (Q1 2026)
+**M1: Backend Foundation** (November 2025) ✅
+- [x] FastAPI project structure
+- [x] PostgreSQL database setup
+- [x] User authentication (JWT)
+- [x] Basic task CRUD API
+- [x] Docker compose for development
 
-**Status:** ⏳ Planned
+**M2: Frontend Foundation** (December 2025) 🚧
+- [ ] Flutter project structure
+- [ ] Authentication UI (login/register)
+- [ ] Basic task list view
+- [ ] Quick capture dialog
+- [ ] Offline storage (Hive)
 
-**Open-Source First Approach:**
+**M3: Dogfooding MVP** (January 2026) 📅
+- [ ] Sync mechanism (local ↔ server)
+- [ ] Time tracking start/stop
+- [ ] Basic project organization
+- [ ] Data export functionality
+- [ ] Deploy personal instance
 
-- [ ] Integration with self-hosted LLM (Ollama/LocalAI)
-- [ ] Task decomposition prompts and logic
-- [ ] Subtask generation
-- [ ] Complexity estimation
+**M4: Private Beta** (February-March 2026) 📅
+- [ ] Bug fixes from dogfooding
+- [ ] Performance optimization (<100ms API)
+- [ ] Mobile app (iOS/Android)
+- [ ] Invite 10-20 ADHD beta testers
+- [ ] Gather feedback
 
-**Future Alternatives (for non-technical users):**
+**Key Features:**
+- ✅ Ultra-fast task capture
+- ✅ Offline-first architecture
+- ✅ Basic time tracking
+- ✅ Simple project organization
+- ✅ Cross-device sync
 
-- [ ] Optional OpenAI API integration
-- [ ] Optional Anthropic Claude API integration
+**Success Criteria:**
+- [ ] Daily active use by 2+ team members
+- [ ] <50ms quick capture response time
+- [ ] Zero data loss in 30 days
+- [ ] Positive feedback from 5+ beta testers
 
-**Dogfooding:** Break down large features into manageable tasks  
-**Impact:** Reduces overwhelm from large, vague tasks
-
-### Milestone 2.3: Focus Mode & Context Switching (Q1 2026)
-
-**Status:** ⏳ Planned
-
-- [ ] Focus session timer (Pomodoro-style)
-- [ ] Distraction blocking reminders
-- [ ] "Current focus" indicator
-- [ ] Context preservation (save state when switching tasks)
-- [ ] Quick context switch with minimal cognitive load
-
-**Dogfooding:** Use during development sessions  
-**Impact:** Helps maintain deep work and manage interruptions
-
----
-
-## Phase 3: Enhanced UX & Gamification (Q2 - Q3 2026)
-
-**Goal:** Make progress visible and rewarding without exploitation
-
-### Milestone 3.1: Progress Visualization (Q2 2026)
-
-**Status:** ⏳ Planned
-
-- [ ] Visual progress indicators
-- [ ] Completion animations
-- [ ] Project progress dashboard
-- [ ] Velocity tracking (tasks/day, week, month)
-- [ ] Calendar view with completion heat map
-
-**Dogfooding:** Track Altair development progress  
-**Impact:** Visual progress fights ADHD paralysis
-
-### Milestone 3.2: Gentle Gamification (Q2 - Q3 2026)
-
-**Status:** ⏳ Planned
-
-**Core Principles:**
-
-- No exploitative mechanics
-- No artificial urgency or FOMO
-- Celebrate progress, not perfection
-- Personal achievement, not comparison
-
-**Features:**
-
-- [ ] Achievement badges (milestones, streaks)
-- [ ] Personal statistics dashboard
-- [ ] Streak tracking (with forgiveness for off days)
-- [ ] "Level up" moments for big wins
-- [ ] Customizable celebration animations
-
-**Dogfooding:** Celebrate development milestones  
-**Impact:** Dopamine boost without exploitation
-
-### Milestone 3.3: Mobile App (Flutter) (Q3 2026)
-
-**Status:** ⏳ Planned
-
-- [ ] iOS app
-- [ ] Android app
-- [ ] Full offline support
-- [ ] Background sync
-- [ ] Push notifications (optional)
-- [ ] Quick capture widget
-- [ ] Home screen widgets
-
-**Dogfooding:** Capture ideas on the go  
-**Impact:** Critical for ADHD users who need immediate capture
+**[View Phase 1 Dependency Graph](diagrams/04-roadmap-planning.md#feature-dependency-graph)**
 
 ---
 
-## Phase 4: Collaboration & Community (Q4 2026)
+### Phase 2: ADHD-Specific Features (Q2 2026)
 
-**Goal:** Enable team use and build community
+**Goal:** Add features that make Altair uniquely ADHD-friendly
 
-### Milestone 4.1: Team Workspaces (Q4 2026)
+**Duration:** 3 months  
+**Target:** June 2026
 
-**Status:** ⏳ Planned
+**[View Phase 2 Feature Matrix](diagrams/04-roadmap-planning.md#feature-priority-matrix)**
 
-- [ ] Multi-user workspaces
-- [ ] Role-based permissions
-- [ ] Task assignment
-- [ ] Activity feed
-- [ ] Comments and discussions
+#### Core ADHD Features:
 
-**Dogfooding:** Collaborate with early contributors  
-**Impact:** Extends Altair to team settings
+**AI Task Breakdown** (April 2026)
+- Natural language task analysis
+- Suggested subtask generation
+- Time & energy estimation
+- Context recommendations
+- Integration with OpenAI/Anthropic APIs
 
-### Milestone 4.2: Templates & Community Sharing (Q4 2026)
+**[View AI Breakdown Architecture](diagrams/01-system-architecture.md#ai-task-breakdown-service)**
 
-**Status:** ⏳ Planned
+**Visual Time Awareness** (April-May 2026)
+- Progress bars for active tasks
+- Time bucket visualization
+- Estimated vs actual tracking
+- Color-coded time warnings
+- Customizable time displays
 
-- [ ] Project templates
-- [ ] Task templates
-- [ ] Community template gallery
-- [ ] Import/export workflows
-- [ ] Public project showcase
+**[View Time Tracking Components](diagrams/03-user-flows.md#time-tracking-session)**
 
-**Dogfooding:** Share Altair's project template  
-**Impact:** Reduce setup friction for new users
+**Focus Mode** (May 2026)
+- Distraction-free single task view
+- Integrated Pomodoro timer
+- Break reminders
+- Ambient sounds integration
+- Hyperfocus protection warnings
 
-### Milestone 4.3: Plugin System Foundation (Q4 2026)
+**[View Focus Mode Flow](diagrams/03-user-flows.md#focus-mode-session)**
 
-**Status:** ⏳ Planned
+**Gentle Gamification** (June 2026)
+- Daily completion celebrations
+- Weekly progress reviews
+- Optional achievement badges
+- NO streaks or FOMO mechanics
+- Fully opt-in system
 
-- [ ] Plugin architecture design
-- [ ] Custom field support
-- [ ] Webhook system
-- [ ] API for third-party integrations
-- [ ] Plugin marketplace (future)
+**Auto Documentation** (June 2026)
+- Quick note capture (Ctrl+/)
+- End-of-day reflection prompts
+- Session summaries
+- Decision logging
+- Insight extraction
 
-**Impact:** Extensibility for power users and integrations
+**[View Documentation Flow](diagrams/03-user-flows.md#documentation-capture)**
 
----
-
-## Phase 5: Managed Services & Scale (2027)
-
-**Goal:** Make Altair accessible to non-technical users
-
-### Milestone 5.1: Managed Hosting - Free Tier
-
-**Status:** ⏳ Future
-
-- [ ] Free tier infrastructure
-- [ ] Account management system
-- [ ] Automated backups
-- [ ] Basic support system
-- [ ] Usage analytics (opt-in, privacy-first)
-
-**Target:** Remove technical barriers for ADHD community
-
-### Milestone 5.2: Managed Hosting - Paid Tiers
-
-**Status:** ⏳ Future
-
-- [ ] Paid tier features
-  - [ ] Increased storage
-  - [ ] Advanced analytics
-  - [ ] Priority support
-  - [ ] Custom domains
-- [ ] Billing system
-- [ ] Subscription management
-
-**Target:** Sustainable funding for development
-
-### Milestone 5.3: Advanced Features
-
-**Status:** ⏳ Future
-
-- [ ] Email integration
-- [ ] Calendar sync
-- [ ] Voice task creation
-- [ ] Smart scheduling
-- [ ] Advanced analytics and insights
-- [ ] Habit tracking integration
+**Success Criteria:**
+- [ ] AI breaks down 80%+ of complex tasks usefully
+- [ ] Users report better time awareness
+- [ ] Focus sessions average 25+ minutes
+- [ ] Gamification feels supportive, not stressful
+- [ ] 50+ active beta testers
 
 ---
 
-## Feature Priority Framework
+### Phase 3: Enhanced UX & Performance (Q3 2026)
 
-### Must Have (Dogfooding Critical)
+**Goal:** Polish the experience and optimize performance
 
-Features needed to manage Altair's development:
+**Duration:** 3 months  
+**Target:** September 2026
 
-- Task management
-- Documentation
-- Basic organization
+**[View Phase 3 Architecture](diagrams/05-component-architecture.md#performance-optimization)**
 
-### Should Have (ADHD-Specific)
+#### Key Improvements:
 
-Features that make Altair uniquely valuable:
+**Cross-Platform Sync** (July 2026)
+- Robust conflict resolution
+- Delta sync for efficiency
+- Real-time sync option (WebSocket)
+- Sync status indicators
+- Manual sync controls
 
-- AI task breakdown
-- Visual time tracking
-- Focus mode
-- Gamification
+**[View Sync Architecture](diagrams/01-system-architecture.md#offline-sync-architecture)**
 
-### Could Have (Quality of Life)
+**Performance Optimization** (July-August 2026)
+- API response <100ms (99th percentile)
+- Frontend rendering <16ms (60fps)
+- Lazy loading of large lists
+- Image optimization
+- Database query optimization
 
-Features that improve experience:
+**Advanced Customization** (August 2026)
+- Customizable keyboard shortcuts
+- UI theme customization
+- Notification preferences
+- Widget configuration
+- Energy level profiles
 
-- Templates
-- Advanced search
-- Keyboard shortcuts
-- Customization
+**Keyboard-First Experience** (August-September 2026)
+- Comprehensive keyboard shortcuts
+- Command palette (Ctrl+K)
+- Vim-like navigation (optional)
+- Quick actions
+- Accessibility improvements
 
-### Won't Have (Yet)
+**Collaboration Features** (September 2026)
+- Shared projects (basic)
+- Task assignment
+- Comments on tasks
+- Activity feed
+- Permission controls
 
-Explicitly deferred:
+**Success Criteria:**
+- [ ] <100ms API response time (p99)
+- [ ] 60fps UI rendering
+- [ ] Sync conflicts <1% of operations
+- [ ] 100+ active users
+- [ ] Net Promoter Score >50
 
-- Real-time collaboration (Phase 1-2)
-- Advanced analytics (Phase 1-3)
-- Third-party integrations (Phase 1-3)
-- Native desktop apps (Phase 1-4)
+---
+
+### Phase 4: Community & Growth (Q4 2026)
+
+**Goal:** Grow the community and prepare for public launch
+
+**Duration:** 3 months  
+**Target:** December 2026
+
+#### Community Building:
+
+**Public Beta Launch** (October 2026)
+- Open beta signups
+- Waitlist management
+- Onboarding flow
+- Video tutorials
+- Help documentation
+
+**App Store Releases** (October-November 2026)
+- iOS App Store submission
+- Google Play Store submission
+- App Store Optimization (ASO)
+- Screenshots and descriptions
+- Review response system
+
+**Plugin System** (November 2026)
+- Plugin API design
+- Developer documentation
+- Example plugins
+- Plugin marketplace (future)
+- Community plugin showcase
+
+**Import/Export** (November-December 2026)
+- Import from Todoist
+- Import from Trello/Asana
+- Import from Notion
+- Import from Apple Reminders
+- Universal CSV import
+
+**Browser Extensions** (December 2026)
+- Chrome extension (quick capture)
+- Firefox extension
+- Safari extension
+- Web clipper functionality
+- Right-click menu integration
+
+**Success Criteria:**
+- [ ] 1,000+ registered users
+- [ ] App store ratings >4.5/5
+- [ ] 50+ community contributors
+- [ ] 10+ community plugins
+- [ ] Positive press coverage
+
+---
+
+### Phase 5: Sustainability & Scale (2027+)
+
+**Goal:** Make Altair sustainable and scale to serve more users
+
+**Duration:** Ongoing  
+**Target:** Throughout 2027
+
+#### Sustainability:
+
+**Managed Hosting Service** (Q1 2027)
+- Optional paid cloud hosting
+- Automated backups
+- Performance monitoring
+- Customer support
+- Transparent pricing ($5-10/month)
+
+**[View Managed Hosting Architecture](diagrams/06-deployment-operations.md#managed-hosting-cloud)**
+
+**Enterprise Features** (Q2 2027)
+- Team accounts
+- SSO integration
+- Advanced permissions
+- Audit logs
+- SLA guarantees
+
+**Advanced AI** (Q3 2027)
+- Better task breakdown
+- Predictive scheduling
+- Pattern recognition
+- Productivity insights
+- Natural language interface
+
+**International Expansion** (Q4 2027)
+- Multi-language support
+- Localization
+- Regional compliance (GDPR, etc.)
+- Local community building
+- International partnerships
+
+**Success Criteria:**
+- [ ] 10,000+ total users
+- [ ] Break-even on hosting costs
+- [ ] Active community governance
+- [ ] Sustainable development pace
+- [ ] Maintained ADHD-first principles
+
+---
+
+## Feature Prioritization
+
+### Priority Framework
+
+We prioritize features based on:
+
+**[View Priority Matrix](diagrams/04-roadmap-planning.md#feature-priority-matrix)**
+
+1. **ADHD Impact** - How much does this help ADHD users specifically?
+2. **Dogfooding Value** - Can we use this immediately ourselves?
+3. **Build in Public** - Can this be showcased publicly as "advertising"?
+4. **Core vs Nice-to-Have** - Is this essential or enhancement?
+5. **Effort vs Value** - Return on development time?
+
+### High Priority (Must Have)
+
+These solve core ADHD pain points:
+- ✅ Quick task capture
+- ✅ Offline-first architecture
+- 📅 Time tracking
+- 📅 AI task breakdown
+- 📅 Visual time awareness
+- 📅 Focus mode
+
+### Medium Priority (Should Have)
+
+These improve the experience significantly:
+- 📅 Gentle gamification
+- 📅 Auto documentation
+- 📅 Keyboard shortcuts
+- 📅 Cross-platform sync
+- 📅 Mobile apps
+
+### Low Priority (Nice to Have)
+
+These are valuable but not essential:
+- 📅 Collaboration features
+- 📅 Plugin system
+- 📅 Browser extensions
+- 📅 Voice input
+- 📅 Email integration
+
+### Future Consideration
+
+These might be valuable but require more research:
+- Smart scheduling AI
+- Calendar integration
+- Habit tracking
+- Goal setting frameworks
+- Community challenges
 
 ---
 
 ## Risks & Mitigation
 
-### Risk: Scope Creep
+**[View Risk Mitigation Diagram](diagrams/04-roadmap-planning.md#risk-mitigation-diagram)**
 
-**Mitigation:** Strict adherence to dogfooding principle—only build what we actively need
+### Technical Risks
 
-### Risk: Developer Burnout
+**Risk: Flutter web performance issues**
+- Mitigation: Test early, optimize aggressively, consider React fallback
 
-**Mitigation:** Sustainable pace, celebrate small wins, use Altair to manage Altair development
+**Risk: Sync conflicts too complex**
+- Mitigation: Simple last-write-wins first, iterate based on needs
 
-### Risk: Low Adoption
+**Risk: AI task breakdown unreliable**
+- Mitigation: Make it optional, allow manual editing, improve over time
 
-**Mitigation:** Build in public, engage ADHD community early, focus on real pain points
+### Product Risks
 
-### Risk: Technical Debt
+**Risk: Feature creep**
+- Mitigation: Strict prioritization, say no to non-ADHD features
 
-**Mitigation:** Regular refactoring sprints, comprehensive testing, documentation-first approach
+**Risk: Too complex for ADHD users**
+- Mitigation: Constant dogfooding, user testing, simplify ruthlessly
+
+**Risk: Not differentiated enough**
+- Mitigation: Focus on unique ADHD features, avoid copying others
+
+### Business Risks
+
+**Risk: Can't sustain development**
+- Mitigation: Managed hosting revenue, sponsorships, keep core free
+
+**Risk: Community doesn't grow**
+- Mitigation: Build in public, engage on Twitter/Discord, provide value
+
+**Risk: Competitors emerge**
+- Mitigation: Open source advantage, community moat, stay authentic
 
 ---
 
-## How to Contribute to Roadmap
+## Community Involvement
 
-We welcome input on priorities! Here's how:
+### How to Influence the Roadmap
 
-1. **Feature Requests:** [GitHub Issues](https://github.com/getaltair/altair/issues)
-2. **Discussions:** [GitHub Discussions](https://github.com/getaltair/altair/discussions)
-3. **Pull Requests:** See [CONTRIBUTING.md](CONTRIBUTING.md)
+1. **Share ADHD Pain Points** - What frustrates you most?
+2. **Vote on Features** - GitHub discussions & Discord polls
+3. **Beta Test** - Try new features, give feedback
+4. **Contribute Code** - Help build prioritized features
+5. **Spread the Word** - More users = more feedback = better prioritization
+
+### Monthly Community Reviews
+
+Last Friday of each month:
+- Progress update
+- Demo new features
+- Community Q&A
+- Roadmap adjustments
+- Celebrate wins
+
+**Join on Discord:** [discord.gg/altair](https://discord.gg/altair)
+
+---
+
+## Public Milestones
+
+These are our commitments to the community:
+
+**November 2025:** Backend foundation complete ✅  
+**December 2025:** Flutter app functional 🚧  
+**January 2026:** Personal dogfooding in production 📅  
+**March 2026:** Private beta with 10-20 testers 📅  
+**June 2026:** ADHD features complete 📅  
+**October 2026:** Public beta launch 📅  
+**December 2026:** App stores + plugins 📅  
+**March 2027:** Managed hosting available 📅  
+
+---
+
+## Questions About the Roadmap?
+
+- **GitHub Discussions:** [github.com/getaltair/altair/discussions](https://github.com/getaltair/altair/discussions)
+- **Discord:** [discord.gg/altair](https://discord.gg/altair)
+- **Email:** roadmap@getaltair.app
 
 ---
 
 **Last Updated:** October 2025  
-**Next Review:** January 2026
+**Next Review:** November 2025  
+**Status:** Living Document
+
+---
+
+## Related Documentation
+
+- [Features](FEATURES.md) - What we're building and why
+- [Architecture](ARCHITECTURE.md) - How we're building it
+- [Contributing](CONTRIBUTING.md) - How to help build it
+- [Visual Diagrams](diagrams/README.md) - All roadmap and planning diagrams
+
+---
+
+*This roadmap is a living document. Dates are estimates, not promises. We'll adjust based on community feedback, technical discoveries, and ADHD realities.* 💙
