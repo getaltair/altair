@@ -1,14 +1,640 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Altair - Where Focus Takes Flight</title>
-    <meta name="description" content="ADHD-friendly project management">
+    <meta name="description" content="ADHD-friendly project management that works with your brain, not against it. Open source. Built by the community.">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/brand/icons/altair-diamond-star.svg">
+    <link rel="icon" type="image/png" sizes="512x512" href="/brand/icons/altair-diamond-star-512px.png">
+    <link rel="icon" type="image/png" sizes="256x256" href="/brand/icons/altair-diamond-star-256px.png">
+    <link rel="icon" type="image/png" sizes="64x64" href="/brand/icons/altair-diamond-star-64px.png">
+
+    <!-- Open Graph / Social Media -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Altair - Where Focus Takes Flight">
+    <meta property="og:description" content="ADHD-friendly project management built by the community">
+    <meta property="og:image" content="/brand/banners/altair-github-preview-1280x640.png">
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Altair - Where Focus Takes Flight">
+    <meta name="twitter:description" content="ADHD-friendly project management built by the community">
+    <meta name="twitter:image" content="/brand/banners/altair-twitter-banner-1500x500.png">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        /* Reset & Base */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            /* Colors from brand guidelines */
+            --blue-light: #60A5FA;
+            --blue-primary: #3B82F6;
+            --blue-dark: #1E40AF;
+            --dark-bg: #0F172A;
+            --slate-900: #1E293B;
+            --slate-800: #1E293B;
+            --white: #FFFFFF;
+            --slate-300: #CBD5E1;
+            --slate-400: #94A3B8;
+            --teal: #14B8A6;
+            --orange: #FB923C;
+
+            /* Typography */
+            --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--dark-bg);
+            color: var(--white);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        /* Header */
+        header {
+            padding: 24px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .header-content {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo {
+            width: 48px;
+            height: 48px;
+        }
+
+        .logo-text {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--white);
+            text-decoration: none;
+        }
+
+        /* Hero Section */
+        .hero {
+            padding: 96px 0;
+            text-align: center;
+        }
+
+        .hero-icon {
+            width: 128px;
+            height: 128px;
+            margin: 0 auto 32px;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+
+        h1 {
+            font-size: 48px;
+            font-weight: 800;
+            line-height: 1.2;
+            margin-bottom: 24px;
+            background: linear-gradient(135deg, var(--white) 0%, var(--blue-light) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .tagline {
+            font-size: 24px;
+            font-weight: 400;
+            color: var(--slate-300);
+            margin-bottom: 16px;
+        }
+
+        .subtitle {
+            font-size: 18px;
+            color: var(--slate-400);
+            margin-bottom: 48px;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* Buttons */
+        .button-group {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 32px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn-primary {
+            background: var(--blue-primary);
+            color: var(--white);
+        }
+
+        .btn-primary:hover {
+            background: var(--blue-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 12px 24px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--white);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Status Badge */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: rgba(20, 184, 166, 0.1);
+            border: 1px solid rgba(20, 184, 166, 0.3);
+            border-radius: 24px;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--teal);
+            margin-bottom: 32px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--teal);
+            border-radius: 50%;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Features Section */
+        .features {
+            padding: 96px 0;
+            background: linear-gradient(180deg, transparent 0%, rgba(30, 41, 59, 0.5) 100%);
+        }
+
+        .section-title {
+            font-size: 36px;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 64px;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 32px;
+        }
+
+        .feature-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 32px;
+            transition: all 0.3s ease;
+        }
+
+        .feature-card:hover {
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
+        }
+
+        .feature-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--blue-primary) 0%, var(--blue-light) 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            margin-bottom: 16px;
+        }
+
+        .feature-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .feature-description {
+            font-size: 16px;
+            color: var(--slate-300);
+            line-height: 1.6;
+        }
+
+        /* Footer */
+        footer {
+            padding: 48px 0;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            text-align: center;
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 32px;
+            justify-content: center;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+
+        .footer-link {
+            color: var(--slate-300);
+            text-decoration: none;
+            font-size: 16px;
+            transition: color 0.2s ease;
+        }
+
+        .footer-link:hover {
+            color: var(--blue-light);
+        }
+
+        .footer-text {
+            color: var(--slate-400);
+            font-size: 14px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 36px;
+            }
+
+            .tagline {
+                font-size: 20px;
+            }
+
+            .subtitle {
+                font-size: 16px;
+            }
+
+            .hero {
+                padding: 64px 0;
+            }
+
+            .features {
+                padding: 64px 0;
+            }
+
+            .section-title {
+                font-size: 28px;
+            }
+
+            .button-group {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        /* Newsletter Section */
+        .newsletter {
+            padding: 64px 0;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(96, 165, 250, 0.05) 100%);
+            border-top: 1px solid rgba(59, 130, 246, 0.2);
+            border-bottom: 1px solid rgba(59, 130, 246, 0.2);
+        }
+
+        .newsletter-content {
+            max-width: 600px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .newsletter-title {
+            font-size: 30px;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+
+        .newsletter-description {
+            font-size: 16px;
+            color: var(--slate-300);
+            margin-bottom: 32px;
+            line-height: 1.6;
+        }
+
+        .newsletter-form {
+            display: flex;
+            gap: 12px;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .newsletter-input {
+            flex: 1;
+            padding: 14px 18px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--white);
+            font-size: 16px;
+            font-family: var(--font-family);
+            transition: all 0.2s ease;
+        }
+
+        .newsletter-input::placeholder {
+            color: var(--slate-400);
+        }
+
+        .newsletter-input:focus {
+            outline: none;
+            border-color: var(--blue-primary);
+            background: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+
+        .newsletter-submit {
+            padding: 14px 28px;
+            background: var(--blue-primary);
+            color: var(--white);
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: var(--font-family);
+            white-space: nowrap;
+        }
+
+        .newsletter-submit:hover {
+            background: var(--blue-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(59, 130, 246, 0.3);
+        }
+
+        .newsletter-submit:active {
+            transform: translateY(0);
+        }
+
+        /* Accessibility - Reduced Motion */
+        @media (prefers-reduced-motion: reduce) {
+            .hero-icon,
+            .status-dot {
+                animation: none;
+            }
+
+            .btn:hover,
+            .feature-card:hover,
+            .newsletter-submit:hover {
+                transform: none;
+            }
+        }
+
+        /* Responsive - Newsletter */
+        @media (max-width: 768px) {
+            .newsletter-form {
+                flex-direction: column;
+            }
+
+            .newsletter-submit {
+                width: 100%;
+            }
+        }
+    </style>
 </head>
 <body>
-    <h1>✨ Altair</h1>
-    <p>ADHD-friendly project management</p>
-    <p>Where focus takes flight</p>
-    <p>Coming 2025 | Open Source | Built for ADHD brains</p>
-    <a href="https://github.com/getaltair/altair">GitHub</a>
+    <!-- Header -->
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <img src="/brand/icons/altair-diamond-star.svg" alt="Altair Logo" class="logo">
+                <a href="/" class="logo-text">Altair</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <main>
+        <section class="hero">
+            <div class="container">
+                <img src="/brand/icons/altair-diamond-star.svg" alt="Altair Diamond Star Icon" class="hero-icon">
+
+                <div class="status-badge">
+                    <span class="status-dot"></span>
+                    <span>In Active Development</span>
+                </div>
+
+                <h1>Altair</h1>
+                <p class="tagline">Where focus takes flight</p>
+                <p class="subtitle">
+                    ADHD-friendly project management that works with your brain, not against it.
+                    Built by the community, for the community.
+                </p>
+
+                <div class="button-group">
+                    <a href="https://github.com/getaltair/altair" class="btn btn-primary">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+                        </svg>
+                        View on GitHub
+                    </a>
+                    <a href="#features" class="btn btn-secondary">Learn More</a>
+                </div>
+
+                <p style="color: var(--slate-400); font-size: 14px; margin-top: 24px;">
+                    Coming 2025 • Open Source • AGPL-3.0 License
+                </p>
+            </div>
+        </section>
+
+        <!-- Newsletter Section -->
+        <section class="newsletter">
+            <div class="container">
+                <div class="newsletter-content">
+                    <h2 class="newsletter-title">Stay Updated</h2>
+                    <p class="newsletter-description">
+                        Get early access, development updates, and ADHD productivity insights delivered to your inbox.
+                        No spam, just signal.
+                    </p>
+                    <form
+                        action="https://buttondown.email/api/emails/embed-subscribe/getaltair"
+                        method="post"
+                        target="popupwindow"
+                        onsubmit="window.open('https://buttondown.email/getaltair', 'popupwindow')"
+                        class="newsletter-form"
+                    >
+                        <input
+                            type="email"
+                            name="email"
+                            id="bd-email"
+                            placeholder="Enter your email"
+                            required
+                            class="newsletter-input"
+                            aria-label="Email address"
+                        />
+                        <input type="submit" value="Subscribe" class="newsletter-submit" />
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <!-- Features Section -->
+        <section id="features" class="features">
+            <div class="container">
+                <h2 class="section-title">Built for ADHD Brains</h2>
+
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">⚡</div>
+                        <h3 class="feature-title">Quick Capture</h3>
+                        <p class="feature-description">
+                            Capture tasks instantly with minimal friction. No endless forms or fields.
+                            Just get it out of your head and move on.
+                        </p>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">🎯</div>
+                        <h3 class="feature-title">Smart Focus Sessions</h3>
+                        <p class="feature-description">
+                            Pomodoro timers that adapt to your hyperfocus patterns.
+                            Gentle breaks that actually help instead of interrupt.
+                        </p>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">🧩</div>
+                        <h3 class="feature-title">Task Decomposition</h3>
+                        <p class="feature-description">
+                            Break overwhelming projects into bite-sized pieces.
+                            AI-assisted when you need it, manual when you don't.
+                        </p>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">🎨</div>
+                        <h3 class="feature-title">Cognitive Load Tracking</h3>
+                        <p class="feature-description">
+                            Rate tasks by mental effort, not just time.
+                            Plan your day around your energy, not the clock.
+                        </p>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">🔄</div>
+                        <h3 class="feature-title">Offline-First</h3>
+                        <p class="feature-description">
+                            Never lose a thought to a dead connection.
+                            Everything saves locally first, syncs when ready.
+                        </p>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">🎉</div>
+                        <h3 class="feature-title">Celebration, Not Shame</h3>
+                        <p class="feature-description">
+                            Progress tracking that celebrates wins instead of highlighting failures.
+                            Built with compassion, not productivity guilt.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Why Section -->
+        <section style="padding: 96px 0;">
+            <div class="container" style="max-width: 800px; text-align: center;">
+                <h2 class="section-title">Why Altair?</h2>
+                <p style="font-size: 18px; color: var(--slate-300); line-height: 1.8; margin-bottom: 32px;">
+                    Traditional project management tools are built for neurotypical brains.
+                    They assume infinite executive function, consistent focus, and linear thinking.
+                </p>
+                <p style="font-size: 18px; color: var(--slate-300); line-height: 1.8; margin-bottom: 32px;">
+                    Altair is different. It's designed from the ground up for the way ADHD brains actually work—
+                    embracing hyperfocus, supporting task switching, and reducing decision fatigue at every turn.
+                </p>
+                <p style="font-size: 20px; font-weight: 600; color: var(--blue-light);">
+                    ADHD users don't need to be fixed. They need tools that work with their brains.
+                </p>
+            </div>
+        </section>
+
+        <!-- Community Section -->
+        <section style="padding: 96px 0; background: linear-gradient(180deg, rgba(30, 41, 59, 0.5) 0%, transparent 100%);">
+            <div class="container" style="max-width: 700px; text-align: center;">
+                <h2 class="section-title">Built in Public</h2>
+                <p style="font-size: 18px; color: var(--slate-300); line-height: 1.8; margin-bottom: 48px;">
+                    Altair is being built openly by the community. Follow the development process,
+                    contribute ideas, and help shape a tool that actually serves neurodivergent needs.
+                </p>
+
+                <div class="button-group">
+                    <a href="https://github.com/getaltair/altair" class="btn btn-primary">
+                        Star on GitHub
+                    </a>
+                    <a href="https://github.com/getaltair/altair/discussions" class="btn btn-secondary">
+                        Join Discussions
+                    </a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="footer-links">
+                <a href="https://github.com/getaltair/altair" class="footer-link">GitHub</a>
+                <a href="https://github.com/getaltair/altair/blob/main/CONTRIBUTING.md" class="footer-link">Contributing</a>
+                <a href="https://github.com/getaltair/altair/blob/main/ARCHITECTURE.md" class="footer-link">Documentation</a>
+                <a href="https://github.com/getaltair/altair/blob/main/brand/BRAND-GUIDELINES.md" class="footer-link">Brand Guidelines</a>
+            </div>
+            <p class="footer-text">
+                &copy; 2025 Altair Project • Licensed under AGPL-3.0 • Built with ❤️ by the community
+            </p>
+        </div>
+    </footer>
 </body>
 </html>

@@ -4,6 +4,22 @@ All notable changes to the Altair project will be documented in this file.
 
 ## [Current] - 2025-10-04
 
+### feat(landing): build production-ready landing page with newsletter signup
+
+- Transform index.html from placeholder to full-featured landing page
+- Implement brand-compliant design using Inter font and official color palette (#3B82F6, #0F172A)
+- Add hero section with animated diamond star icon and project tagline
+- Add Buttondown newsletter integration for email signups at https://buttondown.com/getaltair
+- Add 6 feature cards showcasing ADHD-friendly capabilities (quick capture, focus sessions, task decomposition, cognitive load tracking, offline-first, celebration)
+- Add "Why Altair?" mission statement section
+- Add "Built in Public" community section with GitHub CTAs
+- Implement fully responsive design with mobile-first approach
+- Add accessibility features: reduced motion support, WCAG AA contrast ratios, semantic HTML
+- Add SEO meta tags and Open Graph/Twitter social sharing metadata
+- Add favicon integration with multiple formats (SVG, PNG 512/256/64)
+- Add footer with documentation links and licensing information
+- Style landing page following ADHD-friendly principles: 1.6 line height, clear hierarchy, high contrast
+
 ### docs: restructure documentation with comprehensive root-level guides
 
 - Add ARCHITECTURE.md with detailed system design, tech stack, and deployment strategies
