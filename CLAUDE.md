@@ -432,3 +432,4 @@ The key insight: **ADHD users don't need to be fixed; they need tools that work 
 ---
 *Last Updated: [Update with current date when modified]*
 *Current Focus: MVP Quick Capture and Basic Task Management*
+- Always sign commits
