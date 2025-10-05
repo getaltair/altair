@@ -26,11 +26,12 @@ void main() {
       createdAt: DateTime.parse('2024-01-15T10:30:00Z'),
     );
 
-    const testTokens = AuthTokens(
+    final testTokens = AuthTokens(
       accessToken: 'test_access_token',
       refreshToken: 'test_refresh_token',
       tokenType: 'bearer',
       expiresIn: 3600,
+      issuedAt: DateTime.now(),
     );
 
     setUp(() {

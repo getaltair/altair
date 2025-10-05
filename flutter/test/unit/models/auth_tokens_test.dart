@@ -57,11 +57,12 @@ void main() {
     group('toJson', () {
       test('should correctly serialize to JSON', () {
         // Arrange
-        const tokens = AuthTokens(
+        final tokens = AuthTokens(
           accessToken: 'test_access_token',
           refreshToken: 'test_refresh_token',
           tokenType: 'bearer',
           expiresIn: 3600,
+          issuedAt: DateTime.now(),
         );
 
         // Act
@@ -88,25 +89,32 @@ void main() {
         final resultJson = tokens.toJson();
 
         // Assert
-        expect(resultJson, equals(originalJson));
+        expect(resultJson['access_token'], equals(originalJson['access_token']));
+        expect(resultJson['refresh_token'], equals(originalJson['refresh_token']));
+        expect(resultJson['token_type'], equals(originalJson['token_type']));
+        expect(resultJson['expires_in'], equals(originalJson['expires_in']));
+        expect(resultJson['issued_at'], isNotNull);
       });
     });
 
     group('equality', () {
       test('should be equal when all fields match', () {
         // Arrange
-        const tokens1 = AuthTokens(
+        final issuedAt = DateTime.now();
+        final tokens1 = AuthTokens(
           accessToken: 'token1',
           refreshToken: 'token2',
           tokenType: 'bearer',
           expiresIn: 3600,
+          issuedAt: issuedAt,
         );
 
-        const tokens2 = AuthTokens(
+        final tokens2 = AuthTokens(
           accessToken: 'token1',
           refreshToken: 'token2',
           tokenType: 'bearer',
           expiresIn: 3600,
+          issuedAt: issuedAt,
         );
 
         // Assert
@@ -116,18 +124,21 @@ void main() {
 
       test('should not be equal when access token differs', () {
         // Arrange
-        const tokens1 = AuthTokens(
+        final issuedAt = DateTime.now();
+        final tokens1 = AuthTokens(
           accessToken: 'token1',
           refreshToken: 'token2',
           tokenType: 'bearer',
           expiresIn: 3600,
+          issuedAt: issuedAt,
         );
 
-        const tokens2 = AuthTokens(
+        final tokens2 = AuthTokens(
           accessToken: 'different_token',
           refreshToken: 'token2',
           tokenType: 'bearer',
           expiresIn: 3600,
+          issuedAt: issuedAt,
         );
 
         // Assert
@@ -136,18 +147,21 @@ void main() {
 
       test('should not be equal when expires_in differs', () {
         // Arrange
-        const tokens1 = AuthTokens(
+        final issuedAt = DateTime.now();
+        final tokens1 = AuthTokens(
           accessToken: 'token1',
           refreshToken: 'token2',
           tokenType: 'bearer',
           expiresIn: 3600,
+          issuedAt: issuedAt,
         );
 
-        const tokens2 = AuthTokens(
+        final tokens2 = AuthTokens(
           accessToken: 'token1',
           refreshToken: 'token2',
           tokenType: 'bearer',
           expiresIn: 7200,
+          issuedAt: issuedAt,
         );
 
         // Assert
@@ -158,11 +172,12 @@ void main() {
     group('toString', () {
       test('should truncate tokens in string representation', () {
         // Arrange
-        const tokens = AuthTokens(
+        final tokens = AuthTokens(
           accessToken: 'this_is_a_very_long_access_token_that_should_be_truncated',
           refreshToken: 'this_is_a_very_long_refresh_token_that_should_be_truncated',
           tokenType: 'bearer',
           expiresIn: 3600,
+          issuedAt: DateTime.now(),
         );
 
         // Act

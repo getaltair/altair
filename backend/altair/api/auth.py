@@ -133,8 +133,8 @@ class RefreshRequest(BaseModel):
 @router.post("/refresh", response_model=Token)
 @limiter.limit("10/minute")
 async def refresh_tokens(
-    request_obj: Request,
-    request: RefreshRequest,
+    request: Request,
+    refresh_request: RefreshRequest,
     db: Annotated[Session, Depends(get_db)],
 ) -> dict:
     """Exchange refresh token for new access token.
@@ -143,7 +143,8 @@ async def refresh_tokens(
     refresh token rotation for better security.
 
     Args:
-        request: Request containing the refresh token
+        request: FastAPI Request object (for rate limiting)
+        refresh_request: Request containing the refresh token
         db: Database session
 
     Returns:
@@ -153,7 +154,7 @@ async def refresh_tokens(
         HTTPException 401: If refresh token is invalid or user not found/inactive
     """
     # Verify refresh token
-    payload = verify_token(request.refresh_token, expected_type="refresh")
+    payload = verify_token(refresh_request.refresh_token, expected_type="refresh")
     email = payload.get("sub")
 
     # Verify user still exists and is active

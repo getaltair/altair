@@ -13,11 +13,12 @@ void main() {
     late MockFlutterSecureStorage mockStorage;
     late SecureTokenRepository repository;
 
-    const testTokens = AuthTokens(
+    final testTokens = AuthTokens(
       accessToken: 'test_access_token',
       refreshToken: 'test_refresh_token',
       tokenType: 'bearer',
       expiresIn: 3600,
+      issuedAt: DateTime.now(),
     );
 
     setUp(() {
@@ -46,6 +47,10 @@ void main() {
         verify(mockStorage.write(
           key: 'expires_in',
           value: '3600',
+        )).called(1);
+        verify(mockStorage.write(
+          key: 'issued_at',
+          value: anyNamed('value'),
         )).called(1);
         verifyNoMoreInteractions(mockStorage);
       });
@@ -87,6 +92,8 @@ void main() {
             .thenAnswer((_) async => 'bearer');
         when(mockStorage.read(key: 'expires_in'))
             .thenAnswer((_) async => '3600');
+        when(mockStorage.read(key: 'issued_at'))
+            .thenAnswer((_) async => DateTime.now().toIso8601String());
 
         // Act
         final result = await repository.getAccessToken();
@@ -132,6 +139,8 @@ void main() {
             .thenAnswer((_) async => 'bearer');
         when(mockStorage.read(key: 'expires_in'))
             .thenAnswer((_) async => '3600');
+        when(mockStorage.read(key: 'issued_at'))
+            .thenAnswer((_) async => DateTime.now().toIso8601String());
 
         // Act
         final result = await repository.getRefreshToken();
@@ -164,6 +173,8 @@ void main() {
             .thenAnswer((_) async => 'bearer');
         when(mockStorage.read(key: 'expires_in'))
             .thenAnswer((_) async => '7200');
+        when(mockStorage.read(key: 'issued_at'))
+            .thenAnswer((_) async => DateTime.now().toIso8601String());
 
         // Act
         final result = await repository.getTokens();
@@ -185,6 +196,8 @@ void main() {
             .thenAnswer((_) async => 'bearer');
         when(mockStorage.read(key: 'expires_in'))
             .thenAnswer((_) async => '3600');
+        when(mockStorage.read(key: 'issued_at'))
+            .thenAnswer((_) async => DateTime.now().toIso8601String());
 
         // Act
         final result = await repository.getTokens();
@@ -203,6 +216,8 @@ void main() {
             .thenAnswer((_) async => 'bearer');
         when(mockStorage.read(key: 'expires_in'))
             .thenAnswer((_) async => '3600');
+        when(mockStorage.read(key: 'issued_at'))
+            .thenAnswer((_) async => DateTime.now().toIso8601String());
 
         // Act - first call loads from storage
         final result1 = await repository.getTokens();
@@ -212,7 +227,7 @@ void main() {
         // Assert
         expect(result1, equals(result2));
         // Should only read once (first time)
-        verify(mockStorage.read(key: anyNamed('key'))).called(4); // 4 fields
+        verify(mockStorage.read(key: anyNamed('key'))).called(5); // 5 fields (including issued_at)
       });
     });
 
@@ -266,6 +281,8 @@ void main() {
             .thenAnswer((_) async => 'bearer');
         when(mockStorage.read(key: 'expires_in'))
             .thenAnswer((_) async => '3600');
+        when(mockStorage.read(key: 'issued_at'))
+            .thenAnswer((_) async => DateTime.now().toIso8601String());
 
         // Act
         final result = await repository.hasTokens();
@@ -313,6 +330,8 @@ void main() {
             .thenAnswer((_) async => 'bearer');
         when(mockStorage.read(key: 'expires_in'))
             .thenAnswer((_) async => 'invalid_number');
+        when(mockStorage.read(key: 'issued_at'))
+            .thenAnswer((_) async => DateTime.now().toIso8601String());
 
         // Act & Assert
         expect(
