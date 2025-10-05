@@ -4,6 +4,15 @@ All notable changes to the Altair project will be documented in this file.
 
 ## [Current] - 2025-10-05
 
+### ci(github): optimize workflow with path-based job filtering
+
+- Add path filtering using dorny/paths-filter to detect backend changes
+- Implement conditional job execution - lint and test only run when backend files change
+- Add gatekeeper job (all-checks-passed) that validates results or confirms appropriate skips
+- Improve CI efficiency by skipping unnecessary jobs when only docs/frontend change
+- Add comprehensive status reporting in final validation step
+- Ensure CI still acts as proper merge gate with always() condition on gatekeeper
+
 ### ci(github): add issue templates and pull request template
 
 - Add ADHD-specific feedback issue template for user experience insights
