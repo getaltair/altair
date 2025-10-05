@@ -176,7 +176,8 @@ def is_token_blacklisted(token: str) -> bool:
     """
     try:
         redis_client = get_redis_client()
-        return redis_client.exists(f"blacklist:{token}") > 0
+        result: int = redis_client.exists(f"blacklist:{token}")  # type: ignore[assignment]
+        return result > 0
     except Exception:
         # If Redis is unavailable, fail open (allow the token)
         # This prevents Redis outages from breaking all authentication

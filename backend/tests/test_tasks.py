@@ -139,6 +139,7 @@ class TestQuickCapture:
         task_id = response.json()["id"]
 
         task = db_session.query(Task).filter_by(id=UUID(task_id)).first()
+        assert task is not None
         assert task.user_id == test_user.id
 
 
@@ -177,6 +178,7 @@ class TestTaskCreation:
 
         # Verify in database
         task = db_session.query(Task).filter_by(id=UUID(data["id"])).first()
+        assert task is not None
         assert task.user_id == test_user.id
 
     def test_create_task_minimal_fields(self, client: TestClient, auth_headers: dict):

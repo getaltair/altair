@@ -8,6 +8,9 @@ repos:
       # Run the formatter
       - id: ruff-format
 
+  # Note: pyright is run in CI but not pre-commit due to dependency resolution
+  # Run manually with: uv run pyright
+
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
     hooks:

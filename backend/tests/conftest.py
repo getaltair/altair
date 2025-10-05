@@ -74,7 +74,7 @@ def db_session(engine) -> Iterator[Session]:
 
 
 @pytest.fixture(scope="function")
-def client(db_session: Session) -> TestClient:
+def client(db_session: Session) -> Iterator[TestClient]:
     """Provide a FastAPI TestClient with database dependency override.
 
     Overrides the get_db dependency to use the test database session
@@ -83,7 +83,7 @@ def client(db_session: Session) -> TestClient:
     Args:
         db_session: Test database session from db_session fixture
 
-    Returns:
+    Yields:
         TestClient: FastAPI test client
     """
 

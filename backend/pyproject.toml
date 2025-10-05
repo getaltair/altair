@@ -30,6 +30,7 @@ dev = [
   "ruff>=0.1.0",
   "ipython>=8.0.0",
   "pre-commit>=3.5.0",
+  "pyright>=1.1.350",
 ]
 
 [build-system]
@@ -47,3 +48,12 @@ ignore = []
 [tool.ruff.format]
 quote-style = "double"
 indent-style = "space"
+
+[tool.pyright]
+include = ["altair", "tests"]
+exclude = ["**/__pycache__", "alembic/versions"]
+typeCheckingMode = "basic"
+reportMissingImports = true
+reportMissingTypeStubs = false
+pythonVersion = "3.11"
+pythonPlatform = "Linux"

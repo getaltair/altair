@@ -54,6 +54,9 @@ jobs:
       - name: Run Ruff formatter check
         run: uv run ruff format --check --diff .
 
+      - name: Run Pyright type checker
+        run: uv run pyright
+
   test:
     name: Test (Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest

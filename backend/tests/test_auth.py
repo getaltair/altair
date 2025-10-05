@@ -92,6 +92,7 @@ class TestRegistration:
 
         # Verify password is hashed, not plaintext
         user = db_session.query(User).filter_by(email="hashtest@example.com").first()
+        assert user is not None
         assert user.hashed_password != password
         assert user.hashed_password.startswith("$argon2")  # argon2 hash prefix
 
