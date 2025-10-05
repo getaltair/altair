@@ -54,7 +54,7 @@ def quick_capture(
             "created_at": "2025-10-03T10:30:00Z"
         }
     """
-    task = Task(title=text, state=TaskState.INBOX)
+    task = Task(title=text, state=TaskState.INBOX, user_id=user.id)
     db.add(task)
     db.commit()
     db.refresh(task)
@@ -65,6 +65,7 @@ def quick_capture(
 def list_tasks(
     skip: int = 0,
     limit: int = Query(default=100, le=500),
+    user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """Retrieve a paginated list of tasks.
@@ -86,13 +87,22 @@ def list_tasks(
         Returns the first 20 tasks created
     """
     tasks = (
-        db.query(Task).offset(skip).limit(limit).order_by(Task.created_at.desc()).all()
+        db.query(Task)
+        .where(Task.user_id == user.id)
+        .offset(skip)
+        .limit(limit)
+        .order_by(Task.created_at.desc())
+        .all()
     )
     return tasks
 
 
 @router.post("", response_model=TaskResponse)
-def create_task(task: TaskCreate, db: Session = Depends(get_db)):
+def create_task(
+    task: TaskCreate,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
     """Create a new task with full metadata (structured creation).
 
     Unlike quick-capture, this endpoint accepts a complete TaskCreate schema
@@ -118,7 +128,7 @@ def create_task(task: TaskCreate, db: Session = Depends(get_db)):
             "estimated_minutes": 45
         }
     """
-    db_task = Task(**task.model_dump())
+    db_task = Task(**task.model_dump(), user_id=user.id)
     db.add(db_task)
     db.commit()
     db.refresh(db_task)
@@ -126,7 +136,9 @@ def create_task(task: TaskCreate, db: Session = Depends(get_db)):
 
 
 @router.get("/{task_id}", response_model=TaskResponse)
-def get_task(task_id: UUID, db: Session = Depends(get_db)):
+def get_task(
+    task_id: UUID, user: User = Depends(get_current_user), db: Session = Depends(get_db)
+):
     """Retrieve a single task by its unique ID.
 
     Args:
@@ -142,14 +154,21 @@ def get_task(task_id: UUID, db: Session = Depends(get_db)):
     Example:
         GET /tasks/550e8400-e29b-41d4-a716-446655440000
     """
-    task = db.query(Task).filter(Task.id == task_id).first()
+    task = (
+        db.query(Task).where(Task.user_id == user.id, Task.id == task_id).first()
+    )
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
     return task
 
 
 @router.put("/{task_id}", response_model=TaskResponse)
-def update_task(task_id: UUID, task_update: TaskUpdate, db: Session = Depends(get_db)):
+def update_task(
+    task_id: UUID,
+    task_update: TaskUpdate,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
     """Update an existing task with partial or complete changes.
 
     Uses the TaskUpdate schema which allows partial updates - only fields
@@ -176,7 +195,9 @@ def update_task(task_id: UUID, task_update: TaskUpdate, db: Session = Depends(ge
 
         Only updates the state field, leaving other fields unchanged
     """
-    task = db.query(Task).filter(Task.id == task_id).first()
+    task = (
+        db.query(Task).where(Task.user_id == user.id, Task.id == task_id).first()
+    )
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
 

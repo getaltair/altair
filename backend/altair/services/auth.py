@@ -8,6 +8,7 @@ from passlib.context import CryptContext
 from fastapi import HTTPException, status
 
 from altair.config import settings
+from altair.redis import get_redis_client
 
 # Password hashing context using Argon2 (modern, recommended algorithm)
 pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
@@ -121,3 +122,57 @@ def verify_token(token: str, expected_type: str = "access") -> dict[str, Any]:
 
     except JWTError:
         raise credentials_exception
+
+
+def blacklist_token(token: str, token_type: str = "access") -> None:
+    """Add a token to the blacklist (revoke it).
+
+    Stores the token in Redis with an expiration matching the token's lifetime.
+    This prevents revoked tokens from being used until they naturally expire.
+
+    Args:
+        token: JWT token string to blacklist
+        token_type: Type of token ("access" or "refresh")
+
+    Note:
+        Uses Redis SETEX to automatically remove blacklisted tokens after expiration.
+    """
+    try:
+        redis_client = get_redis_client()
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+
+        # Calculate time until token expires
+        exp_timestamp = payload.get("exp")
+        if exp_timestamp:
+            now = datetime.now(timezone.utc).timestamp()
+            ttl = int(exp_timestamp - now)
+
+            if ttl > 0:
+                # Store token in blacklist with expiration
+                redis_client.setex(
+                    f"blacklist:{token}",
+                    ttl,
+                    token_type
+                )
+    except (JWTError, Exception):
+        # If token is invalid or Redis fails, it's not critical
+        # The token will fail validation anyway
+        pass
+
+
+def is_token_blacklisted(token: str) -> bool:
+    """Check if a token has been blacklisted (revoked).
+
+    Args:
+        token: JWT token string to check
+
+    Returns:
+        bool: True if token is blacklisted, False otherwise
+    """
+    try:
+        redis_client = get_redis_client()
+        return redis_client.exists(f"blacklist:{token}") > 0
+    except Exception:
+        # If Redis is unavailable, fail open (allow the token)
+        # This prevents Redis outages from breaking all authentication
+        return False

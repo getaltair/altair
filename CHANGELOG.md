@@ -4,6 +4,17 @@ All notable changes to the Altair project will be documented in this file.
 
 ## [Current] - 2025-10-04
 
+### feat(auth): implement logout endpoint with token blacklisting and rate limiting
+
+- Add logout endpoint that revokes access tokens via Redis blacklist
+- Implement token blacklist checking in get_current_user dependency
+- Add Redis client module for token revocation and caching
+- Add rate limiting to auth endpoints (register: 3/min, login: 5/min, refresh: 10/min, logout: 10/min)
+- Add slowapi dependency for rate limiting functionality
+- Update .env.example with REFRESH_TOKEN_EXPIRE_DAYS and improved documentation
+- Add user ownership to all task operations (create, read, update, list)
+- Ensure tasks are filtered by user_id to enforce data isolation
+
 ### refactor(brand): rebrand from Polaris to Altair
 
 - Rename all Python packages from `polaris` to `altair` throughout backend

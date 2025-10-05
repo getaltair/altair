@@ -2,15 +2,19 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 from sqlalchemy.orm import Session
 
 from altair.database import get_db
+from altair.dependencies import get_current_user, oauth2_scheme
 from altair.models.user import User
 from altair.schemas.auth import Token, UserCreate, UserResponse
 from altair.services.auth import (
+    blacklist_token,
     create_token_pair,
     hash_password,
     verify_password,
@@ -19,9 +23,14 @@ from altair.services.auth import (
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
+# Initialize rate limiter for auth endpoints
+limiter = Limiter(key_func=get_remote_address)
+
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit("3/minute")
 async def register(
+    request: Request,
     user_data: UserCreate,
     db: Annotated[Session, Depends(get_db)]
 ) -> User:
@@ -73,7 +82,9 @@ async def register(
 
 
 @router.post("/login", response_model=Token)
+@limiter.limit("5/minute")
 async def login(
+    request: Request,
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     db: Annotated[Session, Depends(get_db)]
 ) -> dict:
@@ -120,7 +131,9 @@ class RefreshRequest(BaseModel):
 
 
 @router.post("/refresh", response_model=Token)
+@limiter.limit("10/minute")
 async def refresh_tokens(
+    request_obj: Request,
     request: RefreshRequest,
     db: Annotated[Session, Depends(get_db)]
 ) -> dict:
@@ -154,3 +167,34 @@ async def refresh_tokens(
     # Generate new token pair (implements token rotation)
     tokens = create_token_pair(user.email)
     return tokens
+
+
+@router.post("/logout")
+@limiter.limit("10/minute")
+async def logout(
+    request: Request,
+    token: Annotated[str, Depends(oauth2_scheme)],
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> dict:
+    """Logout and revoke the current access token.
+
+    Adds the current access token to the blacklist in Redis, preventing it
+    from being used for further API calls. The token remains blacklisted
+    until it naturally expires.
+
+    Args:
+        request: FastAPI request object (for rate limiting)
+        token: Current access token from Authorization header
+        current_user: Current authenticated user (validates token is active)
+
+    Returns:
+        Success message confirming logout
+
+    Note:
+        This implements server-side token revocation. Clients should also
+        delete tokens from local storage for security.
+    """
+    # Blacklist the current access token
+    blacklist_token(token, token_type="access")
+
+    return {"message": "Successfully logged out"}

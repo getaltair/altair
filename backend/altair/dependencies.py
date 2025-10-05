@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 
 from altair.database import get_db
 from altair.models.user import User
-from altair.services.auth import verify_token
+from altair.services.auth import is_token_blacklisted, verify_token
 
 # OAuth2 scheme - tells FastAPI where to look for token
 # tokenUrl points to the login endpoint that will issue tokens
@@ -45,6 +45,13 @@ async def get_current_user(
         async def list_tasks(current_user: User = Depends(get_current_user)):
             return {"tasks": get_user_tasks(current_user.id)}
     """
+    # Check if token has been blacklisted (revoked)
+    if is_token_blacklisted(token):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token has been revoked"
+        )
+
     payload = verify_token(token, expected_type="access")
     email = payload.get("sub")
 
