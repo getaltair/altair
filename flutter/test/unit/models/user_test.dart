@@ -67,10 +67,7 @@ void main() {
         };
 
         // Act & Assert
-        expect(
-          () => User.fromJson(invalidJson),
-          throwsA(isA<TypeError>()),
-        );
+        expect(() => User.fromJson(invalidJson), throwsA(isA<TypeError>()));
       });
 
       test('should throw when created_at has invalid format', () {

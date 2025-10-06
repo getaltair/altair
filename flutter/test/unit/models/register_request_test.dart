@@ -243,17 +243,20 @@ void main() {
         expect(request.email, 'valid.email+tag@example.com');
       });
 
-      test('should create request with short password (validation on backend)', () {
-        // Arrange & Act
-        // Note: Password validation is handled on backend
-        const request = RegisterRequest(
-          email: 'test@example.com',
-          password: '123',
-        );
+      test(
+        'should create request with short password (validation on backend)',
+        () {
+          // Arrange & Act
+          // Note: Password validation is handled on backend
+          const request = RegisterRequest(
+            email: 'test@example.com',
+            password: '123',
+          );
 
-        // Assert
-        expect(request.password, '123');
-      });
+          // Assert
+          expect(request.password, '123');
+        },
+      );
 
       test('should create request with special characters in username', () {
         // Arrange & Act

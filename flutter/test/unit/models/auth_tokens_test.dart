@@ -89,8 +89,14 @@ void main() {
         final resultJson = tokens.toJson();
 
         // Assert
-        expect(resultJson['access_token'], equals(originalJson['access_token']));
-        expect(resultJson['refresh_token'], equals(originalJson['refresh_token']));
+        expect(
+          resultJson['access_token'],
+          equals(originalJson['access_token']),
+        );
+        expect(
+          resultJson['refresh_token'],
+          equals(originalJson['refresh_token']),
+        );
         expect(resultJson['token_type'], equals(originalJson['token_type']));
         expect(resultJson['expires_in'], equals(originalJson['expires_in']));
         expect(resultJson['issued_at'], isNotNull);
@@ -173,8 +179,10 @@ void main() {
       test('should truncate tokens in string representation', () {
         // Arrange
         final tokens = AuthTokens(
-          accessToken: 'this_is_a_very_long_access_token_that_should_be_truncated',
-          refreshToken: 'this_is_a_very_long_refresh_token_that_should_be_truncated',
+          accessToken:
+              'this_is_a_very_long_access_token_that_should_be_truncated',
+          refreshToken:
+              'this_is_a_very_long_refresh_token_that_should_be_truncated',
           tokenType: 'bearer',
           expiresIn: 3600,
           issuedAt: DateTime.now(),
@@ -191,7 +199,11 @@ void main() {
         // Full token should not be in string for security
         expect(
           str,
-          isNot(contains('this_is_a_very_long_access_token_that_should_be_truncated')),
+          isNot(
+            contains(
+              'this_is_a_very_long_access_token_that_should_be_truncated',
+            ),
+          ),
         );
       });
     });

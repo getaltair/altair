@@ -39,19 +39,23 @@ void main() {
           username: 'testuser',
         );
 
-        when(mockDio.post<Map<String, dynamic>>(
-          '/auth/register',
-          data: anyNamed('data'),
-        )).thenAnswer((_) async => Response(
-              requestOptions: RequestOptions(path: '/auth/register'),
-              data: {
-                'id': 'user-123',
-                'email': 'test@example.com',
-                'username': 'testuser',
-                'created_at': '2024-01-15T10:30:00Z',
-              },
-              statusCode: 200,
-            ));
+        when(
+          mockDio.post<Map<String, dynamic>>(
+            '/auth/register',
+            data: anyNamed('data'),
+          ),
+        ).thenAnswer(
+          (_) async => Response(
+            requestOptions: RequestOptions(path: '/auth/register'),
+            data: {
+              'id': 'user-123',
+              'email': 'test@example.com',
+              'username': 'testuser',
+              'created_at': '2024-01-15T10:30:00Z',
+            },
+            statusCode: 200,
+          ),
+        );
 
         // Act
         final result = await authService.register(request);
@@ -61,10 +65,12 @@ void main() {
         expect(result.email, 'test@example.com');
         expect(result.username, 'testuser');
 
-        verify(mockDio.post<Map<String, dynamic>>(
-          '/auth/register',
-          data: request.toJson(),
-        )).called(1);
+        verify(
+          mockDio.post<Map<String, dynamic>>(
+            '/auth/register',
+            data: request.toJson(),
+          ),
+        ).called(1);
       });
 
       test('should throw exception when response data is null', () async {
@@ -74,20 +80,21 @@ void main() {
           password: 'password123',
         );
 
-        when(mockDio.post<Map<String, dynamic>>(
-          '/auth/register',
-          data: anyNamed('data'),
-        )).thenAnswer((_) async => Response(
-              requestOptions: RequestOptions(path: '/auth/register'),
-              data: null,
-              statusCode: 200,
-            ));
+        when(
+          mockDio.post<Map<String, dynamic>>(
+            '/auth/register',
+            data: anyNamed('data'),
+          ),
+        ).thenAnswer(
+          (_) async => Response(
+            requestOptions: RequestOptions(path: '/auth/register'),
+            data: null,
+            statusCode: 200,
+          ),
+        );
 
         // Act & Assert
-        expect(
-          () => authService.register(request),
-          throwsA(isA<Exception>()),
-        );
+        expect(() => authService.register(request), throwsA(isA<Exception>()));
       });
 
       test('should throw DioException when registration fails', () async {
@@ -97,17 +104,21 @@ void main() {
           password: 'password123',
         );
 
-        when(mockDio.post<Map<String, dynamic>>(
-          '/auth/register',
-          data: anyNamed('data'),
-        )).thenThrow(DioException(
-          requestOptions: RequestOptions(path: '/auth/register'),
-          response: Response(
-            requestOptions: RequestOptions(path: '/auth/register'),
-            statusCode: 400,
-            data: {'detail': 'Email already exists'},
+        when(
+          mockDio.post<Map<String, dynamic>>(
+            '/auth/register',
+            data: anyNamed('data'),
           ),
-        ));
+        ).thenThrow(
+          DioException(
+            requestOptions: RequestOptions(path: '/auth/register'),
+            response: Response(
+              requestOptions: RequestOptions(path: '/auth/register'),
+              statusCode: 400,
+              data: {'detail': 'Email already exists'},
+            ),
+          ),
+        );
 
         // Act & Assert
         expect(
@@ -120,23 +131,26 @@ void main() {
     group('login', () {
       test('should login successfully and save tokens', () async {
         // Arrange
-        when(mockDio.post<Map<String, dynamic>>(
-          '/auth/login',
-          data: anyNamed('data'),
-          options: anyNamed('options'),
-        )).thenAnswer((_) async => Response(
-              requestOptions: RequestOptions(path: '/auth/login'),
-              data: {
-                'access_token': 'test_access_token',
-                'refresh_token': 'test_refresh_token',
-                'token_type': 'bearer',
-                'expires_in': 3600,
-              },
-              statusCode: 200,
-            ));
+        when(
+          mockDio.post<Map<String, dynamic>>(
+            '/auth/login',
+            data: anyNamed('data'),
+            options: anyNamed('options'),
+          ),
+        ).thenAnswer(
+          (_) async => Response(
+            requestOptions: RequestOptions(path: '/auth/login'),
+            data: {
+              'access_token': 'test_access_token',
+              'refresh_token': 'test_refresh_token',
+              'token_type': 'bearer',
+              'expires_in': 3600,
+            },
+            statusCode: 200,
+          ),
+        );
 
-        when(mockTokenRepository.saveTokens(any))
-            .thenAnswer((_) async => {});
+        when(mockTokenRepository.saveTokens(any)).thenAnswer((_) async => {});
 
         // Act
         final result = await authService.login(
@@ -151,11 +165,13 @@ void main() {
         expect(result.expiresIn, 3600);
 
         // Verify login request was made with correct format
-        final captured = verify(mockDio.post<Map<String, dynamic>>(
-          '/auth/login',
-          data: captureAnyNamed('data'),
-          options: captureAnyNamed('options'),
-        )).captured;
+        final captured = verify(
+          mockDio.post<Map<String, dynamic>>(
+            '/auth/login',
+            data: captureAnyNamed('data'),
+            options: captureAnyNamed('options'),
+          ),
+        ).captured;
 
         final requestData = captured[0] as Map<String, dynamic>;
         expect(requestData['username'], 'test@example.com');
@@ -170,15 +186,19 @@ void main() {
 
       test('should throw exception when response data is null', () async {
         // Arrange
-        when(mockDio.post<Map<String, dynamic>>(
-          '/auth/login',
-          data: anyNamed('data'),
-          options: anyNamed('options'),
-        )).thenAnswer((_) async => Response(
-              requestOptions: RequestOptions(path: '/auth/login'),
-              data: null,
-              statusCode: 200,
-            ));
+        when(
+          mockDio.post<Map<String, dynamic>>(
+            '/auth/login',
+            data: anyNamed('data'),
+            options: anyNamed('options'),
+          ),
+        ).thenAnswer(
+          (_) async => Response(
+            requestOptions: RequestOptions(path: '/auth/login'),
+            data: null,
+            statusCode: 200,
+          ),
+        );
 
         // Act & Assert
         expect(
@@ -192,18 +212,22 @@ void main() {
 
       test('should throw DioException when credentials are invalid', () async {
         // Arrange
-        when(mockDio.post<Map<String, dynamic>>(
-          '/auth/login',
-          data: anyNamed('data'),
-          options: anyNamed('options'),
-        )).thenThrow(DioException(
-          requestOptions: RequestOptions(path: '/auth/login'),
-          response: Response(
-            requestOptions: RequestOptions(path: '/auth/login'),
-            statusCode: 401,
-            data: {'detail': 'Invalid credentials'},
+        when(
+          mockDio.post<Map<String, dynamic>>(
+            '/auth/login',
+            data: anyNamed('data'),
+            options: anyNamed('options'),
           ),
-        ));
+        ).thenThrow(
+          DioException(
+            requestOptions: RequestOptions(path: '/auth/login'),
+            response: Response(
+              requestOptions: RequestOptions(path: '/auth/login'),
+              statusCode: 401,
+              data: {'detail': 'Invalid credentials'},
+            ),
+          ),
+        );
 
         // Act & Assert
         expect(
@@ -219,17 +243,18 @@ void main() {
     group('getCurrentUser', () {
       test('should get current user successfully', () async {
         // Arrange
-        when(mockApiClient.get<Map<String, dynamic>>('/auth/me'))
-            .thenAnswer((_) async => Response(
-                  requestOptions: RequestOptions(path: '/auth/me'),
-                  data: {
-                    'id': 'user-123',
-                    'email': 'test@example.com',
-                    'username': 'testuser',
-                    'created_at': '2024-01-15T10:30:00Z',
-                  },
-                  statusCode: 200,
-                ));
+        when(mockApiClient.get<Map<String, dynamic>>('/auth/me')).thenAnswer(
+          (_) async => Response(
+            requestOptions: RequestOptions(path: '/auth/me'),
+            data: {
+              'id': 'user-123',
+              'email': 'test@example.com',
+              'username': 'testuser',
+              'created_at': '2024-01-15T10:30:00Z',
+            },
+            statusCode: 200,
+          ),
+        );
 
         // Act
         final result = await authService.getCurrentUser();
@@ -244,31 +269,30 @@ void main() {
 
       test('should throw exception when response data is null', () async {
         // Arrange
-        when(mockApiClient.get<Map<String, dynamic>>('/auth/me'))
-            .thenAnswer((_) async => Response(
-                  requestOptions: RequestOptions(path: '/auth/me'),
-                  data: null,
-                  statusCode: 200,
-                ));
+        when(mockApiClient.get<Map<String, dynamic>>('/auth/me')).thenAnswer(
+          (_) async => Response(
+            requestOptions: RequestOptions(path: '/auth/me'),
+            data: null,
+            statusCode: 200,
+          ),
+        );
 
         // Act & Assert
-        expect(
-          () => authService.getCurrentUser(),
-          throwsA(isA<Exception>()),
-        );
+        expect(() => authService.getCurrentUser(), throwsA(isA<Exception>()));
       });
 
       test('should throw DioException when not authenticated', () async {
         // Arrange
-        when(mockApiClient.get<Map<String, dynamic>>('/auth/me'))
-            .thenThrow(DioException(
-          requestOptions: RequestOptions(path: '/auth/me'),
-          response: Response(
+        when(mockApiClient.get<Map<String, dynamic>>('/auth/me')).thenThrow(
+          DioException(
             requestOptions: RequestOptions(path: '/auth/me'),
-            statusCode: 401,
-            data: {'detail': 'Not authenticated'},
+            response: Response(
+              requestOptions: RequestOptions(path: '/auth/me'),
+              statusCode: 401,
+              data: {'detail': 'Not authenticated'},
+            ),
           ),
-        ));
+        );
 
         // Act & Assert
         expect(
@@ -281,25 +305,29 @@ void main() {
     group('refreshTokens', () {
       test('should refresh tokens successfully', () async {
         // Arrange
-        when(mockTokenRepository.getRefreshToken())
-            .thenAnswer((_) async => 'old_refresh_token');
+        when(
+          mockTokenRepository.getRefreshToken(),
+        ).thenAnswer((_) async => 'old_refresh_token');
 
-        when(mockDio.post<Map<String, dynamic>>(
-          '/auth/refresh',
-          data: anyNamed('data'),
-        )).thenAnswer((_) async => Response(
-              requestOptions: RequestOptions(path: '/auth/refresh'),
-              data: {
-                'access_token': 'new_access_token',
-                'refresh_token': 'new_refresh_token',
-                'token_type': 'bearer',
-                'expires_in': 3600,
-              },
-              statusCode: 200,
-            ));
+        when(
+          mockDio.post<Map<String, dynamic>>(
+            '/auth/refresh',
+            data: anyNamed('data'),
+          ),
+        ).thenAnswer(
+          (_) async => Response(
+            requestOptions: RequestOptions(path: '/auth/refresh'),
+            data: {
+              'access_token': 'new_access_token',
+              'refresh_token': 'new_refresh_token',
+              'token_type': 'bearer',
+              'expires_in': 3600,
+            },
+            statusCode: 200,
+          ),
+        );
 
-        when(mockTokenRepository.saveTokens(any))
-            .thenAnswer((_) async => {});
+        when(mockTokenRepository.saveTokens(any)).thenAnswer((_) async => {});
 
         // Act
         final result = await authService.refreshTokens();
@@ -309,60 +337,63 @@ void main() {
         expect(result.refreshToken, 'new_refresh_token');
 
         verify(mockTokenRepository.getRefreshToken()).called(1);
-        verify(mockDio.post<Map<String, dynamic>>(
-          '/auth/refresh',
-          data: {'refresh_token': 'old_refresh_token'},
-        )).called(1);
+        verify(
+          mockDio.post<Map<String, dynamic>>(
+            '/auth/refresh',
+            data: {'refresh_token': 'old_refresh_token'},
+          ),
+        ).called(1);
         verify(mockTokenRepository.saveTokens(result)).called(1);
       });
 
       test('should throw exception when no refresh token available', () async {
         // Arrange
-        when(mockTokenRepository.getRefreshToken())
-            .thenAnswer((_) async => null);
+        when(
+          mockTokenRepository.getRefreshToken(),
+        ).thenAnswer((_) async => null);
 
         // Act & Assert
-        expect(
-          () => authService.refreshTokens(),
-          throwsA(isA<Exception>()),
-        );
+        expect(() => authService.refreshTokens(), throwsA(isA<Exception>()));
 
         verifyNever(mockDio.post(any, data: anyNamed('data')));
       });
 
       test('should throw DioException when refresh token is invalid', () async {
         // Arrange
-        when(mockTokenRepository.getRefreshToken())
-            .thenAnswer((_) async => 'invalid_refresh_token');
+        when(
+          mockTokenRepository.getRefreshToken(),
+        ).thenAnswer((_) async => 'invalid_refresh_token');
 
-        when(mockDio.post<Map<String, dynamic>>(
-          '/auth/refresh',
-          data: anyNamed('data'),
-        )).thenThrow(DioException(
-          requestOptions: RequestOptions(path: '/auth/refresh'),
-          response: Response(
-            requestOptions: RequestOptions(path: '/auth/refresh'),
-            statusCode: 401,
-            data: {'detail': 'Invalid refresh token'},
+        when(
+          mockDio.post<Map<String, dynamic>>(
+            '/auth/refresh',
+            data: anyNamed('data'),
           ),
-        ));
+        ).thenThrow(
+          DioException(
+            requestOptions: RequestOptions(path: '/auth/refresh'),
+            response: Response(
+              requestOptions: RequestOptions(path: '/auth/refresh'),
+              statusCode: 401,
+              data: {'detail': 'Invalid refresh token'},
+            ),
+          ),
+        );
 
         // Act & Assert
-        expect(
-          () => authService.refreshTokens(),
-          throwsA(isA<DioException>()),
-        );
+        expect(() => authService.refreshTokens(), throwsA(isA<DioException>()));
       });
     });
 
     group('logout', () {
       test('should logout successfully and clear tokens', () async {
         // Arrange
-        when(mockApiClient.post('/auth/logout'))
-            .thenAnswer((_) async => Response(
-                  requestOptions: RequestOptions(path: '/auth/logout'),
-                  statusCode: 200,
-                ));
+        when(mockApiClient.post('/auth/logout')).thenAnswer(
+          (_) async => Response(
+            requestOptions: RequestOptions(path: '/auth/logout'),
+            statusCode: 200,
+          ),
+        );
 
         when(mockTokenRepository.clearTokens()).thenAnswer((_) async => {});
 
@@ -376,10 +407,12 @@ void main() {
 
       test('should clear tokens even when logout request fails', () async {
         // Arrange
-        when(mockApiClient.post('/auth/logout')).thenThrow(DioException(
-          requestOptions: RequestOptions(path: '/auth/logout'),
-          error: 'Network error',
-        ));
+        when(mockApiClient.post('/auth/logout')).thenThrow(
+          DioException(
+            requestOptions: RequestOptions(path: '/auth/logout'),
+            error: 'Network error',
+          ),
+        );
 
         when(mockTokenRepository.clearTokens()).thenAnswer((_) async => {});
 
@@ -393,13 +426,15 @@ void main() {
 
       test('should clear tokens when not authenticated', () async {
         // Arrange
-        when(mockApiClient.post('/auth/logout')).thenThrow(DioException(
-          requestOptions: RequestOptions(path: '/auth/logout'),
-          response: Response(
+        when(mockApiClient.post('/auth/logout')).thenThrow(
+          DioException(
             requestOptions: RequestOptions(path: '/auth/logout'),
-            statusCode: 401,
+            response: Response(
+              requestOptions: RequestOptions(path: '/auth/logout'),
+              statusCode: 401,
+            ),
           ),
-        ));
+        );
 
         when(mockTokenRepository.clearTokens()).thenAnswer((_) async => {});
 

@@ -70,73 +70,75 @@ void main() {
       container.dispose();
     });
 
-    test('Full auth flow: register -> login -> getCurrentUser -> logout',
-        () async {
-      // Generate a unique email for this test run
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final testEmail = 'test_$timestamp@example.com';
-      final testPassword = 'testpassword123';
+    test(
+      'Full auth flow: register -> login -> getCurrentUser -> logout',
+      () async {
+        // Generate a unique email for this test run
+        final timestamp = DateTime.now().millisecondsSinceEpoch;
+        final testEmail = 'test_$timestamp@example.com';
+        final testPassword = 'testpassword123';
 
-      print('\n🧪 Starting auth integration test...');
-      print('📧 Test email: $testEmail');
+        print('\n🧪 Starting auth integration test...');
+        print('📧 Test email: $testEmail');
 
-      // Step 1: Register a new user
-      print('\n1️⃣ Registering new user...');
-      final registerRequest = RegisterRequest(
-        email: testEmail,
-        password: testPassword,
-        username: 'testuser_$timestamp',
-      );
+        // Step 1: Register a new user
+        print('\n1️⃣ Registering new user...');
+        final registerRequest = RegisterRequest(
+          email: testEmail,
+          password: testPassword,
+          username: 'testuser_$timestamp',
+        );
 
-      final user = await authService.register(registerRequest);
-      print('✅ Registered user: ${user.email} (ID: ${user.id})');
+        final user = await authService.register(registerRequest);
+        print('✅ Registered user: ${user.email} (ID: ${user.id})');
 
-      expect(user.email, testEmail);
-      expect(user.username, 'testuser_$timestamp');
+        expect(user.email, testEmail);
+        expect(user.username, 'testuser_$timestamp');
 
-      // Step 2: Login with the new user
-      print('\n2️⃣ Logging in...');
-      final tokens = await authService.login(
-        email: testEmail,
-        password: testPassword,
-      );
+        // Step 2: Login with the new user
+        print('\n2️⃣ Logging in...');
+        final tokens = await authService.login(
+          email: testEmail,
+          password: testPassword,
+        );
 
-      print('✅ Logged in successfully');
-      print('   Access token: ${tokens.accessToken.substring(0, 20)}...');
-      print('   Refresh token: ${tokens.refreshToken.substring(0, 20)}...');
-      print('   Token type: ${tokens.tokenType}');
-      print('   Expires in: ${tokens.expiresIn}s');
+        print('✅ Logged in successfully');
+        print('   Access token: ${tokens.accessToken.substring(0, 20)}...');
+        print('   Refresh token: ${tokens.refreshToken.substring(0, 20)}...');
+        print('   Token type: ${tokens.tokenType}');
+        print('   Expires in: ${tokens.expiresIn}s');
 
-      expect(tokens.accessToken, isNotEmpty);
-      expect(tokens.refreshToken, isNotEmpty);
-      expect(tokens.tokenType, 'bearer');
+        expect(tokens.accessToken, isNotEmpty);
+        expect(tokens.refreshToken, isNotEmpty);
+        expect(tokens.tokenType, 'bearer');
 
-      // Step 3: Verify we can make authenticated requests
-      print('\n3️⃣ Fetching current user info...');
-      final currentUser = await authService.getCurrentUser();
+        // Step 3: Verify we can make authenticated requests
+        print('\n3️⃣ Fetching current user info...');
+        final currentUser = await authService.getCurrentUser();
 
-      print('✅ Got current user: ${currentUser.email}');
-      expect(currentUser.email, testEmail);
-      expect(currentUser.id, user.id);
+        print('✅ Got current user: ${currentUser.email}');
+        expect(currentUser.email, testEmail);
+        expect(currentUser.id, user.id);
 
-      // Step 4: Verify we're logged in
-      print('\n4️⃣ Checking login status...');
-      final isLoggedIn = await authService.isLoggedIn();
-      print('✅ Is logged in: $isLoggedIn');
-      expect(isLoggedIn, true);
+        // Step 4: Verify we're logged in
+        print('\n4️⃣ Checking login status...');
+        final isLoggedIn = await authService.isLoggedIn();
+        print('✅ Is logged in: $isLoggedIn');
+        expect(isLoggedIn, true);
 
-      // Step 5: Logout
-      print('\n5️⃣ Logging out...');
-      await authService.logout();
-      print('✅ Logged out successfully');
+        // Step 5: Logout
+        print('\n5️⃣ Logging out...');
+        await authService.logout();
+        print('✅ Logged out successfully');
 
-      // Step 6: Verify we're logged out
-      final isStillLoggedIn = await authService.isLoggedIn();
-      print('✅ Is still logged in: $isStillLoggedIn');
-      expect(isStillLoggedIn, false);
+        // Step 6: Verify we're logged out
+        final isStillLoggedIn = await authService.isLoggedIn();
+        print('✅ Is still logged in: $isStillLoggedIn');
+        expect(isStillLoggedIn, false);
 
-      print('\n🎉 All tests passed!\n');
-    });
+        print('\n🎉 All tests passed!\n');
+      },
+    );
 
     test('Login with invalid credentials should fail', () async {
       print('\n🧪 Testing invalid login...');
@@ -168,10 +170,7 @@ void main() {
       print('✅ First registration succeeded');
 
       // Try to register again with same email
-      expect(
-        () async => await authService.register(request),
-        throwsException,
-      );
+      expect(() async => await authService.register(request), throwsException);
 
       print('✅ Duplicate registration correctly rejected\n');
     });

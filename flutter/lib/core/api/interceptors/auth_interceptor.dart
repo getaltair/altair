@@ -23,19 +23,21 @@ class AuthInterceptor extends Interceptor {
 
   /// Queue of pending request options waiting for token refresh
   final List<({RequestOptions options, ErrorInterceptorHandler handler})>
-      _pendingRequests = [];
+  _pendingRequests = [];
 
   AuthInterceptor({
     required TokenRepository tokenRepository,
     required String baseUrl,
-  })  : _tokenRepository = tokenRepository,
-        _refreshDio = Dio(BaseOptions(
-          baseUrl: baseUrl,
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-          },
-        ));
+  }) : _tokenRepository = tokenRepository,
+       _refreshDio = Dio(
+         BaseOptions(
+           baseUrl: baseUrl,
+           headers: {
+             'Content-Type': 'application/json',
+             'Accept': 'application/json',
+           },
+         ),
+       );
 
   @override
   Future<void> onRequest(
@@ -104,10 +106,7 @@ class AuthInterceptor extends Interceptor {
           pending.handler.reject(
             e is DioException
                 ? e
-                : DioException(
-                    requestOptions: pending.options,
-                    error: e,
-                  ),
+                : DioException(requestOptions: pending.options, error: e),
           );
         }
       }

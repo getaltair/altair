@@ -71,7 +71,9 @@ class SecureTokenRepository implements TokenRepository {
       _storage.write(key: _tokenTypeKey, value: tokens.tokenType),
       _storage.write(key: _expiresInKey, value: tokens.expiresIn.toString()),
       _storage.write(
-          key: _issuedAtKey, value: tokens.issuedAt.toIso8601String()),
+        key: _issuedAtKey,
+        value: tokens.issuedAt.toIso8601String(),
+      ),
     ]);
   }
 

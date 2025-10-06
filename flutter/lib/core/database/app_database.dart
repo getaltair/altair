@@ -155,9 +155,8 @@ class Users extends Table with BaseModel {
   /// - sensory_preferences: UI customizations for sensory needs
   /// - best_focus_times: Times of day when user focuses best
   /// - common_distractions: Known distraction triggers
-  TextColumn get adhdProfile => text()
-      .map(const JsonTypeConverter())
-      .clientDefault(() => '{}')();
+  TextColumn get adhdProfile =>
+      text().map(const JsonTypeConverter()).clientDefault(() => '{}')();
 }
 
 // ============================================================================
@@ -223,28 +222,28 @@ class AppDatabase extends _$AppDatabase {
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
-        onCreate: (Migrator m) async {
-          // Create all tables on first run
-          await m.createAll();
-        },
-        onUpgrade: (Migrator m, int from, int to) async {
-          // Future migrations will go here
-          // Example:
-          // if (from < 2) {
-          //   await m.addColumn(tasks, tasks.actualMinutes);
-          // }
-        },
-        beforeOpen: (details) async {
-          // Enable foreign key constraints
-          await customStatement('PRAGMA foreign_keys = ON');
+    onCreate: (Migrator m) async {
+      // Create all tables on first run
+      await m.createAll();
+    },
+    onUpgrade: (Migrator m, int from, int to) async {
+      // Future migrations will go here
+      // Example:
+      // if (from < 2) {
+      //   await m.addColumn(tasks, tasks.actualMinutes);
+      // }
+    },
+    beforeOpen: (details) async {
+      // Enable foreign key constraints
+      await customStatement('PRAGMA foreign_keys = ON');
 
-          if (details.wasCreated) {
-            // Database was created for the first time
-            // Could seed initial data here if needed
-            print('Database created, version ${details.versionNow}');
-          }
-        },
-      );
+      if (details.wasCreated) {
+        // Database was created for the first time
+        // Could seed initial data here if needed
+        print('Database created, version ${details.versionNow}');
+      }
+    },
+  );
 
   /// Indexes for optimized ADHD-specific queries.
   ///
@@ -254,27 +253,27 @@ class AppDatabase extends _$AppDatabase {
   /// - Cognitive load sorting for energy-based task selection
   @override
   List<DatabaseSchemaEntity> get allSchemaEntities => [
-        ...super.allSchemaEntities,
+    ...super.allSchemaEntities,
 
-        // Fast task list filtering by user and state
-        Index(
-          'idx_tasks_user_state',
-          'CREATE INDEX idx_tasks_user_state ON tasks(user_id, state)',
-        ),
+    // Fast task list filtering by user and state
+    Index(
+      'idx_tasks_user_state',
+      'CREATE INDEX idx_tasks_user_state ON tasks(user_id, state)',
+    ),
 
-        // Quick lookup of unsynced tasks for background sync
-        Index(
-          'idx_tasks_pending_sync',
-          'CREATE INDEX idx_tasks_pending_sync ON tasks(pending_sync) WHERE pending_sync = 1',
-        ),
+    // Quick lookup of unsynced tasks for background sync
+    Index(
+      'idx_tasks_pending_sync',
+      'CREATE INDEX idx_tasks_pending_sync ON tasks(pending_sync) WHERE pending_sync = 1',
+    ),
 
-        // Cognitive load sorting within states
-        // Enables "show me easy tasks" queries
-        Index(
-          'idx_tasks_state_load',
-          'CREATE INDEX idx_tasks_state_load ON tasks(state, cognitive_load)',
-        ),
-      ];
+    // Cognitive load sorting within states
+    // Enables "show me easy tasks" queries
+    Index(
+      'idx_tasks_state_load',
+      'CREATE INDEX idx_tasks_state_load ON tasks(state, cognitive_load)',
+    ),
+  ];
 
   // ==========================================================================
   // Query Methods - Task Operations
@@ -286,9 +285,7 @@ class AppDatabase extends _$AppDatabase {
   Stream<List<Task>> watchAllTasks(String userId) {
     return (select(tasks)
           ..where((t) => t.userId.equals(userId))
-          ..orderBy([
-            (t) => OrderingTerm.desc(t.createdAt),
-          ]))
+          ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
         .watch();
   }
 
@@ -297,11 +294,8 @@ class AppDatabase extends _$AppDatabase {
   /// Useful for inbox view, active tasks list, etc.
   Stream<List<Task>> watchTasksByState(String userId, TaskState state) {
     return (select(tasks)
-          ..where((t) =>
-              t.userId.equals(userId) & t.state.equalsValue(state))
-          ..orderBy([
-            (t) => OrderingTerm.desc(t.createdAt),
-          ]))
+          ..where((t) => t.userId.equals(userId) & t.state.equalsValue(state))
+          ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
         .watch();
   }
 
@@ -319,8 +313,9 @@ class AppDatabase extends _$AppDatabase {
 
   /// Get a task by its server ID (after sync).
   Future<Task?> getTaskByServerId(String serverId) {
-    return (select(tasks)..where((t) => t.serverId.equals(serverId)))
-        .getSingleOrNull();
+    return (select(
+      tasks,
+    )..where((t) => t.serverId.equals(serverId))).getSingleOrNull();
   }
 
   /// Create a new task with optimistic UI update.
@@ -336,11 +331,12 @@ class AppDatabase extends _$AppDatabase {
   /// Returns true if task was found and updated.
   /// Automatically marks task as pending sync.
   Future<bool> updateTask(String id, TasksCompanion task) async {
-    final updated = await (update(tasks)..where((t) => t.id.equals(id)))
-        .write(task.copyWith(
-      updatedAt: Value(DateTime.now()),
-      pendingSync: const Value(true),
-    ));
+    final updated = await (update(tasks)..where((t) => t.id.equals(id))).write(
+      task.copyWith(
+        updatedAt: Value(DateTime.now()),
+        pendingSync: const Value(true),
+      ),
+    );
     return updated > 0;
   }
 
@@ -389,8 +385,9 @@ class AppDatabase extends _$AppDatabase {
 
   /// Get user by email (for login).
   Future<User?> getUserByEmail(String email) {
-    return (select(users)..where((u) => u.email.equals(email)))
-        .getSingleOrNull();
+    return (select(
+      users,
+    )..where((u) => u.email.equals(email))).getSingleOrNull();
   }
 
   /// Upsert user (insert or update if exists).
@@ -401,10 +398,7 @@ class AppDatabase extends _$AppDatabase {
   }
 
   /// Update user's ADHD profile settings.
-  Future<void> updateAdhdProfile(
-    String userId,
-    Map<String, dynamic> profile,
-  ) {
+  Future<void> updateAdhdProfile(String userId, Map<String, dynamic> profile) {
     return (update(users)..where((u) => u.id.equals(userId))).write(
       UsersCompanion(
         adhdProfile: Value(profile),

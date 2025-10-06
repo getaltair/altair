@@ -61,10 +61,8 @@ ApiClient apiClient(Ref ref) {
 class ApiClient {
   final Dio _dio;
 
-  ApiClient({
-    required Dio dio,
-    required TokenRepository tokenRepository,
-  })  : _dio = dio;
+  ApiClient({required Dio dio, required TokenRepository tokenRepository})
+    : _dio = dio;
 
   /// Make an authenticated GET request
   ///

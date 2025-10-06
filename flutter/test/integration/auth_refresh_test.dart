@@ -54,9 +54,7 @@ void main() {
     // Initialize provider container with in-memory token repository
     final inMemoryTokenRepo = InMemoryTokenRepository();
     container = ProviderContainer(
-      overrides: [
-        tokenRepositoryProvider.overrideWithValue(inMemoryTokenRepo),
-      ],
+      overrides: [tokenRepositoryProvider.overrideWithValue(inMemoryTokenRepo)],
     );
     authService = container.read(authServiceProvider);
     tokenRepository = inMemoryTokenRepo;
@@ -86,8 +84,7 @@ void main() {
       }
     });
 
-    test('should successfully refresh expired token and retry request',
-        () async {
+    test('should successfully refresh expired token and retry request', () async {
       print('🧪 Testing automatic token refresh...');
 
       // Step 1: Register and login
@@ -100,7 +97,9 @@ void main() {
         email: testEmail,
         password: 'password123',
       );
-      print('✅ Logged in with tokens: ${loginResult.accessToken.substring(0, 20)}...');
+      print(
+        '✅ Logged in with tokens: ${loginResult.accessToken.substring(0, 20)}...',
+      );
 
       // Step 2: Verify we can access protected endpoint
       print('2️⃣ Accessing protected endpoint...');
@@ -166,10 +165,7 @@ void main() {
         RegisterRequest(email: testEmail, password: 'password123'),
       );
 
-      await authService.login(
-        email: testEmail,
-        password: 'password123',
-      );
+      await authService.login(email: testEmail, password: 'password123');
 
       // Step 2: Invalidate both access and refresh tokens
       print('2️⃣ Invalidating both tokens...');
@@ -206,10 +202,7 @@ void main() {
         RegisterRequest(email: testEmail, password: 'password123'),
       );
 
-      await authService.login(
-        email: testEmail,
-        password: 'password123',
-      );
+      await authService.login(email: testEmail, password: 'password123');
 
       // Step 2: Verify logged in
       final isLoggedIn = await authService.isLoggedIn();

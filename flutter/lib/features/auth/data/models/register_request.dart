@@ -41,6 +41,5 @@ class RegisterRequest {
   int get hashCode => email.hashCode ^ password.hashCode ^ username.hashCode;
 
   @override
-  String toString() =>
-      'RegisterRequest(email: $email, username: $username)';
+  String toString() => 'RegisterRequest(email: $email, username: $username)';
 }

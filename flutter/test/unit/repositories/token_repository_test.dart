@@ -32,26 +32,17 @@ void main() {
         await repository.saveTokens(testTokens);
 
         // Assert
-        verify(mockStorage.write(
-          key: 'access_token',
-          value: 'test_access_token',
-        )).called(1);
-        verify(mockStorage.write(
-          key: 'refresh_token',
-          value: 'test_refresh_token',
-        )).called(1);
-        verify(mockStorage.write(
-          key: 'token_type',
-          value: 'bearer',
-        )).called(1);
-        verify(mockStorage.write(
-          key: 'expires_in',
-          value: '3600',
-        )).called(1);
-        verify(mockStorage.write(
-          key: 'issued_at',
-          value: anyNamed('value'),
-        )).called(1);
+        verify(
+          mockStorage.write(key: 'access_token', value: 'test_access_token'),
+        ).called(1);
+        verify(
+          mockStorage.write(key: 'refresh_token', value: 'test_refresh_token'),
+        ).called(1);
+        verify(mockStorage.write(key: 'token_type', value: 'bearer')).called(1);
+        verify(mockStorage.write(key: 'expires_in', value: '3600')).called(1);
+        verify(
+          mockStorage.write(key: 'issued_at', value: anyNamed('value')),
+        ).called(1);
         verifyNoMoreInteractions(mockStorage);
       });
 
@@ -84,16 +75,21 @@ void main() {
 
       test('should load from storage when cache is empty', () async {
         // Arrange
-        when(mockStorage.read(key: 'access_token'))
-            .thenAnswer((_) async => 'stored_access_token');
-        when(mockStorage.read(key: 'refresh_token'))
-            .thenAnswer((_) async => 'stored_refresh_token');
-        when(mockStorage.read(key: 'token_type'))
-            .thenAnswer((_) async => 'bearer');
-        when(mockStorage.read(key: 'expires_in'))
-            .thenAnswer((_) async => '3600');
-        when(mockStorage.read(key: 'issued_at'))
-            .thenAnswer((_) async => DateTime.now().toIso8601String());
+        when(
+          mockStorage.read(key: 'access_token'),
+        ).thenAnswer((_) async => 'stored_access_token');
+        when(
+          mockStorage.read(key: 'refresh_token'),
+        ).thenAnswer((_) async => 'stored_refresh_token');
+        when(
+          mockStorage.read(key: 'token_type'),
+        ).thenAnswer((_) async => 'bearer');
+        when(
+          mockStorage.read(key: 'expires_in'),
+        ).thenAnswer((_) async => '3600');
+        when(
+          mockStorage.read(key: 'issued_at'),
+        ).thenAnswer((_) async => DateTime.now().toIso8601String());
 
         // Act
         final result = await repository.getAccessToken();
@@ -105,8 +101,9 @@ void main() {
 
       test('should return null when no tokens exist', () async {
         // Arrange
-        when(mockStorage.read(key: anyNamed('key')))
-            .thenAnswer((_) async => null);
+        when(
+          mockStorage.read(key: anyNamed('key')),
+        ).thenAnswer((_) async => null);
 
         // Act
         final result = await repository.getAccessToken();
@@ -131,16 +128,21 @@ void main() {
 
       test('should load from storage when cache is empty', () async {
         // Arrange
-        when(mockStorage.read(key: 'access_token'))
-            .thenAnswer((_) async => 'stored_access_token');
-        when(mockStorage.read(key: 'refresh_token'))
-            .thenAnswer((_) async => 'stored_refresh_token');
-        when(mockStorage.read(key: 'token_type'))
-            .thenAnswer((_) async => 'bearer');
-        when(mockStorage.read(key: 'expires_in'))
-            .thenAnswer((_) async => '3600');
-        when(mockStorage.read(key: 'issued_at'))
-            .thenAnswer((_) async => DateTime.now().toIso8601String());
+        when(
+          mockStorage.read(key: 'access_token'),
+        ).thenAnswer((_) async => 'stored_access_token');
+        when(
+          mockStorage.read(key: 'refresh_token'),
+        ).thenAnswer((_) async => 'stored_refresh_token');
+        when(
+          mockStorage.read(key: 'token_type'),
+        ).thenAnswer((_) async => 'bearer');
+        when(
+          mockStorage.read(key: 'expires_in'),
+        ).thenAnswer((_) async => '3600');
+        when(
+          mockStorage.read(key: 'issued_at'),
+        ).thenAnswer((_) async => DateTime.now().toIso8601String());
 
         // Act
         final result = await repository.getRefreshToken();
@@ -165,16 +167,21 @@ void main() {
 
       test('should load and construct tokens from storage', () async {
         // Arrange
-        when(mockStorage.read(key: 'access_token'))
-            .thenAnswer((_) async => 'stored_access');
-        when(mockStorage.read(key: 'refresh_token'))
-            .thenAnswer((_) async => 'stored_refresh');
-        when(mockStorage.read(key: 'token_type'))
-            .thenAnswer((_) async => 'bearer');
-        when(mockStorage.read(key: 'expires_in'))
-            .thenAnswer((_) async => '7200');
-        when(mockStorage.read(key: 'issued_at'))
-            .thenAnswer((_) async => DateTime.now().toIso8601String());
+        when(
+          mockStorage.read(key: 'access_token'),
+        ).thenAnswer((_) async => 'stored_access');
+        when(
+          mockStorage.read(key: 'refresh_token'),
+        ).thenAnswer((_) async => 'stored_refresh');
+        when(
+          mockStorage.read(key: 'token_type'),
+        ).thenAnswer((_) async => 'bearer');
+        when(
+          mockStorage.read(key: 'expires_in'),
+        ).thenAnswer((_) async => '7200');
+        when(
+          mockStorage.read(key: 'issued_at'),
+        ).thenAnswer((_) async => DateTime.now().toIso8601String());
 
         // Act
         final result = await repository.getTokens();
@@ -188,16 +195,21 @@ void main() {
 
       test('should return null when any required field is missing', () async {
         // Arrange - missing access token
-        when(mockStorage.read(key: 'access_token'))
-            .thenAnswer((_) async => null);
-        when(mockStorage.read(key: 'refresh_token'))
-            .thenAnswer((_) async => 'stored_refresh');
-        when(mockStorage.read(key: 'token_type'))
-            .thenAnswer((_) async => 'bearer');
-        when(mockStorage.read(key: 'expires_in'))
-            .thenAnswer((_) async => '3600');
-        when(mockStorage.read(key: 'issued_at'))
-            .thenAnswer((_) async => DateTime.now().toIso8601String());
+        when(
+          mockStorage.read(key: 'access_token'),
+        ).thenAnswer((_) async => null);
+        when(
+          mockStorage.read(key: 'refresh_token'),
+        ).thenAnswer((_) async => 'stored_refresh');
+        when(
+          mockStorage.read(key: 'token_type'),
+        ).thenAnswer((_) async => 'bearer');
+        when(
+          mockStorage.read(key: 'expires_in'),
+        ).thenAnswer((_) async => '3600');
+        when(
+          mockStorage.read(key: 'issued_at'),
+        ).thenAnswer((_) async => DateTime.now().toIso8601String());
 
         // Act
         final result = await repository.getTokens();
@@ -208,16 +220,21 @@ void main() {
 
       test('should cache tokens loaded from storage', () async {
         // Arrange
-        when(mockStorage.read(key: 'access_token'))
-            .thenAnswer((_) async => 'stored_access');
-        when(mockStorage.read(key: 'refresh_token'))
-            .thenAnswer((_) async => 'stored_refresh');
-        when(mockStorage.read(key: 'token_type'))
-            .thenAnswer((_) async => 'bearer');
-        when(mockStorage.read(key: 'expires_in'))
-            .thenAnswer((_) async => '3600');
-        when(mockStorage.read(key: 'issued_at'))
-            .thenAnswer((_) async => DateTime.now().toIso8601String());
+        when(
+          mockStorage.read(key: 'access_token'),
+        ).thenAnswer((_) async => 'stored_access');
+        when(
+          mockStorage.read(key: 'refresh_token'),
+        ).thenAnswer((_) async => 'stored_refresh');
+        when(
+          mockStorage.read(key: 'token_type'),
+        ).thenAnswer((_) async => 'bearer');
+        when(
+          mockStorage.read(key: 'expires_in'),
+        ).thenAnswer((_) async => '3600');
+        when(
+          mockStorage.read(key: 'issued_at'),
+        ).thenAnswer((_) async => DateTime.now().toIso8601String());
 
         // Act - first call loads from storage
         final result1 = await repository.getTokens();
@@ -227,7 +244,9 @@ void main() {
         // Assert
         expect(result1, equals(result2));
         // Should only read once (first time)
-        verify(mockStorage.read(key: anyNamed('key'))).called(5); // 5 fields (including issued_at)
+        verify(
+          mockStorage.read(key: anyNamed('key')),
+        ).called(5); // 5 fields (including issued_at)
       });
     });
 
@@ -244,8 +263,9 @@ void main() {
         await repository.clearTokens();
 
         // Assert - cache should be cleared
-        when(mockStorage.read(key: anyNamed('key')))
-            .thenAnswer((_) async => null);
+        when(
+          mockStorage.read(key: anyNamed('key')),
+        ).thenAnswer((_) async => null);
         final afterClear = await repository.getAccessToken();
         expect(afterClear, isNull);
       });
@@ -273,16 +293,21 @@ void main() {
 
       test('should return true when tokens exist in storage', () async {
         // Arrange
-        when(mockStorage.read(key: 'access_token'))
-            .thenAnswer((_) async => 'stored_access');
-        when(mockStorage.read(key: 'refresh_token'))
-            .thenAnswer((_) async => 'stored_refresh');
-        when(mockStorage.read(key: 'token_type'))
-            .thenAnswer((_) async => 'bearer');
-        when(mockStorage.read(key: 'expires_in'))
-            .thenAnswer((_) async => '3600');
-        when(mockStorage.read(key: 'issued_at'))
-            .thenAnswer((_) async => DateTime.now().toIso8601String());
+        when(
+          mockStorage.read(key: 'access_token'),
+        ).thenAnswer((_) async => 'stored_access');
+        when(
+          mockStorage.read(key: 'refresh_token'),
+        ).thenAnswer((_) async => 'stored_refresh');
+        when(
+          mockStorage.read(key: 'token_type'),
+        ).thenAnswer((_) async => 'bearer');
+        when(
+          mockStorage.read(key: 'expires_in'),
+        ).thenAnswer((_) async => '3600');
+        when(
+          mockStorage.read(key: 'issued_at'),
+        ).thenAnswer((_) async => DateTime.now().toIso8601String());
 
         // Act
         final result = await repository.hasTokens();
@@ -293,8 +318,9 @@ void main() {
 
       test('should return false when no tokens exist', () async {
         // Arrange
-        when(mockStorage.read(key: anyNamed('key')))
-            .thenAnswer((_) async => null);
+        when(
+          mockStorage.read(key: anyNamed('key')),
+        ).thenAnswer((_) async => null);
 
         // Act
         final result = await repository.hasTokens();
@@ -308,8 +334,9 @@ void main() {
         await repository.saveTokens(testTokens);
         await repository.clearTokens();
 
-        when(mockStorage.read(key: anyNamed('key')))
-            .thenAnswer((_) async => null);
+        when(
+          mockStorage.read(key: anyNamed('key')),
+        ).thenAnswer((_) async => null);
 
         // Act
         final result = await repository.hasTokens();
@@ -322,34 +349,34 @@ void main() {
     group('edge cases', () {
       test('should handle invalid expires_in format gracefully', () async {
         // Arrange
-        when(mockStorage.read(key: 'access_token'))
-            .thenAnswer((_) async => 'stored_access');
-        when(mockStorage.read(key: 'refresh_token'))
-            .thenAnswer((_) async => 'stored_refresh');
-        when(mockStorage.read(key: 'token_type'))
-            .thenAnswer((_) async => 'bearer');
-        when(mockStorage.read(key: 'expires_in'))
-            .thenAnswer((_) async => 'invalid_number');
-        when(mockStorage.read(key: 'issued_at'))
-            .thenAnswer((_) async => DateTime.now().toIso8601String());
+        when(
+          mockStorage.read(key: 'access_token'),
+        ).thenAnswer((_) async => 'stored_access');
+        when(
+          mockStorage.read(key: 'refresh_token'),
+        ).thenAnswer((_) async => 'stored_refresh');
+        when(
+          mockStorage.read(key: 'token_type'),
+        ).thenAnswer((_) async => 'bearer');
+        when(
+          mockStorage.read(key: 'expires_in'),
+        ).thenAnswer((_) async => 'invalid_number');
+        when(
+          mockStorage.read(key: 'issued_at'),
+        ).thenAnswer((_) async => DateTime.now().toIso8601String());
 
         // Act & Assert
-        expect(
-          () => repository.getTokens(),
-          throwsA(isA<FormatException>()),
-        );
+        expect(() => repository.getTokens(), throwsA(isA<FormatException>()));
       });
 
       test('should handle storage errors gracefully', () async {
         // Arrange
-        when(mockStorage.read(key: anyNamed('key')))
-            .thenThrow(Exception('Storage error'));
+        when(
+          mockStorage.read(key: anyNamed('key')),
+        ).thenThrow(Exception('Storage error'));
 
         // Act & Assert
-        expect(
-          () => repository.getAccessToken(),
-          throwsException,
-        );
+        expect(() => repository.getAccessToken(), throwsException);
       });
     });
   });

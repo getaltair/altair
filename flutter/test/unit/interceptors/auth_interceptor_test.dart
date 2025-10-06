@@ -26,8 +26,9 @@ void main() {
     test('should attach access token to authenticated requests', () async {
       // Arrange
       const testToken = 'test-access-token';
-      when(mockTokenRepository.getAccessToken())
-          .thenAnswer((_) async => testToken);
+      when(
+        mockTokenRepository.getAccessToken(),
+      ).thenAnswer((_) async => testToken);
 
       final requestOptions = RequestOptions(
         path: '/tasks',

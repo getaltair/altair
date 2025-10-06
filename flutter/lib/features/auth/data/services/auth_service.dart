@@ -30,8 +30,8 @@ class AuthService {
   AuthService({
     required ApiClient apiClient,
     required TokenRepository tokenRepository,
-  })  : _apiClient = apiClient,
-        _tokenRepository = tokenRepository;
+  }) : _apiClient = apiClient,
+       _tokenRepository = tokenRepository;
 
   /// Register a new user account
   ///
@@ -67,9 +67,7 @@ class AuthService {
     final response = await _apiClient.rawDio.post<Map<String, dynamic>>(
       '/auth/login',
       data: request.toJson(),
-      options: Options(
-        contentType: Headers.formUrlEncodedContentType,
-      ),
+      options: Options(contentType: Headers.formUrlEncodedContentType),
     );
 
     if (response.data == null) {
