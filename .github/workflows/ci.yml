@@ -156,9 +156,13 @@ jobs:
 
       - name: Run code generation
         run: |
-          # Don't use --delete-conflicting-outputs since mock files are committed
-          # This avoids circular dependency issues with TokenRepository
-          flutter pub run build_runner build
+          # Two-phase build to handle dependencies:
+          # 1. Generate library files first (riverpod, drift, etc.)
+          # 2. Then handle mock files (which depend on generated library files)
+          echo "Phase 1: Generating library files..."
+          flutter pub run build_runner build --build-filter='lib/**'
+          echo "Phase 2: Verifying/generating mock files..."
+          flutter pub run build_runner build --build-filter='test/**'
 
       - name: Run Flutter analyzer
         run: flutter analyze
@@ -194,9 +198,13 @@ jobs:
 
       - name: Run code generation
         run: |
-          # Don't use --delete-conflicting-outputs since mock files are committed
-          # This avoids circular dependency issues with TokenRepository
-          flutter pub run build_runner build
+          # Two-phase build to handle dependencies:
+          # 1. Generate library files first (riverpod, drift, etc.)
+          # 2. Then handle mock files (which depend on generated library files)
+          echo "Phase 1: Generating library files..."
+          flutter pub run build_runner build --build-filter='lib/**'
+          echo "Phase 2: Verifying/generating mock files..."
+          flutter pub run build_runner build --build-filter='test/**'
 
       - name: Run tests with coverage
         run: flutter test --coverage --reporter expanded
@@ -271,9 +279,13 @@ jobs:
 
       - name: Run code generation
         run: |
-          # Don't use --delete-conflicting-outputs since mock files are committed
-          # This avoids circular dependency issues with TokenRepository
-          flutter pub run build_runner build
+          # Two-phase build to handle dependencies:
+          # 1. Generate library files first (riverpod, drift, etc.)
+          # 2. Then handle mock files (which depend on generated library files)
+          echo "Phase 1: Generating library files..."
+          flutter pub run build_runner build --build-filter='lib/**'
+          echo "Phase 2: Verifying/generating mock files..."
+          flutter pub run build_runner build --build-filter='test/**'
 
       - name: Build Android APK
         if: matrix.platform == 'android'
