@@ -155,7 +155,10 @@ jobs:
         run: flutter pub get
 
       - name: Run code generation
-        run: flutter pub run build_runner build --delete-conflicting-outputs
+        run: |
+          # Don't use --delete-conflicting-outputs since mock files are committed
+          # This avoids circular dependency issues with TokenRepository
+          flutter pub run build_runner build
 
       - name: Run Flutter analyzer
         run: flutter analyze
@@ -190,7 +193,10 @@ jobs:
         run: flutter pub get
 
       - name: Run code generation
-        run: flutter pub run build_runner build --delete-conflicting-outputs
+        run: |
+          # Don't use --delete-conflicting-outputs since mock files are committed
+          # This avoids circular dependency issues with TokenRepository
+          flutter pub run build_runner build
 
       - name: Run tests with coverage
         run: flutter test --coverage --reporter expanded
@@ -264,7 +270,10 @@ jobs:
         run: flutter pub get
 
       - name: Run code generation
-        run: flutter pub run build_runner build --delete-conflicting-outputs
+        run: |
+          # Don't use --delete-conflicting-outputs since mock files are committed
+          # This avoids circular dependency issues with TokenRepository
+          flutter pub run build_runner build
 
       - name: Build Android APK
         if: matrix.platform == 'android'
