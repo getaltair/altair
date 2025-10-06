@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:altair/core/api/api_client.dart';
 import 'package:altair/features/auth/data/models/auth_tokens.dart';
 import 'package:altair/features/auth/data/models/register_request.dart';
 import 'package:altair/features/auth/data/repositories/token_repository.dart';

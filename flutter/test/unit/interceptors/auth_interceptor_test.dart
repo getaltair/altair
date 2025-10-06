@@ -13,7 +13,6 @@ import 'auth_interceptor_test.mocks.dart';
 void main() {
   late MockTokenRepository mockTokenRepository;
   late AuthInterceptor authInterceptor;
-  late Dio testDio;
 
   setUp(() {
     mockTokenRepository = MockTokenRepository();
@@ -21,7 +20,6 @@ void main() {
       tokenRepository: mockTokenRepository,
       baseUrl: ApiConfig.fullBaseUrl,
     );
-    testDio = Dio();
   });
 
   group('AuthInterceptor - Token Attachment', () {

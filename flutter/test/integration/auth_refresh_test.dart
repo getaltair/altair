@@ -1,5 +1,3 @@
-import 'package:altair/core/api/api_client.dart';
-import 'package:altair/core/api/api_config.dart';
 import 'package:altair/features/auth/data/models/auth_tokens.dart';
 import 'package:altair/features/auth/data/models/register_request.dart';
 import 'package:altair/features/auth/data/repositories/token_repository.dart';
@@ -47,7 +45,6 @@ class InMemoryTokenRepository implements TokenRepository {
 void main() {
   late ProviderContainer container;
   late AuthService authService;
-  late ApiClient apiClient;
   late InMemoryTokenRepository tokenRepository;
 
   setUpAll(() {
@@ -62,7 +59,6 @@ void main() {
       ],
     );
     authService = container.read(authServiceProvider);
-    apiClient = container.read(apiClientProvider);
     tokenRepository = inMemoryTokenRepo;
   });
 

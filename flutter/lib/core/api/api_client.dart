@@ -60,13 +60,11 @@ ApiClient apiClient(Ref ref) {
 /// AuthInterceptor, so these methods simply delegate to Dio.
 class ApiClient {
   final Dio _dio;
-  final TokenRepository _tokenRepository;
 
   ApiClient({
     required Dio dio,
     required TokenRepository tokenRepository,
-  })  : _dio = dio,
-        _tokenRepository = tokenRepository;
+  })  : _dio = dio;
 
   /// Make an authenticated GET request
   ///

@@ -16,7 +16,6 @@ import '../../../features/auth/data/repositories/token_repository.dart';
 /// throw an exception, which should trigger logout in the app.
 class AuthInterceptor extends Interceptor {
   final TokenRepository _tokenRepository;
-  final String _baseUrl;
   final Dio _refreshDio;
 
   /// Whether a token refresh is currently in progress
@@ -30,7 +29,6 @@ class AuthInterceptor extends Interceptor {
     required TokenRepository tokenRepository,
     required String baseUrl,
   })  : _tokenRepository = tokenRepository,
-        _baseUrl = baseUrl,
         _refreshDio = Dio(BaseOptions(
           baseUrl: baseUrl,
           headers: {

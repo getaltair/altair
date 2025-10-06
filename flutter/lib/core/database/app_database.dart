@@ -1,16 +1,16 @@
-/// Drift database schema for Altair's offline-first task management.
-///
-/// This database implements an offline-first architecture specifically designed
-/// for ADHD users to prevent data loss and provide instant feedback. Key features:
-///
-/// - [Tasks] table with cognitive load tracking and state machine
-/// - [Users] table with ADHD profile customization
-/// - Sync metadata (lastSyncedAt, version, pendingSync) for background synchronization
-/// - Local-first primary keys with server IDs added after sync
-/// - Optimized indexes for ADHD-specific query patterns
-///
-/// The schema mirrors the backend PostgreSQL models but adds offline sync
-/// capabilities. See backend/altair/models/ for the source of truth.
+// Drift database schema for Altair's offline-first task management.
+//
+// This database implements an offline-first architecture specifically designed
+// for ADHD users to prevent data loss and provide instant feedback. Key features:
+//
+// - [Tasks] table with cognitive load tracking and state machine
+// - [Users] table with ADHD profile customization
+// - Sync metadata (lastSyncedAt, version, pendingSync) for background synchronization
+// - Local-first primary keys with server IDs added after sync
+// - Optimized indexes for ADHD-specific query patterns
+//
+// The schema mirrors the backend PostgreSQL models but adds offline sync
+// capabilities. See backend/altair/models/ for the source of truth.
 
 import 'dart:convert';
 import 'dart:io';
@@ -195,7 +195,7 @@ class Tasks extends Table with BaseModel {
   /// Helps users choose tasks matching current energy levels.
   /// Defaults to 5 (medium difficulty).
   IntColumn get cognitiveLoad => integer()
-      .check(cognitiveLoad.isBetweenValues(1, 10))
+      .customConstraint('CHECK(cognitive_load BETWEEN 1 AND 10)')
       .withDefault(const Constant(5))();
 
   /// User's time estimate in minutes (nullable).

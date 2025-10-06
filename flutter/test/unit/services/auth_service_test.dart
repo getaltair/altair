@@ -3,9 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:altair/core/api/api_client.dart';
-import 'package:altair/features/auth/data/models/auth_tokens.dart';
 import 'package:altair/features/auth/data/models/register_request.dart';
-import 'package:altair/features/auth/data/models/user.dart';
 import 'package:altair/features/auth/data/repositories/token_repository.dart';
 import 'package:altair/features/auth/data/services/auth_service.dart';
 
@@ -18,21 +16,6 @@ void main() {
     late MockTokenRepository mockTokenRepository;
     late MockDio mockDio;
     late AuthService authService;
-
-    final testUser = User(
-      id: 'user-123',
-      email: 'test@example.com',
-      username: 'testuser',
-      createdAt: DateTime.parse('2024-01-15T10:30:00Z'),
-    );
-
-    final testTokens = AuthTokens(
-      accessToken: 'test_access_token',
-      refreshToken: 'test_refresh_token',
-      tokenType: 'bearer',
-      expiresIn: 3600,
-      issuedAt: DateTime.now(),
-    );
 
     setUp(() {
       mockApiClient = MockApiClient();
