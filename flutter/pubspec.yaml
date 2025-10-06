@@ -19,7 +19,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 version: 1.0.0+1
 
 environment:
-  sdk: ^3.8.1
+  sdk: ^3.8.0
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
@@ -34,34 +34,63 @@ dependencies:
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
+
+  # State management
   flutter_riverpod: ^3.0.1
+  riverpod_annotation: ^3.0.1
+
+  # Routing
   go_router: ^16.2.4
+
+  # Networking
   dio: ^5.9.0
-  drift: ^2.28.2
+
+  # Local database (offline-first)
+  drift: ^2.28.0
   sqlite3_flutter_libs: ^0.5.40
   path_provider: ^2.1.5
-  hive: ^2.2.3
-  hive_flutter: ^1.1.0
+  path: ^1.9.0
+
+  # Code generation support
+  json_annotation: ^4.9.0
+
+  # Secure storage for tokens
+  flutter_secure_storage: ^10.0.0-beta.4
+
+  # Functional programming (Either type for errors)
+  fpdart: ^1.1.0
+
+  # UI & animations
   flutter_animate: ^4.5.2
   google_fonts: ^6.3.2
   flutter_slidable: ^4.0.3
   circular_countdown_timer: ^0.2.4
   fl_chart: ^1.1.0
+
+  # Real-time
   web_socket_channel: ^3.0.3
+
+  # Utilities
+  uuid: ^4.5.1
+  intl: ^0.20.1
+  flutter_secure_storage_linux: 2.0.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
 
-  # The "flutter_lints" package below contains a set of recommended lints to
-  # encourage good coding practices. The lint set provided by the package is
-  # activated in the `analysis_options.yaml` file located at the root of your
-  # package. See that file for information about deactivating specific lint
-  # rules and activating additional ones.
-  flutter_lints: ^5.0.0
-  build_runner: ^2.7.1
-  drift_dev: ^2.28.3
+  # Linting
+  flutter_lints: ^6.0.0
+
+  # Code generation
+  build_runner: ^2.4.13
   riverpod_generator: ^3.0.1
+  riverpod_lint: ^3.0.1
+  drift_dev: ^2.28.0
+
+  # Testing
+  mockito: ^5.4.4
+  test: ^1.25.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

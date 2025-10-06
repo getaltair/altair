@@ -1,0 +1,17 @@
+# Build configuration for code generation
+targets:
+  $default:
+    builders:
+      # Riverpod generator configuration
+      riverpod_generator:
+        generate_for:
+          - lib/**/*.dart
+        options:
+          # Generate @riverpod annotation code
+          generate_riverpod: true
+
+      # Drift database
+      drift_dev:
+        options:
+          # SQLite platform
+          store_date_time_values_as_text: true
