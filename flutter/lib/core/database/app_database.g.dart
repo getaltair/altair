@@ -910,9 +910,9 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, Task> {
     'cognitive_load',
     aliasedName,
     false,
-    check: () => ComparableExpr(cognitiveLoad).isBetweenValues(1, 10),
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'CHECK(cognitive_load BETWEEN 1 AND 10)',
     defaultValue: const Constant(5),
   );
   static const VerificationMeta _estimatedMinutesMeta = const VerificationMeta(
