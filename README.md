@@ -70,7 +70,6 @@ altair/
 - **Flutter** 3.0+ (for desktop/mobile development)
 - **Python** 3.12+ (for backend services)
 - **uv** (Python package manager)
-- **pnpm** (if using Node.js tooling)
 - **mise** (optional, for version management)
 
 ### Running Altair Guidance (Standalone)

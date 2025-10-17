@@ -16,7 +16,6 @@ Thank you for your interest in contributing to Altair! This document provides gu
 - Flutter 3.0+ (for mobile/desktop development)
 - Python 3.12+ (for backend services)
 - uv (Python package manager)
-- pnpm (if using Node.js tooling)
 - pre-commit (for git hooks)
 - mise (optional, for version management)
 
