@@ -1,0 +1,572 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Altair Neo-Brutalist Logo Integration</title>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&display=swap");
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      :root {
+        --bg-primary: #fafafa;
+        --bg-secondary: #ffffff;
+        --text-primary: #000000;
+        --text-secondary: #666666;
+        --border-color: #000000;
+        --accent-yellow: #ffd93d;
+        --accent-blue: #60a5fa;
+        --accent-green: #6bcb77;
+        --hover-bg: #f0f0f0;
+        --dark-bg: #0a0a0a;
+        --dark-bg-secondary: #141414;
+      }
+
+      body {
+        font-family: "JetBrains Mono", monospace;
+        background: var(--bg-primary);
+        color: var(--text-primary);
+        line-height: 1.5;
+        padding: 32px;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+
+      h1 {
+        font-size: 2.5rem;
+        font-weight: 800;
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+
+      h2 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin: 32px 0 16px;
+        padding: 16px;
+        border: 3px solid var(--border-color);
+        background: var(--accent-yellow);
+      }
+
+      /* Neo-Brutalist Diamond Logo CSS Version */
+      .diamond-logo {
+        display: inline-block;
+        width: 40px;
+        height: 40px;
+        position: relative;
+        transform: rotate(45deg);
+        border: 3px solid var(--border-color);
+        background: var(--accent-yellow);
+        transition: all 0.1s;
+      }
+
+      .diamond-logo::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 50%;
+        height: 50%;
+        background: rgba(255, 255, 255, 0.4);
+      }
+
+      .diamond-logo::after {
+        content: "";
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        width: 50%;
+        height: 50%;
+        background: rgba(0, 0, 0, 0.1);
+      }
+
+      .diamond-logo:hover {
+        transform: rotate(45deg) translate(-2px, -2px);
+        box-shadow: 2px 2px 0 var(--border-color);
+      }
+
+      /* Size Variants */
+      .diamond-logo.large {
+        width: 60px;
+        height: 60px;
+        border-width: 4px;
+      }
+
+      .diamond-logo.small {
+        width: 24px;
+        height: 24px;
+        border-width: 2px;
+      }
+
+      .diamond-logo.tiny {
+        width: 16px;
+        height: 16px;
+        border-width: 2px;
+      }
+
+      /* Color Variants */
+      .diamond-logo.outline {
+        background: transparent;
+      }
+
+      .diamond-logo.outline::before,
+      .diamond-logo.outline::after {
+        display: none;
+      }
+
+      .diamond-logo.solid {
+        background: var(--text-primary);
+        border-color: var(--text-primary);
+      }
+
+      .diamond-logo.blue {
+        background: var(--accent-blue);
+      }
+
+      .diamond-logo.green {
+        background: var(--accent-green);
+      }
+
+      /* Dark Mode Variant */
+      .dark-section {
+        background: var(--dark-bg);
+        color: #ffffff;
+        padding: 32px;
+        margin: 32px -32px;
+      }
+
+      .dark-section .diamond-logo {
+        border-color: #ffffff;
+      }
+
+      .dark-section .diamond-logo.solid {
+        background: #ffffff;
+        border-color: #ffffff;
+      }
+
+      /* Demo Grid */
+      .demo-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 24px;
+        margin: 24px 0;
+      }
+
+      .demo-card {
+        border: 3px solid var(--border-color);
+        padding: 24px;
+        background: var(--bg-secondary);
+        transition: all 0.1s;
+      }
+
+      .demo-card:hover {
+        transform: translate(-4px, -4px);
+        box-shadow: 4px 4px 0 var(--border-color);
+      }
+
+      .demo-label {
+        font-size: 0.875rem;
+        font-weight: 600;
+        margin-top: 12px;
+        color: var(--text-secondary);
+      }
+
+      /* UI Component Examples */
+      .nav-mockup {
+        border: 3px solid var(--border-color);
+        background: var(--bg-secondary);
+        padding: 16px 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin: 24px 0;
+      }
+
+      .logo-text {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-weight: 800;
+        font-size: 1.25rem;
+      }
+
+      .logo-text .diamond-logo {
+        transform: rotate(45deg);
+      }
+
+      .sidebar-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
+        border: 2px solid var(--border-color);
+        margin-bottom: 8px;
+        cursor: pointer;
+        transition: all 0.1s;
+        font-weight: 600;
+      }
+
+      .sidebar-item:hover {
+        background: var(--hover-bg);
+        padding-left: 20px;
+      }
+
+      .sidebar-item.active {
+        background: var(--accent-yellow);
+      }
+
+      .button-examples {
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+        align-items: center;
+        margin: 24px 0;
+      }
+
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 20px;
+        border: 3px solid var(--border-color);
+        background: var(--bg-secondary);
+        font-family: inherit;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.1s;
+      }
+
+      .btn:hover {
+        transform: translate(-2px, -2px);
+        box-shadow: 2px 2px 0 var(--border-color);
+      }
+
+      .btn-primary {
+        background: var(--accent-yellow);
+      }
+
+      .btn-primary:hover {
+        background: #ffe380;
+      }
+
+      /* Code Block */
+      .code-block {
+        border: 3px solid var(--border-color);
+        background: var(--dark-bg);
+        color: #ffffff;
+        padding: 24px;
+        margin: 24px 0;
+        font-family: "JetBrains Mono", monospace;
+        overflow-x: auto;
+      }
+
+      .code-block pre {
+        margin: 0;
+      }
+
+      /* Tab Examples */
+      .tab-group {
+        display: flex;
+        gap: 8px;
+        margin: 24px 0;
+      }
+
+      .tab {
+        padding: 8px 16px;
+        border: 2px solid var(--border-color);
+        background: var(--bg-secondary);
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .tab.active {
+        background: var(--text-primary);
+        color: var(--bg-secondary);
+      }
+
+      .tab.active .diamond-logo {
+        border-color: var(--bg-secondary);
+        background: var(--accent-yellow);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>
+        <span class="diamond-logo large"></span>
+        ALTAIR Neo-Brutalist Logo
+      </h1>
+      <p
+        style="
+          font-size: 1.125rem;
+          margin-bottom: 32px;
+          color: var(--text-secondary);
+        "
+      >
+        Diamond-star icon adapted to match the neo-brutalist UI style
+      </p>
+
+      <!-- Size Variants -->
+      <h2>Size Variants</h2>
+      <div class="demo-grid">
+        <div class="demo-card">
+          <span class="diamond-logo large"></span>
+          <div class="demo-label">Large (60Ã—60)</div>
+        </div>
+        <div class="demo-card">
+          <span class="diamond-logo"></span>
+          <div class="demo-label">Default (40Ã—40)</div>
+        </div>
+        <div class="demo-card">
+          <span class="diamond-logo small"></span>
+          <div class="demo-label">Small (24Ã—24)</div>
+        </div>
+        <div class="demo-card">
+          <span class="diamond-logo tiny"></span>
+          <div class="demo-label">Tiny (16Ã—16)</div>
+        </div>
+      </div>
+
+      <!-- Style Variants -->
+      <h2>Style Variants</h2>
+      <div class="demo-grid">
+        <div class="demo-card">
+          <span class="diamond-logo"></span>
+          <div class="demo-label">Default (Yellow)</div>
+        </div>
+        <div class="demo-card">
+          <span class="diamond-logo outline"></span>
+          <div class="demo-label">Outline</div>
+        </div>
+        <div class="demo-card">
+          <span class="diamond-logo solid"></span>
+          <div class="demo-label">Solid Black</div>
+        </div>
+        <div class="demo-card">
+          <span class="diamond-logo blue"></span>
+          <div class="demo-label">Blue Accent</div>
+        </div>
+        <div class="demo-card">
+          <span class="diamond-logo green"></span>
+          <div class="demo-label">Green Accent</div>
+        </div>
+      </div>
+
+      <!-- UI Integration Examples -->
+      <h2>Navigation Bar</h2>
+      <div class="nav-mockup">
+        <div class="logo-text">
+          <span class="diamond-logo"></span>
+          <span>ALTAIR</span>
+        </div>
+        <div style="display: flex; gap: 24px">
+          <span>Dashboard</span>
+          <span>Tasks</span>
+          <span>Projects</span>
+          <span>Focus</span>
+        </div>
+      </div>
+
+      <h2>Sidebar Items</h2>
+      <div style="max-width: 300px">
+        <div class="sidebar-item active">
+          <span class="diamond-logo small"></span>
+          <span>Dashboard</span>
+        </div>
+        <div class="sidebar-item">
+          <span class="diamond-logo small outline"></span>
+          <span>Tasks</span>
+        </div>
+        <div class="sidebar-item">
+          <span class="diamond-logo small outline"></span>
+          <span>Projects</span>
+        </div>
+      </div>
+
+      <h2>Button Integration</h2>
+      <div class="button-examples">
+        <button class="btn">
+          <span class="diamond-logo tiny"></span>
+          Quick Capture
+        </button>
+        <button class="btn btn-primary">
+          <span class="diamond-logo tiny solid"></span>
+          Start Focus Mode
+        </button>
+        <button class="btn">
+          <span class="diamond-logo tiny outline"></span>
+          AI Breakdown
+        </button>
+      </div>
+
+      <h2>Tab Integration</h2>
+      <div class="tab-group">
+        <div class="tab active">
+          <span class="diamond-logo tiny"></span>
+          Today
+        </div>
+        <div class="tab">
+          <span class="diamond-logo tiny outline"></span>
+          This Week
+        </div>
+        <div class="tab">
+          <span class="diamond-logo tiny outline"></span>
+          All Tasks
+        </div>
+      </div>
+
+      <!-- Dark Mode Section -->
+      <div class="dark-section">
+        <h2
+          style="
+            background: var(--dark-bg-secondary);
+            border-color: #ffffff;
+            color: #ffffff;
+          "
+        >
+          Dark Mode Variants
+        </h2>
+        <div class="demo-grid">
+          <div
+            class="demo-card"
+            style="background: var(--dark-bg-secondary); border-color: #ffffff"
+          >
+            <span class="diamond-logo"></span>
+            <div class="demo-label" style="color: #999">Yellow on Dark</div>
+          </div>
+          <div
+            class="demo-card"
+            style="background: var(--dark-bg-secondary); border-color: #ffffff"
+          >
+            <span class="diamond-logo outline"></span>
+            <div class="demo-label" style="color: #999">White Outline</div>
+          </div>
+          <div
+            class="demo-card"
+            style="background: var(--dark-bg-secondary); border-color: #ffffff"
+          >
+            <span class="diamond-logo solid"></span>
+            <div class="demo-label" style="color: #999">White Solid</div>
+          </div>
+        </div>
+
+        <div
+          class="nav-mockup"
+          style="background: var(--dark-bg-secondary); border-color: #ffffff"
+        >
+          <div class="logo-text" style="color: #ffffff">
+            <span class="diamond-logo"></span>
+            <span>ALTAIR</span>
+          </div>
+          <div style="display: flex; gap: 24px; color: #ffffff">
+            <span>Dashboard</span>
+            <span>Tasks</span>
+            <span>Projects</span>
+            <span>Focus</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- CSS Implementation -->
+      <h2>CSS Implementation</h2>
+      <div class="code-block">
+        <pre>
+/* Neo-Brutalist Diamond Logo */
+.diamond-logo {
+    display: inline-block;
+    width: 40px;
+    height: 40px;
+    transform: rotate(45deg);
+    border: 3px solid #000;
+    background: #FFD93D;
+    position: relative;
+}
+
+/* Light facet */
+.diamond-logo::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 50%; height: 50%;
+    background: rgba(255, 255, 255, 0.4);
+}
+
+/* Dark facet */
+.diamond-logo::after {
+    content: '';
+    position: absolute;
+    bottom: 0; right: 0;
+    width: 50%; height: 50%;
+    background: rgba(0, 0, 0, 0.1);
+}</pre
+        >
+      </div>
+
+      <h2>Usage Guidelines</h2>
+      <div
+        style="
+          border: 3px solid var(--border-color);
+          padding: 24px;
+          background: var(--bg-secondary);
+        "
+      >
+        <ul style="list-style: none; padding: 0">
+          <li style="margin-bottom: 12px; display: flex; gap: 12px">
+            <span class="diamond-logo tiny green"></span>
+            <span><strong>DO:</strong> Use thick borders (3px minimum)</span>
+          </li>
+          <li style="margin-bottom: 12px; display: flex; gap: 12px">
+            <span class="diamond-logo tiny green"></span>
+            <span
+              ><strong>DO:</strong> Apply hover effects with transform and
+              shadow</span
+            >
+          </li>
+          <li style="margin-bottom: 12px; display: flex; gap: 12px">
+            <span class="diamond-logo tiny green"></span>
+            <span><strong>DO:</strong> Use flat colors - no gradients</span>
+          </li>
+          <li style="margin-bottom: 12px; display: flex; gap: 12px">
+            <span
+              style="
+                display: inline-block;
+                width: 16px;
+                height: 16px;
+                transform: rotate(45deg);
+                border: 2px solid red;
+                background: rgba(255, 0, 0, 0.1);
+              "
+            ></span>
+            <span><strong>DON'T:</strong> Use gradients or soft shadows</span>
+          </li>
+          <li style="margin-bottom: 12px; display: flex; gap: 12px">
+            <span
+              style="
+                display: inline-block;
+                width: 16px;
+                height: 16px;
+                transform: rotate(45deg);
+                border: 2px solid red;
+                background: rgba(255, 0, 0, 0.1);
+              "
+            ></span>
+            <span><strong>DON'T:</strong> Make borders thinner than 2px</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </body>
+</html>

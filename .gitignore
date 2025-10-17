@@ -1,0 +1,122 @@
+# Altair Monorepo .gitignore
+
+# ===================================
+# Flutter / Dart
+# ===================================
+# Build outputs
+**/build/
+**/.dart_tool/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/.packages
+**/pubspec.lock
+
+# Coverage
+**/coverage/
+
+# IDE
+**/.idea/
+**/.vscode/
+*.swp
+*.swo
+*~
+
+# ===================================
+# Python / FastAPI
+# ===================================
+# Virtual environments
+**/.venv/
+**/venv/
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.pyd
+**/.Python
+
+# Distribution / packaging
+**/*.egg-info/
+**/dist/
+**/build/
+
+# Testing
+**/.pytest_cache/
+**/.coverage
+**/htmlcov/
+
+# Type checking
+**/.mypy_cache/
+**/.dmypy.json
+**/dmypy.json
+
+# Ruff
+**/.ruff_cache/
+
+# UV
+**/.uv/
+
+# ===================================
+# Node / pnpm
+# ===================================
+**/node_modules/
+**/pnpm-lock.yaml
+
+# ===================================
+# Database
+# ===================================
+**/*.db
+**/*.sqlite
+**/*.sqlite3
+
+# ===================================
+# Environment & Secrets
+# ===================================
+**/.env
+**/.env.local
+**/.env.*.local
+**/*.key
+**/*.pem
+**/*.crt
+
+# ===================================
+# Docker
+# ===================================
+**/docker-compose.override.yml
+
+# ===================================
+# OS
+# ===================================
+**/.DS_Store
+**/Thumbs.db
+
+# ===================================
+# Build artifacts
+# ===================================
+**/linux/
+**/windows/
+**/macos/
+**/android/app/build/
+**/ios/build/
+**/web/build/
+
+# ===================================
+# Logs
+# ===================================
+**/logs/
+**/*.log
+
+# ===================================
+# Temporary files
+# ===================================
+**/tmp/
+**/temp/
+**/*.tmp
+
+# ===================================
+# MCP
+# ===================================
+.mcp.json
+
+# ===================================
+# Mise
+# ===================================
+.mise.local.toml
