@@ -76,17 +76,17 @@ class AltairTheme {
       ),
 
       // Card theme
-      cardTheme: CardTheme(
+      cardTheme: const CardThemeData(
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.zero,
-          side: const BorderSide(
+          side: BorderSide(
             color: AltairColors.lightBorderColor,
             width: AltairBorders.standard,
           ),
         ),
         color: AltairColors.lightBgSecondary,
-        margin: const EdgeInsets.all(AltairSpacing.md),
+        margin: EdgeInsets.all(AltairSpacing.md),
       ),
 
       // Button themes
@@ -257,17 +257,17 @@ class AltairTheme {
       ),
 
       // Card theme
-      cardTheme: CardTheme(
+      cardTheme: const CardThemeData(
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.zero,
-          side: const BorderSide(
+          side: BorderSide(
             color: AltairColors.darkBorderColor,
             width: AltairBorders.standard,
           ),
         ),
         color: AltairColors.darkBgSecondary,
-        margin: const EdgeInsets.all(AltairSpacing.md),
+        margin: EdgeInsets.all(AltairSpacing.md),
       ),
 
       // Button themes
