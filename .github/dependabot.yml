@@ -1,0 +1,125 @@
+version: 2
+updates:
+  # Python dependencies (auth-service)
+  - package-ecosystem: "pip"
+    directory: "/services/auth-service"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "backend"
+      - "auth-service"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    reviewers:
+      - "rghamilton3"
+    assignees:
+      - "rghamilton3"
+
+  # Flutter dependencies (altair-core)
+  - package-ecosystem: "pub"
+    directory: "/packages/altair-core"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "flutter"
+      - "altair-core"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    reviewers:
+      - "rghamilton3"
+
+  # Flutter dependencies (altair-auth)
+  - package-ecosystem: "pub"
+    directory: "/packages/altair-auth"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "flutter"
+      - "altair-auth"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    reviewers:
+      - "rghamilton3"
+
+  # Flutter dependencies (altair-ui)
+  - package-ecosystem: "pub"
+    directory: "/packages/altair-ui"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "flutter"
+      - "altair-ui"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    reviewers:
+      - "rghamilton3"
+
+  # Flutter dependencies (altair_guidance app)
+  - package-ecosystem: "pub"
+    directory: "/apps/altair_guidance"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "flutter"
+      - "altair-guidance"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    reviewers:
+      - "rghamilton3"
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "ci/cd"
+    commit-message:
+      prefix: "ci"
+    reviewers:
+      - "rghamilton3"
+
+  # Docker
+  - package-ecosystem: "docker"
+    directory: "/services/auth-service"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "docker"
+    commit-message:
+      prefix: "chore"
+    reviewers:
+      - "rghamilton3"

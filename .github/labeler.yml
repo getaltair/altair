@@ -1,0 +1,69 @@
+# Auto-label PRs based on files changed
+# This file is used by the actions/labeler action in pr-validation.yml
+
+'backend':
+  - changed-files:
+    - any-glob-to-any-file: 'services/**/*'
+
+'auth-service':
+  - changed-files:
+    - any-glob-to-any-file: 'services/auth-service/**/*'
+
+'flutter':
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'packages/**/*'
+      - 'apps/**/*'
+
+'altair-core':
+  - changed-files:
+    - any-glob-to-any-file: 'packages/altair-core/**/*'
+
+'altair-auth':
+  - changed-files:
+    - any-glob-to-any-file: 'packages/altair-auth/**/*'
+
+'altair-ui':
+  - changed-files:
+    - any-glob-to-any-file: 'packages/altair-ui/**/*'
+
+'altair-guidance':
+  - changed-files:
+    - any-glob-to-any-file: 'apps/altair_guidance/**/*'
+
+'documentation':
+  - changed-files:
+    - any-glob-to-any-file:
+      - '**/*.md'
+      - 'docs/**/*'
+
+'ci/cd':
+  - changed-files:
+    - any-glob-to-any-file:
+      - '.github/workflows/**/*'
+      - '.github/**/*'
+
+'docker':
+  - changed-files:
+    - any-glob-to-any-file:
+      - '**/Dockerfile'
+      - 'docker-compose*.yml'
+      - 'docker/**/*'
+
+'tests':
+  - changed-files:
+    - any-glob-to-any-file:
+      - '**/*_test.dart'
+      - '**/test_*.py'
+      - '**/tests/**/*'
+      - '**/test/**/*'
+
+'dependencies':
+  - changed-files:
+    - any-glob-to-any-file:
+      - '**/pubspec.yaml'
+      - '**/pyproject.toml'
+      - '**/requirements*.txt'
+      - '**/package.json'
+      - '**/yarn.lock'
+      - '**/package-lock.json'
