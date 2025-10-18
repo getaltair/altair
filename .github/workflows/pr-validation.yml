@@ -4,6 +4,10 @@ on:
   pull_request:
     types: [opened, edited, synchronize, reopened]
 
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
   validate-pr:
     name: Validate Pull Request
@@ -70,13 +74,11 @@ jobs:
               core.setFailed('This PR is marked as Work In Progress. Please remove WIP from the title when ready for review.');
             }
 
-      # Auto-labeling disabled due to permissions issue
-      # Can be re-enabled with proper GITHUB_TOKEN permissions
-      # - name: Label PR based on files changed
-      #   uses: actions/labeler@v5
-      #   with:
-      #     repo-token: ${{ secrets.GITHUB_TOKEN }}
-      #     configuration-path: .github/labeler.yml
+      - name: Label PR based on files changed
+        uses: actions/labeler@v5
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          configuration-path: .github/labeler.yml
 
   check-conventional-commits:
     name: Check Commit Messages
