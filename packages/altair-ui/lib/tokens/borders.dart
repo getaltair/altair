@@ -11,6 +11,9 @@ class AltairBorders {
   /// Thin border width: 2px
   static const double thin = 2.0;
 
+  /// Medium border width: 3px (same as standard)
+  static const double medium = 3.0;
+
   /// Thick border width: 4px
   static const double thick = 4.0;
 

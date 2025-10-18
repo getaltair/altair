@@ -71,4 +71,14 @@ class AltairColors {
 
   /// Info color (blue)
   static const Color info = accentBlue;
+
+  // Theme-agnostic colors (defaulting to light theme)
+  /// Surface background color
+  static const Color surface = lightBgSecondary;
+
+  /// Border color
+  static const Color border = lightBorderColor;
+
+  /// Secondary text color
+  static const Color textSecondary = lightTextSecondary;
 }

@@ -8,14 +8,7 @@ export 'models/tag.dart';
 
 // Repositories
 export 'repositories/task_repository.dart';
-export 'repositories/project_repository.dart';
-
-// Services
-export 'services/search_service.dart';
 
 // Database
 export 'database/database.dart';
 export 'database/schema.dart';
-
-// Utils
-export 'utils/date_utils.dart';

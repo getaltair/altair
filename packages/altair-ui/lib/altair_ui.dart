@@ -19,4 +19,5 @@ export 'tokens/typography.dart';
 // Widgets
 export 'widgets/altair_button.dart';
 export 'widgets/altair_card.dart';
+export 'widgets/altair_quick_capture.dart';
 export 'widgets/altair_text_field.dart';
