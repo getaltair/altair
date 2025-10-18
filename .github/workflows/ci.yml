@@ -27,7 +27,7 @@ jobs:
       - name: Install dependencies
         run: |
           cd services/auth-service
-          uv sync
+          uv sync --extra dev
 
       - name: Run Ruff linter
         run: |
@@ -64,7 +64,7 @@ jobs:
       - name: Install dependencies
         run: |
           cd services/auth-service
-          uv sync
+          uv sync --extra dev
 
       - name: Run tests
         run: |
@@ -88,7 +88,6 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.24.0'
           channel: 'stable'
 
       - name: Install dependencies (altair-core)
@@ -141,7 +140,6 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.24.0'
           channel: 'stable'
 
       - name: Test altair-core
@@ -179,78 +177,78 @@ jobs:
           flags: flutter
           name: flutter-packages
 
-  build-linux:
-    name: Build Linux App
-    runs-on: ubuntu-latest
-    needs: [lint-flutter, test-flutter]
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Install Linux dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            clang cmake ninja-build pkg-config \
-            libgtk-3-dev liblzma-dev libstdc++-12-dev
-
-      - name: Set up Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.24.0'
-          channel: 'stable'
-
-      - name: Enable Linux desktop
-        run: flutter config --enable-linux-desktop
-
-      - name: Install dependencies
-        run: |
-          cd apps/altair_guidance
-          flutter pub get
-
-      - name: Build Linux app
-        run: |
-          cd apps/altair_guidance
-          flutter build linux --release
-
-      - name: Upload Linux artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: altair-guidance-linux
-          path: apps/altair_guidance/build/linux/x64/release/bundle/
-
-  build-android:
-    name: Build Android App
-    runs-on: ubuntu-latest
-    needs: [lint-flutter, test-flutter]
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-
-      - name: Set up Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.24.0'
-          channel: 'stable'
-
-      - name: Install dependencies
-        run: |
-          cd apps/altair_guidance
-          flutter pub get
-
-      - name: Build Android APK
-        run: |
-          cd apps/altair_guidance
-          flutter build apk --release
-
-      - name: Upload Android artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: altair-guidance-android
-          path: apps/altair_guidance/build/app/outputs/flutter-apk/app-release.apk
+  # Build jobs disabled temporarily to save CI time and costs
+  # Re-enable when ready for deployment
+  # build-linux:
+  #   name: Build Linux App
+  #   runs-on: ubuntu-latest
+  #   needs: [lint-flutter, test-flutter]
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
+  #
+  #     - name: Install Linux dependencies
+  #       run: |
+  #         sudo apt-get update
+  #         sudo apt-get install -y \
+  #           clang cmake ninja-build pkg-config \
+  #           libgtk-3-dev liblzma-dev libstdc++-12-dev
+  #
+  #     - name: Set up Flutter
+  #       uses: subosito/flutter-action@v2
+  #       with:
+  #         channel: 'stable'
+  #
+  #     - name: Enable Linux desktop
+  #       run: flutter config --enable-linux-desktop
+  #
+  #     - name: Install dependencies
+  #       run: |
+  #         cd apps/altair_guidance
+  #         flutter pub get
+  #
+  #     - name: Build Linux app
+  #       run: |
+  #         cd apps/altair_guidance
+  #         flutter build linux --release
+  #
+  #     - name: Upload Linux artifact
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: altair-guidance-linux
+  #         path: apps/altair_guidance/build/linux/x64/release/bundle/
+  #
+  # build-android:
+  #   name: Build Android App
+  #   runs-on: ubuntu-latest
+  #   needs: [lint-flutter, test-flutter]
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
+  #
+  #     - name: Set up Java
+  #       uses: actions/setup-java@v4
+  #       with:
+  #         distribution: 'temurin'
+  #         java-version: '17'
+  #
+  #     - name: Set up Flutter
+  #       uses: subosito/flutter-action@v2
+  #       with:
+  #         channel: 'stable'
+  #
+  #     - name: Install dependencies
+  #       run: |
+  #         cd apps/altair_guidance
+  #         flutter pub get
+  #
+  #     - name: Build Android APK
+  #       run: |
+  #         cd apps/altair_guidance
+  #         flutter build apk --release
+  #
+  #     - name: Upload Android artifact
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: altair-guidance-android
+  #         path: apps/altair_guidance/build/app/outputs/flutter-apk/app-release.apk

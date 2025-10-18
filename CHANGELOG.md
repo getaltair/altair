@@ -67,13 +67,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Dependencies: flutter_bloc, go_router, get_it
   - Ready for Month 2 feature implementation
 
+#### Core Task Management (Month 2)
+
+- **Quick Capture Widget** (AltairQuickCapture):
+  - Sub-3-second task creation optimized for ADHD users
+  - Auto-focus on mount for immediate input
+  - Submit on Enter key for keyboard-first workflow
+  - Visual feedback with checkmark animation
+  - Clear on submit with automatic refocus
+  - Customizable hint text and accent colors
+  - Empty and whitespace-only input validation
+  - Comprehensive widget tests covering all functionality
+
+- **Task BLoC Integration**:
+  - TaskBloc with complete CRUD operations
+  - Quick capture event handling with TaskQuickCaptureRequested
+  - Task states: Initial, Loading, Loaded, Captured, Failure
+  - Integration with TaskRepository for persistence
+  - Search and filter functionality by status
+  - Comprehensive BLoC tests with mocktail
+
+- **Task List UI**:
+  - Real-time task display with status-based accent colors
+  - Checkbox for quick task completion
+  - Delete functionality with confirmation
+  - Empty state guidance for new users
+  - Theme-aware colors for consistent UI
+  - Success feedback with SnackBar notifications
+
 #### Testing Infrastructure
 
 - Comprehensive testing framework for all packages:
-  - **altair-ui**: Widget tests for Button, Card, and TextField components
+  - **altair-ui**: Widget tests for Button, Card, TextField, and Quick Capture components
   - **altair-core**: Unit tests for Task model with serialization and equality tests
   - **altair-auth**: BLoC tests for authentication flows with mockito and bloc_test
-  - **altair_guidance**: App-level tests for routing, theming, and UI
+  - **altair_guidance**: App-level tests for routing, theming, UI, and TaskBloc with mocktail
 - Testing documentation (docs/TESTING.md) with:
   - Complete testing guide for all test types
   - Best practices and examples

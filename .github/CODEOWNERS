@@ -1,0 +1,48 @@
+# CODEOWNERS file
+#
+# This file defines code owners for different parts of the repository.
+# Code owners are automatically requested for review when someone opens a PR
+# that modifies files they own.
+#
+# Format: path/to/files @github-username @org/team-name
+#
+# More info: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default owners for everything in the repo
+# These owners will be the default owners for all files unless a later match takes precedence
+* @rghamilton3
+
+# Backend services
+/services/auth-service/ @rghamilton3
+/services/auth-service/app/ @rghamilton3
+/services/auth-service/tests/ @rghamilton3
+
+# Flutter packages
+/packages/altair-core/ @rghamilton3
+/packages/altair-auth/ @rghamilton3
+/packages/altair-ui/ @rghamilton3
+
+# Flutter apps
+/apps/altair_guidance/ @rghamilton3
+
+# Infrastructure and DevOps
+/docker/ @rghamilton3
+/docker-compose*.yml @rghamilton3
+/.github/workflows/ @rghamilton3
+/.github/CODEOWNERS @rghamilton3
+
+# Documentation
+/docs/ @rghamilton3
+*.md @rghamilton3
+/README.md @rghamilton3
+
+# Configuration files
+/.github/ @rghamilton3
+/pyproject.toml @rghamilton3
+/pubspec.yaml @rghamilton3
+
+# Examples and tests
+/examples/ @rghamilton3
+/tests/ @rghamilton3
+/**/*_test.dart @rghamilton3
+/**/test_*.py @rghamilton3

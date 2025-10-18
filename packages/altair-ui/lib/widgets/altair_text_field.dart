@@ -79,7 +79,7 @@ class _AltairTextFieldState extends State<AltairTextField> {
         : AltairColors.lightBgSecondary;
 
     final focusBackgroundColor = widget.errorText != null
-        ? AltairColors.error.withOpacity(0.1)
+        ? AltairColors.error.withValues(alpha: 0.1)
         : AltairColors.accentYellow;
 
     return Column(

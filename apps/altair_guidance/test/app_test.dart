@@ -1,9 +1,22 @@
+import 'package:altair_core/altair_core.dart';
+import 'package:altair_guidance/bloc/task/task_bloc.dart';
+import 'package:altair_guidance/bloc/task/task_event.dart';
 import 'package:altair_guidance/main.dart';
 import 'package:altair_ui/altair_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+
+class MockTaskRepository extends Mock implements TaskRepository {}
+
+class FakeTask extends Fake implements Task {}
 
 void main() {
+  setUpAll(() {
+    registerFallbackValue(FakeTask());
+  });
+
   group('AltairGuidanceApp', () {
     testWidgets('renders without crashing', (WidgetTester tester) async {
       await tester.pumpWidget(const AltairGuidanceApp());
@@ -34,7 +47,7 @@ void main() {
 
     testWidgets('shows HomePage as home', (WidgetTester tester) async {
       await tester.pumpWidget(const AltairGuidanceApp());
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byType(HomePage), findsOneWidget);
     });
@@ -51,124 +64,83 @@ void main() {
   });
 
   group('HomePage', () {
-    testWidgets('displays app bar with title', (WidgetTester tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: HomePage(),
+    late MockTaskRepository mockTaskRepository;
+
+    setUp(() {
+      mockTaskRepository = MockTaskRepository();
+    });
+
+    Widget createHomePage() {
+      return MaterialApp(
+        home: BlocProvider(
+          create: (_) => TaskBloc(
+            taskRepository: mockTaskRepository,
+          )..add(const TaskLoadRequested()),
+          child: const HomePage(),
         ),
       );
+    }
+
+    testWidgets('displays app bar with title', (WidgetTester tester) async {
+      when(() => mockTaskRepository.findAll()).thenAnswer((_) async => []);
+
+      await tester.pumpWidget(createHomePage());
+      await tester.pumpAndSettle();
 
       expect(find.widgetWithText(AppBar, 'Altair Guidance'), findsOneWidget);
     });
 
-    testWidgets('displays welcome message', (WidgetTester tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: HomePage(),
-        ),
-      );
+    testWidgets('displays Quick Capture widget', (WidgetTester tester) async {
+      when(() => mockTaskRepository.findAll()).thenAnswer((_) async => []);
 
-      expect(find.text('Welcome to Altair Guidance'), findsOneWidget);
-      expect(find.text('ADHD-friendly task management'), findsOneWidget);
+      await tester.pumpWidget(createHomePage());
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AltairQuickCapture), findsOneWidget);
+      expect(find.text('Quick capture (< 3 seconds)...'), findsOneWidget);
     });
 
-    testWidgets('displays Get Started button', (WidgetTester tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: HomePage(),
-        ),
-      );
-
-      expect(find.widgetWithText(AltairButton, 'Get Started'), findsOneWidget);
-    });
-
-    testWidgets('Get Started button shows coming soon snackbar',
+    testWidgets('displays empty state when no tasks',
         (WidgetTester tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: HomePage(),
-        ),
+      when(() => mockTaskRepository.findAll()).thenAnswer((_) async => []);
+
+      await tester.pumpWidget(createHomePage());
+      await tester.pumpAndSettle();
+
+      expect(find.text('No tasks yet'), findsOneWidget);
+      expect(
+        find.text('Use quick capture above to add your first task'),
+        findsOneWidget,
       );
-
-      await tester.tap(find.widgetWithText(AltairButton, 'Get Started'));
-      await tester.pump();
-
-      expect(find.text('Coming soon!'), findsOneWidget);
-      expect(find.byType(SnackBar), findsOneWidget);
     });
 
-    testWidgets('displays Quick Capture card', (WidgetTester tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: HomePage(),
-        ),
+    testWidgets('displays tasks when loaded', (WidgetTester tester) async {
+      final now = DateTime.now();
+      final task = Task(
+        id: '1',
+        title: 'Test Task',
+        createdAt: now,
+        updatedAt: now,
+        status: TaskStatus.todo,
+        priority: 3,
       );
 
-      expect(find.text('Quick Capture'), findsOneWidget);
-      expect(find.text('< 3 second thought-to-save'), findsOneWidget);
+      when(() => mockTaskRepository.findAll()).thenAnswer((_) async => [task]);
+
+      await tester.pumpWidget(createHomePage());
+      await tester.pumpAndSettle();
+
+      expect(find.text('Test Task'), findsOneWidget);
+      expect(find.byType(Checkbox), findsOneWidget);
     });
 
-    testWidgets('Quick Capture card has accent bar',
-        (WidgetTester tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: HomePage(),
-        ),
-      );
+    testWidgets('has filter button in app bar', (WidgetTester tester) async {
+      when(() => mockTaskRepository.findAll()).thenAnswer((_) async => []);
 
-      final cardFinder = find.ancestor(
-        of: find.text('Quick Capture'),
-        matching: find.byType(AltairCard),
-      );
+      await tester.pumpWidget(createHomePage());
+      await tester.pumpAndSettle();
 
-      expect(cardFinder, findsOneWidget);
-
-      final card = tester.widget<AltairCard>(cardFinder);
-      expect(card.showAccentBar, isTrue);
-      expect(card.accentColor, AltairColors.accentBlue);
-    });
-
-    testWidgets('uses centered column layout', (WidgetTester tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: HomePage(),
-        ),
-      );
-
-      // Find the Center widget in the Scaffold's body
-      final centerFinder = find.descendant(
-        of: find.byType(Scaffold),
-        matching: find.byType(Center),
-      );
-
-      expect(centerFinder, findsOneWidget);
-
-      // Find the main Column (the one with mainAxisAlignment.center)
-      final columns = find.byType(Column);
-      bool foundCenteredColumn = false;
-
-      for (final element in columns.evaluate()) {
-        final column = element.widget as Column;
-        if (column.mainAxisAlignment == MainAxisAlignment.center) {
-          foundCenteredColumn = true;
-          break;
-        }
-      }
-
-      expect(foundCenteredColumn, isTrue);
-    });
-
-    testWidgets('applies proper spacing between elements',
-        (WidgetTester tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: HomePage(),
-        ),
-      );
-
-      // Find SizedBox widgets that provide spacing
-      final sizedBoxes = find.byType(SizedBox);
-      expect(sizedBoxes, findsWidgets);
+      expect(find.byIcon(Icons.filter_list), findsOneWidget);
     });
   });
 }
