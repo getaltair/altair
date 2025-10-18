@@ -70,11 +70,13 @@ jobs:
               core.setFailed('This PR is marked as Work In Progress. Please remove WIP from the title when ready for review.');
             }
 
-      - name: Label PR based on files changed
-        uses: actions/labeler@v5
-        with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-          configuration-path: .github/labeler.yml
+      # Auto-labeling disabled due to permissions issue
+      # Can be re-enabled with proper GITHUB_TOKEN permissions
+      # - name: Label PR based on files changed
+      #   uses: actions/labeler@v5
+      #   with:
+      #     repo-token: ${{ secrets.GITHUB_TOKEN }}
+      #     configuration-path: .github/labeler.yml
 
   check-conventional-commits:
     name: Check Commit Messages
