@@ -2,7 +2,6 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../tokens/borders.dart';
 import '../tokens/colors.dart';
@@ -98,7 +97,7 @@ class _AltairQuickCaptureState extends State<AltairQuickCapture> {
               vertical: AltairSpacing.sm,
             ),
             decoration: BoxDecoration(
-              color: widget.accentColor.withOpacity(0.1),
+              color: widget.accentColor.withValues(alpha: 0.1),
               border: Border(
                 right: BorderSide(
                   color: widget.accentColor,
@@ -149,7 +148,7 @@ class _AltairQuickCaptureState extends State<AltairQuickCapture> {
             decoration: BoxDecoration(
               color: _isCapturing
                   ? widget.accentColor
-                  : widget.accentColor.withOpacity(0.1),
+                  : widget.accentColor.withValues(alpha: 0.1),
               border: Border(
                 left: BorderSide(
                   color: widget.accentColor,

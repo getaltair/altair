@@ -1,13 +1,11 @@
 import 'package:altair_ui/altair_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('AltairQuickCapture', () {
     testWidgets('renders with default properties', (tester) async {
       bool capturedCalled = false;
-      String? capturedText;
 
       await tester.pumpWidget(
         MaterialApp(
@@ -15,7 +13,6 @@ void main() {
             body: AltairQuickCapture(
               onCapture: (text) {
                 capturedCalled = true;
-                capturedText = text;
               },
             ),
           ),
