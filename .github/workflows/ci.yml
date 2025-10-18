@@ -72,7 +72,7 @@ jobs:
           uv run pytest --cov=app --cov-report=xml
 
       - name: Upload coverage
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           file: ./services/auth-service/coverage.xml
           flags: python
@@ -167,7 +167,7 @@ jobs:
           flutter test --coverage
 
       - name: Upload coverage
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           files: |
             ./packages/altair-core/coverage/lcov.info
