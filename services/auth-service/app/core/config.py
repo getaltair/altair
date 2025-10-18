@@ -29,10 +29,10 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 10080  # 7 days
 
     # Database
-    DATABASE_URL: PostgresDsn = cast(PostgresDsn, "postgresql://localhost:5432/altair")
+    DATABASE_URL: PostgresDsn = cast("PostgresDsn", "postgresql://localhost:5432/altair")
 
     # Redis
-    REDIS_URL: RedisDsn = cast(RedisDsn, "redis://localhost:6379/0")
+    REDIS_URL: RedisDsn = cast("RedisDsn", "redis://localhost:6379/0")
 
     # CORS
     CORS_ORIGINS: list[str] = ["http://localhost:3000", "http://localhost:8000"]
