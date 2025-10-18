@@ -2,7 +2,7 @@
 // This ensures commit messages follow the conventional commits specification
 // See: https://www.conventionalcommits.org/
 
-module.exports = {
+export default {
   extends: ['@commitlint/config-conventional'],
   rules: {
     'type-enum': [
