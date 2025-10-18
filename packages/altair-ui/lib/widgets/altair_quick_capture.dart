@@ -79,11 +79,13 @@ class _AltairQuickCaptureState extends State<AltairQuickCapture> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Container(
       decoration: BoxDecoration(
-        color: AltairColors.surface,
+        color: theme.cardColor,
         border: Border.all(
-          color: _focusNode.hasFocus ? widget.accentColor : AltairColors.border,
+          color: _focusNode.hasFocus ? widget.accentColor : theme.dividerColor,
           width: AltairBorders.thick,
         ),
       ),
@@ -125,8 +127,8 @@ class _AltairQuickCaptureState extends State<AltairQuickCapture> {
                 ),
                 decoration: InputDecoration(
                   hintText: widget.hint,
-                  hintStyle: TextStyle(
-                    color: AltairColors.textSecondary,
+                  hintStyle: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.hintColor,
                     fontWeight: FontWeight.w400,
                   ),
                   border: InputBorder.none,
@@ -167,7 +169,7 @@ class _AltairQuickCaptureState extends State<AltairQuickCapture> {
                   child: Icon(
                     _isCapturing ? Icons.check : Icons.add,
                     color: _isCapturing
-                        ? AltairColors.surface
+                        ? theme.cardColor
                         : widget.accentColor,
                     size: 24,
                   ),

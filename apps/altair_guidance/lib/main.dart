@@ -63,10 +63,10 @@ class HomePage extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(AltairSpacing.md),
             decoration: BoxDecoration(
-              color: AltairColors.surface,
+              color: Theme.of(context).scaffoldBackgroundColor,
               border: Border(
                 bottom: BorderSide(
-                  color: AltairColors.border,
+                  color: Theme.of(context).dividerColor,
                   width: AltairBorders.medium,
                 ),
               ),
