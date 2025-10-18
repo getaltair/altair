@@ -1,7 +1,6 @@
 import 'package:altair_core/altair_core.dart';
 import 'package:altair_guidance/bloc/task/task_bloc.dart';
 import 'package:altair_guidance/bloc/task/task_event.dart';
-import 'package:altair_guidance/bloc/task/task_state.dart';
 import 'package:altair_guidance/main.dart';
 import 'package:altair_ui/altair_ui.dart';
 import 'package:flutter/material.dart';
