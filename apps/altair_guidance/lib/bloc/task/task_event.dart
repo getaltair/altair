@@ -91,3 +91,17 @@ final class TaskFilterByTagsRequested extends TaskEvent {
 final class TaskClearFiltersRequested extends TaskEvent {
   const TaskClearFiltersRequested();
 }
+
+/// Event to reorder tasks in the list.
+final class TaskReorderRequested extends TaskEvent {
+  const TaskReorderRequested({
+    required this.oldIndex,
+    required this.newIndex,
+  });
+
+  final int oldIndex;
+  final int newIndex;
+
+  @override
+  List<Object?> get props => [oldIndex, newIndex];
+}

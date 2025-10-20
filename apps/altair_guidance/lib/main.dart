@@ -381,12 +381,21 @@ class _HomePageState extends State<HomePage> {
                     );
                   }
 
-                  return ListView.builder(
+                  return ReorderableListView.builder(
                     padding: const EdgeInsets.all(AltairSpacing.md),
                     itemCount: state.tasks.length,
+                    onReorder: (oldIndex, newIndex) {
+                      context.read<TaskBloc>().add(
+                            TaskReorderRequested(
+                              oldIndex: oldIndex,
+                              newIndex: newIndex,
+                            ),
+                          );
+                    },
                     itemBuilder: (context, index) {
                       final task = state.tasks[index];
                       return Padding(
+                        key: ValueKey(task.id), // Required for ReorderableListView
                         padding: const EdgeInsets.only(
                           bottom: AltairSpacing.md,
                         ),

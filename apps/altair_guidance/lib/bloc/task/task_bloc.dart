@@ -26,6 +26,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
     on<TaskFilterByStatusRequested>(_onFilterByStatusRequested);
     on<TaskFilterByTagsRequested>(_onFilterByTagsRequested);
     on<TaskClearFiltersRequested>(_onClearFiltersRequested);
+    on<TaskReorderRequested>(_onReorderRequested);
   }
 
   final TaskRepository _taskRepository;
@@ -202,5 +203,31 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
       _logger.e('Failed to clear filters', error: e, stackTrace: stackTrace);
       emit(TaskFailure(message: e.toString()));
     }
+  }
+
+  /// Handles reordering tasks in the list.
+  void _onReorderRequested(
+    TaskReorderRequested event,
+    Emitter<TaskState> emit,
+  ) {
+    final currentState = state;
+    if (currentState is! TaskLoaded) {
+      return;
+    }
+
+    final tasks = List<Task>.from(currentState.tasks);
+
+    // Adjust indices for Flutter's ReorderableListView behavior
+    final oldIndex = event.oldIndex;
+    final newIndex = event.oldIndex < event.newIndex
+        ? event.newIndex - 1
+        : event.newIndex;
+
+    // Reorder the list
+    final task = tasks.removeAt(oldIndex);
+    tasks.insert(newIndex, task);
+
+    emit(TaskLoaded(tasks: tasks));
+    _logger.i('Reordered task from index $oldIndex to $newIndex');
   }
 }
