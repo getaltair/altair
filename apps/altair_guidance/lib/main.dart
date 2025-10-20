@@ -6,9 +6,12 @@ import 'package:altair_ui/altair_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'bloc/project/project_bloc.dart';
+import 'bloc/project/project_event.dart';
 import 'bloc/task/task_bloc.dart';
 import 'bloc/task/task_event.dart';
 import 'bloc/task/task_state.dart';
+import 'pages/projects_page.dart';
 import 'pages/task_edit_page.dart';
 
 void main() {
@@ -28,10 +31,19 @@ class AltairGuidanceApp extends StatelessWidget {
       theme: AltairTheme.lightTheme,
       darkTheme: AltairTheme.darkTheme,
       themeMode: ThemeMode.system,
-      home: BlocProvider(
-        create: (_) => TaskBloc(
-          taskRepository: TaskRepository(),
-        )..add(const TaskLoadRequested()),
+      home: MultiBlocProvider(
+        providers: [
+          BlocProvider(
+            create: (_) => TaskBloc(
+              taskRepository: TaskRepository(),
+            )..add(const TaskLoadRequested()),
+          ),
+          BlocProvider(
+            create: (_) => ProjectBloc(
+              projectRepository: ProjectRepository(),
+            )..add(const ProjectLoadRequested()),
+          ),
+        ],
         child: const HomePage(),
       ),
     );
@@ -47,7 +59,7 @@ class HomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Altair Guidance'),
+        title: const Text('Tasks'),
         actions: [
           // Filter buttons
           IconButton(
@@ -57,6 +69,77 @@ class HomePage extends StatelessWidget {
             },
           ),
         ],
+      ),
+      drawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            DrawerHeader(
+              decoration: BoxDecoration(
+                color: AltairColors.accentYellow,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Text(
+                    'Altair Guidance',
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
+                        ),
+                  ),
+                  const SizedBox(height: AltairSpacing.xs),
+                  Text(
+                    'ADHD-friendly task management',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Colors.black,
+                        ),
+                  ),
+                ],
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.checklist),
+              title: const Text('Tasks'),
+              selected: true,
+              onTap: () {
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.folder),
+              title: const Text('Projects'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (context) => MultiBlocProvider(
+                      providers: [
+                        BlocProvider.value(
+                          value: context.read<TaskBloc>(),
+                        ),
+                        BlocProvider.value(
+                          value: context.read<ProjectBloc>(),
+                        ),
+                      ],
+                      child: const ProjectsPage(),
+                    ),
+                  ),
+                );
+              },
+            ),
+            const Divider(),
+            ListTile(
+              leading: const Icon(Icons.settings),
+              title: const Text('Settings'),
+              onTap: () {
+                Navigator.pop(context);
+                // TODO: Navigate to settings
+              },
+            ),
+          ],
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {

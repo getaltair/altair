@@ -1,61 +1,65 @@
-/// Task editing page for detailed task management.
+/// Project editing page for creating and managing projects.
 library;
 
 import 'package:altair_core/altair_core.dart';
 import 'package:altair_ui/altair_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../bloc/project/project_bloc.dart';
-import '../bloc/project/project_state.dart';
-import '../bloc/task/task_bloc.dart';
-import '../bloc/task/task_event.dart';
+import '../bloc/project/project_event.dart';
 
-/// Page for creating or editing a task with full details.
-class TaskEditPage extends StatefulWidget {
-  /// Creates a task edit page.
-  const TaskEditPage({
+/// Page for creating or editing a project with full details.
+class ProjectEditPage extends StatefulWidget {
+  /// Creates a project edit page.
+  const ProjectEditPage({
     super.key,
-    this.task,
+    this.project,
   });
 
-  /// The task to edit. If null, creates a new task.
-  final Task? task;
+  /// The project to edit. If null, creates a new project.
+  final Project? project;
 
   @override
-  State<TaskEditPage> createState() => _TaskEditPageState();
+  State<ProjectEditPage> createState() => _ProjectEditPageState();
 }
 
-class _TaskEditPageState extends State<TaskEditPage> {
-  late final TextEditingController _titleController;
+class _ProjectEditPageState extends State<ProjectEditPage> {
+  late final TextEditingController _nameController;
   late final TextEditingController _descriptionController;
-  late final TextEditingController _estimatedMinutesController;
-  late TaskStatus _selectedStatus;
-  late int _selectedPriority;
+  late ProjectStatus _selectedStatus;
   late List<String> _tags;
-  String? _selectedProjectId;
+  String? _selectedColor;
+  DateTime? _targetDate;
   bool _isModified = false;
+
+  // Predefined project colors
+  static const List<Color> projectColors = [
+    AltairColors.accentYellow,
+    AltairColors.accentBlue,
+    AltairColors.accentGreen,
+    Color(0xFFFF6B6B), // Red
+    Color(0xFFB565D8), // Purple
+    Color(0xFFFF8C42), // Orange
+    Color(0xFF4ECDC4), // Teal
+    Color(0xFFF7B731), // Gold
+  ];
 
   @override
   void initState() {
     super.initState();
-    final task = widget.task;
+    final project = widget.project;
 
-    _titleController = TextEditingController(text: task?.title ?? '');
-    _descriptionController = TextEditingController(text: task?.description ?? '');
-    _estimatedMinutesController = TextEditingController(
-      text: task?.estimatedMinutes?.toString() ?? '',
-    );
-    _selectedStatus = task?.status ?? TaskStatus.todo;
-    _selectedPriority = task?.priority ?? 3;
-    _tags = List.from(task?.tags ?? []);
-    _selectedProjectId = task?.projectId;
+    _nameController = TextEditingController(text: project?.name ?? '');
+    _descriptionController = TextEditingController(text: project?.description ?? '');
+    _selectedStatus = project?.status ?? ProjectStatus.active;
+    _tags = List.from(project?.tags ?? []);
+    _selectedColor = project?.color;
+    _targetDate = project?.targetDate;
 
     // Mark as modified when any field changes
-    _titleController.addListener(_markModified);
+    _nameController.addListener(_markModified);
     _descriptionController.addListener(_markModified);
-    _estimatedMinutesController.addListener(_markModified);
   }
 
   void _markModified() {
@@ -66,15 +70,14 @@ class _TaskEditPageState extends State<TaskEditPage> {
 
   @override
   void dispose() {
-    _titleController.dispose();
+    _nameController.dispose();
     _descriptionController.dispose();
-    _estimatedMinutesController.dispose();
     super.dispose();
   }
 
   bool _validateForm() {
-    if (_titleController.text.trim().isEmpty) {
-      _showError('Task title cannot be empty');
+    if (_nameController.text.trim().isEmpty) {
+      _showError('Project name cannot be empty');
       return false;
     }
     return true;
@@ -89,45 +92,39 @@ class _TaskEditPageState extends State<TaskEditPage> {
     );
   }
 
-  void _saveTask() {
+  void _saveProject() {
     if (!_validateForm()) return;
 
     final now = DateTime.now();
-    final task = widget.task?.copyWith(
-      title: _titleController.text.trim(),
+    final project = widget.project?.copyWith(
+      name: _nameController.text.trim(),
       description: _descriptionController.text.trim().isEmpty
           ? null
           : _descriptionController.text.trim(),
       status: _selectedStatus,
-      priority: _selectedPriority,
       tags: _tags,
-      projectId: _selectedProjectId,
-      estimatedMinutes: _estimatedMinutesController.text.isEmpty
-          ? null
-          : int.tryParse(_estimatedMinutesController.text),
+      color: _selectedColor,
+      targetDate: _targetDate,
       updatedAt: now,
-      completedAt: _selectedStatus == TaskStatus.completed ? now : null,
-    ) ?? Task(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      title: _titleController.text.trim(),
+      completedAt: _selectedStatus == ProjectStatus.completed ? now : null,
+    ) ?? Project(
+      id: '',
+      name: _nameController.text.trim(),
       description: _descriptionController.text.trim().isEmpty
           ? null
           : _descriptionController.text.trim(),
       status: _selectedStatus,
-      priority: _selectedPriority,
       tags: _tags,
-      projectId: _selectedProjectId,
-      estimatedMinutes: _estimatedMinutesController.text.isEmpty
-          ? null
-          : int.tryParse(_estimatedMinutesController.text),
+      color: _selectedColor,
+      targetDate: _targetDate,
       createdAt: now,
       updatedAt: now,
     );
 
-    if (widget.task == null) {
-      context.read<TaskBloc>().add(TaskCreateRequested(task: task));
+    if (widget.project == null) {
+      context.read<ProjectBloc>().add(ProjectCreateRequested(project: project));
     } else {
-      context.read<TaskBloc>().add(TaskUpdateRequested(task: task));
+      context.read<ProjectBloc>().add(ProjectUpdateRequested(project: project));
     }
 
     Navigator.of(context).pop();
@@ -163,7 +160,7 @@ class _TaskEditPageState extends State<TaskEditPage> {
 
   @override
   Widget build(BuildContext context) {
-    final isNewTask = widget.task == null;
+    final isNewProject = widget.project == null;
 
     return PopScope(
       canPop: false,
@@ -176,10 +173,10 @@ class _TaskEditPageState extends State<TaskEditPage> {
       },
       child: Scaffold(
         appBar: AppBar(
-          title: Text(isNewTask ? 'New Task' : 'Edit Task'),
+          title: Text(isNewProject ? 'New Project' : 'Edit Project'),
           actions: [
             TextButton(
-              onPressed: _saveTask,
+              onPressed: _saveProject,
               child: Text(
                 'Save',
                 style: TextStyle(
@@ -195,13 +192,13 @@ class _TaskEditPageState extends State<TaskEditPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Title field
+              // Name field
               AltairTextField(
-                controller: _titleController,
-                label: 'Title',
-                hint: 'What needs to be done?',
-                autofocus: isNewTask,
-                maxLines: 2,
+                controller: _nameController,
+                label: 'Project Name',
+                hint: 'e.g., Altair Development, Personal Goals',
+                autofocus: isNewProject,
+                maxLines: 1,
               ),
               const SizedBox(height: AltairSpacing.lg),
 
@@ -209,8 +206,8 @@ class _TaskEditPageState extends State<TaskEditPage> {
               AltairTextField(
                 controller: _descriptionController,
                 label: 'Description',
-                hint: 'Add more details...',
-                maxLines: 5,
+                hint: 'What is this project about?',
+                maxLines: 4,
               ),
               const SizedBox(height: AltairSpacing.lg),
 
@@ -218,24 +215,12 @@ class _TaskEditPageState extends State<TaskEditPage> {
               _buildStatusDropdown(),
               const SizedBox(height: AltairSpacing.lg),
 
-              // Project dropdown
-              _buildProjectDropdown(),
+              // Color picker
+              _buildColorPicker(),
               const SizedBox(height: AltairSpacing.lg),
 
-              // Priority slider
-              _buildPrioritySlider(),
-              const SizedBox(height: AltairSpacing.lg),
-
-              // Estimated time
-              AltairTextField(
-                controller: _estimatedMinutesController,
-                label: 'Estimated time (minutes)',
-                hint: 'e.g., 30',
-                keyboardType: TextInputType.number,
-                inputFormatters: [
-                  FilteringTextInputFormatter.digitsOnly,
-                ],
-              ),
+              // Target date
+              _buildTargetDatePicker(),
               const SizedBox(height: AltairSpacing.lg),
 
               // Tags
@@ -244,10 +229,10 @@ class _TaskEditPageState extends State<TaskEditPage> {
 
               // Save button (also in app bar)
               AltairButton(
-                onPressed: _saveTask,
+                onPressed: _saveProject,
                 variant: AltairButtonVariant.filled,
                 accentColor: AltairColors.accentGreen,
-                child: Text(isNewTask ? 'Create Task' : 'Save Changes'),
+                child: Text(isNewProject ? 'Create Project' : 'Save Changes'),
               ),
             ],
           ),
@@ -267,7 +252,7 @@ class _TaskEditPageState extends State<TaskEditPage> {
               ),
         ),
         const SizedBox(height: AltairSpacing.sm),
-        DropdownButtonFormField<TaskStatus>(
+        DropdownButtonFormField<ProjectStatus>(
           value: _selectedStatus,
           decoration: InputDecoration(
             border: OutlineInputBorder(
@@ -281,7 +266,7 @@ class _TaskEditPageState extends State<TaskEditPage> {
               vertical: AltairSpacing.sm,
             ),
           ),
-          items: TaskStatus.values.map((status) {
+          items: ProjectStatus.values.map((status) {
             return DropdownMenuItem(
               value: status,
               child: Row(
@@ -317,134 +302,120 @@ class _TaskEditPageState extends State<TaskEditPage> {
     );
   }
 
-  Widget _buildProjectDropdown() {
-    return BlocBuilder<ProjectBloc, ProjectState>(
-      builder: (context, state) {
-        final projects = state is ProjectLoaded ? state.projects : <Project>[];
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Project',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-            ),
-            const SizedBox(height: AltairSpacing.sm),
-            DropdownButtonFormField<String?>(
-              value: _selectedProjectId,
-              decoration: InputDecoration(
-                border: OutlineInputBorder(
-                  borderSide: BorderSide(
-                    color: Theme.of(context).dividerColor,
-                    width: AltairBorders.medium,
-                  ),
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: AltairSpacing.md,
-                  vertical: AltairSpacing.sm,
-                ),
-              ),
-              hint: const Text('No project (personal task)'),
-              items: [
-                // None option
-                const DropdownMenuItem<String?>(
-                  value: null,
-                  child: Row(
-                    children: [
-                      Icon(Icons.clear, size: 16),
-                      SizedBox(width: AltairSpacing.sm),
-                      Text('No project (personal task)'),
-                    ],
-                  ),
-                ),
-                // Project options
-                ...projects.map((project) {
-                  return DropdownMenuItem<String?>(
-                    value: project.id,
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 16,
-                          height: 16,
-                          decoration: BoxDecoration(
-                            color: project.color != null
-                                ? _hexToColor(project.color!)
-                                : AltairColors.accentBlue,
-                            borderRadius: BorderRadius.circular(4),
-                            border: Border.all(
-                              color: Colors.black,
-                              width: 2,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: AltairSpacing.sm),
-                        Flexible(
-                          child: Text(
-                            project.name,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }),
-              ],
-              onChanged: (value) {
-                setState(() {
-                  _selectedProjectId = value;
-                  _markModified();
-                });
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildPrioritySlider() {
+  Widget _buildColorPicker() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        Text(
+          'Project Color',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+        ),
+        const SizedBox(height: AltairSpacing.sm),
+        Wrap(
+          spacing: AltairSpacing.sm,
+          runSpacing: AltairSpacing.sm,
           children: [
-            Text(
-              'Priority',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-            ),
-            Text(
-              _getPriorityLabel(_selectedPriority),
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: _getPriorityColor(_selectedPriority),
-                    fontWeight: FontWeight.bold,
-                  ),
-            ),
+            // No color option
+            _buildColorOption(null),
+            // Predefined colors
+            ...projectColors.map((color) => _buildColorOption(_colorToHex(color))),
           ],
         ),
-        Slider(
-          value: _selectedPriority.toDouble(),
-          min: 1,
-          max: 5,
-          divisions: 4,
-          label: _getPriorityLabel(_selectedPriority),
-          onChanged: (value) {
-            setState(() {
-              _selectedPriority = value.round();
-              _markModified();
-            });
+      ],
+    );
+  }
+
+  Widget _buildColorOption(String? colorHex) {
+    final isSelected = _selectedColor == colorHex;
+    final color = colorHex != null ? _hexToColor(colorHex) : Colors.grey;
+
+    return InkWell(
+      onTap: () {
+        setState(() {
+          _selectedColor = colorHex;
+          _markModified();
+        });
+      },
+      child: Container(
+        width: 48,
+        height: 48,
+        decoration: BoxDecoration(
+          color: colorHex != null ? color : Colors.transparent,
+          border: Border.all(
+            color: isSelected ? Colors.black : Colors.grey,
+            width: isSelected ? 3 : 2,
+          ),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: colorHex == null
+            ? const Icon(Icons.block, color: Colors.grey)
+            : isSelected
+                ? const Icon(Icons.check, color: Colors.black)
+                : null,
+      ),
+    );
+  }
+
+  Widget _buildTargetDatePicker() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Target Completion Date',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+        ),
+        const SizedBox(height: AltairSpacing.sm),
+        InkWell(
+          onTap: () async {
+            final date = await showDatePicker(
+              context: context,
+              initialDate: _targetDate ?? DateTime.now(),
+              firstDate: DateTime.now(),
+              lastDate: DateTime.now().add(const Duration(days: 3650)), // ~10 years
+            );
+            if (date != null) {
+              setState(() {
+                _targetDate = date;
+                _markModified();
+              });
+            }
           },
-        ),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text('Highest', style: Theme.of(context).textTheme.bodySmall),
-            Text('Lowest', style: Theme.of(context).textTheme.bodySmall),
-          ],
+          child: Container(
+            padding: const EdgeInsets.all(AltairSpacing.md),
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: Theme.of(context).dividerColor,
+                width: AltairBorders.medium,
+              ),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.calendar_today),
+                const SizedBox(width: AltairSpacing.sm),
+                Text(
+                  _targetDate != null
+                      ? '${_targetDate!.year}-${_targetDate!.month.toString().padLeft(2, '0')}-${_targetDate!.day.toString().padLeft(2, '0')}'
+                      : 'No target date',
+                  style: Theme.of(context).textTheme.bodyLarge,
+                ),
+                const Spacer(),
+                if (_targetDate != null)
+                  IconButton(
+                    icon: const Icon(Icons.clear),
+                    onPressed: () {
+                      setState(() {
+                        _targetDate = null;
+                        _markModified();
+                      });
+                    },
+                  ),
+              ],
+            ),
+          ),
         ),
       ],
     );
@@ -482,7 +453,7 @@ class _TaskEditPageState extends State<TaskEditPage> {
                     _markModified();
                   });
                 },
-                backgroundColor: AltairColors.accentYellow.withValues(alpha: 0.2),
+                backgroundColor: AltairColors.accentBlue.withValues(alpha: 0.2),
                 side: const BorderSide(
                   color: Colors.black,
                   width: AltairBorders.thin,
@@ -494,7 +465,7 @@ class _TaskEditPageState extends State<TaskEditPage> {
         AltairButton(
           onPressed: _showAddTagDialog,
           variant: AltairButtonVariant.outlined,
-          accentColor: AltairColors.accentYellow,
+          accentColor: AltairColors.accentBlue,
           child: const Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -548,7 +519,7 @@ class _TaskEditPageState extends State<TaskEditPage> {
               Navigator.of(context).pop();
             },
             variant: AltairButtonVariant.filled,
-            accentColor: AltairColors.accentYellow,
+            accentColor: AltairColors.accentBlue,
             child: const Text('Add'),
           ),
         ],
@@ -556,44 +527,26 @@ class _TaskEditPageState extends State<TaskEditPage> {
     );
   }
 
-  Color _getStatusColor(TaskStatus status) {
+  Color _getStatusColor(ProjectStatus status) {
     return switch (status) {
-      TaskStatus.todo => AltairColors.accentYellow,
-      TaskStatus.inProgress => AltairColors.accentBlue,
-      TaskStatus.completed => AltairColors.accentGreen,
-      TaskStatus.cancelled => AltairColors.textSecondary,
+      ProjectStatus.active => AltairColors.accentGreen,
+      ProjectStatus.onHold => AltairColors.accentYellow,
+      ProjectStatus.completed => AltairColors.accentBlue,
+      ProjectStatus.cancelled => AltairColors.textSecondary,
     };
   }
 
-  String _getStatusLabel(TaskStatus status) {
+  String _getStatusLabel(ProjectStatus status) {
     return switch (status) {
-      TaskStatus.todo => 'To Do',
-      TaskStatus.inProgress => 'In Progress',
-      TaskStatus.completed => 'Completed',
-      TaskStatus.cancelled => 'Cancelled',
+      ProjectStatus.active => 'Active',
+      ProjectStatus.onHold => 'On Hold',
+      ProjectStatus.completed => 'Completed',
+      ProjectStatus.cancelled => 'Cancelled',
     };
   }
 
-  String _getPriorityLabel(int priority) {
-    return switch (priority) {
-      1 => 'Critical',
-      2 => 'High',
-      3 => 'Medium',
-      4 => 'Low',
-      5 => 'Lowest',
-      _ => 'Medium',
-    };
-  }
-
-  Color _getPriorityColor(int priority) {
-    return switch (priority) {
-      1 => AltairColors.error,
-      2 => const Color(0xFFFF6B6B),
-      3 => AltairColors.accentYellow,
-      4 => AltairColors.accentBlue,
-      5 => AltairColors.textSecondary,
-      _ => AltairColors.accentYellow,
-    };
+  String _colorToHex(Color color) {
+    return '#${color.toARGB32().toRadixString(16).substring(2).toUpperCase()}';
   }
 
   Color _hexToColor(String hex) {
