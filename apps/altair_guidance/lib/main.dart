@@ -9,6 +9,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'bloc/task/task_bloc.dart';
 import 'bloc/task/task_event.dart';
 import 'bloc/task/task_state.dart';
+import 'pages/task_edit_page.dart';
 
 void main() {
   runApp(const AltairGuidanceApp());
@@ -56,6 +57,20 @@ class HomePage extends StatelessWidget {
             },
           ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (context) => BlocProvider.value(
+                value: context.read<TaskBloc>(),
+                child: const TaskEditPage(),
+              ),
+            ),
+          );
+        },
+        backgroundColor: AltairColors.accentGreen,
+        child: const Icon(Icons.add, color: Colors.black),
       ),
       body: Column(
         children: [
@@ -193,10 +208,21 @@ class _TaskListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AltairCard(
-      accentColor: _getAccentColorForStatus(task.status),
-      showAccentBar: true,
-      child: Row(
+    return InkWell(
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (context) => BlocProvider.value(
+              value: context.read<TaskBloc>(),
+              child: TaskEditPage(task: task),
+            ),
+          ),
+        );
+      },
+      child: AltairCard(
+        accentColor: _getAccentColorForStatus(task.status),
+        showAccentBar: true,
+        child: Row(
         children: [
           // Checkbox
           Checkbox(
@@ -255,6 +281,7 @@ class _TaskListItem extends StatelessWidget {
             color: AltairColors.error,
           ),
         ],
+      ),
       ),
     );
   }
