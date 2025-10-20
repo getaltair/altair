@@ -1,0 +1,460 @@
+/// AI service models for requests and responses.
+library;
+
+import 'package:equatable/equatable.dart';
+
+// ============================================================================
+// Request Models
+// ============================================================================
+
+/// Request to break down a task into subtasks.
+class TaskBreakdownRequest extends Equatable {
+  /// Creates a task breakdown request.
+  const TaskBreakdownRequest({
+    required this.taskTitle,
+    this.taskDescription,
+    this.context,
+    this.maxSubtasks = 5,
+  });
+
+  /// Task title.
+  final String taskTitle;
+
+  /// Optional task description.
+  final String? taskDescription;
+
+  /// Additional context about the project or goal.
+  final String? context;
+
+  /// Maximum number of subtasks to generate (1-20).
+  final int maxSubtasks;
+
+  /// Converts to JSON.
+  Map<String, dynamic> toJson() => {
+        'task_title': taskTitle,
+        if (taskDescription != null) 'task_description': taskDescription,
+        if (context != null) 'context': context,
+        'max_subtasks': maxSubtasks,
+      };
+
+  @override
+  List<Object?> get props => [taskTitle, taskDescription, context, maxSubtasks];
+}
+
+/// Request to get prioritization suggestions for tasks.
+class TaskPrioritizationRequest extends Equatable {
+  /// Creates a task prioritization request.
+  const TaskPrioritizationRequest({
+    required this.tasks,
+    this.context,
+  });
+
+  /// List of tasks with title and description.
+  final List<Map<String, String>> tasks;
+
+  /// Project context or goals.
+  final String? context;
+
+  /// Converts to JSON.
+  Map<String, dynamic> toJson() => {
+        'tasks': tasks,
+        if (context != null) 'context': context,
+      };
+
+  @override
+  List<Object?> get props => [tasks, context];
+}
+
+/// Request to estimate time for a task.
+class TimeEstimateRequest extends Equatable {
+  /// Creates a time estimate request.
+  const TimeEstimateRequest({
+    required this.taskTitle,
+    this.taskDescription,
+    this.subtasks,
+    this.skillLevel = 'intermediate',
+  });
+
+  /// Task title.
+  final String taskTitle;
+
+  /// Optional task description.
+  final String? taskDescription;
+
+  /// List of subtasks.
+  final List<String>? subtasks;
+
+  /// User skill level: beginner, intermediate, advanced.
+  final String skillLevel;
+
+  /// Converts to JSON.
+  Map<String, dynamic> toJson() => {
+        'task_title': taskTitle,
+        if (taskDescription != null) 'task_description': taskDescription,
+        if (subtasks != null) 'subtasks': subtasks,
+        'skill_level': skillLevel,
+      };
+
+  @override
+  List<Object?> get props => [taskTitle, taskDescription, subtasks, skillLevel];
+}
+
+/// Request for contextual suggestions.
+class ContextSuggestionRequest extends Equatable {
+  /// Creates a context suggestion request.
+  const ContextSuggestionRequest({
+    required this.taskTitle,
+    this.taskDescription,
+    this.projectContext,
+    this.suggestionType = 'general',
+  });
+
+  /// Task title.
+  final String taskTitle;
+
+  /// Optional task description.
+  final String? taskDescription;
+
+  /// Project context.
+  final String? projectContext;
+
+  /// Type of suggestions: general, resources, tips, blockers.
+  final String suggestionType;
+
+  /// Converts to JSON.
+  Map<String, dynamic> toJson() => {
+        'task_title': taskTitle,
+        if (taskDescription != null) 'task_description': taskDescription,
+        if (projectContext != null) 'project_context': projectContext,
+        'suggestion_type': suggestionType,
+      };
+
+  @override
+  List<Object?> get props =>
+      [taskTitle, taskDescription, projectContext, suggestionType];
+}
+
+// ============================================================================
+// Response Models
+// ============================================================================
+
+/// A suggested subtask.
+class SubtaskSuggestion extends Equatable {
+  /// Creates a subtask suggestion.
+  const SubtaskSuggestion({
+    required this.title,
+    this.description,
+    this.estimatedMinutes,
+    required this.order,
+  });
+
+  /// Creates from JSON.
+  factory SubtaskSuggestion.fromJson(Map<String, dynamic> json) {
+    return SubtaskSuggestion(
+      title: json['title'] as String,
+      description: json['description'] as String?,
+      estimatedMinutes: json['estimated_minutes'] as int?,
+      order: json['order'] as int,
+    );
+  }
+
+  /// Subtask title.
+  final String title;
+
+  /// Detailed description.
+  final String? description;
+
+  /// Estimated time in minutes.
+  final int? estimatedMinutes;
+
+  /// Suggested order of execution.
+  final int order;
+
+  @override
+  List<Object?> get props => [title, description, estimatedMinutes, order];
+}
+
+/// Response containing task breakdown suggestions.
+class TaskBreakdownResponse extends Equatable {
+  /// Creates a task breakdown response.
+  const TaskBreakdownResponse({
+    required this.originalTask,
+    required this.subtasks,
+    this.totalEstimatedMinutes,
+    this.reasoning,
+  });
+
+  /// Creates from JSON.
+  factory TaskBreakdownResponse.fromJson(Map<String, dynamic> json) {
+    return TaskBreakdownResponse(
+      originalTask: json['original_task'] as String,
+      subtasks: (json['subtasks'] as List)
+          .map((e) => SubtaskSuggestion.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      totalEstimatedMinutes: json['total_estimated_minutes'] as int?,
+      reasoning: json['reasoning'] as String?,
+    );
+  }
+
+  /// Original task title.
+  final String originalTask;
+
+  /// List of suggested subtasks.
+  final List<SubtaskSuggestion> subtasks;
+
+  /// Total estimated time for all subtasks.
+  final int? totalEstimatedMinutes;
+
+  /// AI reasoning for the breakdown.
+  final String? reasoning;
+
+  @override
+  List<Object?> get props =>
+      [originalTask, subtasks, totalEstimatedMinutes, reasoning];
+}
+
+/// Priority levels for tasks.
+enum PriorityLevel {
+  /// Critical priority.
+  critical,
+
+  /// High priority.
+  high,
+
+  /// Medium priority.
+  medium,
+
+  /// Low priority.
+  low;
+
+  /// Creates from string.
+  static PriorityLevel fromString(String value) {
+    return PriorityLevel.values.firstWhere(
+      (e) => e.name == value.toLowerCase(),
+      orElse: () => PriorityLevel.medium,
+    );
+  }
+}
+
+/// Priority suggestion for a task.
+class PrioritySuggestion extends Equatable {
+  /// Creates a priority suggestion.
+  const PrioritySuggestion({
+    this.taskId,
+    required this.taskTitle,
+    required this.priority,
+    required this.reasoning,
+    required this.urgencyScore,
+    required this.impactScore,
+  });
+
+  /// Creates from JSON.
+  factory PrioritySuggestion.fromJson(Map<String, dynamic> json) {
+    return PrioritySuggestion(
+      taskId: json['task_id'] as String?,
+      taskTitle: json['task_title'] as String,
+      priority: PriorityLevel.fromString(json['priority'] as String),
+      reasoning: json['reasoning'] as String,
+      urgencyScore: (json['urgency_score'] as num).toDouble(),
+      impactScore: (json['impact_score'] as num).toDouble(),
+    );
+  }
+
+  /// Task identifier from request.
+  final String? taskId;
+
+  /// Task title.
+  final String taskTitle;
+
+  /// Suggested priority level.
+  final PriorityLevel priority;
+
+  /// Why this priority level.
+  final String reasoning;
+
+  /// Urgency score (0-1).
+  final double urgencyScore;
+
+  /// Impact score (0-1).
+  final double impactScore;
+
+  @override
+  List<Object?> get props =>
+      [taskId, taskTitle, priority, reasoning, urgencyScore, impactScore];
+}
+
+/// Response containing task prioritization suggestions.
+class TaskPrioritizationResponse extends Equatable {
+  /// Creates a task prioritization response.
+  const TaskPrioritizationResponse({
+    required this.suggestions,
+    required this.recommendedOrder,
+  });
+
+  /// Creates from JSON.
+  factory TaskPrioritizationResponse.fromJson(Map<String, dynamic> json) {
+    return TaskPrioritizationResponse(
+      suggestions: (json['suggestions'] as List)
+          .map((e) => PrioritySuggestion.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      recommendedOrder: (json['recommended_order'] as List)
+          .map((e) => e as String)
+          .toList(),
+    );
+  }
+
+  /// Priority suggestions per task.
+  final List<PrioritySuggestion> suggestions;
+
+  /// Recommended execution order (task titles).
+  final List<String> recommendedOrder;
+
+  @override
+  List<Object?> get props => [suggestions, recommendedOrder];
+}
+
+/// Time estimate for a task.
+class TimeEstimate extends Equatable {
+  /// Creates a time estimate.
+  const TimeEstimate({
+    required this.optimisticMinutes,
+    required this.realisticMinutes,
+    required this.pessimisticMinutes,
+    required this.confidence,
+  });
+
+  /// Creates from JSON.
+  factory TimeEstimate.fromJson(Map<String, dynamic> json) {
+    return TimeEstimate(
+      optimisticMinutes: json['optimistic_minutes'] as int,
+      realisticMinutes: json['realistic_minutes'] as int,
+      pessimisticMinutes: json['pessimistic_minutes'] as int,
+      confidence: (json['confidence'] as num).toDouble(),
+    );
+  }
+
+  /// Best-case estimate.
+  final int optimisticMinutes;
+
+  /// Most likely estimate.
+  final int realisticMinutes;
+
+  /// Worst-case estimate.
+  final int pessimisticMinutes;
+
+  /// Confidence in estimate (0-1).
+  final double confidence;
+
+  @override
+  List<Object?> get props =>
+      [optimisticMinutes, realisticMinutes, pessimisticMinutes, confidence];
+}
+
+/// Response containing time estimates.
+class TimeEstimateResponse extends Equatable {
+  /// Creates a time estimate response.
+  const TimeEstimateResponse({
+    required this.taskTitle,
+    required this.estimate,
+    required this.factors,
+    required this.assumptions,
+  });
+
+  /// Creates from JSON.
+  factory TimeEstimateResponse.fromJson(Map<String, dynamic> json) {
+    return TimeEstimateResponse(
+      taskTitle: json['task_title'] as String,
+      estimate:
+          TimeEstimate.fromJson(json['estimate'] as Map<String, dynamic>),
+      factors: (json['factors'] as List).map((e) => e as String).toList(),
+      assumptions:
+          (json['assumptions'] as List).map((e) => e as String).toList(),
+    );
+  }
+
+  /// Task being estimated.
+  final String taskTitle;
+
+  /// Time estimates.
+  final TimeEstimate estimate;
+
+  /// Factors considered in estimation.
+  final List<String> factors;
+
+  /// Assumptions made.
+  final List<String> assumptions;
+
+  @override
+  List<Object?> get props => [taskTitle, estimate, factors, assumptions];
+}
+
+/// A contextual suggestion.
+class ContextSuggestion extends Equatable {
+  /// Creates a context suggestion.
+  const ContextSuggestion({
+    required this.title,
+    required this.description,
+    required this.category,
+    this.priority,
+  });
+
+  /// Creates from JSON.
+  factory ContextSuggestion.fromJson(Map<String, dynamic> json) {
+    return ContextSuggestion(
+      title: json['title'] as String,
+      description: json['description'] as String,
+      category: json['category'] as String,
+      priority: json['priority'] != null
+          ? PriorityLevel.fromString(json['priority'] as String)
+          : null,
+    );
+  }
+
+  /// Suggestion title.
+  final String title;
+
+  /// Detailed suggestion.
+  final String description;
+
+  /// Suggestion category: resource, tip, blocker, etc.
+  final String category;
+
+  /// Suggestion priority.
+  final PriorityLevel? priority;
+
+  @override
+  List<Object?> get props => [title, description, category, priority];
+}
+
+/// Response containing contextual suggestions.
+class ContextSuggestionResponse extends Equatable {
+  /// Creates a context suggestion response.
+  const ContextSuggestionResponse({
+    required this.taskTitle,
+    required this.suggestions,
+    this.summary,
+  });
+
+  /// Creates from JSON.
+  factory ContextSuggestionResponse.fromJson(Map<String, dynamic> json) {
+    return ContextSuggestionResponse(
+      taskTitle: json['task_title'] as String,
+      suggestions: (json['suggestions'] as List)
+          .map((e) => ContextSuggestion.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      summary: json['summary'] as String?,
+    );
+  }
+
+  /// Task being analyzed.
+  final String taskTitle;
+
+  /// List of suggestions.
+  final List<ContextSuggestion> suggestions;
+
+  /// Overall summary of suggestions.
+  final String? summary;
+
+  @override
+  List<Object?> get props => [taskTitle, suggestions, summary];
+}
