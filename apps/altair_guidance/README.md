@@ -16,10 +16,13 @@ Altair Guidance is the first app in the Altair ecosystem, focusing on task manag
 
 ### Phase 1 (Current)
 
-- Task management (create, read, update, delete)
-- Local SQLite storage
-- Neo-brutalist UI theme
-- Offline-first operation
+- ✅ Task management (create, read, update, delete)
+- ✅ Quick capture widget (< 3 second task creation)
+- ✅ Task list with status filtering
+- ✅ Local SQLite storage
+- ✅ Neo-brutalist UI theme
+- ✅ BLoC state management
+- ✅ Offline-first operation
 
 ### Planned Features
 
@@ -79,17 +82,11 @@ flutter build apk
 ```
 lib/
 ├── main.dart              # App entry point
-├── features/              # Feature modules (TBD)
-│   ├── tasks/            # Task management
-│   ├── projects/         # Project management
-│   └── settings/         # App settings
-├── core/                  # Core utilities (TBD)
-│   ├── di/               # Dependency injection
-│   ├── router/           # Navigation configuration
-│   └── constants/        # App constants
-└── shared/               # Shared widgets (TBD)
-    ├── widgets/          # Common widgets
-    └── utils/            # Utility functions
+├── bloc/                  # BLoC state management
+│   └── task/             # Task BLoC (events, states, bloc)
+└── test/                 # Widget and integration tests
+    ├── bloc/             # BLoC tests
+    └── widget_test.dart  # App-level widget tests
 ```
 
 ## Development Roadmap
@@ -97,16 +94,18 @@ lib/
 ### Month 1: Foundation
 
 - [x] App skeleton with basic structure
-- [ ] Dependency injection setup
-- [ ] Router configuration
-- [ ] Task list UI
+- [x] Dependency injection setup (get_it)
+- [x] Router configuration (go_router)
+- [x] Task list UI
 
-### Month 2: Core Features
+### Month 2: Core Features (Week 5-6 Complete)
 
-- [ ] Task CRUD operations
+- [x] Task CRUD operations
+- [x] Quick capture UI
+- [x] Task filtering by status
+- [x] BLoC state management
 - [ ] Project management
-- [ ] Quick capture UI
-- [ ] Task filtering and search
+- [ ] Advanced search functionality
 
 ### Month 3: Advanced Features
 

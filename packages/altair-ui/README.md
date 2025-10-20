@@ -7,7 +7,8 @@ Neo-brutalist UI components and theme for the Altair ecosystem.
 - Complete Material 3 theme for light and dark modes
 - Neo-brutalist design system with thick borders and high contrast
 - Design tokens for consistent spacing, colors, typography, and borders
-- Common UI widgets (buttons, cards, text fields)
+- Common UI widgets (buttons, cards, text fields, quick capture)
+- Quick capture widget optimized for < 3 second task creation
 - JetBrains Mono font family
 - ADHD-friendly visual design
 
@@ -78,6 +79,22 @@ AltairTextField(
   label: 'Email',
   hint: 'Enter your email',
   onChanged: (value) => print(value),
+)
+```
+
+#### Quick Capture
+
+```dart
+import 'package:altair_ui/altair_ui.dart';
+
+AltairQuickCapture(
+  onCapture: (text) {
+    // Handle captured text (e.g., save task)
+    print('Captured: $text');
+  },
+  hint: 'What needs to be done?',
+  accentColor: AltairColors.accentYellow,
+  autofocus: true,
 )
 ```
 
