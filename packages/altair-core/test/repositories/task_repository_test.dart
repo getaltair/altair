@@ -1,18 +1,14 @@
+import 'package:altair_core/database/database.dart';
+import 'package:altair_core/models/project.dart';
 import 'package:altair_core/models/task.dart';
+import 'package:altair_core/repositories/project_repository.dart';
 import 'package:altair_core/repositories/task_repository.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 void main() {
-  // Initialize sqflite for testing
+  // Initialize database for testing
   setUpAll(() {
-    // Initialize Flutter bindings
-    TestWidgetsFlutterBinding.ensureInitialized();
-    // Initialize FFI
-    sqfliteFfiInit();
-    // Change the default factory for unit testing calls for SQFlite
-    databaseFactory = databaseFactoryFfi;
+    AltairDatabase.enableTestMode();
   });
 
   group('TaskRepository', () {
@@ -20,6 +16,13 @@ void main() {
 
     setUp(() {
       taskRepository = TaskRepository();
+    });
+
+    tearDown(() async {
+      // Reset database between tests for isolation
+      await AltairDatabase().close();
+      AltairDatabase.reset();
+      AltairDatabase.enableTestMode();
     });
 
     group('CRUD Operations', () {
@@ -140,12 +143,20 @@ void main() {
 
       test('findAll() with projectId filter should return project tasks', () async {
         final now = DateTime.now();
-        const projectId = 'test-project-id';
+
+        // Create a project first (required for foreign key constraint)
+        final projectRepository = ProjectRepository();
+        final project = await projectRepository.create(Project(
+          id: '',
+          name: 'Test Project',
+          createdAt: now,
+          updatedAt: now,
+        ));
 
         final projectTask = Task(
           id: '',
           title: 'Project Task',
-          projectId: projectId,
+          projectId: project.id,
           createdAt: now,
           updatedAt: now,
         );
@@ -160,9 +171,9 @@ void main() {
         await taskRepository.create(projectTask);
         await taskRepository.create(otherTask);
 
-        final projectTasks = await taskRepository.findAll(projectId: projectId);
+        final projectTasks = await taskRepository.findAll(projectId: project.id);
 
-        expect(projectTasks.every((t) => t.projectId == projectId), isTrue);
+        expect(projectTasks.every((t) => t.projectId == project.id), isTrue);
       });
 
       test('update() should update existing task', () async {
@@ -294,14 +305,31 @@ void main() {
         final now = DateTime.now();
         final completedAt = now.add(const Duration(hours: 2));
 
+        // Create project first (required for foreign key constraint)
+        final projectRepository = ProjectRepository();
+        final project = await projectRepository.create(Project(
+          id: '',
+          name: 'Test Project',
+          createdAt: now,
+          updatedAt: now,
+        ));
+
+        // Create parent task first (required for foreign key constraint)
+        final parentTask = await taskRepository.create(Task(
+          id: '',
+          title: 'Parent Task',
+          createdAt: now,
+          updatedAt: now,
+        ));
+
         final task = Task(
           id: '',
           title: 'Full Task',
           description: 'Complete description',
           status: TaskStatus.completed,
           tags: ['tag1', 'tag2', 'tag3'],
-          projectId: 'project-123',
-          parentTaskId: 'parent-123',
+          projectId: project.id,
+          parentTaskId: parentTask.id,
           createdAt: now,
           updatedAt: now,
           completedAt: completedAt,
@@ -319,8 +347,8 @@ void main() {
         expect(found.description, 'Complete description');
         expect(found.status, TaskStatus.completed);
         expect(found.tags, ['tag1', 'tag2', 'tag3']);
-        expect(found.projectId, 'project-123');
-        expect(found.parentTaskId, 'parent-123');
+        expect(found.projectId, project.id);
+        expect(found.parentTaskId, parentTask.id);
         expect(found.estimatedMinutes, 60);
         expect(found.actualMinutes, 75);
         expect(found.priority, 1);

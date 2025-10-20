@@ -1,18 +1,12 @@
+import 'package:altair_core/database/database.dart';
 import 'package:altair_core/models/project.dart';
 import 'package:altair_core/repositories/project_repository.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 void main() {
-  // Initialize sqflite for testing
+  // Initialize database for testing
   setUpAll(() {
-    // Initialize Flutter bindings
-    TestWidgetsFlutterBinding.ensureInitialized();
-    // Initialize FFI
-    sqfliteFfiInit();
-    // Change the default factory for unit testing calls for SQFlite
-    databaseFactory = databaseFactoryFfi;
+    AltairDatabase.enableTestMode();
   });
 
   group('ProjectRepository', () {
@@ -20,6 +14,13 @@ void main() {
 
     setUp(() {
       projectRepository = ProjectRepository();
+    });
+
+    tearDown(() async {
+      // Reset database between tests for isolation
+      await AltairDatabase().close();
+      AltairDatabase.reset();
+      AltairDatabase.enableTestMode();
     });
 
     group('CRUD Operations', () {

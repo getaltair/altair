@@ -13,6 +13,7 @@ import 'schema.dart';
 class AltairDatabase {
   static AltairDatabase? _instance;
   static Database? _database;
+  static bool _isTestMode = false;
 
   AltairDatabase._internal();
 
@@ -20,6 +21,21 @@ class AltairDatabase {
   factory AltairDatabase() {
     _instance ??= AltairDatabase._internal();
     return _instance!;
+  }
+
+  /// Enable test mode (uses in-memory database)
+  /// This must be called before any database operations in tests
+  static void enableTestMode() {
+    _isTestMode = true;
+    _database = null;
+    _instance = null;
+  }
+
+  /// Reset the database instance (useful for testing)
+  static void reset() {
+    _database = null;
+    _instance = null;
+    _isTestMode = false;
   }
 
   /// Get the database instance
@@ -32,13 +48,24 @@ class AltairDatabase {
 
   /// Initialize the database
   Future<Database> _initDatabase() async {
-    // Initialize FFI for desktop platforms
-    if (Platform.isLinux || Platform.isWindows || Platform.isMacOS) {
+    // Initialize FFI for desktop platforms or test mode
+    if (_isTestMode || Platform.isLinux || Platform.isWindows || Platform.isMacOS) {
       sqfliteFfiInit();
       databaseFactory = databaseFactoryFfi;
     }
 
-    // Get the database path
+    // Use in-memory database for tests
+    if (_isTestMode) {
+      return await openDatabase(
+        inMemoryDatabasePath,
+        version: schemaVersion,
+        onCreate: _onCreate,
+        onUpgrade: _onUpgrade,
+        onConfigure: _onConfigure,
+      );
+    }
+
+    // Get the database path for production
     final Directory appDocDir = await getApplicationDocumentsDirectory();
     final String dbPath = join(appDocDir.path, 'altair', 'guidance.db');
 
