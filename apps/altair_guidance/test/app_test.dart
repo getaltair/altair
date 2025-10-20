@@ -97,7 +97,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(AltairQuickCapture), findsOneWidget);
-      expect(find.text('Quick capture (< 3 seconds)...'), findsOneWidget);
+      expect(find.text('Quick capture (Ctrl/Cmd + K)...'), findsOneWidget);
     });
 
     testWidgets('displays empty state when no tasks',
