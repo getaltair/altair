@@ -11,8 +11,12 @@ import 'bloc/project/project_event.dart';
 import 'bloc/task/task_bloc.dart';
 import 'bloc/task/task_event.dart';
 import 'bloc/task/task_state.dart';
+import 'features/focus_mode/focus_mode_cubit.dart';
 import 'pages/projects_page.dart';
 import 'pages/task_edit_page.dart';
+import 'shortcuts/intents.dart';
+import 'shortcuts/shortcuts_config.dart';
+import 'shortcuts/shortcuts_help_dialog.dart';
 
 void main() {
   runApp(const AltairGuidanceApp());
@@ -43,6 +47,9 @@ class AltairGuidanceApp extends StatelessWidget {
               projectRepository: ProjectRepository(),
             )..add(const ProjectLoadRequested()),
           ),
+          BlocProvider(
+            create: (_) => FocusModeCubit(),
+          ),
         ],
         child: const HomePage(),
       ),
@@ -51,26 +58,161 @@ class AltairGuidanceApp extends StatelessWidget {
 }
 
 /// Home page of the application.
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   /// Creates the home page.
   const HomePage({super.key});
 
   @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  final FocusNode _quickCaptureFocusNode = FocusNode();
+
+  @override
+  void dispose() {
+    _quickCaptureFocusNode.dispose();
+    super.dispose();
+  }
+
+  void _handleNewTask() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (context) => BlocProvider.value(
+          value: context.read<TaskBloc>(),
+          child: const TaskEditPage(),
+        ),
+      ),
+    );
+  }
+
+  void _handleFocusQuickCapture() {
+    _quickCaptureFocusNode.requestFocus();
+  }
+
+  void _handleNavigateToProjects() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (context) => MultiBlocProvider(
+          providers: [
+            BlocProvider.value(
+              value: context.read<TaskBloc>(),
+            ),
+            BlocProvider.value(
+              value: context.read<ProjectBloc>(),
+            ),
+          ],
+          child: const ProjectsPage(),
+        ),
+      ),
+    );
+  }
+
+  void _handleRefresh() {
+    context.read<TaskBloc>().add(const TaskLoadRequested());
+  }
+
+  void _handleToggleFocusMode() {
+    context.read<FocusModeCubit>().toggle();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Tasks'),
-        actions: [
-          // Filter buttons
-          IconButton(
-            icon: const Icon(Icons.filter_list),
-            onPressed: () {
-              // TODO: Show filter menu
+    return BlocBuilder<FocusModeCubit, FocusModeState>(
+      builder: (context, focusModeState) {
+        return Shortcuts(
+      shortcuts: ShortcutsConfig.defaultShortcuts,
+      child: Actions(
+        actions: {
+          NewTaskIntent: CallbackAction<NewTaskIntent>(
+            onInvoke: (_) {
+              _handleNewTask();
+              return null;
             },
           ),
+          FocusQuickCaptureIntent: CallbackAction<FocusQuickCaptureIntent>(
+            onInvoke: (_) {
+              _handleFocusQuickCapture();
+              return null;
+            },
+          ),
+          ShowShortcutsHelpIntent: CallbackAction<ShowShortcutsHelpIntent>(
+            onInvoke: (_) {
+              showShortcutsHelp(context);
+              return null;
+            },
+          ),
+          NavigateToProjectsIntent: CallbackAction<NavigateToProjectsIntent>(
+            onInvoke: (_) {
+              _handleNavigateToProjects();
+              return null;
+            },
+          ),
+          NavigateToTasksIntent: CallbackAction<NavigateToTasksIntent>(
+            onInvoke: (_) {
+              // Already on tasks page, just pop to root
+              Navigator.of(context).popUntil((route) => route.isFirst);
+              return null;
+            },
+          ),
+          RefreshIntent: CallbackAction<RefreshIntent>(
+            onInvoke: (_) {
+              _handleRefresh();
+              return null;
+            },
+          ),
+          ToggleFocusModeIntent: CallbackAction<ToggleFocusModeIntent>(
+            onInvoke: (_) {
+              _handleToggleFocusMode();
+              return null;
+            },
+          ),
+        },
+        child: Focus(
+          autofocus: true,
+          child: Scaffold(
+      appBar: AppBar(
+        title: const Text('Tasks'),
+        leading: focusModeState.isEnabled
+            ? null
+            : null, // Keep default drawer icon when not in focus mode
+        automaticallyImplyLeading: !focusModeState.isEnabled,
+        actions: [
+          // Focus mode toggle
+          IconButton(
+            icon: Icon(
+              focusModeState.isEnabled
+                  ? Icons.visibility_off
+                  : Icons.visibility,
+            ),
+            tooltip: focusModeState.isEnabled
+                ? 'Exit focus mode (Ctrl/Cmd + D)'
+                : 'Enter focus mode (Ctrl/Cmd + D)',
+            onPressed: _handleToggleFocusMode,
+            color: focusModeState.isEnabled
+                ? AltairColors.accentYellow
+                : null,
+          ),
+          if (!focusModeState.isEnabled) ...[
+            // Filter buttons
+            IconButton(
+              icon: const Icon(Icons.filter_list),
+              onPressed: () {
+                // TODO: Show filter menu
+              },
+            ),
+            // Keyboard shortcuts help
+            IconButton(
+              icon: const Icon(Icons.keyboard),
+              tooltip: 'Keyboard shortcuts (Shift + ?)',
+              onPressed: () => showShortcutsHelp(context),
+            ),
+          ],
         ],
       ),
-      drawer: Drawer(
+      drawer: focusModeState.isEnabled
+          ? null
+          : Drawer(
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
@@ -141,20 +283,22 @@ class HomePage extends StatelessWidget {
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.of(context).push(
-            MaterialPageRoute<void>(
-              builder: (context) => BlocProvider.value(
-                value: context.read<TaskBloc>(),
-                child: const TaskEditPage(),
-              ),
+      floatingActionButton: focusModeState.isEnabled
+          ? null
+          : FloatingActionButton(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (context) => BlocProvider.value(
+                      value: context.read<TaskBloc>(),
+                      child: const TaskEditPage(),
+                    ),
+                  ),
+                );
+              },
+              backgroundColor: AltairColors.accentGreen,
+              child: const Icon(Icons.add, color: Colors.black),
             ),
-          );
-        },
-        backgroundColor: AltairColors.accentGreen,
-        child: const Icon(Icons.add, color: Colors.black),
-      ),
       body: Column(
         children: [
           // Quick Capture at the top - always visible
@@ -170,12 +314,13 @@ class HomePage extends StatelessWidget {
               ),
             ),
             child: AltairQuickCapture(
+              focusNode: _quickCaptureFocusNode,
               onCapture: (text) {
                 context.read<TaskBloc>().add(
                       TaskQuickCaptureRequested(title: text),
                     );
               },
-              hint: 'Quick capture (< 3 seconds)...',
+              hint: 'Quick capture (Ctrl/Cmd + K)...',
               accentColor: AltairColors.accentYellow,
             ),
           ),
@@ -236,12 +381,21 @@ class HomePage extends StatelessWidget {
                     );
                   }
 
-                  return ListView.builder(
+                  return ReorderableListView.builder(
                     padding: const EdgeInsets.all(AltairSpacing.md),
                     itemCount: state.tasks.length,
+                    onReorder: (oldIndex, newIndex) {
+                      context.read<TaskBloc>().add(
+                            TaskReorderRequested(
+                              oldIndex: oldIndex,
+                              newIndex: newIndex,
+                            ),
+                          );
+                    },
                     itemBuilder: (context, index) {
                       final task = state.tasks[index];
                       return Padding(
+                        key: ValueKey(task.id), // Required for ReorderableListView
                         padding: const EdgeInsets.only(
                           bottom: AltairSpacing.md,
                         ),
@@ -279,6 +433,11 @@ class HomePage extends StatelessWidget {
           ),
         ],
       ),
+          ), // Scaffold
+        ), // Focus
+      ), // Actions
+    ); // Shortcuts
+      },
     );
   }
 }

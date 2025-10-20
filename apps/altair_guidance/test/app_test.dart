@@ -1,6 +1,7 @@
 import 'package:altair_core/altair_core.dart';
 import 'package:altair_guidance/bloc/task/task_bloc.dart';
 import 'package:altair_guidance/bloc/task/task_event.dart';
+import 'package:altair_guidance/features/focus_mode/focus_mode_cubit.dart';
 import 'package:altair_guidance/main.dart';
 import 'package:altair_ui/altair_ui.dart';
 import 'package:flutter/material.dart';
@@ -72,10 +73,17 @@ void main() {
 
     Widget createHomePage() {
       return MaterialApp(
-        home: BlocProvider(
-          create: (_) => TaskBloc(
-            taskRepository: mockTaskRepository,
-          )..add(const TaskLoadRequested()),
+        home: MultiBlocProvider(
+          providers: [
+            BlocProvider(
+              create: (_) => TaskBloc(
+                taskRepository: mockTaskRepository,
+              )..add(const TaskLoadRequested()),
+            ),
+            BlocProvider(
+              create: (_) => FocusModeCubit(),
+            ),
+          ],
           child: const HomePage(),
         ),
       );
@@ -97,7 +105,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(AltairQuickCapture), findsOneWidget);
-      expect(find.text('Quick capture (< 3 seconds)...'), findsOneWidget);
+      expect(find.text('Quick capture (Ctrl/Cmd + K)...'), findsOneWidget);
     });
 
     testWidgets('displays empty state when no tasks',

@@ -23,6 +23,7 @@ class AltairQuickCapture extends StatefulWidget {
     this.hint = 'What needs to be done?',
     this.accentColor = AltairColors.accentYellow,
     this.autofocus = true,
+    this.focusNode,
     super.key,
   });
 
@@ -39,19 +40,34 @@ class AltairQuickCapture extends StatefulWidget {
   /// Whether to autofocus the input field on mount.
   final bool autofocus;
 
+  /// Optional external focus node for programmatic focus control.
+  /// If not provided, an internal focus node will be created.
+  final FocusNode? focusNode;
+
   @override
   State<AltairQuickCapture> createState() => _AltairQuickCaptureState();
 }
 
 class _AltairQuickCaptureState extends State<AltairQuickCapture> {
   final TextEditingController _controller = TextEditingController();
-  final FocusNode _focusNode = FocusNode();
+  late final FocusNode _internalFocusNode;
+  late final FocusNode _focusNode;
   bool _isCapturing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _internalFocusNode = FocusNode();
+    _focusNode = widget.focusNode ?? _internalFocusNode;
+  }
 
   @override
   void dispose() {
     _controller.dispose();
-    _focusNode.dispose();
+    // Only dispose the internal focus node if we created it
+    if (widget.focusNode == null) {
+      _internalFocusNode.dispose();
+    }
     super.dispose();
   }
 
