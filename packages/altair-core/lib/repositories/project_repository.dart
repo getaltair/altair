@@ -1,3 +1,14 @@
+/// Project repository for CRUD operations and queries.
+///
+/// Handles all database interactions for [Project] entities including:
+/// - Creating new projects
+/// - Retrieving projects by ID or filters
+/// - Updating existing projects
+/// - Deleting projects
+/// - Searching projects by name/description
+/// - Counting tasks in projects
+library;
+
 import 'dart:convert';
 
 import 'package:sqflite/sqflite.dart';
@@ -6,12 +17,20 @@ import 'package:uuid/uuid.dart';
 import '../database/database.dart';
 import '../models/project.dart';
 
-/// Repository for managing projects in the database
+/// Repository for managing projects in the database.
+///
+/// Provides CRUD operations and query methods for [Project] entities.
+/// All operations are async and interact with the SQLite database.
 class ProjectRepository {
   final AltairDatabase _db = AltairDatabase();
   final Uuid _uuid = const Uuid();
 
-  /// Create a new project
+  /// Creates a new project in the database.
+  ///
+  /// Generates a UUID for the project if [project.id] is empty.
+  /// Updates the [updatedAt] timestamp to the current time.
+  ///
+  /// Returns the created [Project] with its generated ID.
   Future<Project> create(Project project) async {
     final db = await _db.database;
     final now = DateTime.now();
@@ -34,7 +53,9 @@ class ProjectRepository {
     return projectToInsert;
   }
 
-  /// Get a project by ID
+  /// Retrieves a project by its unique identifier.
+  ///
+  /// Returns the [Project] if found, or `null` if no project exists with the given [id].
   Future<Project?> findById(String id) async {
     final db = await _db.database;
 
@@ -50,7 +71,15 @@ class ProjectRepository {
     return _projectFromMap(results.first);
   }
 
-  /// Get all projects
+  /// Retrieves all projects, optionally filtered by criteria.
+  ///
+  /// Optional filters:
+  /// - [status]: Filter by project status (active, onHold, completed, cancelled)
+  /// - [tags]: Filter by tags (currently not implemented in query)
+  /// - [limit]: Maximum number of results to return
+  /// - [offset]: Number of results to skip (for pagination)
+  ///
+  /// Results are ordered by creation date (newest first).
   Future<List<Project>> findAll({
     ProjectStatus? status,
     List<String>? tags,
@@ -80,7 +109,11 @@ class ProjectRepository {
     return results.map(_projectFromMap).toList();
   }
 
-  /// Update a project
+  /// Updates an existing project in the database.
+  ///
+  /// Automatically updates the [updatedAt] timestamp to the current time.
+  ///
+  /// Returns the updated [Project] with the new timestamp.
   Future<Project> update(Project project) async {
     final db = await _db.database;
 
@@ -98,8 +131,12 @@ class ProjectRepository {
     return projectToUpdate;
   }
 
-  /// Delete a project
-  /// Note: This will cascade delete all tasks in the project
+  /// Deletes a project from the database.
+  ///
+  /// **Warning**: This will cascade delete all tasks associated with this project
+  /// due to the foreign key constraint in the database schema.
+  ///
+  /// The [id] parameter specifies which project to delete.
   Future<void> delete(String id) async {
     final db = await _db.database;
 
@@ -110,7 +147,13 @@ class ProjectRepository {
     );
   }
 
-  /// Search projects by name or description
+  /// Searches for projects by name or description.
+  ///
+  /// Performs a case-insensitive substring search across both project name
+  /// and description fields. Results are ordered by creation date (newest first).
+  ///
+  /// The [query] parameter is the search term to match against.
+  /// Returns a list of matching projects, or an empty list if no matches found.
   Future<List<Project>> search(String query) async {
     final db = await _db.database;
 
@@ -124,7 +167,11 @@ class ProjectRepository {
     return results.map(_projectFromMap).toList();
   }
 
-  /// Get count of tasks in a project
+  /// Retrieves the count of tasks associated with a project.
+  ///
+  /// Counts all tasks where `project_id` matches the given [projectId].
+  ///
+  /// Returns the number of tasks in the project, or 0 if the project has no tasks.
   Future<int> getTaskCount(String projectId) async {
     final db = await _db.database;
 
