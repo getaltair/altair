@@ -267,9 +267,7 @@ class _TaskEditPageState extends State<TaskEditPage> {
               ),
         ),
         const SizedBox(height: AltairSpacing.sm),
-        // ignore: deprecated_member_use
-        DropdownButtonFormField<TaskStatus>(
-          value: _selectedStatus,
+        InputDecorator(
           decoration: InputDecoration(
             border: OutlineInputBorder(
               borderSide: BorderSide(
@@ -282,7 +280,11 @@ class _TaskEditPageState extends State<TaskEditPage> {
               vertical: AltairSpacing.sm,
             ),
           ),
-          items: TaskStatus.values.map((status) {
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<TaskStatus>(
+              value: _selectedStatus,
+              isExpanded: true,
+              items: TaskStatus.values.map((status) {
             return DropdownMenuItem(
               value: status,
               child: Row(
@@ -304,15 +306,17 @@ class _TaskEditPageState extends State<TaskEditPage> {
                 ],
               ),
             );
-          }).toList(),
-          onChanged: (value) {
-            if (value != null) {
-              setState(() {
-                _selectedStatus = value;
-                _markModified();
-              });
-            }
-          },
+              }).toList(),
+              onChanged: (value) {
+                if (value != null) {
+                  setState(() {
+                    _selectedStatus = value;
+                    _markModified();
+                  });
+                }
+              },
+            ),
+          ),
         ),
       ],
     );
@@ -333,9 +337,7 @@ class _TaskEditPageState extends State<TaskEditPage> {
                   ),
             ),
             const SizedBox(height: AltairSpacing.sm),
-            // ignore: deprecated_member_use
-            DropdownButtonFormField<String?>(
-              value: _selectedProjectId,
+            InputDecorator(
               decoration: InputDecoration(
                 border: OutlineInputBorder(
                   borderSide: BorderSide(
@@ -348,8 +350,12 @@ class _TaskEditPageState extends State<TaskEditPage> {
                   vertical: AltairSpacing.sm,
                 ),
               ),
-              hint: const Text('No project (personal task)'),
-              items: [
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String?>(
+                  value: _selectedProjectId,
+                  isExpanded: true,
+                  hint: const Text('No project (personal task)'),
+                  items: [
                 // None option
                 const DropdownMenuItem<String?>(
                   value: null,
@@ -392,13 +398,15 @@ class _TaskEditPageState extends State<TaskEditPage> {
                     ),
                   );
                 }),
-              ],
-              onChanged: (value) {
-                setState(() {
-                  _selectedProjectId = value;
-                  _markModified();
-                });
-              },
+                  ],
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedProjectId = value;
+                      _markModified();
+                    });
+                  },
+                ),
+              ),
             ),
           ],
         );

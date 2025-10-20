@@ -252,9 +252,7 @@ class _ProjectEditPageState extends State<ProjectEditPage> {
               ),
         ),
         const SizedBox(height: AltairSpacing.sm),
-        // ignore: deprecated_member_use
-        DropdownButtonFormField<ProjectStatus>(
-          value: _selectedStatus,
+        InputDecorator(
           decoration: InputDecoration(
             border: OutlineInputBorder(
               borderSide: BorderSide(
@@ -267,7 +265,11 @@ class _ProjectEditPageState extends State<ProjectEditPage> {
               vertical: AltairSpacing.sm,
             ),
           ),
-          items: ProjectStatus.values.map((status) {
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<ProjectStatus>(
+              value: _selectedStatus,
+              isExpanded: true,
+              items: ProjectStatus.values.map((status) {
             return DropdownMenuItem(
               value: status,
               child: Row(
@@ -290,14 +292,16 @@ class _ProjectEditPageState extends State<ProjectEditPage> {
               ),
             );
           }).toList(),
-          onChanged: (value) {
-            if (value != null) {
-              setState(() {
-                _selectedStatus = value;
-                _markModified();
-              });
-            }
-          },
+              onChanged: (value) {
+                if (value != null) {
+                  setState(() {
+                    _selectedStatus = value;
+                    _markModified();
+                  });
+                }
+              },
+            ),
+          ),
         ),
       ],
     );
