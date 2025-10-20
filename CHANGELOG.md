@@ -151,6 +151,67 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Maintains task order in UI state (persistence pending)
     - Unique ValueKey for each task item
 
+#### AI Integration (Month 3 Week 9)
+
+- **AI Service (FastAPI)**:
+  - Complete AI service backend for task assistance features
+  - Multi-provider architecture supporting OpenAI, Anthropic, and Ollama
+  - Provider factory pattern for easy switching between AI backends
+  - Comprehensive error handling with retry logic using tenacity
+  - Environment-based configuration with Pydantic settings
+  - CORS middleware for cross-origin requests
+  - Health check endpoint for service monitoring
+
+- **AI Models and API**:
+  - Request models:
+    - TaskBreakdownRequest: Break tasks into subtasks (max 20)
+    - TaskPrioritizationRequest: Prioritize multiple tasks
+    - TimeEstimateRequest: Estimate task duration with skill level
+    - ContextSuggestionRequest: Get contextual help and resources
+  - Response models:
+    - TaskBreakdownResponse: Subtask suggestions with time estimates
+    - TaskPrioritizationResponse: Priority levels (critical/high/medium/low) with reasoning
+    - TimeEstimateResponse: Optimistic/realistic/pessimistic estimates with confidence scores
+    - ContextSuggestionResponse: Resources, tips, blockers, and tools
+
+- **OpenAI Integration**:
+  - GPT-4 Turbo support for high-quality AI responses
+  - Task breakdown with ADHD-friendly subtask generation
+  - Smart prioritization based on urgency and impact scores
+  - Time estimation with three-point estimates
+  - Contextual suggestions for resources and potential blockers
+  - Automatic retry logic with exponential backoff
+  - JSON response parsing with markdown cleanup
+
+- **Anthropic Integration**:
+  - Claude 3.5 Sonnet support for advanced reasoning
+  - Same feature set as OpenAI (breakdown, prioritization, estimation, suggestions)
+  - Async API calls with proper error handling
+  - Structured JSON outputs for consistent responses
+
+- **Ollama Integration**:
+  - Local AI support for privacy-conscious users
+  - Llama 3 model support (configurable)
+  - HTTP API integration with local Ollama server
+  - No API keys required - runs entirely offline
+  - Same capabilities as cloud providers
+
+- **AI Service Testing**:
+  - 21 comprehensive tests covering all functionality
+  - Unit tests for data models with validation
+  - Factory pattern tests for provider selection
+  - API endpoint tests with mocked AI responses
+  - Health check tests
+  - 100% test pass rate
+  - pytest with async support and mocking
+
+- **Documentation**:
+  - Complete README with setup instructions
+  - API endpoint documentation
+  - Environment variable configuration guide
+  - Example .env.example file
+  - Provider-specific configuration details
+
 #### Testing Infrastructure
 
 - Comprehensive testing framework for all packages:

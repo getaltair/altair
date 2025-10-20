@@ -1,2 +1,0 @@
-- Always test completed features before committing. This means generate at least new unit tests if not a complete set of tests when needed.
-- Always run /update-docs before a PR
