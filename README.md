@@ -110,7 +110,7 @@ pre-commit install
 ### Phase 1: Altair Guidance (Months 1-3)
 
 - ✅ Month 1: Infrastructure & auth
-- ⏳ Month 2: Core task management
+- 🚧 Month 2: Core task management (Week 5-6 complete: Quick Capture)
 - ⏳ Month 3: AI features & beta
 
 ### Phase 2: Altair Knowledge (Months 4-6)
@@ -134,6 +134,7 @@ See [DEVELOPMENT-ROADMAP.md](docs/DEVELOPMENT-ROADMAP.md) for details.
 - [Component Design](docs/COMPONENT-DESIGN.md) — Component structure
 - [Deployment Guide](docs/DEPLOYMENT-GUIDE.md) — Deployment options
 - [Development Roadmap](docs/DEVELOPMENT-ROADMAP.md) — Timeline and milestones
+- [Testing Guide](docs/TESTING.md) — Testing strategies and best practices
 
 ## Technology Stack
 
@@ -190,6 +191,6 @@ This project is licensed under the GNU Affero General Public License v3.0 or lat
 
 ---
 
-**Status**: 🚧 Phase 1 Development (Month 1: Foundation)
+**Status**: 🚧 Phase 1 Development (Month 2: Core Task Management - Week 5-6 Complete)
 
 Made with ❤️ for the ADHD community
