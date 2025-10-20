@@ -81,4 +81,23 @@ class AltairColors {
 
   /// Secondary text color
   static const Color textSecondary = lightTextSecondary;
+
+  // Convenient aliases for theme-aware usage
+  /// Light theme background (alias for lightBgPrimary)
+  static const Color bgLight = lightBgPrimary;
+
+  /// Dark theme background (alias for darkBgPrimary)
+  static const Color bgDark = darkBgPrimary;
+
+  /// Light theme text (alias for lightTextPrimary)
+  static const Color textLight = darkTextPrimary;
+
+  /// Dark theme text (alias for darkTextPrimary)
+  static const Color textDark = lightTextPrimary;
+
+  /// Light theme border (alias for lightBorderColor)
+  static const Color borderLight = lightBorderColor;
+
+  /// Dark theme border (alias for darkBorderColor)
+  static const Color borderDark = darkBorderColor;
 }

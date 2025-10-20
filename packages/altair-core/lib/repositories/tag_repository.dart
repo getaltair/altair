@@ -12,7 +12,6 @@ class TagRepository {
   /// Create a new tag
   Future<Tag> create(Tag tag) async {
     final db = await _db.database;
-    final now = DateTime.now();
 
     // Generate ID if not provided
     final id = tag.id.isEmpty ? _uuid.v4() : tag.id;

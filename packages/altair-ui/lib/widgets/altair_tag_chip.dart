@@ -51,7 +51,7 @@ class AltairTagChip extends StatelessWidget {
             vertical: AltairSpacing.xxs,
           ),
           decoration: BoxDecoration(
-            color: selected ? effectiveColor : effectiveColor.withOpacity(0.2),
+            color: selected ? effectiveColor : effectiveColor.withValues(alpha: 0.2),
             border: Border.all(
               color: isDark ? AltairColors.borderDark : AltairColors.borderLight,
               width: selected ? AltairBorders.thick : AltairBorders.medium,

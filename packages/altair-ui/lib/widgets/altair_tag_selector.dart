@@ -178,7 +178,7 @@ class _AltairTagSelectorState extends State<AltairTagSelector> {
               hintText: 'Search or create tags...',
               hintStyle: AltairTypography.bodyMedium.copyWith(
                 color: (isDark ? AltairColors.textLight : AltairColors.textDark)
-                    .withOpacity(0.5),
+                    .withValues(alpha: 0.5),
               ),
               border: InputBorder.none,
               isDense: true,
@@ -262,7 +262,7 @@ class _AltairTagSelectorState extends State<AltairTagSelector> {
             color: (Theme.of(context).brightness == Brightness.dark
                     ? AltairColors.textLight
                     : AltairColors.textDark)
-                .withOpacity(0.5),
+                .withValues(alpha: 0.5),
           ),
         ),
       );
