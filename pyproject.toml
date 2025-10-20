@@ -118,4 +118,5 @@ exclude_lines = [
 [tool.uv.workspace]
 members = [
     "services/auth-service",
+    "services/ai-service",
 ]
