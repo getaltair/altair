@@ -77,6 +77,16 @@ final class TaskFilterByStatusRequested extends TaskEvent {
   List<Object?> get props => [status];
 }
 
+/// Event to filter tasks by tags.
+final class TaskFilterByTagsRequested extends TaskEvent {
+  const TaskFilterByTagsRequested({required this.tags});
+
+  final List<String> tags;
+
+  @override
+  List<Object?> get props => [tags];
+}
+
 /// Event to clear all filters.
 final class TaskClearFiltersRequested extends TaskEvent {
   const TaskClearFiltersRequested();

@@ -27,13 +27,15 @@ final class ProjectLoaded extends ProjectState {
   const ProjectLoaded({
     required this.projects,
     this.filter,
+    this.tagFilter,
   });
 
   final List<Project> projects;
   final ProjectStatus? filter;
+  final List<String>? tagFilter;
 
   @override
-  List<Object?> get props => [projects, filter];
+  List<Object?> get props => [projects, filter, tagFilter];
 }
 
 /// State when a project operation fails.

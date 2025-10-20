@@ -105,6 +105,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Project filtering by status
   - Integration of tasks and projects in the UI
 
+- **Tags, Filtering & Search** (Week 7):
+  - Tag model with color customization and usage tracking
+  - TagRepository with full CRUD operations:
+    - Create, read, update, and delete tags
+    - Search tags by name
+    - Find most-used tags with configurable limit
+    - Usage count management (increment/decrement)
+    - Batch operations for finding multiple tags by IDs
+  - Tag BLoC for state management:
+    - Complete event handling for all tag operations
+    - Name conflict validation
+    - Error handling with detailed logging
+  - Tag UI components following neo-brutalist design:
+    - AltairTagChip: Reusable tag chip with optional delete and selection
+    - AltairTagSelector: Multi-select tag selector with search and inline creation
+  - Tag filtering integration:
+    - Enhanced TaskRepository with in-memory tag filtering
+    - Enhanced ProjectRepository with in-memory tag filtering
+    - TaskBloc tag filtering events and states
+    - ProjectBloc tag filtering events and states
+  - Comprehensive testing:
+    - 31 TagRepository tests covering CRUD, search, and edge cases
+    - 20 TagBloc tests covering all events and error scenarios
+
 #### Testing Infrastructure
 
 - Comprehensive testing framework for all packages:
@@ -114,10 +138,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Unit tests for Project model with all properties and JSON serialization
     - Integration tests for TaskRepository (30+ tests covering CRUD, search, subtasks, time tracking)
     - Integration tests for ProjectRepository (comprehensive CRUD, search, edge cases, status transitions)
+    - Integration tests for TagRepository (31 tests covering CRUD, search, usage tracking, edge cases)
   - **altair-auth**: BLoC tests for authentication flows with mockito and bloc_test
   - **altair_guidance**:
     - App-level tests for routing, theming, UI, and TaskBloc with mocktail
     - BLoC tests for ProjectBloc (15 tests covering all events and error handling)
+    - BLoC tests for TagBloc (20 tests covering all tag operations and error scenarios)
 - Testing documentation (docs/TESTING.md) with:
   - Complete testing guide for all test types
   - Best practices and examples
@@ -127,7 +153,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `scripts/test-all.sh` - Run all tests across the monorepo
   - `scripts/coverage.sh` - Generate coverage reports for all packages
 - Mock generation setup with build_runner for auth package
-- Total test suite: 77 comprehensive tests across all packages
+- Total test suite: 150+ comprehensive tests across all packages
 
 ### Changed
 

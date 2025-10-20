@@ -75,7 +75,7 @@ class ProjectRepository {
   ///
   /// Optional filters:
   /// - [status]: Filter by project status (active, onHold, completed, cancelled)
-  /// - [tags]: Filter by tags (currently not implemented in query)
+  /// - [tags]: Filter by tags (projects must contain at least one of the specified tags)
   /// - [limit]: Maximum number of results to return
   /// - [offset]: Number of results to skip (for pagination)
   ///
@@ -97,16 +97,32 @@ class ProjectRepository {
       whereArgs.add(status.name);
     }
 
-    final results = await db.query(
+    var results = await db.query(
       'projects',
       where: where.isEmpty ? null : where.join(' AND '),
       whereArgs: whereArgs.isEmpty ? null : whereArgs,
       orderBy: 'created_at DESC',
-      limit: limit,
-      offset: offset,
     );
 
-    return results.map(_projectFromMap).toList();
+    var projects = results.map(_projectFromMap).toList();
+
+    // Filter by tags in memory (since tags are stored as JSON arrays)
+    if (tags != null && tags.isNotEmpty) {
+      projects = projects.where((project) {
+        // Project must contain at least one of the specified tags
+        return project.tags.any((tag) => tags.contains(tag));
+      }).toList();
+    }
+
+    // Apply limit and offset after filtering
+    if (offset != null && offset > 0) {
+      projects = projects.skip(offset).toList();
+    }
+    if (limit != null && limit > 0) {
+      projects = projects.take(limit).toList();
+    }
+
+    return projects;
   }
 
   /// Updates an existing project in the database.

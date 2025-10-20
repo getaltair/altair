@@ -9,6 +9,7 @@ export 'models/tag.dart';
 // Repositories
 export 'repositories/task_repository.dart';
 export 'repositories/project_repository.dart';
+export 'repositories/tag_repository.dart';
 
 // Database
 export 'database/database.dart';
