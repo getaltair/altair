@@ -252,6 +252,7 @@ class _ProjectEditPageState extends State<ProjectEditPage> {
               ),
         ),
         const SizedBox(height: AltairSpacing.sm),
+        // ignore: deprecated_member_use
         DropdownButtonFormField<ProjectStatus>(
           value: _selectedStatus,
           decoration: InputDecoration(

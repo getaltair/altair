@@ -267,6 +267,7 @@ class _TaskEditPageState extends State<TaskEditPage> {
               ),
         ),
         const SizedBox(height: AltairSpacing.sm),
+        // ignore: deprecated_member_use
         DropdownButtonFormField<TaskStatus>(
           value: _selectedStatus,
           decoration: InputDecoration(
@@ -332,6 +333,7 @@ class _TaskEditPageState extends State<TaskEditPage> {
                   ),
             ),
             const SizedBox(height: AltairSpacing.sm),
+            // ignore: deprecated_member_use
             DropdownButtonFormField<String?>(
               value: _selectedProjectId,
               decoration: InputDecoration(
