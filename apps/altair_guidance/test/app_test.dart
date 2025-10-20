@@ -87,7 +87,7 @@ void main() {
       await tester.pumpWidget(createHomePage());
       await tester.pumpAndSettle();
 
-      expect(find.widgetWithText(AppBar, 'Altair Guidance'), findsOneWidget);
+      expect(find.widgetWithText(AppBar, 'Tasks'), findsOneWidget);
     });
 
     testWidgets('displays Quick Capture widget', (WidgetTester tester) async {
