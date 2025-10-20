@@ -9,21 +9,21 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 
 from app.core.config import settings
 from app.models.requests import (
+    ContextSuggestionRequest,
     TaskBreakdownRequest,
     TaskPrioritizationRequest,
     TimeEstimateRequest,
-    ContextSuggestionRequest,
 )
 from app.models.responses import (
+    ContextSuggestion,
+    ContextSuggestionResponse,
+    PriorityLevel,
+    PrioritySuggestion,
+    SubtaskSuggestion,
     TaskBreakdownResponse,
     TaskPrioritizationResponse,
-    TimeEstimateResponse,
-    ContextSuggestionResponse,
-    SubtaskSuggestion,
-    PrioritySuggestion,
-    PriorityLevel,
     TimeEstimate,
-    ContextSuggestion,
+    TimeEstimateResponse,
 )
 from app.services.base import AIProvider
 
@@ -59,11 +59,11 @@ class OpenAIService(AIProvider):
         try:
             response = await self.client.chat.completions.create(
                 model=self.model,
-                messages=messages,  # type: ignore
+                messages=messages,
                 max_tokens=self.max_tokens,
                 temperature=self.temperature,
             )
-            content = response.choices[0].message.content
+            content: str | None = response.choices[0].message.content
             if content is None:
                 raise ValueError("OpenAI returned empty response")
             return content
@@ -93,10 +93,11 @@ class OpenAIService(AIProvider):
             response = response[:-3]
 
         try:
-            return json.loads(response.strip())  # type: ignore
+            result: dict[str, Any] = json.loads(response.strip())
+            return result
         except json.JSONDecodeError as e:
             logger.error(f"Failed to parse JSON: {e}\nResponse: {response}")
-            raise ValueError(f"Invalid JSON response from AI: {e}")
+            raise ValueError(f"Invalid JSON response from AI: {e}") from e
 
     async def breakdown_task(self, request: TaskBreakdownRequest) -> TaskBreakdownResponse:
         """Break down a task into subtasks using OpenAI."""
@@ -156,8 +157,10 @@ class OpenAIService(AIProvider):
     ) -> TaskPrioritizationResponse:
         """Suggest prioritization for tasks using OpenAI."""
         tasks_str = "\n".join(
-            [f"{i+1}. {task['title']}: {task.get('description', 'No description')}"
-             for i, task in enumerate(request.tasks)]
+            [
+                f"{i+1}. {task['title']}: {task.get('description', 'No description')}"
+                for i, task in enumerate(request.tasks)
+            ]
         )
         context_str = f"\n\nProject Context: {request.context}" if request.context else ""
 
@@ -209,7 +212,7 @@ class OpenAIService(AIProvider):
         """Estimate time required for a task using OpenAI."""
         desc_str = f"\nDescription: {request.task_description}" if request.task_description else ""
         subtasks_str = (
-            f"\nSubtasks:\n" + "\n".join(f"- {st}" for st in request.subtasks)
+            "\nSubtasks:\n" + "\n".join(f"- {st}" for st in request.subtasks)
             if request.subtasks
             else ""
         )
@@ -257,9 +260,7 @@ class OpenAIService(AIProvider):
             assumptions=data["assumptions"],
         )
 
-    async def suggest_context(
-        self, request: ContextSuggestionRequest
-    ) -> ContextSuggestionResponse:
+    async def suggest_context(self, request: ContextSuggestionRequest) -> ContextSuggestionResponse:
         """Provide contextual suggestions for a task using OpenAI."""
         desc_str = f"\nDescription: {request.task_description}" if request.task_description else ""
         context_str = (

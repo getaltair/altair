@@ -3,16 +3,16 @@
 from abc import ABC, abstractmethod
 
 from app.models.requests import (
+    ContextSuggestionRequest,
     TaskBreakdownRequest,
     TaskPrioritizationRequest,
     TimeEstimateRequest,
-    ContextSuggestionRequest,
 )
 from app.models.responses import (
+    ContextSuggestionResponse,
     TaskBreakdownResponse,
     TaskPrioritizationResponse,
     TimeEstimateResponse,
-    ContextSuggestionResponse,
 )
 
 
@@ -67,9 +67,7 @@ class AIProvider(ABC):
         pass
 
     @abstractmethod
-    async def suggest_context(
-        self, request: ContextSuggestionRequest
-    ) -> ContextSuggestionResponse:
+    async def suggest_context(self, request: ContextSuggestionRequest) -> ContextSuggestionResponse:
         """Provide contextual suggestions for a task.
 
         Args:

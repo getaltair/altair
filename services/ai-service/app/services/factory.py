@@ -3,10 +3,10 @@
 import logging
 
 from app.core.config import settings
-from app.services.base import AIProvider
-from app.services.openai_service import OpenAIService
 from app.services.anthropic_service import AnthropicService
+from app.services.base import AIProvider
 from app.services.ollama_service import OllamaService
+from app.services.openai_service import OpenAIService
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +43,5 @@ def get_ai_provider() -> AIProvider:
 
     else:
         raise ValueError(
-            f"Invalid AI provider: {provider}. "
-            "Must be one of: openai, anthropic, ollama"
+            f"Invalid AI provider: {provider}. " "Must be one of: openai, anthropic, ollama"
         )

@@ -9,21 +9,21 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 
 from app.core.config import settings
 from app.models.requests import (
+    ContextSuggestionRequest,
     TaskBreakdownRequest,
     TaskPrioritizationRequest,
     TimeEstimateRequest,
-    ContextSuggestionRequest,
 )
 from app.models.responses import (
+    ContextSuggestion,
+    ContextSuggestionResponse,
+    PriorityLevel,
+    PrioritySuggestion,
+    SubtaskSuggestion,
     TaskBreakdownResponse,
     TaskPrioritizationResponse,
-    TimeEstimateResponse,
-    ContextSuggestionResponse,
-    SubtaskSuggestion,
-    PrioritySuggestion,
-    PriorityLevel,
     TimeEstimate,
-    ContextSuggestion,
+    TimeEstimateResponse,
 )
 from app.services.base import AIProvider
 
@@ -71,8 +71,9 @@ class AnthropicService(AIProvider):
                 raise ValueError("Anthropic returned empty response")
 
             content = message.content[0]
-            if hasattr(content, 'text'):
-                return content.text
+            if hasattr(content, "text"):
+                text: str = content.text
+                return text
             else:
                 raise ValueError("Anthropic response missing text content")
 
@@ -102,10 +103,11 @@ class AnthropicService(AIProvider):
             response = response[:-3]
 
         try:
-            return json.loads(response.strip())  # type: ignore
+            result: dict[str, Any] = json.loads(response.strip())
+            return result
         except json.JSONDecodeError as e:
             logger.error(f"Failed to parse JSON: {e}\nResponse: {response}")
-            raise ValueError(f"Invalid JSON response from AI: {e}")
+            raise ValueError(f"Invalid JSON response from AI: {e}") from e
 
     async def breakdown_task(self, request: TaskBreakdownRequest) -> TaskBreakdownResponse:
         """Break down a task into subtasks using Claude."""
@@ -158,8 +160,10 @@ class AnthropicService(AIProvider):
     ) -> TaskPrioritizationResponse:
         """Suggest prioritization for tasks using Claude."""
         tasks_str = "\n".join(
-            [f"{i+1}. {task['title']}: {task.get('description', 'No description')}"
-             for i, task in enumerate(request.tasks)]
+            [
+                f"{i+1}. {task['title']}: {task.get('description', 'No description')}"
+                for i, task in enumerate(request.tasks)
+            ]
         )
         context_str = f"\n\nProject Context: {request.context}" if request.context else ""
 
@@ -204,7 +208,7 @@ class AnthropicService(AIProvider):
         """Estimate time required for a task using Claude."""
         desc_str = f"\nDescription: {request.task_description}" if request.task_description else ""
         subtasks_str = (
-            f"\nSubtasks:\n" + "\n".join(f"- {st}" for st in request.subtasks)
+            "\nSubtasks:\n" + "\n".join(f"- {st}" for st in request.subtasks)
             if request.subtasks
             else ""
         )
@@ -245,9 +249,7 @@ class AnthropicService(AIProvider):
             assumptions=data["assumptions"],
         )
 
-    async def suggest_context(
-        self, request: ContextSuggestionRequest
-    ) -> ContextSuggestionResponse:
+    async def suggest_context(self, request: ContextSuggestionRequest) -> ContextSuggestionResponse:
         """Provide contextual suggestions for a task using Claude."""
         desc_str = f"\nDescription: {request.task_description}" if request.task_description else ""
         context_str = (

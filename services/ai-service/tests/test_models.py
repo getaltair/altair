@@ -1,21 +1,17 @@
 """Tests for data models."""
 
 import pytest
-from pydantic import ValidationError
-
 from app.models.requests import (
     TaskBreakdownRequest,
-    TaskPrioritizationRequest,
-    TimeEstimateRequest,
-    ContextSuggestionRequest,
 )
 from app.models.responses import (
-    SubtaskSuggestion,
-    TaskBreakdownResponse,
     PriorityLevel,
     PrioritySuggestion,
+    SubtaskSuggestion,
+    TaskBreakdownResponse,
     TimeEstimate,
 )
+from pydantic import ValidationError
 
 
 class TestTaskBreakdownRequest:
@@ -87,10 +83,10 @@ class TestPriorityLevel:
 
     def test_priority_levels(self) -> None:
         """Test all priority level values."""
-        assert PriorityLevel.CRITICAL == "critical"
-        assert PriorityLevel.HIGH == "high"
-        assert PriorityLevel.MEDIUM == "medium"
-        assert PriorityLevel.LOW == "low"
+        assert PriorityLevel.CRITICAL.value == "critical"
+        assert PriorityLevel.HIGH.value == "high"
+        assert PriorityLevel.MEDIUM.value == "medium"
+        assert PriorityLevel.LOW.value == "low"
 
 
 class TestPrioritySuggestion:

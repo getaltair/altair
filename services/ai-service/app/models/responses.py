@@ -1,7 +1,6 @@
 """Response models for AI service API."""
 
 from enum import Enum
-from typing import Optional
 
 from pydantic import BaseModel, Field
 
@@ -10,8 +9,8 @@ class SubtaskSuggestion(BaseModel):
     """A suggested subtask."""
 
     title: str = Field(..., description="Subtask title")
-    description: Optional[str] = Field(None, description="Detailed description")
-    estimated_minutes: Optional[int] = Field(None, ge=1, description="Estimated time in minutes")
+    description: str | None = Field(None, description="Detailed description")
+    estimated_minutes: int | None = Field(None, ge=1, description="Estimated time in minutes")
     order: int = Field(..., ge=1, description="Suggested order of execution")
 
 
@@ -20,10 +19,10 @@ class TaskBreakdownResponse(BaseModel):
 
     original_task: str = Field(..., description="Original task title")
     subtasks: list[SubtaskSuggestion] = Field(..., description="List of suggested subtasks")
-    total_estimated_minutes: Optional[int] = Field(
+    total_estimated_minutes: int | None = Field(
         None, description="Total estimated time for all subtasks"
     )
-    reasoning: Optional[str] = Field(None, description="AI reasoning for the breakdown")
+    reasoning: str | None = Field(None, description="AI reasoning for the breakdown")
 
 
 class PriorityLevel(str, Enum):
@@ -38,7 +37,7 @@ class PriorityLevel(str, Enum):
 class PrioritySuggestion(BaseModel):
     """Priority suggestion for a task."""
 
-    task_id: Optional[str] = Field(None, description="Task identifier from request")
+    task_id: str | None = Field(None, description="Task identifier from request")
     task_title: str = Field(..., description="Task title")
     priority: PriorityLevel = Field(..., description="Suggested priority level")
     reasoning: str = Field(..., description="Why this priority level")
@@ -50,7 +49,9 @@ class TaskPrioritizationResponse(BaseModel):
     """Response containing task prioritization suggestions."""
 
     suggestions: list[PrioritySuggestion] = Field(..., description="Priority suggestions per task")
-    recommended_order: list[str] = Field(..., description="Recommended execution order (task titles)")
+    recommended_order: list[str] = Field(
+        ..., description="Recommended execution order (task titles)"
+    )
 
 
 class TimeEstimate(BaseModel):
@@ -77,7 +78,7 @@ class ContextSuggestion(BaseModel):
     title: str = Field(..., description="Suggestion title")
     description: str = Field(..., description="Detailed suggestion")
     category: str = Field(..., description="Suggestion category: resource, tip, blocker, etc.")
-    priority: Optional[PriorityLevel] = Field(None, description="Suggestion priority")
+    priority: PriorityLevel | None = Field(None, description="Suggestion priority")
 
 
 class ContextSuggestionResponse(BaseModel):
@@ -85,4 +86,4 @@ class ContextSuggestionResponse(BaseModel):
 
     task_title: str = Field(..., description="Task being analyzed")
     suggestions: list[ContextSuggestion] = Field(..., description="List of suggestions")
-    summary: Optional[str] = Field(None, description="Overall summary of suggestions")
+    summary: str | None = Field(None, description="Overall summary of suggestions")

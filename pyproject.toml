@@ -58,6 +58,7 @@ unfixable = []
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]  # Allow unused imports in __init__.py
 "**/tests/**" = ["S101"]  # Allow assert in tests
+"**/api/**" = ["B008"]  # Allow function calls in FastAPI Depends()
 
 [tool.ruff.lint.isort]
 known-first-party = ["altair"]

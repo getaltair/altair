@@ -1,21 +1,21 @@
 """Data models for AI service."""
 
 from app.models.requests import (
+    ContextSuggestionRequest,
     TaskBreakdownRequest,
     TaskPrioritizationRequest,
     TimeEstimateRequest,
-    ContextSuggestionRequest,
 )
 from app.models.responses import (
-    SubtaskSuggestion,
-    TaskBreakdownResponse,
+    ContextSuggestion,
+    ContextSuggestionResponse,
     PriorityLevel,
     PrioritySuggestion,
+    SubtaskSuggestion,
+    TaskBreakdownResponse,
     TaskPrioritizationResponse,
     TimeEstimate,
     TimeEstimateResponse,
-    ContextSuggestion,
-    ContextSuggestionResponse,
 )
 
 __all__ = [

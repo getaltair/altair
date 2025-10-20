@@ -2,19 +2,19 @@
 
 import logging
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, Depends, HTTPException
 
 from app.models.requests import (
+    ContextSuggestionRequest,
     TaskBreakdownRequest,
     TaskPrioritizationRequest,
     TimeEstimateRequest,
-    ContextSuggestionRequest,
 )
 from app.models.responses import (
+    ContextSuggestionResponse,
     TaskBreakdownResponse,
     TaskPrioritizationResponse,
     TimeEstimateResponse,
-    ContextSuggestionResponse,
 )
 from app.services.base import AIProvider
 from app.services.factory import get_ai_provider
@@ -36,7 +36,7 @@ def get_provider() -> AIProvider:
         return get_ai_provider()
     except ValueError as e:
         logger.error(f"Failed to initialize AI provider: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/breakdown", response_model=TaskBreakdownResponse)
@@ -63,13 +63,13 @@ async def breakdown_task(
         return result
     except ValueError as e:
         logger.error(f"Validation error in breakdown: {e}")
-        raise HTTPException(status_code=422, detail=str(e))
+        raise HTTPException(status_code=422, detail=str(e)) from e
     except Exception as e:
         logger.error(f"Error breaking down task: {e}")
         raise HTTPException(
             status_code=500,
             detail=f"Failed to break down task: {str(e)}",
-        )
+        ) from e
 
 
 @router.post("/prioritize", response_model=TaskPrioritizationResponse)
@@ -96,13 +96,13 @@ async def prioritize_tasks(
         return result
     except ValueError as e:
         logger.error(f"Validation error in prioritization: {e}")
-        raise HTTPException(status_code=422, detail=str(e))
+        raise HTTPException(status_code=422, detail=str(e)) from e
     except Exception as e:
         logger.error(f"Error prioritizing tasks: {e}")
         raise HTTPException(
             status_code=500,
             detail=f"Failed to prioritize tasks: {str(e)}",
-        )
+        ) from e
 
 
 @router.post("/estimate", response_model=TimeEstimateResponse)
@@ -125,19 +125,17 @@ async def estimate_time(
     try:
         logger.info(f"Estimating time for task: {request.task_title}")
         result = await provider.estimate_time(request)
-        logger.info(
-            f"Estimated {result.estimate.realistic_minutes} minutes (realistic)"
-        )
+        logger.info(f"Estimated {result.estimate.realistic_minutes} minutes (realistic)")
         return result
     except ValueError as e:
         logger.error(f"Validation error in time estimation: {e}")
-        raise HTTPException(status_code=422, detail=str(e))
+        raise HTTPException(status_code=422, detail=str(e)) from e
     except Exception as e:
         logger.error(f"Error estimating time: {e}")
         raise HTTPException(
             status_code=500,
             detail=f"Failed to estimate time: {str(e)}",
-        )
+        ) from e
 
 
 @router.post("/suggest", response_model=ContextSuggestionResponse)
@@ -164,10 +162,10 @@ async def suggest_context(
         return result
     except ValueError as e:
         logger.error(f"Validation error in context suggestions: {e}")
-        raise HTTPException(status_code=422, detail=str(e))
+        raise HTTPException(status_code=422, detail=str(e)) from e
     except Exception as e:
         logger.error(f"Error getting suggestions: {e}")
         raise HTTPException(
             status_code=500,
             detail=f"Failed to get suggestions: {str(e)}",
-        )
+        ) from e
