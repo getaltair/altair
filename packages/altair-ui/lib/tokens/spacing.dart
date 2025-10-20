@@ -5,6 +5,9 @@ library;
 class AltairSpacing {
   const AltairSpacing._();
 
+  /// Double extra small spacing: 2px
+  static const double xxs = 2.0;
+
   /// Extra small spacing: 4px
   static const double xs = 4.0;
 

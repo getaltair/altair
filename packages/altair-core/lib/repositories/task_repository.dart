@@ -74,16 +74,32 @@ class TaskRepository {
       whereArgs.add(projectId);
     }
 
-    final results = await db.query(
+    var results = await db.query(
       'tasks',
       where: where.isEmpty ? null : where.join(' AND '),
       whereArgs: whereArgs.isEmpty ? null : whereArgs,
       orderBy: 'created_at DESC',
-      limit: limit,
-      offset: offset,
     );
 
-    return results.map(_taskFromMap).toList();
+    var tasks = results.map(_taskFromMap).toList();
+
+    // Filter by tags in memory (since tags are stored as JSON arrays)
+    if (tags != null && tags.isNotEmpty) {
+      tasks = tasks.where((task) {
+        // Task must contain at least one of the specified tags
+        return task.tags.any((tag) => tags.contains(tag));
+      }).toList();
+    }
+
+    // Apply limit and offset after filtering
+    if (offset != null && offset > 0) {
+      tasks = tasks.skip(offset).toList();
+    }
+    if (limit != null && limit > 0) {
+      tasks = tasks.take(limit).toList();
+    }
+
+    return tasks;
   }
 
   /// Update a task

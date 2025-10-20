@@ -20,13 +20,15 @@ repos:
       - id: detect-private-key
 
   # Python: Ruff for linting and formatting
+  # NOTE: Pre-commit auto-fixes issues for developer convenience,
+  # but CI runs check-only mode. Both will catch the same issues.
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.1.9
     hooks:
-      # Run the linter
+      # Run the linter (auto-fix for developer convenience)
       - id: ruff
         args: [--fix, --exit-non-zero-on-fix]
-      # Run the formatter
+      # Run the formatter (auto-fix for developer convenience)
       - id: ruff-format
 
   # Python: Type checking with mypy
@@ -51,6 +53,17 @@ repos:
     rev: v8.18.1
     hooks:
       - id: gitleaks
+
+  # Flutter: Local hooks for analysis
+  - repo: local
+    hooks:
+      - id: flutter-analyze
+        name: Flutter analyze
+        entry: scripts/pre-commit/flutter-analyze.sh
+        language: script
+        files: \.dart$
+        pass_filenames: false
+        description: Run flutter analyze on all Flutter packages
 
 # Configuration for specific tools
 ci:

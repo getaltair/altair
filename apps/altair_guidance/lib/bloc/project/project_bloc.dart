@@ -23,6 +23,7 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
     on<ProjectDeleteRequested>(_onDeleteRequested);
     on<ProjectSearchRequested>(_onSearchRequested);
     on<ProjectFilterByStatusRequested>(_onFilterByStatusRequested);
+    on<ProjectFilterByTagsRequested>(_onFilterByTagsRequested);
     on<ProjectClearFiltersRequested>(_onClearFiltersRequested);
   }
 
@@ -137,6 +138,23 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
       _logger.i('Filtered ${projects.length} projects by status: ${event.status}');
     } catch (e, stackTrace) {
       _logger.e('Failed to filter projects', error: e, stackTrace: stackTrace);
+      emit(ProjectFailure(message: e.toString()));
+    }
+  }
+
+  /// Handles filtering projects by tags.
+  Future<void> _onFilterByTagsRequested(
+    ProjectFilterByTagsRequested event,
+    Emitter<ProjectState> emit,
+  ) async {
+    emit(const ProjectLoading());
+
+    try {
+      final projects = await _projectRepository.findAll(tags: event.tags);
+      emit(ProjectLoaded(projects: projects, tagFilter: event.tags));
+      _logger.i('Filtered ${projects.length} projects by tags: ${event.tags}');
+    } catch (e, stackTrace) {
+      _logger.e('Failed to filter projects by tags', error: e, stackTrace: stackTrace);
       emit(ProjectFailure(message: e.toString()));
     }
   }

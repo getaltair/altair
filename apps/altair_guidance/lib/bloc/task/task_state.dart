@@ -27,13 +27,15 @@ final class TaskLoaded extends TaskState {
   const TaskLoaded({
     required this.tasks,
     this.filter,
+    this.tagFilter,
   });
 
   final List<Task> tasks;
   final TaskStatus? filter;
+  final List<String>? tagFilter;
 
   @override
-  List<Object?> get props => [tasks, filter];
+  List<Object?> get props => [tasks, filter, tagFilter];
 }
 
 /// State when a task operation fails.

@@ -67,6 +67,16 @@ final class ProjectFilterByStatusRequested extends ProjectEvent {
   List<Object?> get props => [status];
 }
 
+/// Event to filter projects by tags.
+final class ProjectFilterByTagsRequested extends ProjectEvent {
+  const ProjectFilterByTagsRequested({required this.tags});
+
+  final List<String> tags;
+
+  @override
+  List<Object?> get props => [tags];
+}
+
 /// Event to clear all filters.
 final class ProjectClearFiltersRequested extends ProjectEvent {
   const ProjectClearFiltersRequested();

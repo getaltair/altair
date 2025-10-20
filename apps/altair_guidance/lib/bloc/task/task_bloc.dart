@@ -24,6 +24,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
     on<TaskDeleteRequested>(_onDeleteRequested);
     on<TaskSearchRequested>(_onSearchRequested);
     on<TaskFilterByStatusRequested>(_onFilterByStatusRequested);
+    on<TaskFilterByTagsRequested>(_onFilterByTagsRequested);
     on<TaskClearFiltersRequested>(_onClearFiltersRequested);
   }
 
@@ -165,6 +166,23 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
       _logger.i('Filtered ${tasks.length} tasks by status: ${event.status}');
     } catch (e, stackTrace) {
       _logger.e('Failed to filter tasks', error: e, stackTrace: stackTrace);
+      emit(TaskFailure(message: e.toString()));
+    }
+  }
+
+  /// Handles filtering tasks by tags.
+  Future<void> _onFilterByTagsRequested(
+    TaskFilterByTagsRequested event,
+    Emitter<TaskState> emit,
+  ) async {
+    emit(const TaskLoading());
+
+    try {
+      final tasks = await _taskRepository.findAll(tags: event.tags);
+      emit(TaskLoaded(tasks: tasks, tagFilter: event.tags));
+      _logger.i('Filtered ${tasks.length} tasks by tags: ${event.tags}');
+    } catch (e, stackTrace) {
+      _logger.e('Failed to filter tasks by tags', error: e, stackTrace: stackTrace);
       emit(TaskFailure(message: e.toString()));
     }
   }
