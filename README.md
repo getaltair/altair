@@ -110,7 +110,7 @@ pre-commit install
 ### Phase 1: Altair Guidance (Months 1-3)
 
 - ✅ Month 1: Infrastructure & auth
-- 🚧 Month 2: Core task management (Week 5-7 complete: Quick Capture, Task Editing, Projects)
+- 🚧 Month 2: Core task management (Week 5-8 complete: Quick Capture, Task Editing, Projects, UX Polish)
 - ⏳ Month 3: AI features & beta
 
 ### Phase 2: Altair Knowledge (Months 4-6)
@@ -191,6 +191,6 @@ This project is licensed under the GNU Affero General Public License v3.0 or lat
 
 ---
 
-**Status**: 🚧 Phase 1 Development (Month 2: Core Task Management - Week 5-7 Complete)
+**Status**: 🚧 Phase 1 Development (Month 2: Core Task Management - Week 5-8 Complete)
 
 Made with ❤️ for the ADHD community

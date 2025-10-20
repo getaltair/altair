@@ -129,6 +129,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - 31 TagRepository tests covering CRUD, search, and edge cases
     - 20 TagBloc tests covering all events and error scenarios
 
+- **UX Polish** (Week 8):
+  - **Keyboard Shortcuts**:
+    - Comprehensive keyboard shortcuts system for power users
+    - Shortcuts for all common actions (Ctrl/Cmd + N for new task, Ctrl/Cmd + K for quick capture, etc.)
+    - Help dialog with categorized shortcuts (Shift + ?)
+    - Support for both Control (Windows/Linux) and Command (macOS) modifiers
+    - External focus node support in AltairQuickCapture widget
+    - Action-based architecture using Flutter's Shortcuts and Actions widgets
+  - **Focus Mode**:
+    - ADHD-friendly focus mode to minimize distractions
+    - Toggle with Ctrl/Cmd + D or app bar button
+    - Hides drawer, filters, and floating action button when enabled
+    - Visual indicator (yellow icon) when active
+    - FocusModeCubit for state management
+    - Keyboard shortcut integration
+  - **Drag & Drop Reordering**:
+    - Intuitive drag & drop task reordering using ReorderableListView
+    - TaskReorderRequested event for state management
+    - Smooth reordering UX with proper index handling
+    - Maintains task order in UI state (persistence pending)
+    - Unique ValueKey for each task item
+
 #### Testing Infrastructure
 
 - Comprehensive testing framework for all packages:
