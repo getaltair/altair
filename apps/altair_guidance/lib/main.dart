@@ -11,6 +11,7 @@ import 'bloc/project/project_event.dart';
 import 'bloc/task/task_bloc.dart';
 import 'bloc/task/task_event.dart';
 import 'bloc/task/task_state.dart';
+import 'features/focus_mode/focus_mode_cubit.dart';
 import 'pages/projects_page.dart';
 import 'pages/task_edit_page.dart';
 import 'shortcuts/intents.dart';
@@ -45,6 +46,9 @@ class AltairGuidanceApp extends StatelessWidget {
             create: (_) => ProjectBloc(
               projectRepository: ProjectRepository(),
             )..add(const ProjectLoadRequested()),
+          ),
+          BlocProvider(
+            create: (_) => FocusModeCubit(),
           ),
         ],
         child: const HomePage(),
@@ -108,9 +112,15 @@ class _HomePageState extends State<HomePage> {
     context.read<TaskBloc>().add(const TaskLoadRequested());
   }
 
+  void _handleToggleFocusMode() {
+    context.read<FocusModeCubit>().toggle();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Shortcuts(
+    return BlocBuilder<FocusModeCubit, FocusModeState>(
+      builder: (context, focusModeState) {
+        return Shortcuts(
       shortcuts: ShortcutsConfig.defaultShortcuts,
       child: Actions(
         actions: {
@@ -151,29 +161,58 @@ class _HomePageState extends State<HomePage> {
               return null;
             },
           ),
+          ToggleFocusModeIntent: CallbackAction<ToggleFocusModeIntent>(
+            onInvoke: (_) {
+              _handleToggleFocusMode();
+              return null;
+            },
+          ),
         },
         child: Focus(
           autofocus: true,
           child: Scaffold(
       appBar: AppBar(
         title: const Text('Tasks'),
+        leading: focusModeState.isEnabled
+            ? null
+            : null, // Keep default drawer icon when not in focus mode
+        automaticallyImplyLeading: !focusModeState.isEnabled,
         actions: [
-          // Filter buttons
+          // Focus mode toggle
           IconButton(
-            icon: const Icon(Icons.filter_list),
-            onPressed: () {
-              // TODO: Show filter menu
-            },
+            icon: Icon(
+              focusModeState.isEnabled
+                  ? Icons.visibility_off
+                  : Icons.visibility,
+            ),
+            tooltip: focusModeState.isEnabled
+                ? 'Exit focus mode (Ctrl/Cmd + D)'
+                : 'Enter focus mode (Ctrl/Cmd + D)',
+            onPressed: _handleToggleFocusMode,
+            color: focusModeState.isEnabled
+                ? AltairColors.accentYellow
+                : null,
           ),
-          // Keyboard shortcuts help
-          IconButton(
-            icon: const Icon(Icons.keyboard),
-            tooltip: 'Keyboard shortcuts (Shift + ?)',
-            onPressed: () => showShortcutsHelp(context),
-          ),
+          if (!focusModeState.isEnabled) ...[
+            // Filter buttons
+            IconButton(
+              icon: const Icon(Icons.filter_list),
+              onPressed: () {
+                // TODO: Show filter menu
+              },
+            ),
+            // Keyboard shortcuts help
+            IconButton(
+              icon: const Icon(Icons.keyboard),
+              tooltip: 'Keyboard shortcuts (Shift + ?)',
+              onPressed: () => showShortcutsHelp(context),
+            ),
+          ],
         ],
       ),
-      drawer: Drawer(
+      drawer: focusModeState.isEnabled
+          ? null
+          : Drawer(
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
@@ -244,20 +283,22 @@ class _HomePageState extends State<HomePage> {
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.of(context).push(
-            MaterialPageRoute<void>(
-              builder: (context) => BlocProvider.value(
-                value: context.read<TaskBloc>(),
-                child: const TaskEditPage(),
-              ),
+      floatingActionButton: focusModeState.isEnabled
+          ? null
+          : FloatingActionButton(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (context) => BlocProvider.value(
+                      value: context.read<TaskBloc>(),
+                      child: const TaskEditPage(),
+                    ),
+                  ),
+                );
+              },
+              backgroundColor: AltairColors.accentGreen,
+              child: const Icon(Icons.add, color: Colors.black),
             ),
-          );
-        },
-        backgroundColor: AltairColors.accentGreen,
-        child: const Icon(Icons.add, color: Colors.black),
-      ),
       body: Column(
         children: [
           // Quick Capture at the top - always visible
@@ -387,6 +428,8 @@ class _HomePageState extends State<HomePage> {
         ), // Focus
       ), // Actions
     ); // Shortcuts
+      },
+    );
   }
 }
 
