@@ -2,6 +2,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../tokens/borders.dart';
 import '../tokens/colors.dart';
@@ -18,9 +19,11 @@ class AltairTextField extends StatefulWidget {
     this.errorText,
     this.obscureText = false,
     this.maxLines = 1,
+    this.autofocus = false,
     this.onChanged,
     this.onSubmitted,
     this.keyboardType,
+    this.inputFormatters,
     this.prefixIcon,
     this.suffixIcon,
   });
@@ -43,6 +46,9 @@ class AltairTextField extends StatefulWidget {
   /// Maximum number of lines.
   final int maxLines;
 
+  /// Whether to autofocus this field.
+  final bool autofocus;
+
   /// Callback when text changes.
   final ValueChanged<String>? onChanged;
 
@@ -51,6 +57,9 @@ class AltairTextField extends StatefulWidget {
 
   /// Keyboard type.
   final TextInputType? keyboardType;
+
+  /// Input formatters to restrict/format input.
+  final List<TextInputFormatter>? inputFormatters;
 
   /// Icon displayed at the start of the field.
   final Widget? prefixIcon;
@@ -100,9 +109,11 @@ class _AltairTextFieldState extends State<AltairTextField> {
             controller: widget.controller,
             obscureText: widget.obscureText,
             maxLines: widget.maxLines,
+            autofocus: widget.autofocus,
             onChanged: widget.onChanged,
             onSubmitted: widget.onSubmitted,
             keyboardType: widget.keyboardType,
+            inputFormatters: widget.inputFormatters,
             style: theme.textTheme.bodyMedium,
             decoration: InputDecoration(
               hintText: widget.hint,

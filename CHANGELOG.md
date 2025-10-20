@@ -95,13 +95,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Theme-aware colors for consistent UI
   - Success feedback with SnackBar notifications
 
+- **Task Editing & Project Management** (Week 7):
+  - Detailed task editing screen with full CRUD operations
+  - Project model with status tracking (active, onHold, completed, cancelled)
+  - ProjectRepository with CRUD operations, search, and task counting
+  - Project BLoC for state management with comprehensive event handling
+  - Projects page with list view and creation/editing capabilities
+  - Task-to-project assignment with foreign key constraints
+  - Project filtering by status
+  - Integration of tasks and projects in the UI
+
 #### Testing Infrastructure
 
 - Comprehensive testing framework for all packages:
   - **altair-ui**: Widget tests for Button, Card, TextField, and Quick Capture components
-  - **altair-core**: Unit tests for Task model with serialization and equality tests
+  - **altair-core**:
+    - Unit tests for Task model with serialization and equality tests
+    - Unit tests for Project model with all properties and JSON serialization
+    - Integration tests for TaskRepository (30+ tests covering CRUD, search, subtasks, time tracking)
+    - Integration tests for ProjectRepository (comprehensive CRUD, search, edge cases, status transitions)
   - **altair-auth**: BLoC tests for authentication flows with mockito and bloc_test
-  - **altair_guidance**: App-level tests for routing, theming, UI, and TaskBloc with mocktail
+  - **altair_guidance**:
+    - App-level tests for routing, theming, UI, and TaskBloc with mocktail
+    - BLoC tests for ProjectBloc (15 tests covering all events and error handling)
 - Testing documentation (docs/TESTING.md) with:
   - Complete testing guide for all test types
   - Best practices and examples
@@ -111,6 +127,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `scripts/test-all.sh` - Run all tests across the monorepo
   - `scripts/coverage.sh` - Generate coverage reports for all packages
 - Mock generation setup with build_runner for auth package
+- Total test suite: 77 comprehensive tests across all packages
 
 ### Changed
 
