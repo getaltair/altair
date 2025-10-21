@@ -6,6 +6,7 @@ import 'package:altair_ui/altair_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'bloc/ai/ai_bloc.dart';
 import 'bloc/project/project_bloc.dart';
 import 'bloc/project/project_event.dart';
 import 'bloc/task/task_bloc.dart';
@@ -14,6 +15,8 @@ import 'bloc/task/task_state.dart';
 import 'features/focus_mode/focus_mode_cubit.dart';
 import 'pages/projects_page.dart';
 import 'pages/task_edit_page.dart';
+import 'services/ai/ai_config.dart';
+import 'services/ai/ai_service.dart';
 import 'shortcuts/intents.dart';
 import 'shortcuts/shortcuts_config.dart';
 import 'shortcuts/shortcuts_help_dialog.dart';
@@ -29,6 +32,11 @@ class AltairGuidanceApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Initialize AI service with environment configuration
+    final aiService = AIService(
+      config: AIConfig.fromEnvironment(),
+    );
+
     return MaterialApp(
       title: 'Altair Guidance',
       debugShowCheckedModeBanner: false,
@@ -49,6 +57,9 @@ class AltairGuidanceApp extends StatelessWidget {
           ),
           BlocProvider(
             create: (_) => FocusModeCubit(),
+          ),
+          BlocProvider(
+            create: (_) => AIBloc(aiService: aiService),
           ),
         ],
         child: const HomePage(),
