@@ -34,27 +34,95 @@ print_message() {
     echo -e "${color}$@${NC}"
 }
 
+# Build Linux packages
+build_linux() {
+    local format=$1
+
+    cd "$GUIDANCE_DIR"
+
+    case $format in
+        appimage|"")
+            print_message "$YELLOW" "\nBuilding AppImage for Linux..."
+            bash packaging/linux/build-appimage.sh
+            print_message "$GREEN" "\n✅ Linux AppImage built successfully!"
+            ;;
+
+        snap)
+            print_message "$YELLOW" "\nBuilding Snap package for Linux..."
+
+            if ! command -v snapcraft &> /dev/null; then
+                print_message "$RED" "Error: snapcraft not found"
+                print_message "$YELLOW" "Install snapcraft:"
+                print_message "$CYAN" "  sudo snap install snapcraft --classic"
+                exit 1
+            fi
+
+            snapcraft --use-lxd
+            print_message "$GREEN" "\n✅ Linux Snap package built successfully!"
+            ;;
+
+        aur)
+            print_message "$YELLOW" "\nBuilding AUR package for Arch Linux..."
+
+            if ! command -v makepkg &> /dev/null; then
+                print_message "$RED" "Error: makepkg not found (not on Arch Linux?)"
+                print_message "$YELLOW" "AUR packages can only be built on Arch Linux or derivatives"
+                exit 1
+            fi
+
+            cd packaging/aur
+            makepkg -f
+            print_message "$GREEN" "\n✅ AUR package built successfully!"
+            ;;
+
+        all)
+            print_message "$YELLOW" "\nBuilding all Linux formats..."
+
+            # Build AppImage
+            build_linux appimage
+
+            # Build Snap if available
+            if command -v snapcraft &> /dev/null; then
+                print_message "$YELLOW" "\nBuilding Snap package..."
+                cd "$GUIDANCE_DIR"
+                build_linux snap
+            else
+                print_message "$YELLOW" "\nSkipping Snap (snapcraft not installed)"
+            fi
+
+            # Build AUR if on Arch
+            if command -v makepkg &> /dev/null; then
+                print_message "$YELLOW" "\nBuilding AUR package..."
+                cd "$GUIDANCE_DIR"
+                build_linux aur
+            else
+                print_message "$YELLOW" "\nSkipping AUR (not on Arch Linux)"
+            fi
+
+            print_message "$GREEN" "\n✅ All available Linux formats built successfully!"
+            ;;
+
+        *)
+            print_message "$RED" "Error: Unknown Linux format: $format"
+            print_message "$YELLOW" "Valid formats: appimage, snap, aur, all"
+            exit 1
+            ;;
+    esac
+}
+
 # Build for specific platform
 build_platform() {
     local platform=$1
+    local format=$2
 
     print_message "$CYAN" "======================================"
     print_message "$CYAN" "Building installer for $platform"
     print_message "$CYAN" "Version: $VERSION"
     print_message "$CYAN" "======================================"
 
-    cd "$GUIDANCE_DIR"
-
     case $platform in
         linux)
-            print_message "$YELLOW" "\nBuilding AppImage for Linux..."
-            bash packaging/linux/build-appimage.sh
-
-            print_message "$GREEN" "\n✅ Linux AppImage built successfully!"
-            print_message "$YELLOW" "\nOptional: Build Snap package"
-            print_message "$YELLOW" "To build Snap, install snapcraft and run:"
-            print_message "$CYAN" "  cd $GUIDANCE_DIR"
-            print_message "$CYAN" "  snapcraft --use-lxd"
+            build_linux "$format"
             ;;
 
         macos)
@@ -101,10 +169,40 @@ main() {
     print_message "$YELLOW" "Version: $VERSION"
     echo ""
 
-    # Check if specific platform requested
+    # Parse arguments
+    local target_platform=$PLATFORM
+    local linux_format=""
+
     if [ $# -gt 0 ]; then
-        PLATFORM=$1
-        print_message "$YELLOW" "Building for requested platform: $PLATFORM"
+        target_platform=$1
+        shift
+
+        # Parse Linux-specific options
+        if [ "$target_platform" = "linux" ] && [ $# -gt 0 ]; then
+            case $1 in
+                --appimage)
+                    linux_format="appimage"
+                    ;;
+                --snap)
+                    linux_format="snap"
+                    ;;
+                --aur)
+                    linux_format="aur"
+                    ;;
+                --all)
+                    linux_format="all"
+                    ;;
+                *)
+                    print_message "$RED" "Error: Unknown option: $1"
+                    show_usage
+                    ;;
+            esac
+        fi
+
+        print_message "$YELLOW" "Building for requested platform: $target_platform"
+        if [ -n "$linux_format" ]; then
+            print_message "$YELLOW" "Linux format: $linux_format"
+        fi
     fi
 
     # Check if Flutter is installed
@@ -115,7 +213,7 @@ main() {
     fi
 
     # Build for the platform
-    build_platform "$PLATFORM"
+    build_platform "$target_platform" "$linux_format"
 
     print_message "$GREEN" "\n======================================"
     print_message "$GREEN" "All builds completed successfully!"
@@ -123,15 +221,21 @@ main() {
 }
 
 # Show usage
-if [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
-    echo "Usage: $0 [platform]"
+show_usage() {
+    echo "Usage: $0 [platform] [options]"
     echo ""
     echo "Build standalone installers for Altair Guidance"
     echo ""
     echo "Platforms:"
-    echo "  linux      Build AppImage (and optionally Snap)"
+    echo "  linux      Build Linux installers (default: AppImage)"
     echo "  macos      Build DMG installer"
     echo "  windows    Build Windows installer (Inno Setup)"
+    echo ""
+    echo "Linux-specific options:"
+    echo "  --appimage Build AppImage (default)"
+    echo "  --snap     Build Snap package"
+    echo "  --aur      Build AUR package (Arch Linux)"
+    echo "  --all      Build all Linux formats"
     echo ""
     echo "If no platform is specified, builds for the current platform"
     echo ""
@@ -139,10 +243,17 @@ if [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
     echo "  VERSION    Version number (default: 0.1.0)"
     echo ""
     echo "Examples:"
-    echo "  $0                    # Build for current platform"
-    echo "  $0 linux              # Build for Linux"
-    echo "  VERSION=1.0.0 $0     # Build with custom version"
+    echo "  $0                           # Build for current platform (AppImage on Linux)"
+    echo "  $0 linux                     # Build AppImage for Linux"
+    echo "  $0 linux --snap              # Build Snap package"
+    echo "  $0 linux --aur               # Build AUR package"
+    echo "  $0 linux --all               # Build all Linux formats"
+    echo "  VERSION=1.0.0 $0 linux       # Build with custom version"
     exit 0
+}
+
+if [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
+    show_usage
 fi
 
 main "$@"
