@@ -12,7 +12,7 @@ on:
         default: '0.1.0'
 
 env:
-  VERSION: ${{ github.event.inputs.version || github.ref_name }}
+  VERSION: ${{ github.event.inputs.version || (startsWith(github.ref_name, 'v') && substring(github.ref_name, 1) || github.ref_name) }}
 
 jobs:
   build-linux:
@@ -157,7 +157,7 @@ jobs:
             altair-guidance-macos-dmg/AltairGuidance-*.dmg
             altair-guidance-windows-installer/AltairGuidance-*-Setup.exe
           body: |
-            ## Altair Guidance ${{ env.VERSION }}
+            ## Altair Guidance v${{ env.VERSION }}
 
             ### Downloads
 
