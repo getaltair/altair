@@ -11,9 +11,6 @@ on:
         required: true
         default: '0.1.0'
 
-env:
-  VERSION: ${{ github.event.inputs.version || github.ref_name }}
-
 jobs:
   build-linux:
     name: Build Linux AppImage
@@ -24,6 +21,18 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v5
 
+      - name: Set version
+        id: version
+        run: |
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION="${{ github.ref_name }}"
+            VERSION="${VERSION#v}"
+          fi
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
       - name: Install Linux dependencies
         run: |
           sudo apt-get update
@@ -31,7 +40,8 @@ jobs:
             clang cmake ninja-build pkg-config \
             libgtk-3-dev liblzma-dev libstdc++-12-dev \
             desktop-file-utils libgdk-pixbuf2.0-dev \
-            fakeroot patchelf wget imagemagick
+            fakeroot patchelf wget imagemagick \
+            libsecret-1-dev
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -65,6 +75,18 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
+
+      - name: Set version
+        id: version
+        run: |
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION="${{ github.ref_name }}"
+            VERSION="${VERSION#v}"
+          fi
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -101,6 +123,19 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
+
+      - name: Set version
+        id: version
+        shell: bash
+        run: |
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION="${{ github.ref_name }}"
+            VERSION="${VERSION#v}"
+          fi
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -143,6 +178,18 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v5
 
+      - name: Set version
+        id: version
+        run: |
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION="${{ github.ref_name }}"
+            VERSION="${VERSION#v}"
+          fi
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
       - name: Download all artifacts
         uses: actions/download-artifact@v4
 
@@ -156,7 +203,7 @@ jobs:
             altair-guidance-macos-dmg/AltairGuidance-*.dmg
             altair-guidance-windows-installer/AltairGuidance-*-Setup.exe
           body: |
-            ## Altair Guidance ${{ env.VERSION }}
+            ## Altair Guidance v${{ env.VERSION }}
 
             ### Downloads
 
