@@ -4,18 +4,49 @@ library;
 import 'package:equatable/equatable.dart';
 
 // ============================================================================
+// Enums
+// ============================================================================
+
+/// Skill level for time estimation.
+enum SkillLevel {
+  /// Beginner level - less experienced.
+  beginner,
+
+  /// Intermediate level - moderate experience.
+  intermediate,
+
+  /// Advanced level - highly experienced.
+  advanced;
+
+  /// Converts enum to string for API.
+  String toJson() => name;
+
+  /// Creates from string.
+  static SkillLevel fromString(String value) {
+    return SkillLevel.values.firstWhere(
+      (e) => e.name == value.toLowerCase(),
+      orElse: () => SkillLevel.intermediate,
+    );
+  }
+}
+
+// ============================================================================
 // Request Models
 // ============================================================================
 
 /// Request to break down a task into subtasks.
 class TaskBreakdownRequest extends Equatable {
   /// Creates a task breakdown request.
-  const TaskBreakdownRequest({
+  ///
+  /// Throws [ArgumentError] if validation fails.
+  TaskBreakdownRequest({
     required this.taskTitle,
     this.taskDescription,
     this.context,
     this.maxSubtasks = 5,
-  });
+  }) {
+    _validate();
+  }
 
   /// Task title.
   final String taskTitle;
@@ -28,6 +59,25 @@ class TaskBreakdownRequest extends Equatable {
 
   /// Maximum number of subtasks to generate (1-20).
   final int maxSubtasks;
+
+  /// Validates the request.
+  void _validate() {
+    if (taskTitle.trim().isEmpty) {
+      throw ArgumentError('Task title cannot be empty');
+    }
+    if (taskTitle.length > 500) {
+      throw ArgumentError('Task title must be 500 characters or less');
+    }
+    if (taskDescription != null && taskDescription!.length > 5000) {
+      throw ArgumentError('Task description must be 5000 characters or less');
+    }
+    if (context != null && context!.length > 2000) {
+      throw ArgumentError('Context must be 2000 characters or less');
+    }
+    if (maxSubtasks < 1 || maxSubtasks > 20) {
+      throw ArgumentError('maxSubtasks must be between 1 and 20');
+    }
+  }
 
   /// Converts to JSON.
   Map<String, dynamic> toJson() => {
@@ -44,16 +94,39 @@ class TaskBreakdownRequest extends Equatable {
 /// Request to get prioritization suggestions for tasks.
 class TaskPrioritizationRequest extends Equatable {
   /// Creates a task prioritization request.
-  const TaskPrioritizationRequest({
+  ///
+  /// Throws [ArgumentError] if validation fails.
+  TaskPrioritizationRequest({
     required this.tasks,
     this.context,
-  });
+  }) {
+    _validate();
+  }
 
   /// List of tasks with title and description.
   final List<Map<String, String>> tasks;
 
   /// Project context or goals.
   final String? context;
+
+  /// Validates the request.
+  void _validate() {
+    if (tasks.isEmpty) {
+      throw ArgumentError('Tasks list cannot be empty');
+    }
+    if (tasks.length > 50) {
+      throw ArgumentError('Cannot prioritize more than 50 tasks at once');
+    }
+    if (context != null && context!.length > 2000) {
+      throw ArgumentError('Context must be 2000 characters or less');
+    }
+    // Validate each task has required fields
+    for (final task in tasks) {
+      if (!task.containsKey('title') || task['title']!.trim().isEmpty) {
+        throw ArgumentError('Each task must have a non-empty title');
+      }
+    }
+  }
 
   /// Converts to JSON.
   Map<String, dynamic> toJson() => {
@@ -68,12 +141,16 @@ class TaskPrioritizationRequest extends Equatable {
 /// Request to estimate time for a task.
 class TimeEstimateRequest extends Equatable {
   /// Creates a time estimate request.
-  const TimeEstimateRequest({
+  ///
+  /// Throws [ArgumentError] if validation fails.
+  TimeEstimateRequest({
     required this.taskTitle,
     this.taskDescription,
     this.subtasks,
-    this.skillLevel = 'intermediate',
-  });
+    this.skillLevel = SkillLevel.intermediate,
+  }) {
+    _validate();
+  }
 
   /// Task title.
   final String taskTitle;
@@ -84,15 +161,31 @@ class TimeEstimateRequest extends Equatable {
   /// List of subtasks.
   final List<String>? subtasks;
 
-  /// User skill level: beginner, intermediate, advanced.
-  final String skillLevel;
+  /// User skill level.
+  final SkillLevel skillLevel;
+
+  /// Validates the request.
+  void _validate() {
+    if (taskTitle.trim().isEmpty) {
+      throw ArgumentError('Task title cannot be empty');
+    }
+    if (taskTitle.length > 500) {
+      throw ArgumentError('Task title must be 500 characters or less');
+    }
+    if (taskDescription != null && taskDescription!.length > 5000) {
+      throw ArgumentError('Task description must be 5000 characters or less');
+    }
+    if (subtasks != null && subtasks!.length > 20) {
+      throw ArgumentError('Cannot have more than 20 subtasks');
+    }
+  }
 
   /// Converts to JSON.
   Map<String, dynamic> toJson() => {
         'task_title': taskTitle,
         if (taskDescription != null) 'task_description': taskDescription,
         if (subtasks != null) 'subtasks': subtasks,
-        'skill_level': skillLevel,
+        'skill_level': skillLevel.toJson(),
       };
 
   @override
@@ -102,12 +195,16 @@ class TimeEstimateRequest extends Equatable {
 /// Request for contextual suggestions.
 class ContextSuggestionRequest extends Equatable {
   /// Creates a context suggestion request.
-  const ContextSuggestionRequest({
+  ///
+  /// Throws [ArgumentError] if validation fails.
+  ContextSuggestionRequest({
     required this.taskTitle,
     this.taskDescription,
     this.projectContext,
     this.suggestionType = 'general',
-  });
+  }) {
+    _validate();
+  }
 
   /// Task title.
   final String taskTitle;
@@ -120,6 +217,29 @@ class ContextSuggestionRequest extends Equatable {
 
   /// Type of suggestions: general, resources, tips, blockers.
   final String suggestionType;
+
+  /// Validates the request.
+  void _validate() {
+    if (taskTitle.trim().isEmpty) {
+      throw ArgumentError('Task title cannot be empty');
+    }
+    if (taskTitle.length > 500) {
+      throw ArgumentError('Task title must be 500 characters or less');
+    }
+    if (taskDescription != null && taskDescription!.length > 5000) {
+      throw ArgumentError('Task description must be 5000 characters or less');
+    }
+    if (projectContext != null && projectContext!.length > 2000) {
+      throw ArgumentError('Project context must be 2000 characters or less');
+    }
+    const validTypes = ['general', 'resources', 'tips', 'blockers'];
+    if (!validTypes.contains(suggestionType)) {
+      throw ArgumentError(
+        'Invalid suggestion type: $suggestionType. '
+        'Must be one of: ${validTypes.join(", ")}',
+      );
+    }
+  }
 
   /// Converts to JSON.
   Map<String, dynamic> toJson() => {

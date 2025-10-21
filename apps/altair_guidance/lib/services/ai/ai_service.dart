@@ -1,17 +1,25 @@
 /// AI service client for communicating with the AI backend.
 library;
 
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:http/http.dart' as http;
 import 'package:logger/logger.dart';
 
+import 'ai_config.dart';
 import 'models.dart';
 
 /// Exception thrown when AI service encounters an error.
 class AIServiceException implements Exception {
   /// Creates an AI service exception.
-  const AIServiceException(this.message, {this.statusCode});
+  const AIServiceException(
+    this.message, {
+    this.statusCode,
+    this.isTimeout = false,
+    this.isNetworkError = false,
+  });
 
   /// Error message.
   final String message;
@@ -19,32 +27,57 @@ class AIServiceException implements Exception {
   /// HTTP status code if available.
   final int? statusCode;
 
+  /// Whether this was a timeout error.
+  final bool isTimeout;
+
+  /// Whether this was a network connectivity error.
+  final bool isNetworkError;
+
+  /// Creates a timeout exception.
+  factory AIServiceException.timeout(String operation) {
+    return AIServiceException(
+      'The AI service is taking longer than expected for $operation. '
+      'Please try again.',
+      isTimeout: true,
+    );
+  }
+
+  /// Creates a network error exception.
+  factory AIServiceException.network(String details) {
+    return AIServiceException(
+      'Network error: $details. Please check your connection.',
+      isNetworkError: true,
+    );
+  }
+
   @override
   String toString() => 'AIServiceException: $message'
-      '${statusCode != null ? ' (HTTP $statusCode)' : ''}';
+      '${statusCode != null ? ' (HTTP $statusCode)' : ''}'
+      '${isTimeout ? ' [TIMEOUT]' : ''}'
+      '${isNetworkError ? ' [NETWORK]' : ''}';
 }
 
 /// Client for AI service API.
 class AIService {
   /// Creates an AI service client.
   AIService({
-    required this.baseUrl,
+    required AIConfig config,
     http.Client? httpClient,
-  }) : _client = httpClient ?? http.Client() {
+  })  : _config = config,
+        _client = httpClient ?? http.Client() {
     _logger = Logger();
+    _config.validate();
+    _logger.i('AI Service initialized: ${_config.baseUrl}');
   }
 
-  /// Base URL for the AI service.
-  final String baseUrl;
+  /// Configuration for the AI service.
+  final AIConfig _config;
 
   /// HTTP client.
   final http.Client _client;
 
   /// Logger instance.
   late final Logger _logger;
-
-  /// Request timeout duration.
-  static const Duration _timeout = Duration(seconds: 30);
 
   /// Breaks down a task into subtasks.
   ///
@@ -57,11 +90,11 @@ class AIService {
     try {
       final response = await _client
           .post(
-            Uri.parse('$baseUrl/ai/breakdown'),
-            headers: {'Content-Type': 'application/json'},
+            Uri.parse('${_config.baseUrl}/ai/breakdown'),
+            headers: _config.headers,
             body: jsonEncode(request.toJson()),
           )
-          .timeout(_timeout);
+          .timeout(_config.breakdownTimeout);
 
       if (response.statusCode == 200) {
         final json = jsonDecode(response.body) as Map<String, dynamic>;
@@ -76,12 +109,18 @@ class AIService {
           statusCode: response.statusCode,
         );
       }
+    } on TimeoutException {
+      _logger.w('Task breakdown timed out');
+      throw AIServiceException.timeout('task breakdown');
+    } on SocketException catch (e) {
+      _logger.e('Network error: $e');
+      throw AIServiceException.network(e.message);
     } on http.ClientException catch (e) {
       _logger.e('HTTP client error: $e');
-      throw AIServiceException('Network error: ${e.message}');
+      throw AIServiceException.network(e.message);
     } catch (e) {
       if (e is AIServiceException) rethrow;
-      _logger.e('Unexpected error: $e');
+      _logger.e('Unexpected error during task breakdown', error: e);
       throw AIServiceException('Unexpected error: $e');
     }
   }
@@ -97,11 +136,11 @@ class AIService {
     try {
       final response = await _client
           .post(
-            Uri.parse('$baseUrl/ai/prioritize'),
-            headers: {'Content-Type': 'application/json'},
+            Uri.parse('${_config.baseUrl}/ai/prioritize'),
+            headers: _config.headers,
             body: jsonEncode(request.toJson()),
           )
-          .timeout(_timeout);
+          .timeout(_config.prioritizationTimeout);
 
       if (response.statusCode == 200) {
         final json = jsonDecode(response.body) as Map<String, dynamic>;
@@ -116,12 +155,18 @@ class AIService {
           statusCode: response.statusCode,
         );
       }
+    } on TimeoutException {
+      _logger.w('Task prioritization timed out');
+      throw AIServiceException.timeout('task prioritization');
+    } on SocketException catch (e) {
+      _logger.e('Network error: $e');
+      throw AIServiceException.network(e.message);
     } on http.ClientException catch (e) {
       _logger.e('HTTP client error: $e');
-      throw AIServiceException('Network error: ${e.message}');
+      throw AIServiceException.network(e.message);
     } catch (e) {
       if (e is AIServiceException) rethrow;
-      _logger.e('Unexpected error: $e');
+      _logger.e('Unexpected error during prioritization', error: e);
       throw AIServiceException('Unexpected error: $e');
     }
   }
@@ -137,11 +182,11 @@ class AIService {
     try {
       final response = await _client
           .post(
-            Uri.parse('$baseUrl/ai/estimate'),
-            headers: {'Content-Type': 'application/json'},
+            Uri.parse('${_config.baseUrl}/ai/estimate'),
+            headers: _config.headers,
             body: jsonEncode(request.toJson()),
           )
-          .timeout(_timeout);
+          .timeout(_config.estimateTimeout);
 
       if (response.statusCode == 200) {
         final json = jsonDecode(response.body) as Map<String, dynamic>;
@@ -158,12 +203,18 @@ class AIService {
           statusCode: response.statusCode,
         );
       }
+    } on TimeoutException {
+      _logger.w('Time estimation timed out');
+      throw AIServiceException.timeout('time estimation');
+    } on SocketException catch (e) {
+      _logger.e('Network error: $e');
+      throw AIServiceException.network(e.message);
     } on http.ClientException catch (e) {
       _logger.e('HTTP client error: $e');
-      throw AIServiceException('Network error: ${e.message}');
+      throw AIServiceException.network(e.message);
     } catch (e) {
       if (e is AIServiceException) rethrow;
-      _logger.e('Unexpected error: $e');
+      _logger.e('Unexpected error during time estimation', error: e);
       throw AIServiceException('Unexpected error: $e');
     }
   }
@@ -179,11 +230,11 @@ class AIService {
     try {
       final response = await _client
           .post(
-            Uri.parse('$baseUrl/ai/suggest'),
-            headers: {'Content-Type': 'application/json'},
+            Uri.parse('${_config.baseUrl}/ai/suggest'),
+            headers: _config.headers,
             body: jsonEncode(request.toJson()),
           )
-          .timeout(_timeout);
+          .timeout(_config.suggestionsTimeout);
 
       if (response.statusCode == 200) {
         final json = jsonDecode(response.body) as Map<String, dynamic>;
@@ -198,12 +249,18 @@ class AIService {
           statusCode: response.statusCode,
         );
       }
+    } on TimeoutException {
+      _logger.w('Context suggestions timed out');
+      throw AIServiceException.timeout('context suggestions');
+    } on SocketException catch (e) {
+      _logger.e('Network error: $e');
+      throw AIServiceException.network(e.message);
     } on http.ClientException catch (e) {
       _logger.e('HTTP client error: $e');
-      throw AIServiceException('Network error: ${e.message}');
+      throw AIServiceException.network(e.message);
     } catch (e) {
       if (e is AIServiceException) rethrow;
-      _logger.e('Unexpected error: $e');
+      _logger.e('Unexpected error during context suggestions', error: e);
       throw AIServiceException('Unexpected error: $e');
     }
   }
@@ -212,12 +269,12 @@ class AIService {
   Future<bool> checkHealth() async {
     try {
       final response = await _client
-          .get(Uri.parse('$baseUrl/health'))
-          .timeout(const Duration(seconds: 5));
+          .get(Uri.parse('${_config.baseUrl}/health'))
+          .timeout(_config.healthCheckTimeout);
 
       return response.statusCode == 200;
     } catch (e) {
-      _logger.w('Health check failed: $e');
+      _logger.w('Health check failed', error: e);
       return false;
     }
   }

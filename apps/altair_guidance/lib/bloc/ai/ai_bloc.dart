@@ -162,7 +162,11 @@ class AIBloc extends Bloc<AIEvent, AIState> {
 
   @override
   Future<void> close() {
-    _aiService.dispose();
+    try {
+      _aiService.dispose();
+    } catch (e) {
+      _logger.w('Error disposing AI service', error: e);
+    }
     return super.close();
   }
 }
