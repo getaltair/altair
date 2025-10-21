@@ -132,6 +132,7 @@ class AIConfig {
   }
 
   @override
-  String toString() => 'AIConfig(baseUrl: $baseUrl, hasApiKey: ${apiKey != null}, '
+  String toString() =>
+      'AIConfig(baseUrl: $baseUrl, hasApiKey: ${apiKey != null}, '
       'enableSSL: $enableSSL)';
 }

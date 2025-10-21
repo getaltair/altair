@@ -75,7 +75,8 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
       final tasks = await _taskRepository.findAll();
       emit(TaskLoaded(tasks: tasks));
     } catch (e, stackTrace) {
-      _logger.e('Failed to quick capture task', error: e, stackTrace: stackTrace);
+      _logger.e('Failed to quick capture task',
+          error: e, stackTrace: stackTrace);
       emit(TaskFailure(message: e.toString()));
     }
   }
@@ -183,7 +184,8 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
       emit(TaskLoaded(tasks: tasks, tagFilter: event.tags));
       _logger.i('Filtered ${tasks.length} tasks by tags: ${event.tags}');
     } catch (e, stackTrace) {
-      _logger.e('Failed to filter tasks by tags', error: e, stackTrace: stackTrace);
+      _logger.e('Failed to filter tasks by tags',
+          error: e, stackTrace: stackTrace);
       emit(TaskFailure(message: e.toString()));
     }
   }
@@ -219,9 +221,8 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
 
     // Adjust indices for Flutter's ReorderableListView behavior
     final oldIndex = event.oldIndex;
-    final newIndex = event.oldIndex < event.newIndex
-        ? event.newIndex - 1
-        : event.newIndex;
+    final newIndex =
+        event.oldIndex < event.newIndex ? event.newIndex - 1 : event.newIndex;
 
     // Reorder the list
     final task = tasks.removeAt(oldIndex);

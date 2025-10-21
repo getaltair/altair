@@ -135,7 +135,8 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
     try {
       final projects = await _projectRepository.findAll(status: event.status);
       emit(ProjectLoaded(projects: projects, filter: event.status));
-      _logger.i('Filtered ${projects.length} projects by status: ${event.status}');
+      _logger
+          .i('Filtered ${projects.length} projects by status: ${event.status}');
     } catch (e, stackTrace) {
       _logger.e('Failed to filter projects', error: e, stackTrace: stackTrace);
       emit(ProjectFailure(message: e.toString()));
@@ -154,7 +155,8 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
       emit(ProjectLoaded(projects: projects, tagFilter: event.tags));
       _logger.i('Filtered ${projects.length} projects by tags: ${event.tags}');
     } catch (e, stackTrace) {
-      _logger.e('Failed to filter projects by tags', error: e, stackTrace: stackTrace);
+      _logger.e('Failed to filter projects by tags',
+          error: e, stackTrace: stackTrace);
       emit(ProjectFailure(message: e.toString()));
     }
   }

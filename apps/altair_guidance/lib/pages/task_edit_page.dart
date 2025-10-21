@@ -11,6 +11,10 @@ import '../bloc/project/project_bloc.dart';
 import '../bloc/project/project_state.dart';
 import '../bloc/task/task_bloc.dart';
 import '../bloc/task/task_event.dart';
+import '../features/ai/ai_consent_dialog.dart';
+import '../features/ai/context_suggestions_dialog.dart';
+import '../features/ai/task_breakdown_dialog.dart';
+import '../features/ai/time_estimate_dialog.dart';
 
 /// Page for creating or editing a task with full details.
 class TaskEditPage extends StatefulWidget {
@@ -43,7 +47,8 @@ class _TaskEditPageState extends State<TaskEditPage> {
     final task = widget.task;
 
     _titleController = TextEditingController(text: task?.title ?? '');
-    _descriptionController = TextEditingController(text: task?.description ?? '');
+    _descriptionController =
+        TextEditingController(text: task?.description ?? '');
     _estimatedMinutesController = TextEditingController(
       text: task?.estimatedMinutes?.toString() ?? '',
     );
@@ -94,35 +99,36 @@ class _TaskEditPageState extends State<TaskEditPage> {
 
     final now = DateTime.now();
     final task = widget.task?.copyWith(
-      title: _titleController.text.trim(),
-      description: _descriptionController.text.trim().isEmpty
-          ? null
-          : _descriptionController.text.trim(),
-      status: _selectedStatus,
-      priority: _selectedPriority,
-      tags: _tags,
-      projectId: _selectedProjectId,
-      estimatedMinutes: _estimatedMinutesController.text.isEmpty
-          ? null
-          : int.tryParse(_estimatedMinutesController.text),
-      updatedAt: now,
-      completedAt: _selectedStatus == TaskStatus.completed ? now : null,
-    ) ?? Task(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      title: _titleController.text.trim(),
-      description: _descriptionController.text.trim().isEmpty
-          ? null
-          : _descriptionController.text.trim(),
-      status: _selectedStatus,
-      priority: _selectedPriority,
-      tags: _tags,
-      projectId: _selectedProjectId,
-      estimatedMinutes: _estimatedMinutesController.text.isEmpty
-          ? null
-          : int.tryParse(_estimatedMinutesController.text),
-      createdAt: now,
-      updatedAt: now,
-    );
+          title: _titleController.text.trim(),
+          description: _descriptionController.text.trim().isEmpty
+              ? null
+              : _descriptionController.text.trim(),
+          status: _selectedStatus,
+          priority: _selectedPriority,
+          tags: _tags,
+          projectId: _selectedProjectId,
+          estimatedMinutes: _estimatedMinutesController.text.isEmpty
+              ? null
+              : int.tryParse(_estimatedMinutesController.text),
+          updatedAt: now,
+          completedAt: _selectedStatus == TaskStatus.completed ? now : null,
+        ) ??
+        Task(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          title: _titleController.text.trim(),
+          description: _descriptionController.text.trim().isEmpty
+              ? null
+              : _descriptionController.text.trim(),
+          status: _selectedStatus,
+          priority: _selectedPriority,
+          tags: _tags,
+          projectId: _selectedProjectId,
+          estimatedMinutes: _estimatedMinutesController.text.isEmpty
+              ? null
+              : int.tryParse(_estimatedMinutesController.text),
+          createdAt: now,
+          updatedAt: now,
+        );
 
     if (widget.task == null) {
       context.read<TaskBloc>().add(TaskCreateRequested(task: task));
@@ -242,6 +248,10 @@ class _TaskEditPageState extends State<TaskEditPage> {
               _buildTagsSection(),
               const SizedBox(height: AltairSpacing.xl),
 
+              // AI Assistant Section
+              _buildAIAssistantSection(),
+              const SizedBox(height: AltairSpacing.xl),
+
               // Save button (also in app bar)
               AltairButton(
                 onPressed: _saveTask,
@@ -285,27 +295,27 @@ class _TaskEditPageState extends State<TaskEditPage> {
               value: _selectedStatus,
               isExpanded: true,
               items: TaskStatus.values.map((status) {
-            return DropdownMenuItem(
-              value: status,
-              child: Row(
-                children: [
-                  Container(
-                    width: 16,
-                    height: 16,
-                    decoration: BoxDecoration(
-                      color: _getStatusColor(status),
-                      borderRadius: BorderRadius.circular(4),
-                      border: Border.all(
-                        color: Colors.black,
-                        width: 2,
+                return DropdownMenuItem(
+                  value: status,
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 16,
+                        height: 16,
+                        decoration: BoxDecoration(
+                          color: _getStatusColor(status),
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(
+                            color: Colors.black,
+                            width: 2,
+                          ),
+                        ),
                       ),
-                    ),
+                      const SizedBox(width: AltairSpacing.sm),
+                      Text(_getStatusLabel(status)),
+                    ],
                   ),
-                  const SizedBox(width: AltairSpacing.sm),
-                  Text(_getStatusLabel(status)),
-                ],
-              ),
-            );
+                );
               }).toList(),
               onChanged: (value) {
                 if (value != null) {
@@ -356,48 +366,48 @@ class _TaskEditPageState extends State<TaskEditPage> {
                   isExpanded: true,
                   hint: const Text('No project (personal task)'),
                   items: [
-                // None option
-                const DropdownMenuItem<String?>(
-                  value: null,
-                  child: Row(
-                    children: [
-                      Icon(Icons.clear, size: 16),
-                      SizedBox(width: AltairSpacing.sm),
-                      Text('No project (personal task)'),
-                    ],
-                  ),
-                ),
-                // Project options
-                ...projects.map((project) {
-                  return DropdownMenuItem<String?>(
-                    value: project.id,
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 16,
-                          height: 16,
-                          decoration: BoxDecoration(
-                            color: project.color != null
-                                ? _hexToColor(project.color!)
-                                : AltairColors.accentBlue,
-                            borderRadius: BorderRadius.circular(4),
-                            border: Border.all(
-                              color: Colors.black,
-                              width: 2,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: AltairSpacing.sm),
-                        Flexible(
-                          child: Text(
-                            project.name,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
+                    // None option
+                    const DropdownMenuItem<String?>(
+                      value: null,
+                      child: Row(
+                        children: [
+                          Icon(Icons.clear, size: 16),
+                          SizedBox(width: AltairSpacing.sm),
+                          Text('No project (personal task)'),
+                        ],
+                      ),
                     ),
-                  );
-                }),
+                    // Project options
+                    ...projects.map((project) {
+                      return DropdownMenuItem<String?>(
+                        value: project.id,
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 16,
+                              height: 16,
+                              decoration: BoxDecoration(
+                                color: project.color != null
+                                    ? _hexToColor(project.color!)
+                                    : AltairColors.accentBlue,
+                                borderRadius: BorderRadius.circular(4),
+                                border: Border.all(
+                                  color: Colors.black,
+                                  width: 2,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: AltairSpacing.sm),
+                            Flexible(
+                              child: Text(
+                                project.name,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
                   ],
                   onChanged: (value) {
                     setState(() {
@@ -492,7 +502,8 @@ class _TaskEditPageState extends State<TaskEditPage> {
                     _markModified();
                   });
                 },
-                backgroundColor: AltairColors.accentYellow.withValues(alpha: 0.2),
+                backgroundColor:
+                    AltairColors.accentYellow.withValues(alpha: 0.2),
                 side: const BorderSide(
                   color: Colors.black,
                   width: AltairBorders.thin,
@@ -516,6 +527,116 @@ class _TaskEditPageState extends State<TaskEditPage> {
         ),
       ],
     );
+  }
+
+  Widget _buildAIAssistantSection() {
+    final hasTitle = _titleController.text.trim().isNotEmpty;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.auto_awesome, size: 24),
+            const SizedBox(width: AltairSpacing.sm),
+            Text(
+              'AI Assistant',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+          ],
+        ),
+        const SizedBox(height: AltairSpacing.sm),
+        Text(
+          'Get AI-powered suggestions to help with your task',
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: AltairColors.textSecondary,
+              ),
+        ),
+        const SizedBox(height: AltairSpacing.md),
+        Wrap(
+          spacing: AltairSpacing.sm,
+          runSpacing: AltairSpacing.sm,
+          children: [
+            // Task Breakdown
+            _AIFeatureButton(
+              icon: Icons.format_list_bulleted,
+              label: 'Break Down Task',
+              accentColor: AltairColors.accentBlue,
+              enabled: hasTitle,
+              onPressed: () => _showAIFeature(() {
+                showTaskBreakdownDialog(
+                  context,
+                  taskTitle: _titleController.text.trim(),
+                  taskDescription: _descriptionController.text.trim().isEmpty
+                      ? null
+                      : _descriptionController.text.trim(),
+                  parentTaskId: widget.task?.id,
+                );
+              }),
+            ),
+            // Time Estimate
+            _AIFeatureButton(
+              icon: Icons.timer,
+              label: 'Estimate Time',
+              accentColor: AltairColors.accentGreen,
+              enabled: hasTitle,
+              onPressed: () => _showAIFeature(() {
+                showTimeEstimateDialog(
+                  context,
+                  taskTitle: _titleController.text.trim(),
+                  taskDescription: _descriptionController.text.trim().isEmpty
+                      ? null
+                      : _descriptionController.text.trim(),
+                );
+              }),
+            ),
+            // Context Suggestions
+            _AIFeatureButton(
+              icon: Icons.lightbulb,
+              label: 'Get Suggestions',
+              accentColor: AltairColors.accentYellow,
+              enabled: hasTitle,
+              onPressed: () => _showAIFeature(() {
+                showContextSuggestionsDialog(
+                  context,
+                  taskTitle: _titleController.text.trim(),
+                  taskDescription: _descriptionController.text.trim().isEmpty
+                      ? null
+                      : _descriptionController.text.trim(),
+                );
+              }),
+            ),
+          ],
+        ),
+        if (!hasTitle) ...[
+          const SizedBox(height: AltairSpacing.sm),
+          Text(
+            'Add a task title to use AI features',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: AltairColors.error,
+                  fontStyle: FontStyle.italic,
+                ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Future<void> _showAIFeature(VoidCallback showDialog) async {
+    if (!mounted) return;
+
+    try {
+      final hasConsent = await showAIConsentDialog(context);
+      if (!hasConsent || !mounted) return;
+
+      showDialog();
+    } catch (e) {
+      if (mounted) {
+        _showError('Failed to show AI feature: $e');
+      }
+    }
   }
 
   void _showAddTagDialog() {
@@ -609,5 +730,39 @@ class _TaskEditPageState extends State<TaskEditPage> {
   Color _hexToColor(String hex) {
     final hexColor = hex.replaceAll('#', '');
     return Color(int.parse('FF$hexColor', radix: 16));
+  }
+}
+
+/// Button for AI features.
+class _AIFeatureButton extends StatelessWidget {
+  const _AIFeatureButton({
+    required this.icon,
+    required this.label,
+    required this.accentColor,
+    required this.enabled,
+    required this.onPressed,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color accentColor;
+  final bool enabled;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return AltairButton(
+      onPressed: enabled ? onPressed : null,
+      variant: AltairButtonVariant.outlined,
+      accentColor: accentColor,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 18),
+          const SizedBox(width: AltairSpacing.xs),
+          Text(label),
+        ],
+      ),
+    );
   }
 }

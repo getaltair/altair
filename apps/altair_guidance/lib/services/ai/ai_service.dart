@@ -145,7 +145,8 @@ class AIService {
       if (response.statusCode == 200) {
         final json = jsonDecode(response.body) as Map<String, dynamic>;
         final result = TaskPrioritizationResponse.fromJson(json);
-        _logger.i('Generated ${result.suggestions.length} priority suggestions');
+        _logger
+            .i('Generated ${result.suggestions.length} priority suggestions');
         return result;
       } else {
         final error = _extractErrorMessage(response);

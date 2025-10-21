@@ -35,7 +35,8 @@ class AIBloc extends Bloc<AIEvent, AIState> {
 
     try {
       final response = await _aiService.breakdownTask(event.request);
-      _logger.i('Task breakdown successful: ${response.subtasks.length} subtasks');
+      _logger
+          .i('Task breakdown successful: ${response.subtasks.length} subtasks');
       emit(AITaskBreakdownSuccess(response: response));
     } on AIServiceException catch (e) {
       _logger.e('Task breakdown failed: ${e.message}');
@@ -60,7 +61,8 @@ class AIBloc extends Bloc<AIEvent, AIState> {
     AITaskPrioritizationRequested event,
     Emitter<AIState> emit,
   ) async {
-    _logger.i('Requesting task prioritization for ${event.request.tasks.length} tasks');
+    _logger.i(
+        'Requesting task prioritization for ${event.request.tasks.length} tasks');
     emit(const AILoading(operationType: AIOperationType.prioritization));
 
     try {
