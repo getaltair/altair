@@ -135,7 +135,7 @@ lib/
     │   ├── task/              # Task BLoC tests
     │   └── ai/                # AI BLoC tests
     ├── services/              # Service tests
-    │   └── ai/               # AI service tests (57 tests)
+    │   └── ai/               # AI service tests (92 tests: 18 config + 39 models + 21 service + 14 BLoC)
     └── widget_test.dart       # App-level widget tests
 ```
 

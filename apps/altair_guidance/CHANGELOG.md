@@ -48,9 +48,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Required field validation with clear error messages
   - Empty and whitespace string detection
 
-- **Test Coverage**: 57 passing unit tests
+- **Test Coverage**: 92 passing unit tests (100% pass rate)
   - AIConfig tests (18): Factory methods, URL validation, authentication, timeouts, SSL enforcement
   - Request model tests (39): Input validation, JSON serialization, edge cases, boundary values
+  - AIService integration tests (21): HTTP client mocking, error handling, timeouts, network errors, authentication
+  - AIBloc unit tests (14): State transitions, event handling, error propagation, service disposal
 
 - **Security Enhancements**:
   - API key authentication with Bearer tokens
