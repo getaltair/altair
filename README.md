@@ -65,14 +65,25 @@ altair/
 
 ## Quick Start
 
-### Prerequisites
+### End Users: Download Standalone Installers
+
+**No development tools required!** Download pre-built installers:
+
+- **Linux**: [AppImage](https://github.com/getaltair/altair/releases/latest) (portable, works on all distros)
+- **macOS**: [DMG installer](https://github.com/getaltair/altair/releases/latest)
+- **Windows**: [Setup installer](https://github.com/getaltair/altair/releases/latest)
+
+See [INSTALLERS.md](docs/INSTALLERS.md) for detailed installation instructions.
+
+### Developers: Running from Source
+
+**Prerequisites:**
 
 - **Flutter** 3.0+ (for desktop/mobile development)
-- **Python** 3.12+ (for backend services)
-- **uv** (Python package manager)
-- **mise** (optional, for version management)
+- **Python** 3.12+ (for backend services, optional)
+- **uv** (Python package manager, optional)
 
-### Running Altair Guidance (Standalone)
+**Run Altair Guidance:**
 
 ```bash
 # Navigate to the Guidance app
@@ -83,6 +94,12 @@ flutter pub get
 
 # Run on Linux desktop
 flutter run -d linux
+
+# Run on macOS desktop
+flutter run -d macos
+
+# Run on Windows desktop
+flutter run -d windows
 
 # Run on Android (requires connected device/emulator)
 flutter run -d android
@@ -110,8 +127,9 @@ pre-commit install
 ### Phase 1: Altair Guidance (Months 1-3)
 
 - ✅ Month 1: Infrastructure & auth
-- 🚧 Month 2: Core task management (Week 5-8 complete: Quick Capture, Task Editing, Projects, UX Polish)
-- ⏳ Month 3: AI features & beta
+- ✅ Month 2: Core task management (Week 5-8 complete: Quick Capture, Task Editing, Projects, UX Polish)
+- ✅ Month 3: AI features (Week 9-11 complete: OpenAI, Anthropic, Ollama integrations, AI Features UI)
+- 🚧 Week 12: Polish & Beta (Standalone Installers complete, Beta testing in progress)
 
 ### Phase 2: Altair Knowledge (Months 4-6)
 
@@ -135,6 +153,7 @@ See [DEVELOPMENT-ROADMAP.md](docs/DEVELOPMENT-ROADMAP.md) for details.
 - [Deployment Guide](docs/DEPLOYMENT-GUIDE.md) — Deployment options
 - [Development Roadmap](docs/DEVELOPMENT-ROADMAP.md) — Timeline and milestones
 - [Testing Guide](docs/TESTING.md) — Testing strategies and best practices
+- [Installers Guide](docs/INSTALLERS.md) — Building and distributing standalone installers
 
 ## Technology Stack
 
@@ -191,6 +210,6 @@ This project is licensed under the GNU Affero General Public License v3.0 or lat
 
 ---
 
-**Status**: 🚧 Phase 1 Development (Month 2: Core Task Management - Week 5-8 Complete)
+**Status**: 🚧 Phase 1 Development (Week 12: Polish & Beta - Standalone Installers Complete)
 
 Made with ❤️ for the ADHD community

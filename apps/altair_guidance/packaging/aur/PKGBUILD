@@ -1,0 +1,57 @@
+# Maintainer: Altair Development Team <dev@getaltair.com>
+pkgname=altair-guidance
+pkgver=0.1.0
+pkgrel=1
+pkgdesc='ADHD-friendly task and project management application'
+arch=('x86_64')
+url='https://github.com/getaltair/altair'
+license=('AGPL-3.0-or-later')
+depends=('gtk3' 'libsecret')
+makedepends=('flutter' 'git' 'cmake' 'ninja' 'clang')
+optdepends=(
+    'libappindicator-gtk3: for system tray support'
+)
+source=("$pkgname-$pkgver.tar.gz::https://github.com/getaltair/altair/archive/v$pkgver.tar.gz")
+sha256sums=('SKIP')  # Update with actual checksum after first release
+
+build() {
+    cd "$srcdir/altair-$pkgver/apps/altair_guidance"
+
+    # Configure Flutter for Linux desktop
+    flutter config --enable-linux-desktop
+
+    # Get dependencies
+    flutter pub get
+
+    # Build in release mode
+    flutter build linux --release
+}
+
+package() {
+    cd "$srcdir/altair-$pkgver/apps/altair_guidance"
+
+    # Install binary and supporting files
+    install -dm755 "$pkgdir/opt/$pkgname"
+    cp -r build/linux/x64/release/bundle/* "$pkgdir/opt/$pkgname/"
+
+    # Create wrapper script
+    install -dm755 "$pkgdir/usr/bin"
+    cat > "$pkgdir/usr/bin/$pkgname" <<EOF
+#!/bin/bash
+cd /opt/$pkgname
+exec ./altair_guidance "\$@"
+EOF
+    chmod +x "$pkgdir/usr/bin/$pkgname"
+
+    # Install desktop file
+    install -Dm644 "$srcdir/altair-$pkgver/apps/altair_guidance/packaging/linux/altair-guidance.desktop" \
+        "$pkgdir/usr/share/applications/$pkgname.desktop"
+
+    # Install icon (if available)
+    # For now, we'll create a placeholder or use the app icon from the build
+    # TODO: Add proper icon installation once icon assets are available
+
+    # Install license
+    install -Dm644 "$srcdir/altair-$pkgver/LICENSE" \
+        "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}

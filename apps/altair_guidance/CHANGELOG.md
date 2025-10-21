@@ -66,6 +66,66 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Operation-specific error context
   - Graceful degradation on service failures
 
+#### Standalone Installers (Week 12)
+
+- **Linux AppImage**: Portable single-file installer for all distributions
+  - Automatic desktop integration support
+  - No external dependencies required
+  - Works on Ubuntu, Fedora, Arch, and all major distros
+  - Build script with automatic icon generation
+  - appimagetool integration for packaging
+
+- **Linux Snap**: Alternative distribution format
+  - Snapcraft configuration with strict confinement
+  - Automatic dependency management
+  - Integration with GNOME extensions
+  - Support for desktop, Wayland, and X11
+
+- **Linux AUR (Arch User Repository)**: Native Arch Linux packaging
+  - PKGBUILD for building from source
+  - Proper dependency management via pacman
+  - Desktop integration with .desktop file
+  - Installation via AUR helpers (yay, paru)
+  - Wrapper script for proper execution
+  - License installation to /usr/share/licenses
+
+- **macOS DMG**: Professional drag-and-drop installer
+  - Familiar macOS installation experience
+  - Applications folder symlink included
+  - DMG customization with create-dmg
+  - Proper app bundle structure
+  - Code signing support (optional)
+
+- **Windows Installer**: Inno Setup-based installer
+  - Professional installation wizard
+  - Desktop shortcut option
+  - Automatic uninstaller registration
+  - Start menu integration
+  - Portable extraction mode support
+
+- **Cross-Platform Build Script**: Unified build system
+  - Automatic platform detection
+  - Version management via environment variables
+  - Color-coded terminal output
+  - Platform-specific validation
+  - Comprehensive help documentation
+
+- **CI/CD Integration**: Automated release workflow
+  - GitHub Actions release workflow
+  - Multi-platform concurrent builds (Linux, macOS, Windows)
+  - Automatic artifact upload
+  - Draft release creation with download links
+  - Manual workflow dispatch support
+  - Version tag-based automatic releases
+
+- **Documentation**: Complete installer guide
+  - Installation instructions for all platforms
+  - Build-from-source instructions
+  - Troubleshooting guides
+  - CI/CD integration documentation
+  - Advanced topics (code signing, portable modes, distribution channels)
+  - Release checklist
+
 #### Previous Features (Week 1-9)
 
 - Neo-brutalist UI design system

@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Altair Guidance
+Comment=ADHD-friendly task and project management
+Exec=altair_guidance
+Icon=altair_guidance
+Type=Application
+Categories=Productivity;Office;ProjectManagement;
+Keywords=task;todo;project;adhd;productivity;
+StartupNotify=true
+Terminal=false
