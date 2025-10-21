@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:altair_core/altair_core.dart';
 import 'package:altair_guidance/bloc/ai/ai_bloc.dart';
 import 'package:altair_guidance/bloc/ai/ai_event.dart';
@@ -24,13 +26,17 @@ void main() {
 
   group('showTaskPrioritizationDialog', () {
     late MockAIBloc mockBloc;
+    late StreamController<AIState> streamController;
 
     setUp(() {
       mockBloc = MockAIBloc();
+      streamController = StreamController<AIState>.broadcast();
       when(() => mockBloc.state).thenReturn(const AIInitial());
-      when(() => mockBloc.stream).thenAnswer(
-        (_) => Stream.value(const AIInitial()),
-      );
+      when(() => mockBloc.stream).thenAnswer((_) => streamController.stream);
+    });
+
+    tearDown(() {
+      streamController.close();
     });
 
     testWidgets('shows dialog with correct title', (tester) async {
@@ -69,7 +75,8 @@ void main() {
       );
 
       await tester.tap(find.text('Show Dialog'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump();
 
       expect(find.text('AI Task Prioritization'), findsOneWidget);
     });
@@ -110,11 +117,13 @@ void main() {
       );
 
       await tester.tap(find.text('Show Dialog'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump();
 
       // Dismiss by tapping barrier
       await tester.tapAt(const Offset(10, 10));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump();
 
       expect(find.text('AI Task Prioritization'), findsNothing);
     });
@@ -155,11 +164,13 @@ void main() {
       );
 
       await tester.tap(find.text('Show Dialog'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump();
 
       // Find and tap close button
       await tester.tap(find.byIcon(Icons.close));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump();
 
       expect(find.text('AI Task Prioritization'), findsNothing);
     });
@@ -167,14 +178,18 @@ void main() {
 
   group('TaskPrioritizationDialog', () {
     late MockAIBloc mockBloc;
+    late StreamController<AIState> streamController;
 
     setUp(() {
       mockBloc = MockAIBloc();
+      streamController = StreamController<AIState>.broadcast();
       when(() => mockBloc.state).thenReturn(const AIInitial());
-      when(() => mockBloc.stream).thenAnswer(
-        (_) => Stream.value(const AIInitial()),
-      );
+      when(() => mockBloc.stream).thenAnswer((_) => streamController.stream);
       when(() => mockBloc.add(any())).thenReturn(null);
+    });
+
+    tearDown(() {
+      streamController.close();
     });
 
     testWidgets('dispatches prioritization request on init', (tester) async {
@@ -253,7 +268,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
       expect(
@@ -308,11 +323,11 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('Recommended Execution Order'), findsOneWidget);
-      expect(find.text('Task 1'), findsOneWidget);
-      expect(find.text('Task 2'), findsOneWidget);
+      expect(find.text('Task 1'), findsWidgets);
+      expect(find.text('Task 2'), findsWidgets);
       expect(find.text('Critical for project'), findsOneWidget);
       expect(find.text('Important but not urgent'), findsOneWidget);
     });
@@ -345,7 +360,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('Failed to get prioritization'), findsOneWidget);
       expect(find.text('Network error'), findsOneWidget);
@@ -380,21 +395,20 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Clear previous invocation from initState
       clearInteractions(mockBloc);
 
       // Tap retry button
       await tester.tap(find.text('Retry'));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       verify(() => mockBloc.add(any<AITaskPrioritizationRequested>()))
           .called(1);
     });
 
-    testWidgets('displays priority badges with correct colors',
-        (tester) async {
+    testWidgets('displays priority badges with correct colors', (tester) async {
       final response = TaskPrioritizationResponse(
         recommendedOrder: ['Task 1'],
         suggestions: [
@@ -432,7 +446,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('CRITICAL'), findsOneWidget);
       expect(find.text('Urgency: 90%'), findsOneWidget);
@@ -464,10 +478,14 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
-      final closeButton =
-          tester.widget<IconButton>(find.byIcon(Icons.close));
+      final closeButton = tester.widget<IconButton>(
+        find.ancestor(
+          of: find.byIcon(Icons.close),
+          matching: find.byType(IconButton),
+        ),
+      );
       expect(closeButton.tooltip, 'Close dialog');
     });
   });

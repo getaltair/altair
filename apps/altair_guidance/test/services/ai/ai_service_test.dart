@@ -290,7 +290,8 @@ void main() {
         expect(
           () => service.prioritizeTasks(request),
           throwsA(
-            isA<AIServiceException>().having((e) => e.isTimeout, 'isTimeout', true),
+            isA<AIServiceException>()
+                .having((e) => e.isTimeout, 'isTimeout', true),
           ),
         );
       });

@@ -47,7 +47,8 @@ class _TaskEditPageState extends State<TaskEditPage> {
     final task = widget.task;
 
     _titleController = TextEditingController(text: task?.title ?? '');
-    _descriptionController = TextEditingController(text: task?.description ?? '');
+    _descriptionController =
+        TextEditingController(text: task?.description ?? '');
     _estimatedMinutesController = TextEditingController(
       text: task?.estimatedMinutes?.toString() ?? '',
     );
@@ -98,35 +99,36 @@ class _TaskEditPageState extends State<TaskEditPage> {
 
     final now = DateTime.now();
     final task = widget.task?.copyWith(
-      title: _titleController.text.trim(),
-      description: _descriptionController.text.trim().isEmpty
-          ? null
-          : _descriptionController.text.trim(),
-      status: _selectedStatus,
-      priority: _selectedPriority,
-      tags: _tags,
-      projectId: _selectedProjectId,
-      estimatedMinutes: _estimatedMinutesController.text.isEmpty
-          ? null
-          : int.tryParse(_estimatedMinutesController.text),
-      updatedAt: now,
-      completedAt: _selectedStatus == TaskStatus.completed ? now : null,
-    ) ?? Task(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      title: _titleController.text.trim(),
-      description: _descriptionController.text.trim().isEmpty
-          ? null
-          : _descriptionController.text.trim(),
-      status: _selectedStatus,
-      priority: _selectedPriority,
-      tags: _tags,
-      projectId: _selectedProjectId,
-      estimatedMinutes: _estimatedMinutesController.text.isEmpty
-          ? null
-          : int.tryParse(_estimatedMinutesController.text),
-      createdAt: now,
-      updatedAt: now,
-    );
+          title: _titleController.text.trim(),
+          description: _descriptionController.text.trim().isEmpty
+              ? null
+              : _descriptionController.text.trim(),
+          status: _selectedStatus,
+          priority: _selectedPriority,
+          tags: _tags,
+          projectId: _selectedProjectId,
+          estimatedMinutes: _estimatedMinutesController.text.isEmpty
+              ? null
+              : int.tryParse(_estimatedMinutesController.text),
+          updatedAt: now,
+          completedAt: _selectedStatus == TaskStatus.completed ? now : null,
+        ) ??
+        Task(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          title: _titleController.text.trim(),
+          description: _descriptionController.text.trim().isEmpty
+              ? null
+              : _descriptionController.text.trim(),
+          status: _selectedStatus,
+          priority: _selectedPriority,
+          tags: _tags,
+          projectId: _selectedProjectId,
+          estimatedMinutes: _estimatedMinutesController.text.isEmpty
+              ? null
+              : int.tryParse(_estimatedMinutesController.text),
+          createdAt: now,
+          updatedAt: now,
+        );
 
     if (widget.task == null) {
       context.read<TaskBloc>().add(TaskCreateRequested(task: task));
@@ -293,27 +295,27 @@ class _TaskEditPageState extends State<TaskEditPage> {
               value: _selectedStatus,
               isExpanded: true,
               items: TaskStatus.values.map((status) {
-            return DropdownMenuItem(
-              value: status,
-              child: Row(
-                children: [
-                  Container(
-                    width: 16,
-                    height: 16,
-                    decoration: BoxDecoration(
-                      color: _getStatusColor(status),
-                      borderRadius: BorderRadius.circular(4),
-                      border: Border.all(
-                        color: Colors.black,
-                        width: 2,
+                return DropdownMenuItem(
+                  value: status,
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 16,
+                        height: 16,
+                        decoration: BoxDecoration(
+                          color: _getStatusColor(status),
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(
+                            color: Colors.black,
+                            width: 2,
+                          ),
+                        ),
                       ),
-                    ),
+                      const SizedBox(width: AltairSpacing.sm),
+                      Text(_getStatusLabel(status)),
+                    ],
                   ),
-                  const SizedBox(width: AltairSpacing.sm),
-                  Text(_getStatusLabel(status)),
-                ],
-              ),
-            );
+                );
               }).toList(),
               onChanged: (value) {
                 if (value != null) {
@@ -364,48 +366,48 @@ class _TaskEditPageState extends State<TaskEditPage> {
                   isExpanded: true,
                   hint: const Text('No project (personal task)'),
                   items: [
-                // None option
-                const DropdownMenuItem<String?>(
-                  value: null,
-                  child: Row(
-                    children: [
-                      Icon(Icons.clear, size: 16),
-                      SizedBox(width: AltairSpacing.sm),
-                      Text('No project (personal task)'),
-                    ],
-                  ),
-                ),
-                // Project options
-                ...projects.map((project) {
-                  return DropdownMenuItem<String?>(
-                    value: project.id,
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 16,
-                          height: 16,
-                          decoration: BoxDecoration(
-                            color: project.color != null
-                                ? _hexToColor(project.color!)
-                                : AltairColors.accentBlue,
-                            borderRadius: BorderRadius.circular(4),
-                            border: Border.all(
-                              color: Colors.black,
-                              width: 2,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: AltairSpacing.sm),
-                        Flexible(
-                          child: Text(
-                            project.name,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
+                    // None option
+                    const DropdownMenuItem<String?>(
+                      value: null,
+                      child: Row(
+                        children: [
+                          Icon(Icons.clear, size: 16),
+                          SizedBox(width: AltairSpacing.sm),
+                          Text('No project (personal task)'),
+                        ],
+                      ),
                     ),
-                  );
-                }),
+                    // Project options
+                    ...projects.map((project) {
+                      return DropdownMenuItem<String?>(
+                        value: project.id,
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 16,
+                              height: 16,
+                              decoration: BoxDecoration(
+                                color: project.color != null
+                                    ? _hexToColor(project.color!)
+                                    : AltairColors.accentBlue,
+                                borderRadius: BorderRadius.circular(4),
+                                border: Border.all(
+                                  color: Colors.black,
+                                  width: 2,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: AltairSpacing.sm),
+                            Flexible(
+                              child: Text(
+                                project.name,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
                   ],
                   onChanged: (value) {
                     setState(() {
@@ -500,7 +502,8 @@ class _TaskEditPageState extends State<TaskEditPage> {
                     _markModified();
                   });
                 },
-                backgroundColor: AltairColors.accentYellow.withValues(alpha: 0.2),
+                backgroundColor:
+                    AltairColors.accentYellow.withValues(alpha: 0.2),
                 side: const BorderSide(
                   color: Colors.black,
                   width: AltairBorders.thin,

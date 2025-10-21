@@ -18,14 +18,18 @@ void showTimeEstimateDialog(
   List<String>? subtasks,
   SkillLevel skillLevel = SkillLevel.intermediate,
 }) {
+  final aiBloc = context.read<AIBloc>();
   showDialog<void>(
     context: context,
     barrierDismissible: true,
-    builder: (context) => TimeEstimateDialog(
-      taskTitle: taskTitle,
-      taskDescription: taskDescription,
-      subtasks: subtasks,
-      skillLevel: skillLevel,
+    builder: (context) => BlocProvider<AIBloc>.value(
+      value: aiBloc,
+      child: TimeEstimateDialog(
+        taskTitle: taskTitle,
+        taskDescription: taskDescription,
+        subtasks: subtasks,
+        skillLevel: skillLevel,
+      ),
     ),
   );
 }

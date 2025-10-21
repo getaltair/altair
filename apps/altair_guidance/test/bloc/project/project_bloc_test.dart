@@ -181,7 +181,8 @@ void main() {
             logger: mockLogger,
           );
         },
-        act: (bloc) => bloc.add(ProjectUpdateRequested(project: updatedProject)),
+        act: (bloc) =>
+            bloc.add(ProjectUpdateRequested(project: updatedProject)),
         expect: () => [
           const ProjectLoading(),
           ProjectLoaded(projects: [updatedProject, project2]),
@@ -202,7 +203,8 @@ void main() {
             logger: mockLogger,
           );
         },
-        act: (bloc) => bloc.add(ProjectUpdateRequested(project: updatedProject)),
+        act: (bloc) =>
+            bloc.add(ProjectUpdateRequested(project: updatedProject)),
         expect: () => [
           const ProjectLoading(),
           const ProjectFailure(message: 'Exception: Failed to update'),
@@ -271,7 +273,8 @@ void main() {
             logger: mockLogger,
           );
         },
-        act: (bloc) => bloc.add(const ProjectSearchRequested(query: searchQuery)),
+        act: (bloc) =>
+            bloc.add(const ProjectSearchRequested(query: searchQuery)),
         expect: () => [
           const ProjectLoading(),
           ProjectLoaded(projects: [project1]),
@@ -291,7 +294,8 @@ void main() {
             logger: mockLogger,
           );
         },
-        act: (bloc) => bloc.add(const ProjectSearchRequested(query: searchQuery)),
+        act: (bloc) =>
+            bloc.add(const ProjectSearchRequested(query: searchQuery)),
         expect: () => [
           const ProjectLoading(),
           const ProjectFailure(message: 'Exception: Search failed'),
@@ -306,7 +310,8 @@ void main() {
       blocTest<ProjectBloc, ProjectState>(
         'emits [ProjectLoading, ProjectLoaded] with filter when filtering succeeds',
         build: () {
-          when(() => mockProjectRepository.findAll(status: ProjectStatus.completed))
+          when(() => mockProjectRepository.findAll(
+                  status: ProjectStatus.completed))
               .thenAnswer((_) async => [project2]);
           return ProjectBloc(
             projectRepository: mockProjectRepository,
@@ -322,7 +327,8 @@ void main() {
         ],
         verify: (_) {
           verify(
-            () => mockProjectRepository.findAll(status: ProjectStatus.completed),
+            () =>
+                mockProjectRepository.findAll(status: ProjectStatus.completed),
           ).called(1);
         },
       );
@@ -330,7 +336,8 @@ void main() {
       blocTest<ProjectBloc, ProjectState>(
         'emits [ProjectLoading, ProjectFailure] when filtering fails',
         build: () {
-          when(() => mockProjectRepository.findAll(status: ProjectStatus.active))
+          when(() =>
+                  mockProjectRepository.findAll(status: ProjectStatus.active))
               .thenThrow(Exception('Filter failed'));
           return ProjectBloc(
             projectRepository: mockProjectRepository,
@@ -345,7 +352,8 @@ void main() {
           const ProjectFailure(message: 'Exception: Filter failed'),
         ],
         verify: (_) {
-          verify(() => mockProjectRepository.findAll(status: ProjectStatus.active))
+          verify(() =>
+                  mockProjectRepository.findAll(status: ProjectStatus.active))
               .called(1);
         },
       );

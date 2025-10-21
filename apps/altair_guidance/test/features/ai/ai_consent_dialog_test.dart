@@ -121,8 +121,7 @@ void main() {
       expect(prefs.getBool('ai_features_consent'), isNull);
     });
 
-    testWidgets('dialog is not dismissible by tapping barrier',
-        (tester) async {
+    testWidgets('dialog is not dismissible by tapping barrier', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Builder(

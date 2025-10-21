@@ -196,15 +196,15 @@ void main() {
           const AILoading(operationType: AIOperationType.prioritization),
           isA<AITaskPrioritizationSuccess>()
               .having(
-                (s) => s.response.suggestions.length,
-                'suggestions.length',
-                2,
-              )
+            (s) => s.response.suggestions.length,
+            'suggestions.length',
+            2,
+          )
               .having(
-                (s) => s.response.recommendedOrder,
-                'recommendedOrder',
-                ['Task 1', 'Task 2'],
-              ),
+            (s) => s.response.recommendedOrder,
+            'recommendedOrder',
+            ['Task 1', 'Task 2'],
+          ),
         ],
         verify: (_) {
           verify(() => mockAIService.prioritizeTasks(any())).called(1);

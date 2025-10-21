@@ -18,14 +18,18 @@ void showContextSuggestionsDialog(
   String? projectContext,
   String suggestionType = 'general',
 }) {
+  final aiBloc = context.read<AIBloc>();
   showDialog<void>(
     context: context,
     barrierDismissible: true,
-    builder: (context) => ContextSuggestionsDialog(
-      taskTitle: taskTitle,
-      taskDescription: taskDescription,
-      projectContext: projectContext,
-      suggestionType: suggestionType,
+    builder: (context) => BlocProvider<AIBloc>.value(
+      value: aiBloc,
+      child: ContextSuggestionsDialog(
+        taskTitle: taskTitle,
+        taskDescription: taskDescription,
+        projectContext: projectContext,
+        suggestionType: suggestionType,
+      ),
     ),
   );
 }
@@ -330,34 +334,37 @@ class _ContextSuggestionsDialogState extends State<ContextSuggestionsDialog> {
   }
 
   Widget _buildErrorState(String message) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(
-            Icons.error_outline,
-            size: 64,
-            color: AltairColors.error,
-          ),
-          const SizedBox(height: AltairSpacing.md),
-          Text(
-            'Failed to get suggestions',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          const SizedBox(height: AltairSpacing.sm),
-          Text(
-            message,
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
-          const SizedBox(height: AltairSpacing.lg),
-          AltairButton(
-            onPressed: () => _requestSuggestions(_currentSuggestionType),
-            variant: AltairButtonVariant.filled,
-            accentColor: AltairColors.accentBlue,
-            child: const Text('Retry'),
-          ),
-        ],
+    return SingleChildScrollView(
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.error_outline,
+              size: 64,
+              color: AltairColors.error,
+            ),
+            const SizedBox(height: AltairSpacing.md),
+            Text(
+              'Failed to get suggestions',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: AltairSpacing.sm),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            const SizedBox(height: AltairSpacing.lg),
+            AltairButton(
+              onPressed: () => _requestSuggestions(_currentSuggestionType),
+              variant: AltairButtonVariant.filled,
+              accentColor: AltairColors.accentBlue,
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
       ),
     );
   }

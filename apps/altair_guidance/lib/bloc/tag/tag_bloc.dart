@@ -128,7 +128,8 @@ class TagBloc extends Bloc<TagEvent, TagState> {
     try {
       final tags = await _tagRepository.search(event.query);
       emit(TagLoaded(tags: tags, searchQuery: event.query));
-      _logger.i('Search returned ${tags.length} tags for query: ${event.query}');
+      _logger
+          .i('Search returned ${tags.length} tags for query: ${event.query}');
     } catch (e, stackTrace) {
       _logger.e('Failed to search tags', error: e, stackTrace: stackTrace);
       emit(TagFailure(message: e.toString()));
@@ -147,7 +148,8 @@ class TagBloc extends Bloc<TagEvent, TagState> {
       emit(TagMostUsedLoaded(tags: tags));
       _logger.i('Loaded ${tags.length} most used tags');
     } catch (e, stackTrace) {
-      _logger.e('Failed to load most used tags', error: e, stackTrace: stackTrace);
+      _logger.e('Failed to load most used tags',
+          error: e, stackTrace: stackTrace);
       emit(TagFailure(message: e.toString()));
     }
   }
@@ -162,7 +164,8 @@ class TagBloc extends Bloc<TagEvent, TagState> {
       _logger.i('Incremented usage count for tag: ${event.tagId}');
       // Don't reload all tags, just log the action
     } catch (e, stackTrace) {
-      _logger.e('Failed to increment usage count', error: e, stackTrace: stackTrace);
+      _logger.e('Failed to increment usage count',
+          error: e, stackTrace: stackTrace);
       emit(TagFailure(message: e.toString()));
     }
   }
@@ -177,7 +180,8 @@ class TagBloc extends Bloc<TagEvent, TagState> {
       _logger.i('Decremented usage count for tag: ${event.tagId}');
       // Don't reload all tags, just log the action
     } catch (e, stackTrace) {
-      _logger.e('Failed to decrement usage count', error: e, stackTrace: stackTrace);
+      _logger.e('Failed to decrement usage count',
+          error: e, stackTrace: stackTrace);
       emit(TagFailure(message: e.toString()));
     }
   }

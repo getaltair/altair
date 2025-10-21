@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:altair_guidance/bloc/ai/ai_bloc.dart';
 import 'package:altair_guidance/bloc/ai/ai_event.dart';
 import 'package:altair_guidance/bloc/ai/ai_state.dart';
@@ -21,13 +23,17 @@ void main() {
 
   group('showTimeEstimateDialog', () {
     late MockAIBloc mockBloc;
+    late StreamController<AIState> streamController;
 
     setUp(() {
       mockBloc = MockAIBloc();
+      streamController = StreamController<AIState>.broadcast();
       when(() => mockBloc.state).thenReturn(const AIInitial());
-      when(() => mockBloc.stream).thenAnswer(
-        (_) => Stream.value(const AIInitial()),
-      );
+      when(() => mockBloc.stream).thenAnswer((_) => streamController.stream);
+    });
+
+    tearDown(() {
+      streamController.close();
     });
 
     testWidgets('shows dialog with correct title', (tester) async {
@@ -57,7 +63,7 @@ void main() {
       );
 
       await tester.tap(find.text('Show Dialog'));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('AI Time Estimate'), findsOneWidget);
     });
@@ -89,11 +95,11 @@ void main() {
       );
 
       await tester.tap(find.text('Show Dialog'));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Dismiss by tapping barrier
       await tester.tapAt(const Offset(10, 10));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('AI Time Estimate'), findsNothing);
     });
@@ -101,14 +107,18 @@ void main() {
 
   group('TimeEstimateDialog', () {
     late MockAIBloc mockBloc;
+    late StreamController<AIState> streamController;
 
     setUp(() {
       mockBloc = MockAIBloc();
+      streamController = StreamController<AIState>.broadcast();
       when(() => mockBloc.state).thenReturn(const AIInitial());
-      when(() => mockBloc.stream).thenAnswer(
-        (_) => Stream.value(const AIInitial()),
-      );
+      when(() => mockBloc.stream).thenAnswer((_) => streamController.stream);
       when(() => mockBloc.add(any())).thenReturn(null);
+    });
+
+    tearDown(() {
+      streamController.close();
     });
 
     testWidgets('dispatches time estimate request on init', (tester) async {
@@ -171,7 +181,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
       expect(find.text('AI is calculating time estimate...'), findsOneWidget);
@@ -210,7 +220,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('Task: Build feature'), findsOneWidget);
       expect(find.text('Optimistic (Best Case)'), findsOneWidget);
@@ -248,7 +258,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('15m'), findsOneWidget);
       expect(find.text('30m'), findsOneWidget);
@@ -285,7 +295,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('Factors Considered'), findsOneWidget);
       expect(find.text('Code complexity'), findsOneWidget);
@@ -323,7 +333,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('Assumptions'), findsOneWidget);
       expect(find.text('Developer has experience'), findsOneWidget);
@@ -348,7 +358,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('Failed to get time estimate'), findsOneWidget);
       expect(find.text('Connection timeout'), findsOneWidget);
@@ -372,14 +382,14 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Clear previous invocation from initState
       clearInteractions(mockBloc);
 
       // Tap retry button
       await tester.tap(find.text('Retry'));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       verify(() => mockBloc.add(any<AITimeEstimateRequested>())).called(1);
     });
@@ -410,10 +420,10 @@ void main() {
       );
 
       await tester.tap(find.text('Show'));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       await tester.tap(find.byIcon(Icons.close));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('AI Time Estimate'), findsNothing);
     });
@@ -432,10 +442,14 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
-      final closeButton =
-          tester.widget<IconButton>(find.byIcon(Icons.close));
+      final closeButton = tester.widget<IconButton>(
+        find.ancestor(
+          of: find.byIcon(Icons.close),
+          matching: find.byType(IconButton),
+        ),
+      );
       expect(closeButton.tooltip, 'Close dialog');
     });
 
@@ -465,7 +479,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // The realistic estimate should be highlighted
       expect(find.text('Realistic (Most Likely)'), findsOneWidget);

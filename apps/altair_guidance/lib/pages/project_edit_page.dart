@@ -51,7 +51,8 @@ class _ProjectEditPageState extends State<ProjectEditPage> {
     final project = widget.project;
 
     _nameController = TextEditingController(text: project?.name ?? '');
-    _descriptionController = TextEditingController(text: project?.description ?? '');
+    _descriptionController =
+        TextEditingController(text: project?.description ?? '');
     _selectedStatus = project?.status ?? ProjectStatus.active;
     _tags = List.from(project?.tags ?? []);
     _selectedColor = project?.color;
@@ -97,29 +98,30 @@ class _ProjectEditPageState extends State<ProjectEditPage> {
 
     final now = DateTime.now();
     final project = widget.project?.copyWith(
-      name: _nameController.text.trim(),
-      description: _descriptionController.text.trim().isEmpty
-          ? null
-          : _descriptionController.text.trim(),
-      status: _selectedStatus,
-      tags: _tags,
-      color: _selectedColor,
-      targetDate: _targetDate,
-      updatedAt: now,
-      completedAt: _selectedStatus == ProjectStatus.completed ? now : null,
-    ) ?? Project(
-      id: '',
-      name: _nameController.text.trim(),
-      description: _descriptionController.text.trim().isEmpty
-          ? null
-          : _descriptionController.text.trim(),
-      status: _selectedStatus,
-      tags: _tags,
-      color: _selectedColor,
-      targetDate: _targetDate,
-      createdAt: now,
-      updatedAt: now,
-    );
+          name: _nameController.text.trim(),
+          description: _descriptionController.text.trim().isEmpty
+              ? null
+              : _descriptionController.text.trim(),
+          status: _selectedStatus,
+          tags: _tags,
+          color: _selectedColor,
+          targetDate: _targetDate,
+          updatedAt: now,
+          completedAt: _selectedStatus == ProjectStatus.completed ? now : null,
+        ) ??
+        Project(
+          id: '',
+          name: _nameController.text.trim(),
+          description: _descriptionController.text.trim().isEmpty
+              ? null
+              : _descriptionController.text.trim(),
+          status: _selectedStatus,
+          tags: _tags,
+          color: _selectedColor,
+          targetDate: _targetDate,
+          createdAt: now,
+          updatedAt: now,
+        );
 
     if (widget.project == null) {
       context.read<ProjectBloc>().add(ProjectCreateRequested(project: project));
@@ -270,28 +272,28 @@ class _ProjectEditPageState extends State<ProjectEditPage> {
               value: _selectedStatus,
               isExpanded: true,
               items: ProjectStatus.values.map((status) {
-            return DropdownMenuItem(
-              value: status,
-              child: Row(
-                children: [
-                  Container(
-                    width: 16,
-                    height: 16,
-                    decoration: BoxDecoration(
-                      color: _getStatusColor(status),
-                      borderRadius: BorderRadius.circular(4),
-                      border: Border.all(
-                        color: Colors.black,
-                        width: 2,
+                return DropdownMenuItem(
+                  value: status,
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 16,
+                        height: 16,
+                        decoration: BoxDecoration(
+                          color: _getStatusColor(status),
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(
+                            color: Colors.black,
+                            width: 2,
+                          ),
+                        ),
                       ),
-                    ),
+                      const SizedBox(width: AltairSpacing.sm),
+                      Text(_getStatusLabel(status)),
+                    ],
                   ),
-                  const SizedBox(width: AltairSpacing.sm),
-                  Text(_getStatusLabel(status)),
-                ],
-              ),
-            );
-          }).toList(),
+                );
+              }).toList(),
               onChanged: (value) {
                 if (value != null) {
                   setState(() {
@@ -325,7 +327,8 @@ class _ProjectEditPageState extends State<ProjectEditPage> {
             // No color option
             _buildColorOption(null),
             // Predefined colors
-            ...projectColors.map((color) => _buildColorOption(_colorToHex(color))),
+            ...projectColors
+                .map((color) => _buildColorOption(_colorToHex(color))),
           ],
         ),
       ],
@@ -380,7 +383,8 @@ class _ProjectEditPageState extends State<ProjectEditPage> {
               context: context,
               initialDate: _targetDate ?? DateTime.now(),
               firstDate: DateTime.now(),
-              lastDate: DateTime.now().add(const Duration(days: 3650)), // ~10 years
+              lastDate:
+                  DateTime.now().add(const Duration(days: 3650)), // ~10 years
             );
             if (date != null) {
               setState(() {

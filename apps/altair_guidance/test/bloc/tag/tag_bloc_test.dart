@@ -241,8 +241,7 @@ void main() {
       blocTest<TagBloc, TagState>(
         'emits [TagLoading, TagLoaded] when tag is deleted successfully',
         build: () {
-          when(() => mockTagRepository.delete('1'))
-              .thenAnswer((_) async => {});
+          when(() => mockTagRepository.delete('1')).thenAnswer((_) async => {});
           when(() => mockTagRepository.findAll())
               .thenAnswer((_) async => [tag2, tag3]);
           return TagBloc(

@@ -17,12 +17,16 @@ void showTaskPrioritizationDialog(
   required List<Task> tasks,
   String? projectContext,
 }) {
+  final aiBloc = context.read<AIBloc>();
   showDialog<void>(
     context: context,
     barrierDismissible: true,
-    builder: (context) => TaskPrioritizationDialog(
-      tasks: tasks,
-      projectContext: projectContext,
+    builder: (context) => BlocProvider<AIBloc>.value(
+      value: aiBloc,
+      child: TaskPrioritizationDialog(
+        tasks: tasks,
+        projectContext: projectContext,
+      ),
     ),
   );
 }
@@ -454,7 +458,8 @@ class _ScoreIndicator extends StatelessWidget {
             borderRadius: BorderRadius.circular(4),
             child: LinearProgressIndicator(
               value: score,
-              backgroundColor: AltairColors.textSecondary.withValues(alpha: 0.2),
+              backgroundColor:
+                  AltairColors.textSecondary.withValues(alpha: 0.2),
               valueColor: AlwaysStoppedAnimation(color),
               minHeight: 8,
             ),

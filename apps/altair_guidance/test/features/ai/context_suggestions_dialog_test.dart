@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:altair_guidance/bloc/ai/ai_bloc.dart';
 import 'package:altair_guidance/bloc/ai/ai_event.dart';
 import 'package:altair_guidance/bloc/ai/ai_state.dart';
@@ -21,13 +23,17 @@ void main() {
 
   group('showContextSuggestionsDialog', () {
     late MockAIBloc mockBloc;
+    late StreamController<AIState> streamController;
 
     setUp(() {
       mockBloc = MockAIBloc();
+      streamController = StreamController<AIState>.broadcast();
       when(() => mockBloc.state).thenReturn(const AIInitial());
-      when(() => mockBloc.stream).thenAnswer(
-        (_) => Stream.value(const AIInitial()),
-      );
+      when(() => mockBloc.stream).thenAnswer((_) => streamController.stream);
+    });
+
+    tearDown(() {
+      streamController.close();
     });
 
     testWidgets('shows dialog with correct title', (tester) async {
@@ -57,7 +63,7 @@ void main() {
       );
 
       await tester.tap(find.text('Show Dialog'));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('AI Context Suggestions'), findsOneWidget);
     });
@@ -89,11 +95,11 @@ void main() {
       );
 
       await tester.tap(find.text('Show Dialog'));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Dismiss by tapping barrier
       await tester.tapAt(const Offset(10, 10));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('AI Context Suggestions'), findsNothing);
     });
@@ -101,14 +107,18 @@ void main() {
 
   group('ContextSuggestionsDialog', () {
     late MockAIBloc mockBloc;
+    late StreamController<AIState> streamController;
 
     setUp(() {
       mockBloc = MockAIBloc();
+      streamController = StreamController<AIState>.broadcast();
       when(() => mockBloc.state).thenReturn(const AIInitial());
-      when(() => mockBloc.stream).thenAnswer(
-        (_) => Stream.value(const AIInitial()),
-      );
+      when(() => mockBloc.stream).thenAnswer((_) => streamController.stream);
       when(() => mockBloc.add(any())).thenReturn(null);
+    });
+
+    tearDown(() {
+      streamController.close();
     });
 
     testWidgets('dispatches context suggestions request on init',
@@ -175,7 +185,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
       expect(find.text('AI is generating suggestions...'), findsOneWidget);
@@ -220,7 +230,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('Flutter Documentation'), findsOneWidget);
       expect(find.text('Use const constructors'), findsOneWidget);
@@ -245,7 +255,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('GENERAL'), findsOneWidget);
       expect(find.text('RESOURCES'), findsOneWidget);
@@ -266,14 +276,14 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Clear initial request from initState
       clearInteractions(mockBloc);
 
       // Tap on RESOURCES chip
       await tester.tap(find.text('RESOURCES'));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       verify(() => mockBloc.add(any<AIContextSuggestionsRequested>()))
           .called(1);
@@ -298,14 +308,13 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('No suggestions needed'), findsOneWidget);
       expect(find.text('This task looks good to go!'), findsOneWidget);
     });
 
-    testWidgets('displays category badges with correct colors',
-        (tester) async {
+    testWidgets('displays category badges with correct colors', (tester) async {
       final response = ContextSuggestionResponse(
         taskTitle: 'Test task',
         suggestions: [
@@ -345,7 +354,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('RESOURCE'), findsOneWidget);
       expect(find.text('TIP'), findsOneWidget);
@@ -388,7 +397,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byIcon(Icons.book), findsOneWidget); // resource
       expect(find.byIcon(Icons.tips_and_updates), findsOneWidget); // tip
@@ -421,7 +430,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('Important resource'), findsOneWidget);
     });
@@ -436,14 +445,16 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          home: BlocProvider<AIBloc>.value(
-            value: mockBloc,
-            child: const ContextSuggestionsDialog(taskTitle: 'Test task'),
+          home: Scaffold(
+            body: BlocProvider<AIBloc>.value(
+              value: mockBloc,
+              child: const ContextSuggestionsDialog(taskTitle: 'Test task'),
+            ),
           ),
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('Failed to get suggestions'), findsOneWidget);
       expect(find.text('Service unavailable'), findsOneWidget);
@@ -460,21 +471,23 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          home: BlocProvider<AIBloc>.value(
-            value: mockBloc,
-            child: const ContextSuggestionsDialog(taskTitle: 'Test task'),
+          home: Scaffold(
+            body: BlocProvider<AIBloc>.value(
+              value: mockBloc,
+              child: const ContextSuggestionsDialog(taskTitle: 'Test task'),
+            ),
           ),
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Clear previous invocation from initState
       clearInteractions(mockBloc);
 
       // Tap retry button
       await tester.tap(find.text('Retry'));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       verify(() => mockBloc.add(any<AIContextSuggestionsRequested>()))
           .called(1);
@@ -509,10 +522,10 @@ void main() {
       );
 
       await tester.tap(find.text('Show'));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       await tester.tap(find.byIcon(Icons.close));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('AI Context Suggestions'), findsNothing);
     });
@@ -531,10 +544,14 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
-      final closeButton =
-          tester.widget<IconButton>(find.byIcon(Icons.close));
+      final closeButton = tester.widget<IconButton>(
+        find.ancestor(
+          of: find.byIcon(Icons.close),
+          matching: find.byType(IconButton),
+        ),
+      );
       expect(closeButton.tooltip, 'Close dialog');
     });
 
@@ -564,7 +581,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('Summary'), findsOneWidget);
       expect(
@@ -599,7 +616,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('Summary'), findsNothing);
     });

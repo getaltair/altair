@@ -417,9 +417,8 @@ class TaskPrioritizationResponse extends Equatable {
       suggestions: (json['suggestions'] as List)
           .map((e) => PrioritySuggestion.fromJson(e as Map<String, dynamic>))
           .toList(),
-      recommendedOrder: (json['recommended_order'] as List)
-          .map((e) => e as String)
-          .toList(),
+      recommendedOrder:
+          (json['recommended_order'] as List).map((e) => e as String).toList(),
     );
   }
 
@@ -484,8 +483,7 @@ class TimeEstimateResponse extends Equatable {
   factory TimeEstimateResponse.fromJson(Map<String, dynamic> json) {
     return TimeEstimateResponse(
       taskTitle: json['task_title'] as String,
-      estimate:
-          TimeEstimate.fromJson(json['estimate'] as Map<String, dynamic>),
+      estimate: TimeEstimate.fromJson(json['estimate'] as Map<String, dynamic>),
       factors: (json['factors'] as List).map((e) => e as String).toList(),
       assumptions:
           (json['assumptions'] as List).map((e) => e as String).toList(),
