@@ -11,6 +11,7 @@ import '../bloc/project/project_bloc.dart';
 import '../bloc/project/project_state.dart';
 import '../bloc/task/task_bloc.dart';
 import '../bloc/task/task_event.dart';
+import '../features/ai/ai_consent_dialog.dart';
 import '../features/ai/context_suggestions_dialog.dart';
 import '../features/ai/task_breakdown_dialog.dart';
 import '../features/ai/time_estimate_dialog.dart';
@@ -561,7 +562,7 @@ class _TaskEditPageState extends State<TaskEditPage> {
               label: 'Break Down Task',
               accentColor: AltairColors.accentBlue,
               enabled: hasTitle,
-              onPressed: () {
+              onPressed: () => _showAIFeature(() {
                 showTaskBreakdownDialog(
                   context,
                   taskTitle: _titleController.text.trim(),
@@ -570,7 +571,7 @@ class _TaskEditPageState extends State<TaskEditPage> {
                       : _descriptionController.text.trim(),
                   parentTaskId: widget.task?.id,
                 );
-              },
+              }),
             ),
             // Time Estimate
             _AIFeatureButton(
@@ -578,7 +579,7 @@ class _TaskEditPageState extends State<TaskEditPage> {
               label: 'Estimate Time',
               accentColor: AltairColors.accentGreen,
               enabled: hasTitle,
-              onPressed: () {
+              onPressed: () => _showAIFeature(() {
                 showTimeEstimateDialog(
                   context,
                   taskTitle: _titleController.text.trim(),
@@ -586,7 +587,7 @@ class _TaskEditPageState extends State<TaskEditPage> {
                       ? null
                       : _descriptionController.text.trim(),
                 );
-              },
+              }),
             ),
             // Context Suggestions
             _AIFeatureButton(
@@ -594,7 +595,7 @@ class _TaskEditPageState extends State<TaskEditPage> {
               label: 'Get Suggestions',
               accentColor: AltairColors.accentYellow,
               enabled: hasTitle,
-              onPressed: () {
+              onPressed: () => _showAIFeature(() {
                 showContextSuggestionsDialog(
                   context,
                   taskTitle: _titleController.text.trim(),
@@ -602,7 +603,7 @@ class _TaskEditPageState extends State<TaskEditPage> {
                       ? null
                       : _descriptionController.text.trim(),
                 );
-              },
+              }),
             ),
           ],
         ),
@@ -618,6 +619,21 @@ class _TaskEditPageState extends State<TaskEditPage> {
         ],
       ],
     );
+  }
+
+  Future<void> _showAIFeature(VoidCallback showDialog) async {
+    if (!mounted) return;
+
+    try {
+      final hasConsent = await showAIConsentDialog(context);
+      if (!hasConsent || !mounted) return;
+
+      showDialog();
+    } catch (e) {
+      if (mounted) {
+        _showError('Failed to show AI feature: $e');
+      }
+    }
   }
 
   void _showAddTagDialog() {

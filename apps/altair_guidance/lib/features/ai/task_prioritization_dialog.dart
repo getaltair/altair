@@ -19,7 +19,7 @@ void showTaskPrioritizationDialog(
 }) {
   showDialog<void>(
     context: context,
-    barrierDismissible: false,
+    barrierDismissible: true,
     builder: (context) => TaskPrioritizationDialog(
       tasks: tasks,
       projectContext: projectContext,
@@ -52,21 +52,29 @@ class _TaskPrioritizationDialogState extends State<TaskPrioritizationDialog> {
   void initState() {
     super.initState();
     // Trigger prioritization request when dialog opens
-    final tasksData = widget.tasks
-        .map((task) => {
-              'title': task.title,
-              if (task.description != null) 'description': task.description!,
-            })
-        .toList();
+    try {
+      final tasksData = widget.tasks
+          .map((task) => {
+                'title': task.title,
+                if (task.description != null) 'description': task.description!,
+              })
+          .toList();
 
-    context.read<AIBloc>().add(
-          AITaskPrioritizationRequested(
-            request: TaskPrioritizationRequest(
-              tasks: tasksData,
-              context: widget.projectContext,
+      if (tasksData.isEmpty) {
+        return;
+      }
+
+      context.read<AIBloc>().add(
+            AITaskPrioritizationRequested(
+              request: TaskPrioritizationRequest(
+                tasks: tasksData,
+                context: widget.projectContext,
+              ),
             ),
-          ),
-        );
+          );
+    } catch (e) {
+      // Error will be handled by BlocConsumer listener
+    }
   }
 
   @override
@@ -96,6 +104,7 @@ class _TaskPrioritizationDialogState extends State<TaskPrioritizationDialog> {
                     ),
                     IconButton(
                       icon: const Icon(Icons.close),
+                      tooltip: 'Close dialog',
                       onPressed: () => Navigator.of(context).pop(),
                     ),
                   ],
@@ -164,14 +173,17 @@ class _TaskPrioritizationDialogState extends State<TaskPrioritizationDialog> {
   }
 
   Widget _buildLoadingState() {
-    return const Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          CircularProgressIndicator(),
-          SizedBox(height: AltairSpacing.md),
-          Text('AI is analyzing task priorities...'),
-        ],
+    return Center(
+      child: Semantics(
+        label: 'Loading task prioritization from AI',
+        child: const Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: AltairSpacing.md),
+            Text('AI is analyzing task priorities...'),
+          ],
+        ),
       ),
     );
   }

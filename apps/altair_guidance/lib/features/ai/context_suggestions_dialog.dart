@@ -20,7 +20,7 @@ void showContextSuggestionsDialog(
 }) {
   showDialog<void>(
     context: context,
-    barrierDismissible: false,
+    barrierDismissible: true,
     builder: (context) => ContextSuggestionsDialog(
       taskTitle: taskTitle,
       taskDescription: taskDescription,
@@ -69,16 +69,24 @@ class _ContextSuggestionsDialogState extends State<ContextSuggestionsDialog> {
   }
 
   void _requestSuggestions(String suggestionType) {
-    context.read<AIBloc>().add(
-          AIContextSuggestionsRequested(
-            request: ContextSuggestionRequest(
-              taskTitle: widget.taskTitle,
-              taskDescription: widget.taskDescription,
-              projectContext: widget.projectContext,
-              suggestionType: suggestionType,
+    try {
+      if (widget.taskTitle.trim().isEmpty) {
+        return;
+      }
+
+      context.read<AIBloc>().add(
+            AIContextSuggestionsRequested(
+              request: ContextSuggestionRequest(
+                taskTitle: widget.taskTitle,
+                taskDescription: widget.taskDescription,
+                projectContext: widget.projectContext,
+                suggestionType: suggestionType,
+              ),
             ),
-          ),
-        );
+          );
+    } catch (e) {
+      // Error will be handled by BlocConsumer listener
+    }
   }
 
   @override
@@ -108,6 +116,7 @@ class _ContextSuggestionsDialogState extends State<ContextSuggestionsDialog> {
                     ),
                     IconButton(
                       icon: const Icon(Icons.close),
+                      tooltip: 'Close dialog',
                       onPressed: () => Navigator.of(context).pop(),
                     ),
                   ],
@@ -188,14 +197,17 @@ class _ContextSuggestionsDialogState extends State<ContextSuggestionsDialog> {
   }
 
   Widget _buildLoadingState() {
-    return const Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          CircularProgressIndicator(),
-          SizedBox(height: AltairSpacing.md),
-          Text('AI is generating suggestions...'),
-        ],
+    return Center(
+      child: Semantics(
+        label: 'Loading context suggestions from AI',
+        child: const Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: AltairSpacing.md),
+            Text('AI is generating suggestions...'),
+          ],
+        ),
       ),
     );
   }

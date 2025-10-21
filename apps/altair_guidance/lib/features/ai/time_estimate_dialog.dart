@@ -20,7 +20,7 @@ void showTimeEstimateDialog(
 }) {
   showDialog<void>(
     context: context,
-    barrierDismissible: false,
+    barrierDismissible: true,
     builder: (context) => TimeEstimateDialog(
       taskTitle: taskTitle,
       taskDescription: taskDescription,
@@ -62,16 +62,24 @@ class _TimeEstimateDialogState extends State<TimeEstimateDialog> {
   void initState() {
     super.initState();
     // Trigger estimate request when dialog opens
-    context.read<AIBloc>().add(
-          AITimeEstimateRequested(
-            request: TimeEstimateRequest(
-              taskTitle: widget.taskTitle,
-              taskDescription: widget.taskDescription,
-              subtasks: widget.subtasks,
-              skillLevel: widget.skillLevel,
+    try {
+      if (widget.taskTitle.trim().isEmpty) {
+        return;
+      }
+
+      context.read<AIBloc>().add(
+            AITimeEstimateRequested(
+              request: TimeEstimateRequest(
+                taskTitle: widget.taskTitle,
+                taskDescription: widget.taskDescription,
+                subtasks: widget.subtasks,
+                skillLevel: widget.skillLevel,
+              ),
             ),
-          ),
-        );
+          );
+    } catch (e) {
+      // Error will be handled by BlocConsumer listener
+    }
   }
 
   @override
@@ -101,6 +109,7 @@ class _TimeEstimateDialogState extends State<TimeEstimateDialog> {
                     ),
                     IconButton(
                       icon: const Icon(Icons.close),
+                      tooltip: 'Close dialog',
                       onPressed: () => Navigator.of(context).pop(),
                     ),
                   ],
@@ -166,14 +175,17 @@ class _TimeEstimateDialogState extends State<TimeEstimateDialog> {
   }
 
   Widget _buildLoadingState() {
-    return const Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          CircularProgressIndicator(),
-          SizedBox(height: AltairSpacing.md),
-          Text('AI is calculating time estimate...'),
-        ],
+    return Center(
+      child: Semantics(
+        label: 'Loading time estimate from AI',
+        child: const Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: AltairSpacing.md),
+            Text('AI is calculating time estimate...'),
+          ],
+        ),
       ),
     );
   }
