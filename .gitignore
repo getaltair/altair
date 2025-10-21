@@ -86,12 +86,22 @@
 # ===================================
 # Build artifacts
 # ===================================
-**/linux/
-**/windows/
-**/macos/
+# Flutter app platform directories must be kept!
+# Only ignore platform build outputs
+**/linux/flutter/ephemeral/
+**/windows/flutter/ephemeral/
+**/macos/Flutter/ephemeral/
 **/android/app/build/
 **/ios/build/
 **/web/build/
+
+# But ignore platform directories in other locations (e.g., packages)
+packages/**/linux/
+packages/**/windows/
+packages/**/macos/
+services/**/linux/
+services/**/windows/
+services/**/macos/
 
 # ===================================
 # Logs

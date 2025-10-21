@@ -70,8 +70,15 @@ build_linux() {
                 exit 1
             fi
 
-            cd packaging/aur
-            makepkg -f
+            # For local testing, create a source tarball
+            print_message "$YELLOW" "Creating source tarball for local build..."
+            cd "$APP_DIR"
+            git archive --format=tar.gz --prefix="altair-$VERSION/" -o "apps/altair_guidance/packaging/aur/altair-guidance-$VERSION.tar.gz" HEAD
+
+            cd "$GUIDANCE_DIR/packaging/aur"
+            # Use -d to skip dependency checks for local testing
+            # (assumes Flutter is already installed manually)
+            makepkg -df
             print_message "$GREEN" "\n✅ AUR package built successfully!"
             ;;
 
