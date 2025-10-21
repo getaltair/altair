@@ -1,0 +1,32 @@
+# CodeQL Configuration
+# Excludes Flutter platform boilerplate code from analysis
+
+name: "CodeQL Config"
+
+paths-ignore:
+  # Flutter platform directories (mostly boilerplate)
+  - 'apps/**/android/**'
+  - 'apps/**/ios/**'
+  - 'apps/**/linux/**'
+  - 'apps/**/macos/**'
+  - 'apps/**/windows/**'
+  - 'apps/**/web/**'
+
+  # Flutter build outputs
+  - 'apps/**/build/**'
+  - 'apps/**/.dart_tool/**'
+
+  # Test files (analyzed separately)
+  - 'apps/**/test/**'
+  - 'apps/**/test_driver/**'
+
+  # Generated files
+  - 'apps/**/*.g.dart'
+  - 'apps/**/*.freezed.dart'
+  - 'apps/**/*.mocks.dart'
+
+# Only analyze application code, not platform boilerplate
+paths:
+  - 'apps/**/lib/**'
+  - 'services/**'
+  - 'packages/**/lib/**'
