@@ -150,3 +150,5 @@ packaging/macos/*.dmg
 # Windows installer artifacts
 packaging/windows/Output/
 packaging/windows/*.exe
+
+.neoconf.json

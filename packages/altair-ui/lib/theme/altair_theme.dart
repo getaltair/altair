@@ -22,16 +22,16 @@ class AltairTheme {
 
       // Color scheme
       colorScheme: const ColorScheme.light(
-        primary: AltairColors.accentYellow,
+        primary: AltairColors.accentOrange,
         secondary: AltairColors.accentBlue,
         tertiary: AltairColors.accentGreen,
         error: AltairColors.error,
         surface: AltairColors.lightBgSecondary,
-        onPrimary: AltairColors.lightTextPrimary,
+        onPrimary: Colors.white,
         onSecondary: AltairColors.lightTextPrimary,
         onTertiary: AltairColors.lightTextPrimary,
         onSurface: AltairColors.lightTextPrimary,
-        onError: AltairColors.lightBgSecondary,
+        onError: Colors.white,
         outline: AltairColors.lightBorderColor,
       ),
 
@@ -79,10 +79,9 @@ class AltairTheme {
       cardTheme: const CardThemeData(
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.zero,
           side: BorderSide(
             color: AltairColors.lightBorderColor,
-            width: AltairBorders.standard,
+            width: 1.0,
           ),
         ),
         color: AltairColors.lightBgSecondary,
@@ -95,12 +94,10 @@ class AltairTheme {
           backgroundColor: AltairColors.lightTextPrimary,
           foregroundColor: AltairColors.lightBgSecondary,
           elevation: 0,
-          shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.zero,
-          ),
+          shape: const RoundedRectangleBorder(),
           side: const BorderSide(
             color: AltairColors.lightBorderColor,
-            width: AltairBorders.standard,
+            width: 1.0,
           ),
           padding: const EdgeInsets.symmetric(
             horizontal: AltairSpacing.md,
@@ -114,12 +111,10 @@ class AltairTheme {
         style: OutlinedButton.styleFrom(
           foregroundColor: AltairColors.lightTextPrimary,
           elevation: 0,
-          shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.zero,
-          ),
+          shape: const RoundedRectangleBorder(),
           side: const BorderSide(
             color: AltairColors.lightBorderColor,
-            width: AltairBorders.standard,
+            width: 1.0,
           ),
           padding: const EdgeInsets.symmetric(
             horizontal: AltairSpacing.md,
@@ -130,38 +125,34 @@ class AltairTheme {
       ),
 
       // Input decoration theme
-      inputDecorationTheme: InputDecorationTheme(
+      inputDecorationTheme: const InputDecorationTheme(
         filled: true,
         fillColor: AltairColors.lightBgSecondary,
-        border: const OutlineInputBorder(
-          borderRadius: BorderRadius.zero,
+        border: OutlineInputBorder(
           borderSide: BorderSide(
             color: AltairColors.lightBorderColor,
-            width: AltairBorders.thin,
+            width: 1.0,
           ),
         ),
-        enabledBorder: const OutlineInputBorder(
-          borderRadius: BorderRadius.zero,
+        enabledBorder: OutlineInputBorder(
           borderSide: BorderSide(
             color: AltairColors.lightBorderColor,
-            width: AltairBorders.thin,
+            width: 1.0,
           ),
         ),
-        focusedBorder: const OutlineInputBorder(
-          borderRadius: BorderRadius.zero,
+        focusedBorder: OutlineInputBorder(
           borderSide: BorderSide(
-            color: AltairColors.lightBorderColor,
-            width: AltairBorders.standard,
+            color: AltairColors.accentOrange,
+            width: 2.0,
           ),
         ),
-        errorBorder: const OutlineInputBorder(
-          borderRadius: BorderRadius.zero,
+        errorBorder: OutlineInputBorder(
           borderSide: BorderSide(
             color: AltairColors.error,
-            width: AltairBorders.thin,
+            width: 1.0,
           ),
         ),
-        contentPadding: const EdgeInsets.symmetric(
+        contentPadding: EdgeInsets.symmetric(
           horizontal: AltairSpacing.md,
           vertical: AltairSpacing.sm,
         ),
@@ -170,6 +161,7 @@ class AltairTheme {
       // App bar theme
       appBarTheme: AppBarTheme(
         backgroundColor: AltairColors.lightBgSecondary,
+        surfaceTintColor: Colors.transparent,
         foregroundColor: AltairColors.lightTextPrimary,
         elevation: 0,
         centerTitle: false,
@@ -179,7 +171,7 @@ class AltairTheme {
         shape: const Border(
           bottom: BorderSide(
             color: AltairColors.lightBorderColor,
-            width: AltairBorders.standard,
+            width: 1.0,
           ),
         ),
       ),
@@ -203,16 +195,16 @@ class AltairTheme {
 
       // Color scheme
       colorScheme: const ColorScheme.dark(
-        primary: AltairColors.accentYellow,
+        primary: AltairColors.accentOrange,
         secondary: AltairColors.accentBlue,
         tertiary: AltairColors.accentGreen,
         error: AltairColors.error,
         surface: AltairColors.darkBgSecondary,
-        onPrimary: AltairColors.darkTextPrimary,
+        onPrimary: Colors.white,
         onSecondary: AltairColors.darkTextPrimary,
         onTertiary: AltairColors.darkTextPrimary,
         onSurface: AltairColors.darkTextPrimary,
-        onError: AltairColors.darkBgSecondary,
+        onError: Colors.white,
         outline: AltairColors.darkBorderColor,
       ),
 
@@ -260,10 +252,9 @@ class AltairTheme {
       cardTheme: const CardThemeData(
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.zero,
           side: BorderSide(
             color: AltairColors.darkBorderColor,
-            width: AltairBorders.standard,
+            width: 1.0,
           ),
         ),
         color: AltairColors.darkBgSecondary,
@@ -276,12 +267,10 @@ class AltairTheme {
           backgroundColor: AltairColors.darkTextPrimary,
           foregroundColor: AltairColors.darkBgSecondary,
           elevation: 0,
-          shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.zero,
-          ),
+          shape: const RoundedRectangleBorder(),
           side: const BorderSide(
             color: AltairColors.darkBorderColor,
-            width: AltairBorders.standard,
+            width: 1.0,
           ),
           padding: const EdgeInsets.symmetric(
             horizontal: AltairSpacing.md,
@@ -295,12 +284,10 @@ class AltairTheme {
         style: OutlinedButton.styleFrom(
           foregroundColor: AltairColors.darkTextPrimary,
           elevation: 0,
-          shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.zero,
-          ),
+          shape: const RoundedRectangleBorder(),
           side: const BorderSide(
             color: AltairColors.darkBorderColor,
-            width: AltairBorders.standard,
+            width: 1.0,
           ),
           padding: const EdgeInsets.symmetric(
             horizontal: AltairSpacing.md,
@@ -311,38 +298,34 @@ class AltairTheme {
       ),
 
       // Input decoration theme
-      inputDecorationTheme: InputDecorationTheme(
+      inputDecorationTheme: const InputDecorationTheme(
         filled: true,
         fillColor: AltairColors.darkBgSecondary,
-        border: const OutlineInputBorder(
-          borderRadius: BorderRadius.zero,
+        border: OutlineInputBorder(
           borderSide: BorderSide(
             color: AltairColors.darkBorderColor,
-            width: AltairBorders.thin,
+            width: 1.0,
           ),
         ),
-        enabledBorder: const OutlineInputBorder(
-          borderRadius: BorderRadius.zero,
+        enabledBorder: OutlineInputBorder(
           borderSide: BorderSide(
             color: AltairColors.darkBorderColor,
-            width: AltairBorders.thin,
+            width: 1.0,
           ),
         ),
-        focusedBorder: const OutlineInputBorder(
-          borderRadius: BorderRadius.zero,
+        focusedBorder: OutlineInputBorder(
           borderSide: BorderSide(
-            color: AltairColors.darkBorderColor,
-            width: AltairBorders.standard,
+            color: AltairColors.accentOrange,
+            width: 2.0,
           ),
         ),
-        errorBorder: const OutlineInputBorder(
-          borderRadius: BorderRadius.zero,
+        errorBorder: OutlineInputBorder(
           borderSide: BorderSide(
             color: AltairColors.error,
-            width: AltairBorders.thin,
+            width: 1.0,
           ),
         ),
-        contentPadding: const EdgeInsets.symmetric(
+        contentPadding: EdgeInsets.symmetric(
           horizontal: AltairSpacing.md,
           vertical: AltairSpacing.sm,
         ),
@@ -351,6 +334,7 @@ class AltairTheme {
       // App bar theme
       appBarTheme: AppBarTheme(
         backgroundColor: AltairColors.darkBgSecondary,
+        surfaceTintColor: Colors.transparent,
         foregroundColor: AltairColors.darkTextPrimary,
         elevation: 0,
         centerTitle: false,
@@ -360,7 +344,7 @@ class AltairTheme {
         shape: const Border(
           bottom: BorderSide(
             color: AltairColors.darkBorderColor,
-            width: AltairBorders.standard,
+            width: 1.0,
           ),
         ),
       ),

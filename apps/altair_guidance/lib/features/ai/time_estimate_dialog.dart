@@ -225,7 +225,7 @@ class _TimeEstimateDialogState extends State<TimeEstimateDialog> {
                   _EstimateRow(
                     label: 'Realistic (Most Likely)',
                     minutes: response.estimate.realisticMinutes,
-                    color: AltairColors.accentYellow,
+                    color: AltairColors.accentOrange,
                     isHighlighted: true,
                   ),
                   const SizedBox(height: AltairSpacing.sm),

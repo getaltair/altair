@@ -35,7 +35,7 @@ class _ProjectEditPageState extends State<ProjectEditPage> {
 
   // Predefined project colors
   static const List<Color> projectColors = [
-    AltairColors.accentYellow,
+    AltairColors.accentOrange,
     AltairColors.accentBlue,
     AltairColors.accentGreen,
     Color(0xFFFF6B6B), // Red
@@ -539,7 +539,7 @@ class _ProjectEditPageState extends State<ProjectEditPage> {
   Color _getStatusColor(ProjectStatus status) {
     return switch (status) {
       ProjectStatus.active => AltairColors.accentGreen,
-      ProjectStatus.onHold => AltairColors.accentYellow,
+      ProjectStatus.onHold => AltairColors.accentOrange,
       ProjectStatus.completed => AltairColors.accentBlue,
       ProjectStatus.cancelled => AltairColors.textSecondary,
     };

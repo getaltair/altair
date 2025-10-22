@@ -196,9 +196,9 @@ class _TaskBreakdownDialogState extends State<TaskBreakdownDialog> {
             Container(
               padding: const EdgeInsets.all(AltairSpacing.sm),
               decoration: BoxDecoration(
-                color: AltairColors.accentYellow.withValues(alpha: 0.1),
+                color: AltairColors.accentOrange.withValues(alpha: 0.1),
                 border: Border.all(
-                  color: AltairColors.accentYellow,
+                  color: AltairColors.accentOrange,
                   width: AltairBorders.medium,
                 ),
               ),

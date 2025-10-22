@@ -195,7 +195,7 @@ class ProjectsPage extends StatelessWidget {
                 width: 24,
                 height: 24,
                 decoration: BoxDecoration(
-                  color: AltairColors.accentYellow,
+                  color: AltairColors.accentOrange,
                   border: Border.all(color: Colors.black, width: 2),
                   borderRadius: BorderRadius.circular(4),
                 ),
@@ -425,7 +425,7 @@ class _ProjectListItem extends StatelessWidget {
   Color _getStatusColor(ProjectStatus status) {
     return switch (status) {
       ProjectStatus.active => AltairColors.accentGreen,
-      ProjectStatus.onHold => AltairColors.accentYellow,
+      ProjectStatus.onHold => AltairColors.accentOrange,
       ProjectStatus.completed => AltairColors.accentBlue,
       ProjectStatus.cancelled => AltairColors.textSecondary,
     };

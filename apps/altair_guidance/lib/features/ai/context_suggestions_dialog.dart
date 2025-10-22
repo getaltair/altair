@@ -224,7 +224,7 @@ class _ContextSuggestionsDialogState extends State<ContextSuggestionsDialog> {
           // Summary (if available)
           if (response.summary != null) ...[
             AltairCard(
-              accentColor: AltairColors.accentYellow,
+              accentColor: AltairColors.accentOrange,
               showAccentBar: true,
               child: Padding(
                 padding: const EdgeInsets.all(AltairSpacing.md),
@@ -375,7 +375,7 @@ class _ContextSuggestionsDialogState extends State<ContextSuggestionsDialog> {
       'tip' => AltairColors.accentGreen,
       'blocker' => AltairColors.error,
       'warning' => Colors.orange,
-      _ => AltairColors.accentYellow,
+      _ => AltairColors.accentOrange,
     };
   }
 }
@@ -413,7 +413,7 @@ class _SuggestionTypeSelector extends StatelessWidget {
             }
           },
           backgroundColor: Colors.white,
-          selectedColor: AltairColors.accentYellow,
+          selectedColor: AltairColors.accentOrange,
           side: BorderSide(
             color: Colors.black,
             width: AltairBorders.medium,
@@ -485,7 +485,7 @@ class _CategoryBadge extends StatelessWidget {
       'tip' => AltairColors.accentGreen,
       'blocker' => AltairColors.error,
       'warning' => Colors.orange,
-      _ => AltairColors.accentYellow,
+      _ => AltairColors.accentOrange,
     };
   }
 }
@@ -517,7 +517,7 @@ class _PriorityIndicator extends StatelessWidget {
     return switch (priority) {
       PriorityLevel.critical => AltairColors.error,
       PriorityLevel.high => Colors.orange,
-      PriorityLevel.medium => AltairColors.accentYellow,
+      PriorityLevel.medium => AltairColors.accentOrange,
       PriorityLevel.low => AltairColors.accentGreen,
     };
   }
