@@ -32,10 +32,13 @@ class ProjectsPage extends StatelessWidget {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
+          // Capture bloc from current context before navigation
+          final projectBloc = context.read<ProjectBloc>();
+
           Navigator.of(context).push(
             MaterialPageRoute<void>(
               builder: (context) => BlocProvider.value(
-                value: context.read<ProjectBloc>(),
+                value: projectBloc,
                 child: const ProjectEditPage(),
               ),
             ),
@@ -141,6 +144,9 @@ class ProjectsPage extends StatelessWidget {
   }
 
   void _showFilterMenu(BuildContext context) {
+    // Capture bloc from current context before showing bottom sheet
+    final projectBloc = context.read<ProjectBloc>();
+
     showModalBottomSheet<void>(
       context: context,
       builder: (context) => Container(
@@ -160,9 +166,7 @@ class ProjectsPage extends StatelessWidget {
               leading: const Icon(Icons.all_inclusive),
               title: const Text('All Projects'),
               onTap: () {
-                context
-                    .read<ProjectBloc>()
-                    .add(const ProjectClearFiltersRequested());
+                projectBloc.add(const ProjectClearFiltersRequested());
                 Navigator.pop(context);
               },
             ),
@@ -178,11 +182,11 @@ class ProjectsPage extends StatelessWidget {
               ),
               title: const Text('Active'),
               onTap: () {
-                context.read<ProjectBloc>().add(
-                      const ProjectFilterByStatusRequested(
-                        status: ProjectStatus.active,
-                      ),
-                    );
+                projectBloc.add(
+                  const ProjectFilterByStatusRequested(
+                    status: ProjectStatus.active,
+                  ),
+                );
                 Navigator.pop(context);
               },
             ),
@@ -198,11 +202,11 @@ class ProjectsPage extends StatelessWidget {
               ),
               title: const Text('On Hold'),
               onTap: () {
-                context.read<ProjectBloc>().add(
-                      const ProjectFilterByStatusRequested(
-                        status: ProjectStatus.onHold,
-                      ),
-                    );
+                projectBloc.add(
+                  const ProjectFilterByStatusRequested(
+                    status: ProjectStatus.onHold,
+                  ),
+                );
                 Navigator.pop(context);
               },
             ),
@@ -218,11 +222,11 @@ class ProjectsPage extends StatelessWidget {
               ),
               title: const Text('Completed'),
               onTap: () {
-                context.read<ProjectBloc>().add(
-                      const ProjectFilterByStatusRequested(
-                        status: ProjectStatus.completed,
-                      ),
-                    );
+                projectBloc.add(
+                  const ProjectFilterByStatusRequested(
+                    status: ProjectStatus.completed,
+                  ),
+                );
                 Navigator.pop(context);
               },
             ),
@@ -238,11 +242,11 @@ class ProjectsPage extends StatelessWidget {
               ),
               title: const Text('Cancelled'),
               onTap: () {
-                context.read<ProjectBloc>().add(
-                      const ProjectFilterByStatusRequested(
-                        status: ProjectStatus.cancelled,
-                      ),
-                    );
+                projectBloc.add(
+                  const ProjectFilterByStatusRequested(
+                    status: ProjectStatus.cancelled,
+                  ),
+                );
                 Navigator.pop(context);
               },
             ),
@@ -263,10 +267,13 @@ class _ProjectListItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: () {
+        // Capture bloc from current context before navigation
+        final projectBloc = context.read<ProjectBloc>();
+
         Navigator.of(context).push(
           MaterialPageRoute<void>(
             builder: (context) => BlocProvider.value(
-              value: context.read<ProjectBloc>(),
+              value: projectBloc,
               child: ProjectEditPage(project: project),
             ),
           ),
@@ -376,6 +383,9 @@ class _ProjectListItem extends StatelessWidget {
   }
 
   void _showDeleteConfirmation(BuildContext context) {
+    // Capture bloc from current context before showing dialog
+    final projectBloc = context.read<ProjectBloc>();
+
     showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
@@ -390,9 +400,9 @@ class _ProjectListItem extends StatelessWidget {
           ),
           AltairButton(
             onPressed: () {
-              context.read<ProjectBloc>().add(
-                    ProjectDeleteRequested(projectId: project.id),
-                  );
+              projectBloc.add(
+                ProjectDeleteRequested(projectId: project.id),
+              );
               Navigator.of(context).pop();
             },
             variant: AltairButtonVariant.filled,

@@ -130,3 +130,23 @@ services/**/macos/
 # Claude Code
 # ===================================
 CLAUDE.md
+
+# ===================================
+# Packaging / Distribution Build Artifacts
+# ===================================
+# AUR package build artifacts
+packaging/aur/src/
+packaging/aur/pkg/
+packaging/aur/*.pkg.tar.zst
+packaging/aur/*.tar.gz
+
+# AppImage build artifacts
+*.AppImage
+packaging/appimage/build/
+
+# DMG build artifacts
+packaging/macos/*.dmg
+
+# Windows installer artifacts
+packaging/windows/Output/
+packaging/windows/*.exe
