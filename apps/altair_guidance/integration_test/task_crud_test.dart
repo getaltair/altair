@@ -30,7 +30,10 @@ void main() {
       expect(find.text('New Task'), findsOneWidget);
 
       // Enter only a title
-      final titleField = find.widgetWithText(TextField, 'What needs to be done?');
+      final titleField = find.widgetWithText(
+        TextField,
+        'What needs to be done?',
+      );
       expect(titleField, findsOneWidget);
       await tester.enterText(titleField, 'Buy groceries');
       await tester.pumpAndSettle();
@@ -56,13 +59,22 @@ void main() {
       await tester.pumpAndSettle();
 
       // Fill title
-      final titleField = find.widgetWithText(TextField, 'What needs to be done?');
+      final titleField = find.widgetWithText(
+        TextField,
+        'What needs to be done?',
+      );
       await tester.enterText(titleField, 'Complete integration tests');
       await tester.pumpAndSettle();
 
       // Fill description
-      final descriptionField = find.widgetWithText(TextField, 'Add more details...');
-      await tester.enterText(descriptionField, 'Add comprehensive CRUD tests for task management');
+      final descriptionField = find.widgetWithText(
+        TextField,
+        'Add more details...',
+      );
+      await tester.enterText(
+        descriptionField,
+        'Add comprehensive CRUD tests for task management',
+      );
       await tester.pumpAndSettle();
 
       // Set estimated time
@@ -88,7 +100,10 @@ void main() {
       // Create first task
       await tester.tap(find.byType(FloatingActionButton));
       await tester.pumpAndSettle();
-      final titleField1 = find.widgetWithText(TextField, 'What needs to be done?');
+      final titleField1 = find.widgetWithText(
+        TextField,
+        'What needs to be done?',
+      );
       await tester.enterText(titleField1, 'Task 1');
       await tester.pumpAndSettle();
       await tester.tap(find.text('Save'));
@@ -97,7 +112,10 @@ void main() {
       // Create second task
       await tester.tap(find.byType(FloatingActionButton));
       await tester.pumpAndSettle();
-      final titleField2 = find.widgetWithText(TextField, 'What needs to be done?');
+      final titleField2 = find.widgetWithText(
+        TextField,
+        'What needs to be done?',
+      );
       await tester.enterText(titleField2, 'Task 2');
       await tester.pumpAndSettle();
       await tester.tap(find.text('Save'));
@@ -142,7 +160,10 @@ void main() {
       expect(find.text('Edit Task'), findsOneWidget);
 
       // Clear and update title
-      final titleField = find.widgetWithText(TextField, 'What needs to be done?');
+      final titleField = find.widgetWithText(
+        TextField,
+        'What needs to be done?',
+      );
       await tester.enterText(titleField, '');
       await tester.pumpAndSettle();
       await tester.enterText(titleField, updatedTitle);
@@ -260,7 +281,9 @@ void main() {
       expect(find.text(taskName), findsNothing);
     });
 
-    testWidgets('Delete task when multiple exist - verify only one deleted', (tester) async {
+    testWidgets('Delete task when multiple exist - verify only one deleted', (
+      tester,
+    ) async {
       app.main();
       await tester.pumpAndSettle();
 
@@ -347,7 +370,12 @@ void main() {
 
       // Should show discard changes dialog
       expect(find.text('Discard changes?'), findsOneWidget);
-      expect(find.text('You have unsaved changes. Are you sure you want to discard them?'), findsOneWidget);
+      expect(
+        find.text(
+          'You have unsaved changes. Are you sure you want to discard them?',
+        ),
+        findsOneWidget,
+      );
 
       // Cancel the discard
       await tester.tap(find.text('Cancel'));
@@ -368,7 +396,9 @@ void main() {
       expect(find.text('Unsaved task'), findsNothing); // Task not saved
     });
 
-    testWidgets('Create multiple tasks and verify list updates', (tester) async {
+    testWidgets('Create multiple tasks and verify list updates', (
+      tester,
+    ) async {
       app.main();
       await tester.pumpAndSettle();
 
@@ -399,7 +429,10 @@ void main() {
       }
 
       // Verify at least the number of tasks we created exist
-      expect(find.byIcon(Icons.delete_outline), findsAtLeastNWidgets(taskTitles.length));
+      expect(
+        find.byIcon(Icons.delete_outline),
+        findsAtLeastNWidgets(taskTitles.length),
+      );
     });
 
     testWidgets('Quick capture task from main page', (tester) async {
@@ -407,7 +440,10 @@ void main() {
       await tester.pumpAndSettle();
 
       // Find quick capture field
-      final quickCaptureField = find.widgetWithText(TextField, 'Quick capture (Ctrl/Cmd + K)...');
+      final quickCaptureField = find.widgetWithText(
+        TextField,
+        'Quick capture (Ctrl/Cmd + K)...',
+      );
       expect(quickCaptureField, findsOneWidget);
 
       // Enter task via quick capture

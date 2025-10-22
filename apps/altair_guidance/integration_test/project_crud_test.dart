@@ -13,7 +13,9 @@ void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   group('Project CRUD Operations', () {
-    testWidgets('Create project with minimal fields (name only)', (tester) async {
+    testWidgets('Create project with minimal fields (name only)', (
+      tester,
+    ) async {
       app.main();
       await tester.pumpAndSettle();
 
@@ -67,7 +69,10 @@ void main() {
 
       // Fill description (second TextField if exists)
       if (textFields.evaluate().length > 1) {
-        await tester.enterText(textFields.at(1), 'A comprehensive project with all details');
+        await tester.enterText(
+          textFields.at(1),
+          'A comprehensive project with all details',
+        );
         await tester.pumpAndSettle();
       }
 
@@ -159,7 +164,10 @@ void main() {
       // Create a project
       await tester.tap(find.byType(FloatingActionButton));
       await tester.pumpAndSettle();
-      await tester.enterText(find.byType(TextField).first, 'Status Test Project');
+      await tester.enterText(
+        find.byType(TextField).first,
+        'Status Test Project',
+      );
       await tester.pumpAndSettle();
       await tester.tap(find.text('Save'));
       await tester.pumpAndSettle();
@@ -195,7 +203,8 @@ void main() {
       await tester.pumpAndSettle();
 
       // Use unique project name to avoid collisions
-      final projectName = 'DeleteProject_${DateTime.now().millisecondsSinceEpoch}';
+      final projectName =
+          'DeleteProject_${DateTime.now().millisecondsSinceEpoch}';
 
       // Navigate to Projects
       await tester.tap(find.byIcon(Icons.menu));

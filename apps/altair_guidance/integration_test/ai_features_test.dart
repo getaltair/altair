@@ -29,7 +29,9 @@ void main() {
       // These tests will check if UI elements are present
     });
 
-    testWidgets('Task breakdown button is visible when AI available', (tester) async {
+    testWidgets('Task breakdown button is visible when AI available', (
+      tester,
+    ) async {
       app.main();
       await tester.pumpAndSettle();
 
@@ -46,7 +48,9 @@ void main() {
       expect(find.text('Create Task'), findsWidgets);
     });
 
-    testWidgets('Time estimate button appears on task edit page', (tester) async {
+    testWidgets('Time estimate button appears on task edit page', (
+      tester,
+    ) async {
       app.main();
       await tester.pumpAndSettle();
 
@@ -84,7 +88,9 @@ void main() {
       expect(find.text('Create Task'), findsWidgets);
     });
 
-    testWidgets('Task creation with AI features disabled works', (tester) async {
+    testWidgets('Task creation with AI features disabled works', (
+      tester,
+    ) async {
       app.main();
       await tester.pumpAndSettle();
 

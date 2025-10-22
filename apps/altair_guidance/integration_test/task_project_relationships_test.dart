@@ -102,7 +102,10 @@ void main() {
 
       await tester.tap(find.byType(FloatingActionButton));
       await tester.pumpAndSettle();
-      await tester.enterText(find.byType(TextField).first, 'Assignment Project');
+      await tester.enterText(
+        find.byType(TextField).first,
+        'Assignment Project',
+      );
       await tester.pumpAndSettle();
       await tester.tap(find.text('Save'));
       await tester.pumpAndSettle();
@@ -356,7 +359,9 @@ void main() {
       expect(find.text('Task for Project B'), findsOneWidget);
     });
 
-    testWidgets('Project dropdown shows all available projects', (tester) async {
+    testWidgets('Project dropdown shows all available projects', (
+      tester,
+    ) async {
       app.main();
       await tester.pumpAndSettle();
 

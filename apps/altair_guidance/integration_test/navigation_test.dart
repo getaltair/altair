@@ -106,7 +106,9 @@ void main() {
       expect(find.byType(FloatingActionButton), findsOneWidget);
     });
 
-    testWidgets('Navigate between Tasks and Projects multiple times', (tester) async {
+    testWidgets('Navigate between Tasks and Projects multiple times', (
+      tester,
+    ) async {
       app.main();
       await tester.pumpAndSettle();
 
