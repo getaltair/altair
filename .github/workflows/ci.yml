@@ -88,7 +88,7 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.30.0'
+          flutter-version: '3.35.6'
           channel: 'stable'
 
       - name: Install dependencies (altair-core)
@@ -141,7 +141,7 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.30.0'
+          flutter-version: '3.35.6'
           channel: 'stable'
 
       - name: Test altair-core
