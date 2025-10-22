@@ -495,12 +495,16 @@ class _TaskListItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: () {
+        // Capture blocs from current context before navigation
+        final taskBloc = context.read<TaskBloc>();
+        final projectBloc = context.read<ProjectBloc>();
+
         Navigator.of(context).push(
           MaterialPageRoute<void>(
             builder: (context) => MultiBlocProvider(
               providers: [
-                BlocProvider.value(value: context.read<TaskBloc>()),
-                BlocProvider.value(value: context.read<ProjectBloc>()),
+                BlocProvider.value(value: taskBloc),
+                BlocProvider.value(value: projectBloc),
               ],
               child: TaskEditPage(task: task),
             ),
