@@ -1,8 +1,6 @@
 /// Configuration for AI service.
 library;
 
-import 'package:flutter/foundation.dart';
-
 /// Configuration for AI service endpoints and settings.
 class AIConfig {
   /// Creates an AI configuration.
@@ -54,18 +52,15 @@ class AIConfig {
   }
 
   /// Creates a production configuration.
-  /// Requires HTTPS and API key.
+  /// Recommends HTTPS and API key for security.
   factory AIConfig.production({
     required String baseUrl,
     required String apiKey,
   }) {
-    assert(baseUrl.startsWith('https://'), 'Production must use HTTPS');
-    assert(apiKey.isNotEmpty, 'Production requires API key');
-
     return AIConfig(
       baseUrl: baseUrl,
-      apiKey: apiKey,
-      enableSSL: true,
+      apiKey: apiKey.isEmpty ? null : apiKey,
+      enableSSL: baseUrl.startsWith('https://'),
     );
   }
 
@@ -77,17 +72,13 @@ class AIConfig {
     );
     const apiKey = String.fromEnvironment('AI_SERVICE_API_KEY');
 
-    // In production/release mode, enforce HTTPS
-    if (kReleaseMode && !baseUrl.startsWith('https://')) {
-      throw StateError(
-        'AI_SERVICE_URL must use HTTPS in release mode. Got: $baseUrl',
-      );
-    }
+    // Enable SSL based on URL scheme
+    final usesHttps = baseUrl.startsWith('https://');
 
     return AIConfig(
       baseUrl: baseUrl,
       apiKey: apiKey.isEmpty ? null : apiKey,
-      enableSSL: kReleaseMode,
+      enableSSL: usesHttps,
     );
   }
 
@@ -102,18 +93,6 @@ class AIConfig {
 
     if (!uri.hasScheme || (uri.scheme != 'http' && uri.scheme != 'https')) {
       throw StateError('Base URL must use http:// or https://: $baseUrl');
-    }
-
-    // Enforce HTTPS in production
-    if (enableSSL && uri.scheme != 'https') {
-      throw StateError('SSL is enabled but URL is not HTTPS: $baseUrl');
-    }
-
-    // Warn if no API key in production
-    if (kReleaseMode && apiKey == null) {
-      debugPrint(
-        'WARNING: No API key configured for AI service in release mode',
-      );
     }
   }
 

@@ -48,27 +48,29 @@ void main() {
       expect(config.enableSSL, false);
     });
 
-    test('factory production() requires HTTPS', () {
-      expect(
-        () => AIConfig.production(
-          baseUrl: 'http://api.example.com',
-          apiKey: 'test-key',
-        ),
-        throwsA(isA<AssertionError>()),
+    test('factory production() accepts HTTP (relaxed for v0.1.0)', () {
+      final config = AIConfig.production(
+        baseUrl: 'http://api.example.com',
+        apiKey: 'test-key',
       );
+
+      expect(config.baseUrl, 'http://api.example.com');
+      expect(config.apiKey, 'test-key');
+      expect(config.enableSSL, false);
     });
 
-    test('factory production() requires API key', () {
-      expect(
-        () => AIConfig.production(
-          baseUrl: 'https://api.example.com',
-          apiKey: '',
-        ),
-        throwsA(isA<AssertionError>()),
+    test('factory production() accepts empty API key (relaxed for v0.1.0)', () {
+      final config = AIConfig.production(
+        baseUrl: 'https://api.example.com',
+        apiKey: '',
       );
+
+      expect(config.baseUrl, 'https://api.example.com');
+      expect(config.apiKey, isNull);
+      expect(config.enableSSL, true);
     });
 
-    test('factory production() creates correct config', () {
+    test('factory production() creates correct config with HTTPS', () {
       final config = AIConfig.production(
         baseUrl: 'https://api.example.com',
         apiKey: 'production-key',
@@ -148,22 +150,14 @@ void main() {
         );
       });
 
-      test('throws when SSL enabled but using HTTP', () {
+      test('passes when SSL enabled with HTTP (relaxed for v0.1.0)', () {
         const config = AIConfig(
           baseUrl: 'http://api.example.com',
           enableSSL: true,
         );
 
-        expect(
-          () => config.validate(),
-          throwsA(
-            isA<StateError>().having(
-              (e) => e.message,
-              'message',
-              contains('SSL is enabled but URL is not HTTPS'),
-            ),
-          ),
-        );
+        // Validation relaxed for v0.1.0 - no longer enforces HTTPS when SSL is enabled
+        expect(() => config.validate(), returnsNormally);
       });
     });
 

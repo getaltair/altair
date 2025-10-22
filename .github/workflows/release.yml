@@ -233,6 +233,23 @@ jobs:
             2. Run the installer
             3. Follow the installation wizard
 
+            ### Features
+
+            **Core Task Management:**
+            - ✅ Quick capture (< 3 seconds thought-to-save)
+            - ✅ Task CRUD operations with status tracking
+            - ✅ Project organization
+            - ✅ Tag-based filtering and search
+            - ✅ Keyboard shortcuts and focus mode
+            - ✅ Drag & drop task reordering
+            - ✅ Offline-first architecture
+            - ✅ Neo-brutalist UI for visual clarity
+
+            **Coming Soon:**
+            - ⏳ AI-powered task breakdown (waiting for settings UI)
+            - ⏳ Visual time tracking
+            - ⏳ Multi-device sync
+
             ### What's New
 
             See the full changelog below for details on this release.

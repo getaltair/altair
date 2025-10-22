@@ -14,7 +14,7 @@ Altair Guidance is the first app in the Altair ecosystem, focusing on task manag
 
 ## Features
 
-### Completed Features
+### Completed Features (v0.1.0)
 
 - ✅ Task management (create, read, update, delete)
 - ✅ Quick capture widget (< 3 second task creation)
@@ -23,22 +23,26 @@ Altair Guidance is the first app in the Altair ecosystem, focusing on task manag
 - ✅ Neo-brutalist UI theme
 - ✅ BLoC state management
 - ✅ Offline-first operation
-- ✅ **AI-powered task breakdown** (Week 10)
-  - Break down complex tasks into manageable subtasks
-  - AI-generated time estimates per subtask
-  - One-click creation of subtasks from AI suggestions
-  - Support for parent-child task hierarchy
 - ✅ Tag-based filtering and search
 - ✅ Project organization
 - ✅ Focus mode and keyboard shortcuts
 - ✅ Drag & drop support
 
-### Planned Features
+### In Development (Not in v0.1.0)
+
+**AI Features (Backend Ready, UI Pending):**
+
+- ⏳ AI-powered task breakdown
+  - Backend implemented with OpenAI/Anthropic/Ollama support
+  - Settings UI needed for provider/model configuration
+  - Temporarily disabled in v0.1.0 release
+- ⏳ Task prioritization AI assistance
+- ⏳ Time estimation AI assistance
+- ⏳ Contextual suggestions for task execution
+
+**Other Planned Features:**
 
 - Visual time tracking
-- Task prioritization AI assistance
-- Time estimation AI assistance
-- Contextual suggestions for task execution
 - Multi-device sync (optional)
 
 ## Running the App
@@ -88,25 +92,16 @@ flutter build apk
 - `http`: HTTP client for AI service communication
 - `logger`: Logging and debugging
 
-### AI Service Configuration
+### AI Service Configuration (Not Available in v0.1.0)
 
-The app integrates with a FastAPI backend for AI-powered features. Configure via environment variables:
+> **Note:** AI features are disabled in v0.1.0 release pending settings UI implementation.
+> The backend is ready but requires manual configuration that's not user-friendly yet.
 
-```bash
-# Development (default)
-AI_SERVICE_URL=http://localhost:8001/api
+For developers testing AI features in debug builds:
 
-# Production (requires HTTPS and API key)
-AI_SERVICE_URL=https://your-ai-service.com/api
-AI_SERVICE_API_KEY=your-secret-key
-```
-
-**Security Notes:**
-
-- HTTPS is enforced in release/production builds
-- API key authentication using Bearer tokens
-- Input validation on all AI requests
-- Operation-specific timeouts prevent hanging
+- Backend supports OpenAI, Anthropic, and Ollama
+- Configuration requires environment variables (see `services/ai-service/README.md`)
+- Will be available in future release with proper settings UI
 
 ### Directory Structure
 
