@@ -32,10 +32,13 @@ class ProjectsPage extends StatelessWidget {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
+          // Capture bloc from current context before navigation
+          final projectBloc = context.read<ProjectBloc>();
+
           Navigator.of(context).push(
             MaterialPageRoute<void>(
               builder: (context) => BlocProvider.value(
-                value: context.read<ProjectBloc>(),
+                value: projectBloc,
                 child: const ProjectEditPage(),
               ),
             ),

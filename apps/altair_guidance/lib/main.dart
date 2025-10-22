@@ -87,10 +87,13 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _handleNewTask() {
+    // Capture bloc from current context before navigation
+    final taskBloc = context.read<TaskBloc>();
+
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (context) => BlocProvider.value(
-          value: context.read<TaskBloc>(),
+          value: taskBloc,
           child: const TaskEditPage(),
         ),
       ),
@@ -271,16 +274,20 @@ class _HomePageState extends State<HomePage> {
                               leading: const Icon(Icons.folder),
                               title: const Text('Projects'),
                               onTap: () {
+                                // Capture blocs from current context before navigation
+                                final taskBloc = context.read<TaskBloc>();
+                                final projectBloc = context.read<ProjectBloc>();
+
                                 Navigator.pop(context);
                                 Navigator.of(context).push(
                                   MaterialPageRoute<void>(
                                     builder: (context) => MultiBlocProvider(
                                       providers: [
                                         BlocProvider.value(
-                                          value: context.read<TaskBloc>(),
+                                          value: taskBloc,
                                         ),
                                         BlocProvider.value(
-                                          value: context.read<ProjectBloc>(),
+                                          value: projectBloc,
                                         ),
                                       ],
                                       child: const ProjectsPage(),
@@ -305,10 +312,13 @@ class _HomePageState extends State<HomePage> {
                     ? null
                     : FloatingActionButton(
                         onPressed: () {
+                          // Capture bloc from current context before navigation
+                          final taskBloc = context.read<TaskBloc>();
+
                           Navigator.of(context).push(
                             MaterialPageRoute<void>(
                               builder: (context) => BlocProvider.value(
-                                value: context.read<TaskBloc>(),
+                                value: taskBloc,
                                 child: const TaskEditPage(),
                               ),
                             ),
