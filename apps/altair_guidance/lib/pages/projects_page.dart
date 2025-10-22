@@ -266,10 +266,13 @@ class _ProjectListItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: () {
+        // Capture bloc from current context before navigation
+        final projectBloc = context.read<ProjectBloc>();
+
         Navigator.of(context).push(
           MaterialPageRoute<void>(
             builder: (context) => BlocProvider.value(
-              value: context.read<ProjectBloc>(),
+              value: projectBloc,
               child: ProjectEditPage(project: project),
             ),
           ),
