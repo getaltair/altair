@@ -24,13 +24,16 @@ flutter test integration_test -d linux
 ## What These Tests Catch
 
 ### Provider Context Bugs ✅
+
 The navigation tests specifically verify that provider context is correctly passed through navigation, which would have caught the three bugs fixed in:
+
 - `main.dart:91` - FAB navigation
 - `main.dart:275-276` - Projects menu navigation
 - `projects_page.dart:36` - Project creation FAB
 - `main.dart:316` - Task creation FAB
 
 ### Complete Workflows ✅
+
 - Task creation via quick capture
 - Task creation via FAB
 - Project creation and management
@@ -39,20 +42,29 @@ The navigation tests specifically verify that provider context is correctly pass
 
 ## Test Status
 
-Current status: 4/8 tests passing
+Current status: 7/8 tests passing ✅
 
 **Passing Tests:**
-- App launches successfully
-- Navigate to Projects from drawer
-- Navigate to new task from main FAB
-- Navigate back from Projects to Tasks
+
+- App launches successfully ✓
+- Navigate to Projects from drawer ✓
+- Navigate to new task from main FAB ✓
+- Navigate back from Projects to Tasks ✓
+- Navigate to Projects then create new project ✓
+- Drawer navigation items are accessible ✓
+- Navigate to new task from "New Task" action ✓
 
 **Failing Tests:**
-- Navigate to Projects then create new project
-- Navigate through complete app flow
-- Drawer navigation items check
 
-The failures are expected for initial tests and indicate real issues to fix in the test assertions (finding multiple "Tasks" text, etc.). This is normal and healthy - tests that catch real issues!
+- Navigate through complete app flow (complex multi-step navigation - requires further investigation)
+
+**Recent Fixes:**
+
+- Fixed assertion tuning issues (changed `findsOneWidget` to `findsWidgets` where "Tasks" appears in multiple places)
+- Fixed provider context passing in FAB navigation (added ProjectBloc to task creation navigation)
+- Added timing adjustments for drawer animations
+
+These integration tests successfully caught provider context bugs during development!
 
 ## See Also
 

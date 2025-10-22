@@ -84,11 +84,13 @@
 **Location:** `test/<feature>/*_test.dart`
 
 **Tools:**
+
 - `flutter_test` - Core testing framework
 - `bloc_test` - Testing BLoCs
 - `mocktail` - Mocking dependencies
 
 **Example:**
+
 ```dart
 test('TaskBloc emits [TaskLoading, TaskLoaded] when tasks are loaded', () {
   final repository = MockTaskRepository();
@@ -109,6 +111,7 @@ test('TaskBloc emits [TaskLoading, TaskLoaded] when tasks are loaded', () {
 ```
 
 **What to Test:**
+
 - BLoC state transitions
 - Repository CRUD operations
 - Data model transformations
@@ -123,10 +126,12 @@ test('TaskBloc emits [TaskLoading, TaskLoaded] when tasks are loaded', () {
 **Location:** `test/widgets/*_test.dart`
 
 **Tools:**
+
 - `flutter_test`
 - `mocktail` for mocking providers
 
 **Example:**
+
 ```dart
 testWidgets('TaskCard displays task title and description', (tester) async {
   final task = Task(title: 'Test Task', description: 'Test Description');
@@ -145,6 +150,7 @@ testWidgets('TaskCard displays task title and description', (tester) async {
 ```
 
 **What to Test:**
+
 - Widget rendering
 - User interactions (taps, swipes, etc.)
 - Widget state changes
@@ -159,10 +165,12 @@ testWidgets('TaskCard displays task title and description', (tester) async {
 **Location:** `integration_test/*_test.dart`
 
 **Tools:**
+
 - `integration_test` package
 - `flutter_test`
 
 **Example:**
+
 ```dart
 testWidgets('Complete task creation workflow', (tester) async {
   app.main();
@@ -186,6 +194,7 @@ testWidgets('Complete task creation workflow', (tester) async {
 ```
 
 **What to Test:**
+
 - Navigation flows
 - Multi-step workflows
 - State persistence
@@ -200,10 +209,12 @@ testWidgets('Complete task creation workflow', (tester) async {
 **Location:** `integration_test/e2e/*_test.dart`
 
 **Tools:**
+
 - `integration_test` package
 - Real backend services (or test doubles)
 
 **Example:**
+
 ```dart
 testWidgets('New user onboarding journey', (tester) async {
   app.main();
@@ -217,6 +228,7 @@ testWidgets('New user onboarding journey', (tester) async {
 ```
 
 **What to Test:**
+
 - Critical user paths
 - Authentication flows
 - Data synchronization
@@ -229,11 +241,13 @@ testWidgets('New user onboarding journey', (tester) async {
 ### BLoC Testing
 
 **Pattern:**
+
 1. Arrange: Set up dependencies and initial state
 2. Act: Add event to BLoC
 3. Assert: Verify state emissions
 
 **Example:**
+
 ```dart
 blocTest<TaskBloc, TaskState>(
   'emits [TaskLoading, TaskLoaded] when tasks load successfully',
@@ -255,11 +269,13 @@ blocTest<TaskBloc, TaskState>(
 ### Repository Testing
 
 **Pattern:**
+
 1. Mock data source
 2. Call repository method
 3. Verify correct transformations
 
 **Example:**
+
 ```dart
 test('getAllTasks returns parsed Task objects', () async {
   final dataSource = MockDataSource();
@@ -276,11 +292,13 @@ test('getAllTasks returns parsed Task objects', () async {
 ### Model Testing
 
 **Pattern:**
+
 1. Test serialization/deserialization
 2. Test validation
 3. Test equality
 
 **Example:**
+
 ```dart
 group('Task Model', () {
   test('fromJson creates valid Task', () {
@@ -308,12 +326,14 @@ group('Task Model', () {
 ### Component Testing
 
 **Pattern:**
+
 1. Wrap widget in MaterialApp/Scaffold
 2. Provide necessary providers/blocs
 3. Pump widget
 4. Verify rendering and interactions
 
 **Example:**
+
 ```dart
 testWidgets('QuickCapture submits on Enter key', (tester) async {
   var submitted = false;
@@ -339,11 +359,13 @@ testWidgets('QuickCapture submits on Enter key', (tester) async {
 ### Provider Testing
 
 **Pattern:**
+
 1. Mock provider values
 2. Wrap widget with provider
 3. Verify widget responds to provider state
 
 **Example:**
+
 ```dart
 testWidgets('TaskList shows loading indicator', (tester) async {
   final mockBloc = MockTaskBloc();
@@ -371,6 +393,7 @@ testWidgets('TaskList shows loading indicator', (tester) async {
 Integration tests run the full app and test real user interactions.
 
 **File Structure:**
+
 ```
 integration_test/
 ├── navigation_test.dart         # Navigation flows
@@ -395,6 +418,7 @@ flutter test integration_test/navigation_test.dart
 ### Critical Tests
 
 #### 1. Navigation Tests
+
 - Verify all navigation paths work
 - Test provider context passing
 - Test back navigation
@@ -403,11 +427,13 @@ flutter test integration_test/navigation_test.dart
 **Why Critical:** Provider context bugs cause grey screens and app crashes
 
 #### 2. Data Persistence
+
 - Create/update/delete operations persist
 - App restores state after restart
 - Offline data syncs on reconnect
 
 #### 3. State Management
+
 - BLoC events trigger correct state changes
 - UI updates reflect state changes
 - Multiple widgets share state correctly
@@ -415,6 +441,7 @@ flutter test integration_test/navigation_test.dart
 ### Integration Test Best Practices
 
 1. **Test Real User Flows**
+
    ```dart
    // Good: Test complete workflow
    testWidgets('User creates and completes task', (tester) async {
@@ -428,6 +455,7 @@ flutter test integration_test/navigation_test.dart
    ```
 
 2. **Use Semantic Finders**
+
    ```dart
    // Good: Semantic/accessible
    find.text('Create Task')
@@ -439,11 +467,13 @@ flutter test integration_test/navigation_test.dart
    ```
 
 3. **Wait for Animations**
+
    ```dart
    await tester.pumpAndSettle(); // Wait for all animations
    ```
 
 4. **Test Negative Paths**
+
    ```dart
    testWidgets('Shows error when network fails', (tester) async {
      // Simulate network error
@@ -569,6 +599,7 @@ group('TaskBloc', () {
 ### 1. Test Isolation
 
 ✅ **Good:**
+
 ```dart
 setUp(() {
   repository = MockTaskRepository();
@@ -581,6 +612,7 @@ tearDown(() {
 ```
 
 ❌ **Bad:**
+
 ```dart
 // Shared state between tests
 final bloc = TaskBloc(taskRepository: repository);
@@ -589,6 +621,7 @@ final bloc = TaskBloc(taskRepository: repository);
 ### 2. Clear Assertions
 
 ✅ **Good:**
+
 ```dart
 expect(task.title, equals('Expected Title'));
 expect(tasks, hasLength(5));
@@ -596,6 +629,7 @@ expect(state, isA<TaskLoaded>());
 ```
 
 ❌ **Bad:**
+
 ```dart
 expect(task.title == 'Expected Title', true);
 ```
@@ -603,11 +637,13 @@ expect(task.title == 'Expected Title', true);
 ### 3. Descriptive Test Names
 
 ✅ **Good:**
+
 ```dart
 test('emits TaskFailure when repository throws NetworkException', () {});
 ```
 
 ❌ **Bad:**
+
 ```dart
 test('test1', () {});
 ```
@@ -615,6 +651,7 @@ test('test1', () {});
 ### 4. Test One Thing
 
 ✅ **Good:**
+
 ```dart
 test('task title is required', () {
   expect(() => Task(title: ''), throwsValidationException);
@@ -627,6 +664,7 @@ test('task description is optional', () {
 ```
 
 ❌ **Bad:**
+
 ```dart
 test('task validation', () {
   // Tests multiple validation rules
@@ -636,6 +674,7 @@ test('task validation', () {
 ### 5. Avoid Test Interdependence
 
 ✅ **Good:**
+
 ```dart
 test('creates task successfully', () {
   // Self-contained test
@@ -647,6 +686,7 @@ test('updates task successfully', () {
 ```
 
 ❌ **Bad:**
+
 ```dart
 test('creates task successfully', () {
   createdTaskId = await repository.create(task);
@@ -757,6 +797,7 @@ Some code can be excluded from coverage requirements:
 ```
 
 **Valid Exemptions:**
+
 - Generated code (`.g.dart` files)
 - Platform-specific code with fallbacks
 - Debug-only code
@@ -826,6 +867,7 @@ echo "All checks passed!"
 **Problem:** Widget tests fail with provider errors
 
 **Solution:**
+
 ```dart
 // Wrap widget with necessary providers
 await tester.pumpWidget(
@@ -843,6 +885,7 @@ await tester.pumpWidget(
 **Problem:** Integration tests hang
 
 **Solution:**
+
 ```dart
 // Increase timeout
 testWidgets('slow test', (tester) async {
@@ -858,6 +901,7 @@ await tester.pumpAndSettle(Duration(seconds: 10));
 **Problem:** Tests pass/fail inconsistently
 
 **Solutions:**
+
 - Add proper `await` statements
 - Use `pumpAndSettle()` instead of `pump()`
 - Mock time-dependent code
@@ -868,6 +912,7 @@ await tester.pumpAndSettle(Duration(seconds: 10));
 **Problem:** Screenshot tests fail on different platforms
 
 **Solution:**
+
 ```bash
 # Update goldens on same platform as CI
 flutter test --update-goldens
@@ -906,18 +951,21 @@ matchesGoldenFile('golden.png', version: 1.0)
 ## Future Improvements
 
 ### Short Term
+
 - [ ] Add E2E tests for AI features
 - [ ] Implement visual regression testing
 - [ ] Add performance benchmarks
 - [ ] Set up automated coverage reporting
 
 ### Medium Term
+
 - [ ] Add accessibility testing
 - [ ] Implement load testing for data operations
 - [ ] Add security testing for AI service
 - [ ] Test offline functionality
 
 ### Long Term
+
 - [ ] Implement cross-platform integration tests
 - [ ] Add user analytics to track real-world usage patterns
 - [ ] Automated UI testing in CI/CD
@@ -928,17 +976,20 @@ matchesGoldenFile('golden.png', version: 1.0)
 ## Resources
 
 ### Flutter Testing Docs
+
 - [Testing Flutter Apps](https://docs.flutter.dev/testing)
 - [Integration Testing](https://docs.flutter.dev/testing/integration-tests)
 - [Widget Testing](https://docs.flutter.dev/cookbook/testing/widget/introduction)
 
 ### Tools & Libraries
+
 - [flutter_test](https://api.flutter.dev/flutter/flutter_test/flutter_test-library.html)
 - [integration_test](https://pub.dev/packages/integration_test)
 - [bloc_test](https://pub.dev/packages/bloc_test)
 - [mocktail](https://pub.dev/packages/mocktail)
 
 ### Best Practices
+
 - [Effective Dart: Testing](https://dart.dev/guides/language/effective-dart/testing)
 - [Flutter Testing Best Practices](https://flutter.dev/docs/testing/best-practices)
 
