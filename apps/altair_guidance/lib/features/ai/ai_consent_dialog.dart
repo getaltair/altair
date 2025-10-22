@@ -38,7 +38,7 @@ class _AIConsentDialog extends StatelessWidget {
     return AlertDialog(
       title: Row(
         children: [
-          Icon(Icons.privacy_tip, color: AltairColors.accentYellow),
+          Icon(Icons.privacy_tip, color: AltairColors.accentOrange),
           const SizedBox(width: AltairSpacing.sm),
           const Text('AI Features Privacy Notice'),
         ],
@@ -67,7 +67,7 @@ class _AIConsentDialog extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(AltairSpacing.sm),
               decoration: BoxDecoration(
-                color: AltairColors.accentYellow.withValues(alpha: 0.2),
+                color: AltairColors.accentOrange.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(4),
                 border: Border.all(
                   color: Colors.black,

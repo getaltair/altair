@@ -204,8 +204,7 @@ class _TaskEditPageState extends State<TaskEditPage> {
               // Title field
               AltairTextField(
                 controller: _titleController,
-                label: 'Title',
-                hint: 'What needs to be done?',
+                hint: 'Title - What needs to be done?',
                 autofocus: isNewTask,
                 maxLines: 2,
               ),
@@ -503,7 +502,7 @@ class _TaskEditPageState extends State<TaskEditPage> {
                   });
                 },
                 backgroundColor:
-                    AltairColors.accentYellow.withValues(alpha: 0.2),
+                    AltairColors.accentOrange.withValues(alpha: 0.2),
                 side: const BorderSide(
                   color: Colors.black,
                   width: AltairBorders.thin,
@@ -515,7 +514,7 @@ class _TaskEditPageState extends State<TaskEditPage> {
         AltairButton(
           onPressed: _showAddTagDialog,
           variant: AltairButtonVariant.outlined,
-          accentColor: AltairColors.accentYellow,
+          accentColor: AltairColors.accentOrange,
           child: const Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -596,7 +595,7 @@ class _TaskEditPageState extends State<TaskEditPage> {
             _AIFeatureButton(
               icon: Icons.lightbulb,
               label: 'Get Suggestions',
-              accentColor: AltairColors.accentYellow,
+              accentColor: AltairColors.accentOrange,
               enabled: hasTitle,
               onPressed: () => _showAIFeature(() {
                 showContextSuggestionsDialog(
@@ -679,7 +678,7 @@ class _TaskEditPageState extends State<TaskEditPage> {
               Navigator.of(context).pop();
             },
             variant: AltairButtonVariant.filled,
-            accentColor: AltairColors.accentYellow,
+            accentColor: AltairColors.accentOrange,
             child: const Text('Add'),
           ),
         ],
@@ -689,7 +688,7 @@ class _TaskEditPageState extends State<TaskEditPage> {
 
   Color _getStatusColor(TaskStatus status) {
     return switch (status) {
-      TaskStatus.todo => AltairColors.accentYellow,
+      TaskStatus.todo => AltairColors.accentOrange,
       TaskStatus.inProgress => AltairColors.accentBlue,
       TaskStatus.completed => AltairColors.accentGreen,
       TaskStatus.cancelled => AltairColors.textSecondary,
@@ -720,10 +719,10 @@ class _TaskEditPageState extends State<TaskEditPage> {
     return switch (priority) {
       1 => AltairColors.error,
       2 => const Color(0xFFFF6B6B),
-      3 => AltairColors.accentYellow,
+      3 => AltairColors.accentOrange,
       4 => AltairColors.accentBlue,
       5 => AltairColors.textSecondary,
-      _ => AltairColors.accentYellow,
+      _ => AltairColors.accentOrange,
     };
   }
 

@@ -161,7 +161,7 @@ class _AltairTagSelectorState extends State<AltairTagSelector> {
             color: isDark ? AltairColors.bgDark : AltairColors.bgLight,
             border: Border.all(
               color: _focusNode.hasFocus
-                  ? AltairColors.accentBlue
+                  ? AltairColors.accentOrange
                   : (isDark ? AltairColors.borderDark : AltairColors.borderLight),
               width: _focusNode.hasFocus
                   ? AltairBorders.extraThick
@@ -229,7 +229,7 @@ class _AltairTagSelectorState extends State<AltairTagSelector> {
                                     ? Icons.check_box
                                     : Icons.check_box_outline_blank,
                                 size: 20,
-                                color: tag.color ?? AltairColors.accentYellow,
+                                color: tag.color ?? AltairColors.accentOrange,
                               ),
                               const SizedBox(width: AltairSpacing.xs),
                               Text(

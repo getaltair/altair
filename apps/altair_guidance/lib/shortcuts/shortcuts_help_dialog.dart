@@ -83,7 +83,7 @@ class _ShortcutCategory extends StatelessWidget {
           category.category,
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.bold,
-                color: AltairColors.accentYellow,
+                color: AltairColors.accentOrange,
               ),
         ),
         const SizedBox(height: AltairSpacing.sm),

@@ -89,7 +89,7 @@ class _AltairTextFieldState extends State<AltairTextField> {
 
     final focusBackgroundColor = widget.errorText != null
         ? AltairColors.error.withValues(alpha: 0.1)
-        : AltairColors.accentYellow;
+        : backgroundColor;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

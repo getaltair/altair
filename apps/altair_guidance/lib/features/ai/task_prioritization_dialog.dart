@@ -371,7 +371,7 @@ class _TaskPrioritizationDialogState extends State<TaskPrioritizationDialog> {
     return switch (priority) {
       PriorityLevel.critical => AltairColors.error,
       PriorityLevel.high => Colors.orange,
-      PriorityLevel.medium => AltairColors.accentYellow,
+      PriorityLevel.medium => AltairColors.accentOrange,
       PriorityLevel.low => AltairColors.accentGreen,
     };
   }
@@ -416,7 +416,7 @@ class _PriorityBadge extends StatelessWidget {
     return switch (priority) {
       PriorityLevel.critical => AltairColors.error,
       PriorityLevel.high => Colors.orange,
-      PriorityLevel.medium => AltairColors.accentYellow,
+      PriorityLevel.medium => AltairColors.accentOrange,
       PriorityLevel.low => AltairColors.accentGreen,
     };
   }

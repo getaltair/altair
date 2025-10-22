@@ -8,7 +8,7 @@ import '../tokens/colors.dart';
 import '../tokens/spacing.dart';
 
 /// Neo-brutalist card widget following Altair design system.
-class AltairCard extends StatelessWidget {
+class AltairCard extends StatefulWidget {
   /// Creates an Altair card.
   const AltairCard({
     required this.child,
@@ -35,6 +35,13 @@ class AltairCard extends StatelessWidget {
   final bool showAccentBar;
 
   @override
+  State<AltairCard> createState() => _AltairCardState();
+}
+
+class _AltairCardState extends State<AltairCard> {
+  bool _isHovering = false;
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
@@ -47,40 +54,74 @@ class AltairCard extends StatelessWidget {
         ? AltairColors.darkBgSecondary
         : AltairColors.lightBgSecondary;
 
-    Widget cardContent = Container(
-      padding: padding,
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        border: Border.all(
-          color: borderColor,
-          width: AltairBorders.standard,
+    Widget cardContent = MouseRegion(
+      onEnter: (_) => setState(() => _isHovering = true),
+      onExit: (_) => setState(() => _isHovering = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        transform: _isHovering
+            ? Matrix4.translationValues(-1.0, -1.0, 0.0)
+            : Matrix4.identity(),
+        padding: widget.padding,
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          border: Border.all(
+            color: borderColor,
+            width: AltairBorders.standard,
+          ),
+          boxShadow: [
+            _isHovering ? AltairBorders.shadowHover : AltairBorders.shadow,
+          ],
         ),
+        child: widget.child,
       ),
-      child: child,
     );
 
-    if (showAccentBar && accentColor != null) {
-      cardContent = Stack(
-        children: [
-          cardContent,
-          Positioned(
-            left: 0,
-            top: 0,
-            bottom: 0,
-            child: Container(
-              width: AltairBorders.thick,
-              color: accentColor,
+    if (widget.showAccentBar && widget.accentColor != null) {
+      cardContent = MouseRegion(
+        onEnter: (_) => setState(() => _isHovering = true),
+        onExit: (_) => setState(() => _isHovering = false),
+        child: Stack(
+          children: [
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 150),
+              transform: _isHovering
+                  ? Matrix4.translationValues(-1.0, -1.0, 0.0)
+                  : Matrix4.identity(),
+              padding: widget.padding,
+              decoration: BoxDecoration(
+                color: backgroundColor,
+                border: Border.all(
+                  color: borderColor,
+                  width: AltairBorders.standard,
+                ),
+                boxShadow: [
+                  _isHovering
+                      ? AltairBorders.shadowHover
+                      : AltairBorders.shadow,
+                ],
+              ),
+              child: widget.child,
             ),
-          ),
-        ],
+            Positioned(
+              left: 0,
+              top: 0,
+              bottom: 0,
+              child: Container(
+                width: AltairBorders.thick,
+                color: widget.accentColor,
+              ),
+            ),
+          ],
+        ),
       );
     }
 
-    if (onTap != null) {
+    if (widget.onTap != null) {
       return Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: onTap,
+          onTap: widget.onTap,
           child: cardContent,
         ),
       );

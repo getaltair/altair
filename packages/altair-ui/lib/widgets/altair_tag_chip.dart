@@ -38,7 +38,7 @@ class AltairTagChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final effectiveColor = color ?? AltairColors.accentYellow;
+    final effectiveColor = color ?? AltairColors.accentOrange;
 
     return Material(
       color: Colors.transparent,

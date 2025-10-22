@@ -3,7 +3,6 @@ library;
 
 import 'package:flutter/material.dart';
 
-import '../tokens/borders.dart';
 import '../tokens/colors.dart';
 import '../tokens/spacing.dart';
 
@@ -21,7 +20,7 @@ class AltairQuickCapture extends StatefulWidget {
   const AltairQuickCapture({
     required this.onCapture,
     this.hint = 'What needs to be done?',
-    this.accentColor = AltairColors.accentYellow,
+    this.accentColor = AltairColors.accentOrange,
     this.autofocus = true,
     this.focusNode,
     super.key,
@@ -100,8 +99,10 @@ class _AltairQuickCaptureState extends State<AltairQuickCapture> {
       decoration: BoxDecoration(
         color: theme.cardColor,
         border: Border.all(
-          color: _focusNode.hasFocus ? widget.accentColor : theme.dividerColor,
-          width: AltairBorders.thick,
+          color: _focusNode.hasFocus
+              ? widget.accentColor.withValues(alpha: 0.5)
+              : theme.dividerColor,
+          width: _focusNode.hasFocus ? 2.0 : 1.0,
         ),
       ),
       child: Row(
@@ -111,15 +112,6 @@ class _AltairQuickCaptureState extends State<AltairQuickCapture> {
             padding: const EdgeInsets.symmetric(
               horizontal: AltairSpacing.md,
               vertical: AltairSpacing.sm,
-            ),
-            decoration: BoxDecoration(
-              color: widget.accentColor.withValues(alpha: 0.1),
-              border: Border(
-                right: BorderSide(
-                  color: widget.accentColor,
-                  width: AltairBorders.medium,
-                ),
-              ),
             ),
             child: Icon(
               Icons.flash_on,
@@ -143,8 +135,9 @@ class _AltairQuickCaptureState extends State<AltairQuickCapture> {
                 decoration: InputDecoration(
                   hintText: widget.hint,
                   hintStyle: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.hintColor,
+                    color: AltairColors.textSecondary.withValues(alpha: 0.65),
                     fontWeight: FontWeight.w400,
+                    fontStyle: FontStyle.italic,
                   ),
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.symmetric(
@@ -164,13 +157,7 @@ class _AltairQuickCaptureState extends State<AltairQuickCapture> {
             decoration: BoxDecoration(
               color: _isCapturing
                   ? widget.accentColor
-                  : widget.accentColor.withValues(alpha: 0.1),
-              border: Border(
-                left: BorderSide(
-                  color: widget.accentColor,
-                  width: AltairBorders.medium,
-                ),
-              ),
+                  : Colors.transparent,
             ),
             child: Material(
               color: Colors.transparent,

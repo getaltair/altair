@@ -8,8 +8,8 @@ class AltairColors {
   const AltairColors._();
 
   // Light theme colors
-  /// Primary background color for light theme: #fafafa
-  static const Color lightBgPrimary = Color(0xFFFAFAFA);
+  /// Primary background color for light theme: #f5f5f5
+  static const Color lightBgPrimary = Color(0xFFF5F5F5);
 
   /// Secondary background color for light theme: #ffffff
   static const Color lightBgSecondary = Color(0xFFFFFFFF);
@@ -24,11 +24,11 @@ class AltairColors {
   static const Color lightHoverBg = Color(0xFFF0F0F0);
 
   // Dark theme colors
-  /// Primary background color for dark theme: #1a1a1a
-  static const Color darkBgPrimary = Color(0xFF1A1A1A);
+  /// Primary background color for dark theme: #1a1d24
+  static const Color darkBgPrimary = Color(0xFF1A1D24);
 
-  /// Secondary background color for dark theme: #2a2a2a
-  static const Color darkBgSecondary = Color(0xFF2A2A2A);
+  /// Secondary background color for dark theme: #252932
+  static const Color darkBgSecondary = Color(0xFF252932);
 
   /// Primary text color for dark theme: #ffffff
   static const Color darkTextPrimary = Color(0xFFFFFFFF);
@@ -36,18 +36,21 @@ class AltairColors {
   /// Secondary text color for dark theme: #999999
   static const Color darkTextSecondary = Color(0xFF999999);
 
-  /// Hover background for dark theme: #333333
-  static const Color darkHoverBg = Color(0xFF333333);
+  /// Hover background for dark theme: #2e3139
+  static const Color darkHoverBg = Color(0xFF2E3139);
 
   // Border colors
-  /// Border color for light theme: #000000
-  static const Color lightBorderColor = Color(0xFF000000);
+  /// Border color for light theme: #e0e0e0
+  static const Color lightBorderColor = Color(0xFFE0E0E0);
 
-  /// Border color for dark theme: #ffffff
-  static const Color darkBorderColor = Color(0xFFFFFFFF);
+  /// Border color for dark theme: #3a3f4a
+  static const Color darkBorderColor = Color(0xFF3A3F4A);
 
   // Accent colors (same for both themes)
-  /// Accent yellow: #ffd93d
+  /// Accent orange: #FF9500
+  static const Color accentOrange = Color(0xFFFF9500);
+
+  /// Accent yellow: #ffd93d (legacy, kept for compatibility)
   static const Color accentYellow = Color(0xFFFFD93D);
 
   /// Accent blue: #60a5fa
@@ -66,8 +69,8 @@ class AltairColors {
   /// Error color (red)
   static const Color error = accentRed;
 
-  /// Warning color (yellow)
-  static const Color warning = accentYellow;
+  /// Warning color (orange)
+  static const Color warning = accentOrange;
 
   /// Info color (blue)
   static const Color info = accentBlue;
