@@ -194,6 +194,9 @@ void main() {
       app.main();
       await tester.pumpAndSettle();
 
+      // Use unique project name to avoid collisions
+      final projectName = 'DeleteProject_${DateTime.now().millisecondsSinceEpoch}';
+
       // Navigate to Projects
       await tester.tap(find.byIcon(Icons.menu));
       await tester.pumpAndSettle();
@@ -203,39 +206,40 @@ void main() {
       // Create a project to delete
       await tester.tap(find.byType(FloatingActionButton));
       await tester.pumpAndSettle();
-      await tester.enterText(find.byType(TextField).first, 'Project to Delete');
+      await tester.enterText(find.byType(TextField).first, projectName);
       await tester.pumpAndSettle();
       await tester.tap(find.text('Save'));
       await tester.pumpAndSettle();
 
       // Verify project exists
-      expect(find.text('Project to Delete'), findsOneWidget);
+      expect(find.text(projectName), findsOneWidget);
 
-      // Open project for editing
-      await tester.tap(find.text('Project to Delete'));
+      // Find and tap delete button in the list view
+      final deleteButton = find.byIcon(Icons.delete_outline);
+      expect(deleteButton, findsAtLeastNWidgets(1));
+      await tester.tap(deleteButton.first);
       await tester.pumpAndSettle();
 
-      // Find and tap delete button if available
-      final deleteButton = find.byIcon(Icons.delete);
-      if (deleteButton.evaluate().isNotEmpty) {
-        await tester.tap(deleteButton);
+      // Confirm deletion if dialog appears
+      final confirmButton = find.text('Delete');
+      if (confirmButton.evaluate().isNotEmpty) {
+        await tester.tap(confirmButton);
         await tester.pumpAndSettle();
-
-        // Confirm deletion if dialog appears
-        final confirmButton = find.text('Delete');
-        if (confirmButton.evaluate().isNotEmpty) {
-          await tester.tap(confirmButton);
-          await tester.pumpAndSettle();
-        }
       }
 
       // Verify project is gone
-      expect(find.text('Project to Delete'), findsNothing);
+      expect(find.text(projectName), findsNothing);
     });
 
     testWidgets('Delete project when multiple exist', (tester) async {
       app.main();
       await tester.pumpAndSettle();
+
+      // Use unique project names to avoid collisions
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final project1Name = 'DelTest1_$timestamp';
+      final project2Name = 'DelTest2_$timestamp';
+      final project3Name = 'DelTest3_$timestamp';
 
       // Navigate to Projects
       await tester.tap(find.byIcon(Icons.menu));
@@ -244,35 +248,36 @@ void main() {
       await tester.pumpAndSettle();
 
       // Create three projects
-      for (var i = 1; i <= 3; i++) {
+      for (final name in [project1Name, project2Name, project3Name]) {
         await tester.tap(find.byType(FloatingActionButton));
         await tester.pumpAndSettle();
-        await tester.enterText(find.byType(TextField).first, 'Project $i');
+        await tester.enterText(find.byType(TextField).first, name);
         await tester.pumpAndSettle();
         await tester.tap(find.text('Save'));
         await tester.pumpAndSettle();
       }
 
-      // Delete Project 2
-      await tester.tap(find.text('Project 2'));
+      // Delete Project 2 by tapping its delete button in the list
+      // Projects should be in the list, find the delete button for Project 2
+      final allDeleteButtons = find.byIcon(Icons.delete_outline);
+      expect(allDeleteButtons, findsAtLeastNWidgets(3));
+
+      // Tap the second delete button (for Project 2)
+      // Assuming projects are listed in creation order, Project 2 is at index 1
+      await tester.tap(allDeleteButtons.at(1));
       await tester.pumpAndSettle();
 
-      final deleteButton = find.byIcon(Icons.delete);
-      if (deleteButton.evaluate().isNotEmpty) {
-        await tester.tap(deleteButton);
+      // Confirm deletion if dialog appears
+      final confirmButton = find.text('Delete');
+      if (confirmButton.evaluate().isNotEmpty) {
+        await tester.tap(confirmButton);
         await tester.pumpAndSettle();
-
-        final confirmButton = find.text('Delete');
-        if (confirmButton.evaluate().isNotEmpty) {
-          await tester.tap(confirmButton);
-          await tester.pumpAndSettle();
-        }
       }
 
       // Verify only Project 2 is deleted
-      expect(find.text('Project 1'), findsOneWidget);
-      expect(find.text('Project 2'), findsNothing);
-      expect(find.text('Project 3'), findsOneWidget);
+      expect(find.text(project1Name), findsOneWidget);
+      expect(find.text(project2Name), findsNothing);
+      expect(find.text(project3Name), findsOneWidget);
     });
 
     testWidgets('Form validation - empty name shows error', (tester) async {
