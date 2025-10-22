@@ -493,8 +493,11 @@ class _TaskListItem extends StatelessWidget {
       onTap: () {
         Navigator.of(context).push(
           MaterialPageRoute<void>(
-            builder: (context) => BlocProvider.value(
-              value: context.read<TaskBloc>(),
+            builder: (context) => MultiBlocProvider(
+              providers: [
+                BlocProvider.value(value: context.read<TaskBloc>()),
+                BlocProvider.value(value: context.read<ProjectBloc>()),
+              ],
               child: TaskEditPage(task: task),
             ),
           ),

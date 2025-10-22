@@ -224,19 +224,22 @@ void main() {
       app.main();
       await tester.pumpAndSettle();
 
+      // Use unique task name to avoid collisions
+      final taskName = 'DeleteSingle_${DateTime.now().millisecondsSinceEpoch}';
+
       // Create a task to delete
       await tester.tap(find.byType(FloatingActionButton));
       await tester.pumpAndSettle();
       await tester.enterText(
         find.widgetWithText(TextField, 'What needs to be done?'),
-        'Task to delete',
+        taskName,
       );
       await tester.pumpAndSettle();
       await tester.tap(find.text('Save'));
       await tester.pumpAndSettle();
 
       // Verify task exists
-      expect(find.text('Task to delete'), findsOneWidget);
+      expect(find.text(taskName), findsOneWidget);
 
       // Find and tap delete button (IconButton with delete_outline icon)
       final deleteButton = find.byIcon(Icons.delete_outline);
@@ -245,20 +248,26 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify task is gone
-      expect(find.text('Task to delete'), findsNothing);
+      expect(find.text(taskName), findsNothing);
     });
 
     testWidgets('Delete task when multiple exist - verify only one deleted', (tester) async {
       app.main();
       await tester.pumpAndSettle();
 
+      // Use unique task names to avoid collisions with previous test runs
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final task1Name = 'DeleteTest1_$timestamp';
+      final task2Name = 'DeleteTest2_$timestamp';
+      final task3Name = 'DeleteTest3_$timestamp';
+
       // Create three tasks
-      for (var i = 1; i <= 3; i++) {
+      for (final name in [task1Name, task2Name, task3Name]) {
         await tester.tap(find.byType(FloatingActionButton));
         await tester.pumpAndSettle();
         await tester.enterText(
           find.widgetWithText(TextField, 'What needs to be done?'),
-          'Task $i',
+          name,
         );
         await tester.pumpAndSettle();
         await tester.tap(find.text('Save'));
@@ -266,22 +275,34 @@ void main() {
       }
 
       // Verify all three tasks exist
-      expect(find.text('Task 1'), findsOneWidget);
-      expect(find.text('Task 2'), findsOneWidget);
-      expect(find.text('Task 3'), findsOneWidget);
+      expect(find.text(task1Name), findsOneWidget);
+      expect(find.text(task2Name), findsOneWidget);
+      expect(find.text(task3Name), findsOneWidget);
 
-      // Delete Task 2 by tapping its delete button
-      final deleteButtons = find.byIcon(Icons.delete_outline);
-      expect(deleteButtons, findsAtLeastNWidgets(3));
+      // Count delete buttons before deletion
+      final deleteButtonsBefore = find.byIcon(Icons.delete_outline);
+      final countBefore = tester.widgetList(deleteButtonsBefore).length;
 
-      // Tap the second delete button (for Task 2)
-      await tester.tap(deleteButtons.at(1));
+      // Find the delete button for task2 by finding its index
+      // The tasks should be in the list in reverse creation order (newest first)
+      final task2Finder = find.text(task2Name);
+      expect(task2Finder, findsOneWidget);
+
+      // Get all delete buttons and tap the one corresponding to task2
+      // Since we just created these tasks, they should be at the top of the list
+      final allDeleteButtons = find.byIcon(Icons.delete_outline);
+      // Task2 should be second in the list (0-indexed position 1)
+      await tester.tap(allDeleteButtons.at(1));
       await tester.pumpAndSettle();
 
       // Verify Task 2 is gone but others remain
-      expect(find.text('Task 1'), findsOneWidget);
-      expect(find.text('Task 2'), findsNothing);
-      expect(find.text('Task 3'), findsOneWidget);
+      expect(find.text(task1Name), findsOneWidget);
+      expect(find.text(task2Name), findsNothing);
+      expect(find.text(task3Name), findsOneWidget);
+
+      // Verify one less delete button exists
+      final deleteButtonsAfter = find.byIcon(Icons.delete_outline);
+      expect(tester.widgetList(deleteButtonsAfter).length, equals(countBefore - 1));
     });
 
     testWidgets('Form validation - empty title shows error', (tester) async {
