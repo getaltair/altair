@@ -22,6 +22,7 @@ flutter test test/golden/widget_golden_test.dart
 ## When to Update Golden Files
 
 Update golden files when you:
+
 - **Intentionally change UI** - Colors, layouts, text styles
 - **Add new widgets** - New UI components
 - **Change platform** - Switch between macOS, Linux, Windows (golden files are platform-specific)
@@ -38,6 +39,7 @@ Update golden files when you:
 ## CI/CD Integration
 
 Golden tests run in CI/CD on Linux. If you develop on macOS or Windows:
+
 - Generate goldens on Linux (using CI or Docker)
 - Or accept platform-specific differences
 - Consider using `matchesGoldenFile` with platform suffixes
