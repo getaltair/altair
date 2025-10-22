@@ -14,7 +14,7 @@ ARCH="${ARCH:-x86_64}"
 # Directories
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 APP_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
-BUILD_DIR="$APP_DIR/build/linux/x64/profile"
+BUILD_DIR="$APP_DIR/build/linux/x64/release"
 APPDIR="$BUILD_DIR/AppDir"
 PACKAGING_DIR="$SCRIPT_DIR"
 
@@ -24,11 +24,11 @@ echo "Version: $VERSION"
 echo "Architecture: $ARCH"
 echo "======================================"
 
-# Step 1: Build the Flutter app in profile mode
+# Step 1: Build the Flutter app in release mode
 echo ""
-echo "[1/6] Building Flutter app in profile mode..."
+echo "[1/6] Building Flutter app in release mode..."
 cd "$APP_DIR"
-flutter build linux --profile
+flutter build linux --release
 
 # Step 2: Create AppDir structure
 echo ""
