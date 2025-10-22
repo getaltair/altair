@@ -66,8 +66,12 @@ class AltairDatabase {
     }
 
     // Get the database path for production
-    final Directory appDocDir = await getApplicationDocumentsDirectory();
-    final String dbPath = join(appDocDir.path, 'altair', 'guidance.db');
+    // Use Application Support directory (proper location for app data)
+    // Linux: ~/.local/share/altair/
+    // macOS: ~/Library/Application Support/altair/
+    // Windows: %APPDATA%\altair\
+    final Directory appDataDir = await getApplicationSupportDirectory();
+    final String dbPath = join(appDataDir.path, 'altair', 'guidance.db');
 
     // Ensure directory exists
     await Directory(dirname(dbPath)).create(recursive: true);
@@ -118,8 +122,8 @@ class AltairDatabase {
 
   /// Delete the database (useful for testing)
   Future<void> deleteDatabase() async {
-    final Directory appDocDir = await getApplicationDocumentsDirectory();
-    final String dbPath = join(appDocDir.path, 'altair', 'guidance.db');
+    final Directory appDataDir = await getApplicationSupportDirectory();
+    final String dbPath = join(appDataDir.path, 'altair', 'guidance.db');
     await File(dbPath).delete();
     _database = null;
   }
