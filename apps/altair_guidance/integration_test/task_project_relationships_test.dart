@@ -244,9 +244,9 @@ void main() {
         await tester.tap(dropdownFinders.first);
         await tester.pumpAndSettle();
 
-        final projectOption = find.text('Removable Project').last;
+        final projectOption = find.text('Removable Project');
         if (projectOption.evaluate().isNotEmpty) {
-          await tester.tap(projectOption);
+          await tester.tap(projectOption.last);
           await tester.pumpAndSettle();
         }
       }
@@ -265,9 +265,9 @@ void main() {
         await tester.pumpAndSettle();
 
         // Look for "None" or similar option
-        final noneOption = find.text('None').last;
+        final noneOption = find.text('None');
         if (noneOption.evaluate().isNotEmpty) {
-          await tester.tap(noneOption);
+          await tester.tap(noneOption.last);
           await tester.pumpAndSettle();
         }
       }
