@@ -60,7 +60,7 @@ class _AltairCardState extends State<AltairCard> {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
         transform: _isHovering
-            ? (Matrix4.identity()..translate(-1.0, -1.0))
+            ? Matrix4.translationValues(-1.0, -1.0, 0.0)
             : Matrix4.identity(),
         padding: widget.padding,
         decoration: BoxDecoration(
@@ -86,7 +86,7 @@ class _AltairCardState extends State<AltairCard> {
             AnimatedContainer(
               duration: const Duration(milliseconds: 150),
               transform: _isHovering
-                  ? (Matrix4.identity()..translate(-1.0, -1.0))
+                  ? Matrix4.translationValues(-1.0, -1.0, 0.0)
                   : Matrix4.identity(),
               padding: widget.padding,
               decoration: BoxDecoration(
