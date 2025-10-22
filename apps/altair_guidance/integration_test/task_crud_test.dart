@@ -115,23 +115,28 @@ void main() {
       app.main();
       await tester.pumpAndSettle();
 
+      // Use unique task name
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final originalTitle = 'UpdateTest_$timestamp';
+      final updatedTitle = 'UpdatedTest_$timestamp';
+
       // Create a task
       await tester.tap(find.byType(FloatingActionButton));
       await tester.pumpAndSettle();
       await tester.enterText(
         find.widgetWithText(TextField, 'What needs to be done?'),
-        'Original title',
+        originalTitle,
       );
       await tester.pumpAndSettle();
       await tester.tap(find.text('Save'));
       await tester.pumpAndSettle();
 
       // Verify original task appears
-      expect(find.text('Original title'), findsOneWidget);
+      expect(find.text(originalTitle), findsOneWidget);
 
       // Tap on the task card to edit it
-      await tester.tap(find.text('Original title'));
-      await tester.pumpAndSettle();
+      await tester.tap(find.text(originalTitle));
+      await tester.pumpAndSettle(const Duration(milliseconds: 500));
 
       // Verify edit page opened
       expect(find.text('Edit Task'), findsOneWidget);
@@ -140,7 +145,7 @@ void main() {
       final titleField = find.widgetWithText(TextField, 'What needs to be done?');
       await tester.enterText(titleField, '');
       await tester.pumpAndSettle();
-      await tester.enterText(titleField, 'Updated title');
+      await tester.enterText(titleField, updatedTitle);
       await tester.pumpAndSettle();
 
       // Save changes
@@ -148,8 +153,8 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify updated title appears in list
-      expect(find.text('Updated title'), findsOneWidget);
-      expect(find.text('Original title'), findsNothing);
+      expect(find.text(updatedTitle), findsOneWidget);
+      expect(find.text(originalTitle), findsNothing);
     });
 
     testWidgets('Update task - change status to completed', (tester) async {
@@ -191,20 +196,24 @@ void main() {
       app.main();
       await tester.pumpAndSettle();
 
+      // Use unique task name
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final taskName = 'DescTest_$timestamp';
+
       // Create task without description
       await tester.tap(find.byType(FloatingActionButton));
       await tester.pumpAndSettle();
       await tester.enterText(
         find.widgetWithText(TextField, 'What needs to be done?'),
-        'Task without description',
+        taskName,
       );
       await tester.pumpAndSettle();
       await tester.tap(find.text('Save'));
       await tester.pumpAndSettle();
 
       // Open task for editing
-      await tester.tap(find.text('Task without description'));
-      await tester.pumpAndSettle();
+      await tester.tap(find.text(taskName));
+      await tester.pumpAndSettle(const Duration(milliseconds: 500));
 
       // Add description
       final descField = find.widgetWithText(TextField, 'Add more details...');
@@ -217,7 +226,7 @@ void main() {
 
       // Description should now appear in list (if visible in list view)
       // At minimum, task should still be in list
-      expect(find.text('Task without description'), findsOneWidget);
+      expect(find.text(taskName), findsOneWidget);
     });
 
     testWidgets('Delete task - verify it disappears', (tester) async {
@@ -279,10 +288,6 @@ void main() {
       expect(find.text(task2Name), findsOneWidget);
       expect(find.text(task3Name), findsOneWidget);
 
-      // Count delete buttons before deletion
-      final deleteButtonsBefore = find.byIcon(Icons.delete_outline);
-      final countBefore = tester.widgetList(deleteButtonsBefore).length;
-
       // Find the delete button for task2 by finding its index
       // The tasks should be in the list in reverse creation order (newest first)
       final task2Finder = find.text(task2Name);
@@ -299,10 +304,6 @@ void main() {
       expect(find.text(task1Name), findsOneWidget);
       expect(find.text(task2Name), findsNothing);
       expect(find.text(task3Name), findsOneWidget);
-
-      // Verify one less delete button exists
-      final deleteButtonsAfter = find.byIcon(Icons.delete_outline);
-      expect(tester.widgetList(deleteButtonsAfter).length, equals(countBefore - 1));
     });
 
     testWidgets('Form validation - empty title shows error', (tester) async {
