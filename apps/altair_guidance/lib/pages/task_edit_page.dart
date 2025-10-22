@@ -204,8 +204,7 @@ class _TaskEditPageState extends State<TaskEditPage> {
               // Title field
               AltairTextField(
                 controller: _titleController,
-                label: 'Title',
-                hint: 'What needs to be done?',
+                hint: 'Title - What needs to be done?',
                 autofocus: isNewTask,
                 maxLines: 2,
               ),

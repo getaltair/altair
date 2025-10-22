@@ -846,17 +846,17 @@ class _SidebarButtonState extends State<_SidebarButton> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    final backgroundColor = widget.isSelected
+    final backgroundColor = isDark
+        ? AltairColors.darkBgSecondary
+        : AltairColors.lightBgSecondary;
+
+    final textColor = isDark
+        ? AltairColors.darkTextPrimary
+        : AltairColors.lightTextPrimary;
+
+    final borderColor = widget.isSelected
         ? AltairColors.accentOrange
-        : (isDark ? AltairColors.darkBgSecondary : AltairColors.lightBgSecondary);
-
-    final textColor = widget.isSelected
-        ? Colors.white
-        : (isDark ? AltairColors.darkTextPrimary : AltairColors.lightTextPrimary);
-
-    final borderColor = isDark
-        ? AltairColors.darkBorderColor
-        : AltairColors.lightBorderColor;
+        : (isDark ? AltairColors.darkBorderColor : AltairColors.lightBorderColor);
 
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovering = true),
@@ -876,6 +876,7 @@ class _SidebarButtonState extends State<_SidebarButton> {
                 vertical: AltairSpacing.md,
               ),
               decoration: BoxDecoration(
+                color: backgroundColor,
                 border: Border.all(
                   color: borderColor,
                   width: AltairBorders.standard,

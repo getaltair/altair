@@ -68,7 +68,7 @@ class _AltairButtonState extends State<AltairButton> {
 
     switch (widget.variant) {
       case AltairButtonVariant.filled:
-        backgroundColor = widget.accentColor ?? AltairColors.accentYellow;
+        backgroundColor = widget.accentColor ?? AltairColors.accentOrange;
         foregroundColor = isDark
             ? AltairColors.darkTextPrimary
             : AltairColors.lightTextPrimary;
