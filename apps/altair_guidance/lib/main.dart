@@ -87,13 +87,17 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _handleNewTask() {
-    // Capture bloc from current context before navigation
+    // Capture blocs from current context before navigation
     final taskBloc = context.read<TaskBloc>();
+    final projectBloc = context.read<ProjectBloc>();
 
     Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (context) => BlocProvider.value(
-          value: taskBloc,
+        builder: (context) => MultiBlocProvider(
+          providers: [
+            BlocProvider.value(value: taskBloc),
+            BlocProvider.value(value: projectBloc),
+          ],
           child: const TaskEditPage(),
         ),
       ),
