@@ -157,7 +157,8 @@ void main() {
       expect(find.text('Delete Task'), findsOneWidget);
     });
 
-    testWidgets('long-press menu shows "Mark as Incomplete" for completed tasks',
+    testWidgets(
+        'long-press menu shows "Mark as Incomplete" for completed tasks',
         (WidgetTester tester) async {
       final now = DateTime.now();
       final task = Task(
@@ -252,7 +253,8 @@ void main() {
       // Testing it requires the full app initialization which is complex
       // for widget tests. Integration tests or code review can verify
       // the PopScope implementation at main.dart:307-316
-      expect(true, true); // Placeholder - verify via code review or integration tests
+      expect(true,
+          true); // Placeholder - verify via code review or integration tests
     });
 
     testWidgets('GestureDetector wraps content for keyboard dismissal',
@@ -265,8 +267,7 @@ void main() {
       // Verify GestureDetector is present
       expect(
         find.byWidgetPredicate(
-          (widget) =>
-              widget is GestureDetector && widget.onTap != null,
+          (widget) => widget is GestureDetector && widget.onTap != null,
         ),
         findsWidgets,
       );

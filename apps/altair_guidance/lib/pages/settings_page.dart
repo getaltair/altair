@@ -60,7 +60,9 @@ class SettingsPage extends StatelessWidget {
                       icon: Icons.light_mode,
                       isSelected: state.isLight,
                       onTap: () {
-                        context.read<ThemeCubit>().setThemeMode(ThemeMode.light);
+                        context
+                            .read<ThemeCubit>()
+                            .setThemeMode(ThemeMode.light);
                       },
                     ),
                     const SizedBox(height: AltairSpacing.sm),
@@ -166,12 +168,16 @@ class _ThemeOption extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
 
     final backgroundColor = isSelected
-        ? (isDark ? AltairColors.darkBgSecondary : AltairColors.lightBgSecondary)
+        ? (isDark
+            ? AltairColors.darkBgSecondary
+            : AltairColors.lightBgSecondary)
         : Colors.transparent;
 
     final borderColor = isSelected
         ? AltairColors.accentBlue
-        : (isDark ? AltairColors.darkBorderColor : AltairColors.lightBorderColor);
+        : (isDark
+            ? AltairColors.darkBorderColor
+            : AltairColors.lightBorderColor);
 
     return InkWell(
       onTap: onTap,
@@ -198,7 +204,8 @@ class _ThemeOption extends StatelessWidget {
                   Text(
                     title,
                     style: theme.textTheme.bodyLarge?.copyWith(
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      fontWeight:
+                          isSelected ? FontWeight.bold : FontWeight.normal,
                     ),
                   ),
                   Text(
