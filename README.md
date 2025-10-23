@@ -188,11 +188,15 @@ We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guid
 
 ### Development Workflow
 
-1. Create a feature branch (`git checkout -b feature/amazing-feature`)
+We use **Git Flow** with `main` (stable releases) and `develop` (active development):
+
+1. Branch from `develop`: `git checkout develop && git pull && git checkout -b feature/amazing-feature`
 2. Make changes following our conventions
-3. Run linters and tests (`pre-commit run --all-files`)
-4. Commit with conventional commits (`git commit -m "feat: add amazing feature"`)
-5. Push and create a pull request
+3. Run linters and tests: `pre-commit run --all-files`
+4. Commit with conventional commits: `git commit -m "feat: add amazing feature"`
+5. Push and create PR targeting `develop`: `gh pr create --base develop`
+
+**Important:** PRs target `develop`, not `main`. See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
 ### Code Standards
 
