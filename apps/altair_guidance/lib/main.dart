@@ -1,9 +1,12 @@
 /// Altair Guidance - ADHD-friendly task management.
 library;
 
+import 'dart:io' show Platform;
+
 import 'package:altair_core/altair_core.dart';
 import 'package:altair_ui/altair_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'bloc/ai/ai_bloc.dart';
@@ -15,6 +18,7 @@ import 'bloc/task/task_state.dart';
 import 'features/focus_mode/focus_mode_cubit.dart';
 import 'features/theme/theme_cubit.dart';
 import 'pages/projects_page.dart';
+import 'pages/settings_page.dart';
 import 'pages/task_edit_page.dart';
 import 'services/ai/ai_config.dart';
 import 'services/ai/ai_service.dart';
@@ -23,6 +27,18 @@ import 'shortcuts/shortcuts_config.dart';
 import 'shortcuts/shortcuts_help_dialog.dart';
 
 void main() {
+  // Configure system UI overlays (status bar, navigation bar)
+  WidgetsFlutterBinding.ensureInitialized();
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent, // Transparent status bar
+      statusBarIconBrightness: Brightness.dark, // Dark icons for light mode
+      statusBarBrightness: Brightness.light, // For iOS
+      systemNavigationBarColor: Colors.white, // Navigation bar color (Android)
+      systemNavigationBarIconBrightness: Brightness.dark,
+    ),
+  );
+
   runApp(const AltairGuidanceApp());
 }
 
@@ -65,6 +81,8 @@ class AltairGuidanceApp extends StatelessWidget {
           return MaterialApp(
             title: 'Altair Guidance',
             debugShowCheckedModeBanner: false,
+            // Performance overlay for debugging (enable with 'P' key in debug mode)
+            showPerformanceOverlay: false,
             theme: AltairTheme.lightTheme,
             darkTheme: AltairTheme.darkTheme,
             themeMode: themeState.themeMode,
@@ -152,395 +170,347 @@ class _HomePageState extends State<HomePage> {
             final isDesktop = constraints.maxWidth >= 1024;
             final showDrawer = !isDesktop || focusModeState.isEnabled;
 
-            return Shortcuts(
-              shortcuts: ShortcutsConfig.defaultShortcuts,
-              child: Actions(
-                actions: {
-                  NewTaskIntent: CallbackAction<NewTaskIntent>(
-                    onInvoke: (_) {
-                      _handleNewTask();
-                      return null;
-                    },
-                  ),
-                  FocusQuickCaptureIntent:
-                      CallbackAction<FocusQuickCaptureIntent>(
-                    onInvoke: (_) {
-                      _handleFocusQuickCapture();
-                      return null;
-                    },
-                  ),
-                  ShowShortcutsHelpIntent:
-                      CallbackAction<ShowShortcutsHelpIntent>(
-                    onInvoke: (_) {
-                      showShortcutsHelp(context);
-                      return null;
-                    },
-                  ),
-                  NavigateToProjectsIntent:
-                      CallbackAction<NavigateToProjectsIntent>(
-                    onInvoke: (_) {
-                      _handleNavigateToProjects();
-                      return null;
-                    },
-                  ),
-                  NavigateToTasksIntent: CallbackAction<NavigateToTasksIntent>(
-                    onInvoke: (_) {
-                      // Already on tasks page, just pop to root
-                      Navigator.of(context).popUntil((route) => route.isFirst);
-                      return null;
-                    },
-                  ),
-                  RefreshIntent: CallbackAction<RefreshIntent>(
-                    onInvoke: (_) {
-                      _handleRefresh();
-                      return null;
-                    },
-                  ),
-                  ToggleFocusModeIntent: CallbackAction<ToggleFocusModeIntent>(
-                    onInvoke: (_) {
-                      _handleToggleFocusMode();
-                      return null;
-                    },
-                  ),
-                },
-                child: Focus(
-                  autofocus: true,
-                  child: Row(
-                    children: [
-                      // Fixed sidebar on desktop (when not in focus mode)
-                      if (isDesktop && !focusModeState.isEnabled)
-                        Container(
-                          width: 288,
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).cardColor,
-                            border: Border(
-                              right: BorderSide(
-                                color: Theme.of(context).dividerColor,
-                                width: 2.0,
-                              ),
-                            ),
-                          ),
-                          child: Material(
-                            color: Colors.transparent,
+            // Check if we're on mobile platform (Android or iOS)
+            final isMobilePlatform = Platform.isAndroid || Platform.isIOS;
+
+            // Main content widget
+            final content = Row(
+              children: [
+                // Fixed sidebar on desktop (when not in focus mode)
+                if (isDesktop && !focusModeState.isEnabled)
+                  Container(
+                    width: 288,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).cardColor,
+                      border: Border(
+                        right: BorderSide(
+                          color: Theme.of(context).dividerColor,
+                          width: 2.0,
+                        ),
+                      ),
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: Column(
+                        children: [
+                          // Desktop header
+                          Padding(
+                            padding: const EdgeInsets.all(AltairSpacing.lg),
                             child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                // Desktop header
-                                Padding(
-                                  padding:
-                                      const EdgeInsets.all(AltairSpacing.lg),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        'Altair Guidance',
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .headlineMedium
-                                            ?.copyWith(
-                                              fontWeight: FontWeight.bold,
-                                            ),
+                                Text(
+                                  'Altair Guidance',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .headlineMedium
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.bold,
                                       ),
-                                      const SizedBox(height: AltairSpacing.xs),
-                                      Text(
-                                        'ADHD-friendly task management',
-                                        style: Theme.of(context)
+                                ),
+                                const SizedBox(height: AltairSpacing.xs),
+                                Text(
+                                  'ADHD-friendly task management',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodySmall
+                                      ?.copyWith(
+                                        color: Theme.of(context)
                                             .textTheme
                                             .bodySmall
-                                            ?.copyWith(
-                                              color: Theme.of(context)
-                                                  .textTheme
-                                                  .bodySmall
-                                                  ?.color,
-                                            ),
+                                            ?.color,
                                       ),
-                                      const SizedBox(height: AltairSpacing.md),
-                                      const Divider(),
-                                    ],
-                                  ),
                                 ),
-                                // Navigation buttons
-                                Padding(
+                                const SizedBox(height: AltairSpacing.md),
+                                const Divider(),
+                              ],
+                            ),
+                          ),
+                          // Navigation buttons
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AltairSpacing.md,
+                              vertical: AltairSpacing.sm,
+                            ),
+                            child: Column(
+                              children: [
+                                _SidebarButton(
+                                  icon: Icons.checklist,
+                                  label: 'TASKS',
+                                  isSelected: true,
+                                  onTap: () {},
+                                ),
+                                const SizedBox(height: AltairSpacing.sm),
+                                _SidebarButton(
+                                  icon: Icons.folder,
+                                  label: 'PROJECTS',
+                                  isSelected: false,
+                                  onTap: () {
+                                    Navigator.of(context).push(
+                                      MaterialPageRoute<void>(
+                                        builder: (context) => MultiBlocProvider(
+                                          providers: [
+                                            BlocProvider.value(
+                                              value: context.read<TaskBloc>(),
+                                            ),
+                                            BlocProvider.value(
+                                              value:
+                                                  context.read<ProjectBloc>(),
+                                            ),
+                                          ],
+                                          child: const ProjectsPage(),
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          // Push settings to bottom
+                          const Expanded(child: SizedBox.shrink()),
+
+                          // Settings button at bottom
+                          const Divider(),
+                          Padding(
+                            padding: const EdgeInsets.all(AltairSpacing.md),
+                            child: _SidebarButton(
+                              icon: Icons.settings,
+                              label: 'SETTINGS',
+                              isSelected: false,
+                              onTap: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute<void>(
+                                    builder: (context) => BlocProvider.value(
+                                      value: context.read<ThemeCubit>(),
+                                      child: const SettingsPage(),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                // Main content area
+                Expanded(
+                  child: PopScope(
+                    // Handle Android back button
+                    canPop: true,
+                    onPopInvokedWithResult: (didPop, result) {
+                      if (didPop) return;
+                      // Dismiss keyboard if focused
+                      if (FocusScope.of(context).hasFocus) {
+                        FocusScope.of(context).unfocus();
+                      }
+                    },
+                    child: Scaffold(
+                      appBar: AppBar(
+                        title: const Text('Tasks'),
+                        // Only show hamburger menu on mobile or when not in desktop mode
+                        automaticallyImplyLeading:
+                            showDrawer && !focusModeState.isEnabled,
+                        actions: [
+                          // New Task button (desktop-friendly replacement for FAB)
+                          if (!focusModeState.isEnabled && isDesktop)
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: AltairSpacing.sm,
+                                vertical: AltairSpacing.xs,
+                              ),
+                              child: ElevatedButton.icon(
+                                onPressed: _handleNewTask,
+                                icon: const Icon(Icons.add, size: 20),
+                                label: const Text('NEW TASK'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AltairColors.accentOrange,
+                                  foregroundColor: Colors.white,
+                                  elevation: 0,
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: AltairSpacing.md,
                                     vertical: AltairSpacing.sm,
                                   ),
-                                  child: Column(
-                                    children: [
-                                      _SidebarButton(
-                                        icon: Icons.checklist,
-                                        label: 'TASKS',
-                                        isSelected: true,
-                                        onTap: () {},
-                                      ),
-                                      const SizedBox(height: AltairSpacing.sm),
-                                      _SidebarButton(
-                                        icon: Icons.folder,
-                                        label: 'PROJECTS',
-                                        isSelected: false,
-                                        onTap: () {
-                                          Navigator.of(context).push(
-                                            MaterialPageRoute<void>(
-                                              builder: (context) =>
-                                                  MultiBlocProvider(
-                                                providers: [
-                                                  BlocProvider.value(
-                                                    value: context
-                                                        .read<TaskBloc>(),
-                                                  ),
-                                                  BlocProvider.value(
-                                                    value: context
-                                                        .read<ProjectBloc>(),
-                                                  ),
-                                                ],
-                                                child: const ProjectsPage(),
-                                              ),
-                                            ),
-                                          );
-                                        },
-                                      ),
-                                    ],
+                                  shape: const RoundedRectangleBorder(),
+                                  side: const BorderSide(
+                                    color: Colors.black,
+                                    width: AltairBorders.standard,
                                   ),
                                 ),
-
-                                // Push settings to bottom
-                                const Expanded(child: SizedBox.shrink()),
-
-                                // Settings button at bottom
-                                const Divider(),
-                                Padding(
-                                  padding:
-                                      const EdgeInsets.all(AltairSpacing.md),
-                                  child: _SidebarButton(
-                                    icon: Icons.settings,
-                                    label: 'SETTINGS',
-                                    isSelected: false,
-                                    onTap: () {
-                                      // TODO: Navigate to settings
-                                    },
-                                  ),
-                                ),
-                              ],
+                              ),
                             ),
+                          // Focus mode toggle
+                          IconButton(
+                            icon: Icon(
+                              focusModeState.isEnabled
+                                  ? Icons.visibility_off
+                                  : Icons.visibility,
+                            ),
+                            tooltip: focusModeState.isEnabled
+                                ? (isMobilePlatform
+                                    ? 'Exit focus mode'
+                                    : 'Exit focus mode (Ctrl/Cmd + D)')
+                                : (isMobilePlatform
+                                    ? 'Enter focus mode'
+                                    : 'Enter focus mode (Ctrl/Cmd + D)'),
+                            onPressed: _handleToggleFocusMode,
+                            color: focusModeState.isEnabled
+                                ? AltairColors.accentOrange
+                                : null,
                           ),
-                        ),
-
-                      // Main content area
-                      Expanded(
-                        child: Scaffold(
-                          appBar: AppBar(
-                            title: const Text('Tasks'),
-                            // Only show hamburger menu on mobile or when not in desktop mode
-                            automaticallyImplyLeading:
-                                showDrawer && !focusModeState.isEnabled,
-                            actions: [
-                              // New Task button (desktop-friendly replacement for FAB)
-                              if (!focusModeState.isEnabled && isDesktop)
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: AltairSpacing.sm,
-                                    vertical: AltairSpacing.xs,
-                                  ),
-                                  child: ElevatedButton.icon(
-                                    onPressed: _handleNewTask,
-                                    icon: const Icon(Icons.add, size: 20),
-                                    label: const Text('NEW TASK'),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor:
-                                          AltairColors.accentOrange,
-                                      foregroundColor: Colors.white,
-                                      elevation: 0,
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: AltairSpacing.md,
-                                        vertical: AltairSpacing.sm,
-                                      ),
-                                      shape: const RoundedRectangleBorder(),
-                                      side: const BorderSide(
-                                        color: Colors.black,
-                                        width: AltairBorders.standard,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              // Theme toggle
-                              Builder(
-                                builder: (context) {
-                                  final isDark = Theme.of(context).brightness ==
-                                      Brightness.dark;
-                                  return IconButton(
-                                    icon: Icon(
-                                      isDark
-                                          ? Icons.light_mode
-                                          : Icons.dark_mode,
-                                    ),
-                                    tooltip: isDark
-                                        ? 'Switch to light mode'
-                                        : 'Switch to dark mode',
-                                    onPressed: () {
-                                      context.read<ThemeCubit>().toggle();
-                                    },
-                                  );
-                                },
-                              ),
-                              // Focus mode toggle
+                          if (!focusModeState.isEnabled) ...[
+                            // Filter buttons
+                            IconButton(
+                              icon: const Icon(Icons.filter_list),
+                              onPressed: () {
+                                // TODO: Show filter menu
+                              },
+                            ),
+                            // Keyboard shortcuts help (desktop only)
+                            if (!isMobilePlatform)
                               IconButton(
-                                icon: Icon(
-                                  focusModeState.isEnabled
-                                      ? Icons.visibility_off
-                                      : Icons.visibility,
-                                ),
-                                tooltip: focusModeState.isEnabled
-                                    ? 'Exit focus mode (Ctrl/Cmd + D)'
-                                    : 'Enter focus mode (Ctrl/Cmd + D)',
-                                onPressed: _handleToggleFocusMode,
-                                color: focusModeState.isEnabled
-                                    ? AltairColors.accentOrange
-                                    : null,
+                                icon: const Icon(Icons.keyboard),
+                                tooltip: 'Keyboard shortcuts (Shift + ?)',
+                                onPressed: () => showShortcutsHelp(context),
                               ),
-                              if (!focusModeState.isEnabled) ...[
-                                // Filter buttons
-                                IconButton(
-                                  icon: const Icon(Icons.filter_list),
-                                  onPressed: () {
-                                    // TODO: Show filter menu
-                                  },
-                                ),
-                                // Keyboard shortcuts help
-                                IconButton(
-                                  icon: const Icon(Icons.keyboard),
-                                  tooltip: 'Keyboard shortcuts (Shift + ?)',
-                                  onPressed: () => showShortcutsHelp(context),
-                                ),
-                              ],
-                            ],
-                          ),
-                          // Show drawer on mobile/tablet (when not desktop or in focus mode)
-                          drawer: (showDrawer && !focusModeState.isEnabled)
-                              ? Drawer(
-                                  child: Column(
-                                    children: [
-                                      // Mobile header
-                                      DrawerHeader(
-                                        decoration: BoxDecoration(
-                                          color: Theme.of(context).cardColor,
-                                          border: Border(
-                                            bottom: BorderSide(
-                                              color: Theme.of(context)
-                                                  .dividerColor,
-                                              width: 1.0,
-                                            ),
-                                          ),
-                                        ),
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.end,
-                                          children: [
-                                            Text(
-                                              'Altair Guidance',
-                                              style: Theme.of(context)
-                                                  .textTheme
-                                                  .headlineMedium
-                                                  ?.copyWith(
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                            ),
-                                            const SizedBox(
-                                                height: AltairSpacing.xs),
-                                            Text(
-                                              'ADHD-friendly task management',
-                                              style: Theme.of(context)
-                                                  .textTheme
-                                                  .bodyMedium
-                                                  ?.copyWith(
-                                                    color: Theme.of(context)
-                                                        .textTheme
-                                                        .bodySmall
-                                                        ?.color,
-                                                  ),
-                                            ),
-                                          ],
+                          ],
+                        ],
+                      ),
+                      // Show drawer on mobile/tablet (when not desktop or in focus mode)
+                      drawer: (showDrawer && !focusModeState.isEnabled)
+                          ? Drawer(
+                              child: Column(
+                                children: [
+                                  // Mobile header
+                                  DrawerHeader(
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(context).cardColor,
+                                      border: Border(
+                                        bottom: BorderSide(
+                                          color: Theme.of(context).dividerColor,
+                                          width: 1.0,
                                         ),
                                       ),
-                                      // Navigation buttons
-                                      Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: AltairSpacing.md,
-                                          vertical: AltairSpacing.sm,
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      mainAxisAlignment: MainAxisAlignment.end,
+                                      children: [
+                                        Text(
+                                          'Altair Guidance',
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .headlineMedium
+                                              ?.copyWith(
+                                                fontWeight: FontWeight.bold,
+                                              ),
                                         ),
-                                        child: Column(
-                                          children: [
-                                            _SidebarButton(
-                                              icon: Icons.checklist,
-                                              label: 'TASKS',
-                                              isSelected: true,
-                                              onTap: () {
-                                                Navigator.pop(context);
-                                              },
-                                            ),
-                                            const SizedBox(
-                                                height: AltairSpacing.sm),
-                                            _SidebarButton(
-                                              icon: Icons.folder,
-                                              label: 'PROJECTS',
-                                              isSelected: false,
-                                              onTap: () {
-                                                Navigator.pop(context);
-                                                Navigator.of(context).push(
-                                                  MaterialPageRoute<void>(
-                                                    builder: (context) =>
-                                                        MultiBlocProvider(
-                                                      providers: [
-                                                        BlocProvider.value(
-                                                          value: context
-                                                              .read<TaskBloc>(),
-                                                        ),
-                                                        BlocProvider.value(
-                                                          value: context.read<
-                                                              ProjectBloc>(),
-                                                        ),
-                                                      ],
-                                                      child:
-                                                          const ProjectsPage(),
-                                                    ),
-                                                  ),
-                                                );
-                                              },
-                                            ),
-                                          ],
+                                        const SizedBox(
+                                            height: AltairSpacing.xs),
+                                        Text(
+                                          'ADHD-friendly task management',
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodyMedium
+                                              ?.copyWith(
+                                                color: Theme.of(context)
+                                                    .textTheme
+                                                    .bodySmall
+                                                    ?.color,
+                                              ),
                                         ),
-                                      ),
-
-                                      // Push settings to bottom
-                                      const Expanded(child: SizedBox.shrink()),
-
-                                      // Settings button at bottom
-                                      const Divider(),
-                                      Padding(
-                                        padding: const EdgeInsets.all(
-                                            AltairSpacing.md),
-                                        child: _SidebarButton(
-                                          icon: Icons.settings,
-                                          label: 'SETTINGS',
+                                      ],
+                                    ),
+                                  ),
+                                  // Navigation buttons
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: AltairSpacing.md,
+                                      vertical: AltairSpacing.sm,
+                                    ),
+                                    child: Column(
+                                      children: [
+                                        _SidebarButton(
+                                          icon: Icons.checklist,
+                                          label: 'TASKS',
+                                          isSelected: true,
+                                          onTap: () {
+                                            Navigator.pop(context);
+                                          },
+                                        ),
+                                        const SizedBox(
+                                            height: AltairSpacing.sm),
+                                        _SidebarButton(
+                                          icon: Icons.folder,
+                                          label: 'PROJECTS',
                                           isSelected: false,
                                           onTap: () {
                                             Navigator.pop(context);
-                                            // TODO: Navigate to settings
+                                            Navigator.of(context).push(
+                                              MaterialPageRoute<void>(
+                                                builder: (context) =>
+                                                    MultiBlocProvider(
+                                                  providers: [
+                                                    BlocProvider.value(
+                                                      value: context
+                                                          .read<TaskBloc>(),
+                                                    ),
+                                                    BlocProvider.value(
+                                                      value: context
+                                                          .read<ProjectBloc>(),
+                                                    ),
+                                                  ],
+                                                  child: const ProjectsPage(),
+                                                ),
+                                              ),
+                                            );
                                           },
                                         ),
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
-                                )
-                              : null,
-                          // FAB kept for mobile, hidden on desktop (replaced by AppBar button)
-                          floatingActionButton: (!focusModeState.isEnabled &&
-                                  !isDesktop)
+
+                                  // Push settings to bottom
+                                  const Expanded(child: SizedBox.shrink()),
+
+                                  // Settings button at bottom
+                                  const Divider(),
+                                  Padding(
+                                    padding:
+                                        const EdgeInsets.all(AltairSpacing.md),
+                                    child: _SidebarButton(
+                                      icon: Icons.settings,
+                                      label: 'SETTINGS',
+                                      isSelected: false,
+                                      onTap: () {
+                                        Navigator.pop(context);
+                                        Navigator.of(context).push(
+                                          MaterialPageRoute<void>(
+                                            builder: (context) =>
+                                                BlocProvider.value(
+                                              value: context.read<ThemeCubit>(),
+                                              child: const SettingsPage(),
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                          : null,
+                      // FAB kept for mobile, hidden on desktop (replaced by AppBar button)
+                      floatingActionButton:
+                          (!focusModeState.isEnabled && !isDesktop)
                               ? Padding(
                                   padding: const EdgeInsets.only(
-                                    right: AltairSpacing.lg,
-                                    bottom: AltairSpacing.xl,
+                                    right: AltairSpacing.md,
+                                    bottom: AltairSpacing.md,
                                   ),
                                   child: FloatingActionButton(
                                     onPressed: _handleNewTask,
@@ -550,7 +520,13 @@ class _HomePageState extends State<HomePage> {
                                   ),
                                 )
                               : null,
-                          body: Column(
+                      body: GestureDetector(
+                        // Dismiss keyboard on tap outside (iOS-friendly)
+                        onTap: () {
+                          FocusScope.of(context).unfocus();
+                        },
+                        child: SafeArea(
+                          child: Column(
                             children: [
                               // Quick Capture at the top - always visible
                               Container(
@@ -573,7 +549,9 @@ class _HomePageState extends State<HomePage> {
                                               title: text),
                                         );
                                   },
-                                  hint: 'Quick capture (Ctrl/Cmd + K)...',
+                                  hint: Platform.isAndroid || Platform.isIOS
+                                      ? 'Quick capture...'
+                                      : 'Quick capture (Ctrl/Cmd + K)...',
                                   accentColor: AltairColors.accentOrange,
                                 ),
                               ),
@@ -613,64 +591,171 @@ class _HomePageState extends State<HomePage> {
 
                                     if (state is TaskLoaded) {
                                       if (state.tasks.isEmpty) {
-                                        return Center(
-                                          child: Column(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.center,
-                                            children: [
-                                              Icon(
-                                                Icons.checklist,
-                                                size: 64,
-                                                color:
-                                                    AltairColors.textSecondary,
-                                              ),
-                                              const SizedBox(
-                                                  height: AltairSpacing.md),
-                                              Text(
-                                                'No tasks yet',
-                                                style: Theme.of(context)
-                                                    .textTheme
-                                                    .headlineSmall,
-                                              ),
-                                              const SizedBox(
-                                                  height: AltairSpacing.sm),
-                                              Text(
-                                                'Use quick capture above to add your first task',
-                                                style: Theme.of(context)
-                                                    .textTheme
-                                                    .bodyMedium,
-                                                textAlign: TextAlign.center,
+                                        // Pull-to-refresh even when empty
+                                        return RefreshIndicator(
+                                          onRefresh: () async {
+                                            context.read<TaskBloc>().add(
+                                                  const TaskLoadRequested(),
+                                                );
+                                            // Wait a bit for the bloc to process
+                                            await Future.delayed(
+                                              const Duration(milliseconds: 500),
+                                            );
+                                          },
+                                          child: CustomScrollView(
+                                            slivers: [
+                                              SliverFillRemaining(
+                                                child: Center(
+                                                  child: Column(
+                                                    mainAxisAlignment:
+                                                        MainAxisAlignment
+                                                            .center,
+                                                    children: [
+                                                      Icon(
+                                                        Icons.checklist,
+                                                        size: 64,
+                                                        color: AltairColors
+                                                            .textSecondary,
+                                                      ),
+                                                      const SizedBox(
+                                                          height:
+                                                              AltairSpacing.md),
+                                                      Text(
+                                                        'No tasks yet',
+                                                        style: Theme.of(context)
+                                                            .textTheme
+                                                            .headlineSmall,
+                                                      ),
+                                                      const SizedBox(
+                                                          height:
+                                                              AltairSpacing.sm),
+                                                      Text(
+                                                        'Use quick capture to start',
+                                                        style: Theme.of(context)
+                                                            .textTheme
+                                                            .bodyMedium,
+                                                        textAlign:
+                                                            TextAlign.center,
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
                                               ),
                                             ],
                                           ),
                                         );
                                       }
 
-                                      return ReorderableListView.builder(
-                                        padding: const EdgeInsets.all(
-                                            AltairSpacing.md),
-                                        buildDefaultDragHandles: false,
-                                        itemCount: state.tasks.length,
-                                        onReorder: (oldIndex, newIndex) {
+                                      return RefreshIndicator(
+                                        onRefresh: () async {
                                           context.read<TaskBloc>().add(
-                                                TaskReorderRequested(
-                                                  oldIndex: oldIndex,
-                                                  newIndex: newIndex,
-                                                ),
+                                                const TaskLoadRequested(),
                                               );
-                                        },
-                                        itemBuilder: (context, index) {
-                                          final task = state.tasks[index];
-                                          return Padding(
-                                            key: ValueKey(task
-                                                .id), // Required for ReorderableListView
-                                            padding: const EdgeInsets.only(
-                                              bottom: AltairSpacing.md,
-                                            ),
-                                            child: _TaskListItem(
-                                                task: task, index: index),
+                                          // Wait a bit for the bloc to process
+                                          await Future.delayed(
+                                            const Duration(milliseconds: 500),
                                           );
                                         },
+                                        child: ReorderableListView.builder(
+                                          padding: const EdgeInsets.all(
+                                              AltairSpacing.md),
+                                          buildDefaultDragHandles: false,
+                                          itemCount: state.tasks.length,
+                                          onReorder: (oldIndex, newIndex) {
+                                            context.read<TaskBloc>().add(
+                                                  TaskReorderRequested(
+                                                    oldIndex: oldIndex,
+                                                    newIndex: newIndex,
+                                                  ),
+                                                );
+                                          },
+                                          itemBuilder: (context, index) {
+                                            final task = state.tasks[index];
+                                            return Padding(
+                                              key: ValueKey(task
+                                                  .id), // Required for ReorderableListView
+                                              padding: const EdgeInsets.only(
+                                                bottom: AltairSpacing.md,
+                                              ),
+                                              child: Dismissible(
+                                                key: ValueKey(
+                                                    'dismissible_${task.id}'),
+                                                direction:
+                                                    DismissDirection.endToStart,
+                                                background: Container(
+                                                  alignment:
+                                                      Alignment.centerRight,
+                                                  padding:
+                                                      const EdgeInsets.only(
+                                                    right: AltairSpacing.lg,
+                                                  ),
+                                                  decoration: BoxDecoration(
+                                                    color: AltairColors.error,
+                                                    border: Border.all(
+                                                      color: Colors.black,
+                                                      width: AltairBorders
+                                                          .standard,
+                                                    ),
+                                                  ),
+                                                  child: const Icon(
+                                                    Icons.delete,
+                                                    color: Colors.white,
+                                                    size: 32,
+                                                  ),
+                                                ),
+                                                confirmDismiss:
+                                                    (direction) async {
+                                                  // Show confirmation dialog
+                                                  return await showDialog<bool>(
+                                                    context: context,
+                                                    builder: (BuildContext
+                                                        dialogContext) {
+                                                      return AlertDialog(
+                                                        title: const Text(
+                                                            'Delete Task'),
+                                                        content: Text(
+                                                          'Delete "${task.title}"?',
+                                                        ),
+                                                        actions: [
+                                                          TextButton(
+                                                            onPressed: () =>
+                                                                Navigator.of(
+                                                                        dialogContext)
+                                                                    .pop(false),
+                                                            child: const Text(
+                                                                'CANCEL'),
+                                                          ),
+                                                          TextButton(
+                                                            onPressed: () =>
+                                                                Navigator.of(
+                                                                        dialogContext)
+                                                                    .pop(true),
+                                                            style: TextButton
+                                                                .styleFrom(
+                                                              foregroundColor:
+                                                                  AltairColors
+                                                                      .error,
+                                                            ),
+                                                            child: const Text(
+                                                                'DELETE'),
+                                                          ),
+                                                        ],
+                                                      );
+                                                    },
+                                                  );
+                                                },
+                                                onDismissed: (direction) {
+                                                  context.read<TaskBloc>().add(
+                                                        TaskDeleteRequested(
+                                                            taskId: task.id),
+                                                      );
+                                                },
+                                                child: _TaskListItem(
+                                                    task: task, index: index),
+                                              ),
+                                            );
+                                          },
+                                        ),
                                       );
                                     }
 
@@ -705,14 +790,82 @@ class _HomePageState extends State<HomePage> {
                                 ),
                               ),
                             ],
-                          ),
-                        ), // Scaffold
-                      ), // Expanded
-                    ], // Row children
-                  ), // Row
-                ), // Focus
-              ), // Actions
-            ); // Shortcuts
+                          ), // Column
+                        ), // SafeArea
+                      ), // GestureDetector
+                    ), // Scaffold
+                  ), // PopScope
+                ), // Expanded
+              ], // Row children
+            ); // Row
+
+            // Conditionally wrap with keyboard shortcuts on desktop platforms
+            if (isMobilePlatform) {
+              // Mobile: no keyboard shortcuts
+              return content;
+            } else {
+              // Desktop: include keyboard shortcuts
+              return Shortcuts(
+                shortcuts: ShortcutsConfig.defaultShortcuts,
+                child: Actions(
+                  actions: {
+                    NewTaskIntent: CallbackAction<NewTaskIntent>(
+                      onInvoke: (_) {
+                        _handleNewTask();
+                        return null;
+                      },
+                    ),
+                    FocusQuickCaptureIntent:
+                        CallbackAction<FocusQuickCaptureIntent>(
+                      onInvoke: (_) {
+                        _handleFocusQuickCapture();
+                        return null;
+                      },
+                    ),
+                    ShowShortcutsHelpIntent:
+                        CallbackAction<ShowShortcutsHelpIntent>(
+                      onInvoke: (_) {
+                        showShortcutsHelp(context);
+                        return null;
+                      },
+                    ),
+                    NavigateToProjectsIntent:
+                        CallbackAction<NavigateToProjectsIntent>(
+                      onInvoke: (_) {
+                        _handleNavigateToProjects();
+                        return null;
+                      },
+                    ),
+                    NavigateToTasksIntent:
+                        CallbackAction<NavigateToTasksIntent>(
+                      onInvoke: (_) {
+                        // Already on tasks page, just pop to root
+                        Navigator.of(context)
+                            .popUntil((route) => route.isFirst);
+                        return null;
+                      },
+                    ),
+                    RefreshIntent: CallbackAction<RefreshIntent>(
+                      onInvoke: (_) {
+                        _handleRefresh();
+                        return null;
+                      },
+                    ),
+                    ToggleFocusModeIntent:
+                        CallbackAction<ToggleFocusModeIntent>(
+                      onInvoke: (_) {
+                        _handleToggleFocusMode();
+                        return null;
+                      },
+                    ),
+                  },
+                  child: Focus(
+                    autofocus: true,
+                    child: content,
+                  ),
+                ),
+              );
+            }
           }, // LayoutBuilder builder
         ); // LayoutBuilder
       }, // BlocBuilder builder
@@ -721,11 +874,97 @@ class _HomePageState extends State<HomePage> {
 }
 
 /// Widget to display a task in the list.
+///
+/// Supports touch interactions:
+/// - Long press to show action menu
+/// - Swipe left to delete (with confirmation)
+/// - Tap checkbox to toggle completion status
 class _TaskListItem extends StatelessWidget {
   const _TaskListItem({required this.task, required this.index});
 
+  /// The task to display.
   final Task task;
+
+  /// The index of this task in the list (used for reordering).
   final int index;
+
+  /// Shows a bottom sheet with task actions (edit, complete/incomplete, delete).
+  ///
+  /// This is triggered by long-pressing on a task.
+  void _showTaskActions(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (BuildContext sheetContext) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.edit),
+                title: const Text('Edit Task'),
+                onTap: () {
+                  Navigator.pop(sheetContext);
+                  // Navigate to edit page
+                  final taskBloc = context.read<TaskBloc>();
+                  final projectBloc = context.read<ProjectBloc>();
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (context) => MultiBlocProvider(
+                        providers: [
+                          BlocProvider.value(value: taskBloc),
+                          BlocProvider.value(value: projectBloc),
+                        ],
+                        child: TaskEditPage(task: task),
+                      ),
+                    ),
+                  );
+                },
+              ),
+              ListTile(
+                leading: Icon(
+                  task.status == TaskStatus.completed
+                      ? Icons.radio_button_unchecked
+                      : Icons.check_circle,
+                ),
+                title: Text(
+                  task.status == TaskStatus.completed
+                      ? 'Mark as Incomplete'
+                      : 'Mark as Complete',
+                ),
+                onTap: () {
+                  Navigator.pop(sheetContext);
+                  final updatedTask = task.copyWith(
+                    status: task.status == TaskStatus.completed
+                        ? TaskStatus.todo
+                        : TaskStatus.completed,
+                    completedAt: task.status == TaskStatus.completed
+                        ? null
+                        : DateTime.now(),
+                  );
+                  context.read<TaskBloc>().add(
+                        TaskUpdateRequested(task: updatedTask),
+                      );
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.delete, color: AltairColors.error),
+                title: const Text(
+                  'Delete Task',
+                  style: TextStyle(color: AltairColors.error),
+                ),
+                onTap: () {
+                  Navigator.pop(sheetContext);
+                  context.read<TaskBloc>().add(
+                        TaskDeleteRequested(taskId: task.id),
+                      );
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -747,6 +986,7 @@ class _TaskListItem extends StatelessWidget {
           ),
         );
       },
+      onLongPress: () => _showTaskActions(context),
       child: AltairCard(
         accentColor: _getAccentColorForStatus(task.status),
         showAccentBar: true,

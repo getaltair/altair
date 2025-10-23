@@ -117,7 +117,7 @@ void main() {
 
       expect(find.text('No tasks yet'), findsOneWidget);
       expect(
-        find.text('Use quick capture above to add your first task'),
+        find.text('Use quick capture to start'),
         findsOneWidget,
       );
     });

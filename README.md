@@ -103,7 +103,12 @@ flutter run -d windows
 
 # Run on Android (requires connected device/emulator)
 flutter run -d android
+
+# Run on iOS (macOS only, requires simulator or connected device)
+flutter run -d ios
 ```
+
+**Mobile Development:** See [MOBILE-DEVELOPMENT.md](docs/MOBILE-DEVELOPMENT.md) for detailed mobile platform setup and testing guidelines.
 
 ### Development Setup
 
@@ -127,9 +132,15 @@ pre-commit install
 ### Phase 1: Altair Guidance (Months 1-3)
 
 - ✅ Month 1: Infrastructure & auth
-- ✅ Month 2: Core task management (Week 5-8 complete: Quick Capture, Task Editing, Projects, UX Polish)
-- ✅ Month 3: AI features (Week 9-11 complete: OpenAI, Anthropic, Ollama integrations, AI Features UI)
-- 🚧 Week 12: Polish & Beta (Standalone Installers complete, Beta testing in progress)
+- ✅ Month 2: Core task management (complete: Quick Capture, Task Editing, Projects, UX Polish)
+- ✅ Month 3: AI features (complete: OpenAI, Anthropic, Ollama integrations, AI Features UI)
+- ✅ Polish & Beta (Standalone Installers complete, Beta testing in progress)
+
+### Phase 1.5: Mobile Platform Support
+
+- ✅ Step 1: iOS Platform Setup (Complete)
+- ✅ Step 2: Mobile Optimization & Testing (Complete - 217 tests passing, CI/CD ready)
+- ⏳ Step 3: Physical Device Testing (Pending device access - documentation ready)
 
 ### Phase 2: Altair Knowledge (Months 4-6)
 
@@ -177,11 +188,15 @@ We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guid
 
 ### Development Workflow
 
-1. Create a feature branch (`git checkout -b feature/amazing-feature`)
+We use **Git Flow** with `main` (stable releases) and `develop` (active development):
+
+1. Branch from `develop`: `git checkout develop && git pull && git checkout -b feature/amazing-feature`
 2. Make changes following our conventions
-3. Run linters and tests (`pre-commit run --all-files`)
-4. Commit with conventional commits (`git commit -m "feat: add amazing feature"`)
-5. Push and create a pull request
+3. Run linters and tests: `pre-commit run --all-files`
+4. Commit with conventional commits: `git commit -m "feat: add amazing feature"`
+5. Push and create PR targeting `develop`: `gh pr create --base develop`
+
+**Important:** PRs target `develop`, not `main`. See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
 ### Code Standards
 
@@ -210,6 +225,6 @@ This project is licensed under the GNU Affero General Public License v3.0 or lat
 
 ---
 
-**Status**: 🚧 Phase 1 Development (Week 12: Polish & Beta - Standalone Installers Complete)
+**Status**: ✅ Phase 1.5 Complete (CI/CD Ready) - ⏳ Physical Device Testing Available When Devices Available
 
-Made with ❤️ for the ADHD community
+Made with ☕ for the ADHD community

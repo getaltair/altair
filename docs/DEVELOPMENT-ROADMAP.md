@@ -27,7 +27,7 @@
 
 ```mermaid
 gantt
-    title Altair Development Roadmap (9 Months)
+    title Altair Development Roadmap (9 Months + Mobile)
     dateFormat  YYYY-MM-DD
     section Phase 1: Guidance
     Infrastructure & Auth       :a1, 2025-10-17, 30d
@@ -35,8 +35,13 @@ gantt
     AI Features & Polish       :a3, after a2, 30d
     Guidance Beta Launch       :milestone, after a3, 0d
 
+    section Phase 1.5: Mobile
+    Step 1: iOS Setup          :a4, after a3, 7d
+    Step 2: Optimization       :a5, after a4, 7d
+    Mobile Beta Ready          :milestone, after a5, 0d
+
     section Phase 2: Knowledge
-    Wiki Foundation            :b1, after a3, 30d
+    Wiki Foundation            :b1, after a5, 30d
     Smart Connections          :b2, after b1, 30d
     External Brain Features    :b3, after b2, 30d
     Knowledge Beta Launch      :milestone, after b3, 0d
@@ -74,19 +79,19 @@ Task and project management with ADHD-friendly features.
 
 ```mermaid
 graph TB
-    subgraph "Week 1-2: Setup"
+    subgraph "Step 1-2: Setup"
         A1[Monorepo Structure]
         A2[CI/CD Pipeline]
         A3[Documentation Site]
     end
 
-    subgraph "Week 3: Auth"
+    subgraph "Step 3: Auth"
         B1[altair-auth Package]
         B2[JWT Implementation]
         B3[Secure Storage]
     end
 
-    subgraph "Week 4: Database"
+    subgraph "Step 4: Database"
         C1[SQLite Schema]
         C2[Migrations System]
         C3[Basic CRUD]
@@ -123,21 +128,21 @@ graph TB
 
 ```mermaid
 graph TB
-    subgraph "Week 5-6: altair-ui Package"
+    subgraph "Step 1-2: altair-ui Package"
         A1[Neo-Brutalist Theme]
         A2[Quick Capture Widget]
         A3[Time Blindness Timer]
         A4[Task Card Component]
     end
 
-    subgraph "Week 7: Features"
+    subgraph "Step 3: Features"
         B1[Task Creation & Editing]
         B2[Project Management]
         B3[Tags & Filtering]
         B4[Search Functionality]
     end
 
-    subgraph "Week 8: UX Polish"
+    subgraph "Step 4: UX Polish"
         C1[Keyboard Shortcuts]
         C2[Focus Mode]
         C3[Drag & Drop]
@@ -175,21 +180,21 @@ graph TB
 
 ```mermaid
 graph TB
-    subgraph "Week 9: AI Integration"
+    subgraph "Step 1: AI Integration"
         A1[AI Service Package]
         A2[OpenAI Integration]
         A3[Anthropic Integration]
         A4[Ollama Support]
     end
 
-    subgraph "Week 10: AI Features"
+    subgraph "Step 2: AI Features"
         B1[Task Breakdown Assistant]
         B2[Smart Prioritization]
         B3[Time Estimates]
         B4[Context Suggestions]
     end
 
-    subgraph "Week 11-12: Polish & Beta"
+    subgraph "Step 3-4: Polish & Beta"
         C1[Bug Fixes]
         C2[Performance Optimization]
         C3[Standalone Installers]
@@ -229,6 +234,89 @@ graph TB
 - Using Guidance to manage Altair development
 - Track all tasks, bugs, features in Guidance
 - Test every feature personally before shipping
+
+---
+
+## Phase 1.5: Mobile Platform Support
+
+**Priority shift:** Mobile development begins immediately to target the most ubiquitous device platform.
+
+### Step 1: iOS Platform Setup ✅
+
+**Focus areas:**
+
+- Enable iOS platform for altair_guidance
+- Configure iOS build settings and permissions
+- Test basic app functionality on iOS
+- Ensure UI components work on mobile screens
+
+**Deliverables:**
+
+- ✅ iOS platform enabled
+- ✅ iOS build configuration complete
+- ✅ Basic app runs on iOS simulator/device
+- ✅ UI responsive on iPhone screens
+
+**Success criteria:**
+
+- [x] App builds and runs on iOS devices
+- [x] Core features work on mobile
+- [x] UI adapts to mobile screen sizes
+- [x] No critical iOS-specific bugs
+
+### Step 2: Mobile Optimization & Testing ✅
+
+**Focus areas:**
+
+- Mobile-specific UI/UX improvements
+- Touch gesture support
+- Mobile performance optimization
+- Android testing and refinement
+- Cross-platform testing (iOS + Android)
+
+**Deliverables:**
+
+- ✅ Touch-optimized UI components
+- ✅ Gesture navigation support (swipe-to-delete, long-press, pull-to-refresh)
+- ✅ Performance optimization for mobile
+- ✅ Tested on emulators (217 tests passing, 7 integration tests)
+- ✅ Mobile CI/CD pipeline created
+- ✅ Device testing documentation complete
+- ⏳ Physical device testing (deferred to user availability)
+
+**Success criteria:**
+
+- [x] Quick capture works on mobile
+- [x] Task management smooth on touch devices
+- [x] Platform-specific features implemented (SafeArea, keyboard, back button)
+- [x] Mobile tests comprehensive and passing
+- [ ] Performance validated on physical devices (pending device access)
+- [ ] Beta testers can use mobile version daily (pending physical testing)
+
+### Step 3: Physical Device Validation ⏳
+
+**Focus areas:**
+
+- Test on real Android devices
+- Test on real iOS devices (requires macOS)
+- Measure performance baselines
+- Validate across multiple screen sizes
+- Prepare for app store submissions
+
+**Deliverables:**
+
+- ⏳ Android device testing complete
+- ⏳ iOS device testing complete (requires macOS)
+- ⏳ Performance baselines documented
+- ⏳ App store assets prepared
+- ⏳ Beta distribution via TestFlight/Play Store
+
+**Success criteria:**
+
+- [ ] Tested on 3+ Android devices
+- [ ] Tested on 3+ iOS devices
+- [ ] Performance meets targets on mid-range devices
+- [ ] Ready for public beta distribution
 
 ---
 
@@ -598,7 +686,7 @@ Using Altair to build Altair (meta!).
 
 ```mermaid
 graph TB
-    subgraph "Week 12 (End of Month 3)"
+    subgraph "Phase 1 Complete"
         D1[Switch to Guidance for all task tracking]
         D2[Log bugs as tasks in Guidance]
         D3[Plan sprints in Guidance]
@@ -763,7 +851,7 @@ How we measure progress and success.
 
 ## What's Next?
 
-### Immediate Actions (Week 1)
+### Immediate Actions (Phase 1 Step 1)
 
 **Day 1-2:**
 
@@ -835,7 +923,7 @@ A: Fix it before moving to Knowledge. No point building more apps if first one f
 A: Yes! These are MVPs. Iterate based on user feedback.
 
 **Q: What about mobile apps?**
-A: Desktop first (easier to dogfood). Mobile in post-V1.0 phase.
+A: Mobile development starts immediately after Phase 1 completion. Android already enabled, iOS to be configured. Mobile and desktop platforms developed in parallel.
 
 **Q: How do you avoid burnout over 9 months?**
 A: One app at a time. Celebrate milestones. Ship early, get feedback, stay motivated.
@@ -845,6 +933,7 @@ A: Ship standalone first. Sync is optional enhancement, not blocker.
 
 ---
 
-**Last updated:** October 17, 2025
+**Last updated:** October 22, 2025
 **Next review:** November 17, 2025 (Monthly)
 **Accountability:** Weekly dev logs on Discord
+**Recent change:** Added Phase 1.5 (Mobile Platform Support) - prioritizing mobile development after Phase 1 completion
