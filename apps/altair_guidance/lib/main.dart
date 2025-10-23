@@ -17,6 +17,7 @@ import 'bloc/task/task_state.dart';
 import 'features/focus_mode/focus_mode_cubit.dart';
 import 'features/theme/theme_cubit.dart';
 import 'pages/projects_page.dart';
+import 'pages/settings_page.dart';
 import 'pages/task_edit_page.dart';
 import 'services/ai/ai_config.dart';
 import 'services/ai/ai_service.dart';
@@ -154,60 +155,11 @@ class _HomePageState extends State<HomePage> {
             final isDesktop = constraints.maxWidth >= 1024;
             final showDrawer = !isDesktop || focusModeState.isEnabled;
 
-            return Shortcuts(
-              shortcuts: ShortcutsConfig.defaultShortcuts,
-              child: Actions(
-                actions: {
-                  NewTaskIntent: CallbackAction<NewTaskIntent>(
-                    onInvoke: (_) {
-                      _handleNewTask();
-                      return null;
-                    },
-                  ),
-                  FocusQuickCaptureIntent:
-                      CallbackAction<FocusQuickCaptureIntent>(
-                    onInvoke: (_) {
-                      _handleFocusQuickCapture();
-                      return null;
-                    },
-                  ),
-                  ShowShortcutsHelpIntent:
-                      CallbackAction<ShowShortcutsHelpIntent>(
-                    onInvoke: (_) {
-                      showShortcutsHelp(context);
-                      return null;
-                    },
-                  ),
-                  NavigateToProjectsIntent:
-                      CallbackAction<NavigateToProjectsIntent>(
-                    onInvoke: (_) {
-                      _handleNavigateToProjects();
-                      return null;
-                    },
-                  ),
-                  NavigateToTasksIntent: CallbackAction<NavigateToTasksIntent>(
-                    onInvoke: (_) {
-                      // Already on tasks page, just pop to root
-                      Navigator.of(context).popUntil((route) => route.isFirst);
-                      return null;
-                    },
-                  ),
-                  RefreshIntent: CallbackAction<RefreshIntent>(
-                    onInvoke: (_) {
-                      _handleRefresh();
-                      return null;
-                    },
-                  ),
-                  ToggleFocusModeIntent: CallbackAction<ToggleFocusModeIntent>(
-                    onInvoke: (_) {
-                      _handleToggleFocusMode();
-                      return null;
-                    },
-                  ),
-                },
-                child: Focus(
-                  autofocus: true,
-                  child: Row(
+            // Check if we're on mobile platform (Android or iOS)
+            final isMobilePlatform = Platform.isAndroid || Platform.isIOS;
+
+            // Main content widget
+            final content = Row(
                     children: [
                       // Fixed sidebar on desktop (when not in focus mode)
                       if (isDesktop && !focusModeState.isEnabled)
@@ -318,7 +270,15 @@ class _HomePageState extends State<HomePage> {
                                     label: 'SETTINGS',
                                     isSelected: false,
                                     onTap: () {
-                                      // TODO: Navigate to settings
+                                      Navigator.of(context).push(
+                                        MaterialPageRoute<void>(
+                                          builder: (context) =>
+                                              BlocProvider.value(
+                                            value: context.read<ThemeCubit>(),
+                                            child: const SettingsPage(),
+                                          ),
+                                        ),
+                                      );
                                     },
                                   ),
                                 ),
@@ -364,26 +324,6 @@ class _HomePageState extends State<HomePage> {
                                     ),
                                   ),
                                 ),
-                              // Theme toggle
-                              Builder(
-                                builder: (context) {
-                                  final isDark = Theme.of(context).brightness ==
-                                      Brightness.dark;
-                                  return IconButton(
-                                    icon: Icon(
-                                      isDark
-                                          ? Icons.light_mode
-                                          : Icons.dark_mode,
-                                    ),
-                                    tooltip: isDark
-                                        ? 'Switch to light mode'
-                                        : 'Switch to dark mode',
-                                    onPressed: () {
-                                      context.read<ThemeCubit>().toggle();
-                                    },
-                                  );
-                                },
-                              ),
                               // Focus mode toggle
                               IconButton(
                                 icon: Icon(
@@ -392,8 +332,12 @@ class _HomePageState extends State<HomePage> {
                                       : Icons.visibility,
                                 ),
                                 tooltip: focusModeState.isEnabled
-                                    ? 'Exit focus mode (Ctrl/Cmd + D)'
-                                    : 'Enter focus mode (Ctrl/Cmd + D)',
+                                    ? (isMobilePlatform
+                                        ? 'Exit focus mode'
+                                        : 'Exit focus mode (Ctrl/Cmd + D)')
+                                    : (isMobilePlatform
+                                        ? 'Enter focus mode'
+                                        : 'Enter focus mode (Ctrl/Cmd + D)'),
                                 onPressed: _handleToggleFocusMode,
                                 color: focusModeState.isEnabled
                                     ? AltairColors.accentOrange
@@ -407,12 +351,13 @@ class _HomePageState extends State<HomePage> {
                                     // TODO: Show filter menu
                                   },
                                 ),
-                                // Keyboard shortcuts help
-                                IconButton(
-                                  icon: const Icon(Icons.keyboard),
-                                  tooltip: 'Keyboard shortcuts (Shift + ?)',
-                                  onPressed: () => showShortcutsHelp(context),
-                                ),
+                                // Keyboard shortcuts help (desktop only)
+                                if (!isMobilePlatform)
+                                  IconButton(
+                                    icon: const Icon(Icons.keyboard),
+                                    tooltip: 'Keyboard shortcuts (Shift + ?)',
+                                    onPressed: () => showShortcutsHelp(context),
+                                  ),
                               ],
                             ],
                           ),
@@ -528,7 +473,16 @@ class _HomePageState extends State<HomePage> {
                                           isSelected: false,
                                           onTap: () {
                                             Navigator.pop(context);
-                                            // TODO: Navigate to settings
+                                            Navigator.of(context).push(
+                                              MaterialPageRoute<void>(
+                                                builder: (context) =>
+                                                    BlocProvider.value(
+                                                  value:
+                                                      context.read<ThemeCubit>(),
+                                                  child: const SettingsPage(),
+                                                ),
+                                              ),
+                                            );
                                           },
                                         ),
                                       ),
@@ -713,10 +667,72 @@ class _HomePageState extends State<HomePage> {
                         ), // Scaffold
                       ), // Expanded
                     ], // Row children
-                  ), // Row
-                ), // Focus
-              ), // Actions
-            ); // Shortcuts
+                  ); // Row
+
+            // Conditionally wrap with keyboard shortcuts on desktop platforms
+            if (isMobilePlatform) {
+              // Mobile: no keyboard shortcuts
+              return content;
+            } else {
+              // Desktop: include keyboard shortcuts
+              return Shortcuts(
+                shortcuts: ShortcutsConfig.defaultShortcuts,
+                child: Actions(
+                  actions: {
+                    NewTaskIntent: CallbackAction<NewTaskIntent>(
+                      onInvoke: (_) {
+                        _handleNewTask();
+                        return null;
+                      },
+                    ),
+                    FocusQuickCaptureIntent:
+                        CallbackAction<FocusQuickCaptureIntent>(
+                      onInvoke: (_) {
+                        _handleFocusQuickCapture();
+                        return null;
+                      },
+                    ),
+                    ShowShortcutsHelpIntent:
+                        CallbackAction<ShowShortcutsHelpIntent>(
+                      onInvoke: (_) {
+                        showShortcutsHelp(context);
+                        return null;
+                      },
+                    ),
+                    NavigateToProjectsIntent:
+                        CallbackAction<NavigateToProjectsIntent>(
+                      onInvoke: (_) {
+                        _handleNavigateToProjects();
+                        return null;
+                      },
+                    ),
+                    NavigateToTasksIntent: CallbackAction<NavigateToTasksIntent>(
+                      onInvoke: (_) {
+                        // Already on tasks page, just pop to root
+                        Navigator.of(context).popUntil((route) => route.isFirst);
+                        return null;
+                      },
+                    ),
+                    RefreshIntent: CallbackAction<RefreshIntent>(
+                      onInvoke: (_) {
+                        _handleRefresh();
+                        return null;
+                      },
+                    ),
+                    ToggleFocusModeIntent: CallbackAction<ToggleFocusModeIntent>(
+                      onInvoke: (_) {
+                        _handleToggleFocusMode();
+                        return null;
+                      },
+                    ),
+                  },
+                  child: Focus(
+                    autofocus: true,
+                    child: content,
+                  ),
+                ),
+              );
+            }
           }, // LayoutBuilder builder
         ); // LayoutBuilder
       }, // BlocBuilder builder
