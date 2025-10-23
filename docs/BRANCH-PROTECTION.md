@@ -1,158 +1,178 @@
-# Branch Protection Rules
+# Repository Rulesets
 
-> Recommended branch protection settings for Altair repository
+> Modern branch protection using GitHub Rulesets (replaces legacy branch protection rules)
 
 ## Quick Setup
 
-Go to: **Settings → Branches → Branch protection rules**
+Go to: **Settings → Rules → Rulesets**
 
-Or use the direct link: `https://github.com/getaltair/altair/settings/branches`
+Or use the direct link: `https://github.com/getaltair/altair/settings/rules`
+
+**What are Rulesets?**
+
+Rulesets are GitHub's modern approach to branch protection that offer:
+
+- Multiple rulesets can apply simultaneously (most restrictive wins)
+- Can be enabled/disabled without deletion
+- Visible to all users (not just admins)
+- Support for commit metadata rules
 
 ---
 
-## Protection for `main` Branch
+## Ruleset for `main` Branch
 
-### Branch Name Pattern
+### Step-by-Step Setup
 
-```
-main
-```
+1. **Go to Settings → Rules → Rulesets → New ruleset → New branch ruleset**
 
-### Protection Rules
+2. **Ruleset Name:** `main-protection`
 
-#### ✅ Require Pull Request Before Merging
+3. **Enforcement status:** **Active** (enforce immediately)
+
+4. **Bypass list:** Leave empty (or add specific users with "Pull request only" if needed)
+
+5. **Target branches:**
+   - Add target: **Include by pattern**
+   - Pattern: `main`
+
+6. **Branch protections** - Enable these rules:
+
+#### ✅ Restrict deletions
+
+- Prevents accidental branch deletion
+
+#### ✅ Block force pushes
+
+- Prevents history rewriting (enabled by default)
+
+#### ✅ Require linear history
+
+- Prevents merge commits, enforces squash or rebase
+
+#### ✅ Require pull request before merging
 
 - **Required approvals:** 1
 - ✅ Dismiss stale pull request approvals when new commits are pushed
-- ✅ Require review from Code Owners (optional, if CODEOWNERS file exists)
+- ✅ Require review from Code Owners (if you create a CODEOWNERS file)
+- ✅ Require approval of the most recent reviewable push
+- ✅ Require conversation resolution before merging
 
-#### ✅ Require Status Checks to Pass
-
-**Required status checks:**
-
-- `Test Suite / test`
-- `Test Suite / integration-test`
-- `Test Suite / build`
-- `CI / lint-flutter`
-- `CI / test-flutter`
-- `CI / lint-python` (if backend changes)
-- `CI / test-python` (if backend changes)
-
-**Settings:**
+#### ✅ Require status checks to pass
 
 - ✅ Require branches to be up to date before merging
-- ✅ Require status checks to pass before merging
 
-#### ✅ Require Conversation Resolution Before Merging
+**Add these status checks:**
 
-- All PR comments must be resolved before merge
+- `test` (from Test Suite workflow)
+- `integration-test` (from Test Suite workflow)
+- `build` (from Test Suite workflow)
+- `Lint Flutter Code` (from CI workflow)
+- `Test Flutter Code` (from CI workflow)
+- `Android Build & Test` (from Mobile CI/CD workflow)
+- `Lint Python Code` (if backend changes)
+- `Test Python Code` (if backend changes)
 
-#### ✅ Require Signed Commits (Optional)
+#### ✅ Require signed commits (Optional but recommended)
 
-- Enforces GPG-signed commits for security
+- Ensures all commits are GPG signed
 
-#### ✅ Require Linear History
-
-- Prevents merge commits, requires rebase or squash
-
-#### ✅ Include Administrators
-
-- Even admins must follow these rules
-
-#### ❌ Allow Force Pushes
-
-- **Disabled** - Prevents history rewriting on main
-
-#### ❌ Allow Deletions
-
-- **Disabled** - Prevents accidental branch deletion
+1. **Click "Create"** at the bottom
 
 ---
 
-## Protection for `develop` Branch
+## Ruleset for `develop` Branch
 
-### Branch Name Pattern
+### Step-by-Step Setup
 
-```
-develop
-```
+1. **Go to Settings → Rules → Rulesets → New ruleset → New branch ruleset**
 
-### Protection Rules
+2. **Ruleset Name:** `develop-protection`
 
-#### ✅ Require Pull Request Before Merging
+3. **Enforcement status:** **Active**
 
-- **Required approvals:** 1 (can be 0 for solo development)
+4. **Bypass list:**
+   - For solo dev: Can add yourself with full bypass
+   - For team: Leave empty or add leads with "Pull request only"
+
+5. **Target branches:**
+   - Add target: **Include by pattern**
+   - Pattern: `develop`
+
+6. **Branch protections** - Enable these rules:
+
+#### ✅ Restrict deletions
+
+- Prevents accidental branch deletion
+
+#### ✅ Block force pushes
+
+- Prevents history rewriting
+
+#### ✅ Require pull request before merging
+
+- **Required approvals:** 0 for solo, 1 for team
 - ✅ Dismiss stale pull request approvals when new commits are pushed
+- ✅ Require conversation resolution before merging
 
-#### ✅ Require Status Checks to Pass
-
-**Required status checks:**
-
-- `Test Suite / test`
-- `Test Suite / integration-test`
-- `Test Suite / build`
-- `CI / lint-flutter`
-- `CI / test-flutter`
-
-**Settings:**
+#### ✅ Require status checks to pass
 
 - ✅ Require branches to be up to date before merging
-- ✅ Require status checks to pass before merging
 
-#### ✅ Require Conversation Resolution Before Merging
+**Add these status checks:**
 
-- All PR comments must be resolved
+- `test`
+- `integration-test`
+- `build`
+- `Lint Flutter Code`
+- `Test Flutter Code`
+- `Android Build & Test`
 
-#### ⚠️  Require Linear History (Optional)
+#### ⚠️ Require linear history (Optional)
 
-- Can be enabled for cleaner history
-- May slow down integration if many features
+- Enable for cleaner git history
+- May slow integration if many concurrent features
 
-#### ❌ Include Administrators (Optional)
-
-- Can allow admins to bypass for urgent fixes
-- Recommended: Keep enabled for discipline
-
-#### ❌ Allow Force Pushes
-
-- **Disabled** - Prevents history rewriting
-
-#### ❌ Allow Deletions
-
-- **Disabled** - Prevents accidental deletion
+1. **Click "Create"**
 
 ---
 
-## Protection for Feature Branches
+## Ruleset for Feature Branches (Optional)
 
-### Branch Name Pattern
+### Step-by-Step Setup
 
-```
-feature/*
-fix/*
-docs/*
-```
+1. **Go to Settings → Rules → Rulesets → New ruleset → New branch ruleset**
 
-### Protection Rules
+2. **Ruleset Name:** `feature-branch-checks`
 
-**Minimal protection for flexibility:**
+3. **Enforcement status:** **Active** (or **Evaluate** to test without blocking)
 
-#### ✅ Require Status Checks to Pass (Recommended)
+4. **Bypass list:** Leave empty (all developers can push)
 
-- `CI / lint-flutter`
-- `CI / test-flutter`
+5. **Target branches:**
+   - Add target: **Include by pattern**
+   - Pattern: `feature/*`
+   - Add another: `fix/*`
+   - Add another: `docs/*`
+   - Add another: `test/*`
 
-#### ❌ Require Pull Requests
+6. **Branch protections** - Minimal rules for flexibility:
 
-- Not required (developer manages their own feature branch)
+#### ✅ Require status checks to pass (Recommended)
 
-#### ✅ Allow Force Pushes
+- **Do NOT** require branches to be up to date (too restrictive for feature work)
 
-- **Enabled** - Developers can rebase/clean up commits
+**Add these status checks:**
 
-#### ✅ Allow Deletions
+- `Lint Flutter Code`
+- `Test Flutter Code`
 
-- **Enabled** - Can delete after merge
+**Leave DISABLED:**
+
+- Restrict deletions (developers can delete their feature branches)
+- Block force pushes (developers need to rebase/amend)
+- Require pull requests (not needed for work-in-progress)
+
+1. **Click "Create"**
 
 ---
 
@@ -204,29 +224,13 @@ feature/*:
 
 ---
 
-## Using GitHub CLI (Alternative Method)
+## Using GitHub CLI (Advanced)
 
-If you have `gh` CLI with admin permissions:
+Rulesets can also be created via the GitHub API, though the web interface is recommended for initial setup.
 
-```bash
-# Enable branch protection for main
-gh api repos/getaltair/altair/branches/main/protection \
-  --method PUT \
-  --field required_status_checks='{"strict":true,"contexts":["test","build"]}' \
-  --field enforce_admins=true \
-  --field required_pull_request_reviews='{"required_approving_review_count":1}' \
-  --field restrictions=null
+See [GitHub REST API - Rulesets](https://docs.github.com/en/rest/repos/rules) for API documentation.
 
-# Enable branch protection for develop
-gh api repos/getaltair/altair/branches/develop/protection \
-  --method PUT \
-  --field required_status_checks='{"strict":true,"contexts":["test","build"]}' \
-  --field enforce_admins=true \
-  --field required_pull_request_reviews='{"required_approving_review_count":1}' \
-  --field restrictions=null
-```
-
-**Note:** This requires repository admin permissions and may need adjustment based on your exact CI check names.
+**Note:** The ruleset API is more complex than the legacy branch protection API. Use the web UI unless you need to automate ruleset creation across many repositories.
 
 ---
 
@@ -261,58 +265,43 @@ gh pr create --base develop
 
 ---
 
-## Adjusting Settings
+## Managing Rulesets
 
-### Allow Bypasses for Urgent Hotfixes
+### Temporarily Disable a Ruleset
 
-In `main` branch protection:
+For urgent hotfixes or testing:
 
-1. Disable "Include administrators" temporarily
-2. Make hotfix
-3. Re-enable "Include administrators"
+1. Go to **Settings → Rules → Rulesets**
+2. Click on the ruleset (e.g., `main-protection`)
+3. Change **Enforcement status** to **Disabled**
+4. Make your changes
+5. Re-enable by setting status back to **Active**
 
-### Add More Required Checks
+**Tip:** Use **Evaluate** status to test ruleset changes without blocking contributors.
+
+### Add Bypass Permissions
+
+To allow specific users to bypass rules:
+
+1. Edit the ruleset
+2. Scroll to **Bypass list**
+3. Click **Add bypass**
+4. Select user/team/app
+5. Choose bypass mode:
+   - **Always** - Full bypass (use sparingly)
+   - **Pull request only** - Must still create PR (recommended for admins)
+
+### Add More Status Checks
 
 As you add CI workflows:
 
-1. Go to branch protection settings
-2. Add new check names under "Require status checks"
-3. Save changes
+1. Edit the ruleset
+2. Scroll to **Require status checks to pass**
+3. Click **Add checks**
+4. Enter exact check name (e.g., `Mobile CI Summary`)
+5. Save changes
 
----
-
-## Rulesets (New GitHub Feature)
-
-GitHub now supports **Branch Rulesets** as a more flexible alternative to branch protection rules.
-
-### Benefits
-
-- Apply rules to multiple branches with patterns
-- More granular permissions
-- Better enforcement options
-
-### Creating a Ruleset
-
-1. Go to **Settings → Rules → Rulesets**
-2. Click **New ruleset**
-3. Name: "Production Protection" or "Development Protection"
-4. Target branches: `main`, `develop`, `feature/*`, etc.
-5. Configure rules (same as branch protection)
-6. Set bypass permissions if needed
-
-**Recommended Rulesets:**
-
-1. **Production Ruleset** - For `main`
-   - Strictest rules
-   - No bypasses except owner
-
-2. **Integration Ruleset** - For `develop`
-   - Moderate rules
-   - Admin bypass allowed
-
-3. **Feature Ruleset** - For `feature/*`, `fix/*`, `docs/*`
-   - CI checks only
-   - Full flexibility
+**Tip:** Run a PR first to see exact check names in the "Checks" tab.
 
 ---
 
