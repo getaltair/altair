@@ -222,7 +222,34 @@ From `packages/altair-ui`:
 - ✅ Quick Capture placeholder now platform-aware
   - Mobile (Android/iOS): "Quick capture..."
   - Desktop (Linux/macOS/Windows): "Quick capture (Ctrl/Cmd + K)..."
-  - Fixed at `main.dart:578-580`
+  - Fixed at `main.dart:532-534`
+
+- ✅ Settings page with theme controls
+  - Light/Dark/System theme options
+  - Clean modal bottom sheet design
+  - Moved from AppBar for cleaner mobile UI
+
+- ✅ Platform-aware keyboard shortcuts
+  - Desktop: Full keyboard shortcuts enabled
+  - Mobile: Shortcuts disabled, tooltips hide keyboard hints
+  - Conditional wrapping at `main.dart:673-739`
+
+**🎯 Touch Interactions Implemented:**
+
+- ✅ **Swipe-to-delete** - Swipe left on any task to delete
+  - Red background with delete icon appears
+  - Confirmation dialog prevents accidental deletions
+  - Neo-brutalist styling consistent with app theme
+
+- ✅ **Long-press menu** - Hold any task to show actions
+  - Bottom sheet with Edit, Complete/Incomplete, Delete
+  - Mobile-friendly modal interface
+  - Quick access to common task actions
+
+- ✅ **Pull-to-refresh** - Pull down list to reload tasks
+  - Works on both full list and empty state
+  - Material Design refresh indicator
+  - Smooth animation and feedback
 
 **📊 Screen Resolution:**
 
@@ -246,11 +273,11 @@ From `packages/altair-ui`:
   - [x] FAB positioned correctly for mobile
   - [x] Navigation icons accessible on mobile
 
-- [ ] **Touch Interactions**
-  - [ ] All buttons tappable
-  - [ ] Swipe gestures work where expected
-  - [ ] Long press actions available
-  - [ ] Pull-to-refresh implemented
+- [x] **Touch Interactions**
+  - [x] All buttons tappable
+  - [x] Swipe-to-delete for tasks (with confirmation dialog)
+  - [x] Long-press context menu (Edit, Complete/Incomplete, Delete)
+  - [x] Pull-to-refresh on task list (including empty state)
 
 - [ ] **Performance**
   - [ ] App starts in < 3 seconds

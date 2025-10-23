@@ -571,40 +571,71 @@ class _HomePageState extends State<HomePage> {
 
                                     if (state is TaskLoaded) {
                                       if (state.tasks.isEmpty) {
-                                        return Center(
-                                          child: Column(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.center,
-                                            children: [
-                                              Icon(
-                                                Icons.checklist,
-                                                size: 64,
-                                                color:
-                                                    AltairColors.textSecondary,
-                                              ),
-                                              const SizedBox(
-                                                  height: AltairSpacing.md),
-                                              Text(
-                                                'No tasks yet',
-                                                style: Theme.of(context)
-                                                    .textTheme
-                                                    .headlineSmall,
-                                              ),
-                                              const SizedBox(
-                                                  height: AltairSpacing.sm),
-                                              Text(
-                                                'Use quick capture to start',
-                                                style: Theme.of(context)
-                                                    .textTheme
-                                                    .bodyMedium,
-                                                textAlign: TextAlign.center,
+                                        // Pull-to-refresh even when empty
+                                        return RefreshIndicator(
+                                          onRefresh: () async {
+                                            context.read<TaskBloc>().add(
+                                                  const TaskLoadRequested(),
+                                                );
+                                            // Wait a bit for the bloc to process
+                                            await Future.delayed(
+                                              const Duration(milliseconds: 500),
+                                            );
+                                          },
+                                          child: CustomScrollView(
+                                            slivers: [
+                                              SliverFillRemaining(
+                                                child: Center(
+                                                  child: Column(
+                                                    mainAxisAlignment:
+                                                        MainAxisAlignment.center,
+                                                    children: [
+                                                      Icon(
+                                                        Icons.checklist,
+                                                        size: 64,
+                                                        color: AltairColors
+                                                            .textSecondary,
+                                                      ),
+                                                      const SizedBox(
+                                                          height:
+                                                              AltairSpacing.md),
+                                                      Text(
+                                                        'No tasks yet',
+                                                        style: Theme.of(context)
+                                                            .textTheme
+                                                            .headlineSmall,
+                                                      ),
+                                                      const SizedBox(
+                                                          height:
+                                                              AltairSpacing.sm),
+                                                      Text(
+                                                        'Use quick capture to start',
+                                                        style: Theme.of(context)
+                                                            .textTheme
+                                                            .bodyMedium,
+                                                        textAlign:
+                                                            TextAlign.center,
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
                                               ),
                                             ],
                                           ),
                                         );
                                       }
 
-                                      return ReorderableListView.builder(
+                                      return RefreshIndicator(
+                                        onRefresh: () async {
+                                          context.read<TaskBloc>().add(
+                                                const TaskLoadRequested(),
+                                              );
+                                          // Wait a bit for the bloc to process
+                                          await Future.delayed(
+                                            const Duration(milliseconds: 500),
+                                          );
+                                        },
+                                        child: ReorderableListView.builder(
                                         padding: const EdgeInsets.all(
                                             AltairSpacing.md),
                                         buildDefaultDragHandles: false,
@@ -625,10 +656,73 @@ class _HomePageState extends State<HomePage> {
                                             padding: const EdgeInsets.only(
                                               bottom: AltairSpacing.md,
                                             ),
-                                            child: _TaskListItem(
-                                                task: task, index: index),
+                                            child: Dismissible(
+                                              key: ValueKey('dismissible_${task.id}'),
+                                              direction: DismissDirection.endToStart,
+                                              background: Container(
+                                                alignment: Alignment.centerRight,
+                                                padding: const EdgeInsets.only(
+                                                  right: AltairSpacing.lg,
+                                                ),
+                                                decoration: BoxDecoration(
+                                                  color: AltairColors.error,
+                                                  border: Border.all(
+                                                    color: Colors.black,
+                                                    width: AltairBorders.standard,
+                                                  ),
+                                                ),
+                                                child: const Icon(
+                                                  Icons.delete,
+                                                  color: Colors.white,
+                                                  size: 32,
+                                                ),
+                                              ),
+                                              confirmDismiss: (direction) async {
+                                                // Show confirmation dialog
+                                                return await showDialog<bool>(
+                                                  context: context,
+                                                  builder: (BuildContext dialogContext) {
+                                                    return AlertDialog(
+                                                      title: const Text('Delete Task'),
+                                                      content: Text(
+                                                        'Delete "${task.title}"?',
+                                                      ),
+                                                      actions: [
+                                                        TextButton(
+                                                          onPressed: () =>
+                                                              Navigator.of(
+                                                                      dialogContext)
+                                                                  .pop(false),
+                                                          child: const Text('CANCEL'),
+                                                        ),
+                                                        TextButton(
+                                                          onPressed: () =>
+                                                              Navigator.of(
+                                                                      dialogContext)
+                                                                  .pop(true),
+                                                          style: TextButton.styleFrom(
+                                                            foregroundColor:
+                                                                AltairColors.error,
+                                                          ),
+                                                          child: const Text('DELETE'),
+                                                        ),
+                                                      ],
+                                                    );
+                                                  },
+                                                );
+                                              },
+                                              onDismissed: (direction) {
+                                                context.read<TaskBloc>().add(
+                                                      TaskDeleteRequested(
+                                                          taskId: task.id),
+                                                    );
+                                              },
+                                              child: _TaskListItem(
+                                                  task: task, index: index),
+                                            ),
                                           );
                                         },
+                                        ),
                                       );
                                     }
 
@@ -747,6 +841,81 @@ class _TaskListItem extends StatelessWidget {
   final Task task;
   final int index;
 
+  void _showTaskActions(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (BuildContext sheetContext) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.edit),
+                title: const Text('Edit Task'),
+                onTap: () {
+                  Navigator.pop(sheetContext);
+                  // Navigate to edit page
+                  final taskBloc = context.read<TaskBloc>();
+                  final projectBloc = context.read<ProjectBloc>();
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (context) => MultiBlocProvider(
+                        providers: [
+                          BlocProvider.value(value: taskBloc),
+                          BlocProvider.value(value: projectBloc),
+                        ],
+                        child: TaskEditPage(task: task),
+                      ),
+                    ),
+                  );
+                },
+              ),
+              ListTile(
+                leading: Icon(
+                  task.status == TaskStatus.completed
+                      ? Icons.radio_button_unchecked
+                      : Icons.check_circle,
+                ),
+                title: Text(
+                  task.status == TaskStatus.completed
+                      ? 'Mark as Incomplete'
+                      : 'Mark as Complete',
+                ),
+                onTap: () {
+                  Navigator.pop(sheetContext);
+                  final updatedTask = task.copyWith(
+                    status: task.status == TaskStatus.completed
+                        ? TaskStatus.todo
+                        : TaskStatus.completed,
+                    completedAt: task.status == TaskStatus.completed
+                        ? null
+                        : DateTime.now(),
+                  );
+                  context.read<TaskBloc>().add(
+                        TaskUpdateRequested(task: updatedTask),
+                      );
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.delete, color: AltairColors.error),
+                title: const Text(
+                  'Delete Task',
+                  style: TextStyle(color: AltairColors.error),
+                ),
+                onTap: () {
+                  Navigator.pop(sheetContext);
+                  context.read<TaskBloc>().add(
+                        TaskDeleteRequested(taskId: task.id),
+                      );
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return InkWell(
@@ -767,6 +936,7 @@ class _TaskListItem extends StatelessWidget {
           ),
         );
       },
+      onLongPress: () => _showTaskActions(context),
       child: AltairCard(
         accentColor: _getAccentColorForStatus(task.status),
         showAccentBar: true,
