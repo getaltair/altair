@@ -227,8 +227,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - App-level tests for routing, theming, UI, and TaskBloc with mocktail
     - BLoC tests for ProjectBloc (15 tests covering all events and error handling)
     - BLoC tests for TagBloc (20 tests covering all tag operations and error scenarios)
-- Testing documentation (docs/TESTING.md) with:
-  - Complete testing guide for all test types
+- Testing documentation (docs/TESTING-STRATEGY.md) with:
+  - Comprehensive testing strategy for all test types
   - Best practices and examples
   - Coverage reporting instructions
   - CI/CD integration guidelines

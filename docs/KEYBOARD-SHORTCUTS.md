@@ -287,7 +287,7 @@ lib/shortcuts/
 
 - [Architecture Overview](./ARCHITECTURE-OVERVIEW.md) - System design
 - [Development Roadmap](./DEVELOPMENT-ROADMAP.md) - Feature timeline
-- [Testing Guide](./TESTING.md) - Testing shortcuts
+- [Testing Strategy](./TESTING-STRATEGY.md) - Testing best practices
 
 ---
 
