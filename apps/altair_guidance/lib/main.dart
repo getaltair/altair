@@ -1,6 +1,8 @@
 /// Altair Guidance - ADHD-friendly task management.
 library;
 
+import 'dart:io' show Platform;
+
 import 'package:altair_core/altair_core.dart';
 import 'package:altair_ui/altair_ui.dart';
 import 'package:flutter/material.dart';
@@ -573,7 +575,9 @@ class _HomePageState extends State<HomePage> {
                                               title: text),
                                         );
                                   },
-                                  hint: 'Quick capture (Ctrl/Cmd + K)...',
+                                  hint: Platform.isAndroid || Platform.isIOS
+                                      ? 'Quick capture...'
+                                      : 'Quick capture (Ctrl/Cmd + K)...',
                                   accentColor: AltairColors.accentOrange,
                                 ),
                               ),
