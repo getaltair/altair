@@ -639,7 +639,7 @@ class _HomePageState extends State<HomePage> {
                                               const SizedBox(
                                                   height: AltairSpacing.sm),
                                               Text(
-                                                'Use quick capture above to add your first task',
+                                                'Use quick capture to start',
                                                 style: Theme.of(context)
                                                     .textTheme
                                                     .bodyMedium,
