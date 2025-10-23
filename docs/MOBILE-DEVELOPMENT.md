@@ -320,7 +320,12 @@ From `packages/altair-ui`:
   - [x] Unit tests pass (207 tests)
   - [x] Widget tests pass (10 mobile feature tests)
   - [x] All tests passing (217 total, 2 skipped)
-  - [ ] Integration tests on mobile
+  - [x] Integration tests on mobile (7 tests, all passing)
+    - Pull-to-refresh workflow
+    - Long-press context menu (show, complete, incomplete toggle)
+    - Checkbox toggle workflow
+    - Quick Capture workflow (create task, field clears)
+    - Note: Complex dialog workflows deferred to manual testing
   - [ ] Manual testing on real device
 
 ---
