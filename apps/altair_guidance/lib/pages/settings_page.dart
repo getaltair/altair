@@ -132,7 +132,11 @@ class SettingsPage extends StatelessWidget {
 }
 
 /// Widget for a theme option radio button.
+///
+/// Displays a selectable theme option with an icon, title, and description.
+/// Shows visual feedback for the selected state with accent colors and a checkmark.
 class _ThemeOption extends StatelessWidget {
+  /// Creates a theme option widget.
   const _ThemeOption({
     required this.title,
     required this.description,
@@ -141,10 +145,19 @@ class _ThemeOption extends StatelessWidget {
     required this.onTap,
   });
 
+  /// The title of the theme option (e.g., "Light", "Dark", "Follow System").
   final String title;
+
+  /// A brief description of what this theme option does.
   final String description;
+
+  /// The icon to display for this theme option.
   final IconData icon;
+
+  /// Whether this theme option is currently selected.
   final bool isSelected;
+
+  /// Callback invoked when the user taps this theme option.
   final VoidCallback onTap;
 
   @override

@@ -869,12 +869,23 @@ class _HomePageState extends State<HomePage> {
 }
 
 /// Widget to display a task in the list.
+///
+/// Supports touch interactions:
+/// - Long press to show action menu
+/// - Swipe left to delete (with confirmation)
+/// - Tap checkbox to toggle completion status
 class _TaskListItem extends StatelessWidget {
   const _TaskListItem({required this.task, required this.index});
 
+  /// The task to display.
   final Task task;
+
+  /// The index of this task in the list (used for reordering).
   final int index;
 
+  /// Shows a bottom sheet with task actions (edit, complete/incomplete, delete).
+  ///
+  /// This is triggered by long-pressing on a task.
   void _showTaskActions(BuildContext context) {
     showModalBottomSheet<void>(
       context: context,

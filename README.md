@@ -103,7 +103,12 @@ flutter run -d windows
 
 # Run on Android (requires connected device/emulator)
 flutter run -d android
+
+# Run on iOS (macOS only, requires simulator or connected device)
+flutter run -d ios
 ```
+
+**Mobile Development:** See [MOBILE-DEVELOPMENT.md](docs/MOBILE-DEVELOPMENT.md) for detailed mobile platform setup and testing guidelines.
 
 ### Development Setup
 
@@ -133,8 +138,9 @@ pre-commit install
 
 ### Phase 1.5: Mobile Platform Support
 
-- 🚧 Step 1: iOS Platform Setup (In progress)
-- ⏳ Step 2: Mobile Optimization & Testing
+- ✅ Step 1: iOS Platform Setup (Complete)
+- ✅ Step 2: Mobile Optimization & Testing (Complete - widget & integration tests passing)
+- ⏳ Step 3: Physical Device Testing (Android & iOS)
 
 ### Phase 2: Altair Knowledge (Months 4-6)
 

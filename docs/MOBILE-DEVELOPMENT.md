@@ -68,13 +68,13 @@ flutter build apk --debug
 
 ### Testing Mobile UI on Desktop
 
-Since Android builds are currently blocked on Arch Linux, use desktop for mobile UI testing:
+You can test mobile UI on desktop for rapid iteration:
 
 ```bash
 # Run on Linux desktop
 flutter run -d linux
 
-# The app should be responsive and work on smaller window sizes
+# The app is responsive and works on smaller window sizes
 # Resize window to mobile dimensions (e.g., 375x667 for iPhone)
 ```
 
@@ -88,7 +88,7 @@ flutter run -d "iPhone 15"
 flutter build ios --release
 ```
 
-### Android Development (When Build Issue Resolved)
+### Android Development
 
 ```bash
 # List available emulators
