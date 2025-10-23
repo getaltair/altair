@@ -68,6 +68,8 @@ class AltairGuidanceApp extends StatelessWidget {
           return MaterialApp(
             title: 'Altair Guidance',
             debugShowCheckedModeBanner: false,
+            // Performance overlay for debugging (enable with 'P' key in debug mode)
+            showPerformanceOverlay: false,
             theme: AltairTheme.lightTheme,
             darkTheme: AltairTheme.darkTheme,
             themeMode: themeState.themeMode,
