@@ -251,6 +251,29 @@ From `packages/altair-ui`:
   - Material Design refresh indicator
   - Smooth animation and feedback
 
+**⚙️ Platform Features Implemented:**
+
+- ✅ **SafeArea Protection** - Content respects notches and system UI
+  - Wraps main content in SafeArea widget
+  - Prevents overlap with status bar, notch, home indicator
+  - Automatic handling on all platforms
+
+- ✅ **iOS Keyboard Dismissal** - Tap outside to dismiss keyboard
+  - GestureDetector wrapping content
+  - Unfocus on tap anywhere outside input
+  - Native iOS behavior
+
+- ✅ **Android Back Button** - Smart back navigation
+  - PopScope handles back button presses
+  - Dismisses keyboard if focused
+  - Otherwise allows normal back navigation
+
+- ✅ **Status Bar Styling** - Clean, modern appearance
+  - Transparent status bar (edge-to-edge)
+  - Dark icons for light mode (better contrast)
+  - White navigation bar (Android)
+  - SystemChrome configuration at app startup
+
 **📊 Screen Resolution:**
 
 - Physical size: 1080x2400 (typical modern Android phone)
@@ -287,11 +310,11 @@ From `packages/altair-ui`:
   - [ ] Baseline metrics measured on device
   - [ ] Performance targets validated
 
-- [ ] **Platform Features**
-  - [ ] iOS keyboard dismissal works
-  - [ ] Android back button works
-  - [ ] Status bar styling correct
-  - [ ] Safe area insets respected
+- [x] **Platform Features**
+  - [x] iOS keyboard dismissal (tap outside to dismiss)
+  - [x] Android back button handling (PopScope with keyboard unfocus)
+  - [x] Status bar styling (transparent with dark icons)
+  - [x] Safe area insets (SafeArea widget wrapping content)
 
 - [ ] **Testing Coverage**
   - [x] Unit tests pass

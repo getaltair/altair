@@ -6,6 +6,7 @@ import 'dart:io' show Platform;
 import 'package:altair_core/altair_core.dart';
 import 'package:altair_ui/altair_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'bloc/ai/ai_bloc.dart';
@@ -26,6 +27,18 @@ import 'shortcuts/shortcuts_config.dart';
 import 'shortcuts/shortcuts_help_dialog.dart';
 
 void main() {
+  // Configure system UI overlays (status bar, navigation bar)
+  WidgetsFlutterBinding.ensureInitialized();
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent, // Transparent status bar
+      statusBarIconBrightness: Brightness.dark, // Dark icons for light mode
+      statusBarBrightness: Brightness.light, // For iOS
+      systemNavigationBarColor: Colors.white, // Navigation bar color (Android)
+      systemNavigationBarIconBrightness: Brightness.dark,
+    ),
+  );
+
   runApp(const AltairGuidanceApp());
 }
 
@@ -291,8 +304,18 @@ class _HomePageState extends State<HomePage> {
 
                       // Main content area
                       Expanded(
-                        child: Scaffold(
-                          appBar: AppBar(
+                        child: PopScope(
+                          // Handle Android back button
+                          canPop: true,
+                          onPopInvokedWithResult: (didPop, result) {
+                            if (didPop) return;
+                            // Dismiss keyboard if focused
+                            if (FocusScope.of(context).hasFocus) {
+                              FocusScope.of(context).unfocus();
+                            }
+                          },
+                          child: Scaffold(
+                            appBar: AppBar(
                             title: const Text('Tasks'),
                             // Only show hamburger menu on mobile or when not in desktop mode
                             automaticallyImplyLeading:
@@ -508,10 +531,16 @@ class _HomePageState extends State<HomePage> {
                                   ),
                                 )
                               : null,
-                          body: Column(
-                            children: [
-                              // Quick Capture at the top - always visible
-                              Container(
+                          body: GestureDetector(
+                            // Dismiss keyboard on tap outside (iOS-friendly)
+                            onTap: () {
+                              FocusScope.of(context).unfocus();
+                            },
+                            child: SafeArea(
+                              child: Column(
+                                children: [
+                                  // Quick Capture at the top - always visible
+                                  Container(
                                 padding: const EdgeInsets.all(AltairSpacing.md),
                                 decoration: BoxDecoration(
                                   color:
@@ -758,9 +787,12 @@ class _HomePageState extends State<HomePage> {
                                   },
                                 ),
                               ),
-                            ],
-                          ),
-                        ), // Scaffold
+                                ],
+                              ), // Column
+                            ), // SafeArea
+                          ), // GestureDetector
+                          ), // Scaffold
+                        ), // PopScope
                       ), // Expanded
                     ], // Row children
                   ); // Row
