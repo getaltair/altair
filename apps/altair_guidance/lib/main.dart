@@ -541,8 +541,8 @@ class _HomePageState extends State<HomePage> {
                                   !isDesktop)
                               ? Padding(
                                   padding: const EdgeInsets.only(
-                                    right: AltairSpacing.lg,
-                                    bottom: AltairSpacing.xl,
+                                    right: AltairSpacing.md,
+                                    bottom: AltairSpacing.md,
                                   ),
                                   child: FloatingActionButton(
                                     onPressed: _handleNewTask,
