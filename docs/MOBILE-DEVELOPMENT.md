@@ -20,9 +20,9 @@
 
 ## Known Issues
 
-### Android Build Issue (Arch Linux)
+### Android Build Issue (Arch Linux) - ✅ RESOLVED
 
-**Problem:**
+**Problem (Historical):**
 
 ```
 Error resolving plugin [id: 'dev.flutter.flutter-plugin-loader', version: '1.0.0']
@@ -35,15 +35,32 @@ Error resolving plugin [id: 'dev.flutter.flutter-plugin-loader', version: '1.0.0
 **Cause:**
 The Arch Linux AUR Flutter package installs Flutter system-wide in `/usr/lib/flutter`, which is owned by root. Gradle's composite build feature (used in `android/settings.gradle.kts`) requires write access to the included build directory for caching and configuration.
 
-**Workarounds:**
+**✅ Solution Implemented:**
 
-1. **Use macOS or another Linux distro** with user-installed Flutter
-2. **Install Flutter manually** in home directory instead of using AUR package
-3. **Use Flutter from snap** (if available and preferred)
-4. **Test on CI/CD** using GitHub Actions with Android runners
+Switched to **user-installed Flutter** in home directory:
 
-**Temporary Solution:**
-Test mobile UI responsiveness on Linux desktop using responsive design mode. Most UI issues can be caught this way without needing actual Android builds.
+```bash
+# Clone Flutter to user directory
+cd ~
+git clone https://github.com/flutter/flutter.git -b stable flutter
+
+# Add to PATH permanently
+echo 'export PATH="$HOME/flutter/bin:$PATH"' >> ~/.bashrc
+source ~/.bashrc
+
+# Verify installation
+flutter --version
+# Flutter 3.35.6 • channel stable
+
+# Clean and rebuild
+cd /path/to/altair_guidance
+flutter clean
+flutter build apk --debug
+
+# ✓ Built build/app/outputs/flutter-apk/app-debug.apk (147MB)
+```
+
+**Result:** Android builds now work perfectly! No permission issues.
 
 ---
 
