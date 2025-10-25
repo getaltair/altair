@@ -82,6 +82,46 @@ class AIConfig {
     );
   }
 
+  /// Creates configuration from user settings.
+  ///
+  /// Currently only Ollama is fully supported. OpenAI and Anthropic
+  /// will require dedicated client implementations in future versions.
+  ///
+  /// Returns null if AI features are disabled or provider is not supported.
+  static AIConfig? fromSettings(dynamic settings) {
+    // Import will be: import '../../models/ai_settings.dart';
+    // For now, using dynamic to avoid circular dependency
+
+    // Check if AI is enabled
+    if (settings.enabled == false) {
+      return null;
+    }
+
+    // Get provider name (assumes AIProvider enum has name property)
+    final providerName = settings.provider.toString().split('.').last;
+
+    switch (providerName) {
+      case 'ollama':
+        // Ollama uses a local API endpoint
+        final baseUrl = settings.ollamaBaseUrl ?? settings.provider.defaultBaseUrl;
+        return AIConfig(
+          baseUrl: baseUrl,
+          apiKey: null, // Ollama doesn't use API keys
+          enableSSL: baseUrl.startsWith('https://'),
+        );
+
+      case 'openai':
+      case 'anthropic':
+        // OpenAI and Anthropic require dedicated client implementations
+        // For now, return null to indicate these are not yet supported
+        // TODO: Implement OpenAI and Anthropic clients
+        return null;
+
+      default:
+        return null;
+    }
+  }
+
   /// Validates the configuration.
   /// Throws [StateError] if configuration is invalid.
   void validate() {

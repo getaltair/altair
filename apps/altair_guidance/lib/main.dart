@@ -15,6 +15,7 @@ import 'bloc/project/project_bloc.dart';
 import 'bloc/project/project_event.dart';
 import 'bloc/settings/settings_bloc.dart';
 import 'bloc/settings/settings_event.dart';
+import 'bloc/settings/settings_state.dart';
 import 'bloc/task/task_bloc.dart';
 import 'bloc/task/task_event.dart';
 import 'bloc/task/task_state.dart';
@@ -65,11 +66,6 @@ class AltairGuidanceApp extends StatelessWidget {
     // Initialize repositories
     final aiSettingsRepository = AISettingsRepository(prefs: prefs);
 
-    // Initialize AI service with environment configuration
-    final aiService = AIService(
-      config: AIConfig.fromEnvironment(),
-    );
-
     return MultiBlocProvider(
       providers: [
         BlocProvider(
@@ -93,8 +89,25 @@ class AltairGuidanceApp extends StatelessWidget {
         BlocProvider(
           create: (_) => FocusModeCubit(),
         ),
+        // AIBloc created after SettingsBloc to access AI settings
         BlocProvider(
-          create: (_) => AIBloc(aiService: aiService),
+          create: (context) {
+            // Get current settings state
+            final settingsState = context.read<SettingsBloc>().state;
+
+            AIConfig config;
+            if (settingsState is SettingsLoaded) {
+              // Use settings if available
+              final settingsConfig = AIConfig.fromSettings(settingsState.aiSettings);
+              config = settingsConfig ?? AIConfig.fromEnvironment();
+            } else {
+              // Fallback to environment config
+              config = AIConfig.fromEnvironment();
+            }
+
+            final aiService = AIService(config: config);
+            return AIBloc(aiService: aiService);
+          },
         ),
       ],
       child: BlocBuilder<ThemeCubit, ThemeState>(
