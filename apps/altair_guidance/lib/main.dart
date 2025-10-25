@@ -92,8 +92,9 @@ class AltairGuidanceApp extends StatelessWidget {
         // AIBloc created after SettingsBloc to access AI settings
         BlocProvider(
           create: (context) {
-            // Get current settings state
-            final settingsState = context.read<SettingsBloc>().state;
+            // Get current settings state and SettingsBloc reference
+            final settingsBloc = context.read<SettingsBloc>();
+            final settingsState = settingsBloc.state;
 
             AIConfig config;
             if (settingsState is SettingsLoaded) {
@@ -106,7 +107,10 @@ class AltairGuidanceApp extends StatelessWidget {
             }
 
             final aiService = AIService(config: config);
-            return AIBloc(aiService: aiService);
+            return AIBloc(
+              aiService: aiService,
+              settingsBloc: settingsBloc,
+            );
           },
         ),
       ],
