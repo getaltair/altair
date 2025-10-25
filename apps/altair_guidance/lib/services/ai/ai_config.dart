@@ -84,10 +84,10 @@ class AIConfig {
 
   /// Creates configuration from user settings.
   ///
-  /// Currently only Ollama is fully supported. OpenAI and Anthropic
-  /// will require dedicated client implementations in future versions.
+  /// Connects to the Altair AI backend service which proxies requests to
+  /// the configured AI provider (OpenAI, Anthropic, or Ollama).
   ///
-  /// Returns null if AI features are disabled or provider is not supported.
+  /// Returns null if AI features are disabled or configuration is invalid.
   static AIConfig? fromSettings(dynamic settings) {
     // Import will be: import '../../models/ai_settings.dart';
     // For now, using dynamic to avoid circular dependency
@@ -100,10 +100,18 @@ class AIConfig {
     // Get provider name (assumes AIProvider enum has name property)
     final providerName = settings.provider.toString().split('.').last;
 
+    // Default backend service URL (can be overridden via customBaseUrl)
+    const defaultBackendUrl = 'http://localhost:8001/api';
+
     switch (providerName) {
       case 'ollama':
-        // Ollama uses a local API endpoint
-        final baseUrl = settings.ollamaBaseUrl ?? settings.provider.defaultBaseUrl;
+        // For Ollama, use either custom URL or local Ollama server
+        // If customBaseUrl is set, use it (backend service)
+        // Otherwise, use ollama_baseUrl or default Ollama server
+        final baseUrl = settings.customBaseUrl ??
+            settings.ollamaBaseUrl ??
+            settings.provider.defaultBaseUrl;
+
         return AIConfig(
           baseUrl: baseUrl,
           apiKey: null, // Ollama doesn't use API keys
@@ -111,11 +119,32 @@ class AIConfig {
         );
 
       case 'openai':
+        // OpenAI requires API key
+        final apiKey = settings.openaiApiKey;
+        if (apiKey == null || apiKey.isEmpty) {
+          return null; // Invalid configuration
+        }
+
+        final baseUrl = settings.customBaseUrl ?? defaultBackendUrl;
+        return AIConfig(
+          baseUrl: baseUrl,
+          apiKey: apiKey,
+          enableSSL: baseUrl.startsWith('https://'),
+        );
+
       case 'anthropic':
-        // OpenAI and Anthropic require dedicated client implementations
-        // For now, return null to indicate these are not yet supported
-        // TODO: Implement OpenAI and Anthropic clients
-        return null;
+        // Anthropic requires API key
+        final apiKey = settings.anthropicApiKey;
+        if (apiKey == null || apiKey.isEmpty) {
+          return null; // Invalid configuration
+        }
+
+        final baseUrl = settings.customBaseUrl ?? defaultBackendUrl;
+        return AIConfig(
+          baseUrl: baseUrl,
+          apiKey: apiKey,
+          enableSSL: baseUrl.startsWith('https://'),
+        );
 
       default:
         return null;
