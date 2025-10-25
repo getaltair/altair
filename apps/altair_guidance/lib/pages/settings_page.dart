@@ -408,7 +408,7 @@ class _AISettingsCardState extends State<_AISettingsCard> {
               Container(
                 padding: const EdgeInsets.all(AltairSpacing.sm),
                 decoration: BoxDecoration(
-                  color: AltairColors.error.withOpacity(0.1),
+                  color: AltairColors.error.withValues(alpha: 0.1),
                   border: Border.all(color: AltairColors.error, width: 2),
                 ),
                 child: Row(
@@ -484,17 +484,28 @@ class _ProviderOption extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Theme(
-              data: Theme.of(context).copyWith(
-                radioTheme: RadioThemeData(
-                  fillColor: WidgetStateProperty.all(AltairColors.accentOrange),
+            Container(
+              width: 20,
+              height: 20,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: isSelected ? AltairColors.accentOrange : (isDark ? Colors.white70 : Colors.black45),
+                  width: 2,
                 ),
               ),
-              child: Radio<AIProvider>(
-                value: provider,
-                groupValue: isSelected ? provider : null,
-                onChanged: (_) => onTap(),
-              ),
+              child: isSelected
+                  ? Center(
+                      child: Container(
+                        width: 10,
+                        height: 10,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: AltairColors.accentOrange,
+                        ),
+                      ),
+                    )
+                  : null,
             ),
             Expanded(
               child: Column(
@@ -564,7 +575,7 @@ class _OpenAIConfigSection extends StatelessWidget {
         ),
         const SizedBox(height: AltairSpacing.xs),
         DropdownButtonFormField<String>(
-          value: settings.openaiModel,
+          initialValue: settings.openaiModel,
           decoration: const InputDecoration(
             border: OutlineInputBorder(),
             contentPadding: EdgeInsets.all(AltairSpacing.sm),
@@ -635,7 +646,7 @@ class _AnthropicConfigSection extends StatelessWidget {
         ),
         const SizedBox(height: AltairSpacing.xs),
         DropdownButtonFormField<String>(
-          value: settings.anthropicModel,
+          initialValue: settings.anthropicModel,
           decoration: const InputDecoration(
             border: OutlineInputBorder(),
             contentPadding: EdgeInsets.all(AltairSpacing.sm),
@@ -708,7 +719,7 @@ class _OllamaConfigSection extends StatelessWidget {
         ),
         const SizedBox(height: AltairSpacing.xs),
         DropdownButtonFormField<String>(
-          value: settings.ollamaModel,
+          initialValue: settings.ollamaModel,
           decoration: const InputDecoration(
             border: OutlineInputBorder(),
             contentPadding: EdgeInsets.all(AltairSpacing.sm),
@@ -730,7 +741,7 @@ class _OllamaConfigSection extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(AltairSpacing.sm),
           decoration: BoxDecoration(
-            color: AltairColors.accentBlue.withOpacity(0.1),
+            color: AltairColors.accentBlue.withValues(alpha: 0.1),
             border: Border.all(color: AltairColors.accentBlue, width: 2),
           ),
           child: Row(
