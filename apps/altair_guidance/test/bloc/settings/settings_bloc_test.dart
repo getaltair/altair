@@ -35,7 +35,7 @@ void main() {
         build: () {
           const testSettings = AISettings(
             enabled: true,
-            provider: AIProvider.openai,
+            provider: AIProviderType.openai,
             openaiApiKey: 'test-key',
           );
           when(() => mockRepository.load())
@@ -48,7 +48,7 @@ void main() {
           SettingsLoaded(
             AISettings(
               enabled: true,
-              provider: AIProvider.openai,
+              provider: AIProviderType.openai,
               openaiApiKey: 'test-key',
             ),
           ),
@@ -94,7 +94,7 @@ void main() {
     group('SettingsAIUpdated', () {
       const testSettings = AISettings(
         enabled: true,
-        provider: AIProvider.anthropic,
+        provider: AIProviderType.anthropic,
         anthropicApiKey: 'test-key',
       );
 
@@ -193,7 +193,7 @@ void main() {
         build: () {
           const initialSettings = AISettings(
             enabled: false,
-            provider: AIProvider.openai,
+            provider: AIProviderType.openai,
             openaiModel: 'gpt-4',
           );
           when(() => mockRepository.load())
@@ -212,28 +212,28 @@ void main() {
           SettingsLoaded(
             AISettings(
               enabled: true,
-              provider: AIProvider.openai,
+              provider: AIProviderType.openai,
               openaiModel: 'gpt-4',
             ),
           ),
           SettingsSaving(
             AISettings(
               enabled: true,
-              provider: AIProvider.openai,
+              provider: AIProviderType.openai,
               openaiModel: 'gpt-4',
             ),
           ),
           SettingsSaved(
             AISettings(
               enabled: true,
-              provider: AIProvider.openai,
+              provider: AIProviderType.openai,
               openaiModel: 'gpt-4',
             ),
           ),
           SettingsLoaded(
             AISettings(
               enabled: true,
-              provider: AIProvider.openai,
+              provider: AIProviderType.openai,
               openaiModel: 'gpt-4',
             ),
           ),
@@ -364,7 +364,7 @@ void main() {
             const SettingsAIUpdated(
               AISettings(
                 enabled: true,
-                provider: AIProvider.openai,
+                provider: AIProviderType.openai,
                 openaiApiKey: 'test-key',
               ),
             ),
@@ -376,28 +376,28 @@ void main() {
           SettingsLoaded(
             AISettings(
               enabled: true,
-              provider: AIProvider.openai,
+              provider: AIProviderType.openai,
               openaiApiKey: 'test-key',
             ),
           ),
           SettingsSaving(
             AISettings(
               enabled: true,
-              provider: AIProvider.openai,
+              provider: AIProviderType.openai,
               openaiApiKey: 'test-key',
             ),
           ),
           SettingsSaved(
             AISettings(
               enabled: true,
-              provider: AIProvider.openai,
+              provider: AIProviderType.openai,
               openaiApiKey: 'test-key',
             ),
           ),
           SettingsLoaded(
             AISettings(
               enabled: true,
-              provider: AIProvider.openai,
+              provider: AIProviderType.openai,
               openaiApiKey: 'test-key',
             ),
           ),
@@ -409,7 +409,7 @@ void main() {
         build: () {
           const initialSettings = AISettings(
             enabled: true,
-            provider: AIProvider.openai,
+            provider: AIProviderType.openai,
           );
           when(() => mockRepository.load())
               .thenAnswer((_) async => initialSettings);
@@ -424,7 +424,7 @@ void main() {
         expect: () => const [
           SettingsLoading(),
           SettingsLoaded(
-            AISettings(enabled: true, provider: AIProvider.openai),
+            AISettings(enabled: true, provider: AIProviderType.openai),
           ),
           SettingsLoading(),
           SettingsLoaded(AISettings()),

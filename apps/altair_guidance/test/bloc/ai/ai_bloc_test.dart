@@ -28,7 +28,7 @@ void main() {
         const SettingsLoaded(
           AISettings(
             enabled: true,
-            provider: AIProvider.openai,
+            provider: AIProviderType.openai,
             openaiApiKey: 'test-key',
           ),
         ),

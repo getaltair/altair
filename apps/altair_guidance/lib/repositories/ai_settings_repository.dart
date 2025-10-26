@@ -115,16 +115,16 @@ class AISettingsRepository {
   }
 
   /// Tests if a provider's API key is valid by checking if it's set.
-  Future<bool> hasApiKey(AIProvider provider) async {
+  Future<bool> hasApiKey(AIProviderType provider) async {
     try {
       switch (provider) {
-        case AIProvider.openai:
+        case AIProviderType.openai:
           final key = await _secureStorage.read(key: _openaiKeyStorageKey);
           return key != null && key.isNotEmpty;
-        case AIProvider.anthropic:
+        case AIProviderType.anthropic:
           final key = await _secureStorage.read(key: _anthropicKeyStorageKey);
           return key != null && key.isNotEmpty;
-        case AIProvider.ollama:
+        case AIProviderType.ollama:
           return true; // Ollama doesn't need API key
       }
     } catch (e) {

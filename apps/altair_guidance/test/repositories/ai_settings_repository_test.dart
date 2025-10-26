@@ -42,7 +42,7 @@ void main() {
       test('loads settings from shared preferences', () async {
         const testSettings = AISettings(
           enabled: true,
-          provider: AIProvider.openai,
+          provider: AIProviderType.openai,
           openaiModel: 'gpt-4',
         );
         final jsonString = jsonEncode(testSettings.toJson());
@@ -56,7 +56,7 @@ void main() {
         final settings = await repository.load();
 
         expect(settings.enabled, true);
-        expect(settings.provider, AIProvider.openai);
+        expect(settings.provider, AIProviderType.openai);
         expect(settings.openaiModel, 'gpt-4');
         verify(() => mockPrefs.getString('ai_settings')).called(1);
       });
@@ -64,7 +64,7 @@ void main() {
       test('loads API keys from secure storage', () async {
         const testSettings = AISettings(
           enabled: true,
-          provider: AIProvider.openai,
+          provider: AIProviderType.openai,
         );
         final jsonString = jsonEncode(testSettings.toJson());
 
@@ -107,7 +107,7 @@ void main() {
       test('saves settings to shared preferences', () async {
         const testSettings = AISettings(
           enabled: true,
-          provider: AIProvider.anthropic,
+          provider: AIProviderType.anthropic,
           anthropicModel: 'claude-3-opus',
         );
 
@@ -132,7 +132,7 @@ void main() {
 
       test('saves OpenAI API key to secure storage', () async {
         const testSettings = AISettings(
-          provider: AIProvider.openai,
+          provider: AIProviderType.openai,
           openaiApiKey: 'secret-key',
         );
 
@@ -159,7 +159,7 @@ void main() {
 
       test('saves Anthropic API key to secure storage', () async {
         const testSettings = AISettings(
-          provider: AIProvider.anthropic,
+          provider: AIProviderType.anthropic,
           anthropicApiKey: 'secret-key',
         );
 
@@ -186,7 +186,7 @@ void main() {
 
       test('deletes OpenAI API key when null', () async {
         const testSettings = AISettings(
-          provider: AIProvider.openai,
+          provider: AIProviderType.openai,
           openaiApiKey: null,
         );
 
@@ -203,7 +203,7 @@ void main() {
 
       test('deletes Anthropic API key when null', () async {
         const testSettings = AISettings(
-          provider: AIProvider.anthropic,
+          provider: AIProviderType.anthropic,
           anthropicApiKey: null,
         );
 
@@ -262,7 +262,7 @@ void main() {
         when(() => mockSecureStorage.read(key: 'ai_openai_api_key'))
             .thenAnswer((_) async => 'test-key');
 
-        final result = await repository.hasApiKey(AIProvider.openai);
+        final result = await repository.hasApiKey(AIProviderType.openai);
 
         expect(result, true);
         verify(() => mockSecureStorage.read(key: 'ai_openai_api_key'))
@@ -273,7 +273,7 @@ void main() {
         when(() => mockSecureStorage.read(key: 'ai_openai_api_key'))
             .thenAnswer((_) async => null);
 
-        final result = await repository.hasApiKey(AIProvider.openai);
+        final result = await repository.hasApiKey(AIProviderType.openai);
 
         expect(result, false);
       });
@@ -282,7 +282,7 @@ void main() {
         when(() => mockSecureStorage.read(key: 'ai_openai_api_key'))
             .thenAnswer((_) async => '');
 
-        final result = await repository.hasApiKey(AIProvider.openai);
+        final result = await repository.hasApiKey(AIProviderType.openai);
 
         expect(result, false);
       });
@@ -291,7 +291,7 @@ void main() {
         when(() => mockSecureStorage.read(key: 'ai_anthropic_api_key'))
             .thenAnswer((_) async => 'test-key');
 
-        final result = await repository.hasApiKey(AIProvider.anthropic);
+        final result = await repository.hasApiKey(AIProviderType.anthropic);
 
         expect(result, true);
         verify(() => mockSecureStorage.read(key: 'ai_anthropic_api_key'))
@@ -302,13 +302,13 @@ void main() {
         when(() => mockSecureStorage.read(key: 'ai_anthropic_api_key'))
             .thenAnswer((_) async => null);
 
-        final result = await repository.hasApiKey(AIProvider.anthropic);
+        final result = await repository.hasApiKey(AIProviderType.anthropic);
 
         expect(result, false);
       });
 
       test('returns true for Ollama (no API key needed)', () async {
-        final result = await repository.hasApiKey(AIProvider.ollama);
+        final result = await repository.hasApiKey(AIProviderType.ollama);
 
         expect(result, true);
         verifyNever(() => mockSecureStorage.read(key: any(named: 'key')));
@@ -318,7 +318,7 @@ void main() {
         when(() => mockSecureStorage.read(key: any(named: 'key')))
             .thenThrow(Exception('Storage error'));
 
-        final result = await repository.hasApiKey(AIProvider.openai);
+        final result = await repository.hasApiKey(AIProviderType.openai);
 
         expect(result, false);
       });

@@ -2,20 +2,20 @@ import 'package:altair_guidance/models/ai_settings.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  group('AIProvider', () {
+  group('AIProviderType', () {
     test('has correct display names', () {
-      expect(AIProvider.openai.displayName, 'OpenAI');
-      expect(AIProvider.anthropic.displayName, 'Anthropic');
-      expect(AIProvider.ollama.displayName, 'Ollama (Local)');
+      expect(AIProviderType.openai.displayName, 'OpenAI');
+      expect(AIProviderType.anthropic.displayName, 'Anthropic');
+      expect(AIProviderType.ollama.displayName, 'Ollama (Local)');
     });
 
     test('has correct default base URLs', () {
-      expect(AIProvider.openai.defaultBaseUrl, 'https://api.openai.com/v1');
+      expect(AIProviderType.openai.defaultBaseUrl, 'https://api.openai.com/v1');
       expect(
-        AIProvider.anthropic.defaultBaseUrl,
+        AIProviderType.anthropic.defaultBaseUrl,
         'https://api.anthropic.com/v1',
       );
-      expect(AIProvider.ollama.defaultBaseUrl, 'http://localhost:11434');
+      expect(AIProviderType.ollama.defaultBaseUrl, 'http://localhost:11434');
     });
   });
 
@@ -24,7 +24,7 @@ void main() {
       const settings = AISettings();
 
       expect(settings.enabled, false);
-      expect(settings.provider, AIProvider.ollama);
+      expect(settings.provider, AIProviderType.ollama);
       expect(settings.openaiApiKey, null);
       expect(settings.anthropicApiKey, null);
       expect(settings.ollamaBaseUrl, null);
@@ -37,14 +37,14 @@ void main() {
     test('creates settings with custom values', () {
       const settings = AISettings(
         enabled: true,
-        provider: AIProvider.openai,
+        provider: AIProviderType.openai,
         openaiApiKey: 'test-key',
         openaiModel: 'gpt-4',
         customBaseUrl: 'https://custom.api.com',
       );
 
       expect(settings.enabled, true);
-      expect(settings.provider, AIProvider.openai);
+      expect(settings.provider, AIProviderType.openai);
       expect(settings.openaiApiKey, 'test-key');
       expect(settings.openaiModel, 'gpt-4');
       expect(settings.customBaseUrl, 'https://custom.api.com');
@@ -53,7 +53,7 @@ void main() {
     group('currentApiKey', () {
       test('returns OpenAI API key when provider is OpenAI', () {
         const settings = AISettings(
-          provider: AIProvider.openai,
+          provider: AIProviderType.openai,
           openaiApiKey: 'openai-key',
           anthropicApiKey: 'anthropic-key',
         );
@@ -63,7 +63,7 @@ void main() {
 
       test('returns Anthropic API key when provider is Anthropic', () {
         const settings = AISettings(
-          provider: AIProvider.anthropic,
+          provider: AIProviderType.anthropic,
           openaiApiKey: 'openai-key',
           anthropicApiKey: 'anthropic-key',
         );
@@ -73,7 +73,7 @@ void main() {
 
       test('returns null when provider is Ollama', () {
         const settings = AISettings(
-          provider: AIProvider.ollama,
+          provider: AIProviderType.ollama,
           openaiApiKey: 'openai-key',
         );
 
@@ -84,7 +84,7 @@ void main() {
     group('currentModel', () {
       test('returns OpenAI model when provider is OpenAI', () {
         const settings = AISettings(
-          provider: AIProvider.openai,
+          provider: AIProviderType.openai,
           openaiModel: 'gpt-4',
         );
 
@@ -93,7 +93,7 @@ void main() {
 
       test('returns Anthropic model when provider is Anthropic', () {
         const settings = AISettings(
-          provider: AIProvider.anthropic,
+          provider: AIProviderType.anthropic,
           anthropicModel: 'claude-3-opus',
         );
 
@@ -102,7 +102,7 @@ void main() {
 
       test('returns Ollama model when provider is Ollama', () {
         const settings = AISettings(
-          provider: AIProvider.ollama,
+          provider: AIProviderType.ollama,
           ollamaModel: 'llama3',
         );
 
@@ -113,7 +113,7 @@ void main() {
     group('baseUrl', () {
       test('returns custom base URL when set', () {
         const settings = AISettings(
-          provider: AIProvider.openai,
+          provider: AIProviderType.openai,
           customBaseUrl: 'https://custom.api.com',
         );
 
@@ -121,26 +121,26 @@ void main() {
       });
 
       test('returns default OpenAI URL when provider is OpenAI', () {
-        const settings = AISettings(provider: AIProvider.openai);
+        const settings = AISettings(provider: AIProviderType.openai);
 
         expect(settings.baseUrl, 'https://api.openai.com/v1');
       });
 
       test('returns default Anthropic URL when provider is Anthropic', () {
-        const settings = AISettings(provider: AIProvider.anthropic);
+        const settings = AISettings(provider: AIProviderType.anthropic);
 
         expect(settings.baseUrl, 'https://api.anthropic.com/v1');
       });
 
       test('returns default Ollama URL when provider is Ollama', () {
-        const settings = AISettings(provider: AIProvider.ollama);
+        const settings = AISettings(provider: AIProviderType.ollama);
 
         expect(settings.baseUrl, 'http://localhost:11434');
       });
 
       test('returns custom Ollama URL when set', () {
         const settings = AISettings(
-          provider: AIProvider.ollama,
+          provider: AIProviderType.ollama,
           ollamaBaseUrl: 'http://192.168.1.100:11434',
         );
 
@@ -158,7 +158,7 @@ void main() {
       test('returns false when OpenAI provider has no API key', () {
         const settings = AISettings(
           enabled: true,
-          provider: AIProvider.openai,
+          provider: AIProviderType.openai,
         );
 
         expect(settings.isValid, false);
@@ -167,7 +167,7 @@ void main() {
       test('returns false when OpenAI provider has empty API key', () {
         const settings = AISettings(
           enabled: true,
-          provider: AIProvider.openai,
+          provider: AIProviderType.openai,
           openaiApiKey: '',
         );
 
@@ -177,7 +177,7 @@ void main() {
       test('returns true when OpenAI provider has API key', () {
         const settings = AISettings(
           enabled: true,
-          provider: AIProvider.openai,
+          provider: AIProviderType.openai,
           openaiApiKey: 'test-key',
         );
 
@@ -187,7 +187,7 @@ void main() {
       test('returns false when Anthropic provider has no API key', () {
         const settings = AISettings(
           enabled: true,
-          provider: AIProvider.anthropic,
+          provider: AIProviderType.anthropic,
         );
 
         expect(settings.isValid, false);
@@ -196,7 +196,7 @@ void main() {
       test('returns false when Anthropic provider has empty API key', () {
         const settings = AISettings(
           enabled: true,
-          provider: AIProvider.anthropic,
+          provider: AIProviderType.anthropic,
           anthropicApiKey: '',
         );
 
@@ -206,7 +206,7 @@ void main() {
       test('returns true when Anthropic provider has API key', () {
         const settings = AISettings(
           enabled: true,
-          provider: AIProvider.anthropic,
+          provider: AIProviderType.anthropic,
           anthropicApiKey: 'test-key',
         );
 
@@ -216,7 +216,7 @@ void main() {
       test('returns true when Ollama provider is enabled', () {
         const settings = AISettings(
           enabled: true,
-          provider: AIProvider.ollama,
+          provider: AIProviderType.ollama,
         );
 
         expect(settings.isValid, true);
@@ -225,7 +225,7 @@ void main() {
       test('returns false when Ollama has empty base URL', () {
         const settings = AISettings(
           enabled: true,
-          provider: AIProvider.ollama,
+          provider: AIProviderType.ollama,
           ollamaBaseUrl: '',
         );
 
@@ -244,9 +244,9 @@ void main() {
 
       test('creates copy with updated provider', () {
         const original = AISettings();
-        final updated = original.copyWith(provider: AIProvider.openai);
+        final updated = original.copyWith(provider: AIProviderType.openai);
 
-        expect(updated.provider, AIProvider.openai);
+        expect(updated.provider, AIProviderType.openai);
         expect(updated.enabled, original.enabled);
       });
 
@@ -277,7 +277,7 @@ void main() {
       test('preserves original values when not specified', () {
         const original = AISettings(
           enabled: true,
-          provider: AIProvider.openai,
+          provider: AIProviderType.openai,
           openaiApiKey: 'test-key',
         );
         final updated = original.copyWith(openaiModel: 'gpt-4');
@@ -293,7 +293,7 @@ void main() {
       test('toJson includes all non-sensitive fields', () {
         const settings = AISettings(
           enabled: true,
-          provider: AIProvider.openai,
+          provider: AIProviderType.openai,
           openaiApiKey: 'secret-key',
           openaiModel: 'gpt-4',
           customBaseUrl: 'https://custom.api.com',
@@ -320,7 +320,7 @@ void main() {
         final settings = AISettings.fromJson(json);
 
         expect(settings.enabled, true);
-        expect(settings.provider, AIProvider.anthropic);
+        expect(settings.provider, AIProviderType.anthropic);
         expect(settings.anthropicModel, 'claude-3-opus');
         expect(settings.ollamaBaseUrl, 'http://custom:11434');
         expect(settings.openaiApiKey, null);
@@ -333,7 +333,7 @@ void main() {
         final settings = AISettings.fromJson(json);
 
         expect(settings.enabled, false);
-        expect(settings.provider, AIProvider.ollama);
+        expect(settings.provider, AIProviderType.ollama);
         expect(settings.openaiModel, 'gpt-4-turbo-preview');
         expect(settings.anthropicModel, 'claude-3-5-sonnet-20241022');
         expect(settings.ollamaModel, 'llama3');
@@ -344,13 +344,13 @@ void main() {
 
         final settings = AISettings.fromJson(json);
 
-        expect(settings.provider, AIProvider.ollama);
+        expect(settings.provider, AIProviderType.ollama);
       });
 
       test('round-trip serialization preserves data', () {
         const original = AISettings(
           enabled: true,
-          provider: AIProvider.anthropic,
+          provider: AIProviderType.anthropic,
           anthropicModel: 'claude-3-opus',
           customBaseUrl: 'https://custom.api.com',
         );
@@ -369,12 +369,12 @@ void main() {
       test('equals when all fields are the same', () {
         const settings1 = AISettings(
           enabled: true,
-          provider: AIProvider.openai,
+          provider: AIProviderType.openai,
           openaiApiKey: 'test-key',
         );
         const settings2 = AISettings(
           enabled: true,
-          provider: AIProvider.openai,
+          provider: AIProviderType.openai,
           openaiApiKey: 'test-key',
         );
 
@@ -390,11 +390,11 @@ void main() {
 
       test('not equals when API keys differ', () {
         const settings1 = AISettings(
-          provider: AIProvider.openai,
+          provider: AIProviderType.openai,
           openaiApiKey: 'key1',
         );
         const settings2 = AISettings(
-          provider: AIProvider.openai,
+          provider: AIProviderType.openai,
           openaiApiKey: 'key2',
         );
 
@@ -406,7 +406,7 @@ void main() {
       test('includes relevant information', () {
         const settings = AISettings(
           enabled: true,
-          provider: AIProvider.openai,
+          provider: AIProviderType.openai,
           openaiApiKey: 'test-key',
           openaiModel: 'gpt-4',
         );

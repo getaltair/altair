@@ -4,7 +4,7 @@ library;
 import 'package:equatable/equatable.dart';
 
 /// Supported AI providers.
-enum AIProvider {
+enum AIProviderType {
   /// OpenAI (GPT models).
   openai('OpenAI', 'https://api.openai.com/v1'),
 
@@ -14,7 +14,7 @@ enum AIProvider {
   /// Ollama (local models).
   ollama('Ollama (Local)', 'http://localhost:11434');
 
-  const AIProvider(this.displayName, this.defaultBaseUrl);
+  const AIProviderType(this.displayName, this.defaultBaseUrl);
 
   /// User-friendly display name.
   final String displayName;
@@ -28,7 +28,7 @@ class AISettings extends Equatable {
   /// Creates AI settings.
   const AISettings({
     this.enabled = false,
-    this.provider = AIProvider.ollama,
+    this.provider = AIProviderType.ollama,
     this.openaiApiKey,
     this.anthropicApiKey,
     this.ollamaBaseUrl,
@@ -42,7 +42,7 @@ class AISettings extends Equatable {
   final bool enabled;
 
   /// Selected AI provider.
-  final AIProvider provider;
+  final AIProviderType provider;
 
   /// OpenAI API key (stored securely).
   final String? openaiApiKey;
@@ -68,11 +68,11 @@ class AISettings extends Equatable {
   /// Gets the current API key based on selected provider.
   String? get currentApiKey {
     switch (provider) {
-      case AIProvider.openai:
+      case AIProviderType.openai:
         return openaiApiKey;
-      case AIProvider.anthropic:
+      case AIProviderType.anthropic:
         return anthropicApiKey;
-      case AIProvider.ollama:
+      case AIProviderType.ollama:
         return null; // Ollama doesn't need API key
     }
   }
@@ -80,11 +80,11 @@ class AISettings extends Equatable {
   /// Gets the current model based on selected provider.
   String get currentModel {
     switch (provider) {
-      case AIProvider.openai:
+      case AIProviderType.openai:
         return openaiModel;
-      case AIProvider.anthropic:
+      case AIProviderType.anthropic:
         return anthropicModel;
-      case AIProvider.ollama:
+      case AIProviderType.ollama:
         return ollamaModel;
     }
   }
@@ -96,12 +96,12 @@ class AISettings extends Equatable {
     }
 
     switch (provider) {
-      case AIProvider.openai:
-        return AIProvider.openai.defaultBaseUrl;
-      case AIProvider.anthropic:
-        return AIProvider.anthropic.defaultBaseUrl;
-      case AIProvider.ollama:
-        return ollamaBaseUrl ?? AIProvider.ollama.defaultBaseUrl;
+      case AIProviderType.openai:
+        return AIProviderType.openai.defaultBaseUrl;
+      case AIProviderType.anthropic:
+        return AIProviderType.anthropic.defaultBaseUrl;
+      case AIProviderType.ollama:
+        return ollamaBaseUrl ?? AIProviderType.ollama.defaultBaseUrl;
     }
   }
 
@@ -110,16 +110,16 @@ class AISettings extends Equatable {
     if (!enabled) return true;
 
     // Check if API key is provided for cloud providers
-    if (provider == AIProvider.openai && (openaiApiKey == null || openaiApiKey!.isEmpty)) {
+    if (provider == AIProviderType.openai && (openaiApiKey == null || openaiApiKey!.isEmpty)) {
       return false;
     }
-    if (provider == AIProvider.anthropic && (anthropicApiKey == null || anthropicApiKey!.isEmpty)) {
+    if (provider == AIProviderType.anthropic && (anthropicApiKey == null || anthropicApiKey!.isEmpty)) {
       return false;
     }
 
     // Ollama doesn't need API key, just ensure base URL is set
-    if (provider == AIProvider.ollama) {
-      final url = ollamaBaseUrl ?? AIProvider.ollama.defaultBaseUrl;
+    if (provider == AIProviderType.ollama) {
+      final url = ollamaBaseUrl ?? AIProviderType.ollama.defaultBaseUrl;
       if (url.isEmpty) return false;
     }
 
@@ -129,7 +129,7 @@ class AISettings extends Equatable {
   /// Creates a copy with updated fields.
   AISettings copyWith({
     bool? enabled,
-    AIProvider? provider,
+    AIProviderType? provider,
     String? openaiApiKey,
     String? anthropicApiKey,
     String? ollamaBaseUrl,
@@ -169,9 +169,9 @@ class AISettings extends Equatable {
   factory AISettings.fromJson(Map<String, dynamic> json) {
     return AISettings(
       enabled: json['enabled'] as bool? ?? false,
-      provider: AIProvider.values.firstWhere(
+      provider: AIProviderType.values.firstWhere(
         (p) => p.name == json['provider'],
-        orElse: () => AIProvider.ollama,
+        orElse: () => AIProviderType.ollama,
       ),
       ollamaBaseUrl: json['ollamaBaseUrl'] as String?,
       openaiModel: json['openaiModel'] as String? ?? 'gpt-4-turbo-preview',

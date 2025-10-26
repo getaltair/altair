@@ -279,7 +279,7 @@ void main() {
       testWidgets('tapping provider option updates settings', (tester) async {
         when(() => mockSettingsBloc.state).thenReturn(
           const SettingsLoaded(
-            AISettings(enabled: true, provider: AIProvider.ollama),
+            AISettings(enabled: true, provider: AIProviderType.ollama),
           ),
         );
         when(() => mockThemeCubit.state).thenReturn(
@@ -301,7 +301,7 @@ void main() {
               that: isA<SettingsAIUpdated>().having(
                 (event) => event.settings.provider,
                 'provider',
-                AIProvider.openai,
+                AIProviderType.openai,
               ),
             ),
           ),
@@ -314,7 +314,7 @@ void main() {
           (tester) async {
         when(() => mockSettingsBloc.state).thenReturn(
           const SettingsLoaded(
-            AISettings(enabled: true, provider: AIProvider.openai),
+            AISettings(enabled: true, provider: AIProviderType.openai),
           ),
         );
         when(() => mockThemeCubit.state).thenReturn(
@@ -335,7 +335,7 @@ void main() {
       testWidgets('entering API key updates settings', (tester) async {
         when(() => mockSettingsBloc.state).thenReturn(
           const SettingsLoaded(
-            AISettings(enabled: true, provider: AIProvider.openai),
+            AISettings(enabled: true, provider: AIProviderType.openai),
           ),
         );
         when(() => mockThemeCubit.state).thenReturn(
@@ -368,7 +368,7 @@ void main() {
           const SettingsLoaded(
             AISettings(
               enabled: true,
-              provider: AIProvider.openai,
+              provider: AIProviderType.openai,
               openaiModel: 'gpt-4-turbo-preview',
             ),
           ),
@@ -410,7 +410,7 @@ void main() {
           (tester) async {
         when(() => mockSettingsBloc.state).thenReturn(
           const SettingsLoaded(
-            AISettings(enabled: true, provider: AIProvider.anthropic),
+            AISettings(enabled: true, provider: AIProviderType.anthropic),
           ),
         );
         when(() => mockThemeCubit.state).thenReturn(
@@ -431,7 +431,7 @@ void main() {
       testWidgets('entering API key updates settings', (tester) async {
         when(() => mockSettingsBloc.state).thenReturn(
           const SettingsLoaded(
-            AISettings(enabled: true, provider: AIProvider.anthropic),
+            AISettings(enabled: true, provider: AIProviderType.anthropic),
           ),
         );
         when(() => mockThemeCubit.state).thenReturn(
@@ -465,7 +465,7 @@ void main() {
           (tester) async {
         when(() => mockSettingsBloc.state).thenReturn(
           const SettingsLoaded(
-            AISettings(enabled: true, provider: AIProvider.ollama),
+            AISettings(enabled: true, provider: AIProviderType.ollama),
           ),
         );
         when(() => mockThemeCubit.state).thenReturn(
@@ -486,7 +486,7 @@ void main() {
       testWidgets('entering URL updates settings', (tester) async {
         when(() => mockSettingsBloc.state).thenReturn(
           const SettingsLoaded(
-            AISettings(enabled: true, provider: AIProvider.ollama),
+            AISettings(enabled: true, provider: AIProviderType.ollama),
           ),
         );
         when(() => mockThemeCubit.state).thenReturn(
@@ -522,7 +522,7 @@ void main() {
           const SettingsLoaded(
             AISettings(
               enabled: true,
-              provider: AIProvider.openai,
+              provider: AIProviderType.openai,
               // No API key provided
             ),
           ),
@@ -545,7 +545,7 @@ void main() {
           const SettingsLoaded(
             AISettings(
               enabled: true,
-              provider: AIProvider.openai,
+              provider: AIProviderType.openai,
               openaiApiKey: 'sk-valid-key',
             ),
           ),
@@ -569,7 +569,7 @@ void main() {
           const SettingsLoaded(
             AISettings(
               enabled: true,
-              provider: AIProvider.anthropic,
+              provider: AIProviderType.anthropic,
               // No API key provided
             ),
           ),
@@ -586,7 +586,7 @@ void main() {
       testWidgets('no warning for Ollama (no API key needed)', (tester) async {
         when(() => mockSettingsBloc.state).thenReturn(
           const SettingsLoaded(
-            AISettings(enabled: true, provider: AIProvider.ollama),
+            AISettings(enabled: true, provider: AIProviderType.ollama),
           ),
         );
         when(() => mockThemeCubit.state).thenReturn(

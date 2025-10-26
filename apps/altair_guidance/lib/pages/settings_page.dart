@@ -281,7 +281,7 @@ class _AISettingsCardState extends State<_AISettingsCard> {
     _openaiKeyController = TextEditingController(text: widget.settings.openaiApiKey);
     _anthropicKeyController = TextEditingController(text: widget.settings.anthropicApiKey);
     _ollamaUrlController = TextEditingController(
-      text: widget.settings.ollamaBaseUrl ?? AIProvider.ollama.defaultBaseUrl,
+      text: widget.settings.ollamaBaseUrl ?? AIProviderType.ollama.defaultBaseUrl,
     );
   }
 
@@ -293,7 +293,7 @@ class _AISettingsCardState extends State<_AISettingsCard> {
       _openaiKeyController.text = widget.settings.openaiApiKey ?? '';
       _anthropicKeyController.text = widget.settings.anthropicApiKey ?? '';
       _ollamaUrlController.text =
-          widget.settings.ollamaBaseUrl ?? AIProvider.ollama.defaultBaseUrl;
+          widget.settings.ollamaBaseUrl ?? AIProviderType.ollama.defaultBaseUrl;
     }
   }
 
@@ -366,7 +366,7 @@ class _AISettingsCardState extends State<_AISettingsCard> {
             ),
             const SizedBox(height: AltairSpacing.sm),
 
-            ...AIProvider.values.map((provider) {
+            ...AIProviderType.values.map((provider) {
               final isSelected = _workingSettings.provider == provider;
               return Padding(
                 padding: const EdgeInsets.only(bottom: AltairSpacing.sm),
@@ -383,19 +383,19 @@ class _AISettingsCardState extends State<_AISettingsCard> {
             const SizedBox(height: AltairSpacing.md),
 
             // Provider-specific Configuration
-            if (_workingSettings.provider == AIProvider.openai)
+            if (_workingSettings.provider == AIProviderType.openai)
               _OpenAIConfigSection(
                 settings: _workingSettings,
                 apiKeyController: _openaiKeyController,
                 onSettingsChanged: _updateSettings,
               ),
-            if (_workingSettings.provider == AIProvider.anthropic)
+            if (_workingSettings.provider == AIProviderType.anthropic)
               _AnthropicConfigSection(
                 settings: _workingSettings,
                 apiKeyController: _anthropicKeyController,
                 onSettingsChanged: _updateSettings,
               ),
-            if (_workingSettings.provider == AIProvider.ollama)
+            if (_workingSettings.provider == AIProviderType.ollama)
               _OllamaConfigSection(
                 settings: _workingSettings,
                 urlController: _ollamaUrlController,
@@ -443,17 +443,17 @@ class _ProviderOption extends StatelessWidget {
     required this.onTap,
   });
 
-  final AIProvider provider;
+  final AIProviderType provider;
   final bool isSelected;
   final VoidCallback onTap;
 
-  String _getProviderDescription(AIProvider provider) {
+  String _getProviderDescription(AIProviderType provider) {
     switch (provider) {
-      case AIProvider.openai:
+      case AIProviderType.openai:
         return 'GPT models from OpenAI (requires API key)';
-      case AIProvider.anthropic:
+      case AIProviderType.anthropic:
         return 'Claude models from Anthropic (requires API key)';
-      case AIProvider.ollama:
+      case AIProviderType.ollama:
         return 'Run AI models locally (free, no API key needed)';
     }
   }

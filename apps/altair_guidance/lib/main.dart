@@ -27,6 +27,8 @@ import 'pages/task_edit_page.dart';
 import 'repositories/ai_settings_repository.dart';
 import 'services/ai/ai_config.dart';
 import 'services/ai/ai_service.dart';
+import 'services/ai/models.dart';
+import 'services/ai/providers/ai_provider.dart';
 import 'shortcuts/intents.dart';
 import 'shortcuts/shortcuts_config.dart';
 import 'shortcuts/shortcuts_help_dialog.dart';
@@ -96,17 +98,17 @@ class AltairGuidanceApp extends StatelessWidget {
             final settingsBloc = context.read<SettingsBloc>();
             final settingsState = settingsBloc.state;
 
-            AIConfig config;
+            // Create AI provider from settings (OpenAI or Anthropic)
+            AIProvider? provider;
             if (settingsState is SettingsLoaded) {
-              // Use settings if available
-              final settingsConfig = AIConfig.fromSettings(settingsState.aiSettings);
-              config = settingsConfig ?? AIConfig.fromEnvironment();
-            } else {
-              // Fallback to environment config
-              config = AIConfig.fromEnvironment();
+              provider = AIConfig.createProvider(settingsState.aiSettings);
             }
 
-            final aiService = AIService(config: config);
+            // If no provider available, create a disabled service
+            // This allows the app to work without AI features
+            provider ??= _DisabledAIProvider();
+
+            final aiService = AIService(provider: provider);
             return AIBloc(
               aiService: aiService,
               settingsBloc: settingsBloc,
@@ -129,6 +131,48 @@ class AltairGuidanceApp extends StatelessWidget {
         },
       ),
     );
+  }
+}
+
+/// Disabled AI provider that throws when AI features are not configured.
+class _DisabledAIProvider implements AIProvider {
+  @override
+  Future<TaskBreakdownResponse> breakdownTask(
+    TaskBreakdownRequest request,
+  ) async {
+    throw AIServiceException(
+      'AI features are disabled. Please configure an AI provider in settings.',
+    );
+  }
+
+  @override
+  Future<TaskPrioritizationResponse> prioritizeTasks(
+    TaskPrioritizationRequest request,
+  ) async {
+    throw AIServiceException(
+      'AI features are disabled. Please configure an AI provider in settings.',
+    );
+  }
+
+  @override
+  Future<TimeEstimateResponse> estimateTime(TimeEstimateRequest request) async {
+    throw AIServiceException(
+      'AI features are disabled. Please configure an AI provider in settings.',
+    );
+  }
+
+  @override
+  Future<ContextSuggestionResponse> getSuggestions(
+    ContextSuggestionRequest request,
+  ) async {
+    throw AIServiceException(
+      'AI features are disabled. Please configure an AI provider in settings.',
+    );
+  }
+
+  @override
+  void dispose() {
+    // Nothing to dispose
   }
 }
 
