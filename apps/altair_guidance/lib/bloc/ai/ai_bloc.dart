@@ -5,14 +5,20 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:logger/logger.dart';
 
 import '../../services/ai/ai_service.dart';
+import '../../services/ai/models.dart';
+import '../settings/settings_bloc.dart';
+import '../settings/settings_state.dart';
 import 'ai_event.dart';
 import 'ai_state.dart';
 
 /// BLoC for AI operations.
 class AIBloc extends Bloc<AIEvent, AIState> {
   /// Creates an AI BLoC.
-  AIBloc({required AIService aiService})
-      : _aiService = aiService,
+  AIBloc({
+    required AIService aiService,
+    required SettingsBloc settingsBloc,
+  })  : _aiService = aiService,
+        _settingsBloc = settingsBloc,
         super(const AIInitial()) {
     _logger = Logger();
 
@@ -24,7 +30,26 @@ class AIBloc extends Bloc<AIEvent, AIState> {
   }
 
   final AIService _aiService;
+  final SettingsBloc _settingsBloc;
   late final Logger _logger;
+
+  /// Extracts provider and API key from settings.
+  ({String? provider, String? apiKey}) _getProviderConfig() {
+    final state = _settingsBloc.state;
+    if (state is! SettingsLoaded) {
+      return (provider: null, apiKey: null);
+    }
+
+    final settings = state.aiSettings;
+    if (!settings.enabled) {
+      return (provider: null, apiKey: null);
+    }
+
+    return (
+      provider: settings.provider.name,
+      apiKey: settings.currentApiKey,
+    );
+  }
 
   Future<void> _onTaskBreakdownRequested(
     AITaskBreakdownRequested event,
@@ -34,7 +59,18 @@ class AIBloc extends Bloc<AIEvent, AIState> {
     emit(const AILoading(operationType: AIOperationType.breakdown));
 
     try {
-      final response = await _aiService.breakdownTask(event.request);
+      // Inject provider and API key from settings
+      final config = _getProviderConfig();
+      final request = TaskBreakdownRequest(
+        taskTitle: event.request.taskTitle,
+        taskDescription: event.request.taskDescription,
+        context: event.request.context,
+        maxSubtasks: event.request.maxSubtasks,
+        provider: config.provider,
+        apiKey: config.apiKey,
+      );
+
+      final response = await _aiService.breakdownTask(request);
       _logger
           .i('Task breakdown successful: ${response.subtasks.length} subtasks');
       emit(AITaskBreakdownSuccess(response: response));
@@ -66,7 +102,16 @@ class AIBloc extends Bloc<AIEvent, AIState> {
     emit(const AILoading(operationType: AIOperationType.prioritization));
 
     try {
-      final response = await _aiService.prioritizeTasks(event.request);
+      // Inject provider and API key from settings
+      final config = _getProviderConfig();
+      final request = TaskPrioritizationRequest(
+        tasks: event.request.tasks,
+        context: event.request.context,
+        provider: config.provider,
+        apiKey: config.apiKey,
+      );
+
+      final response = await _aiService.prioritizeTasks(request);
       _logger.i(
         'Task prioritization successful: ${response.suggestions.length} suggestions',
       );
@@ -98,7 +143,18 @@ class AIBloc extends Bloc<AIEvent, AIState> {
     emit(const AILoading(operationType: AIOperationType.timeEstimate));
 
     try {
-      final response = await _aiService.estimateTime(event.request);
+      // Inject provider and API key from settings
+      final config = _getProviderConfig();
+      final request = TimeEstimateRequest(
+        taskTitle: event.request.taskTitle,
+        taskDescription: event.request.taskDescription,
+        subtasks: event.request.subtasks,
+        skillLevel: event.request.skillLevel,
+        provider: config.provider,
+        apiKey: config.apiKey,
+      );
+
+      final response = await _aiService.estimateTime(request);
       _logger.i(
         'Time estimate successful: ${response.estimate.realisticMinutes} minutes',
       );
@@ -130,7 +186,18 @@ class AIBloc extends Bloc<AIEvent, AIState> {
     emit(const AILoading(operationType: AIOperationType.contextSuggestions));
 
     try {
-      final response = await _aiService.getSuggestions(event.request);
+      // Inject provider and API key from settings
+      final config = _getProviderConfig();
+      final request = ContextSuggestionRequest(
+        taskTitle: event.request.taskTitle,
+        taskDescription: event.request.taskDescription,
+        projectContext: event.request.projectContext,
+        suggestionType: event.request.suggestionType,
+        provider: config.provider,
+        apiKey: config.apiKey,
+      );
+
+      final response = await _aiService.getSuggestions(request);
       _logger.i(
         'Context suggestions successful: ${response.suggestions.length} suggestions',
       );

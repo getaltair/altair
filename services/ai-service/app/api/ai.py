@@ -2,7 +2,7 @@
 
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, HTTPException
 
 from app.models.requests import (
     ContextSuggestionRequest,
@@ -23,8 +23,12 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
-def get_provider() -> AIProvider:
-    """Dependency to get AI provider instance.
+def _get_provider_from_request(provider_name: str | None, api_key: str | None) -> AIProvider:
+    """Get AI provider based on request parameters.
+
+    Args:
+        provider_name: Provider name from request (optional)
+        api_key: API key from request (optional)
 
     Returns:
         Configured AI provider
@@ -33,22 +37,24 @@ def get_provider() -> AIProvider:
         HTTPException: If provider cannot be initialized
     """
     try:
-        return get_ai_provider()
+        # Cast to Literal type expected by factory (mypy requires this)
+        from typing import Literal, cast
+
+        typed_provider = cast(Literal["openai", "anthropic", "ollama"] | None, provider_name)
+        return get_ai_provider(provider_name=typed_provider, api_key=api_key)
     except ValueError as e:
         logger.error(f"Failed to initialize AI provider: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @router.post("/breakdown", response_model=TaskBreakdownResponse)
 async def breakdown_task(
     request: TaskBreakdownRequest,
-    provider: AIProvider = Depends(get_provider),
 ) -> TaskBreakdownResponse:
     """Break down a task into subtasks.
 
     Args:
-        request: Task breakdown request
-        provider: AI provider instance
+        request: Task breakdown request (includes optional provider and api_key)
 
     Returns:
         Task breakdown with suggested subtasks
@@ -56,6 +62,9 @@ async def breakdown_task(
     Raises:
         HTTPException: If AI call fails
     """
+    # Get provider based on client request (or use server default)
+    provider = _get_provider_from_request(request.provider, request.api_key)
+
     try:
         logger.info(f"Breaking down task: {request.task_title}")
         result = await provider.breakdown_task(request)
@@ -75,13 +84,11 @@ async def breakdown_task(
 @router.post("/prioritize", response_model=TaskPrioritizationResponse)
 async def prioritize_tasks(
     request: TaskPrioritizationRequest,
-    provider: AIProvider = Depends(get_provider),
 ) -> TaskPrioritizationResponse:
     """Get prioritization suggestions for tasks.
 
     Args:
-        request: Task prioritization request
-        provider: AI provider instance
+        request: Task prioritization request (includes optional provider and api_key)
 
     Returns:
         Priority suggestions for tasks
@@ -89,6 +96,9 @@ async def prioritize_tasks(
     Raises:
         HTTPException: If AI call fails
     """
+    # Get provider based on client request (or use server default)
+    provider = _get_provider_from_request(request.provider, request.api_key)
+
     try:
         logger.info(f"Prioritizing {len(request.tasks)} tasks")
         result = await provider.prioritize_tasks(request)
@@ -108,13 +118,11 @@ async def prioritize_tasks(
 @router.post("/estimate", response_model=TimeEstimateResponse)
 async def estimate_time(
     request: TimeEstimateRequest,
-    provider: AIProvider = Depends(get_provider),
 ) -> TimeEstimateResponse:
     """Estimate time required for a task.
 
     Args:
-        request: Time estimate request
-        provider: AI provider instance
+        request: Time estimate request (includes optional provider and api_key)
 
     Returns:
         Time estimates (optimistic, realistic, pessimistic)
@@ -122,6 +130,9 @@ async def estimate_time(
     Raises:
         HTTPException: If AI call fails
     """
+    # Get provider based on client request (or use server default)
+    provider = _get_provider_from_request(request.provider, request.api_key)
+
     try:
         logger.info(f"Estimating time for task: {request.task_title}")
         result = await provider.estimate_time(request)
@@ -141,13 +152,11 @@ async def estimate_time(
 @router.post("/suggest", response_model=ContextSuggestionResponse)
 async def suggest_context(
     request: ContextSuggestionRequest,
-    provider: AIProvider = Depends(get_provider),
 ) -> ContextSuggestionResponse:
     """Get contextual suggestions for a task.
 
     Args:
-        request: Context suggestion request
-        provider: AI provider instance
+        request: Context suggestion request (includes optional provider and api_key)
 
     Returns:
         Contextual suggestions (resources, tips, blockers)
@@ -155,6 +164,9 @@ async def suggest_context(
     Raises:
         HTTPException: If AI call fails
     """
+    # Get provider based on client request (or use server default)
+    provider = _get_provider_from_request(request.provider, request.api_key)
+
     try:
         logger.info(f"Getting suggestions for task: {request.task_title}")
         result = await provider.suggest_context(request)

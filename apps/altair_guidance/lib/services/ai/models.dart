@@ -44,6 +44,8 @@ class TaskBreakdownRequest extends Equatable {
     this.taskDescription,
     this.context,
     this.maxSubtasks = 5,
+    this.provider,
+    this.apiKey,
   }) {
     _validate();
   }
@@ -59,6 +61,12 @@ class TaskBreakdownRequest extends Equatable {
 
   /// Maximum number of subtasks to generate (1-20).
   final int maxSubtasks;
+
+  /// AI provider to use (overrides server default).
+  final String? provider;
+
+  /// API key for the provider (required for openai/anthropic if not in server config).
+  final String? apiKey;
 
   /// Validates the request.
   void _validate() {
@@ -85,10 +93,13 @@ class TaskBreakdownRequest extends Equatable {
         if (taskDescription != null) 'task_description': taskDescription,
         if (context != null) 'context': context,
         'max_subtasks': maxSubtasks,
+        if (provider != null) 'provider': provider,
+        if (apiKey != null) 'api_key': apiKey,
       };
 
   @override
-  List<Object?> get props => [taskTitle, taskDescription, context, maxSubtasks];
+  List<Object?> get props =>
+      [taskTitle, taskDescription, context, maxSubtasks, provider, apiKey];
 }
 
 /// Request to get prioritization suggestions for tasks.
@@ -99,6 +110,8 @@ class TaskPrioritizationRequest extends Equatable {
   TaskPrioritizationRequest({
     required this.tasks,
     this.context,
+    this.provider,
+    this.apiKey,
   }) {
     _validate();
   }
@@ -108,6 +121,12 @@ class TaskPrioritizationRequest extends Equatable {
 
   /// Project context or goals.
   final String? context;
+
+  /// AI provider to use (overrides server default).
+  final String? provider;
+
+  /// API key for the provider (required for openai/anthropic if not in server config).
+  final String? apiKey;
 
   /// Validates the request.
   void _validate() {
@@ -132,10 +151,12 @@ class TaskPrioritizationRequest extends Equatable {
   Map<String, dynamic> toJson() => {
         'tasks': tasks,
         if (context != null) 'context': context,
+        if (provider != null) 'provider': provider,
+        if (apiKey != null) 'api_key': apiKey,
       };
 
   @override
-  List<Object?> get props => [tasks, context];
+  List<Object?> get props => [tasks, context, provider, apiKey];
 }
 
 /// Request to estimate time for a task.
@@ -148,6 +169,8 @@ class TimeEstimateRequest extends Equatable {
     this.taskDescription,
     this.subtasks,
     this.skillLevel = SkillLevel.intermediate,
+    this.provider,
+    this.apiKey,
   }) {
     _validate();
   }
@@ -163,6 +186,12 @@ class TimeEstimateRequest extends Equatable {
 
   /// User skill level.
   final SkillLevel skillLevel;
+
+  /// AI provider to use (overrides server default).
+  final String? provider;
+
+  /// API key for the provider (required for openai/anthropic if not in server config).
+  final String? apiKey;
 
   /// Validates the request.
   void _validate() {
@@ -186,10 +215,13 @@ class TimeEstimateRequest extends Equatable {
         if (taskDescription != null) 'task_description': taskDescription,
         if (subtasks != null) 'subtasks': subtasks,
         'skill_level': skillLevel.toJson(),
+        if (provider != null) 'provider': provider,
+        if (apiKey != null) 'api_key': apiKey,
       };
 
   @override
-  List<Object?> get props => [taskTitle, taskDescription, subtasks, skillLevel];
+  List<Object?> get props =>
+      [taskTitle, taskDescription, subtasks, skillLevel, provider, apiKey];
 }
 
 /// Request for contextual suggestions.
@@ -202,6 +234,8 @@ class ContextSuggestionRequest extends Equatable {
     this.taskDescription,
     this.projectContext,
     this.suggestionType = 'general',
+    this.provider,
+    this.apiKey,
   }) {
     _validate();
   }
@@ -217,6 +251,12 @@ class ContextSuggestionRequest extends Equatable {
 
   /// Type of suggestions: general, resources, tips, blockers.
   final String suggestionType;
+
+  /// AI provider to use (overrides server default).
+  final String? provider;
+
+  /// API key for the provider (required for openai/anthropic if not in server config).
+  final String? apiKey;
 
   /// Validates the request.
   void _validate() {
@@ -247,11 +287,19 @@ class ContextSuggestionRequest extends Equatable {
         if (taskDescription != null) 'task_description': taskDescription,
         if (projectContext != null) 'project_context': projectContext,
         'suggestion_type': suggestionType,
+        if (provider != null) 'provider': provider,
+        if (apiKey != null) 'api_key': apiKey,
       };
 
   @override
-  List<Object?> get props =>
-      [taskTitle, taskDescription, projectContext, suggestionType];
+  List<Object?> get props => [
+        taskTitle,
+        taskDescription,
+        projectContext,
+        suggestionType,
+        provider,
+        apiKey
+      ];
 }
 
 // ============================================================================
