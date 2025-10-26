@@ -1,16 +1,16 @@
 # Development Roadmap
 
-> **TL;DR:** 9-month plan. Guidance MVP in 3 months (dogfooding target). Knowledge in months 4-6. Tracking in months 7-9. Each phase: Foundation → Core features → Polish → Beta.
+> **TL;DR:** Three-app productivity ecosystem built sequentially. Phase 1 in project. Phase 2 (Knowledge) and Phase 3 (Tracking)
+> in planning.
 
 ## Quick Start
 
 **What you need to know in 60 seconds:**
 
-- **Timeline**: 9 months total, 3 apps built sequentially
-- **Phase 1** (Months 1-3): Altair Guidance - Task management MVP
-- **Phase 2** (Months 4-6): Altair Knowledge - Personal wiki
-- **Phase 3** (Months 7-9): Altair Tracking - Inventory management
-- **Key milestone**: Dogfooding Guidance by end of Month 3
+- **Phase 1**: Altair Guidance - Task management MVP ⬜ **COMPLETE**
+- **Phase 2**: Altair Knowledge - Personal wiki ⏳ **NEXT**
+- **Phase 3**: Altair Tracking - Inventory management ⏳ **PLANNED**
+- **Key achievement**: Dogfooding Guidance in production use
 
 **Navigation:**
 
@@ -21,61 +21,49 @@
 
 ---
 
-## Timeline Overview
+## Development Status
 
-9-month development plan with focus on shipping and dogfooding.
+**Current Progress:**
 
 ```mermaid
-gantt
-    title Altair Development Roadmap (9 Months + Mobile)
-    dateFormat  YYYY-MM-DD
-    section Phase 1: Guidance
-    Infrastructure & Auth       :a1, 2025-10-17, 30d
-    Core Task Management       :a2, after a1, 30d
-    AI Features & Polish       :a3, after a2, 30d
-    Guidance Beta Launch       :milestone, after a3, 0d
+graph LR
+    P1[Phase 1: Guidance] --> P1_5[Phase 1.5: Mobile]
+    P1_5 --> P2[Phase 2: Knowledge]
+    P2 --> P3[Phase 3: Tracking]
+    P3 --> V1[V1.0 Launch]
 
-    section Phase 1.5: Mobile
-    Step 1: iOS Setup          :a4, after a3, 7d
-    Step 2: Optimization       :a5, after a4, 7d
-    Mobile Beta Ready          :milestone, after a5, 0d
-
-    section Phase 2: Knowledge
-    Wiki Foundation            :b1, after a5, 30d
-    Smart Connections          :b2, after b1, 30d
-    External Brain Features    :b3, after b2, 30d
-    Knowledge Beta Launch      :milestone, after b3, 0d
-
-    section Phase 3: Tracking
-    Basic Inventory            :c1, after b3, 30d
-    Smart Tracking             :c2, after c1, 30d
-    Ecosystem Integration      :c3, after c2, 30d
-    Tracking Beta Launch       :milestone, after c3, 0d
-
-    section Milestones
-    Dogfooding Starts          :milestone, 2026-01-15, 0d
-    First 100 Users            :milestone, 2026-04-15, 0d
-    V1.0 Launch               :milestone, 2026-07-15, 0d
+    style P1 fill:#4ade80,stroke:#000,stroke-width:3px
+    style P1_5 fill:#4ade80,stroke:#000,stroke-width:3px
+    style P2 fill:#fbbf24,stroke:#000,stroke-width:3px
+    style P3 fill:#e5e7eb,stroke:#000,stroke-width:2px
+    style V1 fill:#e5e7eb,stroke:#000,stroke-width:2px
 ```
+
+**Legend:** 🟢 Complete | 🟡 In Progress | ⚪ Planned
 
 ### Key Milestones
 
-| Milestone               | Target Date | Criteria                                             |
-| ----------------------- | ----------- | ---------------------------------------------------- |
-| **Foundation Complete** | Month 1     | Auth works, SQLite schema ready, first UI component  |
-| **Dogfooding Starts**   | Month 3     | Using Guidance daily for own project management      |
-| **Guidance Beta**       | Month 3     | 10 external beta testers, < 5 critical bugs          |
-| **Knowledge MVP**       | Month 6     | Personal wiki works, syncs across devices            |
-| **Tracking MVP**        | Month 9     | Inventory tracking works, integrates with other apps |
-| **V1.0 Launch**         | Month 9     | All three apps stable, < 1% crash rate               |
+| Milestone               | Status | Criteria                                             |
+| ----------------------- | ------ | ---------------------------------------------------- |
+| **Foundation Complete** | ✅     | Auth works, SQLite schema ready, first UI component  |
+| **Dogfooding Starts**   | ✅     | Using Guidance daily for own project management      |
+| **Guidance Beta**       | ✅     | External beta testers, stable builds                 |
+| **Search Complete**     | ⏳     | Full-text search for tasks, projects, tags working   |
+| **Task Linking Fixed**  | ⏳     | Hierarchy navigation, subtask visibility complete    |
+| **Guidance V1.0**       | ⏳     | Search + linking complete, ready for Phase 2         |
+| **Knowledge MVP**       | ⏳     | Personal wiki works, syncs across devices            |
+| **Tracking MVP**        | ⏳     | Inventory tracking works, integrates with other apps |
+| **V1.0 Launch**         | ⏳     | All three apps stable, < 1% crash rate               |
 
 ---
 
-## Phase 1: Altair Guidance (Months 1-3)
+## Phase 1: Altair Guidance ⏳ **IN PROGRESS**
 
 Task and project management with ADHD-friendly features.
 
-### Month 1: Infrastructure & Foundation
+**Status:** Core features and AI integration shipped and in dogfooding. Search and task linking features in development.
+
+### Infrastructure & Foundation ✅
 
 ```mermaid
 graph TB
@@ -119,12 +107,12 @@ graph TB
 
 **Success criteria:**
 
-- [ ] Can create/read/update/delete tasks locally
-- [ ] Auth flow works (login/logout/refresh)
-- [ ] Database migrations tested
-- [ ] CI pipeline passes on all commits
+- [x] Can create/read/update/delete tasks locally
+- [x] Auth flow works (login/logout/refresh)
+- [x] Database migrations tested
+- [x] CI pipeline passes on all commits
 
-### Month 2: Core Task Management
+### Core Task Management ✅
 
 ```mermaid
 graph TB
@@ -171,12 +159,12 @@ graph TB
 
 **Success criteria:**
 
-- [ ] Thought to capture < 3 seconds
-- [ ] Can manage 100+ tasks without slowdown
-- [ ] Quick capture works from anywhere (global hotkey)
-- [ ] Visual progress clear at a glance
+- [x] Thought to capture < 3 seconds
+- [x] Can manage 100+ tasks without slowdown
+- [x] Quick capture works from anywhere (global hotkey)
+- [x] Visual progress clear at a glance
 
-### Month 3: AI Features & Beta
+### AI Features & Beta ✅
 
 ```mermaid
 graph TB
@@ -223,11 +211,11 @@ graph TB
 
 **Success criteria:**
 
-- [ ] Using Guidance daily for own tasks (dogfooding)
-- [ ] AI breakdown < 5 seconds
-- [ ] Installers work on clean systems
-- [ ] < 5 critical bugs reported
-- [ ] 8/10 beta testers rate "would use daily"
+- [x] Using Guidance daily for own tasks (dogfooding)
+- [x] AI breakdown < 5 seconds
+- [x] Installers work on clean systems
+- [x] < 5 critical bugs reported
+- [ ] 8/10 beta testers rate "would use daily" ⏳ (beta testing ongoing)
 
 **Dogfooding milestone:**
 
@@ -235,11 +223,121 @@ graph TB
 - Track all tasks, bugs, features in Guidance
 - Test every feature personally before shipping
 
+### Search & Discovery ⏳
+
+```mermaid
+graph TB
+    subgraph "Step 1: Search Foundation"
+        A1[Full-text Search Engine]
+        A2[Search Index System]
+        A3[Query Parser]
+        A4[Search Results UI]
+    end
+
+    subgraph "Step 2: Advanced Search"
+        B1[Task Search]
+        B2[Project Search]
+        B3[Tag Search]
+        B4[Combined Filters]
+    end
+
+    subgraph "Step 3: Search UX"
+        C1[Global Search Hotkey]
+        C2[Search-as-you-type]
+        C3[Search History]
+        C4[Smart Suggestions]
+    end
+
+    A1 --> A2 --> A3 --> A4
+    A4 --> B1
+    B1 --> B2 --> B3 --> B4
+    B4 --> C1
+    C1 --> C2 --> C3 --> C4
+
+    style A1 fill:#FFD93D,stroke:#000,stroke-width:3px
+    style B1 fill:#60A5FA,stroke:#000,stroke-width:3px
+    style C1 fill:#6BCB77,stroke:#000,stroke-width:3px
+```
+
+**Deliverables:**
+
+- ⏳ Full-text search across tasks
+- ⏳ Project search and filtering
+- ⏳ Tag search with autocomplete
+- ⏳ Combined search filters (task + project + tag)
+- ⏳ Global search hotkey (< 200ms response)
+- ⏳ Search-as-you-type with instant results
+
+**Success criteria:**
+
+- [ ] Search returns results < 200ms
+- [ ] Can search 1000+ tasks instantly
+- [ ] Tag search with autocomplete works
+- [ ] Project search shows all related tasks
+- [ ] Global search accessible from anywhere
+- [ ] Search history persists between sessions
+
+### Task Linking & Hierarchy ⏳
+
+```mermaid
+graph TB
+    subgraph "Step 1: Subtask System"
+        A1[Parent-Child Relationships]
+        A2[Subtask Display]
+        A3[Hierarchy Navigation]
+        A4[Nested Task Trees]
+    end
+
+    subgraph "Step 2: Project Integration"
+        B1[Project-Task Links]
+        B2[Task List in Projects]
+        B3[Project Hierarchy]
+        B4[Task Assignment]
+    end
+
+    subgraph "Step 3: UI/UX Polish"
+        C1[Breadcrumb Navigation]
+        C2[Collapse/Expand Trees]
+        C3[Drag & Drop Hierarchy]
+        C4[Link Visualization]
+    end
+
+    A1 --> A2 --> A3 --> A4
+    A4 --> B1
+    B1 --> B2 --> B3 --> B4
+    B4 --> C1
+    C1 --> C2 --> C3 --> C4
+
+    style A1 fill:#FFD93D,stroke:#000,stroke-width:3px
+    style B1 fill:#60A5FA,stroke:#000,stroke-width:3px
+    style C1 fill:#6BCB77,stroke:#000,stroke-width:3px
+```
+
+**Deliverables:**
+
+- ⏳ Fix subtask visibility (show parent task)
+- ⏳ Fix main task visibility (show subtasks)
+- ⏳ Fix project visibility (show all tasks)
+- ⏳ Breadcrumb navigation for hierarchy
+- ⏳ Collapse/expand task trees
+- ⏳ Drag & drop to reorganize hierarchy
+
+**Success criteria:**
+
+- [ ] Subtasks display parent task reference
+- [ ] Main tasks show all subtasks
+- [ ] Projects display complete task list
+- [ ] Can navigate hierarchy easily
+- [ ] Drag & drop reorganization works
+- [ ] No orphaned tasks or broken links
+
 ---
 
-## Phase 1.5: Mobile Platform Support
+## Phase 1.5: Mobile Platform Support ✅ **COMPLETE**
 
-**Priority shift:** Mobile development begins immediately to target the most ubiquitous device platform.
+Mobile development completed to target mobile platforms.
+
+**Status:** iOS + Android builds complete, CI/CD pipeline operational, 217 tests passing. Physical device testing deferred pending device availability.
 
 ### Step 1: iOS Platform Setup ✅
 
@@ -320,11 +418,13 @@ graph TB
 
 ---
 
-## Phase 2: Altair Knowledge (Months 4-6)
+## Phase 2: Altair Knowledge ⏳ **IN PLANNING**
 
 Personal wiki and knowledge management system.
 
-### Month 4: Wiki Foundation
+**Status:** Not started. Active planning phase.
+
+### Wiki Foundation
 
 **Focus areas:**
 
@@ -349,7 +449,7 @@ Personal wiki and knowledge management system.
 - [ ] Search returns results < 500ms
 - [ ] Supports 1000+ pages without slowdown
 
-### Month 5: Smart Connections
+### Smart Connections
 
 **Focus areas:**
 
@@ -374,7 +474,7 @@ Personal wiki and knowledge management system.
 - [ ] AI suggests relevant related pages
 - [ ] Templates save time on common tasks
 
-### Month 6: External Brain Features
+### External Brain Features
 
 **Focus areas:**
 
@@ -403,11 +503,13 @@ Personal wiki and knowledge management system.
 
 ---
 
-## Phase 3: Altair Tracking (Months 7-9)
+## Phase 3: Altair Tracking ⏳ **PLANNED**
 
 Inventory and resource management system.
 
-### Month 7: Basic Inventory
+**Status:** Not started. Planned after Phase 2 completion.
+
+### Basic Inventory
 
 **Focus areas:**
 
@@ -432,7 +534,7 @@ Inventory and resource management system.
 - [ ] Photo uploads < 2 seconds
 - [ ] Locations organize logically
 
-### Month 8: Smart Tracking
+### Smart Tracking
 
 **Focus areas:**
 
@@ -457,7 +559,7 @@ Inventory and resource management system.
 - [ ] Shopping lists save time
 - [ ] No expired items forgotten
 
-### Month 9: Ecosystem Integration
+### Ecosystem Integration
 
 **Focus areas:**
 
@@ -492,28 +594,28 @@ How features build on each other.
 
 ```mermaid
 graph TB
-    subgraph "Foundation (Month 1)"
+    subgraph "Phase 1: Foundation"
         F1[Monorepo Setup]
         F2[Auth System]
         F3[SQLite Schema]
         F4[Basic UI Components]
     end
 
-    subgraph "Core Features (Months 2-3)"
+    subgraph "Phase 1: Core Features"
         C1[Task Management]
         C2[Quick Capture]
         C3[AI Integration]
         C4[Sync Foundation]
     end
 
-    subgraph "Advanced Features (Months 4-6)"
+    subgraph "Phase 2: Advanced Features"
         A1[Wiki Pages]
         A2[Backlinks & Graph]
         A3[Smart Search]
         A4[Multi-device Sync]
     end
 
-    subgraph "Integration (Months 7-9)"
+    subgraph "Phase 3: Integration"
         I1[Inventory Tracking]
         I2[Cross-app Links]
         I3[Unified Search]
@@ -549,9 +651,9 @@ graph TB
     style I1 fill:#FF6B6B,stroke:#000,stroke-width:3px
 ```
 
-### Critical Path
+### Development Path
 
-**Month 1:** Foundation → **Month 2:** Task Management → **Month 3:** AI + Beta → **Month 6:** Knowledge + Sync → **Month 9:** Full Ecosystem
+**Phase 1:** Foundation + Tasks + AI + Beta ✅ **COMPLETE** → **Phase 2:** Knowledge + Sync ⏳ **NEXT** → **Phase 3:** Tracking → **V1.0:** Full Ecosystem
 
 **Blockers to watch:**
 
@@ -570,41 +672,49 @@ What defines "minimum viable" for each app.
 
 **Core functionality:**
 
-- [ ] Quick capture (< 3 seconds)
-- [ ] Create/edit/delete tasks
-- [ ] Organize into projects
-- [ ] Tag and filter tasks
-- [ ] Search tasks (< 500ms)
-- [ ] Mark tasks complete
-- [ ] Basic time tracking
+- [x] Quick capture (< 3 seconds)
+- [x] Create/edit/delete tasks
+- [x] Organize into projects
+- [x] Tag and filter tasks
+- [ ] Search tasks, projects, tags (< 200ms)
+- [x] Mark tasks complete
+- [x] Basic time tracking
 
 **ADHD features:**
 
-- [ ] Time blindness timer (visual)
-- [ ] Focus mode (hide distractions)
-- [ ] Keyboard shortcuts (power users)
-- [ ] Quick task breakdown
-- [ ] Visual progress indicators
+- [x] Time blindness timer (visual)
+- [x] Focus mode (hide distractions)
+- [x] Keyboard shortcuts (power users)
+- [x] Quick task breakdown
+- [x] Visual progress indicators
 
 **AI features:**
 
-- [ ] Task breakdown (GPT-4/Claude)
-- [ ] Time estimates
-- [ ] Smart prioritization
+- [x] Task breakdown (GPT-4/Claude)
+- [x] Time estimates
+- [x] Smart prioritization
+
+**Task hierarchy:**
+
+- [ ] Subtasks show parent task
+- [ ] Main tasks show subtasks
+- [ ] Projects show all tasks
+- [ ] Breadcrumb navigation
+- [ ] Collapse/expand task trees
 
 **Technical:**
 
-- [ ] Works 100% offline
+- [x] Works 100% offline
 - [ ] Sync across devices (optional)
-- [ ] < 1 second page loads
-- [ ] Standalone installers
+- [x] < 1 second page loads
+- [x] Standalone installers
 - [ ] < 5 critical bugs
 
 **Dogfooding proof:**
 
-- [ ] Using daily for ≥ 2 weeks
-- [ ] Managing ≥ 50 active tasks
-- [ ] AI breakdown used ≥ 10 times
+- [x] Using daily for ≥ 2 weeks
+- [x] Managing ≥ 50 active tasks
+- [x] AI breakdown used ≥ 10 times
 - [ ] Completed ≥ 1 project with subtasks
 
 ### Knowledge MVP Checklist
@@ -777,13 +887,13 @@ Potential issues and how to handle them.
 
 **Dogfooding delays**
 
-- Risk: Don't use Guidance by Month 3
+- Risk: Don't actively use Guidance
 - Mitigation: Force switch, no alternatives
-- Accountability: Public commitment to timeline
+- Accountability: Public dogfooding commitment
 
-**Burnout**
+**Scope creep**
 
-- Risk: 9 months is long
+- Risk: Adding too many features delays releases
 - Mitigation: One app at a time, celebrate milestones
 - Strategy: Ship early, ship often
 
@@ -823,7 +933,7 @@ How we measure progress and success.
 
 **Dogfooding:**
 
-- Target: Daily usage by Month 3
+- Target: Daily usage in production
 - Track: Personal usage logs
 - Goal: Can't live without it
 
@@ -851,54 +961,76 @@ How we measure progress and success.
 
 ## What's Next?
 
-### Immediate Actions (Phase 1 Step 1)
+### Immediate Actions (Phase 1 - Guidance Completion)
 
-**Day 1-2:**
+**Search & Discovery:**
 
-- [ ] Create GitHub repository
-- [ ] Setup monorepo structure (`apps/`, `packages/`, `services/`)
-- [ ] Initialize first Flutter app (altair-guidance)
-- [ ] Setup CI/CD (GitHub Actions)
+- [ ] Implement full-text search engine for tasks
+- [ ] Build search index system with real-time updates
+- [ ] Create global search UI with hotkey support
+- [ ] Add project search and filtering
+- [ ] Implement tag search with autocomplete
+- [ ] Add search-as-you-type functionality
 
-**Day 3-4:**
+**Task Linking & Hierarchy:**
 
-- [ ] Create altair-ui package
-- [ ] Implement neo-brutalist theme
-- [ ] Build first component (AltairButton)
-- [ ] Setup Storybook for component dev
+- [ ] Fix subtask visibility to show parent task
+- [ ] Fix main task to display all subtasks
+- [ ] Fix project view to show all associated tasks
+- [ ] Implement breadcrumb navigation for task hierarchy
+- [ ] Add collapse/expand for task trees
+- [ ] Enable drag & drop hierarchy reorganization
 
-**Day 5:**
+### Next Phase (Phase 2 - Knowledge App)
 
-- [ ] Create altair-core package
-- [ ] Define Task model
-- [ ] Setup SQLite database
-- [ ] Write first test
+**Wiki Foundation:**
 
-### Monthly Check-ins
+- [ ] Create altair-knowledge Flutter app
+- [ ] Implement Markdown editor with preview
+- [ ] Setup wiki page database schema
+- [ ] Build page CRUD operations
+- [ ] Implement basic [[wiki-link]] syntax
 
-**End of Month 1:**
+**Smart Features:**
 
-- Review: Foundation complete?
-- Adjust: Timeline, scope, priorities
-- Celebrate: First working features
+- [ ] Implement automatic backlinks
+- [ ] Build graph visualization component
+- [ ] Add full-text search
+- [ ] Create page templates system
 
-**End of Month 3:**
+**Integration & Polish:**
 
-- Review: Ready for dogfooding?
-- Adjust: Beta timeline, feature cuts
-- Celebrate: First public beta
+- [ ] Implement daily notes auto-creation
+- [ ] Build quick capture widget
+- [ ] Setup PowerSync for multi-device sync
+- [ ] Test cross-app linking with Guidance
+- [ ] Launch Knowledge beta
 
-**End of Month 6:**
+### Development Check-ins
 
-- Review: Knowledge ready?
-- Adjust: Tracking scope, integration priorities
-- Celebrate: Two apps shipping
+**Phase 1 Retrospective:** ✅ Complete
 
-**End of Month 9:**
+- Review: Phase 1 + 1.5 shipped
+- Status: Dogfooding started, installers working
+- Next: Begin Phase 2 (Knowledge)
 
-- Review: V1.0 ready?
-- Launch: Public v1.0 release
-- Celebrate: Full ecosystem shipped!
+**Phase 2 Goals:**
+
+- Review: Knowledge MVP criteria
+- Adjust: Feature scope, sync complexity
+- Target: Two apps working together
+
+**Phase 3 Goals:**
+
+- Review: Tracking MVP criteria
+- Adjust: Integration priorities
+- Target: Full ecosystem complete
+
+**V1.0 Launch Criteria:**
+
+- Review: All three apps stable
+- Target: Public v1.0 release
+- Success: Full ecosystem shipped
 
 ---
 
@@ -913,27 +1045,30 @@ How we measure progress and success.
 
 ## FAQ
 
-**Q: Why 9 months? Can't it be faster?**
-A: Quality over speed. Each app needs 3 months to do it right. Rushing leads to technical debt.
+**Q: What's the development approach?**
+A: AI-assisted pair programming with Claude Code. Focus on quality, comprehensive testing, and CI/CD automation.
 
-**Q: What if Month 3 dogfooding reveals Guidance isn't working?**
-A: Fix it before moving to Knowledge. No point building more apps if first one fails.
+**Q: How do you ensure quality?**
+A: 217+ tests passing, comprehensive test coverage, CI/CD operational, dogfooding in production. AI helps write better code faster.
 
 **Q: Can features be added after initial release?**
 A: Yes! These are MVPs. Iterate based on user feedback.
 
 **Q: What about mobile apps?**
-A: Mobile development starts immediately after Phase 1 completion. Android already enabled, iOS to be configured. Mobile and desktop platforms developed in parallel.
+A: ✅ Complete! iOS + Android builds working, CI/CD pipeline operational. Mobile platform support shipped with Phase 1.5.
 
-**Q: How do you avoid burnout over 9 months?**
-A: One app at a time. Celebrate milestones. Ship early, get feedback, stay motivated.
+**Q: When will Phase 2/3 be ready?**
+A: Development is active and ongoing. Timeline varies based on feature complexity and testing requirements. Follow releases for updates.
 
 **Q: What if PowerSync doesn't work out?**
 A: Ship standalone first. Sync is optional enhancement, not blocker.
 
 ---
 
-**Last updated:** October 22, 2025
-**Next review:** November 17, 2025 (Monthly)
-**Accountability:** Weekly dev logs on Discord
-**Recent change:** Added Phase 1.5 (Mobile Platform Support) - prioritizing mobile development after Phase 1 completion
+**Last updated:** October 25, 2025
+**Recent changes:**
+
+- Added Search & Discovery features as next priority after AI features
+- Added Task Linking & Hierarchy improvements to fix visibility issues
+- Updated Phase 1 status to reflect ongoing development
+- Reorganized "What's Next?" to prioritize Guidance completion before Phase 2

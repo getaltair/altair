@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class MockTaskRepository extends Mock implements TaskRepository {}
 
@@ -19,13 +20,21 @@ void main() {
   });
 
   group('AltairGuidanceApp', () {
+    late SharedPreferences prefs;
+
+    setUp(() async {
+      // Initialize SharedPreferences with fake implementation for testing
+      SharedPreferences.setMockInitialValues({});
+      prefs = await SharedPreferences.getInstance();
+    });
+
     testWidgets('renders without crashing', (WidgetTester tester) async {
-      await tester.pumpWidget(const AltairGuidanceApp());
+      await tester.pumpWidget(AltairGuidanceApp(prefs: prefs));
       expect(find.byType(MaterialApp), findsOneWidget);
     });
 
     testWidgets('has correct title', (WidgetTester tester) async {
-      await tester.pumpWidget(const AltairGuidanceApp());
+      await tester.pumpWidget(AltairGuidanceApp(prefs: prefs));
 
       final materialApp = tester.widget<MaterialApp>(
         find.byType(MaterialApp),
@@ -35,7 +44,7 @@ void main() {
     });
 
     testWidgets('uses Altair theme', (WidgetTester tester) async {
-      await tester.pumpWidget(const AltairGuidanceApp());
+      await tester.pumpWidget(AltairGuidanceApp(prefs: prefs));
 
       final materialApp = tester.widget<MaterialApp>(
         find.byType(MaterialApp),
@@ -47,14 +56,14 @@ void main() {
     });
 
     testWidgets('shows HomePage as home', (WidgetTester tester) async {
-      await tester.pumpWidget(const AltairGuidanceApp());
+      await tester.pumpWidget(AltairGuidanceApp(prefs: prefs));
       await tester.pump();
 
       expect(find.byType(HomePage), findsOneWidget);
     });
 
     testWidgets('hides debug banner', (WidgetTester tester) async {
-      await tester.pumpWidget(const AltairGuidanceApp());
+      await tester.pumpWidget(AltairGuidanceApp(prefs: prefs));
 
       final materialApp = tester.widget<MaterialApp>(
         find.byType(MaterialApp),

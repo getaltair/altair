@@ -1,6 +1,9 @@
 import 'package:altair_guidance/bloc/ai/ai_bloc.dart';
 import 'package:altair_guidance/bloc/ai/ai_event.dart';
 import 'package:altair_guidance/bloc/ai/ai_state.dart';
+import 'package:altair_guidance/bloc/settings/settings_bloc.dart';
+import 'package:altair_guidance/bloc/settings/settings_state.dart';
+import 'package:altair_guidance/models/ai_settings.dart';
 import 'package:altair_guidance/services/ai/ai_service.dart';
 import 'package:altair_guidance/services/ai/models.dart';
 import 'package:bloc_test/bloc_test.dart';
@@ -9,12 +12,27 @@ import 'package:mocktail/mocktail.dart';
 
 class MockAIService extends Mock implements AIService {}
 
+class MockSettingsBloc extends Mock implements SettingsBloc {}
+
 void main() {
   group('AIBloc', () {
     late MockAIService mockAIService;
+    late MockSettingsBloc mockSettingsBloc;
 
     setUp(() {
       mockAIService = MockAIService();
+      mockSettingsBloc = MockSettingsBloc();
+
+      // Mock default settings state
+      when(() => mockSettingsBloc.state).thenReturn(
+        const SettingsLoaded(
+          AISettings(
+            enabled: true,
+            provider: AIProviderType.openai,
+            openaiApiKey: 'test-key',
+          ),
+        ),
+      );
 
       // Register fallback values
       registerFallbackValue(
@@ -35,7 +53,10 @@ void main() {
 
     group('constructor', () {
       test('initial state is AIInitial', () {
-        final bloc = AIBloc(aiService: mockAIService);
+        final bloc = AIBloc(
+          aiService: mockAIService,
+          settingsBloc: mockSettingsBloc,
+        );
         expect(bloc.state, const AIInitial());
         bloc.close();
       });
@@ -66,7 +87,10 @@ void main() {
               reasoning: 'Logical breakdown',
             ),
           );
-          return AIBloc(aiService: mockAIService);
+          return AIBloc(
+            aiService: mockAIService,
+            settingsBloc: mockSettingsBloc,
+          );
         },
         act: (bloc) => bloc.add(
           AITaskBreakdownRequested(
@@ -109,7 +133,10 @@ void main() {
               statusCode: 503,
             ),
           );
-          return AIBloc(aiService: mockAIService);
+          return AIBloc(
+            aiService: mockAIService,
+            settingsBloc: mockSettingsBloc,
+          );
         },
         act: (bloc) => bloc.add(
           AITaskBreakdownRequested(
@@ -131,7 +158,10 @@ void main() {
           when(() => mockAIService.breakdownTask(any())).thenThrow(
             Exception('Unexpected error'),
           );
-          return AIBloc(aiService: mockAIService);
+          return AIBloc(
+            aiService: mockAIService,
+            settingsBloc: mockSettingsBloc,
+          );
         },
         act: (bloc) => bloc.add(
           AITaskBreakdownRequested(
@@ -180,7 +210,10 @@ void main() {
               recommendedOrder: ['Task 1', 'Task 2'],
             ),
           );
-          return AIBloc(aiService: mockAIService);
+          return AIBloc(
+            aiService: mockAIService,
+            settingsBloc: mockSettingsBloc,
+          );
         },
         act: (bloc) => bloc.add(
           AITaskPrioritizationRequested(
@@ -217,7 +250,10 @@ void main() {
           when(() => mockAIService.prioritizeTasks(any())).thenThrow(
             AIServiceException.timeout('task prioritization'),
           );
-          return AIBloc(aiService: mockAIService);
+          return AIBloc(
+            aiService: mockAIService,
+            settingsBloc: mockSettingsBloc,
+          );
         },
         act: (bloc) => bloc.add(
           AITaskPrioritizationRequested(
@@ -262,7 +298,10 @@ void main() {
               assumptions: ['No blockers'],
             ),
           );
-          return AIBloc(aiService: mockAIService);
+          return AIBloc(
+            aiService: mockAIService,
+            settingsBloc: mockSettingsBloc,
+          );
         },
         act: (bloc) => bloc.add(
           AITimeEstimateRequested(
@@ -302,7 +341,10 @@ void main() {
           when(() => mockAIService.estimateTime(any())).thenThrow(
             AIServiceException.network('Connection lost'),
           );
-          return AIBloc(aiService: mockAIService);
+          return AIBloc(
+            aiService: mockAIService,
+            settingsBloc: mockSettingsBloc,
+          );
         },
         act: (bloc) => bloc.add(
           AITimeEstimateRequested(
@@ -348,7 +390,10 @@ void main() {
               summary: 'Start with docs',
             ),
           );
-          return AIBloc(aiService: mockAIService);
+          return AIBloc(
+            aiService: mockAIService,
+            settingsBloc: mockSettingsBloc,
+          );
         },
         act: (bloc) => bloc.add(
           AIContextSuggestionsRequested(
@@ -388,7 +433,10 @@ void main() {
           when(() => mockAIService.getSuggestions(any())).thenThrow(
             const AIServiceException('Invalid request', statusCode: 400),
           );
-          return AIBloc(aiService: mockAIService);
+          return AIBloc(
+            aiService: mockAIService,
+            settingsBloc: mockSettingsBloc,
+          );
         },
         act: (bloc) => bloc.add(
           AIContextSuggestionsRequested(
@@ -408,7 +456,10 @@ void main() {
     group('AIClearState', () {
       blocTest<AIBloc, AIState>(
         'emits [AIInitial] when clear state is requested',
-        build: () => AIBloc(aiService: mockAIService),
+        build: () => AIBloc(
+          aiService: mockAIService,
+          settingsBloc: mockSettingsBloc,
+        ),
         seed: () => const AITaskBreakdownSuccess(
           response: TaskBreakdownResponse(
             originalTask: 'Test',
@@ -421,7 +472,10 @@ void main() {
 
       blocTest<AIBloc, AIState>(
         'clears failure state',
-        build: () => AIBloc(aiService: mockAIService),
+        build: () => AIBloc(
+          aiService: mockAIService,
+          settingsBloc: mockSettingsBloc,
+        ),
         seed: () => const AIFailure(
           message: 'Error',
           operationType: AIOperationType.breakdown,
@@ -435,7 +489,10 @@ void main() {
       test('disposes AI service', () async {
         when(() => mockAIService.dispose()).thenReturn(null);
 
-        final bloc = AIBloc(aiService: mockAIService);
+        final bloc = AIBloc(
+          aiService: mockAIService,
+          settingsBloc: mockSettingsBloc,
+        );
         await bloc.close();
 
         verify(() => mockAIService.dispose()).called(1);
@@ -444,7 +501,10 @@ void main() {
       test('handles disposal errors gracefully', () async {
         when(() => mockAIService.dispose()).thenThrow(Exception('Error'));
 
-        final bloc = AIBloc(aiService: mockAIService);
+        final bloc = AIBloc(
+          aiService: mockAIService,
+          settingsBloc: mockSettingsBloc,
+        );
 
         // Should not throw even if dispose fails
         expect(() => bloc.close(), returnsNormally);

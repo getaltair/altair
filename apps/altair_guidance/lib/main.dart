@@ -8,10 +8,14 @@ import 'package:altair_ui/altair_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'bloc/ai/ai_bloc.dart';
 import 'bloc/project/project_bloc.dart';
 import 'bloc/project/project_event.dart';
+import 'bloc/settings/settings_bloc.dart';
+import 'bloc/settings/settings_event.dart';
+import 'bloc/settings/settings_state.dart';
 import 'bloc/task/task_bloc.dart';
 import 'bloc/task/task_event.dart';
 import 'bloc/task/task_state.dart';
@@ -20,13 +24,16 @@ import 'features/theme/theme_cubit.dart';
 import 'pages/projects_page.dart';
 import 'pages/settings_page.dart';
 import 'pages/task_edit_page.dart';
+import 'repositories/ai_settings_repository.dart';
 import 'services/ai/ai_config.dart';
 import 'services/ai/ai_service.dart';
+import 'services/ai/models.dart';
+import 'services/ai/providers/ai_provider.dart';
 import 'shortcuts/intents.dart';
 import 'shortcuts/shortcuts_config.dart';
 import 'shortcuts/shortcuts_help_dialog.dart';
 
-void main() {
+Future<void> main() async {
   // Configure system UI overlays (status bar, navigation bar)
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setSystemUIOverlayStyle(
@@ -39,25 +46,37 @@ void main() {
     ),
   );
 
-  runApp(const AltairGuidanceApp());
+  // Initialize SharedPreferences for settings persistence
+  final prefs = await SharedPreferences.getInstance();
+
+  runApp(AltairGuidanceApp(prefs: prefs));
 }
 
 /// Main application widget.
 class AltairGuidanceApp extends StatelessWidget {
   /// Creates the Altair Guidance app.
-  const AltairGuidanceApp({super.key});
+  const AltairGuidanceApp({
+    required this.prefs,
+    super.key,
+  });
+
+  /// Shared preferences instance for settings persistence.
+  final SharedPreferences prefs;
 
   @override
   Widget build(BuildContext context) {
-    // Initialize AI service with environment configuration
-    final aiService = AIService(
-      config: AIConfig.fromEnvironment(),
-    );
+    // Initialize repositories
+    final aiSettingsRepository = AISettingsRepository(prefs: prefs);
 
     return MultiBlocProvider(
       providers: [
         BlocProvider(
           create: (_) => ThemeCubit(),
+        ),
+        BlocProvider(
+          create: (_) => SettingsBloc(
+            aiSettingsRepository: aiSettingsRepository,
+          )..add(const SettingsLoadRequested()),
         ),
         BlocProvider(
           create: (_) => TaskBloc(
@@ -72,8 +91,29 @@ class AltairGuidanceApp extends StatelessWidget {
         BlocProvider(
           create: (_) => FocusModeCubit(),
         ),
+        // AIBloc created after SettingsBloc to access AI settings
         BlocProvider(
-          create: (_) => AIBloc(aiService: aiService),
+          create: (context) {
+            // Get current settings state and SettingsBloc reference
+            final settingsBloc = context.read<SettingsBloc>();
+            final settingsState = settingsBloc.state;
+
+            // Create AI provider from settings (OpenAI or Anthropic)
+            AIProvider? provider;
+            if (settingsState is SettingsLoaded) {
+              provider = AIConfig.createProvider(settingsState.aiSettings);
+            }
+
+            // If no provider available, create a disabled service
+            // This allows the app to work without AI features
+            provider ??= _DisabledAIProvider();
+
+            final aiService = AIService(provider: provider);
+            return AIBloc(
+              aiService: aiService,
+              settingsBloc: settingsBloc,
+            );
+          },
         ),
       ],
       child: BlocBuilder<ThemeCubit, ThemeState>(
@@ -91,6 +131,48 @@ class AltairGuidanceApp extends StatelessWidget {
         },
       ),
     );
+  }
+}
+
+/// Disabled AI provider that throws when AI features are not configured.
+class _DisabledAIProvider implements AIProvider {
+  @override
+  Future<TaskBreakdownResponse> breakdownTask(
+    TaskBreakdownRequest request,
+  ) async {
+    throw AIServiceException(
+      'AI features are disabled. Please configure an AI provider in settings.',
+    );
+  }
+
+  @override
+  Future<TaskPrioritizationResponse> prioritizeTasks(
+    TaskPrioritizationRequest request,
+  ) async {
+    throw AIServiceException(
+      'AI features are disabled. Please configure an AI provider in settings.',
+    );
+  }
+
+  @override
+  Future<TimeEstimateResponse> estimateTime(TimeEstimateRequest request) async {
+    throw AIServiceException(
+      'AI features are disabled. Please configure an AI provider in settings.',
+    );
+  }
+
+  @override
+  Future<ContextSuggestionResponse> getSuggestions(
+    ContextSuggestionRequest request,
+  ) async {
+    throw AIServiceException(
+      'AI features are disabled. Please configure an AI provider in settings.',
+    );
+  }
+
+  @override
+  void dispose() {
+    // Nothing to dispose
   }
 }
 
@@ -282,8 +364,15 @@ class _HomePageState extends State<HomePage> {
                               onTap: () {
                                 Navigator.of(context).push(
                                   MaterialPageRoute<void>(
-                                    builder: (context) => BlocProvider.value(
-                                      value: context.read<ThemeCubit>(),
+                                    builder: (context) => MultiBlocProvider(
+                                      providers: [
+                                        BlocProvider.value(
+                                          value: context.read<ThemeCubit>(),
+                                        ),
+                                        BlocProvider.value(
+                                          value: context.read<SettingsBloc>(),
+                                        ),
+                                      ],
                                       child: const SettingsPage(),
                                     ),
                                   ),
@@ -491,8 +580,17 @@ class _HomePageState extends State<HomePage> {
                                         Navigator.of(context).push(
                                           MaterialPageRoute<void>(
                                             builder: (context) =>
+                                                MultiBlocProvider(
+                                              providers: [
                                                 BlocProvider.value(
-                                              value: context.read<ThemeCubit>(),
+                                                  value: context
+                                                      .read<ThemeCubit>(),
+                                                ),
+                                                BlocProvider.value(
+                                                  value: context
+                                                      .read<SettingsBloc>(),
+                                                ),
+                                              ],
                                               child: const SettingsPage(),
                                             ),
                                           ),

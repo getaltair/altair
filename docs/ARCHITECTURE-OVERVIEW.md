@@ -402,9 +402,9 @@ altair/
 
 ### Three-App Split
 
-- ✅ **Guidance:** Tasks & projects (MVP first)
-- ✅ **Knowledge:** Personal wiki (Month 4-6)
-- ✅ **Tracking:** Inventory (Month 7-9)
+- ✅ **Guidance:** Tasks & projects ✅ **COMPLETE**
+- ⏳ **Knowledge:** Personal wiki ⏳ **IN PLANNING**
+- ⏳ **Tracking:** Inventory ⏳ **PLANNED**
 - ✅ **Why:** Focus, incremental adoption, dogfooding
 - ✅ **Trade-off:** More repos, shared code complexity
 
@@ -469,11 +469,11 @@ flutter run -d macos --dart-define=SYNC_ENABLED=true
 
 ### Development Priorities
 
-#### Phase 1: Altair Guidance (Months 1-3)
+#### Phase 1: Altair Guidance ✅ **COMPLETE**
 
-1. ✅ Month 1: Auth + SQLite schemas
-2. ✅ Month 2: Core task management
-3. ✅ Month 3: AI features + dogfooding
+1. ✅ Auth + SQLite schemas + Infrastructure
+2. ✅ Core task management + UI components
+3. ✅ AI features + dogfooding + installers
 
 **Focus areas:**
 
@@ -766,9 +766,10 @@ docker-compose up -d
 - Add small feature (e.g., task tags)
 - Submit PR
 
-### Month 2+: Core Contributor
+### Becoming a Core Contributor
 
 - Implement larger features
+- Work on Phase 2/3 apps
 - Review PRs
 - Help with architecture decisions
 
