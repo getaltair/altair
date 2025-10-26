@@ -93,8 +93,7 @@ Return ONLY valid JSON matching the structure above.
       final fullJson = '{$content';
       final json = jsonDecode(fullJson) as Map<String, dynamic>;
       final result = TaskBreakdownResponse.fromJson(json);
-      _logger
-          .i('[Anthropic] Generated ${result.subtasks.length} subtasks');
+      _logger.i('[Anthropic] Generated ${result.subtasks.length} subtasks');
       return result;
     } catch (e) {
       _logger.e('[Anthropic] Task breakdown failed: $e');

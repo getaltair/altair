@@ -60,8 +60,9 @@ void main() {
 
     // Mock Anthropic API calls
     when(() => mockHttpClient.get(
-          any(that: predicate<Uri>((uri) =>
-              uri.toString().contains('api.anthropic.com'))),
+          any(
+              that: predicate<Uri>(
+                  (uri) => uri.toString().contains('api.anthropic.com'))),
           headers: any(named: 'headers'),
         )).thenAnswer((_) async => http.Response(
           '{"data": [{"id": "claude-3-5-sonnet-20241022"}]}',
@@ -70,7 +71,9 @@ void main() {
 
     // Mock Ollama API calls
     when(() => mockHttpClient.get(
-          any(that: predicate<Uri>((uri) => uri.toString().contains('/api/tags'))),
+          any(
+              that: predicate<Uri>(
+                  (uri) => uri.toString().contains('/api/tags'))),
         )).thenAnswer((_) async => http.Response(
           '{"models": [{"name": "llama3.2"}]}',
           200,
@@ -261,8 +264,7 @@ void main() {
         ).called(1);
       });
 
-      testWidgets('hides provider options when AI is disabled',
-          (tester) async {
+      testWidgets('hides provider options when AI is disabled', (tester) async {
         when(() => mockSettingsBloc.state).thenReturn(
           const SettingsLoaded(AISettings(enabled: false)),
         );
@@ -276,8 +278,7 @@ void main() {
         expect(find.text('OpenAI'), findsNothing);
       });
 
-      testWidgets('shows provider options when AI is enabled',
-          (tester) async {
+      testWidgets('shows provider options when AI is enabled', (tester) async {
         when(() => mockSettingsBloc.state).thenReturn(
           const SettingsLoaded(AISettings(enabled: true)),
         );
@@ -353,8 +354,7 @@ void main() {
     });
 
     group('OpenAI Configuration', () {
-      testWidgets('shows OpenAI config when provider selected',
-          (tester) async {
+      testWidgets('shows OpenAI config when provider selected', (tester) async {
         when(() => mockSettingsBloc.state).thenReturn(
           const SettingsLoaded(
             AISettings(enabled: true, provider: AIProviderType.openai),
@@ -407,7 +407,6 @@ void main() {
           ),
         ).called(1);
       });
-
     });
 
     group('Anthropic Configuration', () {
@@ -468,8 +467,7 @@ void main() {
     });
 
     group('Ollama Configuration', () {
-      testWidgets('shows Ollama config when provider selected',
-          (tester) async {
+      testWidgets('shows Ollama config when provider selected', (tester) async {
         when(() => mockSettingsBloc.state).thenReturn(
           const SettingsLoaded(
             AISettings(enabled: true, provider: AIProviderType.ollama),
@@ -525,8 +523,7 @@ void main() {
     });
 
     group('Validation Warning', () {
-      testWidgets('shows warning when OpenAI settings invalid',
-          (tester) async {
+      testWidgets('shows warning when OpenAI settings invalid', (tester) async {
         when(() => mockSettingsBloc.state).thenReturn(
           const SettingsLoaded(
             AISettings(

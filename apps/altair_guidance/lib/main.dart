@@ -583,8 +583,8 @@ class _HomePageState extends State<HomePage> {
                                                 MultiBlocProvider(
                                               providers: [
                                                 BlocProvider.value(
-                                                  value:
-                                                      context.read<ThemeCubit>(),
+                                                  value: context
+                                                      .read<ThemeCubit>(),
                                                 ),
                                                 BlocProvider.value(
                                                   value: context

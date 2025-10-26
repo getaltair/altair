@@ -28,7 +28,8 @@ void main() {
         ]),
       );
       registerFallbackValue(
-        TimeEstimateRequest(taskTitle: 'test', skillLevel: SkillLevel.intermediate),
+        TimeEstimateRequest(
+            taskTitle: 'test', skillLevel: SkillLevel.intermediate),
       );
       registerFallbackValue(
         ContextSuggestionRequest(taskTitle: 'test', suggestionType: 'general'),

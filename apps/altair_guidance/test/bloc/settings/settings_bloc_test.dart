@@ -61,8 +61,7 @@ void main() {
       blocTest<SettingsBloc, SettingsState>(
         'emits [SettingsLoading, SettingsFailure] when load fails',
         build: () {
-          when(() => mockRepository.load())
-              .thenThrow(Exception('Load failed'));
+          when(() => mockRepository.load()).thenThrow(Exception('Load failed'));
           return SettingsBloc(aiSettingsRepository: mockRepository);
         },
         act: (bloc) => bloc.add(const SettingsLoadRequested()),
@@ -151,7 +150,9 @@ void main() {
         },
         act: (bloc) {
           bloc.add(const SettingsLoadRequested());
-          return bloc.stream.firstWhere((state) => state is SettingsLoaded).then(
+          return bloc.stream
+              .firstWhere((state) => state is SettingsLoaded)
+              .then(
                 (_) => bloc.add(const SettingsAIToggled(true)),
               );
         },
@@ -175,7 +176,9 @@ void main() {
         },
         act: (bloc) {
           bloc.add(const SettingsLoadRequested());
-          return bloc.stream.firstWhere((state) => state is SettingsLoaded).then(
+          return bloc.stream
+              .firstWhere((state) => state is SettingsLoaded)
+              .then(
                 (_) => bloc.add(const SettingsAIToggled(false)),
               );
         },
@@ -203,7 +206,9 @@ void main() {
         },
         act: (bloc) {
           bloc.add(const SettingsLoadRequested());
-          return bloc.stream.firstWhere((state) => state is SettingsLoaded).then(
+          return bloc.stream
+              .firstWhere((state) => state is SettingsLoaded)
+              .then(
                 (_) => bloc.add(const SettingsAIToggled(true)),
               );
         },
@@ -260,7 +265,9 @@ void main() {
         },
         act: (bloc) {
           bloc.add(const SettingsLoadRequested());
-          return bloc.stream.firstWhere((state) => state is SettingsLoaded).then(
+          return bloc.stream
+              .firstWhere((state) => state is SettingsLoaded)
+              .then(
                 (_) => bloc.add(const SettingsSaveRequested()),
               );
         },
@@ -288,7 +295,9 @@ void main() {
         },
         act: (bloc) {
           bloc.add(const SettingsLoadRequested());
-          return bloc.stream.firstWhere((state) => state is SettingsLoaded).then(
+          return bloc.stream
+              .firstWhere((state) => state is SettingsLoaded)
+              .then(
                 (_) => bloc.add(const SettingsSaveRequested()),
               );
         },

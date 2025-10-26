@@ -80,7 +80,8 @@ void main() {
       (_) => themeStreamController.stream,
     );
 
-    when(() => mockProjectBloc.state).thenReturn(const ProjectLoaded(projects: []));
+    when(() => mockProjectBloc.state)
+        .thenReturn(const ProjectLoaded(projects: []));
 
     when(() => mockAIBloc.state).thenReturn(const AIInitial());
     when(() => mockAIBloc.stream).thenAnswer((_) => aiStreamController.stream);

@@ -68,144 +68,149 @@ class SettingsPage extends StatelessWidget {
         body: ListView(
           padding: const EdgeInsets.all(AltairSpacing.lg),
           children: [
-          // Appearance section
-          Text(
-            'APPEARANCE',
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.2,
-                ),
-          ),
-          const SizedBox(height: AltairSpacing.md),
-
-          // Theme mode setting
-          BlocBuilder<ThemeCubit, ThemeState>(
-            builder: (context, state) {
-              return AltairCard(
-                accentColor: AltairColors.accentBlue,
-                showAccentBar: true,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Theme Mode',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                    ),
-                    const SizedBox(height: AltairSpacing.sm),
-                    Text(
-                      'Choose your preferred color scheme',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                    const SizedBox(height: AltairSpacing.md),
-
-                    // Theme options
-                    _ThemeOption(
-                      title: 'Light',
-                      description: 'Always use light theme',
-                      icon: Icons.light_mode,
-                      isSelected: state.isLight,
-                      onTap: () {
-                        context
-                            .read<ThemeCubit>()
-                            .setThemeMode(ThemeMode.light);
-                      },
-                    ),
-                    const SizedBox(height: AltairSpacing.sm),
-                    _ThemeOption(
-                      title: 'Dark',
-                      description: 'Always use dark theme',
-                      icon: Icons.dark_mode,
-                      isSelected: state.isDark,
-                      onTap: () {
-                        context.read<ThemeCubit>().setThemeMode(ThemeMode.dark);
-                      },
-                    ),
-                    const SizedBox(height: AltairSpacing.sm),
-                    _ThemeOption(
-                      title: 'Follow System',
-                      description: 'Match your device settings',
-                      icon: Icons.brightness_auto,
-                      isSelected: state.isSystem,
-                      onTap: () {
-                        context.read<ThemeCubit>().useSystemTheme();
-                      },
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-
-          const SizedBox(height: AltairSpacing.xl),
-
-          // AI Features section
-          Text(
-            'AI FEATURES',
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.2,
-                ),
-          ),
-          const SizedBox(height: AltairSpacing.md),
-          BlocBuilder<SettingsBloc, SettingsState>(
-            builder: (context, state) {
-              if (state is SettingsLoaded || state is SettingsSaved || state is SettingsSaving) {
-                final aiSettings = state is SettingsLoaded
-                    ? state.aiSettings
-                    : state is SettingsSaved
-                        ? state.aiSettings
-                        : (state as SettingsSaving).aiSettings;
-
-                return _AISettingsCard(settings: aiSettings);
-              }
-
-              return const Center(child: CircularProgressIndicator());
-            },
-          ),
-
-          const SizedBox(height: AltairSpacing.xl),
-
-          // About section
-          Text(
-            'ABOUT',
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.2,
-                ),
-          ),
-          const SizedBox(height: AltairSpacing.md),
-          AltairCard(
-            accentColor: AltairColors.accentOrange,
-            showAccentBar: true,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Altair Guidance',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                ),
-                const SizedBox(height: AltairSpacing.xs),
-                Text(
-                  'ADHD-friendly task management',
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-                const SizedBox(height: AltairSpacing.sm),
-                Text(
-                  'Version 0.1.0',
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ],
+            // Appearance section
+            Text(
+              'APPEARANCE',
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.2,
+                  ),
             ),
-          ),
-        ],
+            const SizedBox(height: AltairSpacing.md),
+
+            // Theme mode setting
+            BlocBuilder<ThemeCubit, ThemeState>(
+              builder: (context, state) {
+                return AltairCard(
+                  accentColor: AltairColors.accentBlue,
+                  showAccentBar: true,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Theme Mode',
+                        style:
+                            Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                      ),
+                      const SizedBox(height: AltairSpacing.sm),
+                      Text(
+                        'Choose your preferred color scheme',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                      const SizedBox(height: AltairSpacing.md),
+
+                      // Theme options
+                      _ThemeOption(
+                        title: 'Light',
+                        description: 'Always use light theme',
+                        icon: Icons.light_mode,
+                        isSelected: state.isLight,
+                        onTap: () {
+                          context
+                              .read<ThemeCubit>()
+                              .setThemeMode(ThemeMode.light);
+                        },
+                      ),
+                      const SizedBox(height: AltairSpacing.sm),
+                      _ThemeOption(
+                        title: 'Dark',
+                        description: 'Always use dark theme',
+                        icon: Icons.dark_mode,
+                        isSelected: state.isDark,
+                        onTap: () {
+                          context
+                              .read<ThemeCubit>()
+                              .setThemeMode(ThemeMode.dark);
+                        },
+                      ),
+                      const SizedBox(height: AltairSpacing.sm),
+                      _ThemeOption(
+                        title: 'Follow System',
+                        description: 'Match your device settings',
+                        icon: Icons.brightness_auto,
+                        isSelected: state.isSystem,
+                        onTap: () {
+                          context.read<ThemeCubit>().useSystemTheme();
+                        },
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+
+            const SizedBox(height: AltairSpacing.xl),
+
+            // AI Features section
+            Text(
+              'AI FEATURES',
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.2,
+                  ),
+            ),
+            const SizedBox(height: AltairSpacing.md),
+            BlocBuilder<SettingsBloc, SettingsState>(
+              builder: (context, state) {
+                if (state is SettingsLoaded ||
+                    state is SettingsSaved ||
+                    state is SettingsSaving) {
+                  final aiSettings = state is SettingsLoaded
+                      ? state.aiSettings
+                      : state is SettingsSaved
+                          ? state.aiSettings
+                          : (state as SettingsSaving).aiSettings;
+
+                  return _AISettingsCard(settings: aiSettings);
+                }
+
+                return const Center(child: CircularProgressIndicator());
+              },
+            ),
+
+            const SizedBox(height: AltairSpacing.xl),
+
+            // About section
+            Text(
+              'ABOUT',
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.2,
+                  ),
+            ),
+            const SizedBox(height: AltairSpacing.md),
+            AltairCard(
+              accentColor: AltairColors.accentOrange,
+              showAccentBar: true,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Altair Guidance',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                  const SizedBox(height: AltairSpacing.xs),
+                  Text(
+                    'ADHD-friendly task management',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                  const SizedBox(height: AltairSpacing.sm),
+                  Text(
+                    'Version 0.1.0',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 }
 
 /// Widget for a theme option radio button.
@@ -325,14 +330,20 @@ class _AISettingsCardState extends State<_AISettingsCard> {
   void initState() {
     super.initState();
     _workingSettings = widget.settings;
-    _openaiKeyController = TextEditingController(text: widget.settings.openaiApiKey);
-    _anthropicKeyController = TextEditingController(text: widget.settings.anthropicApiKey);
+    _openaiKeyController =
+        TextEditingController(text: widget.settings.openaiApiKey);
+    _anthropicKeyController =
+        TextEditingController(text: widget.settings.anthropicApiKey);
     _ollamaUrlController = TextEditingController(
-      text: widget.settings.ollamaBaseUrl ?? AIProviderType.ollama.defaultBaseUrl,
+      text:
+          widget.settings.ollamaBaseUrl ?? AIProviderType.ollama.defaultBaseUrl,
     );
-    _openaiModelController = TextEditingController(text: widget.settings.openaiModel);
-    _anthropicModelController = TextEditingController(text: widget.settings.anthropicModel);
-    _ollamaModelController = TextEditingController(text: widget.settings.ollamaModel);
+    _openaiModelController =
+        TextEditingController(text: widget.settings.openaiModel);
+    _anthropicModelController =
+        TextEditingController(text: widget.settings.anthropicModel);
+    _ollamaModelController =
+        TextEditingController(text: widget.settings.ollamaModel);
   }
 
   @override
@@ -430,7 +441,8 @@ class _AISettingsCardState extends State<_AISettingsCard> {
                   provider: provider,
                   isSelected: isSelected,
                   onTap: () {
-                    _updateSettings(_workingSettings.copyWith(provider: provider));
+                    _updateSettings(
+                        _workingSettings.copyWith(provider: provider));
                   },
                 ),
               );
@@ -472,7 +484,8 @@ class _AISettingsCardState extends State<_AISettingsCard> {
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.warning, color: AltairColors.error, size: 20),
+                    const Icon(Icons.warning,
+                        color: AltairColors.error, size: 20),
                     const SizedBox(width: AltairSpacing.sm),
                     Expanded(
                       child: Text(
@@ -523,12 +536,16 @@ class _ProviderOption extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
 
     final backgroundColor = isSelected
-        ? (isDark ? AltairColors.darkBgSecondary : AltairColors.lightBgSecondary)
+        ? (isDark
+            ? AltairColors.darkBgSecondary
+            : AltairColors.lightBgSecondary)
         : Colors.transparent;
 
     final borderColor = isSelected
         ? AltairColors.accentOrange
-        : (isDark ? AltairColors.darkBorderColor : AltairColors.lightBorderColor);
+        : (isDark
+            ? AltairColors.darkBorderColor
+            : AltairColors.lightBorderColor);
 
     return InkWell(
       onTap: onTap,
@@ -549,7 +566,9 @@ class _ProviderOption extends StatelessWidget {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: isSelected ? AltairColors.accentOrange : (isDark ? Colors.white70 : Colors.black45),
+                  color: isSelected
+                      ? AltairColors.accentOrange
+                      : (isDark ? Colors.white70 : Colors.black45),
                   width: 2,
                 ),
               ),
@@ -573,7 +592,8 @@ class _ProviderOption extends StatelessWidget {
                   Text(
                     provider.displayName,
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      fontWeight:
+                          isSelected ? FontWeight.bold : FontWeight.normal,
                     ),
                   ),
                   Text(
@@ -584,7 +604,8 @@ class _ProviderOption extends StatelessWidget {
               ),
             ),
             if (isSelected)
-              const Icon(Icons.check_circle, color: AltairColors.accentOrange, size: 20),
+              const Icon(Icons.check_circle,
+                  color: AltairColors.accentOrange, size: 20),
           ],
         ),
       ),
@@ -654,7 +675,8 @@ class _OpenAIConfigSection extends StatelessWidget {
                 apiModels = models.map((m) => m.id).toList()..sort();
               } catch (e) {
                 // Don't fallback - throw error to show user the API call failed
-                throw Exception('Failed to fetch OpenAI models: ${e.toString()}');
+                throw Exception(
+                    'Failed to fetch OpenAI models: ${e.toString()}');
               }
             } else {
               // No API key - show latest default models
@@ -666,12 +688,14 @@ class _OpenAIConfigSection extends StatelessWidget {
             if (filter.isNotEmpty && !items.contains(filter)) {
               items.insert(0, filter); // Add custom input at the top
             }
-            if (modelController.text.isNotEmpty && !items.contains(modelController.text)) {
+            if (modelController.text.isNotEmpty &&
+                !items.contains(modelController.text)) {
               items.insert(0, modelController.text);
             }
             return items;
           },
-          selectedItem: modelController.text.isEmpty ? null : modelController.text,
+          selectedItem:
+              modelController.text.isEmpty ? null : modelController.text,
           onChanged: (value) {
             if (value != null) {
               modelController.text = value;
@@ -685,7 +709,8 @@ class _OpenAIConfigSection extends StatelessWidget {
           decoratorProps: DropDownDecoratorProps(
             decoration: InputDecoration(
               hintText: 'Type or select model',
-              helperText: 'Enter API key to fetch available models, or type custom model name',
+              helperText:
+                  'Enter API key to fetch available models, or type custom model name',
               helperMaxLines: 2,
               border: const OutlineInputBorder(),
               contentPadding: const EdgeInsets.all(AltairSpacing.sm),
@@ -789,7 +814,8 @@ class _AnthropicConfigSection extends StatelessWidget {
                 );
 
                 if (response.statusCode == 200) {
-                  final data = json.decode(response.body) as Map<String, dynamic>;
+                  final data =
+                      json.decode(response.body) as Map<String, dynamic>;
                   final modelsList = data['data'] as List<dynamic>?;
                   if (modelsList != null) {
                     apiModels = modelsList
@@ -799,11 +825,13 @@ class _AnthropicConfigSection extends StatelessWidget {
                     throw Exception('No models found in Anthropic response');
                   }
                 } else {
-                  throw Exception('Failed to fetch Anthropic models: HTTP ${response.statusCode}');
+                  throw Exception(
+                      'Failed to fetch Anthropic models: HTTP ${response.statusCode}');
                 }
               } catch (e) {
                 // Don't fallback - throw error to show user the API call failed
-                throw Exception('Failed to fetch Anthropic models: ${e.toString()}');
+                throw Exception(
+                    'Failed to fetch Anthropic models: ${e.toString()}');
               }
             } else {
               // No API key - show latest default models
@@ -814,12 +842,14 @@ class _AnthropicConfigSection extends StatelessWidget {
             if (filter.isNotEmpty && !apiModels.contains(filter)) {
               apiModels.insert(0, filter); // Add custom input at the top
             }
-            if (modelController.text.isNotEmpty && !apiModels.contains(modelController.text)) {
+            if (modelController.text.isNotEmpty &&
+                !apiModels.contains(modelController.text)) {
               apiModels.insert(0, modelController.text);
             }
             return apiModels;
           },
-          selectedItem: modelController.text.isEmpty ? null : modelController.text,
+          selectedItem:
+              modelController.text.isEmpty ? null : modelController.text,
           onChanged: (value) {
             if (value != null) {
               modelController.text = value;
@@ -833,7 +863,8 @@ class _AnthropicConfigSection extends StatelessWidget {
           decoratorProps: DropDownDecoratorProps(
             decoration: InputDecoration(
               hintText: 'Type or select model',
-              helperText: 'Enter API key to fetch available models, or type custom model name',
+              helperText:
+                  'Enter API key to fetch available models, or type custom model name',
               helperMaxLines: 2,
               border: const OutlineInputBorder(),
               contentPadding: const EdgeInsets.all(AltairSpacing.sm),
@@ -941,25 +972,30 @@ class _OllamaConfigSection extends StatelessWidget {
             List<String> apiModels;
             if (urlController.text.isNotEmpty) {
               try {
-                final baseUrl = urlController.text.replaceAll(RegExp(r'/$'), '');
+                final baseUrl =
+                    urlController.text.replaceAll(RegExp(r'/$'), '');
                 final response = await http.get(Uri.parse('$baseUrl/api/tags'));
                 if (response.statusCode == 200) {
-                  final data = json.decode(response.body) as Map<String, dynamic>;
+                  final data =
+                      json.decode(response.body) as Map<String, dynamic>;
                   final modelsList = data['models'] as List<dynamic>?;
                   if (modelsList != null) {
                     apiModels = modelsList
-                        .map((m) => (m as Map<String, dynamic>)['name'] as String)
+                        .map((m) =>
+                            (m as Map<String, dynamic>)['name'] as String)
                         .toList()
                       ..sort();
                   } else {
                     throw Exception('No models found in Ollama response');
                   }
                 } else {
-                  throw Exception('Failed to fetch Ollama models: HTTP ${response.statusCode}');
+                  throw Exception(
+                      'Failed to fetch Ollama models: HTTP ${response.statusCode}');
                 }
               } catch (e) {
                 // Don't fallback - throw error to show user the API call failed
-                throw Exception('Failed to fetch Ollama models: ${e.toString()}');
+                throw Exception(
+                    'Failed to fetch Ollama models: ${e.toString()}');
               }
             } else {
               // No URL configured - show recommended models
@@ -971,12 +1007,14 @@ class _OllamaConfigSection extends StatelessWidget {
             if (filter.isNotEmpty && !items.contains(filter)) {
               items.insert(0, filter); // Add custom input at the top
             }
-            if (modelController.text.isNotEmpty && !items.contains(modelController.text)) {
+            if (modelController.text.isNotEmpty &&
+                !items.contains(modelController.text)) {
               items.insert(0, modelController.text);
             }
             return items;
           },
-          selectedItem: modelController.text.isEmpty ? null : modelController.text,
+          selectedItem:
+              modelController.text.isEmpty ? null : modelController.text,
           onChanged: (value) {
             if (value != null) {
               modelController.text = value;
@@ -990,7 +1028,8 @@ class _OllamaConfigSection extends StatelessWidget {
           decoratorProps: DropDownDecoratorProps(
             decoration: InputDecoration(
               hintText: 'Type or select model',
-              helperText: 'Enter server URL to fetch installed models, or choose from recommended models',
+              helperText:
+                  'Enter server URL to fetch installed models, or choose from recommended models',
               helperMaxLines: 2,
               border: const OutlineInputBorder(),
               contentPadding: const EdgeInsets.all(AltairSpacing.sm),

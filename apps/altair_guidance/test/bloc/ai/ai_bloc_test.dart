@@ -88,9 +88,9 @@ void main() {
             ),
           );
           return AIBloc(
-          aiService: mockAIService,
-          settingsBloc: mockSettingsBloc,
-        );
+            aiService: mockAIService,
+            settingsBloc: mockSettingsBloc,
+          );
         },
         act: (bloc) => bloc.add(
           AITaskBreakdownRequested(
@@ -134,9 +134,9 @@ void main() {
             ),
           );
           return AIBloc(
-          aiService: mockAIService,
-          settingsBloc: mockSettingsBloc,
-        );
+            aiService: mockAIService,
+            settingsBloc: mockSettingsBloc,
+          );
         },
         act: (bloc) => bloc.add(
           AITaskBreakdownRequested(
@@ -159,9 +159,9 @@ void main() {
             Exception('Unexpected error'),
           );
           return AIBloc(
-          aiService: mockAIService,
-          settingsBloc: mockSettingsBloc,
-        );
+            aiService: mockAIService,
+            settingsBloc: mockSettingsBloc,
+          );
         },
         act: (bloc) => bloc.add(
           AITaskBreakdownRequested(
@@ -211,9 +211,9 @@ void main() {
             ),
           );
           return AIBloc(
-          aiService: mockAIService,
-          settingsBloc: mockSettingsBloc,
-        );
+            aiService: mockAIService,
+            settingsBloc: mockSettingsBloc,
+          );
         },
         act: (bloc) => bloc.add(
           AITaskPrioritizationRequested(
@@ -251,9 +251,9 @@ void main() {
             AIServiceException.timeout('task prioritization'),
           );
           return AIBloc(
-          aiService: mockAIService,
-          settingsBloc: mockSettingsBloc,
-        );
+            aiService: mockAIService,
+            settingsBloc: mockSettingsBloc,
+          );
         },
         act: (bloc) => bloc.add(
           AITaskPrioritizationRequested(
@@ -299,9 +299,9 @@ void main() {
             ),
           );
           return AIBloc(
-          aiService: mockAIService,
-          settingsBloc: mockSettingsBloc,
-        );
+            aiService: mockAIService,
+            settingsBloc: mockSettingsBloc,
+          );
         },
         act: (bloc) => bloc.add(
           AITimeEstimateRequested(
@@ -342,9 +342,9 @@ void main() {
             AIServiceException.network('Connection lost'),
           );
           return AIBloc(
-          aiService: mockAIService,
-          settingsBloc: mockSettingsBloc,
-        );
+            aiService: mockAIService,
+            settingsBloc: mockSettingsBloc,
+          );
         },
         act: (bloc) => bloc.add(
           AITimeEstimateRequested(
@@ -391,9 +391,9 @@ void main() {
             ),
           );
           return AIBloc(
-          aiService: mockAIService,
-          settingsBloc: mockSettingsBloc,
-        );
+            aiService: mockAIService,
+            settingsBloc: mockSettingsBloc,
+          );
         },
         act: (bloc) => bloc.add(
           AIContextSuggestionsRequested(
@@ -434,9 +434,9 @@ void main() {
             const AIServiceException('Invalid request', statusCode: 400),
           );
           return AIBloc(
-          aiService: mockAIService,
-          settingsBloc: mockSettingsBloc,
-        );
+            aiService: mockAIService,
+            settingsBloc: mockSettingsBloc,
+          );
         },
         act: (bloc) => bloc.add(
           AIContextSuggestionsRequested(

@@ -52,7 +52,8 @@ class AISettingsRepository {
 
       // Load API keys from secure storage
       final openaiKey = await _secureStorage.read(key: _openaiKeyStorageKey);
-      final anthropicKey = await _secureStorage.read(key: _anthropicKeyStorageKey);
+      final anthropicKey =
+          await _secureStorage.read(key: _anthropicKeyStorageKey);
 
       final settingsWithKeys = settings.copyWith(
         openaiApiKey: openaiKey,
@@ -109,7 +110,8 @@ class AISettingsRepository {
       await _secureStorage.delete(key: _anthropicKeyStorageKey);
       _logger.i('Cleared AI settings');
     } catch (e, stackTrace) {
-      _logger.e('Failed to clear AI settings', error: e, stackTrace: stackTrace);
+      _logger.e('Failed to clear AI settings',
+          error: e, stackTrace: stackTrace);
       rethrow;
     }
   }

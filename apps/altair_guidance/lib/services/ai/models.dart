@@ -98,7 +98,8 @@ class TaskBreakdownRequest extends Equatable {
       };
 
   @override
-  List<Object?> get props => [taskTitle, taskDescription, context, maxSubtasks, provider, apiKey];
+  List<Object?> get props =>
+      [taskTitle, taskDescription, context, maxSubtasks, provider, apiKey];
 }
 
 /// Request to get prioritization suggestions for tasks.
@@ -219,7 +220,8 @@ class TimeEstimateRequest extends Equatable {
       };
 
   @override
-  List<Object?> get props => [taskTitle, taskDescription, subtasks, skillLevel, provider, apiKey];
+  List<Object?> get props =>
+      [taskTitle, taskDescription, subtasks, skillLevel, provider, apiKey];
 }
 
 /// Request for contextual suggestions.
@@ -290,8 +292,14 @@ class ContextSuggestionRequest extends Equatable {
       };
 
   @override
-  List<Object?> get props =>
-      [taskTitle, taskDescription, projectContext, suggestionType, provider, apiKey];
+  List<Object?> get props => [
+        taskTitle,
+        taskDescription,
+        projectContext,
+        suggestionType,
+        provider,
+        apiKey
+      ];
 }
 
 // ============================================================================

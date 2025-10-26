@@ -110,10 +110,12 @@ class AISettings extends Equatable {
     if (!enabled) return true;
 
     // Check if API key is provided for cloud providers
-    if (provider == AIProviderType.openai && (openaiApiKey == null || openaiApiKey!.isEmpty)) {
+    if (provider == AIProviderType.openai &&
+        (openaiApiKey == null || openaiApiKey!.isEmpty)) {
       return false;
     }
-    if (provider == AIProviderType.anthropic && (anthropicApiKey == null || anthropicApiKey!.isEmpty)) {
+    if (provider == AIProviderType.anthropic &&
+        (anthropicApiKey == null || anthropicApiKey!.isEmpty)) {
       return false;
     }
 
@@ -175,7 +177,8 @@ class AISettings extends Equatable {
       ),
       ollamaBaseUrl: json['ollamaBaseUrl'] as String?,
       openaiModel: json['openaiModel'] as String? ?? 'gpt-4-turbo-preview',
-      anthropicModel: json['anthropicModel'] as String? ?? 'claude-3-5-sonnet-20241022',
+      anthropicModel:
+          json['anthropicModel'] as String? ?? 'claude-3-5-sonnet-20241022',
       ollamaModel: json['ollamaModel'] as String? ?? 'llama3',
       customBaseUrl: json['customBaseUrl'] as String?,
     );

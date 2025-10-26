@@ -67,13 +67,16 @@ void main() {
     settingsStreamController = StreamController<SettingsState>.broadcast();
     aiStreamController = StreamController<AIState>.broadcast();
 
-    when(() => mockProjectBloc.state).thenReturn(const ProjectLoaded(projects: []));
-    when(() => mockProjectBloc.stream).thenAnswer((_) => projectStreamController.stream);
+    when(() => mockProjectBloc.state)
+        .thenReturn(const ProjectLoaded(projects: []));
+    when(() => mockProjectBloc.stream)
+        .thenAnswer((_) => projectStreamController.stream);
 
     when(() => mockSettingsBloc.state).thenReturn(
       const SettingsLoaded(AISettings(enabled: true)),
     );
-    when(() => mockSettingsBloc.stream).thenAnswer((_) => settingsStreamController.stream);
+    when(() => mockSettingsBloc.stream)
+        .thenAnswer((_) => settingsStreamController.stream);
 
     when(() => mockAIBloc.state).thenReturn(const AIInitial());
     when(() => mockAIBloc.stream).thenAnswer((_) => aiStreamController.stream);
@@ -101,7 +104,8 @@ void main() {
   }
 
   group('AI Features Integration - Break Down Task', () {
-    testWidgets('clicking Break Down Task shows dialog and handles success response',
+    testWidgets(
+        'clicking Break Down Task shows dialog and handles success response',
         (tester) async {
       await tester.pumpWidget(createTaskEditPage());
 
@@ -227,7 +231,8 @@ void main() {
   });
 
   group('AI Features Integration - Estimate Time', () {
-    testWidgets('clicking Estimate Time shows dialog and handles success response',
+    testWidgets(
+        'clicking Estimate Time shows dialog and handles success response',
         (tester) async {
       await tester.pumpWidget(createTaskEditPage());
 
@@ -291,7 +296,9 @@ void main() {
       expect(find.textContaining('30'), findsWidgets);
       expect(find.textContaining('60'), findsWidgets);
       expect(find.textContaining('120'), findsWidgets);
-    }, skip: true); // Skip: Time numbers formatted differently in UI than expected
+    },
+        skip:
+            true); // Skip: Time numbers formatted differently in UI than expected
 
     testWidgets('clicking Estimate Time handles error response gracefully',
         (tester) async {
@@ -325,7 +332,8 @@ void main() {
   });
 
   group('AI Features Integration - Get Suggestions', () {
-    testWidgets('clicking Get Suggestions shows dialog and handles success response',
+    testWidgets(
+        'clicking Get Suggestions shows dialog and handles success response',
         (tester) async {
       await tester.pumpWidget(createTaskEditPage());
 
@@ -348,7 +356,8 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       // Verify AIBloc received the suggestions request
-      verify(() => mockAIBloc.add(any<AIContextSuggestionsRequested>())).called(1);
+      verify(() => mockAIBloc.add(any<AIContextSuggestionsRequested>()))
+          .called(1);
 
       // Simulate loading
       aiStreamController.add(
@@ -419,7 +428,8 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       // Verify error displays
-      expect(find.text('Error: Service temporarily unavailable'), findsOneWidget);
+      expect(
+          find.text('Error: Service temporarily unavailable'), findsOneWidget);
     });
   });
 }

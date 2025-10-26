@@ -41,13 +41,16 @@ void main() {
     settingsStreamController = StreamController<SettingsState>.broadcast();
     aiStreamController = StreamController<AIState>.broadcast();
 
-    when(() => mockProjectBloc.state).thenReturn(const ProjectLoaded(projects: []));
-    when(() => mockProjectBloc.stream).thenAnswer((_) => projectStreamController.stream);
+    when(() => mockProjectBloc.state)
+        .thenReturn(const ProjectLoaded(projects: []));
+    when(() => mockProjectBloc.stream)
+        .thenAnswer((_) => projectStreamController.stream);
 
     when(() => mockSettingsBloc.state).thenReturn(
       const SettingsLoaded(AISettings(enabled: true)),
     );
-    when(() => mockSettingsBloc.stream).thenAnswer((_) => settingsStreamController.stream);
+    when(() => mockSettingsBloc.stream)
+        .thenAnswer((_) => settingsStreamController.stream);
 
     when(() => mockAIBloc.stream).thenAnswer((_) => aiStreamController.stream);
   });
@@ -150,8 +153,7 @@ void main() {
       expect(find.byIcon(Icons.lightbulb), findsOneWidget);
     });
 
-    testWidgets(
-        'AI assistant section rebuilds when title controller changes',
+    testWidgets('AI assistant section rebuilds when title controller changes',
         (tester) async {
       await tester.pumpWidget(createTaskEditPage());
 
@@ -295,8 +297,7 @@ void main() {
       expect(find.text('Get Suggestions'), findsOneWidget);
     });
 
-    testWidgets('whitespace-only title keeps buttons disabled',
-        (tester) async {
+    testWidgets('whitespace-only title keeps buttons disabled', (tester) async {
       await tester.pumpWidget(createTaskEditPage());
 
       // Enter whitespace-only title

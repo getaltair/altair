@@ -94,8 +94,7 @@ Please break this down into ${request.maxSubtasks} or fewer actionable subtasks.
 
       final json = jsonDecode(content) as Map<String, dynamic>;
       final response = TaskBreakdownResponse.fromJson(json);
-      _logger
-          .i('[OpenAI] Generated ${response.subtasks.length} subtasks');
+      _logger.i('[OpenAI] Generated ${response.subtasks.length} subtasks');
       return response;
     } catch (e) {
       _logger.e('[OpenAI] Task breakdown failed: $e');

@@ -38,7 +38,6 @@ void main() {
     );
   });
 
-
   group('TaskBreakdownDialog', () {
     late MockAIBloc mockAIBloc;
     late MockTaskBloc mockTaskBloc;
@@ -203,7 +202,8 @@ void main() {
     });
 
     testWidgets('shows error snackbar when breakdown fails', (tester) async {
-      when(() => mockAIBloc.state).thenReturn(const AILoading(operationType: AIOperationType.breakdown));
+      when(() => mockAIBloc.state).thenReturn(
+          const AILoading(operationType: AIOperationType.breakdown));
 
       await tester.pumpWidget(
         MaterialApp(
