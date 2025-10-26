@@ -29,30 +29,6 @@ class AnthropicProvider implements AIProvider {
   /// Logger instance.
   late final Logger _logger;
 
-  /// Extracts JSON from markdown code blocks if present.
-  ///
-  /// Anthropic sometimes wraps JSON responses in markdown code blocks like:
-  /// ```json
-  /// {...}
-  /// ```
-  ///
-  /// This method strips those markers and returns clean JSON.
-  String _extractJsonFromMarkdown(String content) {
-    final trimmed = content.trim();
-
-    // Check if content is wrapped in markdown code blocks
-    if (trimmed.startsWith('```')) {
-      final lines = trimmed.split('\n');
-
-      // Remove first line (```json or ```) and last line (```)
-      if (lines.length >= 3 && lines.last.trim() == '```') {
-        return lines.sublist(1, lines.length - 1).join('\n');
-      }
-    }
-
-    return trimmed;
-  }
-
   @override
   Future<TaskBreakdownResponse> breakdownTask(
     TaskBreakdownRequest request,
@@ -96,6 +72,11 @@ Return ONLY valid JSON matching the structure above.
               role: MessageRole.user,
               content: MessageContent.text(userPrompt),
             ),
+            // Prefill with { to force clean JSON output
+            Message(
+              role: MessageRole.assistant,
+              content: MessageContent.text('{'),
+            ),
           ],
           system: CreateMessageRequestSystem.text(systemPrompt),
           maxTokens: 2000,
@@ -108,8 +89,9 @@ Return ONLY valid JSON matching the structure above.
         throw Exception('No response from Anthropic');
       }
 
-      final cleanJson = _extractJsonFromMarkdown(content);
-      final json = jsonDecode(cleanJson) as Map<String, dynamic>;
+      // Prepend { since it's not included in the response
+      final fullJson = '{$content';
+      final json = jsonDecode(fullJson) as Map<String, dynamic>;
       final result = TaskBreakdownResponse.fromJson(json);
       _logger
           .i('[Anthropic] Generated ${result.subtasks.length} subtasks');
@@ -166,6 +148,11 @@ Return ONLY valid JSON matching the structure above.
               role: MessageRole.user,
               content: MessageContent.text(userPrompt),
             ),
+            // Prefill with { to force clean JSON output
+            Message(
+              role: MessageRole.assistant,
+              content: MessageContent.text('{'),
+            ),
           ],
           system: CreateMessageRequestSystem.text(systemPrompt),
           maxTokens: 2000,
@@ -178,8 +165,9 @@ Return ONLY valid JSON matching the structure above.
         throw Exception('No response from Anthropic');
       }
 
-      final cleanJson = _extractJsonFromMarkdown(content);
-      final json = jsonDecode(cleanJson) as Map<String, dynamic>;
+      // Prepend { since it's not included in the response
+      final fullJson = '{$content';
+      final json = jsonDecode(fullJson) as Map<String, dynamic>;
       final result = TaskPrioritizationResponse.fromJson(json);
       _logger.i(
         '[Anthropic] Generated ${result.suggestions.length} priority suggestions',
@@ -234,6 +222,11 @@ Return ONLY valid JSON matching the structure above.
               role: MessageRole.user,
               content: MessageContent.text(userPrompt),
             ),
+            // Prefill with { to force clean JSON output
+            Message(
+              role: MessageRole.assistant,
+              content: MessageContent.text('{'),
+            ),
           ],
           system: CreateMessageRequestSystem.text(systemPrompt),
           maxTokens: 1500,
@@ -246,8 +239,9 @@ Return ONLY valid JSON matching the structure above.
         throw Exception('No response from Anthropic');
       }
 
-      final cleanJson = _extractJsonFromMarkdown(content);
-      final json = jsonDecode(cleanJson) as Map<String, dynamic>;
+      // Prepend { since it's not included in the response
+      final fullJson = '{$content';
+      final json = jsonDecode(fullJson) as Map<String, dynamic>;
       final result = TimeEstimateResponse.fromJson(json);
       _logger.i(
         '[Anthropic] Generated time estimate: ${result.estimate.realisticMinutes} minutes',
@@ -302,10 +296,15 @@ Return ONLY valid JSON matching the structure above.
               role: MessageRole.user,
               content: MessageContent.text(userPrompt),
             ),
+            // Prefill with { to force clean JSON output
+            Message(
+              role: MessageRole.assistant,
+              content: MessageContent.text('{'),
+            ),
           ],
           system: CreateMessageRequestSystem.text(systemPrompt),
           maxTokens: 2000,
-          temperature: 0.5,
+          temperature: 0.2,
         ),
       );
 
@@ -314,8 +313,9 @@ Return ONLY valid JSON matching the structure above.
         throw Exception('No response from Anthropic');
       }
 
-      final cleanJson = _extractJsonFromMarkdown(content);
-      final json = jsonDecode(cleanJson) as Map<String, dynamic>;
+      // Prepend { since it's not included in the response
+      final fullJson = '{$content';
+      final json = jsonDecode(fullJson) as Map<String, dynamic>;
       final result = ContextSuggestionResponse.fromJson(json);
       _logger.i(
         '[Anthropic] Generated ${result.suggestions.length} suggestions',

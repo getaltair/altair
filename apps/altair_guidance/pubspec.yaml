@@ -47,6 +47,9 @@ dependencies:
   dart_openai: ^5.1.0
   anthropic_sdk_dart: ^0.3.0
 
+  # Dropdown with search and custom input
+  dropdown_search: ^6.0.1
+
   # Persistent storage
   shared_preferences: ^2.3.3
   flutter_secure_storage: ^9.2.2

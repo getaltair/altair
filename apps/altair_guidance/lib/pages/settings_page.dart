@@ -1,9 +1,14 @@
 /// Settings page for Altair Guidance.
 library;
 
+import 'dart:convert';
+
 import 'package:altair_ui/altair_ui.dart';
+import 'package:dart_openai/dart_openai.dart';
+import 'package:dropdown_search/dropdown_search.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:http/http.dart' as http;
 
 import '../bloc/settings/settings_bloc.dart';
 import '../bloc/settings/settings_event.dart';
@@ -18,13 +23,51 @@ class SettingsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Settings'),
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(AltairSpacing.lg),
-        children: [
+    return BlocListener<SettingsBloc, SettingsState>(
+      listener: (context, state) {
+        if (state is SettingsSaved) {
+          // Show success feedback
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.check_circle, color: Colors.white),
+                  const SizedBox(width: AltairSpacing.sm),
+                  Text(
+                    '${state.aiSettings.provider.displayName} settings saved',
+                  ),
+                ],
+              ),
+              backgroundColor: AltairColors.accentGreen,
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        } else if (state is SettingsFailure) {
+          // Show error feedback
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.error, color: Colors.white),
+                  const SizedBox(width: AltairSpacing.sm),
+                  Expanded(child: Text(state.message)),
+                ],
+              ),
+              backgroundColor: AltairColors.error,
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Settings'),
+        ),
+        body: ListView(
+          padding: const EdgeInsets.all(AltairSpacing.lg),
+          children: [
           // Appearance section
           Text(
             'APPEARANCE',
@@ -160,8 +203,9 @@ class SettingsPage extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 }
 
 /// Widget for a theme option radio button.
@@ -273,6 +317,9 @@ class _AISettingsCardState extends State<_AISettingsCard> {
   late TextEditingController _openaiKeyController;
   late TextEditingController _anthropicKeyController;
   late TextEditingController _ollamaUrlController;
+  late TextEditingController _openaiModelController;
+  late TextEditingController _anthropicModelController;
+  late TextEditingController _ollamaModelController;
 
   @override
   void initState() {
@@ -283,6 +330,9 @@ class _AISettingsCardState extends State<_AISettingsCard> {
     _ollamaUrlController = TextEditingController(
       text: widget.settings.ollamaBaseUrl ?? AIProviderType.ollama.defaultBaseUrl,
     );
+    _openaiModelController = TextEditingController(text: widget.settings.openaiModel);
+    _anthropicModelController = TextEditingController(text: widget.settings.anthropicModel);
+    _ollamaModelController = TextEditingController(text: widget.settings.ollamaModel);
   }
 
   @override
@@ -294,6 +344,9 @@ class _AISettingsCardState extends State<_AISettingsCard> {
       _anthropicKeyController.text = widget.settings.anthropicApiKey ?? '';
       _ollamaUrlController.text =
           widget.settings.ollamaBaseUrl ?? AIProviderType.ollama.defaultBaseUrl;
+      _openaiModelController.text = widget.settings.openaiModel;
+      _anthropicModelController.text = widget.settings.anthropicModel;
+      _ollamaModelController.text = widget.settings.ollamaModel;
     }
   }
 
@@ -302,6 +355,9 @@ class _AISettingsCardState extends State<_AISettingsCard> {
     _openaiKeyController.dispose();
     _anthropicKeyController.dispose();
     _ollamaUrlController.dispose();
+    _openaiModelController.dispose();
+    _anthropicModelController.dispose();
+    _ollamaModelController.dispose();
     super.dispose();
   }
 
@@ -387,18 +443,21 @@ class _AISettingsCardState extends State<_AISettingsCard> {
               _OpenAIConfigSection(
                 settings: _workingSettings,
                 apiKeyController: _openaiKeyController,
+                modelController: _openaiModelController,
                 onSettingsChanged: _updateSettings,
               ),
             if (_workingSettings.provider == AIProviderType.anthropic)
               _AnthropicConfigSection(
                 settings: _workingSettings,
                 apiKeyController: _anthropicKeyController,
+                modelController: _anthropicModelController,
                 onSettingsChanged: _updateSettings,
               ),
             if (_workingSettings.provider == AIProviderType.ollama)
               _OllamaConfigSection(
                 settings: _workingSettings,
                 urlController: _ollamaUrlController,
+                modelController: _ollamaModelController,
                 onSettingsChanged: _updateSettings,
               ),
 
@@ -538,15 +597,25 @@ class _OpenAIConfigSection extends StatelessWidget {
   const _OpenAIConfigSection({
     required this.settings,
     required this.apiKeyController,
+    required this.modelController,
     required this.onSettingsChanged,
   });
 
   final AISettings settings;
   final TextEditingController apiKeyController;
+  final TextEditingController modelController;
   final ValueChanged<AISettings> onSettingsChanged;
 
   @override
   Widget build(BuildContext context) {
+    // Latest recommended models as defaults
+    const openaiDefaultModels = [
+      'gpt-4o',
+      'gpt-4o-mini',
+      'o1-preview',
+      'o1-mini',
+    ];
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -574,23 +643,73 @@ class _OpenAIConfigSection extends StatelessWidget {
               ),
         ),
         const SizedBox(height: AltairSpacing.xs),
-        DropdownButtonFormField<String>(
-          initialValue: settings.openaiModel,
-          decoration: const InputDecoration(
-            border: OutlineInputBorder(),
-            contentPadding: EdgeInsets.all(AltairSpacing.sm),
-            isDense: true,
-          ),
-          items: const [
-            DropdownMenuItem(value: 'gpt-4-turbo-preview', child: Text('GPT-4 Turbo')),
-            DropdownMenuItem(value: 'gpt-4', child: Text('GPT-4')),
-            DropdownMenuItem(value: 'gpt-3.5-turbo', child: Text('GPT-3.5 Turbo')),
-          ],
+        DropdownSearch<String>(
+          items: (filter, loadProps) async {
+            // Fetch models from OpenAI API if key is available
+            List<String> apiModels;
+            if (apiKeyController.text.isNotEmpty) {
+              try {
+                OpenAI.apiKey = apiKeyController.text;
+                final models = await OpenAI.instance.model.list();
+                apiModels = models.map((m) => m.id).toList()..sort();
+              } catch (e) {
+                // Don't fallback - throw error to show user the API call failed
+                throw Exception('Failed to fetch OpenAI models: ${e.toString()}');
+              }
+            } else {
+              // No API key - show latest default models
+              apiModels = [...openaiDefaultModels];
+            }
+
+            final items = <String>[...apiModels];
+            // Always include the filter text as an option if it's not empty
+            if (filter.isNotEmpty && !items.contains(filter)) {
+              items.insert(0, filter); // Add custom input at the top
+            }
+            if (modelController.text.isNotEmpty && !items.contains(modelController.text)) {
+              items.insert(0, modelController.text);
+            }
+            return items;
+          },
+          selectedItem: modelController.text.isEmpty ? null : modelController.text,
           onChanged: (value) {
             if (value != null) {
+              modelController.text = value;
               onSettingsChanged(settings.copyWith(openaiModel: value));
             }
           },
+          onBeforeChange: (prevItem, nextItem) async {
+            // Accept any value, including custom text
+            return true;
+          },
+          decoratorProps: DropDownDecoratorProps(
+            decoration: InputDecoration(
+              hintText: 'Type or select model',
+              helperText: 'Enter API key to fetch available models, or type custom model name',
+              helperMaxLines: 2,
+              border: const OutlineInputBorder(),
+              contentPadding: const EdgeInsets.all(AltairSpacing.sm),
+              isDense: true,
+            ),
+          ),
+          popupProps: PopupProps.menu(
+            showSearchBox: true,
+            searchFieldProps: TextFieldProps(
+              decoration: const InputDecoration(
+                hintText: 'Search or type custom model...',
+                border: OutlineInputBorder(),
+                contentPadding: EdgeInsets.all(AltairSpacing.sm),
+              ),
+              onSubmitted: (value) {
+                // When Enter is pressed in search field, accept the custom value
+                if (value.isNotEmpty) {
+                  modelController.text = value;
+                  onSettingsChanged(settings.copyWith(openaiModel: value));
+                }
+              },
+            ),
+          ),
+          compareFn: (item1, item2) => item1 == item2,
         ),
         const SizedBox(height: AltairSpacing.xs),
         Text(
@@ -609,15 +728,25 @@ class _AnthropicConfigSection extends StatelessWidget {
   const _AnthropicConfigSection({
     required this.settings,
     required this.apiKeyController,
+    required this.modelController,
     required this.onSettingsChanged,
   });
 
   final AISettings settings;
   final TextEditingController apiKeyController;
+  final TextEditingController modelController;
   final ValueChanged<AISettings> onSettingsChanged;
 
   @override
   Widget build(BuildContext context) {
+    // Latest recommended models as defaults
+    const anthropicDefaultModels = [
+      'claude-sonnet-4-5-20250929',
+      'claude-3-5-sonnet-20241022',
+      'claude-3-5-haiku-20241022',
+      'claude-3-opus-20240229',
+    ];
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -645,26 +774,90 @@ class _AnthropicConfigSection extends StatelessWidget {
               ),
         ),
         const SizedBox(height: AltairSpacing.xs),
-        DropdownButtonFormField<String>(
-          initialValue: settings.anthropicModel,
-          decoration: const InputDecoration(
-            border: OutlineInputBorder(),
-            contentPadding: EdgeInsets.all(AltairSpacing.sm),
-            isDense: true,
-          ),
-          items: const [
-            DropdownMenuItem(
-              value: 'claude-3-5-sonnet-20241022',
-              child: Text('Claude 3.5 Sonnet'),
-            ),
-            DropdownMenuItem(value: 'claude-3-opus-20240229', child: Text('Claude 3 Opus')),
-            DropdownMenuItem(value: 'claude-3-sonnet-20240229', child: Text('Claude 3 Sonnet')),
-          ],
+        DropdownSearch<String>(
+          items: (filter, loadProps) async {
+            // Fetch models from Anthropic API if key is available
+            List<String> apiModels;
+            if (apiKeyController.text.isNotEmpty) {
+              try {
+                final response = await http.get(
+                  Uri.parse('https://api.anthropic.com/v1/models'),
+                  headers: {
+                    'x-api-key': apiKeyController.text,
+                    'anthropic-version': '2023-06-01',
+                  },
+                );
+
+                if (response.statusCode == 200) {
+                  final data = json.decode(response.body) as Map<String, dynamic>;
+                  final modelsList = data['data'] as List<dynamic>?;
+                  if (modelsList != null) {
+                    apiModels = modelsList
+                        .map((m) => (m as Map<String, dynamic>)['id'] as String)
+                        .toList();
+                  } else {
+                    throw Exception('No models found in Anthropic response');
+                  }
+                } else {
+                  throw Exception('Failed to fetch Anthropic models: HTTP ${response.statusCode}');
+                }
+              } catch (e) {
+                // Don't fallback - throw error to show user the API call failed
+                throw Exception('Failed to fetch Anthropic models: ${e.toString()}');
+              }
+            } else {
+              // No API key - show latest default models
+              apiModels = [...anthropicDefaultModels];
+            }
+
+            // Always include the filter text as an option if it's not empty
+            if (filter.isNotEmpty && !apiModels.contains(filter)) {
+              apiModels.insert(0, filter); // Add custom input at the top
+            }
+            if (modelController.text.isNotEmpty && !apiModels.contains(modelController.text)) {
+              apiModels.insert(0, modelController.text);
+            }
+            return apiModels;
+          },
+          selectedItem: modelController.text.isEmpty ? null : modelController.text,
           onChanged: (value) {
             if (value != null) {
+              modelController.text = value;
               onSettingsChanged(settings.copyWith(anthropicModel: value));
             }
           },
+          onBeforeChange: (prevItem, nextItem) async {
+            // Accept any value, including custom text
+            return true;
+          },
+          decoratorProps: DropDownDecoratorProps(
+            decoration: InputDecoration(
+              hintText: 'Type or select model',
+              helperText: 'Enter API key to fetch available models, or type custom model name',
+              helperMaxLines: 2,
+              border: const OutlineInputBorder(),
+              contentPadding: const EdgeInsets.all(AltairSpacing.sm),
+              isDense: true,
+            ),
+          ),
+          popupProps: PopupProps.menu(
+            showSearchBox: true,
+            searchFieldProps: TextFieldProps(
+              decoration: const InputDecoration(
+                hintText: 'Search or type custom model...',
+                border: OutlineInputBorder(),
+                contentPadding: EdgeInsets.all(AltairSpacing.sm),
+              ),
+              onSubmitted: (value) {
+                // When Enter is pressed in search field, accept the custom value
+                if (value.isNotEmpty) {
+                  modelController.text = value;
+                  onSettingsChanged(settings.copyWith(anthropicModel: value));
+                }
+              },
+            ),
+          ),
+          compareFn: (item1, item2) => item1 == item2,
         ),
         const SizedBox(height: AltairSpacing.xs),
         Text(
@@ -683,15 +876,39 @@ class _OllamaConfigSection extends StatelessWidget {
   const _OllamaConfigSection({
     required this.settings,
     required this.urlController,
+    required this.modelController,
     required this.onSettingsChanged,
   });
 
   final AISettings settings;
   final TextEditingController urlController;
+  final TextEditingController modelController;
   final ValueChanged<AISettings> onSettingsChanged;
 
   @override
   Widget build(BuildContext context) {
+    // Recommended models that work well - Ollama has many more available
+    const ollamaRecommendedModels = [
+      'llama3.3',
+      'llama3.2',
+      'llama3.2:1b',
+      'llama3.2:3b',
+      'llama3.1',
+      'llama3.1:70b',
+      'qwen2.5',
+      'qwen2.5:7b',
+      'qwen2.5:14b',
+      'qwen2.5:32b',
+      'mistral',
+      'mistral-nemo',
+      'codellama',
+      'deepseek-coder-v2',
+      'phi4',
+      'gemma2',
+      'gemma2:2b',
+      'gemma2:9b',
+    ];
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -718,26 +935,95 @@ class _OllamaConfigSection extends StatelessWidget {
               ),
         ),
         const SizedBox(height: AltairSpacing.xs),
-        DropdownButtonFormField<String>(
-          initialValue: settings.ollamaModel,
-          decoration: const InputDecoration(
-            border: OutlineInputBorder(),
-            contentPadding: EdgeInsets.all(AltairSpacing.sm),
-            isDense: true,
-          ),
-          items: const [
-            DropdownMenuItem(value: 'llama3', child: Text('Llama 3')),
-            DropdownMenuItem(value: 'llama3:70b', child: Text('Llama 3 70B')),
-            DropdownMenuItem(value: 'mistral', child: Text('Mistral')),
-            DropdownMenuItem(value: 'codellama', child: Text('Code Llama')),
-          ],
+        DropdownSearch<String>(
+          items: (filter, loadProps) async {
+            // Fetch installed models from Ollama server if URL is configured
+            List<String> apiModels;
+            if (urlController.text.isNotEmpty) {
+              try {
+                final baseUrl = urlController.text.replaceAll(RegExp(r'/$'), '');
+                final response = await http.get(Uri.parse('$baseUrl/api/tags'));
+                if (response.statusCode == 200) {
+                  final data = json.decode(response.body) as Map<String, dynamic>;
+                  final modelsList = data['models'] as List<dynamic>?;
+                  if (modelsList != null) {
+                    apiModels = modelsList
+                        .map((m) => (m as Map<String, dynamic>)['name'] as String)
+                        .toList()
+                      ..sort();
+                  } else {
+                    throw Exception('No models found in Ollama response');
+                  }
+                } else {
+                  throw Exception('Failed to fetch Ollama models: HTTP ${response.statusCode}');
+                }
+              } catch (e) {
+                // Don't fallback - throw error to show user the API call failed
+                throw Exception('Failed to fetch Ollama models: ${e.toString()}');
+              }
+            } else {
+              // No URL configured - show recommended models
+              apiModels = [...ollamaRecommendedModels];
+            }
+
+            final items = <String>[...apiModels];
+            // Always include the filter text as an option if it's not empty
+            if (filter.isNotEmpty && !items.contains(filter)) {
+              items.insert(0, filter); // Add custom input at the top
+            }
+            if (modelController.text.isNotEmpty && !items.contains(modelController.text)) {
+              items.insert(0, modelController.text);
+            }
+            return items;
+          },
+          selectedItem: modelController.text.isEmpty ? null : modelController.text,
           onChanged: (value) {
             if (value != null) {
+              modelController.text = value;
               onSettingsChanged(settings.copyWith(ollamaModel: value));
             }
           },
+          onBeforeChange: (prevItem, nextItem) async {
+            // Accept any value, including custom text
+            return true;
+          },
+          decoratorProps: DropDownDecoratorProps(
+            decoration: InputDecoration(
+              hintText: 'Type or select model',
+              helperText: 'Enter server URL to fetch installed models, or choose from recommended models',
+              helperMaxLines: 2,
+              border: const OutlineInputBorder(),
+              contentPadding: const EdgeInsets.all(AltairSpacing.sm),
+              isDense: true,
+            ),
+          ),
+          popupProps: PopupProps.menu(
+            showSearchBox: true,
+            searchFieldProps: TextFieldProps(
+              decoration: const InputDecoration(
+                hintText: 'Search or type custom model...',
+                border: OutlineInputBorder(),
+                contentPadding: EdgeInsets.all(AltairSpacing.sm),
+              ),
+              onSubmitted: (value) {
+                // When Enter is pressed in search field, accept the custom value
+                if (value.isNotEmpty) {
+                  modelController.text = value;
+                  onSettingsChanged(settings.copyWith(ollamaModel: value));
+                }
+              },
+            ),
+          ),
+          compareFn: (item1, item2) => item1 == item2,
         ),
         const SizedBox(height: AltairSpacing.xs),
+        Text(
+          'Showing installed models or recommended models that work well with Altair.',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                fontStyle: FontStyle.italic,
+              ),
+        ),
+        const SizedBox(height: AltairSpacing.sm),
         Container(
           padding: const EdgeInsets.all(AltairSpacing.sm),
           decoration: BoxDecoration(

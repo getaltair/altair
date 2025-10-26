@@ -247,8 +247,11 @@ class _TaskEditPageState extends State<TaskEditPage> {
               _buildTagsSection(),
               const SizedBox(height: AltairSpacing.xl),
 
-              // AI Assistant Section
-              _buildAIAssistantSection(),
+              // AI Assistant Section - Rebuild when title changes
+              ListenableBuilder(
+                listenable: _titleController,
+                builder: (context, _) => _buildAIAssistantSection(),
+              ),
               const SizedBox(height: AltairSpacing.xl),
 
               // Save button (also in app bar)
