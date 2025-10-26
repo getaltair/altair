@@ -32,14 +32,9 @@ repos:
       - id: ruff-format
 
   # Python: Type checking with mypy
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.7.1
-    hooks:
-      - id: mypy
-        files: ^services/
-        additional_dependencies:
-          - types-redis
-          - types-requests
+  # NOTE: Mypy checks are disabled in pre-commit for Python services
+  # Each service has its own pyproject.toml with mypy configuration
+  # and runs type checking in its own CI/CD pipeline
 
   # Markdown: Linting
   - repo: https://github.com/igorshubovych/markdownlint-cli

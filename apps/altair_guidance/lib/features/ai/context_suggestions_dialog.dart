@@ -402,7 +402,7 @@ class _SuggestionTypeSelector extends StatelessWidget {
           label: Text(
             type.toUpperCase(),
             style: TextStyle(
-              color: isSelected ? Colors.black : null,
+              color: Colors.black,
               fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
             ),
           ),

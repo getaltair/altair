@@ -1,13 +1,13 @@
 # Development Roadmap
 
-> **TL;DR:** Three-app ecosystem built sequentially. Phase 1 + 1.5 complete. Phase 2 (Knowledge) and Phase 3 (Tracking) in planning.
+> **TL;DR:** Three-app productivity ecosystem built sequentially. Phase 1 in project. Phase 2 (Knowledge) and Phase 3 (Tracking)
+> in planning.
 
 ## Quick Start
 
 **What you need to know in 60 seconds:**
 
-- **Phase 1**: Altair Guidance - Task management MVP ✅ **COMPLETE**
-- **Phase 1.5**: Mobile Platform Support ✅ **COMPLETE**
+- **Phase 1**: Altair Guidance - Task management MVP ⬜ **COMPLETE**
 - **Phase 2**: Altair Knowledge - Personal wiki ⏳ **NEXT**
 - **Phase 3**: Altair Tracking - Inventory management ⏳ **PLANNED**
 - **Key achievement**: Dogfooding Guidance in production use
@@ -48,18 +48,20 @@ graph LR
 | **Foundation Complete** | ✅     | Auth works, SQLite schema ready, first UI component  |
 | **Dogfooding Starts**   | ✅     | Using Guidance daily for own project management      |
 | **Guidance Beta**       | ✅     | External beta testers, stable builds                 |
-| **Mobile Beta Ready**   | ✅     | iOS + Android builds working, CI/CD pipeline ready   |
+| **Search Complete**     | ⏳     | Full-text search for tasks, projects, tags working   |
+| **Task Linking Fixed**  | ⏳     | Hierarchy navigation, subtask visibility complete    |
+| **Guidance V1.0**       | ⏳     | Search + linking complete, ready for Phase 2         |
 | **Knowledge MVP**       | ⏳     | Personal wiki works, syncs across devices            |
 | **Tracking MVP**        | ⏳     | Inventory tracking works, integrates with other apps |
 | **V1.0 Launch**         | ⏳     | All three apps stable, < 1% crash rate               |
 
 ---
 
-## Phase 1: Altair Guidance ✅ **COMPLETE**
+## Phase 1: Altair Guidance ⏳ **IN PROGRESS**
 
 Task and project management with ADHD-friendly features.
 
-**Status:** Shipped and in dogfooding. All core features, AI integration, and standalone installers complete.
+**Status:** Core features and AI integration shipped and in dogfooding. Search and task linking features in development.
 
 ### Infrastructure & Foundation ✅
 
@@ -220,6 +222,114 @@ graph TB
 - Using Guidance to manage Altair development
 - Track all tasks, bugs, features in Guidance
 - Test every feature personally before shipping
+
+### Search & Discovery ⏳
+
+```mermaid
+graph TB
+    subgraph "Step 1: Search Foundation"
+        A1[Full-text Search Engine]
+        A2[Search Index System]
+        A3[Query Parser]
+        A4[Search Results UI]
+    end
+
+    subgraph "Step 2: Advanced Search"
+        B1[Task Search]
+        B2[Project Search]
+        B3[Tag Search]
+        B4[Combined Filters]
+    end
+
+    subgraph "Step 3: Search UX"
+        C1[Global Search Hotkey]
+        C2[Search-as-you-type]
+        C3[Search History]
+        C4[Smart Suggestions]
+    end
+
+    A1 --> A2 --> A3 --> A4
+    A4 --> B1
+    B1 --> B2 --> B3 --> B4
+    B4 --> C1
+    C1 --> C2 --> C3 --> C4
+
+    style A1 fill:#FFD93D,stroke:#000,stroke-width:3px
+    style B1 fill:#60A5FA,stroke:#000,stroke-width:3px
+    style C1 fill:#6BCB77,stroke:#000,stroke-width:3px
+```
+
+**Deliverables:**
+
+- ⏳ Full-text search across tasks
+- ⏳ Project search and filtering
+- ⏳ Tag search with autocomplete
+- ⏳ Combined search filters (task + project + tag)
+- ⏳ Global search hotkey (< 200ms response)
+- ⏳ Search-as-you-type with instant results
+
+**Success criteria:**
+
+- [ ] Search returns results < 200ms
+- [ ] Can search 1000+ tasks instantly
+- [ ] Tag search with autocomplete works
+- [ ] Project search shows all related tasks
+- [ ] Global search accessible from anywhere
+- [ ] Search history persists between sessions
+
+### Task Linking & Hierarchy ⏳
+
+```mermaid
+graph TB
+    subgraph "Step 1: Subtask System"
+        A1[Parent-Child Relationships]
+        A2[Subtask Display]
+        A3[Hierarchy Navigation]
+        A4[Nested Task Trees]
+    end
+
+    subgraph "Step 2: Project Integration"
+        B1[Project-Task Links]
+        B2[Task List in Projects]
+        B3[Project Hierarchy]
+        B4[Task Assignment]
+    end
+
+    subgraph "Step 3: UI/UX Polish"
+        C1[Breadcrumb Navigation]
+        C2[Collapse/Expand Trees]
+        C3[Drag & Drop Hierarchy]
+        C4[Link Visualization]
+    end
+
+    A1 --> A2 --> A3 --> A4
+    A4 --> B1
+    B1 --> B2 --> B3 --> B4
+    B4 --> C1
+    C1 --> C2 --> C3 --> C4
+
+    style A1 fill:#FFD93D,stroke:#000,stroke-width:3px
+    style B1 fill:#60A5FA,stroke:#000,stroke-width:3px
+    style C1 fill:#6BCB77,stroke:#000,stroke-width:3px
+```
+
+**Deliverables:**
+
+- ⏳ Fix subtask visibility (show parent task)
+- ⏳ Fix main task visibility (show subtasks)
+- ⏳ Fix project visibility (show all tasks)
+- ⏳ Breadcrumb navigation for hierarchy
+- ⏳ Collapse/expand task trees
+- ⏳ Drag & drop to reorganize hierarchy
+
+**Success criteria:**
+
+- [ ] Subtasks display parent task reference
+- [ ] Main tasks show all subtasks
+- [ ] Projects display complete task list
+- [ ] Can navigate hierarchy easily
+- [ ] Drag & drop reorganization works
+- [ ] No orphaned tasks or broken links
 
 ---
 
@@ -562,41 +672,49 @@ What defines "minimum viable" for each app.
 
 **Core functionality:**
 
-- [ ] Quick capture (< 3 seconds)
-- [ ] Create/edit/delete tasks
-- [ ] Organize into projects
-- [ ] Tag and filter tasks
-- [ ] Search tasks (< 500ms)
-- [ ] Mark tasks complete
-- [ ] Basic time tracking
+- [x] Quick capture (< 3 seconds)
+- [x] Create/edit/delete tasks
+- [x] Organize into projects
+- [x] Tag and filter tasks
+- [ ] Search tasks, projects, tags (< 200ms)
+- [x] Mark tasks complete
+- [x] Basic time tracking
 
 **ADHD features:**
 
-- [ ] Time blindness timer (visual)
-- [ ] Focus mode (hide distractions)
-- [ ] Keyboard shortcuts (power users)
-- [ ] Quick task breakdown
-- [ ] Visual progress indicators
+- [x] Time blindness timer (visual)
+- [x] Focus mode (hide distractions)
+- [x] Keyboard shortcuts (power users)
+- [x] Quick task breakdown
+- [x] Visual progress indicators
 
 **AI features:**
 
-- [ ] Task breakdown (GPT-4/Claude)
-- [ ] Time estimates
-- [ ] Smart prioritization
+- [x] Task breakdown (GPT-4/Claude)
+- [x] Time estimates
+- [x] Smart prioritization
+
+**Task hierarchy:**
+
+- [ ] Subtasks show parent task
+- [ ] Main tasks show subtasks
+- [ ] Projects show all tasks
+- [ ] Breadcrumb navigation
+- [ ] Collapse/expand task trees
 
 **Technical:**
 
-- [ ] Works 100% offline
+- [x] Works 100% offline
 - [ ] Sync across devices (optional)
-- [ ] < 1 second page loads
-- [ ] Standalone installers
+- [x] < 1 second page loads
+- [x] Standalone installers
 - [ ] < 5 critical bugs
 
 **Dogfooding proof:**
 
-- [ ] Using daily for ≥ 2 weeks
-- [ ] Managing ≥ 50 active tasks
-- [ ] AI breakdown used ≥ 10 times
+- [x] Using daily for ≥ 2 weeks
+- [x] Managing ≥ 50 active tasks
+- [x] AI breakdown used ≥ 10 times
 - [ ] Completed ≥ 1 project with subtasks
 
 ### Knowledge MVP Checklist
@@ -843,7 +961,27 @@ How we measure progress and success.
 
 ## What's Next?
 
-### Immediate Actions (Phase 2 - Knowledge App)
+### Immediate Actions (Phase 1 - Guidance Completion)
+
+**Search & Discovery:**
+
+- [ ] Implement full-text search engine for tasks
+- [ ] Build search index system with real-time updates
+- [ ] Create global search UI with hotkey support
+- [ ] Add project search and filtering
+- [ ] Implement tag search with autocomplete
+- [ ] Add search-as-you-type functionality
+
+**Task Linking & Hierarchy:**
+
+- [ ] Fix subtask visibility to show parent task
+- [ ] Fix main task to display all subtasks
+- [ ] Fix project view to show all associated tasks
+- [ ] Implement breadcrumb navigation for task hierarchy
+- [ ] Add collapse/expand for task trees
+- [ ] Enable drag & drop hierarchy reorganization
+
+### Next Phase (Phase 2 - Knowledge App)
 
 **Wiki Foundation:**
 
@@ -927,9 +1065,10 @@ A: Ship standalone first. Sync is optional enhancement, not blocker.
 
 ---
 
-**Last updated:** October 23, 2025
+**Last updated:** October 25, 2025
 **Recent changes:**
 
-- Removed specific timeframes to avoid setting unrealistic expectations
-- Focus on milestone completion status rather than dates
-- Phase 1 + 1.5 complete and in production use
+- Added Search & Discovery features as next priority after AI features
+- Added Task Linking & Hierarchy improvements to fix visibility issues
+- Updated Phase 1 status to reflect ongoing development
+- Reorganized "What's Next?" to prioritize Guidance completion before Phase 2

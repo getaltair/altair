@@ -125,12 +125,20 @@ lib/
 │   ├── home_page.dart          # Main task list
 │   ├── task_edit_page.dart     # Task editing
 │   └── ...
-└── test/                       # Tests
+└── test/                       # Tests (335 passing, 2 skipped)
     ├── bloc/                   # BLoC tests
     │   ├── task/              # Task BLoC tests
-    │   └── ai/                # AI BLoC tests
+    │   └── ai/                # AI BLoC tests (14 tests)
     ├── services/              # Service tests
-    │   └── ai/               # AI service tests (92 tests: 18 config + 39 models + 21 service + 14 BLoC)
+    │   └── ai/               # AI service tests (78 tests: 18 config + 39 models + 21 service)
+    ├── pages/                 # Page widget tests
+    │   ├── settings_page_test.dart    # Settings UI tests (25 tests)
+    │   └── task_edit_page_test.dart   # Task edit tests
+    ├── features/              # Feature tests
+    │   └── ai/               # AI dialog tests (6 tests)
+    ├── integration/           # Integration tests
+    │   ├── ai_features_integration_test.dart  # AI workflow tests (4 passing, 2 skipped)
+    │   └── ollama_ai_workflow_test.dart       # Ollama integration tests (5 tests)
     └── widget_test.dart       # App-level widget tests
 ```
 
