@@ -60,7 +60,7 @@ jobs:
           lcov --summary coverage/lcov.info
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           files: apps/altair_guidance/coverage/lcov.info
           flags: unittests
