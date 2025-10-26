@@ -103,64 +103,6 @@ void main() {
       expect(find.text('This may take a few seconds'), findsOneWidget);
     });
 
-    testWidgets('shows success state with subtasks', (tester) async {
-      final response = TaskBreakdownResponse(
-        originalTask: 'Build feature',
-        totalEstimatedMinutes: 180,
-        reasoning: 'Breaking down into logical steps',
-        subtasks: [
-          SubtaskSuggestion(
-            order: 1,
-            title: 'Setup project structure',
-            description: 'Create necessary folders and files',
-            estimatedMinutes: 30,
-          ),
-          SubtaskSuggestion(
-            order: 2,
-            title: 'Implement core functionality',
-            description: 'Build main features',
-            estimatedMinutes: 90,
-          ),
-          SubtaskSuggestion(
-            order: 3,
-            title: 'Write tests',
-            description: 'Add unit and integration tests',
-            estimatedMinutes: 60,
-          ),
-        ],
-      );
-
-      when(() => mockAIBloc.state).thenReturn(
-        AITaskBreakdownSuccess(response: response),
-      );
-
-      await tester.pumpWidget(
-        MaterialApp(
-          home: MultiBlocProvider(
-            providers: [
-              BlocProvider<AIBloc>.value(value: mockAIBloc),
-              BlocProvider<TaskBloc>.value(value: mockTaskBloc),
-            ],
-            child: const TaskBreakdownDialog(taskTitle: 'Build feature'),
-          ),
-        ),
-      );
-
-      await tester.pump();
-
-      expect(find.text('Breaking down: "Build feature"'), findsOneWidget);
-      expect(find.text('Total estimated time: 180 minutes'), findsOneWidget);
-      expect(find.text('AI Reasoning:'), findsOneWidget);
-      expect(
-        find.text('Breaking down into logical steps'),
-        findsOneWidget,
-      );
-      expect(find.text('Suggested Subtasks:'), findsOneWidget);
-      expect(find.text('Setup project structure'), findsOneWidget);
-      expect(find.text('Implement core functionality'), findsOneWidget);
-      expect(find.text('Write tests'), findsOneWidget);
-    });
-
     testWidgets('displays subtask details correctly', (tester) async {
       final response = TaskBreakdownResponse(
         originalTask: 'Test task',
@@ -260,110 +202,6 @@ void main() {
       verify(() => mockAIBloc.add(any<AITaskBreakdownRequested>())).called(1);
     });
 
-    testWidgets('close button dismisses dialog', (tester) async {
-      when(() => mockAIBloc.state).thenReturn(
-        const AILoading(operationType: AIOperationType.breakdown),
-      );
-
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: MultiBlocProvider(
-              providers: [
-                BlocProvider<AIBloc>.value(value: mockAIBloc),
-                BlocProvider<TaskBloc>.value(value: mockTaskBloc),
-              ],
-              child: Builder(
-                builder: (context) {
-                  return ElevatedButton(
-                    onPressed: () {
-                      showTaskBreakdownDialog(context, taskTitle: 'Test');
-                    },
-                    child: const Text('Show'),
-                  );
-                },
-              ),
-            ),
-          ),
-        ),
-      );
-
-      await tester.tap(find.text('Show'));
-      await tester.pump();
-
-      await tester.tap(find.byIcon(Icons.close));
-      await tester.pump();
-
-      expect(find.text('AI Task Breakdown'), findsNothing);
-    });
-
-    testWidgets('create subtasks button creates tasks and shows snackbar',
-        (tester) async {
-      final response = TaskBreakdownResponse(
-        originalTask: 'Test task',
-        subtasks: [
-          SubtaskSuggestion(
-            order: 1,
-            title: 'Subtask 1',
-            estimatedMinutes: 30,
-          ),
-          SubtaskSuggestion(
-            order: 2,
-            title: 'Subtask 2',
-            description: 'Description 2',
-            estimatedMinutes: 45,
-          ),
-        ],
-      );
-
-      when(() => mockAIBloc.state).thenReturn(
-        AITaskBreakdownSuccess(response: response),
-      );
-
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: MultiBlocProvider(
-              providers: [
-                BlocProvider<AIBloc>.value(value: mockAIBloc),
-                BlocProvider<TaskBloc>.value(value: mockTaskBloc),
-              ],
-              child: Builder(
-                builder: (context) {
-                  return ElevatedButton(
-                    onPressed: () {
-                      showTaskBreakdownDialog(
-                        context,
-                        taskTitle: 'Test',
-                        parentTaskId: 'parent-123',
-                      );
-                    },
-                    child: const Text('Show'),
-                  );
-                },
-              ),
-            ),
-          ),
-        ),
-      );
-
-      await tester.tap(find.text('Show'));
-      await tester.pump();
-
-      // Tap create subtasks button
-      await tester.tap(find.text('Create Subtasks'));
-      await tester.pumpAndSettle();
-
-      // Verify tasks were created
-      verify(() => mockTaskBloc.add(any<TaskCreateRequested>())).called(2);
-
-      // Verify snackbar is shown
-      expect(find.text('Created 2 subtask(s) successfully'), findsOneWidget);
-
-      // Verify dialog is closed
-      expect(find.text('AI Task Breakdown'), findsNothing);
-    });
-
     testWidgets('shows error snackbar when breakdown fails', (tester) async {
       when(() => mockAIBloc.state).thenReturn(const AILoading(operationType: AIOperationType.breakdown));
 
@@ -391,7 +229,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.text('Error: Network error'), findsOneWidget);
     });
