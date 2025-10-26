@@ -1,15 +1,13 @@
-/// AI service client for communicating with the AI backend.
+/// AI service client for communicating with AI providers.
 library;
 
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 
-import 'package:http/http.dart' as http;
 import 'package:logger/logger.dart';
 
-import 'ai_config.dart';
 import 'models.dart';
+import 'providers/ai_provider.dart';
 
 /// Exception thrown when AI service encounters an error.
 class AIServiceException implements Exception {
@@ -57,24 +55,18 @@ class AIServiceException implements Exception {
       '${isNetworkError ? ' [NETWORK]' : ''}';
 }
 
-/// Client for AI service API.
+/// Client for AI service using provider pattern.
 class AIService {
   /// Creates an AI service client.
   AIService({
-    required AIConfig config,
-    http.Client? httpClient,
-  })  : _config = config,
-        _client = httpClient ?? http.Client() {
+    required AIProvider provider,
+  }) : _provider = provider {
     _logger = Logger();
-    _config.validate();
-    _logger.i('AI Service initialized: ${_config.baseUrl}');
+    _logger.i('AI Service initialized with ${provider.runtimeType}');
   }
 
-  /// Configuration for the AI service.
-  final AIConfig _config;
-
-  /// HTTP client.
-  final http.Client _client;
+  /// The AI provider to use.
+  final AIProvider _provider;
 
   /// Logger instance.
   late final Logger _logger;
@@ -88,35 +80,12 @@ class AIService {
     _logger.i('Breaking down task: ${request.taskTitle}');
 
     try {
-      final response = await _client
-          .post(
-            Uri.parse('${_config.baseUrl}/ai/breakdown'),
-            headers: _config.headers,
-            body: jsonEncode(request.toJson()),
-          )
-          .timeout(_config.breakdownTimeout);
-
-      if (response.statusCode == 200) {
-        final json = jsonDecode(response.body) as Map<String, dynamic>;
-        final result = TaskBreakdownResponse.fromJson(json);
-        _logger.i('Generated ${result.subtasks.length} subtasks');
-        return result;
-      } else {
-        final error = _extractErrorMessage(response);
-        _logger.e('Task breakdown failed: $error');
-        throw AIServiceException(
-          error,
-          statusCode: response.statusCode,
-        );
-      }
+      return await _provider.breakdownTask(request);
     } on TimeoutException {
       _logger.w('Task breakdown timed out');
       throw AIServiceException.timeout('task breakdown');
     } on SocketException catch (e) {
       _logger.e('Network error: $e');
-      throw AIServiceException.network(e.message);
-    } on http.ClientException catch (e) {
-      _logger.e('HTTP client error: $e');
       throw AIServiceException.network(e.message);
     } catch (e) {
       if (e is AIServiceException) rethrow;
@@ -134,36 +103,12 @@ class AIService {
     _logger.i('Prioritizing ${request.tasks.length} tasks');
 
     try {
-      final response = await _client
-          .post(
-            Uri.parse('${_config.baseUrl}/ai/prioritize'),
-            headers: _config.headers,
-            body: jsonEncode(request.toJson()),
-          )
-          .timeout(_config.prioritizationTimeout);
-
-      if (response.statusCode == 200) {
-        final json = jsonDecode(response.body) as Map<String, dynamic>;
-        final result = TaskPrioritizationResponse.fromJson(json);
-        _logger
-            .i('Generated ${result.suggestions.length} priority suggestions');
-        return result;
-      } else {
-        final error = _extractErrorMessage(response);
-        _logger.e('Task prioritization failed: $error');
-        throw AIServiceException(
-          error,
-          statusCode: response.statusCode,
-        );
-      }
+      return await _provider.prioritizeTasks(request);
     } on TimeoutException {
       _logger.w('Task prioritization timed out');
       throw AIServiceException.timeout('task prioritization');
     } on SocketException catch (e) {
       _logger.e('Network error: $e');
-      throw AIServiceException.network(e.message);
-    } on http.ClientException catch (e) {
-      _logger.e('HTTP client error: $e');
       throw AIServiceException.network(e.message);
     } catch (e) {
       if (e is AIServiceException) rethrow;
@@ -181,37 +126,12 @@ class AIService {
     _logger.i('Estimating time for task: ${request.taskTitle}');
 
     try {
-      final response = await _client
-          .post(
-            Uri.parse('${_config.baseUrl}/ai/estimate'),
-            headers: _config.headers,
-            body: jsonEncode(request.toJson()),
-          )
-          .timeout(_config.estimateTimeout);
-
-      if (response.statusCode == 200) {
-        final json = jsonDecode(response.body) as Map<String, dynamic>;
-        final result = TimeEstimateResponse.fromJson(json);
-        _logger.i(
-          'Generated time estimate: ${result.estimate.realisticMinutes} minutes',
-        );
-        return result;
-      } else {
-        final error = _extractErrorMessage(response);
-        _logger.e('Time estimation failed: $error');
-        throw AIServiceException(
-          error,
-          statusCode: response.statusCode,
-        );
-      }
+      return await _provider.estimateTime(request);
     } on TimeoutException {
       _logger.w('Time estimation timed out');
       throw AIServiceException.timeout('time estimation');
     } on SocketException catch (e) {
       _logger.e('Network error: $e');
-      throw AIServiceException.network(e.message);
-    } on http.ClientException catch (e) {
-      _logger.e('HTTP client error: $e');
       throw AIServiceException.network(e.message);
     } catch (e) {
       if (e is AIServiceException) rethrow;
@@ -229,35 +149,12 @@ class AIService {
     _logger.i('Getting suggestions for task: ${request.taskTitle}');
 
     try {
-      final response = await _client
-          .post(
-            Uri.parse('${_config.baseUrl}/ai/suggest'),
-            headers: _config.headers,
-            body: jsonEncode(request.toJson()),
-          )
-          .timeout(_config.suggestionsTimeout);
-
-      if (response.statusCode == 200) {
-        final json = jsonDecode(response.body) as Map<String, dynamic>;
-        final result = ContextSuggestionResponse.fromJson(json);
-        _logger.i('Generated ${result.suggestions.length} suggestions');
-        return result;
-      } else {
-        final error = _extractErrorMessage(response);
-        _logger.e('Context suggestions failed: $error');
-        throw AIServiceException(
-          error,
-          statusCode: response.statusCode,
-        );
-      }
+      return await _provider.getSuggestions(request);
     } on TimeoutException {
       _logger.w('Context suggestions timed out');
       throw AIServiceException.timeout('context suggestions');
     } on SocketException catch (e) {
       _logger.e('Network error: $e');
-      throw AIServiceException.network(e.message);
-    } on http.ClientException catch (e) {
-      _logger.e('HTTP client error: $e');
       throw AIServiceException.network(e.message);
     } catch (e) {
       if (e is AIServiceException) rethrow;
@@ -266,32 +163,8 @@ class AIService {
     }
   }
 
-  /// Checks if the AI service is healthy.
-  Future<bool> checkHealth() async {
-    try {
-      final response = await _client
-          .get(Uri.parse('${_config.baseUrl}/health'))
-          .timeout(_config.healthCheckTimeout);
-
-      return response.statusCode == 200;
-    } catch (e) {
-      _logger.w('Health check failed', error: e);
-      return false;
-    }
-  }
-
-  /// Extracts error message from HTTP response.
-  String _extractErrorMessage(http.Response response) {
-    try {
-      final json = jsonDecode(response.body) as Map<String, dynamic>;
-      return json['detail'] as String? ?? 'Unknown error';
-    } catch (_) {
-      return 'HTTP ${response.statusCode}: ${response.reasonPhrase}';
-    }
-  }
-
-  /// Closes the HTTP client.
+  /// Disposes of AI service resources.
   void dispose() {
-    _client.close();
+    _provider.dispose();
   }
 }

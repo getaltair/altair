@@ -212,6 +212,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Example .env.example file
   - Provider-specific configuration details
 
+#### AI Settings & Configuration (Week 10)
+
+- **AI Settings UI**:
+  - Settings page with AI provider configuration
+  - Support for OpenAI, Anthropic, and Ollama providers
+  - Provider selection with descriptions and visual feedback
+  - Per-provider configuration sections:
+    - OpenAI: API key and model selection (GPT-4 Turbo, GPT-4, GPT-3.5 Turbo)
+    - Anthropic: API key and model selection (Claude 3.5 Sonnet, Claude 3 Opus, Claude 3 Sonnet)
+    - Ollama: Server URL and model selection (Llama 3, Mistral, Code Llama)
+  - Real-time validation with visual error indicators
+  - Enable/disable toggle for AI features
+
+- **AI Settings Model**:
+  - AISettings model with provider-specific configurations
+  - AIProvider enum with display names and default URLs
+  - Validation logic for required API keys
+  - JSON serialization (excluding sensitive API keys)
+  - Computed properties for current provider state
+
+- **Secure Storage**:
+  - AISettingsRepository for settings persistence
+  - API keys stored in flutter_secure_storage (platform keychain)
+  - Non-sensitive settings in SharedPreferences
+  - Separate storage keys per provider
+  - Clear and load operations with error handling
+
+- **Settings State Management**:
+  - SettingsBloc for managing application settings
+  - Settings events: Load, Update, Toggle, Save, Clear
+  - Settings states: Initial, Loading, Loaded, Saving, Saved, Failure
+  - Auto-save after configuration changes
+  - Cached settings for performance
+
+- **AI Provider Integration**:
+  - AIConfig.fromSettings() implementation for all providers
+  - Backend service integration for OpenAI and Anthropic
+  - Direct Ollama server support or backend proxy
+  - Configurable base URLs for custom deployments
+  - API key injection via Authorization headers
+
+- **Comprehensive Testing**:
+  - 424 AISettings model tests (serialization, validation, computed properties)
+  - 483 SettingsBloc tests (all events and state transitions)
+  - 327 AISettingsRepository tests (persistence, secure storage, edge cases)
+  - 623 SettingsPage UI tests (provider selection, configuration, validation)
+  - All tests passing with full coverage
+
 #### Testing Infrastructure
 
 - Comprehensive testing framework for all packages:
@@ -227,8 +275,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - App-level tests for routing, theming, UI, and TaskBloc with mocktail
     - BLoC tests for ProjectBloc (15 tests covering all events and error handling)
     - BLoC tests for TagBloc (20 tests covering all tag operations and error scenarios)
-- Testing documentation (docs/TESTING.md) with:
-  - Complete testing guide for all test types
+- Testing documentation (docs/TESTING-STRATEGY.md) with:
+  - Comprehensive testing strategy for all test types
   - Best practices and examples
   - Coverage reporting instructions
   - CI/CD integration guidelines

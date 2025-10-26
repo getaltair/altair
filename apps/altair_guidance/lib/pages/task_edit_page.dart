@@ -11,11 +11,10 @@ import '../bloc/project/project_bloc.dart';
 import '../bloc/project/project_state.dart';
 import '../bloc/task/task_bloc.dart';
 import '../bloc/task/task_event.dart';
-// DISABLED for v0.1.0 - AI features commented out
-// import '../features/ai/ai_consent_dialog.dart';
-// import '../features/ai/context_suggestions_dialog.dart';
-// import '../features/ai/task_breakdown_dialog.dart';
-// import '../features/ai/time_estimate_dialog.dart';
+import '../features/ai/ai_consent_dialog.dart';
+import '../features/ai/context_suggestions_dialog.dart';
+import '../features/ai/task_breakdown_dialog.dart';
+import '../features/ai/time_estimate_dialog.dart';
 
 /// Page for creating or editing a task with full details.
 class TaskEditPage extends StatefulWidget {
@@ -248,10 +247,12 @@ class _TaskEditPageState extends State<TaskEditPage> {
               _buildTagsSection(),
               const SizedBox(height: AltairSpacing.xl),
 
-              // AI Assistant Section - DISABLED for v0.1.0
-              // TODO: Re-enable when settings UI is implemented for provider/model config
-              // _buildAIAssistantSection(),
-              // const SizedBox(height: AltairSpacing.xl),
+              // AI Assistant Section - Rebuild when title changes
+              ListenableBuilder(
+                listenable: _titleController,
+                builder: (context, _) => _buildAIAssistantSection(),
+              ),
+              const SizedBox(height: AltairSpacing.xl),
 
               // Save button (also in app bar)
               AltairButton(
@@ -530,116 +531,115 @@ class _TaskEditPageState extends State<TaskEditPage> {
     );
   }
 
-  // DISABLED for v0.1.0 - Re-enable when settings UI is implemented
-  // Widget _buildAIAssistantSection() {
-  //   final hasTitle = _titleController.text.trim().isNotEmpty;
-  //
-  //   return Column(
-  //     crossAxisAlignment: CrossAxisAlignment.start,
-  //     children: [
-  //       Row(
-  //         children: [
-  //           const Icon(Icons.auto_awesome, size: 24),
-  //           const SizedBox(width: AltairSpacing.sm),
-  //           Text(
-  //             'AI Assistant',
-  //             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-  //                   fontWeight: FontWeight.bold,
-  //                 ),
-  //           ),
-  //         ],
-  //       ),
-  //       const SizedBox(height: AltairSpacing.sm),
-  //       Text(
-  //         'Get AI-powered suggestions to help with your task',
-  //         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-  //               color: AltairColors.textSecondary,
-  //             ),
-  //       ),
-  //       const SizedBox(height: AltairSpacing.md),
-  //       Wrap(
-  //         spacing: AltairSpacing.sm,
-  //         runSpacing: AltairSpacing.sm,
-  //         children: [
-  //           // Task Breakdown
-  //           _AIFeatureButton(
-  //             icon: Icons.format_list_bulleted,
-  //             label: 'Break Down Task',
-  //             accentColor: AltairColors.accentBlue,
-  //             enabled: hasTitle,
-  //             onPressed: () => _showAIFeature(() {
-  //               showTaskBreakdownDialog(
-  //                 context,
-  //                 taskTitle: _titleController.text.trim(),
-  //                 taskDescription: _descriptionController.text.trim().isEmpty
-  //                     ? null
-  //                     : _descriptionController.text.trim(),
-  //                 parentTaskId: widget.task?.id,
-  //               );
-  //             }),
-  //           ),
-  //           // Time Estimate
-  //           _AIFeatureButton(
-  //             icon: Icons.timer,
-  //             label: 'Estimate Time',
-  //             accentColor: AltairColors.accentGreen,
-  //             enabled: hasTitle,
-  //             onPressed: () => _showAIFeature(() {
-  //               showTimeEstimateDialog(
-  //                 context,
-  //                 taskTitle: _titleController.text.trim(),
-  //                 taskDescription: _descriptionController.text.trim().isEmpty
-  //                     ? null
-  //                     : _descriptionController.text.trim(),
-  //               );
-  //             }),
-  //           ),
-  //           // Context Suggestions
-  //           _AIFeatureButton(
-  //             icon: Icons.lightbulb,
-  //             label: 'Get Suggestions',
-  //             accentColor: AltairColors.accentOrange,
-  //             enabled: hasTitle,
-  //             onPressed: () => _showAIFeature(() {
-  //               showContextSuggestionsDialog(
-  //                 context,
-  //                 taskTitle: _titleController.text.trim(),
-  //                 taskDescription: _descriptionController.text.trim().isEmpty
-  //                     ? null
-  //                     : _descriptionController.text.trim(),
-  //               );
-  //             }),
-  //           ),
-  //         ],
-  //       ),
-  //       if (!hasTitle) ...[
-  //         const SizedBox(height: AltairSpacing.sm),
-  //         Text(
-  //           'Add a task title to use AI features',
-  //           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-  //                 color: AltairColors.error,
-  //                 fontStyle: FontStyle.italic,
-  //               ),
-  //         ),
-  //       ],
-  //     ],
-  //   );
-  // }
-  //
-  // Future<void> _showAIFeature(VoidCallback showDialog) async {
-  //   if (!mounted) return;
-  //
-  //   try {
-  //     final hasConsent = await showAIConsentDialog(context);
-  //     if (!hasConsent || !mounted) return;
-  //
-  //     showDialog();
-  //   } catch (e) {
-  //     if (mounted) {
-  //       _showError('Failed to show AI feature: $e');
-  //     }
-  //   }
-  // }
+  Widget _buildAIAssistantSection() {
+    final hasTitle = _titleController.text.trim().isNotEmpty;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.auto_awesome, size: 24),
+            const SizedBox(width: AltairSpacing.sm),
+            Text(
+              'AI Assistant',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+          ],
+        ),
+        const SizedBox(height: AltairSpacing.sm),
+        Text(
+          'Get AI-powered suggestions to help with your task',
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: AltairColors.textSecondary,
+              ),
+        ),
+        const SizedBox(height: AltairSpacing.md),
+        Wrap(
+          spacing: AltairSpacing.sm,
+          runSpacing: AltairSpacing.sm,
+          children: [
+            // Task Breakdown
+            _AIFeatureButton(
+              icon: Icons.format_list_bulleted,
+              label: 'Break Down Task',
+              accentColor: AltairColors.accentBlue,
+              enabled: hasTitle,
+              onPressed: () => _showAIFeature(() {
+                showTaskBreakdownDialog(
+                  context,
+                  taskTitle: _titleController.text.trim(),
+                  taskDescription: _descriptionController.text.trim().isEmpty
+                      ? null
+                      : _descriptionController.text.trim(),
+                  parentTaskId: widget.task?.id,
+                );
+              }),
+            ),
+            // Time Estimate
+            _AIFeatureButton(
+              icon: Icons.timer,
+              label: 'Estimate Time',
+              accentColor: AltairColors.accentGreen,
+              enabled: hasTitle,
+              onPressed: () => _showAIFeature(() {
+                showTimeEstimateDialog(
+                  context,
+                  taskTitle: _titleController.text.trim(),
+                  taskDescription: _descriptionController.text.trim().isEmpty
+                      ? null
+                      : _descriptionController.text.trim(),
+                );
+              }),
+            ),
+            // Context Suggestions
+            _AIFeatureButton(
+              icon: Icons.lightbulb,
+              label: 'Get Suggestions',
+              accentColor: AltairColors.accentOrange,
+              enabled: hasTitle,
+              onPressed: () => _showAIFeature(() {
+                showContextSuggestionsDialog(
+                  context,
+                  taskTitle: _titleController.text.trim(),
+                  taskDescription: _descriptionController.text.trim().isEmpty
+                      ? null
+                      : _descriptionController.text.trim(),
+                );
+              }),
+            ),
+          ],
+        ),
+        if (!hasTitle) ...[
+          const SizedBox(height: AltairSpacing.sm),
+          Text(
+            'Add a task title to use AI features',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: AltairColors.error,
+                  fontStyle: FontStyle.italic,
+                ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Future<void> _showAIFeature(VoidCallback showDialog) async {
+    if (!mounted) return;
+
+    try {
+      final hasConsent = await showAIConsentDialog(context);
+      if (!hasConsent || !mounted) return;
+
+      showDialog();
+    } catch (e) {
+      if (mounted) {
+        _showError('Failed to show AI feature: $e');
+      }
+    }
+  }
 
   void _showAddTagDialog() {
     final controller = TextEditingController();
@@ -735,37 +735,36 @@ class _TaskEditPageState extends State<TaskEditPage> {
   }
 }
 
-// DISABLED for v0.1.0 - Re-enable when AI features are restored
-// /// Button for AI features.
-// class _AIFeatureButton extends StatelessWidget {
-//   const _AIFeatureButton({
-//     required this.icon,
-//     required this.label,
-//     required this.accentColor,
-//     required this.enabled,
-//     required this.onPressed,
-//   });
-//
-//   final IconData icon;
-//   final String label;
-//   final Color accentColor;
-//   final bool enabled;
-//   final VoidCallback onPressed;
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     return AltairButton(
-//       onPressed: enabled ? onPressed : null,
-//       variant: AltairButtonVariant.outlined,
-//       accentColor: accentColor,
-//       child: Row(
-//         mainAxisSize: MainAxisSize.min,
-//         children: [
-//           Icon(icon, size: 18),
-//           const SizedBox(width: AltairSpacing.xs),
-//           Text(label),
-//         ],
-//       ),
-//     );
-//   }
-// }
+/// Button for AI features.
+class _AIFeatureButton extends StatelessWidget {
+  const _AIFeatureButton({
+    required this.icon,
+    required this.label,
+    required this.accentColor,
+    required this.enabled,
+    required this.onPressed,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color accentColor;
+  final bool enabled;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return AltairButton(
+      onPressed: enabled ? onPressed : null,
+      variant: AltairButtonVariant.outlined,
+      accentColor: accentColor,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 18),
+          const SizedBox(width: AltairSpacing.xs),
+          Text(label),
+        ],
+      ),
+    );
+  }
+}
