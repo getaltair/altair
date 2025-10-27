@@ -68,7 +68,7 @@ jobs:
           fail_ci_if_error: false
 
       - name: Archive coverage reports
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: coverage-report
           path: apps/altair_guidance/coverage/
@@ -126,7 +126,7 @@ jobs:
 
       - name: Upload integration test results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: integration-test-results
           path: apps/altair_guidance/TEST_RESULTS.json
@@ -162,7 +162,7 @@ jobs:
         run: flutter build linux --release
 
       - name: Archive build artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: linux-build
           path: apps/altair_guidance/build/linux/x64/release/bundle/
