@@ -1,6 +1,7 @@
 import 'package:altair_guidance/models/ai_settings.dart';
 import 'package:altair_guidance/services/ai/ai_config.dart';
 import 'package:altair_guidance/services/ai/providers/anthropic_provider.dart';
+import 'package:altair_guidance/services/ai/providers/ollama_provider.dart';
 import 'package:altair_guidance/services/ai/providers/openai_provider.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -122,16 +123,31 @@ void main() {
       expect(provider, isA<AnthropicProvider>());
     });
 
-    test('throws UnimplementedError for Ollama provider', () {
+    test('creates Ollama provider with custom settings', () {
       const settings = AISettings(
         enabled: true,
         provider: AIProviderType.ollama,
+        ollamaBaseUrl: 'http://localhost:11434',
+        ollamaModel: 'llama3.1:8b',
       );
 
-      expect(
-        () => AIConfig.createProvider(settings),
-        throwsA(isA<UnimplementedError>()),
+      final provider = AIConfig.createProvider(settings);
+
+      expect(provider, isNotNull);
+      expect(provider, isA<OllamaProvider>());
+    });
+
+    test('creates Ollama provider with default settings', () {
+      const settings = AISettings(
+        enabled: true,
+        provider: AIProviderType.ollama,
+        // Using default ollamaBaseUrl and ollamaModel from AISettings
       );
+
+      final provider = AIConfig.createProvider(settings);
+
+      expect(provider, isNotNull);
+      expect(provider, isA<OllamaProvider>());
     });
   });
 }

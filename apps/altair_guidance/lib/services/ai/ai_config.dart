@@ -4,6 +4,7 @@ library;
 import '../../models/ai_settings.dart';
 import 'providers/ai_provider.dart';
 import 'providers/anthropic_provider.dart';
+import 'providers/ollama_provider.dart';
 import 'providers/openai_provider.dart';
 
 /// Factory for creating AI providers based on configuration.
@@ -47,11 +48,11 @@ class AIConfig {
         return AnthropicProvider(apiKey: apiKey, model: model);
 
       case AIProviderType.ollama:
-        // Ollama not yet implemented with direct API
-        // Would require additional ollama_dart package or HTTP client
-        throw UnimplementedError(
-          'Ollama provider not yet implemented for direct API calls',
-        );
+        // Ollama doesn't require API key, just base URL
+        final baseUrl = settings.ollamaBaseUrl ??
+            AIProviderType.ollama.defaultBaseUrl;
+        final model = settings.ollamaModel;
+        return OllamaProvider(baseUrl: baseUrl, model: model);
     }
   }
 }
