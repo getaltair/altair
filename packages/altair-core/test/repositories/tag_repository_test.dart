@@ -184,21 +184,28 @@ void main() {
       test('findAll() should support offset', () async {
         final now = DateTime.now();
 
-        await tagRepository.create(Tag(id: '', name: 'tag1', createdAt: now, usageCount: 3));
-        await tagRepository.create(Tag(id: '', name: 'tag2', createdAt: now, usageCount: 2));
-        await tagRepository.create(Tag(id: '', name: 'tag3', createdAt: now, usageCount: 1));
+        await tagRepository
+            .create(Tag(id: '', name: 'tag1', createdAt: now, usageCount: 3));
+        await tagRepository
+            .create(Tag(id: '', name: 'tag2', createdAt: now, usageCount: 2));
+        await tagRepository
+            .create(Tag(id: '', name: 'tag3', createdAt: now, usageCount: 1));
 
         final tags = await tagRepository.findAll(offset: 1, limit: 2);
 
         expect(tags.length, 2);
       });
 
-      test('findAll() orders by usage count DESC then name ASC by default', () async {
+      test('findAll() orders by usage count DESC then name ASC by default',
+          () async {
         final now = DateTime.now();
 
-        await tagRepository.create(Tag(id: '', name: 'zebra', createdAt: now, usageCount: 1));
-        await tagRepository.create(Tag(id: '', name: 'apple', createdAt: now, usageCount: 5));
-        await tagRepository.create(Tag(id: '', name: 'banana', createdAt: now, usageCount: 5));
+        await tagRepository
+            .create(Tag(id: '', name: 'zebra', createdAt: now, usageCount: 1));
+        await tagRepository
+            .create(Tag(id: '', name: 'apple', createdAt: now, usageCount: 5));
+        await tagRepository
+            .create(Tag(id: '', name: 'banana', createdAt: now, usageCount: 5));
 
         final tags = await tagRepository.findAll();
 
@@ -211,7 +218,8 @@ void main() {
         final now = DateTime.now();
 
         await tagRepository.create(Tag(id: '', name: 'urgent', createdAt: now));
-        await tagRepository.create(Tag(id: '', name: 'important', createdAt: now));
+        await tagRepository
+            .create(Tag(id: '', name: 'important', createdAt: now));
         await tagRepository.create(Tag(id: '', name: 'work', createdAt: now));
 
         final results = await tagRepository.search('urg');
@@ -224,10 +232,18 @@ void main() {
         final now = DateTime.now();
 
         await tagRepository.create(
-          Tag(id: '', name: 'tag1', description: 'High priority items', createdAt: now),
+          Tag(
+              id: '',
+              name: 'tag1',
+              description: 'High priority items',
+              createdAt: now),
         );
         await tagRepository.create(
-          Tag(id: '', name: 'tag2', description: 'Low priority items', createdAt: now),
+          Tag(
+              id: '',
+              name: 'tag2',
+              description: 'Low priority items',
+              createdAt: now),
         );
 
         final results = await tagRepository.search('High');
@@ -257,13 +273,18 @@ void main() {
         expect(results, isEmpty);
       });
 
-      test('findMostUsed() should return tags with usage > 0 ordered by count', () async {
+      test('findMostUsed() should return tags with usage > 0 ordered by count',
+          () async {
         final now = DateTime.now();
 
-        await tagRepository.create(Tag(id: '', name: 'tag1', createdAt: now, usageCount: 10));
-        await tagRepository.create(Tag(id: '', name: 'tag2', createdAt: now, usageCount: 5));
-        await tagRepository.create(Tag(id: '', name: 'tag3', createdAt: now, usageCount: 0));
-        await tagRepository.create(Tag(id: '', name: 'tag4', createdAt: now, usageCount: 15));
+        await tagRepository
+            .create(Tag(id: '', name: 'tag1', createdAt: now, usageCount: 10));
+        await tagRepository
+            .create(Tag(id: '', name: 'tag2', createdAt: now, usageCount: 5));
+        await tagRepository
+            .create(Tag(id: '', name: 'tag3', createdAt: now, usageCount: 0));
+        await tagRepository
+            .create(Tag(id: '', name: 'tag4', createdAt: now, usageCount: 15));
 
         final mostUsed = await tagRepository.findMostUsed(limit: 2);
 
@@ -275,9 +296,12 @@ void main() {
       test('findMostUsed() should respect limit parameter', () async {
         final now = DateTime.now();
 
-        await tagRepository.create(Tag(id: '', name: 'tag1', createdAt: now, usageCount: 3));
-        await tagRepository.create(Tag(id: '', name: 'tag2', createdAt: now, usageCount: 2));
-        await tagRepository.create(Tag(id: '', name: 'tag3', createdAt: now, usageCount: 1));
+        await tagRepository
+            .create(Tag(id: '', name: 'tag1', createdAt: now, usageCount: 3));
+        await tagRepository
+            .create(Tag(id: '', name: 'tag2', createdAt: now, usageCount: 2));
+        await tagRepository
+            .create(Tag(id: '', name: 'tag3', createdAt: now, usageCount: 1));
 
         final mostUsed = await tagRepository.findMostUsed(limit: 2);
 
@@ -287,8 +311,10 @@ void main() {
       test('findByIds() should return tags with matching IDs', () async {
         final now = DateTime.now();
 
-        final tag1 = await tagRepository.create(Tag(id: '', name: 'tag1', createdAt: now));
-        final tag2 = await tagRepository.create(Tag(id: '', name: 'tag2', createdAt: now));
+        final tag1 = await tagRepository
+            .create(Tag(id: '', name: 'tag1', createdAt: now));
+        final tag2 = await tagRepository
+            .create(Tag(id: '', name: 'tag2', createdAt: now));
         await tagRepository.create(Tag(id: '', name: 'tag3', createdAt: now));
 
         final tags = await tagRepository.findByIds([tag1.id, tag2.id]);
@@ -304,8 +330,10 @@ void main() {
         expect(tags, isEmpty);
       });
 
-      test('findByIds() should return empty list for non-existent IDs', () async {
-        final tags = await tagRepository.findByIds(['non-existent-1', 'non-existent-2']);
+      test('findByIds() should return empty list for non-existent IDs',
+          () async {
+        final tags =
+            await tagRepository.findByIds(['non-existent-1', 'non-existent-2']);
         expect(tags, isEmpty);
       });
 

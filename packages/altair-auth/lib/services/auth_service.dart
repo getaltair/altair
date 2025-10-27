@@ -69,7 +69,8 @@ class AuthService {
       }
       rethrow;
     } catch (e, stackTrace) {
-      _logger.e('Login failed with unexpected error', error: e, stackTrace: stackTrace);
+      _logger.e('Login failed with unexpected error',
+          error: e, stackTrace: stackTrace);
       rethrow;
     }
   }
@@ -117,7 +118,8 @@ class AuthService {
       }
       rethrow;
     } catch (e, stackTrace) {
-      _logger.e('Registration failed with unexpected error', error: e, stackTrace: stackTrace);
+      _logger.e('Registration failed with unexpected error',
+          error: e, stackTrace: stackTrace);
       rethrow;
     }
   }
@@ -194,7 +196,8 @@ class AuthService {
       _logger.i('Current user fetched: ${user.email}');
       return user;
     } catch (e, stackTrace) {
-      _logger.e('Failed to fetch current user', error: e, stackTrace: stackTrace);
+      _logger.e('Failed to fetch current user',
+          error: e, stackTrace: stackTrace);
       rethrow;
     }
   }

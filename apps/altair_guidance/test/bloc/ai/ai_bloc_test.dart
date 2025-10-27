@@ -51,7 +51,8 @@ void main() {
       blocTest<AIBloc, AIState>(
         'emits failure when settings not loaded',
         build: () {
-          when(() => mockSettingsBloc.state).thenReturn(const SettingsLoading());
+          when(() => mockSettingsBloc.state)
+              .thenReturn(const SettingsLoading());
           return AIBloc(settingsBloc: mockSettingsBloc);
         },
         act: (bloc) => bloc.add(

@@ -32,7 +32,8 @@ void main() {
       expect(capturedCalled, false);
     });
 
-    testWidgets('autofocuses input field when autofocus is true', (tester) async {
+    testWidgets('autofocuses input field when autofocus is true',
+        (tester) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(

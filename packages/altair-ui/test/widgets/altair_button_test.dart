@@ -77,8 +77,7 @@ void main() {
       expect(button.accentColor, AltairColors.accentYellow);
     });
 
-    testWidgets('applies outlined variant styles',
-        (WidgetTester tester) async {
+    testWidgets('applies outlined variant styles', (WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(

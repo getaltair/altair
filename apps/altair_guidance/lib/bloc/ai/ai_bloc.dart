@@ -48,7 +48,8 @@ class AIBloc extends Bloc<AIEvent, AIState> {
     try {
       final provider = AIConfig.createProvider(settings);
       if (provider == null) {
-        _logger.w('Failed to create AI provider from settings: ${settings.provider.displayName}');
+        _logger.w(
+            'Failed to create AI provider from settings: ${settings.provider.displayName}');
       } else {
         _logger.i('Created ${settings.provider.displayName} provider');
       }
@@ -194,5 +195,4 @@ class AIBloc extends Bloc<AIEvent, AIState> {
     _logger.d('Clearing AI state');
     emit(const AIInitial());
   }
-
 }

@@ -45,10 +45,8 @@ void main() {
       blocTest<AuthBloc, AuthState>(
         'emits [AuthLoading, AuthAuthenticated] when user is authenticated',
         build: () {
-          when(authService.isAuthenticated())
-              .thenAnswer((_) async => true);
-          when(authService.getCurrentUser())
-              .thenAnswer((_) async => testUser);
+          when(authService.isAuthenticated()).thenAnswer((_) async => true);
+          when(authService.getCurrentUser()).thenAnswer((_) async => testUser);
           return AuthBloc(authService: authService, logger: logger);
         },
         act: (bloc) => bloc.add(const AuthCheckRequested()),
@@ -65,8 +63,7 @@ void main() {
       blocTest<AuthBloc, AuthState>(
         'emits [AuthLoading, AuthUnauthenticated] when user is not authenticated',
         build: () {
-          when(authService.isAuthenticated())
-              .thenAnswer((_) async => false);
+          when(authService.isAuthenticated()).thenAnswer((_) async => false);
           return AuthBloc(authService: authService, logger: logger);
         },
         act: (bloc) => bloc.add(const AuthCheckRequested()),
@@ -108,8 +105,7 @@ void main() {
             email: anyNamed('email'),
             password: anyNamed('password'),
           )).thenAnswer((_) async => testToken);
-          when(authService.getCurrentUser())
-              .thenAnswer((_) async => testUser);
+          when(authService.getCurrentUser()).thenAnswer((_) async => testUser);
           return AuthBloc(authService: authService, logger: logger);
         },
         act: (bloc) => bloc.add(const AuthLoginRequested(
@@ -162,8 +158,7 @@ void main() {
             email: anyNamed('email'),
             password: anyNamed('password'),
           )).thenAnswer((_) async => testToken);
-          when(authService.getCurrentUser())
-              .thenAnswer((_) async => testUser);
+          when(authService.getCurrentUser()).thenAnswer((_) async => testUser);
           return AuthBloc(authService: authService, logger: logger);
         },
         act: (bloc) => bloc.add(const AuthRegisterRequested(
@@ -223,8 +218,7 @@ void main() {
       blocTest<AuthBloc, AuthState>(
         'emits [AuthLoading, AuthFailure] when logout fails',
         build: () {
-          when(authService.logout())
-              .thenThrow(Exception('Logout failed'));
+          when(authService.logout()).thenThrow(Exception('Logout failed'));
           return AuthBloc(authService: authService, logger: logger);
         },
         act: (bloc) => bloc.add(const AuthLogoutRequested()),
@@ -245,8 +239,7 @@ void main() {
         'emits [AuthAuthenticated] when token refresh succeeds',
         build: () {
           when(authService.refreshToken()).thenAnswer((_) async => testToken);
-          when(authService.getCurrentUser())
-              .thenAnswer((_) async => testUser);
+          when(authService.getCurrentUser()).thenAnswer((_) async => testUser);
           return AuthBloc(authService: authService, logger: logger);
         },
         act: (bloc) => bloc.add(const AuthRefreshRequested()),

@@ -253,7 +253,8 @@ class _TaskEditPageState extends State<TaskEditPage> {
               BlocBuilder<SettingsBloc, SettingsState>(
                 builder: (context, settingsState) => ListenableBuilder(
                   listenable: _titleController,
-                  builder: (context, _) => _buildAIAssistantSection(settingsState),
+                  builder: (context, _) =>
+                      _buildAIAssistantSection(settingsState),
                 ),
               ),
               const SizedBox(height: AltairSpacing.xl),

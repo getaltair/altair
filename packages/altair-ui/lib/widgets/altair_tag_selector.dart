@@ -162,7 +162,9 @@ class _AltairTagSelectorState extends State<AltairTagSelector> {
             border: Border.all(
               color: _focusNode.hasFocus
                   ? AltairColors.accentOrange
-                  : (isDark ? AltairColors.borderDark : AltairColors.borderLight),
+                  : (isDark
+                      ? AltairColors.borderDark
+                      : AltairColors.borderLight),
               width: _focusNode.hasFocus
                   ? AltairBorders.extraThick
                   : AltairBorders.medium,
@@ -195,7 +197,8 @@ class _AltairTagSelectorState extends State<AltairTagSelector> {
             decoration: BoxDecoration(
               color: isDark ? AltairColors.bgDark : AltairColors.bgLight,
               border: Border.all(
-                color: isDark ? AltairColors.borderDark : AltairColors.borderLight,
+                color:
+                    isDark ? AltairColors.borderDark : AltairColors.borderLight,
                 width: AltairBorders.medium,
               ),
             ),

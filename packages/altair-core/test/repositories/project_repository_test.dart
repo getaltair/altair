@@ -77,7 +77,8 @@ void main() {
         expect(found.name, 'Find Me');
       });
 
-      test('findById() should return null when project does not exist', () async {
+      test('findById() should return null when project does not exist',
+          () async {
         final found = await projectRepository.findById('non-existent-id');
 
         expect(found, isNull);
@@ -110,7 +111,8 @@ void main() {
         expect(projects.any((p) => p.name == 'Project 2'), isTrue);
       });
 
-      test('findAll() with status filter should return filtered projects', () async {
+      test('findAll() with status filter should return filtered projects',
+          () async {
         final now = DateTime.now();
 
         final activeProject = Project(
@@ -136,7 +138,8 @@ void main() {
           status: ProjectStatus.active,
         );
 
-        expect(activeProjects.every((p) => p.status == ProjectStatus.active), isTrue);
+        expect(activeProjects.every((p) => p.status == ProjectStatus.active),
+            isTrue);
       });
 
       test('update() should update existing project', () async {
@@ -212,18 +215,21 @@ void main() {
 
         expect(results.isNotEmpty, isTrue);
         expect(
-          results.any((p) => p.description?.contains('Unique description') ?? false),
+          results.any(
+              (p) => p.description?.contains('Unique description') ?? false),
           isTrue,
         );
       });
 
       test('search() should return empty list when no matches', () async {
-        final results = await projectRepository.search('NonExistentSearchTerm123456');
+        final results =
+            await projectRepository.search('NonExistentSearchTerm123456');
 
         expect(results, isEmpty);
       });
 
-      test('getTaskCount() should return correct task count for project', () async {
+      test('getTaskCount() should return correct task count for project',
+          () async {
         final now = DateTime.now();
         final project = Project(
           id: '',

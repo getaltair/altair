@@ -49,8 +49,8 @@ class AIConfig {
 
       case AIProviderType.ollama:
         // Ollama doesn't require API key, just base URL
-        final baseUrl = settings.ollamaBaseUrl ??
-            AIProviderType.ollama.defaultBaseUrl;
+        final baseUrl =
+            settings.ollamaBaseUrl ?? AIProviderType.ollama.defaultBaseUrl;
         final model = settings.ollamaModel;
         return OllamaProvider(baseUrl: baseUrl, model: model);
     }

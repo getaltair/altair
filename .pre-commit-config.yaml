@@ -49,9 +49,19 @@ repos:
     hooks:
       - id: gitleaks
 
-  # Flutter: Local hooks for analysis
+  # Flutter/Dart: Local hooks for formatting and analysis
   - repo: local
     hooks:
+      # Dart format check (matches CI exactly)
+      - id: dart-format
+        name: Dart format
+        entry: scripts/pre-commit/dart-format.sh
+        language: script
+        files: \.dart$
+        pass_filenames: false
+        description: Check Dart formatting with --set-exit-if-changed (matches CI)
+
+      # Flutter analyze
       - id: flutter-analyze
         name: Flutter analyze
         entry: scripts/pre-commit/flutter-analyze.sh
