@@ -1,0 +1,28 @@
+name: altair_db_service
+description: Shared SurrealDB service for all Altair applications. Manages local database instance lifecycle across desktop and mobile platforms.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.5.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  path: ^1.9.0
+  path_provider: ^2.1.0
+  http: ^1.2.0
+  surrealdb: ^1.1.1
+  process_run: ^1.1.0
+  crypto: ^3.0.3
+  archive: ^3.6.0  # For backup/restore functionality
+  win32: ^5.5.0  # Windows service management
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  test: ^1.24.0
+
+flutter:
+  # This package does not contain any UI assets

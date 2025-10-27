@@ -21,10 +21,10 @@ void main() {
     registerFallbackValue(FakeTask());
   });
 
-  // Sample test data
+  // Sample test data with SurrealDB ID format
   final now = DateTime.now();
   final task1 = Task(
-    id: '1',
+    id: 'task:1',
     title: 'Test Task 1',
     createdAt: now,
     updatedAt: now,
@@ -33,7 +33,7 @@ void main() {
   );
 
   final task2 = Task(
-    id: '2',
+    id: 'task:2',
     title: 'Test Task 2',
     description: 'Task description',
     createdAt: now,
@@ -44,7 +44,7 @@ void main() {
   );
 
   final task3 = Task(
-    id: '3',
+    id: 'task:3',
     title: 'In Progress Task',
     createdAt: now,
     updatedAt: now,
@@ -112,7 +112,7 @@ void main() {
     group('TaskQuickCaptureRequested', () {
       final captureTitle = 'Quick captured task';
       final capturedTask = Task(
-        id: '4',
+        id: 'task:4',
         title: captureTitle,
         createdAt: now,
         updatedAt: now,
@@ -266,7 +266,7 @@ void main() {
       blocTest<TaskBloc, TaskState>(
         'emits [TaskLoading, TaskLoaded] when task is deleted successfully',
         build: () {
-          when(() => mockTaskRepository.delete('1'))
+          when(() => mockTaskRepository.delete('task:1'))
               .thenAnswer((_) async => {});
           when(() => mockTaskRepository.findAll())
               .thenAnswer((_) async => [task2]);
@@ -275,13 +275,13 @@ void main() {
             logger: mockLogger,
           );
         },
-        act: (bloc) => bloc.add(const TaskDeleteRequested(taskId: '1')),
+        act: (bloc) => bloc.add(const TaskDeleteRequested(taskId: 'task:1')),
         expect: () => [
           const TaskLoading(),
           TaskLoaded(tasks: [task2]),
         ],
         verify: (_) {
-          verify(() => mockTaskRepository.delete('1')).called(1);
+          verify(() => mockTaskRepository.delete('task:1')).called(1);
           verify(() => mockTaskRepository.findAll()).called(1);
         },
       );
@@ -289,20 +289,20 @@ void main() {
       blocTest<TaskBloc, TaskState>(
         'emits [TaskLoading, TaskFailure] when deletion fails',
         build: () {
-          when(() => mockTaskRepository.delete('1'))
+          when(() => mockTaskRepository.delete('task:1'))
               .thenThrow(Exception('Failed to delete'));
           return TaskBloc(
             taskRepository: mockTaskRepository,
             logger: mockLogger,
           );
         },
-        act: (bloc) => bloc.add(const TaskDeleteRequested(taskId: '1')),
+        act: (bloc) => bloc.add(const TaskDeleteRequested(taskId: 'task:1')),
         expect: () => [
           const TaskLoading(),
           const TaskFailure(message: 'Exception: Failed to delete'),
         ],
         verify: (_) {
-          verify(() => mockTaskRepository.delete('1')).called(1);
+          verify(() => mockTaskRepository.delete('task:1')).called(1);
         },
       );
     });
