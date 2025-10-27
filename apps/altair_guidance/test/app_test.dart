@@ -10,7 +10,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class MockTaskRepository extends Mock implements TaskRepository {}
+class MockTaskRepositorySurrealDB extends Mock
+    implements TaskRepositorySurrealDB {}
 
 class FakeTask extends Fake implements Task {}
 
@@ -21,20 +22,28 @@ void main() {
 
   group('AltairGuidanceApp', () {
     late SharedPreferences prefs;
+    late MockTaskRepositorySurrealDB mockTaskRepository;
 
     setUp(() async {
       // Initialize SharedPreferences with fake implementation for testing
       SharedPreferences.setMockInitialValues({});
       prefs = await SharedPreferences.getInstance();
+      mockTaskRepository = MockTaskRepositorySurrealDB();
     });
 
     testWidgets('renders without crashing', (WidgetTester tester) async {
-      await tester.pumpWidget(AltairGuidanceApp(prefs: prefs));
+      await tester.pumpWidget(AltairGuidanceApp(
+        prefs: prefs,
+        taskRepository: mockTaskRepository,
+      ));
       expect(find.byType(MaterialApp), findsOneWidget);
     });
 
     testWidgets('has correct title', (WidgetTester tester) async {
-      await tester.pumpWidget(AltairGuidanceApp(prefs: prefs));
+      await tester.pumpWidget(AltairGuidanceApp(
+        prefs: prefs,
+        taskRepository: mockTaskRepository,
+      ));
 
       final materialApp = tester.widget<MaterialApp>(
         find.byType(MaterialApp),
@@ -44,7 +53,10 @@ void main() {
     });
 
     testWidgets('uses Altair theme', (WidgetTester tester) async {
-      await tester.pumpWidget(AltairGuidanceApp(prefs: prefs));
+      await tester.pumpWidget(AltairGuidanceApp(
+        prefs: prefs,
+        taskRepository: mockTaskRepository,
+      ));
 
       final materialApp = tester.widget<MaterialApp>(
         find.byType(MaterialApp),
@@ -56,14 +68,20 @@ void main() {
     });
 
     testWidgets('shows HomePage as home', (WidgetTester tester) async {
-      await tester.pumpWidget(AltairGuidanceApp(prefs: prefs));
+      await tester.pumpWidget(AltairGuidanceApp(
+        prefs: prefs,
+        taskRepository: mockTaskRepository,
+      ));
       await tester.pump();
 
       expect(find.byType(HomePage), findsOneWidget);
     });
 
     testWidgets('hides debug banner', (WidgetTester tester) async {
-      await tester.pumpWidget(AltairGuidanceApp(prefs: prefs));
+      await tester.pumpWidget(AltairGuidanceApp(
+        prefs: prefs,
+        taskRepository: mockTaskRepository,
+      ));
 
       final materialApp = tester.widget<MaterialApp>(
         find.byType(MaterialApp),
@@ -74,10 +92,10 @@ void main() {
   });
 
   group('HomePage', () {
-    late MockTaskRepository mockTaskRepository;
+    late MockTaskRepositorySurrealDB mockTaskRepository;
 
     setUp(() {
-      mockTaskRepository = MockTaskRepository();
+      mockTaskRepository = MockTaskRepositorySurrealDB();
     });
 
     Widget createHomePage() {

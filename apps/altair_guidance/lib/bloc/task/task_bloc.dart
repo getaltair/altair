@@ -12,7 +12,7 @@ import 'task_state.dart';
 class TaskBloc extends Bloc<TaskEvent, TaskState> {
   /// Creates a task bloc.
   TaskBloc({
-    required TaskRepository taskRepository,
+    required TaskRepositorySurrealDB taskRepository,
     Logger? logger,
   })  : _taskRepository = taskRepository,
         _logger = logger ?? Logger(),
@@ -29,7 +29,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
     on<TaskReorderRequested>(_onReorderRequested);
   }
 
-  final TaskRepository _taskRepository;
+  final TaskRepositorySurrealDB _taskRepository;
   final Logger _logger;
 
   /// Handles loading all tasks.

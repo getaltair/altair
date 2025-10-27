@@ -1,28 +1,29 @@
-import 'package:altair_core/database/database.dart';
 import 'package:altair_core/models/project.dart';
 import 'package:altair_core/models/task.dart';
 import 'package:altair_core/repositories/project_repository.dart';
-import 'package:altair_core/repositories/task_repository.dart';
+import 'package:altair_core/repositories/task_repository_surrealdb.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  // Initialize database for testing
-  setUpAll(() {
-    AltairDatabase.enableTestMode();
-  });
+  group('TaskRepositorySurrealDB', () {
+    late TaskRepositorySurrealDB taskRepository;
 
-  group('TaskRepository', () {
-    late TaskRepository taskRepository;
-
-    setUp(() {
-      taskRepository = TaskRepository();
+    setUp(() async {
+      taskRepository = TaskRepositorySurrealDB();
+      await taskRepository.initialize();
     });
 
     tearDown(() async {
-      // Reset database between tests for isolation
-      await AltairDatabase().close();
-      AltairDatabase.reset();
-      AltairDatabase.enableTestMode();
+      // Clean up test data - delete all tasks created during test
+      // This ensures test isolation without closing the shared connection
+      try {
+        final tasks = await taskRepository.findAll();
+        for (final task in tasks) {
+          await taskRepository.delete(task.id);
+        }
+      } catch (e) {
+        // Ignore cleanup errors in tearDown
+      }
     });
 
     group('CRUD Operations', () {
@@ -49,7 +50,7 @@ void main() {
         expect(createdTask.priority, 1);
       });
 
-      test('create() generates UUID if id is empty', () async {
+      test('create() generates task ID with prefix if id is empty', () async {
         final now = DateTime.now();
         final task = Task(
           id: '',
@@ -61,7 +62,8 @@ void main() {
         final createdTask = await taskRepository.create(task);
 
         expect(createdTask.id, isNotEmpty);
-        expect(createdTask.id.length, 36); // UUID length
+        expect(createdTask.id, startsWith('task:')); // SurrealDB ID format
+        expect(createdTask.id.length, greaterThan(5)); // Has UUID after prefix
       });
 
       test('findById() should return task when it exists', () async {
