@@ -63,7 +63,7 @@ jobs:
           VERSION=${{ env.VERSION }} bash packaging/linux/build-appimage.sh
 
       - name: Upload AppImage artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: altair-guidance-linux-appimage
           path: apps/altair_guidance/build/linux/x64/release/AltairGuidance-*.AppImage
@@ -112,7 +112,7 @@ jobs:
           VERSION=${{ env.VERSION }} bash packaging/macos/build-dmg.sh
 
       - name: Upload DMG artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: altair-guidance-macos-dmg
           path: apps/altair_guidance/build/macos/Build/Products/Release/AltairGuidance-*.dmg
@@ -165,7 +165,7 @@ jobs:
           powershell.exe -ExecutionPolicy Bypass -File packaging/windows/build-installer.ps1 -Version $env:VERSION
 
       - name: Upload Windows installer artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: altair-guidance-windows-installer
           path: apps/altair_guidance/build/windows/installer/AltairGuidance-*-Setup.exe
