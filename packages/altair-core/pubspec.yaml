@@ -16,6 +16,10 @@ dependencies:
   path: ^1.8.3
   path_provider: ^2.1.2
 
+  # Shared database service
+  altair_db_service:
+    path: ../altair-db-service
+
   # JSON serialization
   json_annotation: ^4.8.1
 

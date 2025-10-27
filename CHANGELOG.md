@@ -9,6 +9,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+#### Database Service Infrastructure (Week 11)
+
+- **altair-db-service** package:
+  - Shared local SurrealDB instance for all Altair applications
+  - Cross-app data integration with single database process
+  - Platform-specific service installers (Linux systemd, macOS launchd, Windows Service)
+  - Service lifecycle management (install, start, stop, uninstall)
+  - Connection manager singleton for shared database access
+  - Auto-start configuration for seamless user experience
+  - Health check endpoints for service monitoring
+  - Platform-agnostic installer abstraction
+  - Secure credential management with system keychain integration
+  - Comprehensive documentation with usage examples
+
+- **Database Connection Management**:
+  - AltairConnectionManager singleton for unified database access
+  - Automatic schema initialization on first connection
+  - Cross-app linking system for resource relationships
+  - Full-text search across all resource types (tasks, notes, items)
+  - Link creation and management between resources
+  - Query utilities for common operations
+
+- **SurrealDB Integration**:
+  - TaskRepositorySurrealDB implementation in altair-core
+  - Complete CRUD operations for tasks using SurrealDB
+  - Subtask querying and parent-child relationships
+  - Tag-based filtering with ALLINSIDE operator
+  - Search functionality with full-text indexing
+  - Time tracking support (estimated and actual minutes)
+  - Metadata field for extensibility
+
+- **Platform Support**:
+  - Linux: systemd user service with auto-start
+  - macOS: launchd service configuration
+  - Windows: Windows Service installation
+  - Android: Background service fallback
+  - Platform-specific data directory handling
+
 #### Infrastructure (Month 1 Week 1-2)
 
 - Complete monorepo structure with `apps/`, `packages/`, `services/`, and `infrastructure/` directories
