@@ -7,15 +7,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:logger/logger.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockTaskRepositorySurrealDB extends Mock
-    implements TaskRepositorySurrealDB {}
+class MockTaskRepository extends Mock implements TaskRepository {}
 
 class MockLogger extends Mock implements Logger {}
 
 class FakeTask extends Fake implements Task {}
 
 void main() {
-  late MockTaskRepositorySurrealDB mockTaskRepository;
+  late MockTaskRepository mockTaskRepository;
   late MockLogger mockLogger;
 
   setUpAll(() {
@@ -54,7 +53,7 @@ void main() {
   );
 
   setUp(() {
-    mockTaskRepository = MockTaskRepositorySurrealDB();
+    mockTaskRepository = MockTaskRepository();
     mockLogger = MockLogger();
   });
 

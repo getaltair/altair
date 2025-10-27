@@ -8,8 +8,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockTaskRepositorySurrealDB extends Mock
-    implements TaskRepositorySurrealDB {}
+class MockTaskRepository extends Mock implements TaskRepository {}
 
 class FakeTask extends Fake implements Task {}
 
@@ -19,10 +18,10 @@ void main() {
   });
 
   group('Mobile Touch Interactions', () {
-    late MockTaskRepositorySurrealDB mockTaskRepository;
+    late MockTaskRepository mockTaskRepository;
 
     setUp(() {
-      mockTaskRepository = MockTaskRepositorySurrealDB();
+      mockTaskRepository = MockTaskRepository();
     });
 
     Widget createHomePage() {
@@ -214,10 +213,10 @@ void main() {
   });
 
   group('Platform Features', () {
-    late MockTaskRepositorySurrealDB mockTaskRepository;
+    late MockTaskRepository mockTaskRepository;
 
     setUp(() {
-      mockTaskRepository = MockTaskRepositorySurrealDB();
+      mockTaskRepository = MockTaskRepository();
     });
 
     Widget createHomePage() {

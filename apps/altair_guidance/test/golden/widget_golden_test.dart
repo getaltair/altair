@@ -18,8 +18,7 @@ void main() {
         MaterialApp(
           home: Scaffold(
             body: BlocProvider(
-              create: (_) =>
-                  TaskBloc(taskRepository: TaskRepositorySurrealDB()),
+              create: (_) => TaskBloc(taskRepository: TaskRepository()),
               child: BlocBuilder<TaskBloc, TaskState>(
                 builder: (context, state) {
                   if (state is TaskLoaded && state.tasks.isEmpty) {

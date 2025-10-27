@@ -45,7 +45,7 @@ Future<void> main() async {
   final prefs = await SharedPreferences.getInstance();
 
   // Initialize SurrealDB-based repository
-  final taskRepository = TaskRepositorySurrealDB();
+  final taskRepository = TaskRepository();
   await taskRepository.initialize();
 
   runApp(AltairGuidanceApp(prefs: prefs, taskRepository: taskRepository));
@@ -64,7 +64,7 @@ class AltairGuidanceApp extends StatelessWidget {
   final SharedPreferences prefs;
 
   /// SurrealDB-based task repository.
-  final TaskRepositorySurrealDB taskRepository;
+  final TaskRepository taskRepository;
 
   @override
   Widget build(BuildContext context) {

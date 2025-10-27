@@ -8,7 +8,6 @@ export 'models/tag.dart';
 
 // Repositories
 export 'repositories/task_repository.dart';
-export 'repositories/task_repository_surrealdb.dart';
 export 'repositories/project_repository.dart';
 export 'repositories/tag_repository.dart';
 

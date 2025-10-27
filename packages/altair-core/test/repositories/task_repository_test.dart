@@ -1,13 +1,13 @@
 import 'package:altair_core/models/task.dart';
-import 'package:altair_core/repositories/task_repository_surrealdb.dart';
+import 'package:altair_core/repositories/task_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  group('TaskRepositorySurrealDB', () {
-    late TaskRepositorySurrealDB repository;
+  group('TaskRepository', () {
+    late TaskRepository repository;
 
     setUp(() {
-      repository = TaskRepositorySurrealDB();
+      repository = TaskRepository();
     });
 
     group('ID generation', () {

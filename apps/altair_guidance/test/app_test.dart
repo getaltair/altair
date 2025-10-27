@@ -10,8 +10,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class MockTaskRepositorySurrealDB extends Mock
-    implements TaskRepositorySurrealDB {}
+class MockTaskRepository extends Mock implements TaskRepository {}
 
 class FakeTask extends Fake implements Task {}
 
@@ -22,13 +21,13 @@ void main() {
 
   group('AltairGuidanceApp', () {
     late SharedPreferences prefs;
-    late MockTaskRepositorySurrealDB mockTaskRepository;
+    late MockTaskRepository mockTaskRepository;
 
     setUp(() async {
       // Initialize SharedPreferences with fake implementation for testing
       SharedPreferences.setMockInitialValues({});
       prefs = await SharedPreferences.getInstance();
-      mockTaskRepository = MockTaskRepositorySurrealDB();
+      mockTaskRepository = MockTaskRepository();
     });
 
     testWidgets('renders without crashing', (WidgetTester tester) async {
@@ -92,10 +91,10 @@ void main() {
   });
 
   group('HomePage', () {
-    late MockTaskRepositorySurrealDB mockTaskRepository;
+    late MockTaskRepository mockTaskRepository;
 
     setUp(() {
-      mockTaskRepository = MockTaskRepositorySurrealDB();
+      mockTaskRepository = MockTaskRepository();
     });
 
     Widget createHomePage() {
