@@ -28,7 +28,8 @@ class SecureStorageService {
       await _storage.write(key: _accessTokenKey, value: token);
       _logger.d('Access token saved');
     } catch (e, stackTrace) {
-      _logger.e('Failed to save access token', error: e, stackTrace: stackTrace);
+      _logger.e('Failed to save access token',
+          error: e, stackTrace: stackTrace);
       rethrow;
     }
   }
@@ -38,7 +39,8 @@ class SecureStorageService {
     try {
       return await _storage.read(key: _accessTokenKey);
     } catch (e, stackTrace) {
-      _logger.e('Failed to read access token', error: e, stackTrace: stackTrace);
+      _logger.e('Failed to read access token',
+          error: e, stackTrace: stackTrace);
       return null;
     }
   }
@@ -49,7 +51,8 @@ class SecureStorageService {
       await _storage.write(key: _refreshTokenKey, value: token);
       _logger.d('Refresh token saved');
     } catch (e, stackTrace) {
-      _logger.e('Failed to save refresh token', error: e, stackTrace: stackTrace);
+      _logger.e('Failed to save refresh token',
+          error: e, stackTrace: stackTrace);
       rethrow;
     }
   }
@@ -59,7 +62,8 @@ class SecureStorageService {
     try {
       return await _storage.read(key: _refreshTokenKey);
     } catch (e, stackTrace) {
-      _logger.e('Failed to read refresh token', error: e, stackTrace: stackTrace);
+      _logger.e('Failed to read refresh token',
+          error: e, stackTrace: stackTrace);
       return null;
     }
   }

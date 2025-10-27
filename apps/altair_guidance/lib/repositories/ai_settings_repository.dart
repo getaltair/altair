@@ -50,10 +50,13 @@ class AISettingsRepository {
       final json = jsonDecode(jsonString) as Map<String, dynamic>;
       final settings = AISettings.fromJson(json);
 
-      // Load API keys from secure storage
-      final openaiKey = await _secureStorage.read(key: _openaiKeyStorageKey);
-      final anthropicKey =
-          await _secureStorage.read(key: _anthropicKeyStorageKey);
+      // Load API keys from secure storage in parallel for better performance
+      final results = await Future.wait([
+        _secureStorage.read(key: _openaiKeyStorageKey),
+        _secureStorage.read(key: _anthropicKeyStorageKey),
+      ]);
+      final openaiKey = results[0];
+      final anthropicKey = results[1];
 
       final settingsWithKeys = settings.copyWith(
         openaiApiKey: openaiKey,

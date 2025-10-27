@@ -4,8 +4,8 @@ library;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:logger/logger.dart';
 
-import '../../services/ai/ai_service.dart';
-import '../../services/ai/models.dart';
+import '../../services/ai/ai_config.dart';
+import '../../services/ai/providers/ai_provider.dart';
 import '../settings/settings_bloc.dart';
 import '../settings/settings_state.dart';
 import 'ai_event.dart';
@@ -15,10 +15,8 @@ import 'ai_state.dart';
 class AIBloc extends Bloc<AIEvent, AIState> {
   /// Creates an AI BLoC.
   AIBloc({
-    required AIService aiService,
     required SettingsBloc settingsBloc,
-  })  : _aiService = aiService,
-        _settingsBloc = settingsBloc,
+  })  : _settingsBloc = settingsBloc,
         super(const AIInitial()) {
     _logger = Logger();
 
@@ -29,26 +27,37 @@ class AIBloc extends Bloc<AIEvent, AIState> {
     on<AIClearState>(_onClearState);
   }
 
-  final AIService _aiService;
   final SettingsBloc _settingsBloc;
   late final Logger _logger;
 
-  /// Extracts provider and API key from settings.
-  ({String? provider, String? apiKey}) _getProviderConfig() {
+  /// Gets the current AI provider based on settings.
+  /// Returns null if AI is disabled or settings not loaded.
+  AIProvider? _getCurrentProvider() {
     final state = _settingsBloc.state;
     if (state is! SettingsLoaded) {
-      return (provider: null, apiKey: null);
+      _logger.w('Settings not loaded, AI provider unavailable');
+      return null;
     }
 
     final settings = state.aiSettings;
     if (!settings.enabled) {
-      return (provider: null, apiKey: null);
+      _logger.i('AI features disabled in settings');
+      return null;
     }
 
-    return (
-      provider: settings.provider.name,
-      apiKey: settings.currentApiKey,
-    );
+    try {
+      final provider = AIConfig.createProvider(settings);
+      if (provider == null) {
+        _logger.w(
+            'Failed to create AI provider from settings: ${settings.provider.displayName}');
+      } else {
+        _logger.i('Created ${settings.provider.displayName} provider');
+      }
+      return provider;
+    } catch (e) {
+      _logger.e('Error creating AI provider: $e');
+      return null;
+    }
   }
 
   Future<void> _onTaskBreakdownRequested(
@@ -59,34 +68,23 @@ class AIBloc extends Bloc<AIEvent, AIState> {
     emit(const AILoading(operationType: AIOperationType.breakdown));
 
     try {
-      // Inject provider and API key from settings
-      final config = _getProviderConfig();
-      final request = TaskBreakdownRequest(
-        taskTitle: event.request.taskTitle,
-        taskDescription: event.request.taskDescription,
-        context: event.request.context,
-        maxSubtasks: event.request.maxSubtasks,
-        provider: config.provider,
-        apiKey: config.apiKey,
-      );
+      // Get current AI provider from settings
+      final provider = _getCurrentProvider();
+      if (provider == null) {
+        throw Exception(
+          'AI features are disabled. Please configure an AI provider in settings.',
+        );
+      }
 
-      final response = await _aiService.breakdownTask(request);
+      final response = await provider.breakdownTask(event.request);
       _logger
           .i('Task breakdown successful: ${response.subtasks.length} subtasks');
       emit(AITaskBreakdownSuccess(response: response));
-    } on AIServiceException catch (e) {
-      _logger.e('Task breakdown failed: ${e.message}');
-      emit(
-        AIFailure(
-          message: e.message,
-          operationType: AIOperationType.breakdown,
-        ),
-      );
     } catch (e) {
-      _logger.e('Unexpected error during task breakdown: $e');
+      _logger.e('Task breakdown failed: $e');
       emit(
         AIFailure(
-          message: 'Unexpected error: $e',
+          message: e.toString(),
           operationType: AIOperationType.breakdown,
         ),
       );
@@ -102,33 +100,24 @@ class AIBloc extends Bloc<AIEvent, AIState> {
     emit(const AILoading(operationType: AIOperationType.prioritization));
 
     try {
-      // Inject provider and API key from settings
-      final config = _getProviderConfig();
-      final request = TaskPrioritizationRequest(
-        tasks: event.request.tasks,
-        context: event.request.context,
-        provider: config.provider,
-        apiKey: config.apiKey,
-      );
+      // Get current AI provider from settings
+      final provider = _getCurrentProvider();
+      if (provider == null) {
+        throw Exception(
+          'AI features are disabled. Please configure an AI provider in settings.',
+        );
+      }
 
-      final response = await _aiService.prioritizeTasks(request);
+      final response = await provider.prioritizeTasks(event.request);
       _logger.i(
         'Task prioritization successful: ${response.suggestions.length} suggestions',
       );
       emit(AITaskPrioritizationSuccess(response: response));
-    } on AIServiceException catch (e) {
-      _logger.e('Task prioritization failed: ${e.message}');
-      emit(
-        AIFailure(
-          message: e.message,
-          operationType: AIOperationType.prioritization,
-        ),
-      );
     } catch (e) {
-      _logger.e('Unexpected error during task prioritization: $e');
+      _logger.e('Task prioritization failed: $e');
       emit(
         AIFailure(
-          message: 'Unexpected error: $e',
+          message: e.toString(),
           operationType: AIOperationType.prioritization,
         ),
       );
@@ -143,35 +132,24 @@ class AIBloc extends Bloc<AIEvent, AIState> {
     emit(const AILoading(operationType: AIOperationType.timeEstimate));
 
     try {
-      // Inject provider and API key from settings
-      final config = _getProviderConfig();
-      final request = TimeEstimateRequest(
-        taskTitle: event.request.taskTitle,
-        taskDescription: event.request.taskDescription,
-        subtasks: event.request.subtasks,
-        skillLevel: event.request.skillLevel,
-        provider: config.provider,
-        apiKey: config.apiKey,
-      );
+      // Get current AI provider from settings
+      final provider = _getCurrentProvider();
+      if (provider == null) {
+        throw Exception(
+          'AI features are disabled. Please configure an AI provider in settings.',
+        );
+      }
 
-      final response = await _aiService.estimateTime(request);
+      final response = await provider.estimateTime(event.request);
       _logger.i(
         'Time estimate successful: ${response.estimate.realisticMinutes} minutes',
       );
       emit(AITimeEstimateSuccess(response: response));
-    } on AIServiceException catch (e) {
-      _logger.e('Time estimation failed: ${e.message}');
-      emit(
-        AIFailure(
-          message: e.message,
-          operationType: AIOperationType.timeEstimate,
-        ),
-      );
     } catch (e) {
-      _logger.e('Unexpected error during time estimation: $e');
+      _logger.e('Time estimation failed: $e');
       emit(
         AIFailure(
-          message: 'Unexpected error: $e',
+          message: e.toString(),
           operationType: AIOperationType.timeEstimate,
         ),
       );
@@ -186,35 +164,24 @@ class AIBloc extends Bloc<AIEvent, AIState> {
     emit(const AILoading(operationType: AIOperationType.contextSuggestions));
 
     try {
-      // Inject provider and API key from settings
-      final config = _getProviderConfig();
-      final request = ContextSuggestionRequest(
-        taskTitle: event.request.taskTitle,
-        taskDescription: event.request.taskDescription,
-        projectContext: event.request.projectContext,
-        suggestionType: event.request.suggestionType,
-        provider: config.provider,
-        apiKey: config.apiKey,
-      );
+      // Get current AI provider from settings
+      final provider = _getCurrentProvider();
+      if (provider == null) {
+        throw Exception(
+          'AI features are disabled. Please configure an AI provider in settings.',
+        );
+      }
 
-      final response = await _aiService.getSuggestions(request);
+      final response = await provider.getSuggestions(event.request);
       _logger.i(
         'Context suggestions successful: ${response.suggestions.length} suggestions',
       );
       emit(AIContextSuggestionsSuccess(response: response));
-    } on AIServiceException catch (e) {
-      _logger.e('Context suggestions failed: ${e.message}');
-      emit(
-        AIFailure(
-          message: e.message,
-          operationType: AIOperationType.contextSuggestions,
-        ),
-      );
     } catch (e) {
-      _logger.e('Unexpected error during context suggestions: $e');
+      _logger.e('Context suggestions failed: $e');
       emit(
         AIFailure(
-          message: 'Unexpected error: $e',
+          message: e.toString(),
           operationType: AIOperationType.contextSuggestions,
         ),
       );
@@ -227,15 +194,5 @@ class AIBloc extends Bloc<AIEvent, AIState> {
   ) {
     _logger.d('Clearing AI state');
     emit(const AIInitial());
-  }
-
-  @override
-  Future<void> close() {
-    try {
-      _aiService.dispose();
-    } catch (e) {
-      _logger.w('Error disposing AI service', error: e);
-    }
-    return super.close();
   }
 }

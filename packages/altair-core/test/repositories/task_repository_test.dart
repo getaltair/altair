@@ -114,7 +114,8 @@ void main() {
         expect(tasks.any((t) => t.title == 'Task 2'), isTrue);
       });
 
-      test('findAll() with status filter should return filtered tasks', () async {
+      test('findAll() with status filter should return filtered tasks',
+          () async {
         final now = DateTime.now();
 
         final todoTask = Task(
@@ -141,7 +142,8 @@ void main() {
         expect(todoTasks.every((t) => t.status == TaskStatus.todo), isTrue);
       });
 
-      test('findAll() with projectId filter should return project tasks', () async {
+      test('findAll() with projectId filter should return project tasks',
+          () async {
         final now = DateTime.now();
 
         // Create a project first (required for foreign key constraint)
@@ -171,7 +173,8 @@ void main() {
         await taskRepository.create(projectTask);
         await taskRepository.create(otherTask);
 
-        final projectTasks = await taskRepository.findAll(projectId: project.id);
+        final projectTasks =
+            await taskRepository.findAll(projectId: project.id);
 
         expect(projectTasks.every((t) => t.projectId == project.id), isTrue);
       });
@@ -252,13 +255,15 @@ void main() {
 
         expect(results.isNotEmpty, isTrue);
         expect(
-          results.any((t) => t.description?.contains('Unique description') ?? false),
+          results.any(
+              (t) => t.description?.contains('Unique description') ?? false),
           isTrue,
         );
       });
 
       test('search() should return empty list when no matches', () async {
-        final results = await taskRepository.search('NonExistentSearchTerm123456');
+        final results =
+            await taskRepository.search('NonExistentSearchTerm123456');
 
         expect(results, isEmpty);
       });

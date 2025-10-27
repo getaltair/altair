@@ -212,7 +212,8 @@ class ProjectRepository {
       'updated_at': project.updatedAt.millisecondsSinceEpoch,
       'target_date': project.targetDate?.millisecondsSinceEpoch,
       'completed_at': project.completedAt?.millisecondsSinceEpoch,
-      'metadata': project.metadata != null ? jsonEncode(project.metadata) : null,
+      'metadata':
+          project.metadata != null ? jsonEncode(project.metadata) : null,
     };
   }
 

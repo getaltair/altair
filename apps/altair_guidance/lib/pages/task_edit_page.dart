@@ -9,6 +9,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../bloc/project/project_bloc.dart';
 import '../bloc/project/project_state.dart';
+import '../bloc/settings/settings_bloc.dart';
+import '../bloc/settings/settings_state.dart';
 import '../bloc/task/task_bloc.dart';
 import '../bloc/task/task_event.dart';
 import '../features/ai/ai_consent_dialog.dart';
@@ -247,10 +249,13 @@ class _TaskEditPageState extends State<TaskEditPage> {
               _buildTagsSection(),
               const SizedBox(height: AltairSpacing.xl),
 
-              // AI Assistant Section - Rebuild when title changes
-              ListenableBuilder(
-                listenable: _titleController,
-                builder: (context, _) => _buildAIAssistantSection(),
+              // AI Assistant Section - Rebuild when title or settings change
+              BlocBuilder<SettingsBloc, SettingsState>(
+                builder: (context, settingsState) => ListenableBuilder(
+                  listenable: _titleController,
+                  builder: (context, _) =>
+                      _buildAIAssistantSection(settingsState),
+                ),
               ),
               const SizedBox(height: AltairSpacing.xl),
 
@@ -531,8 +536,24 @@ class _TaskEditPageState extends State<TaskEditPage> {
     );
   }
 
-  Widget _buildAIAssistantSection() {
+  Widget _buildAIAssistantSection(SettingsState settingsState) {
     final hasTitle = _titleController.text.trim().isNotEmpty;
+    final settingsLoading = settingsState is SettingsLoading;
+    final settingsLoaded = settingsState is SettingsLoaded;
+    final aiEnabled = settingsLoaded && settingsState.aiSettings.enabled;
+
+    // Determine if AI features should be enabled
+    final aiAvailable = hasTitle && settingsLoaded && aiEnabled;
+
+    // Determine status message
+    String? statusMessage;
+    if (!hasTitle) {
+      statusMessage = 'Add a task title to use AI features';
+    } else if (settingsLoading) {
+      statusMessage = 'Loading AI settings...';
+    } else if (!aiEnabled) {
+      statusMessage = 'AI features disabled. Enable in Settings to use.';
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -547,6 +568,14 @@ class _TaskEditPageState extends State<TaskEditPage> {
                     fontWeight: FontWeight.bold,
                   ),
             ),
+            if (settingsLoading) ...[
+              const SizedBox(width: AltairSpacing.sm),
+              const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ],
           ],
         ),
         const SizedBox(height: AltairSpacing.sm),
@@ -566,7 +595,7 @@ class _TaskEditPageState extends State<TaskEditPage> {
               icon: Icons.format_list_bulleted,
               label: 'Break Down Task',
               accentColor: AltairColors.accentBlue,
-              enabled: hasTitle,
+              enabled: aiAvailable,
               onPressed: () => _showAIFeature(() {
                 showTaskBreakdownDialog(
                   context,
@@ -583,7 +612,7 @@ class _TaskEditPageState extends State<TaskEditPage> {
               icon: Icons.timer,
               label: 'Estimate Time',
               accentColor: AltairColors.accentGreen,
-              enabled: hasTitle,
+              enabled: aiAvailable,
               onPressed: () => _showAIFeature(() {
                 showTimeEstimateDialog(
                   context,
@@ -599,7 +628,7 @@ class _TaskEditPageState extends State<TaskEditPage> {
               icon: Icons.lightbulb,
               label: 'Get Suggestions',
               accentColor: AltairColors.accentOrange,
-              enabled: hasTitle,
+              enabled: aiAvailable,
               onPressed: () => _showAIFeature(() {
                 showContextSuggestionsDialog(
                   context,
@@ -612,12 +641,14 @@ class _TaskEditPageState extends State<TaskEditPage> {
             ),
           ],
         ),
-        if (!hasTitle) ...[
+        if (statusMessage != null) ...[
           const SizedBox(height: AltairSpacing.sm),
           Text(
-            'Add a task title to use AI features',
+            statusMessage,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AltairColors.error,
+                  color: settingsLoading
+                      ? AltairColors.accentBlue
+                      : AltairColors.error,
                   fontStyle: FontStyle.italic,
                 ),
           ),
@@ -630,6 +661,23 @@ class _TaskEditPageState extends State<TaskEditPage> {
     if (!mounted) return;
 
     try {
+      // Check if settings are loaded before allowing AI features
+      final settingsState = context.read<SettingsBloc>().state;
+      if (settingsState is! SettingsLoaded) {
+        _showError(
+          'Settings are still loading. Please wait a moment and try again.',
+        );
+        return;
+      }
+
+      // Check if AI is enabled
+      if (!settingsState.aiSettings.enabled) {
+        _showError(
+          'AI features are disabled. Please configure an AI provider in Settings.',
+        );
+        return;
+      }
+
       final hasConsent = await showAIConsentDialog(context);
       if (!hasConsent || !mounted) return;
 

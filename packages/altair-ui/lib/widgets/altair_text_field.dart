@@ -79,13 +79,11 @@ class _AltairTextFieldState extends State<AltairTextField> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    final borderColor = isDark
-        ? AltairColors.darkBorderColor
-        : AltairColors.lightBorderColor;
+    final borderColor =
+        isDark ? AltairColors.darkBorderColor : AltairColors.lightBorderColor;
 
-    final backgroundColor = isDark
-        ? AltairColors.darkBgSecondary
-        : AltairColors.lightBgSecondary;
+    final backgroundColor =
+        isDark ? AltairColors.darkBgSecondary : AltairColors.lightBgSecondary;
 
     final focusBackgroundColor = widget.errorText != null
         ? AltairColors.error.withValues(alpha: 0.1)

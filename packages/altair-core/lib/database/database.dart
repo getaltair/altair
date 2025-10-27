@@ -49,7 +49,10 @@ class AltairDatabase {
   /// Initialize the database
   Future<Database> _initDatabase() async {
     // Initialize FFI for desktop platforms or test mode
-    if (_isTestMode || Platform.isLinux || Platform.isWindows || Platform.isMacOS) {
+    if (_isTestMode ||
+        Platform.isLinux ||
+        Platform.isWindows ||
+        Platform.isMacOS) {
       sqfliteFfiInit();
       databaseFactory = databaseFactoryFfi;
     }

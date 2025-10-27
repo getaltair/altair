@@ -15,7 +15,6 @@ import 'bloc/project/project_bloc.dart';
 import 'bloc/project/project_event.dart';
 import 'bloc/settings/settings_bloc.dart';
 import 'bloc/settings/settings_event.dart';
-import 'bloc/settings/settings_state.dart';
 import 'bloc/task/task_bloc.dart';
 import 'bloc/task/task_event.dart';
 import 'bloc/task/task_state.dart';
@@ -25,10 +24,6 @@ import 'pages/projects_page.dart';
 import 'pages/settings_page.dart';
 import 'pages/task_edit_page.dart';
 import 'repositories/ai_settings_repository.dart';
-import 'services/ai/ai_config.dart';
-import 'services/ai/ai_service.dart';
-import 'services/ai/models.dart';
-import 'services/ai/providers/ai_provider.dart';
 import 'shortcuts/intents.dart';
 import 'shortcuts/shortcuts_config.dart';
 import 'shortcuts/shortcuts_help_dialog.dart';
@@ -93,27 +88,9 @@ class AltairGuidanceApp extends StatelessWidget {
         ),
         // AIBloc created after SettingsBloc to access AI settings
         BlocProvider(
-          create: (context) {
-            // Get current settings state and SettingsBloc reference
-            final settingsBloc = context.read<SettingsBloc>();
-            final settingsState = settingsBloc.state;
-
-            // Create AI provider from settings (OpenAI or Anthropic)
-            AIProvider? provider;
-            if (settingsState is SettingsLoaded) {
-              provider = AIConfig.createProvider(settingsState.aiSettings);
-            }
-
-            // If no provider available, create a disabled service
-            // This allows the app to work without AI features
-            provider ??= _DisabledAIProvider();
-
-            final aiService = AIService(provider: provider);
-            return AIBloc(
-              aiService: aiService,
-              settingsBloc: settingsBloc,
-            );
-          },
+          create: (context) => AIBloc(
+            settingsBloc: context.read<SettingsBloc>(),
+          ),
         ),
       ],
       child: BlocBuilder<ThemeCubit, ThemeState>(
@@ -131,48 +108,6 @@ class AltairGuidanceApp extends StatelessWidget {
         },
       ),
     );
-  }
-}
-
-/// Disabled AI provider that throws when AI features are not configured.
-class _DisabledAIProvider implements AIProvider {
-  @override
-  Future<TaskBreakdownResponse> breakdownTask(
-    TaskBreakdownRequest request,
-  ) async {
-    throw AIServiceException(
-      'AI features are disabled. Please configure an AI provider in settings.',
-    );
-  }
-
-  @override
-  Future<TaskPrioritizationResponse> prioritizeTasks(
-    TaskPrioritizationRequest request,
-  ) async {
-    throw AIServiceException(
-      'AI features are disabled. Please configure an AI provider in settings.',
-    );
-  }
-
-  @override
-  Future<TimeEstimateResponse> estimateTime(TimeEstimateRequest request) async {
-    throw AIServiceException(
-      'AI features are disabled. Please configure an AI provider in settings.',
-    );
-  }
-
-  @override
-  Future<ContextSuggestionResponse> getSuggestions(
-    ContextSuggestionRequest request,
-  ) async {
-    throw AIServiceException(
-      'AI features are disabled. Please configure an AI provider in settings.',
-    );
-  }
-
-  @override
-  void dispose() {
-    // Nothing to dispose
   }
 }
 
