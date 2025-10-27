@@ -23,6 +23,8 @@ dependencies:
     path: ../../packages/altair-auth
   altair_ui:
     path: ../../packages/altair-ui
+  altair_db_service:
+    path: ../../packages/altair-db-service
 
   # State management
   flutter_bloc: ^9.1.1
