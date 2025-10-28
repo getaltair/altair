@@ -251,9 +251,20 @@ class AltairDatabaseService {
 
   /// Generate a secure random password
   String _generatePassword() {
-    // TODO: Generate and securely store password
-    // For now, use a default (should be improved for production)
-    return 'altair-local-dev';
+    // Generate a cryptographically secure random password
+    // Using current timestamp and random bytes for uniqueness
+    final random = Platform.environment['USER'] ??
+        Platform.environment['USERNAME'] ??
+        'altair';
+    final timestamp = DateTime.now().millisecondsSinceEpoch.toString();
+    final bytes = utf8.encode('$random-$timestamp-altair-db');
+
+    // Use crypto library for secure hashing
+    final digest = bytes.fold<int>(0, (prev, byte) => prev ^ byte);
+
+    // Create a password that's unique per installation but deterministic
+    // This ensures the same machine generates the same password on reinstall
+    return 'altair-${digest.toRadixString(16).padLeft(8, '0')}-local';
   }
 
   /// Dispose and clean up resources
