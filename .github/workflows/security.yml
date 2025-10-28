@@ -36,13 +36,18 @@ jobs:
           cd services/auth-service
           uv sync
 
+      - name: Export requirements for Snyk
+        run: |
+          cd services/auth-service
+          uv pip compile pyproject.toml -o requirements.txt
+
       - name: Run Snyk to check for vulnerabilities (Python)
         uses: snyk/actions/python@master
         continue-on-error: true
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
-          args: --severity-threshold=high --file=services/auth-service/pyproject.toml --sarif-file-output=snyk.sarif
+          args: --severity-threshold=high --file=services/auth-service/requirements.txt --sarif-file-output=snyk.sarif
 
       - name: Upload Snyk results to GitHub Security
         uses: github/codeql-action/upload-sarif@v3
