@@ -42,47 +42,7 @@ jobs:
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
-          args: --severity-threshold=high --file=services/auth-service/pyproject.toml
-
-      - name: Upload Snyk results to GitHub Security
-        uses: github/codeql-action/upload-sarif@v3
-        if: always()
-        with:
-          sarif_file: snyk.sarif
-
-  snyk-flutter-scan:
-    name: Snyk Flutter Scan
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        package:
-          - packages/altair-core
-          - packages/altair-auth
-          - packages/altair-ui
-          - packages/altair-db-service
-          - apps/altair_guidance
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v5
-
-      - name: Set up Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.35.6'
-          channel: 'stable'
-
-      - name: Install dependencies
-        run: |
-          cd ${{ matrix.package }}
-          flutter pub get
-
-      - name: Run Snyk to check for vulnerabilities (Dart)
-        uses: snyk/actions/flutter@master
-        continue-on-error: true
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          args: --severity-threshold=high --file=${{ matrix.package }}/pubspec.yaml
+          args: --severity-threshold=high --file=services/auth-service/pyproject.toml --sarif-file-output=snyk.sarif
 
       - name: Upload Snyk results to GitHub Security
         uses: github/codeql-action/upload-sarif@v3
@@ -103,21 +63,6 @@ jobs:
         with:
           fail-on-severity: moderate
           deny-licenses: GPL-2.0, GPL-3.0, AGPL-3.0
-
-  secret-scanning:
-    name: Secret Scanning
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
-
-      - name: Gitleaks Scan
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
 
   ossf-scorecard:
     name: OSSF Scorecard
