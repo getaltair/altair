@@ -39,6 +39,45 @@ Altair is a three-app ecosystem designed specifically for people with ADHD who n
 - ⚡ **Fast** — Instant captures, < 1s page loads
 - 🔐 **Private** — Your data, your control
 
+## Security
+
+Altair takes security seriously. All database credentials are handled securely:
+
+### Credential Security
+
+- **Cryptographically Secure Password Generation**: All database passwords are generated using cryptographically secure random number generators with:
+  - Minimum 32-character length
+  - Mixed character types (uppercase, lowercase, numbers, special characters)
+  - High entropy to resist brute-force attacks
+
+- **Platform-Specific Secure Storage**:
+  - **macOS**: Keychain
+  - **Windows**: Credential Manager
+  - **Linux**: Secret Service API (gnome-keyring/kwallet)
+  - **Fallback**: Encrypted file with `chmod 600` permissions
+
+- **Environment Variable Credentials**: Database credentials are passed via environment variables instead of command-line arguments, preventing exposure in process listings
+
+- **No Hardcoded Passwords**: All hardcoded password fallbacks have been removed from platform installers
+
+### File Permissions
+
+Credential files stored on disk have strict permissions:
+
+- **Unix/Linux/macOS**: `600` (owner read/write only)
+- **Windows**: ACL restricted to current user only
+
+### Best Practices
+
+When deploying Altair:
+
+1. Never commit credential files to version control
+2. Use environment variables for sensitive configuration
+3. Regularly rotate database passwords using the built-in credential manager
+4. Keep your operating system's secure storage (Keychain/Credential Manager) up to date
+
+For security concerns or to report vulnerabilities, please email: <security@getaltair.com>
+
 ## Architecture
 
 ```

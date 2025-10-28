@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
+import 'security/credential_manager.dart';
 
 /// Configuration for Altair database service
 class AltairDatabaseConfig {
@@ -24,9 +25,6 @@ class AltairDatabaseConfig {
   /// Username for database authentication
   final String username;
 
-  /// Password for database authentication (will be generated if not provided)
-  final String? password;
-
   /// Whether cloud sync is enabled
   final bool syncEnabled;
 
@@ -44,7 +42,6 @@ class AltairDatabaseConfig {
     this.database = 'local',
     this.dataDirectory,
     this.username = 'altair',
-    this.password,
     this.syncEnabled = false,
     this.cloudSyncUrl,
     this.syncInterval = 300,
@@ -122,6 +119,22 @@ class AltairDatabaseConfig {
   /// HTTP health check URL
   String get healthCheckUrl => 'http://$bindAddress:$port/health';
 
+  /// Get or generate credentials using CredentialManager
+  Future<Credentials> getOrGenerateCredentials() async {
+    final configDir = await getConfigDirectory();
+    final credManager = CredentialManager(configDir);
+
+    var credentials = await credManager.getCredentials();
+    if (credentials == null) {
+      // Generate new secure credentials
+      credentials = await credManager.generateAndStoreCredentials(
+        username: username,
+      );
+    }
+
+    return credentials;
+  }
+
   /// Copy with changes
   AltairDatabaseConfig copyWith({
     int? port,
@@ -131,7 +144,6 @@ class AltairDatabaseConfig {
     String? database,
     String? dataDirectory,
     String? username,
-    String? password,
     bool? syncEnabled,
     String? cloudSyncUrl,
     int? syncInterval,
@@ -144,7 +156,6 @@ class AltairDatabaseConfig {
       database: database ?? this.database,
       dataDirectory: dataDirectory ?? this.dataDirectory,
       username: username ?? this.username,
-      password: password ?? this.password,
       syncEnabled: syncEnabled ?? this.syncEnabled,
       cloudSyncUrl: cloudSyncUrl ?? this.cloudSyncUrl,
       syncInterval: syncInterval ?? this.syncInterval,

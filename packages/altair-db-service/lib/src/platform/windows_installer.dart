@@ -44,14 +44,28 @@ class WindowsServiceInstaller extends ServiceInstaller {
     final configDir = await config.getConfigDirectory();
     final binaryPath = '$configDir\\surrealdb-windows.exe';
 
-    // Create batch file to start the service
+    // Get or generate credentials
+    final credentials = await config.getOrGenerateCredentials();
+
+    // Create batch file with environment variables for credentials
+    // This prevents credentials from being visible in process listings
     final batchContent = '''@echo off
 echo Starting Altair Database Service...
-"$binaryPath" start "file://$dataDir\\altair.db" --bind ${config.bindAddress}:${config.port} --user ${config.username} --pass ${config.password ?? 'altair-local-dev'}
+set SURREAL_USER=${credentials.username}
+set SURREAL_PASS=${credentials.password}
+"$binaryPath" start "file://$dataDir\\altair.db" --bind ${config.bindAddress}:${config.port} --auth
 ''';
 
     final batchPath = await batchFilePath;
     await File(batchPath).writeAsString(batchContent);
+
+    // Set secure permissions on batch file (current user only)
+    await Process.run('icacls', [
+      batchPath,
+      '/inheritance:r',
+      '/grant:r',
+      '${Platform.environment['USERNAME']}:(R,W)',
+    ]);
 
     // Create shortcut using PowerShell
     final shortcut = await shortcutPath;
@@ -70,6 +84,7 @@ echo Starting Altair Database Service...
 
     print('Service installed (will start on login)');
     print('Shortcut created at: $shortcut');
+    print('Credentials stored securely');
   }
 
   @override

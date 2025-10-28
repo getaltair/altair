@@ -13,3 +13,4 @@ export 'src/platform/linux_installer.dart';
 export 'src/platform/macos_installer.dart';
 export 'src/platform/windows_installer.dart';
 export 'src/queries.dart';
+export 'src/security/credential_manager.dart';

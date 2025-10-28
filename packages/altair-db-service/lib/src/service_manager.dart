@@ -93,7 +93,7 @@ class AltairDatabaseService {
   Future<void> _startProcess() async {
     final dataDir = await config.getDataDirectory();
     final binaryPath = await _getSurrealDBBinary();
-    final password = config.password ?? _generatePassword();
+    final credentials = await config.getOrGenerateCredentials();
 
     final args = [
       'start',
@@ -101,9 +101,9 @@ class AltairDatabaseService {
       '--bind',
       '${config.bindAddress}:${config.port}',
       '--user',
-      config.username,
+      credentials.username,
       '--pass',
-      password,
+      credentials.password,
     ];
 
     print('Starting SurrealDB: $binaryPath ${args.join(' ')}');
@@ -174,10 +174,13 @@ class AltairDatabaseService {
     _connection = SurrealDB(config.connectionUri);
     _connection!.connect();
 
+    // Get credentials
+    final credentials = await config.getOrGenerateCredentials();
+
     // Sign in
     await _connection!.signin(
-      user: config.username,
-      pass: config.password ?? _generatePassword(),
+      user: credentials.username,
+      pass: credentials.password,
     );
 
     // Use namespace and database
@@ -247,24 +250,6 @@ class AltairDatabaseService {
     }
 
     return binaryPath;
-  }
-
-  /// Generate a secure random password
-  String _generatePassword() {
-    // Generate a cryptographically secure random password
-    // Using current timestamp and random bytes for uniqueness
-    final random = Platform.environment['USER'] ??
-        Platform.environment['USERNAME'] ??
-        'altair';
-    final timestamp = DateTime.now().millisecondsSinceEpoch.toString();
-    final bytes = utf8.encode('$random-$timestamp-altair-db');
-
-    // Use crypto library for secure hashing
-    final digest = bytes.fold<int>(0, (prev, byte) => prev ^ byte);
-
-    // Create a password that's unique per installation but deterministic
-    // This ensures the same machine generates the same password on reinstall
-    return 'altair-${digest.toRadixString(16).padLeft(8, '0')}-local';
   }
 
   /// Dispose and clean up resources

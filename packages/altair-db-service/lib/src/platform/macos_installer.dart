@@ -34,6 +34,9 @@ class MacOSServiceInstaller extends ServiceInstaller {
     final binaryPath = '$configDir/surrealdb-macos';
     final home = Platform.environment['HOME'];
 
+    // Get or generate credentials
+    final credentials = await config.getOrGenerateCredentials();
+
     // Ensure LaunchAgents directory exists
     final launchAgentsDir = Directory('$home/Library/LaunchAgents');
     if (!await launchAgentsDir.exists()) {
@@ -46,7 +49,8 @@ class MacOSServiceInstaller extends ServiceInstaller {
       await logsDir.create(recursive: true);
     }
 
-    // Generate plist file
+    // Generate plist file with environment variables for credentials
+    // This prevents credentials from being visible in process listings
     final plistContent = '''<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -60,11 +64,15 @@ class MacOSServiceInstaller extends ServiceInstaller {
         <string>file://$dataDir/altair.db</string>
         <string>--bind</string>
         <string>${config.bindAddress}:${config.port}</string>
-        <string>--user</string>
-        <string>${config.username}</string>
-        <string>--pass</string>
-        <string>${config.password ?? 'altair-local-dev'}</string>
+        <string>--auth</string>
     </array>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>SURREAL_USER</key>
+        <string>${credentials.username}</string>
+        <key>SURREAL_PASS</key>
+        <string>${credentials.password}</string>
+    </dict>
     <key>RunAtLoad</key>
     <true/>
     <key>KeepAlive</key>
@@ -81,7 +89,11 @@ class MacOSServiceInstaller extends ServiceInstaller {
     final plistPath = await plistFilePath;
     await File(plistPath).writeAsString(plistContent);
 
+    // Set secure permissions on plist file
+    await Process.run('chmod', ['600', plistPath]);
+
     print('Service installed at $plistPath');
+    print('Credentials stored securely');
   }
 
   @override

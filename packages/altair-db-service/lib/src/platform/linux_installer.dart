@@ -34,6 +34,9 @@ class LinuxServiceInstaller extends ServiceInstaller {
     final configDir = await config.getConfigDirectory();
     final binaryPath = '$configDir/surrealdb-linux';
 
+    // Get or generate credentials
+    final credentials = await config.getOrGenerateCredentials();
+
     // Ensure systemd user directory exists
     final home = Platform.environment['HOME'];
     final systemdDir = Directory('$home/.config/systemd/user');
@@ -41,7 +44,8 @@ class LinuxServiceInstaller extends ServiceInstaller {
       await systemdDir.create(recursive: true);
     }
 
-    // Generate service file
+    // Generate service file with environment variables for credentials
+    // This prevents credentials from being visible in process listings
     final serviceContent = '''
 [Unit]
 Description=Altair Database Service
@@ -49,7 +53,9 @@ After=network.target
 
 [Service]
 Type=simple
-ExecStart=$binaryPath start file://$dataDir/altair.db --bind ${config.bindAddress}:${config.port} --user ${config.username} --pass ${config.password ?? 'altair-local-dev'}
+Environment="SURREAL_USER=${credentials.username}"
+Environment="SURREAL_PASS=${credentials.password}"
+ExecStart=$binaryPath start file://$dataDir/altair.db --bind ${config.bindAddress}:${config.port} --auth
 Restart=on-failure
 RestartSec=5s
 
@@ -61,10 +67,14 @@ WantedBy=default.target
     final servicePath = await serviceFilePath;
     await File(servicePath).writeAsString(serviceContent);
 
+    // Set secure permissions on service file
+    await Process.run('chmod', ['600', servicePath]);
+
     // Reload systemd daemon
     await shell.run('systemctl --user daemon-reload');
 
     print('Service installed at $servicePath');
+    print('Credentials stored securely');
   }
 
   @override
