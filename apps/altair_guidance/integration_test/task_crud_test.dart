@@ -9,6 +9,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
+/// Taps the create task button (FAB on mobile, button on desktop)
+Future<void> tapCreateTaskButton(WidgetTester tester) async {
+  final fab = find.byType(FloatingActionButton);
+  final newTaskButton = find.text('NEW TASK');
+
+  if (fab.evaluate().isNotEmpty) {
+    await tester.tap(fab);
+  } else if (newTaskButton.evaluate().isNotEmpty) {
+    await tester.tap(newTaskButton);
+  } else {
+    throw TestFailure('Could not find create task button (FAB or NEW TASK)');
+  }
+  await tester.pumpAndSettle();
+}
+
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
@@ -17,14 +32,8 @@ void main() {
       app.main();
       await tester.pumpAndSettle();
 
-      // Note: Database may have existing tasks from previous tests
-      // We just verify the app loaded successfully
-      expect(find.byType(FloatingActionButton), findsOneWidget);
-
-      // Open new task page via FAB
-      final fab = find.byType(FloatingActionButton);
-      await tester.tap(fab);
-      await tester.pumpAndSettle();
+      // Open new task page
+      await tapCreateTaskButton(tester);
 
       // Verify task edit page loaded
       expect(find.text('New Task'), findsOneWidget);
@@ -32,7 +41,7 @@ void main() {
       // Enter only a title
       final titleField = find.widgetWithText(
         TextField,
-        'What needs to be done?',
+        'Title - What needs to be done?',
       );
       expect(titleField, findsOneWidget);
       await tester.enterText(titleField, 'Buy groceries');
@@ -55,13 +64,13 @@ void main() {
       await tester.pumpAndSettle();
 
       // Open new task page
-      await tester.tap(find.byType(FloatingActionButton));
+      await tapCreateTaskButton(tester);
       await tester.pumpAndSettle();
 
       // Fill title
       final titleField = find.widgetWithText(
         TextField,
-        'What needs to be done?',
+        'Title - What needs to be done?',
       );
       await tester.enterText(titleField, 'Complete integration tests');
       await tester.pumpAndSettle();
@@ -98,11 +107,11 @@ void main() {
       await tester.pumpAndSettle();
 
       // Create first task
-      await tester.tap(find.byType(FloatingActionButton));
+      await tapCreateTaskButton(tester);
       await tester.pumpAndSettle();
       final titleField1 = find.widgetWithText(
         TextField,
-        'What needs to be done?',
+        'Title - What needs to be done?',
       );
       await tester.enterText(titleField1, 'Task 1');
       await tester.pumpAndSettle();
@@ -110,11 +119,11 @@ void main() {
       await tester.pumpAndSettle();
 
       // Create second task
-      await tester.tap(find.byType(FloatingActionButton));
+      await tapCreateTaskButton(tester);
       await tester.pumpAndSettle();
       final titleField2 = find.widgetWithText(
         TextField,
-        'What needs to be done?',
+        'Title - What needs to be done?',
       );
       await tester.enterText(titleField2, 'Task 2');
       await tester.pumpAndSettle();
@@ -139,10 +148,10 @@ void main() {
       final updatedTitle = 'UpdatedTest_$timestamp';
 
       // Create a task
-      await tester.tap(find.byType(FloatingActionButton));
+      await tapCreateTaskButton(tester);
       await tester.pumpAndSettle();
       await tester.enterText(
-        find.widgetWithText(TextField, 'What needs to be done?'),
+        find.widgetWithText(TextField, 'Title - What needs to be done?'),
         originalTitle,
       );
       await tester.pumpAndSettle();
@@ -162,7 +171,7 @@ void main() {
       // Clear and update title
       final titleField = find.widgetWithText(
         TextField,
-        'What needs to be done?',
+        'Title - What needs to be done?',
       );
       await tester.enterText(titleField, '');
       await tester.pumpAndSettle();
@@ -183,10 +192,10 @@ void main() {
       await tester.pumpAndSettle();
 
       // Create a task
-      await tester.tap(find.byType(FloatingActionButton));
+      await tapCreateTaskButton(tester);
       await tester.pumpAndSettle();
       await tester.enterText(
-        find.widgetWithText(TextField, 'What needs to be done?'),
+        find.widgetWithText(TextField, 'Title - What needs to be done?'),
         'Task to complete',
       );
       await tester.pumpAndSettle();
@@ -222,10 +231,10 @@ void main() {
       final taskName = 'DescTest_$timestamp';
 
       // Create task without description
-      await tester.tap(find.byType(FloatingActionButton));
+      await tapCreateTaskButton(tester);
       await tester.pumpAndSettle();
       await tester.enterText(
-        find.widgetWithText(TextField, 'What needs to be done?'),
+        find.widgetWithText(TextField, 'Title - What needs to be done?'),
         taskName,
       );
       await tester.pumpAndSettle();
@@ -258,10 +267,10 @@ void main() {
       final taskName = 'DeleteSingle_${DateTime.now().millisecondsSinceEpoch}';
 
       // Create a task to delete
-      await tester.tap(find.byType(FloatingActionButton));
+      await tapCreateTaskButton(tester);
       await tester.pumpAndSettle();
       await tester.enterText(
-        find.widgetWithText(TextField, 'What needs to be done?'),
+        find.widgetWithText(TextField, 'Title - What needs to be done?'),
         taskName,
       );
       await tester.pumpAndSettle();
@@ -295,10 +304,10 @@ void main() {
 
       // Create three tasks
       for (final name in [task1Name, task2Name, task3Name]) {
-        await tester.tap(find.byType(FloatingActionButton));
+        await tapCreateTaskButton(tester);
         await tester.pumpAndSettle();
         await tester.enterText(
-          find.widgetWithText(TextField, 'What needs to be done?'),
+          find.widgetWithText(TextField, 'Title - What needs to be done?'),
           name,
         );
         await tester.pumpAndSettle();
@@ -334,7 +343,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Open new task page
-      await tester.tap(find.byType(FloatingActionButton));
+      await tapCreateTaskButton(tester);
       await tester.pumpAndSettle();
 
       // Try to save without entering title
@@ -353,12 +362,12 @@ void main() {
       await tester.pumpAndSettle();
 
       // Open new task page
-      await tester.tap(find.byType(FloatingActionButton));
+      await tapCreateTaskButton(tester);
       await tester.pumpAndSettle();
 
       // Enter some text
       await tester.enterText(
-        find.widgetWithText(TextField, 'What needs to be done?'),
+        find.widgetWithText(TextField, 'Title - What needs to be done?'),
         'Unsaved task',
       );
       await tester.pumpAndSettle();
@@ -412,10 +421,10 @@ void main() {
 
       // Create all tasks
       for (final title in taskTitles) {
-        await tester.tap(find.byType(FloatingActionButton));
+        await tapCreateTaskButton(tester);
         await tester.pumpAndSettle();
         await tester.enterText(
-          find.widgetWithText(TextField, 'What needs to be done?'),
+          find.widgetWithText(TextField, 'Title - What needs to be done?'),
           title,
         );
         await tester.pumpAndSettle();

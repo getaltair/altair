@@ -44,11 +44,22 @@ Future<void> main() async {
   // Initialize SharedPreferences for settings persistence
   final prefs = await SharedPreferences.getInstance();
 
-  // Initialize SurrealDB-based repository
+  // Initialize SurrealDB-based repositories
   final taskRepository = TaskRepository();
   await taskRepository.initialize();
 
-  runApp(AltairGuidanceApp(prefs: prefs, taskRepository: taskRepository));
+  final projectRepository = ProjectRepository();
+  await projectRepository.initialize();
+
+  final tagRepository = TagRepository();
+  await tagRepository.initialize();
+
+  runApp(AltairGuidanceApp(
+    prefs: prefs,
+    taskRepository: taskRepository,
+    projectRepository: projectRepository,
+    tagRepository: tagRepository,
+  ));
 }
 
 /// Main application widget.
@@ -57,6 +68,8 @@ class AltairGuidanceApp extends StatelessWidget {
   const AltairGuidanceApp({
     required this.prefs,
     required this.taskRepository,
+    required this.projectRepository,
+    required this.tagRepository,
     super.key,
   });
 
@@ -65,6 +78,12 @@ class AltairGuidanceApp extends StatelessWidget {
 
   /// SurrealDB-based task repository.
   final TaskRepository taskRepository;
+
+  /// SurrealDB-based project repository.
+  final ProjectRepository projectRepository;
+
+  /// SurrealDB-based tag repository.
+  final TagRepository tagRepository;
 
   @override
   Widget build(BuildContext context) {
@@ -88,7 +107,7 @@ class AltairGuidanceApp extends StatelessWidget {
         ),
         BlocProvider(
           create: (_) => ProjectBloc(
-            projectRepository: ProjectRepository(),
+            projectRepository: projectRepository,
           )..add(const ProjectLoadRequested()),
         ),
         BlocProvider(
