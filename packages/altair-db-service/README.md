@@ -1,5 +1,7 @@
 # Altair Database Service
 
+> **⚠️ EXPERIMENTAL:** This package is under active development and not yet production-ready. It provides infrastructure for future cross-app data integration but currently has known limitations. See [Limitations](&#x26A0;&#xFE0F; limitations) section below.
+
 **TL;DR:** Shared local SurrealDB instance that all Altair apps connect to. One database, three apps, seamless integration.
 
 ## 🎯 What This Does
@@ -260,3 +262,40 @@ MIT License - see [LICENSE](../../LICENSE)
 ---
 
 **Last updated:** October 26, 2025
+
+## ⚠️ Limitations
+
+**Current Status: Experimental - Not Production Ready**
+
+### Known Issues
+
+1. **No Data Migration**: Existing SQLite data is not automatically migrated
+2. **Security**: Password generation needs strengthening (tracked in issue #TBD)
+3. **Platform Support**: Mobile platforms (Android/iOS) not fully implemented
+4. **Error Handling**: Limited graceful degradation if service fails to start
+5. **Testing**: Integration tests require manual SurrealDB setup
+
+### Roadmap to Production
+
+- [ ] Implement SQLite → SurrealDB migration tool
+- [ ] Strengthen password generation with `Random.secure()`
+- [ ] Add graceful fallback to SQLite if service unavailable
+- [ ] Complete Android background service implementation
+- [ ] Add comprehensive integration tests
+- [ ] Implement automatic binary download/installation
+
+### Use Cases
+
+**✅ Recommended For:**
+
+- Development and testing of cross-app features
+- Prototype applications
+- Internal tools
+
+**❌ Not Recommended For:**
+
+- Production deployments with existing user data
+- Apps requiring 100% uptime without external dependencies
+- Mobile-first applications (iOS limitations)
+
+---
