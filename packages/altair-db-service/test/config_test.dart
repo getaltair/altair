@@ -16,19 +16,13 @@ void main() {
     test('health check URL is constructed correctly', () {
       const config = AltairDatabaseConfig.defaultConfig;
 
-      expect(
-        config.healthCheckUrl,
-        equals('http://127.0.0.1:8000/health'),
-      );
+      expect(config.healthCheckUrl, equals('http://127.0.0.1:8000/health'));
     });
 
     test('connection URI is constructed correctly', () {
       const config = AltairDatabaseConfig.defaultConfig;
 
-      expect(
-        config.connectionUri,
-        equals('ws://127.0.0.1:8000/rpc'),
-      );
+      expect(config.connectionUri, equals('ws://127.0.0.1:8000/rpc'));
     });
 
     test('custom config preserves values', () {
@@ -48,35 +42,34 @@ void main() {
     });
 
     test('custom config generates correct URLs', () {
-      const config = AltairDatabaseConfig(
-        port: 9000,
-        bindAddress: 'localhost',
-      );
+      const config = AltairDatabaseConfig(port: 9000, bindAddress: 'localhost');
 
-      expect(
-        config.healthCheckUrl,
-        equals('http://localhost:9000/health'),
-      );
-      expect(
-        config.connectionUri,
-        equals('ws://localhost:9000/rpc'),
-      );
+      expect(config.healthCheckUrl, equals('http://localhost:9000/health'));
+      expect(config.connectionUri, equals('ws://localhost:9000/rpc'));
     });
 
     // Skip platform-specific directory tests in unit tests
     // These require Flutter test environment with bindings
-    test('getDataDirectory returns platform-specific path', () async {
-      const config = AltairDatabaseConfig.defaultConfig;
+    test(
+      'getDataDirectory returns platform-specific path',
+      () async {
+        const config = AltairDatabaseConfig.defaultConfig;
 
-      // This test would require proper Flutter test environment
-      expect(() => config.getDataDirectory(), returnsNormally);
-    }, skip: 'Requires Flutter test environment');
+        // This test would require proper Flutter test environment
+        expect(() => config.getDataDirectory(), returnsNormally);
+      },
+      skip: 'Requires Flutter test environment',
+    );
 
-    test('getConfigDirectory returns platform-specific path', () async {
-      const config = AltairDatabaseConfig.defaultConfig;
+    test(
+      'getConfigDirectory returns platform-specific path',
+      () async {
+        const config = AltairDatabaseConfig.defaultConfig;
 
-      // This test would require proper Flutter test environment
-      expect(() => config.getConfigDirectory(), returnsNormally);
-    }, skip: 'Requires Flutter test environment');
+        // This test would require proper Flutter test environment
+        expect(() => config.getConfigDirectory(), returnsNormally);
+      },
+      skip: 'Requires Flutter test environment',
+    );
   });
 }

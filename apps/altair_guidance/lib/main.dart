@@ -706,6 +706,11 @@ class _HomePageState extends State<HomePage> {
                                         );
                                       }
 
+                                      // Build task hierarchy: filter only root tasks (no parent)
+                                      final rootTasks = state.tasks
+                                          .where((t) => t.parentTaskId == null)
+                                          .toList();
+
                                       return RefreshIndicator(
                                         onRefresh: () async {
                                           context.read<TaskBloc>().add(
@@ -720,7 +725,7 @@ class _HomePageState extends State<HomePage> {
                                           padding: const EdgeInsets.all(
                                               AltairSpacing.md),
                                           buildDefaultDragHandles: false,
-                                          itemCount: state.tasks.length,
+                                          itemCount: rootTasks.length,
                                           onReorder: (oldIndex, newIndex) {
                                             context.read<TaskBloc>().add(
                                                   TaskReorderRequested(
@@ -730,7 +735,13 @@ class _HomePageState extends State<HomePage> {
                                                 );
                                           },
                                           itemBuilder: (context, index) {
-                                            final task = state.tasks[index];
+                                            final task = rootTasks[index];
+                                            // Find subtasks for this parent
+                                            final subtasks = state.tasks
+                                                .where((t) =>
+                                                    t.parentTaskId == task.id)
+                                                .toList();
+
                                             return Padding(
                                               key: ValueKey(task
                                                   .id), // Required for ReorderableListView
@@ -811,7 +822,11 @@ class _HomePageState extends State<HomePage> {
                                                       );
                                                 },
                                                 child: _TaskListItem(
-                                                    task: task, index: index),
+                                                  task: task,
+                                                  index: index,
+                                                  subtasks: subtasks,
+                                                  allTasks: state.tasks,
+                                                ),
                                               ),
                                             );
                                           },
@@ -933,20 +948,47 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
-/// Widget to display a task in the list.
+/// Widget to display a task in the list with hierarchy support.
 ///
 /// Supports touch interactions:
 /// - Long press to show action menu
 /// - Swipe left to delete (with confirmation)
 /// - Tap checkbox to toggle completion status
-class _TaskListItem extends StatelessWidget {
-  const _TaskListItem({required this.task, required this.index});
+/// - Tap to expand/collapse subtasks (if any)
+class _TaskListItem extends StatefulWidget {
+  const _TaskListItem({
+    required this.task,
+    required this.index,
+    this.subtasks = const [],
+    this.allTasks = const [],
+    this.parentTask,
+    this.isSubtask = false,
+  });
 
   /// The task to display.
   final Task task;
 
   /// The index of this task in the list (used for reordering).
   final int index;
+
+  /// Subtasks of this task (if it's a parent).
+  final List<Task> subtasks;
+
+  /// All tasks (for breadcrumb lookup).
+  final List<Task> allTasks;
+
+  /// Parent task (if this is a subtask).
+  final Task? parentTask;
+
+  /// Whether this is a subtask (for visual styling).
+  final bool isSubtask;
+
+  @override
+  State<_TaskListItem> createState() => _TaskListItemState();
+}
+
+class _TaskListItemState extends State<_TaskListItem> {
+  bool _isExpanded = false;
 
   /// Shows a bottom sheet with task actions (edit, complete/incomplete, delete).
   ///
@@ -974,7 +1016,7 @@ class _TaskListItem extends StatelessWidget {
                           BlocProvider.value(value: taskBloc),
                           BlocProvider.value(value: projectBloc),
                         ],
-                        child: TaskEditPage(task: task),
+                        child: TaskEditPage(task: widget.task),
                       ),
                     ),
                   );
@@ -982,22 +1024,22 @@ class _TaskListItem extends StatelessWidget {
               ),
               ListTile(
                 leading: Icon(
-                  task.status == TaskStatus.completed
+                  widget.task.status == TaskStatus.completed
                       ? Icons.radio_button_unchecked
                       : Icons.check_circle,
                 ),
                 title: Text(
-                  task.status == TaskStatus.completed
+                  widget.task.status == TaskStatus.completed
                       ? 'Mark as Incomplete'
                       : 'Mark as Complete',
                 ),
                 onTap: () {
                   Navigator.pop(sheetContext);
-                  final updatedTask = task.copyWith(
-                    status: task.status == TaskStatus.completed
+                  final updatedTask = widget.task.copyWith(
+                    status: widget.task.status == TaskStatus.completed
                         ? TaskStatus.todo
                         : TaskStatus.completed,
-                    completedAt: task.status == TaskStatus.completed
+                    completedAt: widget.task.status == TaskStatus.completed
                         ? null
                         : DateTime.now(),
                   );
@@ -1015,7 +1057,7 @@ class _TaskListItem extends StatelessWidget {
                 onTap: () {
                   Navigator.pop(sheetContext);
                   context.read<TaskBloc>().add(
-                        TaskDeleteRequested(taskId: task.id),
+                        TaskDeleteRequested(taskId: widget.task.id),
                       );
                 },
               ),
@@ -1028,125 +1070,260 @@ class _TaskListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: () {
-        // Capture blocs from current context before navigation
-        final taskBloc = context.read<TaskBloc>();
-        final projectBloc = context.read<ProjectBloc>();
+    // Find parent task if this is a subtask
+    final parentTask = widget.task.parentTaskId != null
+        ? widget.allTasks.firstWhere(
+            (t) => t.id == widget.task.parentTaskId,
+            orElse: () => widget.task,
+          )
+        : widget.parentTask;
 
-        Navigator.of(context).push(
-          MaterialPageRoute<void>(
-            builder: (context) => MultiBlocProvider(
-              providers: [
-                BlocProvider.value(value: taskBloc),
-                BlocProvider.value(value: projectBloc),
-              ],
-              child: TaskEditPage(task: task),
+    final hasSubtasks = widget.subtasks.isNotEmpty;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Main task card
+        InkWell(
+          onTap: hasSubtasks
+              ? () {
+                  setState(() {
+                    _isExpanded = !_isExpanded;
+                  });
+                }
+              : () {
+                  // Capture blocs from current context before navigation
+                  final taskBloc = context.read<TaskBloc>();
+                  final projectBloc = context.read<ProjectBloc>();
+
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (context) => MultiBlocProvider(
+                        providers: [
+                          BlocProvider.value(value: taskBloc),
+                          BlocProvider.value(value: projectBloc),
+                        ],
+                        child: TaskEditPage(task: widget.task),
+                      ),
+                    ),
+                  );
+                },
+          onLongPress: () => _showTaskActions(context),
+          child: AltairCard(
+            accentColor: _getAccentColorForStatus(widget.task.status),
+            showAccentBar: true,
+            child: IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Expand/collapse button for tasks with subtasks
+                  if (hasSubtasks)
+                    Center(
+                      child: IconButton(
+                        icon: Icon(
+                          _isExpanded ? Icons.expand_less : Icons.expand_more,
+                          size: 20,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _isExpanded = !_isExpanded;
+                          });
+                        },
+                        padding: const EdgeInsets.all(AltairSpacing.xs),
+                        constraints: const BoxConstraints(
+                          minWidth: 36,
+                          minHeight: 36,
+                        ),
+                      ),
+                    ),
+
+                  // Checkbox - centered vertically
+                  Center(
+                    child: Checkbox(
+                      value: widget.task.status == TaskStatus.completed,
+                      onChanged: (value) {
+                        final updatedTask = widget.task.copyWith(
+                          status: value == true
+                              ? TaskStatus.completed
+                              : TaskStatus.todo,
+                          completedAt: value == true ? DateTime.now() : null,
+                        );
+                        context.read<TaskBloc>().add(
+                              TaskUpdateRequested(task: updatedTask),
+                            );
+                      },
+                      activeColor: AltairColors.accentGreen,
+                    ),
+                  ),
+
+                  const SizedBox(width: AltairSpacing.sm),
+
+                  // Task content
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: AltairSpacing.xs,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          // Breadcrumb for subtasks
+                          if (widget.isSubtask && parentTask != null) ...[
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.subdirectory_arrow_right,
+                                  size: 14,
+                                  color: AltairColors.textSecondary,
+                                ),
+                                const SizedBox(width: AltairSpacing.xs),
+                                Flexible(
+                                  child: Text(
+                                    parentTask.title,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodySmall
+                                        ?.copyWith(
+                                          color: AltairColors.textSecondary,
+                                        ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: AltairSpacing.xs),
+                          ],
+
+                          // Task title with subtask count badge
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  widget.task.title,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodyLarge
+                                      ?.copyWith(
+                                        decoration: widget.task.status ==
+                                                TaskStatus.completed
+                                            ? TextDecoration.lineThrough
+                                            : null,
+                                        color: widget.task.status ==
+                                                TaskStatus.completed
+                                            ? AltairColors.textSecondary
+                                            : null,
+                                      ),
+                                ),
+                              ),
+                              if (hasSubtasks) ...[
+                                const SizedBox(width: AltairSpacing.xs),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: AltairSpacing.xs,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: AltairColors.accentBlue,
+                                    border: Border.all(
+                                      color: Colors.black,
+                                      width: AltairBorders.standard,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    '${widget.subtasks.length}',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .labelSmall
+                                        ?.copyWith(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+
+                          if (widget.task.description != null) ...[
+                            const SizedBox(height: AltairSpacing.xs),
+                            Text(
+                              widget.task.description!,
+                              style: Theme.of(context).textTheme.bodySmall,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(width: AltairSpacing.sm),
+
+                  // Delete button - centered vertically
+                  Center(
+                    child: IconButton(
+                      icon: const Icon(Icons.delete_outline, size: 20),
+                      onPressed: () {
+                        context.read<TaskBloc>().add(
+                              TaskDeleteRequested(taskId: widget.task.id),
+                            );
+                      },
+                      color: AltairColors.error,
+                      padding: const EdgeInsets.all(AltairSpacing.xs),
+                      constraints: const BoxConstraints(
+                        minWidth: 36,
+                        minHeight: 36,
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(width: AltairSpacing.xs),
+
+                  // Custom drag handle - centered vertically
+                  if (!widget.isSubtask)
+                    ReorderableDragStartListener(
+                      index: widget.index,
+                      child: Center(
+                        child: Icon(
+                          Icons.drag_handle,
+                          color: Theme.of(context).dividerColor,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             ),
           ),
-        );
-      },
-      onLongPress: () => _showTaskActions(context),
-      child: AltairCard(
-        accentColor: _getAccentColorForStatus(task.status),
-        showAccentBar: true,
-        child: IntrinsicHeight(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Checkbox - centered vertically
-              Center(
-                child: Checkbox(
-                  value: task.status == TaskStatus.completed,
-                  onChanged: (value) {
-                    final updatedTask = task.copyWith(
-                      status: value == true
-                          ? TaskStatus.completed
-                          : TaskStatus.todo,
-                      completedAt: value == true ? DateTime.now() : null,
-                    );
-                    context.read<TaskBloc>().add(
-                          TaskUpdateRequested(task: updatedTask),
-                        );
-                  },
-                  activeColor: AltairColors.accentGreen,
-                ),
-              ),
-
-              const SizedBox(width: AltairSpacing.sm),
-
-              // Task content
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: AltairSpacing.xs,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        task.title,
-                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                              decoration: task.status == TaskStatus.completed
-                                  ? TextDecoration.lineThrough
-                                  : null,
-                              color: task.status == TaskStatus.completed
-                                  ? AltairColors.textSecondary
-                                  : null,
-                            ),
-                      ),
-                      if (task.description != null) ...[
-                        const SizedBox(height: AltairSpacing.xs),
-                        Text(
-                          task.description!,
-                          style: Theme.of(context).textTheme.bodySmall,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ),
-
-              const SizedBox(width: AltairSpacing.sm),
-
-              // Delete button - centered vertically
-              Center(
-                child: IconButton(
-                  icon: const Icon(Icons.delete_outline, size: 20),
-                  onPressed: () {
-                    context.read<TaskBloc>().add(
-                          TaskDeleteRequested(taskId: task.id),
-                        );
-                  },
-                  color: AltairColors.error,
-                  padding: const EdgeInsets.all(AltairSpacing.xs),
-                  constraints: const BoxConstraints(
-                    minWidth: 36,
-                    minHeight: 36,
-                  ),
-                ),
-              ),
-
-              const SizedBox(width: AltairSpacing.xs),
-
-              // Custom drag handle - centered vertically
-              ReorderableDragStartListener(
-                index: index,
-                child: Center(
-                  child: Icon(
-                    Icons.drag_handle,
-                    color: Theme.of(context).dividerColor,
-                    size: 20,
-                  ),
-                ),
-              ),
-            ],
-          ),
         ),
-      ),
+
+        // Subtasks section (shown when expanded)
+        if (hasSubtasks && _isExpanded)
+          Padding(
+            padding: const EdgeInsets.only(
+              left: AltairSpacing.lg,
+              top: AltairSpacing.sm,
+            ),
+            child: Column(
+              children: widget.subtasks.map((subtask) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: AltairSpacing.sm),
+                  child: _TaskListItem(
+                    task: subtask,
+                    index: 0, // Subtasks don't need reordering index
+                    parentTask: widget.task,
+                    isSubtask: true,
+                    allTasks: widget.allTasks,
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+      ],
     );
   }
 

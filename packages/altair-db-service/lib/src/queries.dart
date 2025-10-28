@@ -35,7 +35,8 @@ class AltairQueries {
 
   /// Get all resources linked TO a given resource (backlinks)
   Future<List<Map<String, dynamic>>> getBacklinks(String resourceId) async {
-    final result = await db.query('''
+    final result = await db.query(
+      '''
       SELECT
         source,
         link_type,
@@ -44,7 +45,9 @@ class AltairQueries {
       FROM link
       WHERE target = \$resourceId
       ORDER BY created_at DESC;
-    ''', {'resourceId': resourceId});
+    ''',
+      {'resourceId': resourceId},
+    );
 
     if (result == null) return [];
     final list = (result as List).isNotEmpty ? (result[0] as List) : [];
@@ -53,7 +56,8 @@ class AltairQueries {
 
   /// Get all resources linked FROM a given resource (forward links)
   Future<List<Map<String, dynamic>>> getForwardLinks(String resourceId) async {
-    final result = await db.query('''
+    final result = await db.query(
+      '''
       SELECT
         target,
         link_type,
@@ -62,7 +66,9 @@ class AltairQueries {
       FROM link
       WHERE source = \$resourceId
       ORDER BY created_at DESC;
-    ''', {'resourceId': resourceId});
+    ''',
+      {'resourceId': resourceId},
+    );
 
     if (result == null) return [];
     final list = (result as List).isNotEmpty ? (result[0] as List) : [];
@@ -71,7 +77,8 @@ class AltairQueries {
 
   /// Get ALL links (both directions) for a resource
   Future<List<Map<String, dynamic>>> getAllLinks(String resourceId) async {
-    final result = await db.query('''
+    final result = await db.query(
+      '''
       -- Get links where resource is source
       SELECT
         'outgoing' AS direction,
@@ -95,7 +102,9 @@ class AltairQueries {
       WHERE target = \$resourceId
 
       ORDER BY created_at DESC;
-    ''', {'resourceId': resourceId});
+    ''',
+      {'resourceId': resourceId},
+    );
 
     if (result == null) return [];
     final list = (result as List).isNotEmpty ? (result[0] as List) : [];
@@ -104,7 +113,8 @@ class AltairQueries {
 
   /// Search across all apps
   Future<List<Map<String, dynamic>>> searchAll(String query) async {
-    final result = await db.query('''
+    final result = await db.query(
+      '''
       SELECT
         id,
         title,
@@ -138,7 +148,9 @@ class AltairQueries {
 
       ORDER BY created_at DESC
       LIMIT 50;
-    ''', {'query': query});
+    ''',
+      {'query': query},
+    );
 
     if (result == null) return [];
     final list = (result as List).isNotEmpty ? (result[0] as List) : [];
@@ -147,12 +159,15 @@ class AltairQueries {
 
   /// Get tasks blocking a given task
   Future<List<Map<String, dynamic>>> getBlockingTasks(String taskId) async {
-    final result = await db.query('''
+    final result = await db.query(
+      '''
       SELECT
         (SELECT * FROM \$source)[0] AS blocking_task
       FROM link
       WHERE target = \$taskId AND link_type = 'blocks';
-    ''', {'taskId': taskId});
+    ''',
+      {'taskId': taskId},
+    );
 
     if (result == null) return [];
     final list = (result as List).isNotEmpty ? (result[0] as List) : [];
@@ -161,7 +176,8 @@ class AltairQueries {
 
   /// Get all tasks in a project, including linked notes and items
   Future<Map<String, dynamic>> getProjectWithLinks(String projectId) async {
-    final result = await db.query('''
+    final result = await db.query(
+      '''
       LET \$project = (SELECT * FROM \$projectId)[0];
       LET \$tasks = SELECT * FROM task WHERE project_id = \$projectId;
 
@@ -185,7 +201,9 @@ class AltairQueries {
         linked_notes: \$linked_notes,
         linked_items: \$linked_items
       };
-    ''', {'projectId': projectId});
+    ''',
+      {'projectId': projectId},
+    );
 
     if (result == null ||
         (result as List).isEmpty ||

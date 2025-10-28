@@ -55,8 +55,9 @@ class AltairTagChip extends StatelessWidget {
                 ? effectiveColor
                 : effectiveColor.withValues(alpha: 0.2),
             border: Border.all(
-              color:
-                  isDark ? AltairColors.borderDark : AltairColors.borderLight,
+              color: isDark
+                  ? AltairColors.borderDark
+                  : AltairColors.borderLight,
               width: selected ? AltairBorders.thick : AltairBorders.medium,
             ),
           ),
@@ -70,8 +71,8 @@ class AltairTagChip extends StatelessWidget {
                   color: selected
                       ? AltairColors.textDark
                       : (isDark
-                          ? AltairColors.textLight
-                          : AltairColors.textDark),
+                            ? AltairColors.textLight
+                            : AltairColors.textDark),
                 ),
               ),
               if (onDelete != null) ...[
@@ -84,8 +85,8 @@ class AltairTagChip extends StatelessWidget {
                     color: selected
                         ? AltairColors.textDark
                         : (isDark
-                            ? AltairColors.textLight
-                            : AltairColors.textDark),
+                              ? AltairColors.textLight
+                              : AltairColors.textDark),
                   ),
                 ),
               ],

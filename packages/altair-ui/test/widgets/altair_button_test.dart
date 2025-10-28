@@ -41,15 +41,13 @@ void main() {
       expect(pressed, isTrue);
     });
 
-    testWidgets('is disabled when onPressed is null',
-        (WidgetTester tester) async {
+    testWidgets('is disabled when onPressed is null', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
-            body: AltairButton(
-              onPressed: null,
-              child: Text('Disabled Button'),
-            ),
+            body: AltairButton(onPressed: null, child: Text('Disabled Button')),
           ),
         ),
       );

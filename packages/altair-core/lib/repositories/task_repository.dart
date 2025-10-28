@@ -42,9 +42,12 @@ class TaskRepository {
     await _ensureInitialized();
     final db = _connectionManager.client;
 
-    final result = await db.query('''
+    final result = await db.query(
+      '''
       SELECT * FROM \$taskId;
-    ''', {'taskId': id});
+    ''',
+      {'taskId': id},
+    );
 
     if (result == null || result is! List) return null;
     if (result.isEmpty) return null;
@@ -88,12 +91,14 @@ class TaskRepository {
       params['tags'] = tags;
     }
 
-    final whereClause =
-        conditions.isEmpty ? '' : 'WHERE ${conditions.join(' AND ')}';
+    final whereClause = conditions.isEmpty
+        ? ''
+        : 'WHERE ${conditions.join(' AND ')}';
     final limitClause = limit != null ? 'LIMIT $limit' : '';
     final startClause = offset != null ? 'START $offset' : '';
 
-    final query = '''
+    final query =
+        '''
       SELECT * FROM task
       $whereClause
       ORDER BY created_at DESC
@@ -135,9 +140,7 @@ class TaskRepository {
     await _ensureInitialized();
     final db = _connectionManager.client;
 
-    final taskToUpdate = task.copyWith(
-      updatedAt: DateTime.now(),
-    );
+    final taskToUpdate = task.copyWith(updatedAt: DateTime.now());
 
     await db.update(task.id, _taskToMap(taskToUpdate));
 
@@ -157,12 +160,15 @@ class TaskRepository {
     await _ensureInitialized();
     final db = _connectionManager.client;
 
-    final result = await db.query('''
+    final result = await db.query(
+      '''
       SELECT * FROM task
       WHERE title @@ \$query OR description @@ \$query
       ORDER BY created_at DESC
       LIMIT 50;
-    ''', {'query': query});
+    ''',
+      {'query': query},
+    );
 
     if (result == null || result is! List) return [];
     if (result.isEmpty) return [];
@@ -183,11 +189,14 @@ class TaskRepository {
     await _ensureInitialized();
     final db = _connectionManager.client;
 
-    final result = await db.query('''
+    final result = await db.query(
+      '''
       SELECT * FROM task
       WHERE parent_task_id = \$parentTaskId
       ORDER BY created_at ASC;
-    ''', {'parentTaskId': parentTaskId});
+    ''',
+      {'parentTaskId': parentTaskId},
+    );
 
     if (result == null || result is! List) return [];
     if (result.isEmpty) return [];
@@ -237,7 +246,8 @@ class TaskRepository {
       title: map['title'] as String,
       description: map['description'] as String?,
       status: TaskStatus.values.byName(map['status'] as String),
-      tags: (map['tags'] as List<dynamic>?)?.map((e) => e as String).toList() ??
+      tags:
+          (map['tags'] as List<dynamic>?)?.map((e) => e as String).toList() ??
           [],
       projectId: map['project_id'] as String?,
       parentTaskId: map['parent_task_id'] as String?,

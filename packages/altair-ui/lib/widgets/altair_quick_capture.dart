@@ -113,11 +113,7 @@ class _AltairQuickCaptureState extends State<AltairQuickCapture> {
               horizontal: AltairSpacing.md,
               vertical: AltairSpacing.sm,
             ),
-            child: Icon(
-              Icons.flash_on,
-              color: widget.accentColor,
-              size: 24,
-            ),
+            child: Icon(Icons.flash_on, color: widget.accentColor, size: 24),
           ),
 
           // Input field

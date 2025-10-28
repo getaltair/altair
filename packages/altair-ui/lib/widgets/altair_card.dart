@@ -46,11 +46,13 @@ class _AltairCardState extends State<AltairCard> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    final borderColor =
-        isDark ? AltairColors.darkBorderColor : AltairColors.lightBorderColor;
+    final borderColor = isDark
+        ? AltairColors.darkBorderColor
+        : AltairColors.lightBorderColor;
 
-    final backgroundColor =
-        isDark ? AltairColors.darkBgSecondary : AltairColors.lightBgSecondary;
+    final backgroundColor = isDark
+        ? AltairColors.darkBgSecondary
+        : AltairColors.lightBgSecondary;
 
     Widget cardContent = MouseRegion(
       onEnter: (_) => setState(() => _isHovering = true),
@@ -63,10 +65,7 @@ class _AltairCardState extends State<AltairCard> {
         padding: widget.padding,
         decoration: BoxDecoration(
           color: backgroundColor,
-          border: Border.all(
-            color: borderColor,
-            width: AltairBorders.standard,
-          ),
+          border: Border.all(color: borderColor, width: AltairBorders.standard),
           boxShadow: [
             _isHovering ? AltairBorders.shadowHover : AltairBorders.shadow,
           ],
@@ -118,10 +117,7 @@ class _AltairCardState extends State<AltairCard> {
     if (widget.onTap != null) {
       return Material(
         color: Colors.transparent,
-        child: InkWell(
-          onTap: widget.onTap,
-          child: cardContent,
-        ),
+        child: InkWell(onTap: widget.onTap, child: cardContent),
       );
     }
 

@@ -11,12 +11,10 @@ import 'auth_state.dart';
 /// Bloc for managing authentication state.
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   /// Creates an authentication bloc.
-  AuthBloc({
-    required AuthService authService,
-    Logger? logger,
-  })  : _authService = authService,
-        _logger = logger ?? Logger(),
-        super(const AuthInitial()) {
+  AuthBloc({required AuthService authService, Logger? logger})
+    : _authService = authService,
+      _logger = logger ?? Logger(),
+      super(const AuthInitial()) {
     on<AuthCheckRequested>(_onAuthCheckRequested);
     on<AuthLoginRequested>(_onAuthLoginRequested);
     on<AuthRegisterRequested>(_onAuthRegisterRequested);
@@ -59,10 +57,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(const AuthLoading());
 
     try {
-      await _authService.login(
-        email: event.email,
-        password: event.password,
-      );
+      await _authService.login(email: event.email, password: event.password);
 
       final user = await _authService.getCurrentUser();
       emit(AuthAuthenticated(user: user));
@@ -81,10 +76,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(const AuthLoading());
 
     try {
-      await _authService.register(
-        email: event.email,
-        password: event.password,
-      );
+      await _authService.register(email: event.email, password: event.password);
 
       final user = await _authService.getCurrentUser();
       emit(AuthAuthenticated(user: user));

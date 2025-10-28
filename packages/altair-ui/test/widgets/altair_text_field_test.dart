@@ -7,11 +7,7 @@ void main() {
     testWidgets('renders with label', (WidgetTester tester) async {
       await tester.pumpWidget(
         const MaterialApp(
-          home: Scaffold(
-            body: AltairTextField(
-              label: 'Test Label',
-            ),
-          ),
+          home: Scaffold(body: AltairTextField(label: 'Test Label')),
         ),
       );
 
@@ -22,10 +18,7 @@ void main() {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
-            body: AltairTextField(
-              label: 'Field',
-              hint: 'Enter text here',
-            ),
+            body: AltairTextField(label: 'Field', hint: 'Enter text here'),
           ),
         ),
       );
@@ -39,10 +32,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: AltairTextField(
-              label: 'Field',
-              controller: controller,
-            ),
+            body: AltairTextField(label: 'Field', controller: controller),
           ),
         ),
       );
@@ -51,8 +41,9 @@ void main() {
       expect(controller.text, 'Hello World');
     });
 
-    testWidgets('calls onChanged when text changes',
-        (WidgetTester tester) async {
+    testWidgets('calls onChanged when text changes', (
+      WidgetTester tester,
+    ) async {
       String? changedText;
 
       await tester.pumpWidget(
@@ -87,15 +78,13 @@ void main() {
       expect(find.text('This field is required'), findsOneWidget);
     });
 
-    testWidgets('obscures text when obscureText is true',
-        (WidgetTester tester) async {
+    testWidgets('obscures text when obscureText is true', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
-            body: AltairTextField(
-              label: 'Password',
-              obscureText: true,
-            ),
+            body: AltairTextField(label: 'Password', obscureText: true),
           ),
         ),
       );
