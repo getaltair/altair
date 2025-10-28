@@ -17,6 +17,7 @@ dependencies:
   crypto: ^3.0.3
   archive: ^3.6.0  # For backup/restore functionality
   win32: ^5.5.0  # Windows service management
+  flutter_secure_storage: ^9.2.2  # Platform-specific secure credential storage
 
 dev_dependencies:
   flutter_test:

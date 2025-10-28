@@ -1,0 +1,132 @@
+# Altair Monorepo Ripgrep Configuration
+# =======================================================
+
+# ===================================
+# Display Options
+# ===================================
+# Show line numbers
+--line-number
+
+# Smart case search (case-insensitive unless uppercase is used)
+--smart-case
+
+# Follow symbolic links
+--follow
+
+# Search hidden files/directories
+--hidden
+
+# Show column numbers
+--column
+
+# ===================================
+# Flutter / Dart Exclusions
+# ===================================
+--glob=!.dart_tool/
+--glob=!.flutter-plugins
+--glob=!.flutter-plugins-dependencies
+--glob=!.packages
+--glob=!pubspec.lock
+--glob=!coverage/
+--glob=!coverage.json
+
+# ===================================
+# Python Exclusions
+# ===================================
+--glob=!.venv/
+--glob=!venv/
+--glob=!__pycache__/
+--glob=!*.pyc
+--glob=!*.pyo
+--glob=!*.pyd
+--glob=!.Python
+--glob=!*.egg-info/
+--glob=!.pytest_cache/
+--glob=!.coverage
+--glob=!htmlcov/
+--glob=!.mypy_cache/
+--glob=!.ruff_cache/
+--glob=!.uv/
+
+# ===================================
+# Build Artifacts
+# ===================================
+--glob=!build/
+--glob=!dist/
+--glob=!**/linux/flutter/ephemeral/
+--glob=!**/windows/flutter/ephemeral/
+--glob=!**/macos/Flutter/ephemeral/
+--glob=!**/android/app/build/
+--glob=!**/ios/build/
+--glob=!**/web/build/
+
+# ===================================
+# IDE & Editor Files
+# ===================================
+--glob=!.idea/
+--glob=!.vscode/
+--glob=!*.swp
+--glob=!*.swo
+--glob=!*~
+
+# ===================================
+# Version Control
+# ===================================
+--glob=!.git/
+
+# ===================================
+# Database Files
+# ===================================
+--glob=!*.db
+--glob=!*.sqlite
+--glob=!*.sqlite3
+--glob=!altair.db/
+
+# ===================================
+# Environment & Secrets
+# ===================================
+--glob=!*.key
+--glob=!*.pem
+--glob=!*.crt
+
+# ===================================
+# Logs & Temporary Files
+# ===================================
+--glob=!tmp/
+--glob=!temp/
+--glob=!*.tmp
+
+# ===================================
+# Packaging Artifacts
+# ===================================
+--glob=!*.AppImage
+--glob=!packaging/aur/src/
+--glob=!packaging/aur/pkg/
+--glob=!packaging/aur/*.pkg.tar.zst
+--glob=!packaging/aur/*.tar.gz
+--glob=!packaging/appimage/build/
+--glob=!packaging/macos/*.dmg
+--glob=!packaging/windows/Output/
+--glob=!packaging/windows/*.exe
+
+# ===================================
+# Lock Files (keep searchable but note)
+# ===================================
+--glob=!uv.lock
+
+# ===================================
+# OS Files
+# ===================================
+--glob=!.DS_Store
+--glob=!Thumbs.db
+
+# ===================================
+# CI/CD Artifacts
+# ===================================
+--glob=!.github/
+
+# ===================================
+# Misc
+# ===================================
+--glob=!.mcp.json
+--glob=!.mise.local.toml

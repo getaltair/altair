@@ -5,6 +5,8 @@
 [![License](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
 [![Flutter](https://img.shields.io/badge/Flutter-3.0+-02569B?logo=flutter)](https://flutter.dev)
 [![Python](https://img.shields.io/badge/Python-3.12+-3776AB?logo=python&logoColor=white)](https://python.org)
+[![Security](https://img.shields.io/badge/security-Snyk-4C4A73?logo=snyk)](https://snyk.io)
+[![OSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/getaltair/altair/badge)](https://securityscorecards.dev/viewer/?uri=github.com/getaltair/altair)
 
 ## What is Altair?
 
@@ -38,6 +40,56 @@ Altair is a three-app ecosystem designed specifically for people with ADHD who n
 - 🤖 **AI-powered** — Task breakdown, prioritization (OpenAI, Anthropic, Ollama)
 - ⚡ **Fast** — Instant captures, < 1s page loads
 - 🔐 **Private** — Your data, your control
+
+## Security
+
+Altair takes security seriously. All database credentials are handled securely:
+
+### Credential Security
+
+- **Cryptographically Secure Password Generation**: All database passwords are generated using cryptographically secure random number generators with:
+  - Minimum 32-character length
+  - Mixed character types (uppercase, lowercase, numbers, special characters)
+  - High entropy to resist brute-force attacks
+
+- **Platform-Specific Secure Storage**:
+  - **macOS**: Keychain
+  - **Windows**: Credential Manager
+  - **Linux**: Secret Service API (gnome-keyring/kwallet)
+  - **Fallback**: Encrypted file with `chmod 600` permissions
+
+- **Environment Variable Credentials**: Database credentials are passed via environment variables instead of command-line arguments, preventing exposure in process listings
+
+- **No Hardcoded Passwords**: All hardcoded password fallbacks have been removed from platform installers
+
+### File Permissions
+
+Credential files stored on disk have strict permissions:
+
+- **Unix/Linux/macOS**: `600` (owner read/write only)
+- **Windows**: ACL restricted to current user only
+
+### Best Practices
+
+When deploying Altair:
+
+1. Never commit credential files to version control
+2. Use environment variables for sensitive configuration
+3. Regularly rotate database passwords using the built-in credential manager
+4. Keep your operating system's secure storage (Keychain/Credential Manager) up to date
+
+For security concerns or to report vulnerabilities, please see our [Security Policy](SECURITY.md) or email: <security@getaltair.com>
+
+### Security Scanning
+
+Automated security scanning runs on every commit and pull request:
+
+- **Dependency Vulnerabilities**: Snyk scans all Python and Flutter dependencies
+- **Secret Detection**: Gitleaks prevents credential leaks
+- **License Compliance**: Automated license policy enforcement
+- **Security Best Practices**: OSSF Scorecard validation
+
+View security status: [![Security](https://img.shields.io/badge/security-Snyk-4C4A73?logo=snyk)](https://snyk.io)
 
 ## Architecture
 

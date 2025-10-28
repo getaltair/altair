@@ -12,15 +12,33 @@ NC='\033[0m' # No Color
 
 # Default values (matching altair-db-service config)
 DEFAULT_USER="altair"
-DEFAULT_PASS="altair-local-dev"
 DEFAULT_DB_PATH="./altair.db"
 DEFAULT_PORT="8000"
 DEFAULT_BIND="0.0.0.0"
 
+# Generate a secure password if not provided via environment variable
+if [ -z "$SURREAL_PASS" ]; then
+  # Generate a cryptographically secure password
+  SURREAL_PASS=$(openssl rand -base64 32 | tr -d "=+/" | cut -c1-32)
+  echo -e "${YELLOW}⚠️  Generated secure password (save this!)${NC}"
+  echo -e "${BLUE}Password: $SURREAL_PASS${NC}"
+  echo ""
+fi
+
 # Parse arguments
-USER="${1:-$DEFAULT_USER}"
-PASS="${2:-$DEFAULT_PASS}"
+USER="${SURREAL_USER:-${1:-$DEFAULT_USER}}"
+PASS="${SURREAL_PASS:-${2}}"
 DB_PATH="${3:-$DEFAULT_DB_PATH}"
+
+# Validate password is set
+if [ -z "$PASS" ]; then
+  echo -e "${RED}❌ No password provided${NC}"
+  echo -e "${BLUE}Set password via:${NC}"
+  echo "  export SURREAL_PASS=your_secure_password"
+  echo "  Or pass as second argument"
+  echo ""
+  exit 1
+fi
 
 # Function to check if SurrealDB is installed
 check_surrealdb() {
@@ -67,12 +85,13 @@ echo "  Namespace: altair"
 echo "  Database:  local"
 echo ""
 
-# Start SurrealDB
+# Start SurrealDB with credentials via environment variables
 echo -e "${YELLOW}Starting SurrealDB...${NC}"
+export SURREAL_USER="$USER"
+export SURREAL_PASS="$PASS"
 surreal start \
   --bind "${DEFAULT_BIND}:${DEFAULT_PORT}" \
-  --user "$USER" \
-  --pass "$PASS" \
+  --auth \
   "file://${DB_PATH}" &
 
 # Wait for service to be ready
