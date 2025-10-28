@@ -1,25 +1,5 @@
 version: 2
 updates:
-  # Python dependencies (auth-service)
-  - package-ecosystem: "pip"
-    directory: "/services/auth-service"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "09:00"
-    open-pull-requests-limit: 5
-    labels:
-      - "dependencies"
-      - "backend"
-      - "auth-service"
-    commit-message:
-      prefix: "chore"
-      include: "scope"
-    reviewers:
-      - "rghamilton3"
-    assignees:
-      - "rghamilton3"
-
   # Flutter dependencies (altair-core)
   - package-ecosystem: "pub"
     directory: "/packages/altair-core"
@@ -105,21 +85,5 @@ updates:
       - "ci/cd"
     commit-message:
       prefix: "ci"
-    reviewers:
-      - "rghamilton3"
-
-  # Docker
-  - package-ecosystem: "docker"
-    directory: "/services/auth-service"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "09:00"
-    open-pull-requests-limit: 5
-    labels:
-      - "dependencies"
-      - "docker"
-    commit-message:
-      prefix: "chore"
     reviewers:
       - "rghamilton3"

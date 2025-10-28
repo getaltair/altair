@@ -14,47 +14,6 @@ permissions:
   security-events: write
 
 jobs:
-  snyk-dependency-scan:
-    name: Snyk Dependency Scan
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v5
-
-      - name: Set up Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: '3.12'
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v7
-        with:
-          enable-cache: true
-
-      - name: Export requirements for Snyk
-        run: |
-          cd services/auth-service
-          uv pip compile pyproject.toml -o requirements.txt
-
-      - name: Install dependencies with pip for Snyk
-        run: |
-          cd services/auth-service
-          pip install -r requirements.txt
-
-      - name: Run Snyk to check for vulnerabilities (Python)
-        uses: snyk/actions/python@master
-        continue-on-error: true
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          args: --severity-threshold=high --file=services/auth-service/requirements.txt --sarif-file-output=snyk.sarif
-
-      - name: Upload Snyk results to GitHub Security
-        uses: github/codeql-action/upload-sarif@v3
-        if: always()
-        with:
-          sarif_file: snyk.sarif
-
   dependency-review:
     name: Dependency Review
     runs-on: ubuntu-latest
