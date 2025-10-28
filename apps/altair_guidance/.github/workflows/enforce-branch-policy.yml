@@ -1,0 +1,37 @@
+name: Enforce Branch Policy
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  check-source-branch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check source branch is develop or hotfix
+        run: |
+          SOURCE_BRANCH="${{ github.head_ref }}"
+
+          echo "Source branch: $SOURCE_BRANCH"
+          echo "Target branch: ${{ github.base_ref }}"
+
+          # Allow develop and hotfix/* branches
+          if [[ "$SOURCE_BRANCH" == "develop" ]] || [[ "$SOURCE_BRANCH" == hotfix/* ]]; then
+            echo "✅ Source branch '$SOURCE_BRANCH' is allowed to merge to main"
+            exit 0
+          else
+            echo ""
+            echo "❌ ERROR: Only 'develop' and 'hotfix/*' branches can merge to main"
+            echo ""
+            echo "Current source branch: $SOURCE_BRANCH"
+            echo "Target branch: main"
+            echo ""
+            echo "Git flow requires:"
+            echo "  1. Feature branches → develop"
+            echo "  2. develop → main (releases)"
+            echo "  3. hotfix/* → main (emergency fixes)"
+            echo ""
+            echo "Please close this PR and create it targeting 'develop' instead."
+            exit 1
+          fi
