@@ -8,8 +8,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class MockTaskRepository extends Mock implements TaskRepository {}
+
+class MockProjectRepository extends Mock implements ProjectRepository {}
+
+class MockTagRepository extends Mock implements TagRepository {}
 
 class FakeTask extends Fake implements Task {}
 
@@ -19,13 +24,37 @@ void main() {
   });
 
   group('AltairGuidanceApp', () {
+    late SharedPreferences prefs;
+    late MockTaskRepository mockTaskRepository;
+    late MockProjectRepository mockProjectRepository;
+    late MockTagRepository mockTagRepository;
+
+    setUp(() async {
+      // Initialize SharedPreferences with fake implementation for testing
+      SharedPreferences.setMockInitialValues({});
+      prefs = await SharedPreferences.getInstance();
+      mockTaskRepository = MockTaskRepository();
+      mockProjectRepository = MockProjectRepository();
+      mockTagRepository = MockTagRepository();
+    });
+
     testWidgets('renders without crashing', (WidgetTester tester) async {
-      await tester.pumpWidget(const AltairGuidanceApp());
+      await tester.pumpWidget(AltairGuidanceApp(
+        prefs: prefs,
+        taskRepository: mockTaskRepository,
+        projectRepository: mockProjectRepository,
+        tagRepository: mockTagRepository,
+      ));
       expect(find.byType(MaterialApp), findsOneWidget);
     });
 
     testWidgets('has correct title', (WidgetTester tester) async {
-      await tester.pumpWidget(const AltairGuidanceApp());
+      await tester.pumpWidget(AltairGuidanceApp(
+        prefs: prefs,
+        taskRepository: mockTaskRepository,
+        projectRepository: mockProjectRepository,
+        tagRepository: mockTagRepository,
+      ));
 
       final materialApp = tester.widget<MaterialApp>(
         find.byType(MaterialApp),
@@ -35,7 +64,12 @@ void main() {
     });
 
     testWidgets('uses Altair theme', (WidgetTester tester) async {
-      await tester.pumpWidget(const AltairGuidanceApp());
+      await tester.pumpWidget(AltairGuidanceApp(
+        prefs: prefs,
+        taskRepository: mockTaskRepository,
+        projectRepository: mockProjectRepository,
+        tagRepository: mockTagRepository,
+      ));
 
       final materialApp = tester.widget<MaterialApp>(
         find.byType(MaterialApp),
@@ -47,14 +81,24 @@ void main() {
     });
 
     testWidgets('shows HomePage as home', (WidgetTester tester) async {
-      await tester.pumpWidget(const AltairGuidanceApp());
+      await tester.pumpWidget(AltairGuidanceApp(
+        prefs: prefs,
+        taskRepository: mockTaskRepository,
+        projectRepository: mockProjectRepository,
+        tagRepository: mockTagRepository,
+      ));
       await tester.pump();
 
       expect(find.byType(HomePage), findsOneWidget);
     });
 
     testWidgets('hides debug banner', (WidgetTester tester) async {
-      await tester.pumpWidget(const AltairGuidanceApp());
+      await tester.pumpWidget(AltairGuidanceApp(
+        prefs: prefs,
+        taskRepository: mockTaskRepository,
+        projectRepository: mockProjectRepository,
+        tagRepository: mockTagRepository,
+      ));
 
       final materialApp = tester.widget<MaterialApp>(
         find.byType(MaterialApp),
@@ -117,7 +161,7 @@ void main() {
 
       expect(find.text('No tasks yet'), findsOneWidget);
       expect(
-        find.text('Use quick capture above to add your first task'),
+        find.text('Use quick capture to start'),
         findsOneWidget,
       );
     });

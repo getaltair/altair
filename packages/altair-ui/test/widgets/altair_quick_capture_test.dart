@@ -32,14 +32,13 @@ void main() {
       expect(capturedCalled, false);
     });
 
-    testWidgets('autofocuses input field when autofocus is true', (tester) async {
+    testWidgets('autofocuses input field when autofocus is true', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: AltairQuickCapture(
-              onCapture: (_) {},
-              autofocus: true,
-            ),
+            body: AltairQuickCapture(onCapture: (_) {}, autofocus: true),
           ),
         ),
       );
@@ -49,8 +48,9 @@ void main() {
       expect(textField.autofocus, true);
     });
 
-    testWidgets('calls onCapture when text is entered and submitted',
-        (tester) async {
+    testWidgets('calls onCapture when text is entered and submitted', (
+      tester,
+    ) async {
       String? capturedText;
 
       await tester.pumpWidget(
@@ -105,11 +105,7 @@ void main() {
     testWidgets('clears input after capture', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
-          home: Scaffold(
-            body: AltairQuickCapture(
-              onCapture: (_) {},
-            ),
-          ),
+          home: Scaffold(body: AltairQuickCapture(onCapture: (_) {})),
         ),
       );
 
@@ -129,11 +125,7 @@ void main() {
     testWidgets('shows checkmark icon briefly after capture', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
-          home: Scaffold(
-            body: AltairQuickCapture(
-              onCapture: (_) {},
-            ),
-          ),
+          home: Scaffold(body: AltairQuickCapture(onCapture: (_) {})),
         ),
       );
 
@@ -207,10 +199,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: AltairQuickCapture(
-              onCapture: (_) {},
-              hint: 'Custom hint',
-            ),
+            body: AltairQuickCapture(onCapture: (_) {}, hint: 'Custom hint'),
           ),
         ),
       );

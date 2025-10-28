@@ -9,6 +9,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+#### Database Service Infrastructure (Week 11)
+
+- **altair-db-service** package:
+  - Shared local SurrealDB instance for all Altair applications
+  - Cross-app data integration with single database process
+  - Platform-specific service installers (Linux systemd, macOS launchd, Windows Service)
+  - Service lifecycle management (install, start, stop, uninstall)
+  - Connection manager singleton for shared database access
+  - Auto-start configuration for seamless user experience
+  - Health check endpoints for service monitoring
+  - Platform-agnostic installer abstraction
+  - Secure credential management with system keychain integration
+  - Comprehensive documentation with usage examples
+
+- **Database Connection Management**:
+  - AltairConnectionManager singleton for unified database access
+  - Automatic schema initialization on first connection
+  - Cross-app linking system for resource relationships
+  - Full-text search across all resource types (tasks, notes, items)
+  - Link creation and management between resources
+  - Query utilities for common operations
+
+- **SurrealDB Integration**:
+  - TaskRepositorySurrealDB implementation in altair-core
+  - Complete CRUD operations for tasks using SurrealDB
+  - Subtask querying and parent-child relationships
+  - Tag-based filtering with ALLINSIDE operator
+  - Search functionality with full-text indexing
+  - Time tracking support (estimated and actual minutes)
+  - Metadata field for extensibility
+
+- **Platform Support**:
+  - Linux: systemd user service with auto-start
+  - macOS: launchd service configuration
+  - Windows: Windows Service installation
+  - Android: Background service fallback
+  - Platform-specific data directory handling
+
 #### Infrastructure (Month 1 Week 1-2)
 
 - Complete monorepo structure with `apps/`, `packages/`, `services/`, and `infrastructure/` directories
@@ -212,6 +250,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Example .env.example file
   - Provider-specific configuration details
 
+#### AI Settings & Configuration (Week 10)
+
+- **AI Settings UI**:
+  - Settings page with AI provider configuration
+  - Support for OpenAI, Anthropic, and Ollama providers
+  - Provider selection with descriptions and visual feedback
+  - Per-provider configuration sections:
+    - OpenAI: API key and model selection (GPT-4 Turbo, GPT-4, GPT-3.5 Turbo)
+    - Anthropic: API key and model selection (Claude 3.5 Sonnet, Claude 3 Opus, Claude 3 Sonnet)
+    - Ollama: Server URL and model selection (Llama 3, Mistral, Code Llama)
+  - Real-time validation with visual error indicators
+  - Enable/disable toggle for AI features
+
+- **AI Settings Model**:
+  - AISettings model with provider-specific configurations
+  - AIProvider enum with display names and default URLs
+  - Validation logic for required API keys
+  - JSON serialization (excluding sensitive API keys)
+  - Computed properties for current provider state
+
+- **Secure Storage**:
+  - AISettingsRepository for settings persistence
+  - API keys stored in flutter_secure_storage (platform keychain)
+  - Non-sensitive settings in SharedPreferences
+  - Separate storage keys per provider
+  - Clear and load operations with error handling
+
+- **Settings State Management**:
+  - SettingsBloc for managing application settings
+  - Settings events: Load, Update, Toggle, Save, Clear
+  - Settings states: Initial, Loading, Loaded, Saving, Saved, Failure
+  - Auto-save after configuration changes
+  - Cached settings for performance
+
+- **AI Provider Integration**:
+  - AIConfig.fromSettings() implementation for all providers
+  - Backend service integration for OpenAI and Anthropic
+  - Direct Ollama server support or backend proxy
+  - Configurable base URLs for custom deployments
+  - API key injection via Authorization headers
+
+- **Comprehensive Testing**:
+  - 424 AISettings model tests (serialization, validation, computed properties)
+  - 483 SettingsBloc tests (all events and state transitions)
+  - 327 AISettingsRepository tests (persistence, secure storage, edge cases)
+  - 623 SettingsPage UI tests (provider selection, configuration, validation)
+  - All tests passing with full coverage
+
 #### Testing Infrastructure
 
 - Comprehensive testing framework for all packages:
@@ -227,8 +313,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - App-level tests for routing, theming, UI, and TaskBloc with mocktail
     - BLoC tests for ProjectBloc (15 tests covering all events and error handling)
     - BLoC tests for TagBloc (20 tests covering all tag operations and error scenarios)
-- Testing documentation (docs/TESTING.md) with:
-  - Complete testing guide for all test types
+- Testing documentation (docs/TESTING-STRATEGY.md) with:
+  - Comprehensive testing strategy for all test types
   - Best practices and examples
   - Coverage reporting instructions
   - CI/CD integration guidelines
@@ -254,3 +340,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Project initialization
 - Development environment setup with mise
+
+## Migration Notes
+
+### SurrealDB Integration (Experimental)
+
+**Status**: The SurrealDB database service is experimental and opt-in. Existing apps continue to use SQLite by default.
+
+**For Developers**:
+
+- The `altair-db-service` package provides infrastructure for future cross-app data integration
+- Current implementation does not include automatic migration from SQLite
+- Production apps should continue using SQLite until migration tools are available
+
+**Known Limitations**:
+
+1. No automatic data migration from SQLite
+2. Requires manual SurrealDB installation for development
+3. Mobile platform support incomplete (Android/iOS)
+4. Security improvements needed before production use
+
+**Roadmap**:
+
+- v0.2.0: SQLite → SurrealDB migration tool
+- v0.3.0: Production-ready security and error handling
+- v0.4.0: Full mobile platform support
+
+See `packages/altair-db-service/README.md` for details.

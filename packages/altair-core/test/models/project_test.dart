@@ -111,9 +111,7 @@ void main() {
 
     test('handles target date', () {
       final targetDate = DateTime(2025, 12, 31);
-      final projectWithTarget = testProject.copyWith(
-        targetDate: targetDate,
-      );
+      final projectWithTarget = testProject.copyWith(targetDate: targetDate);
 
       expect(projectWithTarget.targetDate, targetDate);
     });
@@ -208,9 +206,7 @@ void main() {
     });
 
     test('handles on hold status', () {
-      final onHoldProject = testProject.copyWith(
-        status: ProjectStatus.onHold,
-      );
+      final onHoldProject = testProject.copyWith(status: ProjectStatus.onHold);
 
       expect(onHoldProject.status, ProjectStatus.onHold);
     });

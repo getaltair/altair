@@ -113,11 +113,7 @@ class _AltairQuickCaptureState extends State<AltairQuickCapture> {
               horizontal: AltairSpacing.md,
               vertical: AltairSpacing.sm,
             ),
-            child: Icon(
-              Icons.flash_on,
-              color: widget.accentColor,
-              size: 24,
-            ),
+            child: Icon(Icons.flash_on, color: widget.accentColor, size: 24),
           ),
 
           // Input field
@@ -155,9 +151,7 @@ class _AltairQuickCaptureState extends State<AltairQuickCapture> {
           AnimatedContainer(
             duration: const Duration(milliseconds: 150),
             decoration: BoxDecoration(
-              color: _isCapturing
-                  ? widget.accentColor
-                  : Colors.transparent,
+              color: _isCapturing ? widget.accentColor : Colors.transparent,
             ),
             child: Material(
               color: Colors.transparent,
@@ -170,9 +164,7 @@ class _AltairQuickCaptureState extends State<AltairQuickCapture> {
                   ),
                   child: Icon(
                     _isCapturing ? Icons.check : Icons.add,
-                    color: _isCapturing
-                        ? theme.cardColor
-                        : widget.accentColor,
+                    color: _isCapturing ? theme.cardColor : widget.accentColor,
                     size: 24,
                   ),
                 ),

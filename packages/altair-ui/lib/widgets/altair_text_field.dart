@@ -95,10 +95,7 @@ class _AltairTextFieldState extends State<AltairTextField> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (widget.label != null) ...[
-          Text(
-            widget.label!,
-            style: theme.textTheme.labelLarge,
-          ),
+          Text(widget.label!, style: theme.textTheme.labelLarge),
           const SizedBox(height: AltairSpacing.xs),
         ],
         Focus(

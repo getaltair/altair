@@ -5,6 +5,8 @@
 [![License](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
 [![Flutter](https://img.shields.io/badge/Flutter-3.0+-02569B?logo=flutter)](https://flutter.dev)
 [![Python](https://img.shields.io/badge/Python-3.12+-3776AB?logo=python&logoColor=white)](https://python.org)
+[![Security](https://img.shields.io/badge/security-Snyk-4C4A73?logo=snyk)](https://snyk.io)
+[![OSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/getaltair/altair/badge)](https://securityscorecards.dev/viewer/?uri=github.com/getaltair/altair)
 
 ## What is Altair?
 
@@ -38,6 +40,56 @@ Altair is a three-app ecosystem designed specifically for people with ADHD who n
 - 🤖 **AI-powered** — Task breakdown, prioritization (OpenAI, Anthropic, Ollama)
 - ⚡ **Fast** — Instant captures, < 1s page loads
 - 🔐 **Private** — Your data, your control
+
+## Security
+
+Altair takes security seriously. All database credentials are handled securely:
+
+### Credential Security
+
+- **Cryptographically Secure Password Generation**: All database passwords are generated using cryptographically secure random number generators with:
+  - Minimum 32-character length
+  - Mixed character types (uppercase, lowercase, numbers, special characters)
+  - High entropy to resist brute-force attacks
+
+- **Platform-Specific Secure Storage**:
+  - **macOS**: Keychain
+  - **Windows**: Credential Manager
+  - **Linux**: Secret Service API (gnome-keyring/kwallet)
+  - **Fallback**: Encrypted file with `chmod 600` permissions
+
+- **Environment Variable Credentials**: Database credentials are passed via environment variables instead of command-line arguments, preventing exposure in process listings
+
+- **No Hardcoded Passwords**: All hardcoded password fallbacks have been removed from platform installers
+
+### File Permissions
+
+Credential files stored on disk have strict permissions:
+
+- **Unix/Linux/macOS**: `600` (owner read/write only)
+- **Windows**: ACL restricted to current user only
+
+### Best Practices
+
+When deploying Altair:
+
+1. Never commit credential files to version control
+2. Use environment variables for sensitive configuration
+3. Regularly rotate database passwords using the built-in credential manager
+4. Keep your operating system's secure storage (Keychain/Credential Manager) up to date
+
+For security concerns or to report vulnerabilities, please see our [Security Policy](SECURITY.md) or email: <security@getaltair.com>
+
+### Security Scanning
+
+Automated security scanning runs on every commit and pull request:
+
+- **Dependency Vulnerabilities**: Snyk scans all Python and Flutter dependencies
+- **Secret Detection**: Gitleaks prevents credential leaks
+- **License Compliance**: Automated license policy enforcement
+- **Security Best Practices**: OSSF Scorecard validation
+
+View security status: [![Security](https://img.shields.io/badge/security-Snyk-4C4A73?logo=snyk)](https://snyk.io)
 
 ## Architecture
 
@@ -103,7 +155,12 @@ flutter run -d windows
 
 # Run on Android (requires connected device/emulator)
 flutter run -d android
+
+# Run on iOS (macOS only, requires simulator or connected device)
+flutter run -d ios
 ```
+
+**Mobile Development:** See [MOBILE-DEVELOPMENT.md](docs/MOBILE-DEVELOPMENT.md) for detailed mobile platform setup and testing guidelines.
 
 ### Development Setup
 
@@ -124,24 +181,30 @@ pre-commit install
 
 ## Development Roadmap
 
-### Phase 1: Altair Guidance (Months 1-3)
+### Phase 1: Altair Guidance ✅ **COMPLETE**
 
-- ✅ Month 1: Infrastructure & auth
-- ✅ Month 2: Core task management (Week 5-8 complete: Quick Capture, Task Editing, Projects, UX Polish)
-- ✅ Month 3: AI features (Week 9-11 complete: OpenAI, Anthropic, Ollama integrations, AI Features UI)
-- 🚧 Week 12: Polish & Beta (Standalone Installers complete, Beta testing in progress)
+- ✅ Infrastructure & auth
+- ✅ Core task management: Quick Capture, Task Editing, Projects, UX Polish
+- ✅ AI features: OpenAI, Anthropic, Ollama integrations, AI Features UI
+- ✅ Polish & Beta: Standalone Installers complete, Beta testing in progress
 
-### Phase 2: Altair Knowledge (Months 4-6)
+### Phase 1.5: Mobile Platform Support ✅ **COMPLETE**
 
-- ⏳ Wiki foundation
-- ⏳ Smart connections
-- ⏳ External brain features
+- ✅ iOS Platform Setup
+- ✅ Mobile Optimization & Testing (217 tests passing, CI/CD ready)
+- ⏳ Physical Device Testing (Pending device access - documentation ready)
 
-### Phase 3: Altair Tracking (Months 7-9)
+### Phase 2: Altair Knowledge ⏳ **IN PLANNING**
 
-- ⏳ Basic inventory
-- ⏳ Smart tracking
-- ⏳ Ecosystem integration
+- ⏳ Wiki foundation (Markdown editor, page organization)
+- ⏳ Smart connections (Backlinks, graph view)
+- ⏳ External brain features (Daily notes, sync)
+
+### Phase 3: Altair Tracking ⏳ **PLANNED**
+
+- ⏳ Basic inventory (Items, locations, barcode scanning)
+- ⏳ Smart tracking (AI alerts, predictions)
+- ⏳ Ecosystem integration (Cross-app links, unified search)
 
 See [DEVELOPMENT-ROADMAP.md](docs/DEVELOPMENT-ROADMAP.md) for details.
 
@@ -152,7 +215,7 @@ See [DEVELOPMENT-ROADMAP.md](docs/DEVELOPMENT-ROADMAP.md) for details.
 - [Component Design](docs/COMPONENT-DESIGN.md) — Component structure
 - [Deployment Guide](docs/DEPLOYMENT-GUIDE.md) — Deployment options
 - [Development Roadmap](docs/DEVELOPMENT-ROADMAP.md) — Timeline and milestones
-- [Testing Guide](docs/TESTING.md) — Testing strategies and best practices
+- [Testing Strategy](docs/TESTING-STRATEGY.md) — Comprehensive testing strategy and best practices
 - [Installers Guide](docs/INSTALLERS.md) — Building and distributing standalone installers
 
 ## Technology Stack
@@ -177,11 +240,15 @@ We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guid
 
 ### Development Workflow
 
-1. Create a feature branch (`git checkout -b feature/amazing-feature`)
+We use **Git Flow** with `main` (stable releases) and `develop` (active development):
+
+1. Branch from `develop`: `git checkout develop && git pull && git checkout -b feature/amazing-feature`
 2. Make changes following our conventions
-3. Run linters and tests (`pre-commit run --all-files`)
-4. Commit with conventional commits (`git commit -m "feat: add amazing feature"`)
-5. Push and create a pull request
+3. Run linters and tests: `pre-commit run --all-files`
+4. Commit with conventional commits: `git commit -m "feat: add amazing feature"`
+5. Push and create PR targeting `develop`: `gh pr create --base develop`
+
+**Important:** PRs target `develop`, not `main`. See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
 ### Code Standards
 
@@ -210,6 +277,6 @@ This project is licensed under the GNU Affero General Public License v3.0 or lat
 
 ---
 
-**Status**: 🚧 Phase 1 Development (Week 12: Polish & Beta - Standalone Installers Complete)
+**Status**: ✅ Phase 1 + 1.5 Complete | ⏳ Phase 2 (Knowledge) In Planning | 🚀 AI-Assisted Development
 
-Made with ❤️ for the ADHD community
+Made with ☕ and 🤖 for the ADHD community

@@ -12,11 +12,7 @@ import 'altair_tag_chip.dart';
 /// Represents a tag option.
 class TagOption {
   /// Creates a tag option.
-  const TagOption({
-    required this.id,
-    required this.name,
-    this.color,
-  });
+  const TagOption({required this.id, required this.name, this.color});
 
   /// Tag ID.
   final String id;
@@ -162,7 +158,9 @@ class _AltairTagSelectorState extends State<AltairTagSelector> {
             border: Border.all(
               color: _focusNode.hasFocus
                   ? AltairColors.accentOrange
-                  : (isDark ? AltairColors.borderDark : AltairColors.borderLight),
+                  : (isDark
+                        ? AltairColors.borderDark
+                        : AltairColors.borderLight),
               width: _focusNode.hasFocus
                   ? AltairBorders.extraThick
                   : AltairBorders.medium,
@@ -195,7 +193,9 @@ class _AltairTagSelectorState extends State<AltairTagSelector> {
             decoration: BoxDecoration(
               color: isDark ? AltairColors.bgDark : AltairColors.bgLight,
               border: Border.all(
-                color: isDark ? AltairColors.borderDark : AltairColors.borderLight,
+                color: isDark
+                    ? AltairColors.borderDark
+                    : AltairColors.borderLight,
                 width: AltairBorders.medium,
               ),
             ),
@@ -259,10 +259,11 @@ class _AltairTagSelectorState extends State<AltairTagSelector> {
         child: Text(
           'No tags found',
           style: AltairTypography.bodySmall.copyWith(
-            color: (Theme.of(context).brightness == Brightness.dark
-                    ? AltairColors.textLight
-                    : AltairColors.textDark)
-                .withValues(alpha: 0.5),
+            color:
+                (Theme.of(context).brightness == Brightness.dark
+                        ? AltairColors.textLight
+                        : AltairColors.textDark)
+                    .withValues(alpha: 0.5),
           ),
         ),
       );

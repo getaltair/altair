@@ -43,9 +43,37 @@ uv sync
 
 ## Development Workflow
 
+### Git Branching Strategy
+
+We use a **Git Flow** approach with two main branches:
+
+- **`main`** - Stable, production-ready code (releases only)
+- **`develop`** - Integration branch for ongoing development
+
+**Workflow:**
+
+1. All feature branches are created from `develop`
+2. Pull requests target `develop` (not `main`)
+3. When ready for release, `develop` is merged into `main` with a version tag
+
+```
+main (stable releases: v0.1.0, v0.2.0)
+  ↑
+develop (active development)
+  ↑
+feature/your-feature-name
+```
+
 ### 1. Create a Feature Branch
 
+**Always branch from `develop`:**
+
 ```bash
+# Make sure you're on develop and up to date
+git checkout develop
+git pull origin develop
+
+# Create your feature branch
 git checkout -b feature/your-feature-name
 ```
 
@@ -112,10 +140,14 @@ uv run pytest
 ### 5. Push and Create Pull Request
 
 ```bash
+# Push your feature branch
 git push origin feature/your-feature-name
+
+# Create a pull request targeting 'develop' branch
+gh pr create --base develop --title "feat(scope): your feature description"
 ```
 
-Then create a pull request on GitHub.
+**Important:** Always create PRs against `develop`, not `main`.
 
 ## Coding Standards
 

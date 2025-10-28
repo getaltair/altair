@@ -26,23 +26,13 @@ import 'package:mockito/mockito.dart' as _i1;
 // ignore_for_file: subtype_of_sealed_class
 
 class _FakeAuthToken_0 extends _i1.SmartFake implements _i2.AuthToken {
-  _FakeAuthToken_0(
-    Object parent,
-    Invocation parentInvocation,
-  ) : super(
-          parent,
-          parentInvocation,
-        );
+  _FakeAuthToken_0(Object parent, Invocation parentInvocation)
+    : super(parent, parentInvocation);
 }
 
 class _FakeUser_1 extends _i1.SmartFake implements _i3.User {
-  _FakeUser_1(
-    Object parent,
-    Invocation parentInvocation,
-  ) : super(
-          parent,
-          parentInvocation,
-        );
+  _FakeUser_1(Object parent, Invocation parentInvocation)
+    : super(parent, parentInvocation);
 }
 
 /// A class which mocks [AuthService].
@@ -59,26 +49,18 @@ class MockAuthService extends _i1.Mock implements _i4.AuthService {
     required String? password,
   }) =>
       (super.noSuchMethod(
-        Invocation.method(
-          #login,
-          [],
-          {
-            #email: email,
-            #password: password,
-          },
-        ),
-        returnValue: _i5.Future<_i2.AuthToken>.value(_FakeAuthToken_0(
-          this,
-          Invocation.method(
-            #login,
-            [],
-            {
-              #email: email,
-              #password: password,
-            },
-          ),
-        )),
-      ) as _i5.Future<_i2.AuthToken>);
+            Invocation.method(#login, [], {#email: email, #password: password}),
+            returnValue: _i5.Future<_i2.AuthToken>.value(
+              _FakeAuthToken_0(
+                this,
+                Invocation.method(#login, [], {
+                  #email: email,
+                  #password: password,
+                }),
+              ),
+            ),
+          )
+          as _i5.Future<_i2.AuthToken>);
 
   @override
   _i5.Future<_i2.AuthToken> register({
@@ -86,75 +68,58 @@ class MockAuthService extends _i1.Mock implements _i4.AuthService {
     required String? password,
   }) =>
       (super.noSuchMethod(
-        Invocation.method(
-          #register,
-          [],
-          {
-            #email: email,
-            #password: password,
-          },
-        ),
-        returnValue: _i5.Future<_i2.AuthToken>.value(_FakeAuthToken_0(
-          this,
-          Invocation.method(
-            #register,
-            [],
-            {
+            Invocation.method(#register, [], {
               #email: email,
               #password: password,
-            },
-          ),
-        )),
-      ) as _i5.Future<_i2.AuthToken>);
+            }),
+            returnValue: _i5.Future<_i2.AuthToken>.value(
+              _FakeAuthToken_0(
+                this,
+                Invocation.method(#register, [], {
+                  #email: email,
+                  #password: password,
+                }),
+              ),
+            ),
+          )
+          as _i5.Future<_i2.AuthToken>);
 
   @override
-  _i5.Future<_i2.AuthToken> refreshToken() => (super.noSuchMethod(
-        Invocation.method(
-          #refreshToken,
-          [],
-        ),
-        returnValue: _i5.Future<_i2.AuthToken>.value(_FakeAuthToken_0(
-          this,
-          Invocation.method(
-            #refreshToken,
-            [],
-          ),
-        )),
-      ) as _i5.Future<_i2.AuthToken>);
+  _i5.Future<_i2.AuthToken> refreshToken() =>
+      (super.noSuchMethod(
+            Invocation.method(#refreshToken, []),
+            returnValue: _i5.Future<_i2.AuthToken>.value(
+              _FakeAuthToken_0(this, Invocation.method(#refreshToken, [])),
+            ),
+          )
+          as _i5.Future<_i2.AuthToken>);
 
   @override
-  _i5.Future<void> logout() => (super.noSuchMethod(
-        Invocation.method(
-          #logout,
-          [],
-        ),
-        returnValue: _i5.Future<void>.value(),
-        returnValueForMissingStub: _i5.Future<void>.value(),
-      ) as _i5.Future<void>);
+  _i5.Future<void> logout() =>
+      (super.noSuchMethod(
+            Invocation.method(#logout, []),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
+          )
+          as _i5.Future<void>);
 
   @override
-  _i5.Future<_i3.User> getCurrentUser() => (super.noSuchMethod(
-        Invocation.method(
-          #getCurrentUser,
-          [],
-        ),
-        returnValue: _i5.Future<_i3.User>.value(_FakeUser_1(
-          this,
-          Invocation.method(
-            #getCurrentUser,
-            [],
-          ),
-        )),
-      ) as _i5.Future<_i3.User>);
+  _i5.Future<_i3.User> getCurrentUser() =>
+      (super.noSuchMethod(
+            Invocation.method(#getCurrentUser, []),
+            returnValue: _i5.Future<_i3.User>.value(
+              _FakeUser_1(this, Invocation.method(#getCurrentUser, [])),
+            ),
+          )
+          as _i5.Future<_i3.User>);
 
   @override
-  _i5.Future<bool> isAuthenticated() => (super.noSuchMethod(
-        Invocation.method(
-          #isAuthenticated,
-          [],
-        ),
-        returnValue: _i5.Future<bool>.value(false),
-      ) as _i5.Future<bool>);
+  _i5.Future<bool> isAuthenticated() =>
+      (super.noSuchMethod(
+            Invocation.method(#isAuthenticated, []),
+            returnValue: _i5.Future<bool>.value(false),
+          )
+          as _i5.Future<bool>);
 }
 
 /// A class which mocks [Logger].
@@ -166,10 +131,12 @@ class MockLogger extends _i1.Mock implements _i6.Logger {
   }
 
   @override
-  _i5.Future<void> get init => (super.noSuchMethod(
-        Invocation.getter(#init),
-        returnValue: _i5.Future<void>.value(),
-      ) as _i5.Future<void>);
+  _i5.Future<void> get init =>
+      (super.noSuchMethod(
+            Invocation.getter(#init),
+            returnValue: _i5.Future<void>.value(),
+          )
+          as _i5.Future<void>);
 
   @override
   void v(
@@ -177,19 +144,14 @@ class MockLogger extends _i1.Mock implements _i6.Logger {
     DateTime? time,
     Object? error,
     StackTrace? stackTrace,
-  }) =>
-      super.noSuchMethod(
-        Invocation.method(
-          #v,
-          [message],
-          {
-            #time: time,
-            #error: error,
-            #stackTrace: stackTrace,
-          },
-        ),
-        returnValueForMissingStub: null,
-      );
+  }) => super.noSuchMethod(
+    Invocation.method(
+      #v,
+      [message],
+      {#time: time, #error: error, #stackTrace: stackTrace},
+    ),
+    returnValueForMissingStub: null,
+  );
 
   @override
   void t(
@@ -197,19 +159,14 @@ class MockLogger extends _i1.Mock implements _i6.Logger {
     DateTime? time,
     Object? error,
     StackTrace? stackTrace,
-  }) =>
-      super.noSuchMethod(
-        Invocation.method(
-          #t,
-          [message],
-          {
-            #time: time,
-            #error: error,
-            #stackTrace: stackTrace,
-          },
-        ),
-        returnValueForMissingStub: null,
-      );
+  }) => super.noSuchMethod(
+    Invocation.method(
+      #t,
+      [message],
+      {#time: time, #error: error, #stackTrace: stackTrace},
+    ),
+    returnValueForMissingStub: null,
+  );
 
   @override
   void d(
@@ -217,19 +174,14 @@ class MockLogger extends _i1.Mock implements _i6.Logger {
     DateTime? time,
     Object? error,
     StackTrace? stackTrace,
-  }) =>
-      super.noSuchMethod(
-        Invocation.method(
-          #d,
-          [message],
-          {
-            #time: time,
-            #error: error,
-            #stackTrace: stackTrace,
-          },
-        ),
-        returnValueForMissingStub: null,
-      );
+  }) => super.noSuchMethod(
+    Invocation.method(
+      #d,
+      [message],
+      {#time: time, #error: error, #stackTrace: stackTrace},
+    ),
+    returnValueForMissingStub: null,
+  );
 
   @override
   void i(
@@ -237,19 +189,14 @@ class MockLogger extends _i1.Mock implements _i6.Logger {
     DateTime? time,
     Object? error,
     StackTrace? stackTrace,
-  }) =>
-      super.noSuchMethod(
-        Invocation.method(
-          #i,
-          [message],
-          {
-            #time: time,
-            #error: error,
-            #stackTrace: stackTrace,
-          },
-        ),
-        returnValueForMissingStub: null,
-      );
+  }) => super.noSuchMethod(
+    Invocation.method(
+      #i,
+      [message],
+      {#time: time, #error: error, #stackTrace: stackTrace},
+    ),
+    returnValueForMissingStub: null,
+  );
 
   @override
   void w(
@@ -257,19 +204,14 @@ class MockLogger extends _i1.Mock implements _i6.Logger {
     DateTime? time,
     Object? error,
     StackTrace? stackTrace,
-  }) =>
-      super.noSuchMethod(
-        Invocation.method(
-          #w,
-          [message],
-          {
-            #time: time,
-            #error: error,
-            #stackTrace: stackTrace,
-          },
-        ),
-        returnValueForMissingStub: null,
-      );
+  }) => super.noSuchMethod(
+    Invocation.method(
+      #w,
+      [message],
+      {#time: time, #error: error, #stackTrace: stackTrace},
+    ),
+    returnValueForMissingStub: null,
+  );
 
   @override
   void e(
@@ -277,19 +219,14 @@ class MockLogger extends _i1.Mock implements _i6.Logger {
     DateTime? time,
     Object? error,
     StackTrace? stackTrace,
-  }) =>
-      super.noSuchMethod(
-        Invocation.method(
-          #e,
-          [message],
-          {
-            #time: time,
-            #error: error,
-            #stackTrace: stackTrace,
-          },
-        ),
-        returnValueForMissingStub: null,
-      );
+  }) => super.noSuchMethod(
+    Invocation.method(
+      #e,
+      [message],
+      {#time: time, #error: error, #stackTrace: stackTrace},
+    ),
+    returnValueForMissingStub: null,
+  );
 
   @override
   void wtf(
@@ -297,19 +234,14 @@ class MockLogger extends _i1.Mock implements _i6.Logger {
     DateTime? time,
     Object? error,
     StackTrace? stackTrace,
-  }) =>
-      super.noSuchMethod(
-        Invocation.method(
-          #wtf,
-          [message],
-          {
-            #time: time,
-            #error: error,
-            #stackTrace: stackTrace,
-          },
-        ),
-        returnValueForMissingStub: null,
-      );
+  }) => super.noSuchMethod(
+    Invocation.method(
+      #wtf,
+      [message],
+      {#time: time, #error: error, #stackTrace: stackTrace},
+    ),
+    returnValueForMissingStub: null,
+  );
 
   @override
   void f(
@@ -317,19 +249,14 @@ class MockLogger extends _i1.Mock implements _i6.Logger {
     DateTime? time,
     Object? error,
     StackTrace? stackTrace,
-  }) =>
-      super.noSuchMethod(
-        Invocation.method(
-          #f,
-          [message],
-          {
-            #time: time,
-            #error: error,
-            #stackTrace: stackTrace,
-          },
-        ),
-        returnValueForMissingStub: null,
-      );
+  }) => super.noSuchMethod(
+    Invocation.method(
+      #f,
+      [message],
+      {#time: time, #error: error, #stackTrace: stackTrace},
+    ),
+    returnValueForMissingStub: null,
+  );
 
   @override
   void log(
@@ -338,39 +265,26 @@ class MockLogger extends _i1.Mock implements _i6.Logger {
     DateTime? time,
     Object? error,
     StackTrace? stackTrace,
-  }) =>
-      super.noSuchMethod(
-        Invocation.method(
-          #log,
-          [
-            level,
-            message,
-          ],
-          {
-            #time: time,
-            #error: error,
-            #stackTrace: stackTrace,
-          },
-        ),
-        returnValueForMissingStub: null,
-      );
+  }) => super.noSuchMethod(
+    Invocation.method(
+      #log,
+      [level, message],
+      {#time: time, #error: error, #stackTrace: stackTrace},
+    ),
+    returnValueForMissingStub: null,
+  );
 
   @override
-  bool isClosed() => (super.noSuchMethod(
-        Invocation.method(
-          #isClosed,
-          [],
-        ),
-        returnValue: false,
-      ) as bool);
+  bool isClosed() =>
+      (super.noSuchMethod(Invocation.method(#isClosed, []), returnValue: false)
+          as bool);
 
   @override
-  _i5.Future<void> close() => (super.noSuchMethod(
-        Invocation.method(
-          #close,
-          [],
-        ),
-        returnValue: _i5.Future<void>.value(),
-        returnValueForMissingStub: _i5.Future<void>.value(),
-      ) as _i5.Future<void>);
+  _i5.Future<void> close() =>
+      (super.noSuchMethod(
+            Invocation.method(#close, []),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
+          )
+          as _i5.Future<void>);
 }

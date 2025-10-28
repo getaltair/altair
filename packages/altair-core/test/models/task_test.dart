@@ -185,11 +185,7 @@ void main() {
     });
 
     test('handles metadata as flexible field', () {
-      final metadata = {
-        'color': 'blue',
-        'icon': 'star',
-        'customField': 123,
-      };
+      final metadata = {'color': 'blue', 'icon': 'star', 'customField': 123};
 
       final taskWithMeta = testTask.copyWith(metadata: metadata);
 

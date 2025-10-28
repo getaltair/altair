@@ -1,5 +1,7 @@
 """Request models for AI service API."""
 
+from typing import Literal
+
 from pydantic import BaseModel, Field
 
 
@@ -13,6 +15,15 @@ class TaskBreakdownRequest(BaseModel):
     )
     max_subtasks: int = Field(5, ge=1, le=20, description="Maximum number of subtasks to generate")
 
+    # Client-provided provider configuration (optional, overrides server .env)
+    provider: Literal["openai", "anthropic", "ollama"] | None = Field(
+        None, description="AI provider to use (overrides server default)"
+    )
+    api_key: str | None = Field(
+        None,
+        description="API key for the provider (required for openai/anthropic if not in server .env)",
+    )
+
 
 class TaskPrioritizationRequest(BaseModel):
     """Request to get prioritization suggestions for tasks."""
@@ -21,6 +32,15 @@ class TaskPrioritizationRequest(BaseModel):
         ..., min_length=1, max_length=50, description="List of tasks with title and description"
     )
     context: str | None = Field(None, max_length=2000, description="Project context or goals")
+
+    # Client-provided provider configuration (optional, overrides server .env)
+    provider: Literal["openai", "anthropic", "ollama"] | None = Field(
+        None, description="AI provider to use (overrides server default)"
+    )
+    api_key: str | None = Field(
+        None,
+        description="API key for the provider (required for openai/anthropic if not in server .env)",
+    )
 
 
 class TimeEstimateRequest(BaseModel):
@@ -33,6 +53,15 @@ class TimeEstimateRequest(BaseModel):
         "intermediate", description="User skill level: beginner, intermediate, advanced"
     )
 
+    # Client-provided provider configuration (optional, overrides server .env)
+    provider: Literal["openai", "anthropic", "ollama"] | None = Field(
+        None, description="AI provider to use (overrides server default)"
+    )
+    api_key: str | None = Field(
+        None,
+        description="API key for the provider (required for openai/anthropic if not in server .env)",
+    )
+
 
 class ContextSuggestionRequest(BaseModel):
     """Request for contextual suggestions."""
@@ -42,4 +71,13 @@ class ContextSuggestionRequest(BaseModel):
     project_context: str | None = Field(None, max_length=2000)
     suggestion_type: str = Field(
         "general", description="Type of suggestions: general, resources, tips, blockers"
+    )
+
+    # Client-provided provider configuration (optional, overrides server .env)
+    provider: Literal["openai", "anthropic", "ollama"] | None = Field(
+        None, description="AI provider to use (overrides server default)"
+    )
+    api_key: str | None = Field(
+        None,
+        description="API key for the provider (required for openai/anthropic if not in server .env)",
     )

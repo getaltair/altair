@@ -7,6 +7,7 @@ This directory contains integration tests for Altair Guidance. These tests verif
 - **navigation_test.dart** - Tests all navigation flows including provider context passing
 - **task_operations_test.dart** - Tests complete task CRUD workflows
 - **project_operations_test.dart** - Tests complete project management workflows
+- **mobile_interactions_test.dart** - Tests mobile touch interactions and gestures (7 tests)
 
 ## Running Tests
 

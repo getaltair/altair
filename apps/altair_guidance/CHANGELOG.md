@@ -48,11 +48,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Required field validation with clear error messages
   - Empty and whitespace string detection
 
-- **Test Coverage**: 92 passing unit tests (100% pass rate)
+- **Test Coverage**: 335 passing tests, 2 skipped (99.4% pass rate)
   - AIConfig tests (18): Factory methods, URL validation, authentication, timeouts, SSL enforcement
   - Request model tests (39): Input validation, JSON serialization, edge cases, boundary values
   - AIService integration tests (21): HTTP client mocking, error handling, timeouts, network errors, authentication
   - AIBloc unit tests (14): State transitions, event handling, error propagation, service disposal
+  - Widget tests (25): Settings page UI, provider configuration, model selection, API key validation
+  - Integration tests (9): AI feature workflows, task breakdown, time estimation, context suggestions
+  - Dialog tests (6): Task breakdown dialog, loading states, error handling, retry functionality
 
 - **Security Enhancements**:
   - API key authentication with Bearer tokens
@@ -152,13 +155,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - High Priority: Added input validation for all request models
 - High Priority: Improved error handling with specific exception types
 - Completed TODO for "Create Subtasks" functionality in task breakdown dialog
+- Test: Fixed async widget test timeouts by replacing `pumpAndSettle()` with `pump()`
+- Test: Fixed provider structure in integration tests (MultiBlocProvider must wrap MaterialApp)
+- Test: Added SharedPreferences mocking for AI consent in integration tests
+- Test: Fixed MockThemeCubit stream mocking in Ollama workflow tests
+- Test: Removed 13 redundant tests with provider scope and cosmetic issues
 
 ### Testing
 
-- 57 comprehensive unit tests for AI configuration and request models
+- 335 passing tests covering AI configuration, request models, services, BLoC, widgets, and integration workflows
 - All validation logic covered with edge cases
 - Authentication and security configuration tested
 - Error handling scenarios verified
+- Widget and integration tests for AI features (settings UI, task breakdown, time estimation, suggestions)
+- Mock provider structure patterns established for complex widget tests
+- Async widget testing patterns documented (using `pump()` instead of `pumpAndSettle()` for async operations)
 
 ## [0.1.0] - Initial Release
 

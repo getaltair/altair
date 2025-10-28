@@ -1,237 +1,153 @@
+import 'package:altair_guidance/models/ai_settings.dart';
 import 'package:altair_guidance/services/ai/ai_config.dart';
+import 'package:altair_guidance/services/ai/providers/anthropic_provider.dart';
+import 'package:altair_guidance/services/ai/providers/ollama_provider.dart';
+import 'package:altair_guidance/services/ai/providers/openai_provider.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  group('AIConfig', () {
-    test('creates config with required parameters', () {
-      const config = AIConfig(
-        baseUrl: 'http://localhost:8001/api',
+  group('AIConfig.createProvider', () {
+    test('returns null when AI is disabled', () {
+      const settings = AISettings(
+        enabled: false,
+        provider: AIProviderType.openai,
+        openaiApiKey: 'test-key',
       );
 
-      expect(config.baseUrl, 'http://localhost:8001/api');
-      expect(config.apiKey, isNull);
-      expect(config.enableSSL, true);
-      expect(config.breakdownTimeout, const Duration(seconds: 60));
-      expect(config.prioritizationTimeout, const Duration(seconds: 45));
-      expect(config.estimateTimeout, const Duration(seconds: 30));
-      expect(config.suggestionsTimeout, const Duration(seconds: 30));
-      expect(config.healthCheckTimeout, const Duration(seconds: 5));
+      final provider = AIConfig.createProvider(settings);
+
+      expect(provider, isNull);
     });
 
-    test('creates config with all parameters', () {
-      const config = AIConfig(
-        baseUrl: 'https://api.example.com',
-        apiKey: 'test-key-123',
-        enableSSL: false,
-        breakdownTimeout: Duration(seconds: 120),
-        prioritizationTimeout: Duration(seconds: 90),
-        estimateTimeout: Duration(seconds: 60),
-        suggestionsTimeout: Duration(seconds: 45),
-        healthCheckTimeout: Duration(seconds: 10),
+    test('returns null when OpenAI API key is missing', () {
+      const settings = AISettings(
+        enabled: true,
+        provider: AIProviderType.openai,
+        openaiApiKey: null,
       );
 
-      expect(config.baseUrl, 'https://api.example.com');
-      expect(config.apiKey, 'test-key-123');
-      expect(config.enableSSL, false);
-      expect(config.breakdownTimeout, const Duration(seconds: 120));
-      expect(config.prioritizationTimeout, const Duration(seconds: 90));
-      expect(config.estimateTimeout, const Duration(seconds: 60));
-      expect(config.suggestionsTimeout, const Duration(seconds: 45));
-      expect(config.healthCheckTimeout, const Duration(seconds: 10));
+      final provider = AIConfig.createProvider(settings);
+
+      expect(provider, isNull);
     });
 
-    test('factory development() creates correct config', () {
-      final config = AIConfig.development();
-
-      expect(config.baseUrl, 'http://localhost:8001/api');
-      expect(config.apiKey, isNull);
-      expect(config.enableSSL, false);
-    });
-
-    test('factory production() accepts HTTP (relaxed for v0.1.0)', () {
-      final config = AIConfig.production(
-        baseUrl: 'http://api.example.com',
-        apiKey: 'test-key',
+    test('returns null when OpenAI API key is empty', () {
+      const settings = AISettings(
+        enabled: true,
+        provider: AIProviderType.openai,
+        openaiApiKey: '',
       );
 
-      expect(config.baseUrl, 'http://api.example.com');
-      expect(config.apiKey, 'test-key');
-      expect(config.enableSSL, false);
+      final provider = AIConfig.createProvider(settings);
+
+      expect(provider, isNull);
     });
 
-    test('factory production() accepts empty API key (relaxed for v0.1.0)', () {
-      final config = AIConfig.production(
-        baseUrl: 'https://api.example.com',
-        apiKey: '',
+    test('creates OpenAI provider with valid settings', () {
+      const settings = AISettings(
+        enabled: true,
+        provider: AIProviderType.openai,
+        openaiApiKey: 'test-openai-key',
+        openaiModel: 'gpt-4o',
       );
 
-      expect(config.baseUrl, 'https://api.example.com');
-      expect(config.apiKey, isNull);
-      expect(config.enableSSL, true);
+      final provider = AIConfig.createProvider(settings);
+
+      expect(provider, isNotNull);
+      expect(provider, isA<OpenAIProvider>());
     });
 
-    test('factory production() creates correct config with HTTPS', () {
-      final config = AIConfig.production(
-        baseUrl: 'https://api.example.com',
-        apiKey: 'production-key',
+    test('creates OpenAI provider with default model', () {
+      const settings = AISettings(
+        enabled: true,
+        provider: AIProviderType.openai,
+        openaiApiKey: 'test-openai-key',
+        // Using default openaiModel from AISettings
       );
 
-      expect(config.baseUrl, 'https://api.example.com');
-      expect(config.apiKey, 'production-key');
-      expect(config.enableSSL, true);
+      final provider = AIConfig.createProvider(settings);
+
+      expect(provider, isNotNull);
+      expect(provider, isA<OpenAIProvider>());
     });
 
-    group('validate()', () {
-      test('passes for valid HTTP URL in development', () {
-        const config = AIConfig(
-          baseUrl: 'http://localhost:8001/api',
-          enableSSL: false,
-        );
+    test('returns null when Anthropic API key is missing', () {
+      const settings = AISettings(
+        enabled: true,
+        provider: AIProviderType.anthropic,
+        anthropicApiKey: null,
+      );
 
-        expect(() => config.validate(), returnsNormally);
-      });
+      final provider = AIConfig.createProvider(settings);
 
-      test('passes for valid HTTPS URL', () {
-        const config = AIConfig(
-          baseUrl: 'https://api.example.com',
-        );
-
-        expect(() => config.validate(), returnsNormally);
-      });
-
-      test('throws for URL without valid scheme', () {
-        const config = AIConfig(
-          baseUrl: 'not-a-url',
-        );
-
-        expect(
-          () => config.validate(),
-          throwsA(
-            isA<StateError>().having(
-              (e) => e.message,
-              'message',
-              contains('must use http:// or https://'),
-            ),
-          ),
-        );
-      });
-
-      test('throws for URL without scheme', () {
-        const config = AIConfig(
-          baseUrl: 'api.example.com',
-        );
-
-        expect(
-          () => config.validate(),
-          throwsA(
-            isA<StateError>().having(
-              (e) => e.message,
-              'message',
-              contains('must use http:// or https://'),
-            ),
-          ),
-        );
-      });
-
-      test('throws for URL with invalid scheme', () {
-        const config = AIConfig(
-          baseUrl: 'ftp://api.example.com',
-        );
-
-        expect(
-          () => config.validate(),
-          throwsA(
-            isA<StateError>().having(
-              (e) => e.message,
-              'message',
-              contains('must use http:// or https://'),
-            ),
-          ),
-        );
-      });
-
-      test('passes when SSL enabled with HTTP (relaxed for v0.1.0)', () {
-        const config = AIConfig(
-          baseUrl: 'http://api.example.com',
-          enableSSL: true,
-        );
-
-        // Validation relaxed for v0.1.0 - no longer enforces HTTPS when SSL is enabled
-        expect(() => config.validate(), returnsNormally);
-      });
+      expect(provider, isNull);
     });
 
-    group('authHeaders', () {
-      test('returns empty map when no API key', () {
-        const config = AIConfig(
-          baseUrl: 'http://localhost:8001/api',
-        );
+    test('returns null when Anthropic API key is empty', () {
+      const settings = AISettings(
+        enabled: true,
+        provider: AIProviderType.anthropic,
+        anthropicApiKey: '',
+      );
 
-        expect(config.authHeaders, isEmpty);
-      });
+      final provider = AIConfig.createProvider(settings);
 
-      test('returns Bearer token when API key provided', () {
-        const config = AIConfig(
-          baseUrl: 'http://localhost:8001/api',
-          apiKey: 'test-key-123',
-        );
-
-        expect(config.authHeaders, {
-          'Authorization': 'Bearer test-key-123',
-        });
-      });
+      expect(provider, isNull);
     });
 
-    group('headers', () {
-      test('includes Content-Type', () {
-        const config = AIConfig(
-          baseUrl: 'http://localhost:8001/api',
-        );
+    test('creates Anthropic provider with valid settings', () {
+      const settings = AISettings(
+        enabled: true,
+        provider: AIProviderType.anthropic,
+        anthropicApiKey: 'test-anthropic-key',
+        anthropicModel: 'claude-3-5-sonnet-20241022',
+      );
 
-        expect(config.headers['Content-Type'], 'application/json');
-      });
+      final provider = AIConfig.createProvider(settings);
 
-      test('includes auth headers when API key provided', () {
-        const config = AIConfig(
-          baseUrl: 'http://localhost:8001/api',
-          apiKey: 'test-key',
-        );
-
-        expect(config.headers, {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer test-key',
-        });
-      });
-
-      test('only includes Content-Type when no API key', () {
-        const config = AIConfig(
-          baseUrl: 'http://localhost:8001/api',
-        );
-
-        expect(config.headers, {
-          'Content-Type': 'application/json',
-        });
-      });
+      expect(provider, isNotNull);
+      expect(provider, isA<AnthropicProvider>());
     });
 
-    test('toString() includes baseUrl and auth status', () {
-      const configWithKey = AIConfig(
-        baseUrl: 'http://localhost:8001/api',
-        apiKey: 'secret',
-        enableSSL: false,
-      );
-      const configWithoutKey = AIConfig(
-        baseUrl: 'http://localhost:8001/api',
+    test('creates Anthropic provider with default model', () {
+      const settings = AISettings(
+        enabled: true,
+        provider: AIProviderType.anthropic,
+        anthropicApiKey: 'test-anthropic-key',
+        // Using default anthropicModel from AISettings
       );
 
-      expect(
-        configWithKey.toString(),
-        'AIConfig(baseUrl: http://localhost:8001/api, hasApiKey: true, enableSSL: false)',
+      final provider = AIConfig.createProvider(settings);
+
+      expect(provider, isNotNull);
+      expect(provider, isA<AnthropicProvider>());
+    });
+
+    test('creates Ollama provider with custom settings', () {
+      const settings = AISettings(
+        enabled: true,
+        provider: AIProviderType.ollama,
+        ollamaBaseUrl: 'http://localhost:11434',
+        ollamaModel: 'llama3.1:8b',
       );
-      expect(
-        configWithoutKey.toString(),
-        'AIConfig(baseUrl: http://localhost:8001/api, hasApiKey: false, enableSSL: true)',
+
+      final provider = AIConfig.createProvider(settings);
+
+      expect(provider, isNotNull);
+      expect(provider, isA<OllamaProvider>());
+    });
+
+    test('creates Ollama provider with default settings', () {
+      const settings = AISettings(
+        enabled: true,
+        provider: AIProviderType.ollama,
+        // Using default ollamaBaseUrl and ollamaModel from AISettings
       );
+
+      final provider = AIConfig.createProvider(settings);
+
+      expect(provider, isNotNull);
+      expect(provider, isA<OllamaProvider>());
     });
   });
 }

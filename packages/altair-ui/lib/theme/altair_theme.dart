@@ -79,10 +79,7 @@ class AltairTheme {
       cardTheme: const CardThemeData(
         elevation: 0,
         shape: RoundedRectangleBorder(
-          side: BorderSide(
-            color: AltairColors.lightBorderColor,
-            width: 1.0,
-          ),
+          side: BorderSide(color: AltairColors.lightBorderColor, width: 1.0),
         ),
         color: AltairColors.lightBgSecondary,
         margin: EdgeInsets.all(AltairSpacing.md),
@@ -141,16 +138,10 @@ class AltairTheme {
           ),
         ),
         focusedBorder: OutlineInputBorder(
-          borderSide: BorderSide(
-            color: AltairColors.accentOrange,
-            width: 2.0,
-          ),
+          borderSide: BorderSide(color: AltairColors.accentOrange, width: 2.0),
         ),
         errorBorder: OutlineInputBorder(
-          borderSide: BorderSide(
-            color: AltairColors.error,
-            width: 1.0,
-          ),
+          borderSide: BorderSide(color: AltairColors.error, width: 1.0),
         ),
         contentPadding: EdgeInsets.symmetric(
           horizontal: AltairSpacing.md,
@@ -169,10 +160,7 @@ class AltairTheme {
           color: AltairColors.lightTextPrimary,
         ),
         shape: const Border(
-          bottom: BorderSide(
-            color: AltairColors.lightBorderColor,
-            width: 1.0,
-          ),
+          bottom: BorderSide(color: AltairColors.lightBorderColor, width: 1.0),
         ),
       ),
 
@@ -252,10 +240,7 @@ class AltairTheme {
       cardTheme: const CardThemeData(
         elevation: 0,
         shape: RoundedRectangleBorder(
-          side: BorderSide(
-            color: AltairColors.darkBorderColor,
-            width: 1.0,
-          ),
+          side: BorderSide(color: AltairColors.darkBorderColor, width: 1.0),
         ),
         color: AltairColors.darkBgSecondary,
         margin: EdgeInsets.all(AltairSpacing.md),
@@ -314,16 +299,10 @@ class AltairTheme {
           ),
         ),
         focusedBorder: OutlineInputBorder(
-          borderSide: BorderSide(
-            color: AltairColors.accentOrange,
-            width: 2.0,
-          ),
+          borderSide: BorderSide(color: AltairColors.accentOrange, width: 2.0),
         ),
         errorBorder: OutlineInputBorder(
-          borderSide: BorderSide(
-            color: AltairColors.error,
-            width: 1.0,
-          ),
+          borderSide: BorderSide(color: AltairColors.error, width: 1.0),
         ),
         contentPadding: EdgeInsets.symmetric(
           horizontal: AltairSpacing.md,
@@ -342,10 +321,7 @@ class AltairTheme {
           color: AltairColors.darkTextPrimary,
         ),
         shape: const Border(
-          bottom: BorderSide(
-            color: AltairColors.darkBorderColor,
-            width: 1.0,
-          ),
+          bottom: BorderSide(color: AltairColors.darkBorderColor, width: 1.0),
         ),
       ),
 

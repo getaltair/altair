@@ -7,11 +7,7 @@ void main() {
     testWidgets('renders with child content', (WidgetTester tester) async {
       await tester.pumpWidget(
         const MaterialApp(
-          home: Scaffold(
-            body: AltairCard(
-              child: Text('Card Content'),
-            ),
-          ),
+          home: Scaffold(body: AltairCard(child: Text('Card Content'))),
         ),
       );
 
@@ -36,15 +32,12 @@ void main() {
       expect(card.accentColor, AltairColors.accentBlue);
     });
 
-    testWidgets('accent color is null when not specified',
-        (WidgetTester tester) async {
+    testWidgets('accent color is null when not specified', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         const MaterialApp(
-          home: Scaffold(
-            body: AltairCard(
-              child: Text('Default Card'),
-            ),
-          ),
+          home: Scaffold(body: AltairCard(child: Text('Default Card'))),
         ),
       );
 
@@ -55,11 +48,7 @@ void main() {
     testWidgets('hides accent bar by default', (WidgetTester tester) async {
       await tester.pumpWidget(
         const MaterialApp(
-          home: Scaffold(
-            body: AltairCard(
-              child: Text('Card without Accent'),
-            ),
-          ),
+          home: Scaffold(body: AltairCard(child: Text('Card without Accent'))),
         ),
       );
 
