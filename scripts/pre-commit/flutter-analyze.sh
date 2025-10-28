@@ -20,6 +20,7 @@ FLUTTER_PROJECTS=(
   "packages/altair-core"
   "packages/altair-auth"
   "packages/altair-ui"
+  "packages/altair-db-service"
   "apps/altair_guidance"
 )
 
