@@ -1,0 +1,47 @@
+# Snyk (https://snyk.io) policy file
+
+version: v1.25.0
+
+# Ignore specific vulnerabilities (with justification)
+ignore: {}
+
+# Patch vulnerabilities automatically
+patch: {}
+
+# Language-specific settings
+language-settings:
+  python:
+    # Fail on high and critical vulnerabilities
+    fail-on: upgradable
+    severity-threshold: high
+
+  dart:
+    # Fail on high and critical vulnerabilities
+    fail-on: upgradable
+    severity-threshold: high
+
+# Exclude paths from scanning
+exclude:
+  # Build artifacts
+  - build/
+  - dist/
+  - '*.build/'
+
+  # Dependencies
+  - node_modules/
+  - .pub-cache/
+  - .dart_tool/
+
+  # Test files (scan, but don't fail on test-only dependencies)
+  - '**/*_test.dart'
+  - '**/test/**'
+  - tests/
+  - '**/tests/**'
+
+  # Generated files
+  - '**/*.g.dart'
+  - '**/*.freezed.dart'
+  - '**/*.mocks.dart'
+
+# Organization settings (will use once configured)
+# org: getaltair
