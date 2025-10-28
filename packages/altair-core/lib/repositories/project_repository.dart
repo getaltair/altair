@@ -1,42 +1,30 @@
-/// Project repository for CRUD operations and queries.
-///
-/// Handles all database interactions for [Project] entities including:
-/// - Creating new projects
-/// - Retrieving projects by ID or filters
-/// - Updating existing projects
-/// - Deleting projects
-/// - Searching projects by name/description
-/// - Counting tasks in projects
-library;
-
-import 'dart:convert';
-
-import 'package:sqflite/sqflite.dart';
+import 'package:altair_db_service/altair_db_service.dart';
 import 'package:uuid/uuid.dart';
 
-import '../database/database.dart';
 import '../models/project.dart';
 
-/// Repository for managing projects in the database.
-///
-/// Provides CRUD operations and query methods for [Project] entities.
-/// All operations are async and interact with the SQLite database.
+/// SurrealDB-based repository for managing projects
 class ProjectRepository {
-  final AltairDatabase _db = AltairDatabase();
   final Uuid _uuid = const Uuid();
+  late final AltairConnectionManager _connectionManager;
+  bool _initialized = false;
 
-  /// Creates a new project in the database.
-  ///
-  /// Generates a UUID for the project if [project.id] is empty.
-  /// Updates the [updatedAt] timestamp to the current time.
-  ///
-  /// Returns the created [Project] with its generated ID.
+  /// Initialize the repository with database connection
+  Future<void> initialize() async {
+    if (_initialized) return;
+
+    _connectionManager = await AltairConnectionManager.getInstance();
+    _initialized = true;
+  }
+
+  /// Create a new project
   Future<Project> create(Project project) async {
-    final db = await _db.database;
+    await _ensureInitialized();
+    final db = _connectionManager.client;
     final now = DateTime.now();
 
     // Generate ID if not provided
-    final id = project.id.isEmpty ? _uuid.v4() : project.id;
+    final id = project.id.isEmpty ? 'project:${_uuid.v4()}' : project.id;
 
     final projectToInsert = project.copyWith(
       id: id,
@@ -44,159 +32,162 @@ class ProjectRepository {
       updatedAt: now,
     );
 
-    await db.insert(
-      'projects',
-      _projectToMap(projectToInsert),
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    await db.create('project', _projectToMap(projectToInsert));
 
     return projectToInsert;
   }
 
-  /// Retrieves a project by its unique identifier.
-  ///
-  /// Returns the [Project] if found, or `null` if no project exists with the given [id].
+  /// Get a project by ID
   Future<Project?> findById(String id) async {
-    final db = await _db.database;
+    await _ensureInitialized();
+    final db = _connectionManager.client;
 
-    final List<Map<String, dynamic>> results = await db.query(
-      'projects',
-      where: 'id = ?',
-      whereArgs: [id],
-      limit: 1,
-    );
+    final result = await db.query('''
+      SELECT * FROM \$projectId;
+    ''', {'projectId': id});
 
-    if (results.isEmpty) return null;
+    if (result == null || result is! List) return null;
+    if (result.isEmpty) return null;
+    if (result[0] is! Map) return null;
 
-    return _projectFromMap(results.first);
+    final responseMap = result[0] as Map<String, dynamic>;
+    final data = responseMap['result'];
+
+    if (data is! List || data.isEmpty) return null;
+
+    return _projectFromMap(data[0] as Map<String, dynamic>);
   }
 
-  /// Retrieves all projects, optionally filtered by criteria.
-  ///
-  /// Optional filters:
-  /// - [status]: Filter by project status (active, onHold, completed, cancelled)
-  /// - [tags]: Filter by tags (projects must contain at least one of the specified tags)
-  /// - [limit]: Maximum number of results to return
-  /// - [offset]: Number of results to skip (for pagination)
-  ///
-  /// Results are ordered by creation date (newest first).
+  /// Get all projects
   Future<List<Project>> findAll({
     ProjectStatus? status,
     List<String>? tags,
     int? limit,
     int? offset,
   }) async {
-    final db = await _db.database;
+    await _ensureInitialized();
+    final db = _connectionManager.client;
 
-    // Build query
-    final where = <String>[];
-    final whereArgs = <dynamic>[];
+    // Build query with filters
+    final conditions = <String>[];
+    final params = <String, dynamic>{};
 
     if (status != null) {
-      where.add('status = ?');
-      whereArgs.add(status.name);
+      conditions.add('status = \$status');
+      params['status'] = status.name;
     }
 
-    var results = await db.query(
-      'projects',
-      where: where.isEmpty ? null : where.join(' AND '),
-      whereArgs: whereArgs.isEmpty ? null : whereArgs,
-      orderBy: 'created_at DESC',
-    );
-
-    var projects = results.map(_projectFromMap).toList();
-
-    // Filter by tags in memory (since tags are stored as JSON arrays)
     if (tags != null && tags.isNotEmpty) {
-      projects = projects.where((project) {
-        // Project must contain at least one of the specified tags
-        return project.tags.any((tag) => tags.contains(tag));
-      }).toList();
+      conditions.add('\$tags ALLINSIDE tags');
+      params['tags'] = tags;
     }
 
-    // Apply limit and offset after filtering
-    if (offset != null && offset > 0) {
-      projects = projects.skip(offset).toList();
-    }
-    if (limit != null && limit > 0) {
-      projects = projects.take(limit).toList();
-    }
+    final whereClause =
+        conditions.isEmpty ? '' : 'WHERE ${conditions.join(' AND ')}';
+    final limitClause = limit != null ? 'LIMIT $limit' : '';
+    final startClause = offset != null ? 'START $offset' : '';
 
-    return projects;
+    final query = '''
+      SELECT * FROM project
+      $whereClause
+      ORDER BY created_at DESC
+      $startClause
+      $limitClause;
+    ''';
+
+    final result = await db.query(query, params);
+
+    if (result == null || result is! List) return [];
+    if (result.isEmpty) return [];
+    if (result[0] is! Map) return [];
+
+    final responseMap = result[0] as Map<String, dynamic>;
+    final data = responseMap['result'];
+
+    if (data is! List) return [];
+
+    return data
+        .map((item) => _projectFromMap(item as Map<String, dynamic>))
+        .toList();
   }
 
-  /// Updates an existing project in the database.
-  ///
-  /// Automatically updates the [updatedAt] timestamp to the current time.
-  ///
-  /// Returns the updated [Project] with the new timestamp.
+  /// Update a project
   Future<Project> update(Project project) async {
-    final db = await _db.database;
+    await _ensureInitialized();
+    final db = _connectionManager.client;
 
     final projectToUpdate = project.copyWith(
       updatedAt: DateTime.now(),
     );
 
-    await db.update(
-      'projects',
-      _projectToMap(projectToUpdate),
-      where: 'id = ?',
-      whereArgs: [project.id],
-    );
+    await db.update(project.id, _projectToMap(projectToUpdate));
 
     return projectToUpdate;
   }
 
-  /// Deletes a project from the database.
-  ///
-  /// **Warning**: This will cascade delete all tasks associated with this project
-  /// due to the foreign key constraint in the database schema.
-  ///
-  /// The [id] parameter specifies which project to delete.
+  /// Delete a project
   Future<void> delete(String id) async {
-    final db = await _db.database;
+    await _ensureInitialized();
+    final db = _connectionManager.client;
 
-    await db.delete(
-      'projects',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+    await db.delete(id);
   }
 
-  /// Searches for projects by name or description.
-  ///
-  /// Performs a case-insensitive substring search across both project name
-  /// and description fields. Results are ordered by creation date (newest first).
-  ///
-  /// The [query] parameter is the search term to match against.
-  /// Returns a list of matching projects, or an empty list if no matches found.
+  /// Search projects by name or description
   Future<List<Project>> search(String query) async {
-    final db = await _db.database;
+    await _ensureInitialized();
+    final db = _connectionManager.client;
 
-    final results = await db.query(
-      'projects',
-      where: 'name LIKE ? OR description LIKE ?',
-      whereArgs: ['%$query%', '%$query%'],
-      orderBy: 'created_at DESC',
-    );
+    final result = await db.query('''
+      SELECT * FROM project
+      WHERE name @@ \$query OR description @@ \$query
+      ORDER BY created_at DESC
+      LIMIT 50;
+    ''', {'query': query});
 
-    return results.map(_projectFromMap).toList();
+    if (result == null || result is! List) return [];
+    if (result.isEmpty) return [];
+    if (result[0] is! Map) return [];
+
+    final responseMap = result[0] as Map<String, dynamic>;
+    final data = responseMap['result'];
+
+    if (data is! List) return [];
+
+    return data
+        .map((item) => _projectFromMap(item as Map<String, dynamic>))
+        .toList();
   }
 
-  /// Retrieves the count of tasks associated with a project.
-  ///
-  /// Counts all tasks where `project_id` matches the given [projectId].
-  ///
-  /// Returns the number of tasks in the project, or 0 if the project has no tasks.
+  /// Get task count for a project
   Future<int> getTaskCount(String projectId) async {
-    final db = await _db.database;
+    await _ensureInitialized();
+    final db = _connectionManager.client;
 
-    final result = await db.rawQuery(
-      'SELECT COUNT(*) as count FROM tasks WHERE project_id = ?',
-      [projectId],
-    );
+    final result = await db.query('''
+      SELECT count() as count FROM task
+      WHERE project_id = \$projectId
+      GROUP ALL;
+    ''', {'projectId': projectId});
 
-    return (result.first['count'] as int?) ?? 0;
+    if (result == null || result is! List) return 0;
+    if (result.isEmpty) return 0;
+    if (result[0] is! Map) return 0;
+
+    final responseMap = result[0] as Map<String, dynamic>;
+    final data = responseMap['result'];
+
+    if (data is! List || data.isEmpty) return 0;
+
+    final countMap = data[0] as Map<String, dynamic>;
+    return (countMap['count'] as num?)?.toInt() ?? 0;
+  }
+
+  /// Ensure the repository is initialized
+  Future<void> _ensureInitialized() async {
+    if (!_initialized) {
+      await initialize();
+    }
   }
 
   /// Convert Project to Map for database storage
@@ -206,14 +197,13 @@ class ProjectRepository {
       'name': project.name,
       'description': project.description,
       'status': project.status.name,
-      'tags': jsonEncode(project.tags),
+      'tags': project.tags,
       'color': project.color,
-      'created_at': project.createdAt.millisecondsSinceEpoch,
-      'updated_at': project.updatedAt.millisecondsSinceEpoch,
-      'target_date': project.targetDate?.millisecondsSinceEpoch,
-      'completed_at': project.completedAt?.millisecondsSinceEpoch,
-      'metadata':
-          project.metadata != null ? jsonEncode(project.metadata) : null,
+      'created_at': project.createdAt.toIso8601String(),
+      'updated_at': project.updatedAt.toIso8601String(),
+      'target_date': project.targetDate?.toIso8601String(),
+      'completed_at': project.completedAt?.toIso8601String(),
+      'metadata': project.metadata,
     };
   }
 
@@ -224,21 +214,18 @@ class ProjectRepository {
       name: map['name'] as String,
       description: map['description'] as String?,
       status: ProjectStatus.values.byName(map['status'] as String),
-      tags: (jsonDecode(map['tags'] as String) as List<dynamic>)
-          .map((e) => e as String)
-          .toList(),
+      tags: (map['tags'] as List<dynamic>?)?.map((e) => e as String).toList() ??
+          [],
       color: map['color'] as String?,
-      createdAt: DateTime.fromMillisecondsSinceEpoch(map['created_at'] as int),
-      updatedAt: DateTime.fromMillisecondsSinceEpoch(map['updated_at'] as int),
+      createdAt: DateTime.parse(map['created_at'] as String),
+      updatedAt: DateTime.parse(map['updated_at'] as String),
       targetDate: map['target_date'] != null
-          ? DateTime.fromMillisecondsSinceEpoch(map['target_date'] as int)
+          ? DateTime.parse(map['target_date'] as String)
           : null,
       completedAt: map['completed_at'] != null
-          ? DateTime.fromMillisecondsSinceEpoch(map['completed_at'] as int)
+          ? DateTime.parse(map['completed_at'] as String)
           : null,
-      metadata: map['metadata'] != null
-          ? jsonDecode(map['metadata'] as String) as Map<String, dynamic>
-          : null,
+      metadata: map['metadata'] as Map<String, dynamic>?,
     );
   }
 }

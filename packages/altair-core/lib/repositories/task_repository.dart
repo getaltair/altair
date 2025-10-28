@@ -46,13 +46,16 @@ class TaskRepository {
       SELECT * FROM \$taskId;
     ''', {'taskId': id});
 
-    if (result == null ||
-        (result as List).isEmpty ||
-        (result[0] as List).isEmpty) {
-      return null;
-    }
+    if (result == null || result is! List) return null;
+    if (result.isEmpty) return null;
+    if (result[0] is! Map) return null;
 
-    return _taskFromMap(result[0][0] as Map<String, dynamic>);
+    final responseMap = result[0] as Map<String, dynamic>;
+    final data = responseMap['result'];
+
+    if (data is! List || data.isEmpty) return null;
+
+    return _taskFromMap(data[0] as Map<String, dynamic>);
   }
 
   /// Get all tasks
@@ -101,8 +104,28 @@ class TaskRepository {
     final result = await db.query(query, params);
 
     if (result == null) return [];
-    final list = (result as List).isNotEmpty ? (result[0] as List) : [];
-    return list
+
+    // Handle error responses (SurrealDB returns Map for errors)
+    if (result is! List) {
+      print('❌ SurrealDB query error (not a List): $result');
+      return [];
+    }
+
+    if (result.isEmpty) return [];
+
+    // SurrealDB returns results as: [{result: [...data...], status: "OK", time: "..."}]
+    // Extract the actual data from result[0]['result']
+    if (result[0] is! Map) {
+      print('❌ SurrealDB unexpected response format: ${result[0]}');
+      return [];
+    }
+
+    final responseMap = result[0] as Map<String, dynamic>;
+    final data = responseMap['result'];
+
+    if (data is! List) return [];
+
+    return data
         .map((item) => _taskFromMap(item as Map<String, dynamic>))
         .toList();
   }
@@ -141,9 +164,16 @@ class TaskRepository {
       LIMIT 50;
     ''', {'query': query});
 
-    if (result == null) return [];
-    final list = (result as List).isNotEmpty ? (result[0] as List) : [];
-    return list
+    if (result == null || result is! List) return [];
+    if (result.isEmpty) return [];
+    if (result[0] is! Map) return [];
+
+    final responseMap = result[0] as Map<String, dynamic>;
+    final data = responseMap['result'];
+
+    if (data is! List) return [];
+
+    return data
         .map((item) => _taskFromMap(item as Map<String, dynamic>))
         .toList();
   }
@@ -159,9 +189,16 @@ class TaskRepository {
       ORDER BY created_at ASC;
     ''', {'parentTaskId': parentTaskId});
 
-    if (result == null) return [];
-    final list = (result as List).isNotEmpty ? (result[0] as List) : [];
-    return list
+    if (result == null || result is! List) return [];
+    if (result.isEmpty) return [];
+    if (result[0] is! Map) return [];
+
+    final responseMap = result[0] as Map<String, dynamic>;
+    final data = responseMap['result'];
+
+    if (data is! List) return [];
+
+    return data
         .map((item) => _taskFromMap(item as Map<String, dynamic>))
         .toList();
   }

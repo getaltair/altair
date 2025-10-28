@@ -12,6 +12,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class MockTaskRepository extends Mock implements TaskRepository {}
 
+class MockProjectRepository extends Mock implements ProjectRepository {}
+
+class MockTagRepository extends Mock implements TagRepository {}
+
 class FakeTask extends Fake implements Task {}
 
 void main() {
@@ -22,18 +26,24 @@ void main() {
   group('AltairGuidanceApp', () {
     late SharedPreferences prefs;
     late MockTaskRepository mockTaskRepository;
+    late MockProjectRepository mockProjectRepository;
+    late MockTagRepository mockTagRepository;
 
     setUp(() async {
       // Initialize SharedPreferences with fake implementation for testing
       SharedPreferences.setMockInitialValues({});
       prefs = await SharedPreferences.getInstance();
       mockTaskRepository = MockTaskRepository();
+      mockProjectRepository = MockProjectRepository();
+      mockTagRepository = MockTagRepository();
     });
 
     testWidgets('renders without crashing', (WidgetTester tester) async {
       await tester.pumpWidget(AltairGuidanceApp(
         prefs: prefs,
         taskRepository: mockTaskRepository,
+        projectRepository: mockProjectRepository,
+        tagRepository: mockTagRepository,
       ));
       expect(find.byType(MaterialApp), findsOneWidget);
     });
@@ -42,6 +52,8 @@ void main() {
       await tester.pumpWidget(AltairGuidanceApp(
         prefs: prefs,
         taskRepository: mockTaskRepository,
+        projectRepository: mockProjectRepository,
+        tagRepository: mockTagRepository,
       ));
 
       final materialApp = tester.widget<MaterialApp>(
@@ -55,6 +67,8 @@ void main() {
       await tester.pumpWidget(AltairGuidanceApp(
         prefs: prefs,
         taskRepository: mockTaskRepository,
+        projectRepository: mockProjectRepository,
+        tagRepository: mockTagRepository,
       ));
 
       final materialApp = tester.widget<MaterialApp>(
@@ -70,6 +84,8 @@ void main() {
       await tester.pumpWidget(AltairGuidanceApp(
         prefs: prefs,
         taskRepository: mockTaskRepository,
+        projectRepository: mockProjectRepository,
+        tagRepository: mockTagRepository,
       ));
       await tester.pump();
 
@@ -80,6 +96,8 @@ void main() {
       await tester.pumpWidget(AltairGuidanceApp(
         prefs: prefs,
         taskRepository: mockTaskRepository,
+        projectRepository: mockProjectRepository,
+        tagRepository: mockTagRepository,
       ));
 
       final materialApp = tester.widget<MaterialApp>(

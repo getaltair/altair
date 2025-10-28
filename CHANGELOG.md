@@ -340,3 +340,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Project initialization
 - Development environment setup with mise
+
+## Migration Notes
+
+### SurrealDB Integration (Experimental)
+
+**Status**: The SurrealDB database service is experimental and opt-in. Existing apps continue to use SQLite by default.
+
+**For Developers**:
+
+- The `altair-db-service` package provides infrastructure for future cross-app data integration
+- Current implementation does not include automatic migration from SQLite
+- Production apps should continue using SQLite until migration tools are available
+
+**Known Limitations**:
+
+1. No automatic data migration from SQLite
+2. Requires manual SurrealDB installation for development
+3. Mobile platform support incomplete (Android/iOS)
+4. Security improvements needed before production use
+
+**Roadmap**:
+
+- v0.2.0: SQLite → SurrealDB migration tool
+- v0.3.0: Production-ready security and error handling
+- v0.4.0: Full mobile platform support
+
+See `packages/altair-db-service/README.md` for details.
