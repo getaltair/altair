@@ -31,15 +31,15 @@ jobs:
         with:
           enable-cache: true
 
-      - name: Install Python dependencies
-        run: |
-          cd services/auth-service
-          uv sync
-
       - name: Export requirements for Snyk
         run: |
           cd services/auth-service
           uv pip compile pyproject.toml -o requirements.txt
+
+      - name: Install dependencies with pip for Snyk
+        run: |
+          cd services/auth-service
+          pip install -r requirements.txt
 
       - name: Run Snyk to check for vulnerabilities (Python)
         uses: snyk/actions/python@master
