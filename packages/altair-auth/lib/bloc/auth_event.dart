@@ -18,10 +18,7 @@ final class AuthCheckRequested extends AuthEvent {
 
 /// Event to log in a user.
 final class AuthLoginRequested extends AuthEvent {
-  const AuthLoginRequested({
-    required this.email,
-    required this.password,
-  });
+  const AuthLoginRequested({required this.email, required this.password});
 
   final String email;
   final String password;
@@ -32,10 +29,7 @@ final class AuthLoginRequested extends AuthEvent {
 
 /// Event to register a new user.
 final class AuthRegisterRequested extends AuthEvent {
-  const AuthRegisterRequested({
-    required this.email,
-    required this.password,
-  });
+  const AuthRegisterRequested({required this.email, required this.password});
 
   final String email;
   final String password;

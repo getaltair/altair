@@ -7,19 +7,19 @@ part of 'tag.dart';
 // **************************************************************************
 
 Tag _$TagFromJson(Map<String, dynamic> json) => Tag(
-      id: json['id'] as String,
-      name: json['name'] as String,
-      description: json['description'] as String?,
-      color: json['color'] as String?,
-      createdAt: DateTime.parse(json['createdAt'] as String),
-      usageCount: (json['usageCount'] as num?)?.toInt() ?? 0,
-    );
+  id: json['id'] as String,
+  name: json['name'] as String,
+  description: json['description'] as String?,
+  color: json['color'] as String?,
+  createdAt: DateTime.parse(json['createdAt'] as String),
+  usageCount: (json['usageCount'] as num?)?.toInt() ?? 0,
+);
 
 Map<String, dynamic> _$TagToJson(Tag instance) => <String, dynamic>{
-      'id': instance.id,
-      'name': instance.name,
-      'description': instance.description,
-      'color': instance.color,
-      'createdAt': instance.createdAt.toIso8601String(),
-      'usageCount': instance.usageCount,
-    };
+  'id': instance.id,
+  'name': instance.name,
+  'description': instance.description,
+  'color': instance.color,
+  'createdAt': instance.createdAt.toIso8601String(),
+  'usageCount': instance.usageCount,
+};
