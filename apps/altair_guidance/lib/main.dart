@@ -27,6 +27,7 @@ import 'repositories/ai_settings_repository.dart';
 import 'shortcuts/intents.dart';
 import 'shortcuts/shortcuts_config.dart';
 import 'shortcuts/shortcuts_help_dialog.dart';
+import 'widgets/task_filter_menu.dart';
 
 Future<void> main() async {
   // Configure system UI overlays (status bar, navigation bar)
@@ -413,11 +414,15 @@ class _HomePageState extends State<HomePage> {
                                 : null,
                           ),
                           if (!focusModeState.isEnabled) ...[
-                            // Filter buttons
+                            // Filter button
                             IconButton(
                               icon: const Icon(Icons.filter_list),
+                              tooltip: 'Filter tasks',
                               onPressed: () {
-                                // TODO: Show filter menu
+                                showTaskFilterMenu(
+                                  context,
+                                  isMobile: isMobilePlatform,
+                                );
                               },
                             ),
                             // Keyboard shortcuts help (desktop only)
