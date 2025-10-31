@@ -145,12 +145,27 @@ class TaskRepository {
     return taskToUpdate;
   }
 
-  /// Delete a task
+  /// Delete a task and all its subtasks (cascade delete)
   Future<void> delete(String id) async {
     await _ensureInitialized();
     final db = _connectionManager.client;
 
+    // First, find and delete all subtasks recursively
+    await _deleteSubtasksRecursively(id);
+
+    // Then delete the task itself
     await db.delete(id);
+  }
+
+  /// Recursively delete all subtasks of a given task
+  Future<void> _deleteSubtasksRecursively(String parentTaskId) async {
+    // Find all direct subtasks
+    final subtasks = await findSubtasks(parentTaskId);
+
+    // Recursively delete each subtask and its children
+    for (final subtask in subtasks) {
+      await delete(subtask.id);
+    }
   }
 
   /// Search tasks by title or description
