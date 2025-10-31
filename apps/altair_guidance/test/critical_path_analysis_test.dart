@@ -1,11 +1,11 @@
-/// Critical Path Analysis Test for Task Hierarchy Implementation
-///
-/// This test documents critical issues identified in the code review:
-/// 1. Cascade deletion handling (CRITICAL - Security/Data Integrity)
-/// 2. O(n²) performance issue in subtask filtering (HIGH - Performance)
-/// 3. State loss on rebuild (HIGH - UX/Stability)
-///
-/// Reference: Code review findings from main.dart task hierarchy implementation
+// Critical Path Analysis Test for Task Hierarchy Implementation
+//
+// This test documents critical issues identified in the code review:
+// 1. Cascade deletion handling (CRITICAL - Security/Data Integrity)
+// 2. O(n²) performance issue in subtask filtering (HIGH - Performance)
+// 3. State loss on rebuild (HIGH - UX/Stability)
+//
+// Reference: Code review findings from main.dart task hierarchy implementation
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:altair_core/altair_core.dart';
@@ -183,7 +183,7 @@ void main() {
         stopwatch.stop();
 
         // Should be fast, but demonstrates repeated scanning
-        print('O(n) scan time: ${stopwatch.elapsedMilliseconds}ms');
+        // Performance: O(n) scan time should be < 500ms
         expect(stopwatch.elapsedMilliseconds, lessThan(500));
 
         // OPTIMIZATION OPPORTUNITY:
