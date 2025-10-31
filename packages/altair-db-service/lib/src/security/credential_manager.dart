@@ -13,11 +13,12 @@ class CredentialManager {
   final String _configDirectory;
 
   CredentialManager(this._configDirectory)
-    : _secureStorage = const FlutterSecureStorage(
-        aOptions: AndroidOptions(encryptedSharedPreferences: true),
-        iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock),
-        lOptions: LinuxOptions(),
-      );
+      : _secureStorage = const FlutterSecureStorage(
+          aOptions: AndroidOptions(encryptedSharedPreferences: true),
+          iOptions:
+              IOSOptions(accessibility: KeychainAccessibility.first_unlock),
+          lOptions: LinuxOptions(),
+        );
 
   /// Generate a cryptographically secure password
   ///

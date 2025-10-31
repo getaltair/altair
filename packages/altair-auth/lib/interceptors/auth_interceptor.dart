@@ -10,8 +10,8 @@ import '../services/secure_storage_service.dart';
 class AuthInterceptor extends Interceptor {
   /// Creates an authentication interceptor.
   AuthInterceptor({required SecureStorageService storage, Logger? logger})
-    : _storage = storage,
-      _logger = logger ?? Logger();
+      : _storage = storage,
+        _logger = logger ?? Logger();
 
   final SecureStorageService _storage;
   final Logger _logger;

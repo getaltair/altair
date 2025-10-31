@@ -16,10 +16,10 @@ class AuthService {
     required SecureStorageService storage,
     required String baseUrl,
     Logger? logger,
-  }) : _dio = dio,
-       _storage = storage,
-       _baseUrl = baseUrl,
-       _logger = logger ?? Logger();
+  })  : _dio = dio,
+        _storage = storage,
+        _baseUrl = baseUrl,
+        _logger = logger ?? Logger();
 
   final Dio _dio;
   final SecureStorageService _storage;

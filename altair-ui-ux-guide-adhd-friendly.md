@@ -1,4 +1,5 @@
 # Altair UI/UX Design Guide
+
 ## ADHD-Focused Local-First Productivity Apps
 
 > **Your Mission:** Build a bold, accessible, lightning-fast productivity suite that ADHD users actually use
@@ -8,8 +9,9 @@
 ## 🎯 TL;DR - The Winning Formula
 
 **Your competitive advantage:**
+
 - **ADHD-optimized patterns** = Progressive disclosure + AI task breakdown + multiple views
-- **Local-first speed** = <100ms response, works offline, data sovereignty  
+- **Local-first speed** = <100ms response, works offline, data sovereignty
 - **Functional neo-brutalism** = Bold clarity without chaos, strategic accent not immersion
 - **Flutter consistency** = Seamless cross-platform with Material Design 3
 
@@ -35,6 +37,7 @@
 ### Quick Wins (Weeks 1-6)
 
 **Week 1-2: Foundation Accessibility**
+
 - ✅ Keyboard navigation (Tab, Enter, Escape)
 - ✅ 2px minimum focus indicators (3:1 contrast)
 - ✅ Skip links ("Skip to main content")
@@ -42,6 +45,7 @@
 - ✅ Test with keyboard only
 
 **Week 2-3: Neo-Brutalist Design System**
+
 - ✅ ColorScheme.fromSeed() with soft blue (#6B9BD1)
 - ✅ Verify 4.5:1 contrast (normal text), 3:1 (large text)
 - ✅ Borders: 2-4px solid (NOT 8px)
@@ -49,18 +53,21 @@
 - ✅ Whitespace: 24-32px padding between sections
 
 **Week 3-4: Sync Status Visibility**
+
 - ✅ Status bar at top (green=synced, blue=syncing, orange=pending)
 - ✅ Document-level badges on tasks/nodes/items
 - ✅ Settings panel with sync history
 - ✅ "Sync Now" manual button
 
 **Week 4-5: Command Palette**
+
 - ✅ CMD/CTRL+K universal navigation
 - ✅ Task creation, view switching, navigation
 - ✅ Recent items (last 5)
 - ✅ Keyboard shortcuts visible
 
 **Week 5-6: Responsive Design**
+
 - ✅ Mobile (0-599dp): bottom nav, single column
 - ✅ Tablet (840-1239dp): two columns, optional side nav
 - ✅ Desktop (1240+dp): multi-column, permanent nav
@@ -75,6 +82,7 @@
 What it does: Breaks overwhelming tasks into bite-sized subtasks
 
 **Implementation:**
+
 1. User inputs: "Plan team retreat"
 2. Selects spicy level: 1-5 (granularity slider)
 3. AI breaks down:
@@ -86,6 +94,7 @@ What it does: Breaks overwhelming tasks into bite-sized subtasks
 4. Each subtask supports further breakdown
 
 **Critical ADHD benefits:**
+
 - Combats executive dysfunction
 - Reduces task initiation paralysis
 - Externalizes complexity without shame
@@ -103,6 +112,7 @@ What it does: Breaks overwhelming tasks into bite-sized subtasks
 | **Timeline** | Time-sensitive work | Combats time blindness |
 
 **Implementation:**
+
 - View switcher: top-right, keyboard shortcuts (CMD+1/2/3)
 - Persist per project (Marketing→board, Personal→list)
 - Knowledge app: emphasize graph view with filters
@@ -114,10 +124,12 @@ What it does: Breaks overwhelming tasks into bite-sized subtasks
 Break complex interfaces into manageable chunks:
 
 **Before (❌):**
+
 - One overwhelming screen with 20 fields
 - Users abandon at Step 1
 
 **After (✅):**
+
 - Step 1 of 4: Title, project, due date
 - "Show more options" expands to tags, priority, assignees
 - Visual progress bar
@@ -130,17 +142,21 @@ Break complex interfaces into manageable chunks:
 **Month 3: Comprehensive Customization**
 
 **Density controls:**
+
 - Compact / Comfortable / Spacious
 
 **Theme system:**
+
 - Light / Dark / High Contrast / Custom
 
 **Typography:**
+
 - Font family (Inter, Roboto, OpenDyslexic)
 - Size scaling (100-200%, 10% increments)
 - Line height adjustment
 
 **Preset modes:**
+
 - 🧠 **Dyslexia Mode**: OpenDyslexic, 1.8 line spacing, 0.35ch letter spacing
 - 🎯 **Focus Mode**: Hides non-essential UI, enables distraction blocking
 - 😌 **Calm Mode**: Pastel colors, reduced contrast, minimal animations
@@ -154,6 +170,7 @@ Break complex interfaces into manageable chunks:
 > 💡 **Tip:** Make it optional - some ADHD users find gamification stressful
 
 **What works:**
+
 - ✅ Streak counters (7-day completion 🔥)
 - ✅ XP/points (small=10, medium=25, large=50)
 - ✅ Progress trees (10 tasks → unlock customization)
@@ -161,6 +178,7 @@ Break complex interfaces into manageable chunks:
 - ✅ Surprise encouragement (variable-ratio rewards)
 
 **What to avoid:**
+
 - ❌ Punitive loss (losing streaks = failure feeling)
 - ❌ Mandatory leaderboards (demotivating comparison)
 - ❌ Complex systems (overwhelming)
@@ -174,6 +192,7 @@ Break complex interfaces into manageable chunks:
 **Month 4-6: CRDT Implementation**
 
 **What it solves:**
+
 - Automatic merging of concurrent changes
 - Eliminates most conflict scenarios
 - Enables real-time collaboration
@@ -199,17 +218,20 @@ Break complex interfaces into manageable chunks:
 > ⚠️ **Warning:** ADHD users filter out 50+ daily pings - quality over quantity
 
 **Context-aware triggers:**
+
 - 📍 Location: "Buy milk" when near store
 - ⏰ Time-of-day: Morning reminders for morning tasks
 - 📅 Calendar: Before meetings, during commute
 - ✅ Activity: After completing related task
 
 **Progressive urgency:**
+
 1. First: Gentle notification
 2. Second (15 min): More persistent
 3. Third (critical only): Full-screen modal
 
 **Anti-habituation:**
+
 - Rotate notification sounds monthly
 - Vary format (sound/vibration/visual)
 - Random motivational quotes
@@ -222,6 +244,7 @@ Break complex interfaces into manageable chunks:
 **Month 6-8: Knowledge Graph Intelligence**
 
 **AI-powered features:**
+
 - **Auto-linking**: Suggests connections based on content similarity
 - **Smart tagging**: NLP suggests relevant tags
 - **Semantic search**: Understands intent ("find all accessibility notes")
@@ -229,6 +252,7 @@ Break complex interfaces into manageable chunks:
 - **Related concepts**: "Others also referenced..."
 
 **Tana-style supertags:**
+
 - Define object types: Book, Person, Project
 - Auto-populate fields (Book → Author, Year, Genre)
 - Reduces manual overhead
@@ -240,22 +264,26 @@ Break complex interfaces into manageable chunks:
 **Three-tier system:**
 
 **Level 1: Gentle Guidance**
+
 - Shows current goal in corner
 - Easy one-click override
 - Tracks time in session
 
 **Level 2: Active Blocking**
+
 - Blocks distracting apps/websites
 - Visible countdown timer
 - Requires typing full task name to override
 
 **Level 3: Full Immersion**
+
 - Full-screen mode
 - ONLY current task + subtasks visible
 - All notifications silenced (emergency calls only)
 - Confirmation dialog to exit
 
 **Scheduled distractions:**
+
 - Pomodoro integration (25 min focus → 5 min break)
 - Browser tab parking ("15 tabs → Read Later")
 - Parking lot for intrusive thoughts
@@ -274,6 +302,7 @@ Break complex interfaces into manageable chunks:
 | Unified search (CMD+K) | Searches all 3 apps | Filtered results |
 
 **Dashboard insights:**
+
 - Tasks with linked knowledge (integration health)
 - Inventory allocated to projects (resource utilization)
 - Knowledge creation by project (documentation health)
@@ -285,6 +314,7 @@ Break complex interfaces into manageable chunks:
 ### Core Principle: External Executive Function
 
 ADHD-friendly design **externalizes cognitive processes** that neurotypical users do automatically:
+
 - **Task initiation** → AI breaks down into first tiny step
 - **Time awareness** → Visual timelines, progress bars
 - **Working memory** → Everything visible, nothing hidden
@@ -301,14 +331,16 @@ ADHD-friendly design **externalizes cognitive processes** that neurotypical user
 **Example: Bowling Reservation (Anti-Pattern)**
 
 ❌ **Bad - All at once:**
+
 - Date
-- Time  
+- Time
 - Duration
 - Food options
 - Lane type
 - Special requests
 
 ✅ **Good - 4 steps:**
+
 1. Date & time
 2. Duration & lane type
 3. Food options (optional)
@@ -333,6 +365,7 @@ ADHD-friendly design **externalizes cognitive processes** that neurotypical user
 | **Timeline** | High energy | Time awareness |
 
 **Implementation:**
+
 - Prominent view switcher (top-right)
 - Keyboard shortcuts (CMD+1/2/3)
 - Remember per-project preference
@@ -354,6 +387,7 @@ ADHD-friendly design **externalizes cognitive processes** that neurotypical user
 > 💡 **Tip:** Reserve bright colors for function, never decoration
 
 **Typography hierarchy:**
+
 - H1: 24-32px (bold)
 - H2: 20-24px (semibold)
 - Body: 14-16px minimum
@@ -373,18 +407,22 @@ ADHD-friendly design **externalizes cognitive processes** that neurotypical user
 **Effective strategies:**
 
 **Location-based:**
+
 - "Buy milk" when near store
 - "Call doctor" when at home
 
 **Transition warnings:**
+
 - "Meeting in 15 minutes" (prepare)
 - "Meeting now" (go)
 
 **Custom snooze:**
+
 - "Remind when I arrive home"
 - "Remind Monday morning"
 
 **Limit categories:** 3-5 max
+
 - Critical
 - Time-sensitive
 - Supportive nudges
@@ -415,6 +453,7 @@ Each subtask supports further breakdown
 ```
 
 **ADHD benefits:**
+
 - Combats executive dysfunction
 - Reduces task initiation paralysis
 - Focuses on "first tiny step"
@@ -428,7 +467,7 @@ Each subtask supports further breakdown
 
 ### WCAG 2.2 Critical Requirements
 
-**Published:** October 2023  
+**Published:** October 2023
 **Your target:** Level AA (6 months)
 
 > ℹ️ **Note:** 83.6% of websites fail contrast - this is your opportunity
@@ -473,6 +512,7 @@ Each subtask supports further breakdown
 | Skip navigation | Skip link | Jump to main content |
 
 **For Altair:**
+
 - All interactive elements: Tab/Shift+Tab
 - Activate: Enter or Space
 - Visible focus: 2px minimum, 3:1 contrast
@@ -483,18 +523,21 @@ Each subtask supports further breakdown
 ### Neurodivergent Patterns
 
 **ADHD-specific:**
+
 - ✅ Minimize animations (respect `prefers-reduced-motion`)
 - ✅ Avoid keyboard traps
 - ✅ No auto-play content
 - ✅ Time-blindness support without hiding clocks
 
 **Autism-specific:**
+
 - ✅ Absolute consistency (same icon = same action)
 - ✅ Muted low-saturation colors
 - ✅ Explicit step-by-step instructions
 - ✅ Warn before context changes
 
 **Dyslexia-specific:**
+
 - ✅ Letter spacing: 0.35ch
 - ✅ Line height: 1.5-2.0
 - ✅ Sans-serif fonts (+ OpenDyslexic toggle)
@@ -508,6 +551,7 @@ Each subtask supports further breakdown
 **Essential controls:**
 
 **Visual:**
+
 - Theme (light/dark/high contrast/custom)
 - Font family (Inter/Roboto/OpenDyslexic/Atkinson Hyperlegible)
 - Font size (100-200%, 10% increments)
@@ -515,17 +559,20 @@ Each subtask supports further breakdown
 - Letter spacing (0-0.5ch)
 
 **Layout:**
+
 - Density (compact/comfortable/spacious)
 - Animation level (full/reduced/none)
 - View preference per project
 
 **Notifications:**
+
 - Categories to enable/disable
 - Frequency limits
 - Delivery methods
 - Sound rotation
 
 **Presets (one-click):**
+
 - 🧠 Dyslexia Mode
 - 🎯 Focus Mode
 - 😌 Calm Mode
@@ -549,6 +596,7 @@ Each subtask supports further breakdown
 | Button states | Enlarge + haptic | Tactile confirmation |
 
 **Constraints:**
+
 - Under 400ms duration
 - 60 FPS minimum
 - Optional disable
@@ -569,8 +617,9 @@ Each subtask supports further breakdown
 **For Altair Knowledge:**
 
 Hybrid approach:
+
 - ✅ Capacities' object-first simplicity
-- ✅ Obsidian's graph visualization  
+- ✅ Obsidian's graph visualization
 - ✅ Tana's smart tagging
 - ✅ Local graph (2 degrees) with filters
 
@@ -583,6 +632,7 @@ Hybrid approach:
 **Status:** As standard as save/undo in 2025
 
 **Implementation:**
+
 - CMD/CTRL+K trigger
 - Natural language parsing
 - Recent items prominent
@@ -590,6 +640,7 @@ Hybrid approach:
 - Visual shortcuts (show "CMD+N")
 
 **Example queries:**
+
 - "Show overdue tasks"
 - "Switch to board view"
 - "New task in Marketing"
@@ -599,7 +650,8 @@ Hybrid approach:
 
 ### Onboarding That Works
 
-**Statistics:** 
+**Statistics:**
+
 - 76% continue after good onboarding
 - 77% abandon within 3 days without it
 
@@ -646,6 +698,7 @@ Each step clickable → relevant UI
 | **Refined neo-brutalism** (2024-2025) | Soft brutalism | Airier colors, rounded edges, accessibility |
 
 **Current characteristics:**
+
 - High-contrast palettes (vibrant + black/white)
 - Thick borders (4-8px, though 2-4px better for productivity)
 - Bold stark shadows (single-color, 100% opacity)
@@ -676,6 +729,7 @@ Each step clickable → relevant UI
 **For Altair implementation:**
 
 ✅ **High-contrast color system**
+
 - 2-3 bold colors maximum
 - Soft blue #6B9BD1
 - Warm coral #FF6B6B
@@ -684,30 +738,36 @@ Each step clickable → relevant UI
 - Meet WCAG AA minimum
 
 ✅ **Thick clear borders**
+
 - 2-4px on cards/containers (NOT 8px)
 - Creates visual boundaries
 - Helps ADHD chunking
 
 ✅ **Bold solid shadows**
+
 - 4px offset
 - Black at 60-80% opacity (softer than 100%)
 - Elevated elements only
 
 ✅ **Strategic typography**
+
 - Bold sans-serif headings (Montserrat/Inter)
 - Clean 14-16pt minimum body
 - 1.5-1.8 line height
 
 ✅ **Geometric accents**
+
 - Icons, buttons, status indicators
 - Functional not decorative
 
 ✅ **Minimal animation**
+
 - Simple state transitions only
 - No autoplay
 - No continuous motion
 
 ✅ **Generous whitespace**
+
 - 24-32px padding around sections
 - 1.5-1.8 line height
 
@@ -718,22 +778,27 @@ Each step clickable → relevant UI
 **For productivity UX:**
 
 ❌ **Asymmetrical task lists**
+
 - Keep work areas symmetrical
 - Exception: marketing/landing pages OK
 
 ❌ **Excessive decoration**
+
 - No shapes cluttering work areas
 - Every element serves purpose
 
 ❌ **High-saturation backgrounds**
+
 - Use vibrant colors for accents only
 - Content areas: neutral backgrounds
 
 ❌ **Experimental body fonts**
+
 - Reserve for headings/branding
 - Body text: highly legible
 
 ❌ **Breaking UI conventions**
+
 - Visual boldness ≠ functional novelty
 - Don't reinvent buttons, forms, navigation
 
@@ -769,6 +834,7 @@ background: #FFFFFF or #F5F5F5;
 ```
 
 **Task item:**
+
 - Clean grid layout
 - Geometric checkbox (circle or square, 2px border)
 - Bold colored status dots
@@ -811,11 +877,13 @@ background: #FFFFFF or #F5F5F5;
 | Error | Yellow | ! | "Sync failed" | Static |
 
 **2. Document-Level**
+
 - Colored badge on each task/node/item
 - Shows individual sync status
 - Same color scheme as status bar
 
 **3. Settings Panel**
+
 - Overall status
 - Last sync timestamp
 - Next scheduled sync
@@ -825,6 +893,7 @@ background: #FFFFFF or #F5F5F5;
 - Troubleshooting (view conflicts, retry)
 
 **Timing pattern (Logseq model):**
+
 - Desktop: 20 seconds after stopping typing
 - Mobile: 2 seconds after stopping typing
 
@@ -835,6 +904,7 @@ background: #FFFFFF or #F5F5F5;
 **Make offline feel normal, not exceptional**
 
 **Initial sync:**
+
 - Distinct onboarding step
 - Time estimate
 - Network requirements
@@ -842,15 +912,18 @@ background: #FFFFFF or #F5F5F5;
 - Optimal WiFi location
 
 **Ongoing sync:**
+
 - Background without distraction
 - Reassuring message: "You're offline. Updates will upload when reconnected"
 - Avoid distracting details: NO "Retrying in 3:22"
 
 **Context-dependent intervals:**
+
 - After typing stops (2-20 sec)
 - NOT rigid schedules
 
 **"Last updated" timestamps:**
+
 - On critical views (task lists, nodes, inventory)
 - Helps users understand data currency
 
@@ -861,6 +934,7 @@ background: #FFFFFF or #F5F5F5;
 **Good news:** Conflicts are rare with CRDT
 
 **Why?**
+
 - Character-level text tracking
 - Users avoid concurrent edits intuitively
 - Different document parts merge cleanly
@@ -878,6 +952,7 @@ background: #FFFFFF or #F5F5F5;
 **When manual resolution needed:**
 
 Visual diff tool showing:
+
 - Item type/ID
 - Server value vs Local value (columns)
 - Timestamps + attribution
@@ -894,17 +969,20 @@ Visual diff tool showing:
 **Transparency about data location:**
 
 **Your Data Location:**
+
 - **Primary:** Your devices (local storage)
 - **Sync:** Encrypted copies on servers
 - **Region:** [data center location]
 
 **Key messages:**
+
 - "Your data lives on your devices first"
 - "Servers only hold encrypted copies for sync"
 - "Export/backup anytime"
 - "Works fully offline—server not required"
 
 **Prominent features:**
+
 - Export in standard formats (Markdown, JSON, CSV)
 - Delete account with clear confirmation
 - "Last local backup" timestamp
@@ -918,22 +996,26 @@ Visual diff tool showing:
 
 ✅ **Speed:**
 "Your tasks, notes, inventory in high-performance local database"
+
 - <100ms response times
 - Zero latency
 - Instant access
 
 ✅ **Control:**
 "Optional cloud sync when you want it, where you want it"
+
 - User decides
 - Self-hosted option
 
 ✅ **Freedom:**
 "Open data formats—never locked in"
+
 - Markdown export
 - JSON export
 - Works without server
 
 **vs Competitors:**
+
 - Notion: 3-4 second page loads
 - Todoist: Requires connection for many operations
 - Asana: Fully cloud-dependent
@@ -947,6 +1029,7 @@ Visual diff tool showing:
 **Became default:** Flutter 3.16+
 
 **Key benefits:**
+
 - ✅ Systematic theming
 - ✅ Enhanced accessibility
 - ✅ Large screen optimization
@@ -968,6 +1051,7 @@ ColorScheme.fromSeed(
 ```
 
 **Result:**
+
 - Automatic light/dark mode
 - Proper contrast ratios
 - Harmonious palette
@@ -976,6 +1060,7 @@ ColorScheme.fromSeed(
 > ⚠️ **Warning:** Never override individual ColorScheme colors—breaks harmony
 
 **Layer neo-brutalism on top:**
+
 - Borders: 2-4px solid black
 - Shadows: 4px offset, black 60-80% opacity
 - Keep Material 3 color system intact
@@ -993,11 +1078,13 @@ Theme.of(context).textTheme.bodyLarge
 ```
 
 **Platform fonts:**
+
 - Android: Roboto (automatic)
 - iOS: San Francisco (automatic)
 - Fallback: System default
 
 **Your customization:**
+
 - Bold weights for headers
 - 14-16pt minimum body
 - 1.5-1.8 line height
@@ -1045,13 +1132,13 @@ Platform.isIOS ? CupertinoButton() : ElevatedButton()
 
 ```dart
 class Responsive {
-  static bool isMobile(BuildContext context) => 
+  static bool isMobile(BuildContext context) =>
     MediaQuery.of(context).size.width < 600;
-  
+
   static bool isTablet(BuildContext context) =>
     MediaQuery.of(context).size.width >= 840 &&
     MediaQuery.of(context).size.width < 1240;
-    
+
   static bool isDesktop(BuildContext context) =>
     MediaQuery.of(context).size.width >= 1240;
 }
@@ -1064,6 +1151,7 @@ class Responsive {
 ### Performance Optimization
 
 **Flutter advantages:**
+
 - Compiles to native ARM C/C++
 - No JavaScript bridge
 - Renders via Impeller/Skia
@@ -1072,17 +1160,20 @@ class Responsive {
 **Your responsibilities:**
 
 ✅ **const constructors**
+
 ```dart
 const Text('Hello'); // Flutter skips rebuilds
 ```
 
 ✅ **StatelessWidget preference**
+
 ```dart
 // Use StatelessWidget when no state needed
 // Simpler, faster, less memory
 ```
 
 ✅ **RepaintBoundary**
+
 ```dart
 // Isolate frequently changing sections
 RepaintBoundary(
@@ -1091,6 +1182,7 @@ RepaintBoundary(
 ```
 
 ✅ **Lazy loading**
+
 ```dart
 // Always use .builder() for lists
 ListView.builder(
@@ -1100,6 +1192,7 @@ ListView.builder(
 ```
 
 **For Altair:**
+
 - Task lists: ListView.builder (NEVER full list)
 - Pagination: 100+ tasks
 - Optimistic updates (immediate UI, background sync)
@@ -1116,10 +1209,12 @@ ListView.builder(
 **Optimization strategies:**
 
 ✅ **Tree shaking**
+
 - Automatic in release builds
 - Can reduce 50%+
 
 ✅ **Deferred loading**
+
 ```dart
 import 'package:localization/messages.dart' deferred as messages;
 
@@ -1128,6 +1223,7 @@ await messages.loadLibrary();
 ```
 
 ✅ **Critical splash screen**
+
 ```html
 <!-- Plain CSS/HTML displays instantly -->
 <div id="loading">
@@ -1137,14 +1233,17 @@ await messages.loadLibrary();
 ```
 
 ✅ **Preload tags**
+
 ```html
 <link rel="preload" href="main.dart.js" as="script">
 ```
 
 ✅ **WebP images**
+
 - Better compression than PNG/JPEG
 
 ✅ **Disable page transitions**
+
 - Faster perceived navigation
 
 ---
@@ -1154,6 +1253,7 @@ await messages.loadLibrary();
 **For Altair: Recommended Riverpod 2.0+**
 
 **Why?**
+
 - ✅ Compile-time safety
 - ✅ Better DevTools
 - ✅ No BuildContext required
@@ -1168,6 +1268,7 @@ await messages.loadLibrary();
 | **Provider** | Simple projects | Low |
 
 **Local-first pairing:**
+
 - SurrealDB changes → Riverpod reactive updates
 - Granular rebuild control
 - Automatic UI propagation
@@ -1179,9 +1280,10 @@ await messages.loadLibrary();
 ### Essential User Testing
 
 **Recruit diverse ADHD population:**
+
 - Inattentive, hyperactive, combined
 - Various ages
-- Different severity levels  
+- Different severity levels
 - With/without medication
 
 **Methods:**
@@ -1215,6 +1317,7 @@ await messages.loadLibrary();
 **Decision criteria:**
 
 If bold aesthetic causes:
+
 - Task completion drop >10%
 - Time to completion increase >10%
 - Error rate increase >15%
@@ -1245,6 +1348,7 @@ If bold aesthetic causes:
 **Roadmap:**
 
 **6 months:** WCAG 2.2 Level AA
+
 - 4.5:1 contrast (normal text)
 - 3:1 contrast (large text/components)
 - Keyboard accessible
@@ -1253,16 +1357,19 @@ If bold aesthetic causes:
 - Focus management
 
 **12 months:** Select AAA criteria
+
 - 7:1 contrast (critical text)
 - Enhanced focus appearance
 - Comprehensive shortcuts
 - Sign language onboarding videos
 
 **Quarterly audits:**
+
 - Automated tools: axe DevTools, WAVE, Lighthouse (catch 30-40%)
 - Manual testing: Remaining 60-70%
 
 **Biannual screen reader testing:**
+
 - NVDA (Windows)
 - VoiceOver (Mac/iOS)
 - TalkBack (Android)
@@ -1278,16 +1385,19 @@ If bold aesthetic causes:
 **Phased approach:**
 
 **Phase 1 (Months 1-3): Accent Implementation**
+
 - Neo-brutalist marketing/landing pages
 - More conventional core application
 - Test user response
 
 **Phase 2 (Months 4-6): Optional Themes**
+
 - "Bold Mode" vs "Classic Mode"
 - Gather adoption data
 - Monitor metrics
 
 **Phase 3 (Months 7-12): Default Bold (if data supports)**
+
 - Neo-brutalist as default
 - Maintain alternatives
 - Continuous monitoring
@@ -1299,29 +1409,33 @@ If bold aesthetic causes:
 **No competitor has:**
 
 ✅ ADHD-optimized patterns
+
 - Progressive disclosure
 - AI task breakdown
 - Multiple views
 - Focus modes
 
 ✅ Local-first speed
+
 - Instant response
 - Offline capability
 - Data sovereignty
 
 ✅ Strategic neo-brutalism
+
 - Bold clarity
 - Without chaos
 - Functional not decorative
 
 ✅ Flutter consistency
+
 - Seamless cross-platform
 - Material Design 3
 - Single codebase
 
-**vs Notion:** No ADHD focus, no local-first  
-**vs Todoist:** No knowledge management, no bold aesthetic  
-**vs Obsidian:** No ADHD features, limited mobile  
+**vs Notion:** No ADHD focus, no local-first
+**vs Todoist:** No knowledge management, no bold aesthetic
+**vs Obsidian:** No ADHD features, limited mobile
 **vs All:** No one combines your complete feature set
 
 ---
@@ -1368,14 +1482,14 @@ If bold aesthetic causes:
 
 **You'll know you're succeeding when:**
 
-✅ ADHD users complete onboarding <10 min  
-✅ Task completion rate >90%  
-✅ Daily active use >40%  
-✅ Response time <100ms feels "instant"  
-✅ Users say "finally, something that works for my brain"  
-✅ Accessibility audit scores >90%  
-✅ Multiple views used regularly  
-✅ AI task breakdown drives engagement  
+✅ ADHD users complete onboarding <10 min
+✅ Task completion rate >90%
+✅ Daily active use >40%
+✅ Response time <100ms feels "instant"
+✅ Users say "finally, something that works for my brain"
+✅ Accessibility audit scores >90%
+✅ Multiple views used regularly
+✅ AI task breakdown drives engagement
 
 ---
 
@@ -1460,6 +1574,7 @@ If bold aesthetic causes:
 ### Accessibility Quick Checks
 
 **30-second validation:**
+
 - [ ] Can I Tab through everything?
 - [ ] Can I see keyboard focus?
 - [ ] Can I dismiss modals with Escape?
@@ -1467,10 +1582,11 @@ If bold aesthetic causes:
 - [ ] Are touch targets at least 44x44px?
 - [ ] Does it work with reduced motion?
 
-**WebAIM Contrast Checker:**  
-https://webaim.org/resources/contrastchecker/
+**WebAIM Contrast Checker:**
+<https://webaim.org/resources/contrastchecker/>
 
 **ARIA label example:**
+
 ```dart
 Semantics(
   label: 'Complete task',
@@ -1511,12 +1627,13 @@ ADHD optimization
 
 **Clarity amplifies, chaos destroys**
 
-Every design decision must answer:  
+Every design decision must answer:
 **"Does this help users complete tasks more effectively?"**
 
 If visual boldness compromises:
+
 - Focus
-- Efficiency  
+- Efficiency
 - Accessibility
 
 **It fails, regardless of aesthetic appeal**
@@ -1525,11 +1642,11 @@ If visual boldness compromises:
 
 ### Your Path Forward
 
-**1. Build the foundation** (accessibility, performance)  
-**2. Add ADHD features** (AI breakdown, views, focus)  
-**3. Layer bold aesthetic** (carefully, validate metrics)  
-**4. Optimize local-first** (speed is competitive advantage)  
-**5. Test relentlessly** (with neurodivergent users)  
+**1. Build the foundation** (accessibility, performance)
+**2. Add ADHD features** (AI breakdown, views, focus)
+**3. Layer bold aesthetic** (carefully, validate metrics)
+**4. Optimize local-first** (speed is competitive advantage)
+**5. Test relentlessly** (with neurodivergent users)
 **6. Iterate based on data** (not assumptions)
 
 ---
@@ -1537,6 +1654,7 @@ If visual boldness compromises:
 ### The Market Gap
 
 **Opportunity exists for:**
+
 - Bold execution
 - Underserved ADHD population
 - Excellent design
@@ -1544,12 +1662,13 @@ If visual boldness compromises:
 - Technical sophistication
 
 **Your three-app ecosystem:**
+
 - 🎯 Guidance (task management)
 - 📚 Knowledge (PKM)
 - 📦 Tracking (inventory)
 
-**Each serves distinct ADHD needs**  
-**All share design language**  
+**Each serves distinct ADHD needs**
+**All share design language**
 **Users adopt one or all three**
 
 ---
@@ -1560,19 +1679,20 @@ If visual boldness compromises:
 
 A focused product clearly communicating key insights proves far more valuable than feature-complete overwhelm.
 
-**Follow the research.**  
-**Test with real users.**  
-**Measure what matters.**  
+**Follow the research.**
+**Test with real users.**
+**Measure what matters.**
 **Build the ADHD-focused productivity suite that combines clarity with capability.**
 
 ---
 
-**Your tagline says it all:**  
+**Your tagline says it all:**
+
 ## "Where focus takes flight" ✈️
 
 Make sure the UX delivers on that promise.
 
 ---
 
-_Document created with ADHD-friendly formatting principles_  
+_Document created with ADHD-friendly formatting principles_
 _Last updated: October 2025_

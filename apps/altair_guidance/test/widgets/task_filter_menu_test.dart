@@ -2,15 +2,14 @@
 library;
 
 import 'package:altair_core/altair_core.dart';
+import 'package:altair_guidance/bloc/task/task_bloc.dart';
+import 'package:altair_guidance/bloc/task/task_event.dart';
+import 'package:altair_guidance/bloc/task/task_state.dart';
+import 'package:altair_guidance/widgets/task_filter_menu.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-
-import '../../lib/bloc/task/task_bloc.dart';
-import '../../lib/bloc/task/task_event.dart';
-import '../../lib/bloc/task/task_state.dart';
-import '../../lib/widgets/task_filter_menu.dart';
 
 // Mock classes
 class MockTaskBloc extends Mock implements TaskBloc {}
@@ -24,7 +23,8 @@ void main() {
     // Register fallback values for Mocktail
     registerFallbackValue(const TaskLoadRequested());
     registerFallbackValue(const TaskClearFiltersRequested());
-    registerFallbackValue(const TaskFilterByStatusRequested(status: TaskStatus.todo));
+    registerFallbackValue(
+        const TaskFilterByStatusRequested(status: TaskStatus.todo));
     registerFallbackValue(const TaskFilterByTagsRequested(tags: []));
   });
 
@@ -340,7 +340,8 @@ void main() {
       await tester.pump();
 
       // Verify clear event was sent
-      verify(() => mockTaskBloc.add(const TaskClearFiltersRequested())).called(1);
+      verify(() => mockTaskBloc.add(const TaskClearFiltersRequested()))
+          .called(1);
     });
 
     testWidgets('shows current filter state in UI', (tester) async {

@@ -76,7 +76,9 @@ class _TaskFilterBottomSheet extends StatelessWidget {
                   ),
                   TextButton(
                     onPressed: () {
-                      context.read<TaskBloc>().add(const TaskClearFiltersRequested());
+                      context
+                          .read<TaskBloc>()
+                          .add(const TaskClearFiltersRequested());
                       Navigator.pop(context);
                     },
                     child: const Text('Clear All'),
@@ -133,7 +135,9 @@ class _TaskFilterDialog extends StatelessWidget {
                   children: [
                     TextButton(
                       onPressed: () {
-                        context.read<TaskBloc>().add(const TaskClearFiltersRequested());
+                        context
+                            .read<TaskBloc>()
+                            .add(const TaskClearFiltersRequested());
                       },
                       child: const Text('Clear All'),
                     ),
@@ -197,8 +201,8 @@ class _TaskFilterContent extends StatelessWidget {
             Text(
               'Status',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+                    fontWeight: FontWeight.bold,
+                  ),
             ),
             const SizedBox(height: 12),
 
@@ -210,7 +214,9 @@ class _TaskFilterContent extends StatelessWidget {
                   label: 'All',
                   isSelected: currentFilter == null,
                   onTap: () {
-                    context.read<TaskBloc>().add(const TaskClearFiltersRequested());
+                    context
+                        .read<TaskBloc>()
+                        .add(const TaskClearFiltersRequested());
                   },
                 ),
                 ...TaskStatus.values.map((status) {
@@ -219,8 +225,8 @@ class _TaskFilterContent extends StatelessWidget {
                     isSelected: currentFilter == status,
                     onTap: () {
                       context.read<TaskBloc>().add(
-                        TaskFilterByStatusRequested(status: status),
-                      );
+                            TaskFilterByStatusRequested(status: status),
+                          );
                     },
                   );
                 }),
@@ -234,8 +240,8 @@ class _TaskFilterContent extends StatelessWidget {
               Text(
                 'Tags',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+                      fontWeight: FontWeight.bold,
+                    ),
               ),
               const SizedBox(height: 12),
 
@@ -248,7 +254,8 @@ class _TaskFilterContent extends StatelessWidget {
                     label: tag,
                     isSelected: isSelected,
                     onTap: () {
-                      final newTags = Set<String>.from(currentTagFilter ?? <String>{});
+                      final newTags =
+                          Set<String>.from(currentTagFilter ?? <String>{});
                       if (isSelected) {
                         newTags.remove(tag);
                       } else {
@@ -256,11 +263,13 @@ class _TaskFilterContent extends StatelessWidget {
                       }
 
                       if (newTags.isEmpty) {
-                        context.read<TaskBloc>().add(const TaskClearFiltersRequested());
+                        context
+                            .read<TaskBloc>()
+                            .add(const TaskClearFiltersRequested());
                       } else {
                         context.read<TaskBloc>().add(
-                          TaskFilterByTagsRequested(tags: newTags.toList()),
-                        );
+                              TaskFilterByTagsRequested(tags: newTags.toList()),
+                            );
                       }
                     },
                   );

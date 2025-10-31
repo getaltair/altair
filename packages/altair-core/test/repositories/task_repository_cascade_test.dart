@@ -2,7 +2,7 @@
 library;
 
 import 'package:altair_core/altair_core.dart';
-import 'package:test/test.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   late TaskRepository repository;
