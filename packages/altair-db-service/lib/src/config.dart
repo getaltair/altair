@@ -50,6 +50,46 @@ class AltairDatabaseConfig {
   /// Default configuration
   static const AltairDatabaseConfig defaultConfig = AltairDatabaseConfig();
 
+  /// Create configuration from environment variables (for CI/CD testing)
+  ///
+  /// Reads from these environment variables:
+  /// - SURREALDB_URL: Full connection URL (e.g., http://localhost:8000)
+  /// - SURREALDB_HOST: Host address (default: 127.0.0.1)
+  /// - SURREALDB_PORT: Port number (default: 8000)
+  /// - SURREALDB_NS: Namespace (default: altair)
+  /// - SURREALDB_DB: Database name (default: local)
+  /// - SURREALDB_USER: Username (default: altair)
+  ///
+  /// Example:
+  /// ```dart
+  /// // In CI/CD with env vars set
+  /// final config = AltairDatabaseConfig.fromEnvironment();
+  /// ```
+  factory AltairDatabaseConfig.fromEnvironment() {
+    final env = Platform.environment;
+
+    // Parse URL if provided (e.g., http://localhost:8000)
+    String? host;
+    int? port;
+    if (env.containsKey('SURREALDB_URL')) {
+      final url = Uri.tryParse(env['SURREALDB_URL']!);
+      if (url != null) {
+        host = url.host;
+        port = url.port;
+      }
+    }
+
+    return AltairDatabaseConfig(
+      bindAddress: host ?? env['SURREALDB_HOST'] ?? '127.0.0.1',
+      port: port ?? int.tryParse(env['SURREALDB_PORT'] ?? '') ?? 8000,
+      namespace: env['SURREALDB_NS'] ?? 'altair',
+      database: env['SURREALDB_DB'] ?? 'local',
+      username: env['SURREALDB_USER'] ?? 'altair',
+      // CI/CD specific settings
+      autoStart: false, // Don't auto-start in CI/CD, use existing instance
+    );
+  }
+
   /// Get the data directory, creating it if necessary
   Future<String> getDataDirectory() async {
     if (dataDirectory != null) {

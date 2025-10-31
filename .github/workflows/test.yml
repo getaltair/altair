@@ -85,6 +85,86 @@ jobs:
 
           echo "Coverage ${COVERAGE}% meets threshold ${THRESHOLD}%"
 
+  database-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    services:
+      surrealdb:
+        image: surrealdb/surrealdb:latest
+        ports:
+          - 8000:8000
+        options: >-
+          --health-cmd="curl -f http://localhost:8000/health || exit 1"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+        # Start SurrealDB with in-memory storage for testing
+        # Uses namespace 'test' and database 'test'
+        # No authentication for CI/CD tests
+        env:
+          SURREAL_LOG: info
+          SURREAL_STRICT: true
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@fd55f4c5af5b953cc57a2be44cb082c8f6635e8e # v2
+        with:
+          flutter-version: '3.35.6'
+          channel: 'stable'
+          cache: true
+
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y \
+            clang cmake ninja-build pkg-config libgtk-3-dev \
+            liblzma-dev libstdc++-12-dev libsecret-1-dev
+
+      - name: Wait for SurrealDB to be ready
+        run: |
+          echo "Waiting for SurrealDB to be ready..."
+          timeout 30 sh -c 'until curl -f http://localhost:8000/health; do sleep 1; done'
+          echo "SurrealDB is ready!"
+
+      - name: Verify SurrealDB connection
+        run: |
+          echo "Testing SurrealDB connection..."
+          curl -X POST http://localhost:8000/sql \
+            -H "Accept: application/json" \
+            -H "NS: test" \
+            -H "DB: test" \
+            -d "INFO FOR DB;" || echo "SurrealDB connection test completed"
+
+      - name: Get dependencies (altair-core)
+        working-directory: packages/altair-core
+        run: flutter pub get
+
+      - name: Get dependencies (altair-db-service)
+        working-directory: packages/altair-db-service
+        run: flutter pub get
+
+      - name: Run database tests (altair-core)
+        working-directory: packages/altair-core
+        env:
+          SURREALDB_URL: http://localhost:8000
+          SURREALDB_NS: test
+          SURREALDB_DB: test
+        run: |
+          echo "Running database-dependent tests..."
+          flutter test test/repositories/ --reporter expanded
+        continue-on-error: false
+
+      - name: Upload database test results
+        if: always()
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        with:
+          name: database-test-results
+          path: packages/altair-core/test/repositories/
+
   integration-test:
     runs-on: ubuntu-latest
     timeout-minutes: 45

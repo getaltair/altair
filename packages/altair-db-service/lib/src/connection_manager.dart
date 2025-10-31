@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:surrealdb/surrealdb.dart';
 import 'service_manager.dart';
 import 'config.dart';
@@ -17,12 +18,23 @@ class AltairConnectionManager {
   AltairConnectionManager._();
 
   /// Get the singleton instance
+  ///
+  /// Automatically detects CI/CD environment and uses appropriate configuration:
+  /// - If SURREALDB_URL environment variable is set, uses fromEnvironment()
+  /// - Otherwise uses provided config or default config
   static Future<AltairConnectionManager> getInstance({
     AltairDatabaseConfig? config,
   }) async {
     if (_instance == null) {
       _instance = AltairConnectionManager._();
-      await _instance!._connect(config ?? AltairDatabaseConfig.defaultConfig);
+
+      // Auto-detect CI/CD environment
+      final effectiveConfig = config ??
+          (Platform.environment.containsKey('SURREALDB_URL')
+              ? AltairDatabaseConfig.fromEnvironment()
+              : AltairDatabaseConfig.defaultConfig);
+
+      await _instance!._connect(effectiveConfig);
     }
     return _instance!;
   }
