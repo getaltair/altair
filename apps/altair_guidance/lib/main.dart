@@ -706,14 +706,11 @@ class _HomePageState extends State<HomePage> {
                                         );
                                       }
 
-<<<<<<< HEAD
-=======
                                       // Build task hierarchy: filter only root tasks (no parent)
                                       final rootTasks = state.tasks
                                           .where((t) => t.parentTaskId == null)
                                           .toList();
 
->>>>>>> origin/main
                                       return RefreshIndicator(
                                         onRefresh: () async {
                                           context.read<TaskBloc>().add(
@@ -728,11 +725,7 @@ class _HomePageState extends State<HomePage> {
                                           padding: const EdgeInsets.all(
                                               AltairSpacing.md),
                                           buildDefaultDragHandles: false,
-<<<<<<< HEAD
-                                          itemCount: state.tasks.length,
-=======
                                           itemCount: rootTasks.length,
->>>>>>> origin/main
                                           onReorder: (oldIndex, newIndex) {
                                             context.read<TaskBloc>().add(
                                                   TaskReorderRequested(
@@ -742,9 +735,6 @@ class _HomePageState extends State<HomePage> {
                                                 );
                                           },
                                           itemBuilder: (context, index) {
-<<<<<<< HEAD
-                                            final task = state.tasks[index];
-=======
                                             final task = rootTasks[index];
                                             // Find subtasks for this parent
                                             final subtasks = state.tasks
@@ -752,7 +742,6 @@ class _HomePageState extends State<HomePage> {
                                                     t.parentTaskId == task.id)
                                                 .toList();
 
->>>>>>> origin/main
                                             return Padding(
                                               key: ValueKey(task
                                                   .id), // Required for ReorderableListView
@@ -833,15 +822,11 @@ class _HomePageState extends State<HomePage> {
                                                       );
                                                 },
                                                 child: _TaskListItem(
-<<<<<<< HEAD
-                                                    task: task, index: index),
-=======
                                                   task: task,
                                                   index: index,
                                                   subtasks: subtasks,
                                                   allTasks: state.tasks,
                                                 ),
->>>>>>> origin/main
                                               ),
                                             );
                                           },
@@ -963,20 +948,12 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
-<<<<<<< HEAD
-/// Widget to display a task in the list.
-=======
 /// Widget to display a task in the list with hierarchy support.
->>>>>>> origin/main
 ///
 /// Supports touch interactions:
 /// - Long press to show action menu
 /// - Swipe left to delete (with confirmation)
 /// - Tap checkbox to toggle completion status
-<<<<<<< HEAD
-class _TaskListItem extends StatelessWidget {
-  const _TaskListItem({required this.task, required this.index});
-=======
 /// - Tap to expand/collapse subtasks (if any)
 class _TaskListItem extends StatefulWidget {
   const _TaskListItem({
@@ -987,7 +964,6 @@ class _TaskListItem extends StatefulWidget {
     this.parentTask,
     this.isSubtask = false,
   });
->>>>>>> origin/main
 
   /// The task to display.
   final Task task;
@@ -995,85 +971,6 @@ class _TaskListItem extends StatefulWidget {
   /// The index of this task in the list (used for reordering).
   final int index;
 
-<<<<<<< HEAD
-  /// Shows a bottom sheet with task actions (edit, complete/incomplete, delete).
-  ///
-  /// This is triggered by long-pressing on a task.
-  void _showTaskActions(BuildContext context) {
-    showModalBottomSheet<void>(
-      context: context,
-      builder: (BuildContext sheetContext) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: const Icon(Icons.edit),
-                title: const Text('Edit Task'),
-                onTap: () {
-                  Navigator.pop(sheetContext);
-                  // Navigate to edit page
-                  final taskBloc = context.read<TaskBloc>();
-                  final projectBloc = context.read<ProjectBloc>();
-                  Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (context) => MultiBlocProvider(
-                        providers: [
-                          BlocProvider.value(value: taskBloc),
-                          BlocProvider.value(value: projectBloc),
-                        ],
-                        child: TaskEditPage(task: task),
-                      ),
-                    ),
-                  );
-                },
-              ),
-              ListTile(
-                leading: Icon(
-                  task.status == TaskStatus.completed
-                      ? Icons.radio_button_unchecked
-                      : Icons.check_circle,
-                ),
-                title: Text(
-                  task.status == TaskStatus.completed
-                      ? 'Mark as Incomplete'
-                      : 'Mark as Complete',
-                ),
-                onTap: () {
-                  Navigator.pop(sheetContext);
-                  final updatedTask = task.copyWith(
-                    status: task.status == TaskStatus.completed
-                        ? TaskStatus.todo
-                        : TaskStatus.completed,
-                    completedAt: task.status == TaskStatus.completed
-                        ? null
-                        : DateTime.now(),
-                  );
-                  context.read<TaskBloc>().add(
-                        TaskUpdateRequested(task: updatedTask),
-                      );
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.delete, color: AltairColors.error),
-                title: const Text(
-                  'Delete Task',
-                  style: TextStyle(color: AltairColors.error),
-                ),
-                onTap: () {
-                  Navigator.pop(sheetContext);
-                  context.read<TaskBloc>().add(
-                        TaskDeleteRequested(taskId: task.id),
-                      );
-                },
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-=======
   /// Subtasks of this task (if it's a parent).
   final List<Task> subtasks;
 
@@ -1085,33 +982,11 @@ class _TaskListItem extends StatefulWidget {
 
   /// Whether this is a subtask (for visual styling).
   final bool isSubtask;
->>>>>>> origin/main
 
   @override
   State<_TaskListItem> createState() => _TaskListItemState();
 }
 
-<<<<<<< HEAD
-        Navigator.of(context).push(
-          MaterialPageRoute<void>(
-            builder: (context) => MultiBlocProvider(
-              providers: [
-                BlocProvider.value(value: taskBloc),
-                BlocProvider.value(value: projectBloc),
-              ],
-              child: TaskEditPage(task: task),
-            ),
-          ),
-        );
-      },
-      onLongPress: () => _showTaskActions(context),
-      child: AltairCard(
-        accentColor: _getAccentColorForStatus(task.status),
-        showAccentBar: true,
-        child: IntrinsicHeight(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-=======
 class _TaskListItemState extends State<_TaskListItem> {
   bool _isExpanded = false;
 
@@ -1125,7 +1000,6 @@ class _TaskListItemState extends State<_TaskListItem> {
         return SafeArea(
           child: Column(
             mainAxisSize: MainAxisSize.min,
->>>>>>> origin/main
             children: [
               ListTile(
                 leading: const Icon(Icons.edit),
