@@ -42,9 +42,12 @@ class ProjectRepository {
     await _ensureInitialized();
     final db = _connectionManager.client;
 
-    final result = await db.query('''
+    final result = await db.query(
+      '''
       SELECT * FROM \$projectId;
-    ''', {'projectId': id});
+    ''',
+      {'projectId': id},
+    );
 
     if (result == null || result is! List) return null;
     if (result.isEmpty) return null;
@@ -116,9 +119,7 @@ class ProjectRepository {
     await _ensureInitialized();
     final db = _connectionManager.client;
 
-    final projectToUpdate = project.copyWith(
-      updatedAt: DateTime.now(),
-    );
+    final projectToUpdate = project.copyWith(updatedAt: DateTime.now());
 
     await db.update(project.id, _projectToMap(projectToUpdate));
 
@@ -138,12 +139,15 @@ class ProjectRepository {
     await _ensureInitialized();
     final db = _connectionManager.client;
 
-    final result = await db.query('''
+    final result = await db.query(
+      '''
       SELECT * FROM project
       WHERE name @@ \$query OR description @@ \$query
       ORDER BY created_at DESC
       LIMIT 50;
-    ''', {'query': query});
+    ''',
+      {'query': query},
+    );
 
     if (result == null || result is! List) return [];
     if (result.isEmpty) return [];
@@ -164,11 +168,14 @@ class ProjectRepository {
     await _ensureInitialized();
     final db = _connectionManager.client;
 
-    final result = await db.query('''
+    final result = await db.query(
+      '''
       SELECT count() as count FROM task
       WHERE project_id = \$projectId
       GROUP ALL;
-    ''', {'projectId': projectId});
+    ''',
+      {'projectId': projectId},
+    );
 
     if (result == null || result is! List) return 0;
     if (result.isEmpty) return 0;

@@ -46,7 +46,8 @@ class LinuxServiceInstaller extends ServiceInstaller {
 
     // Generate service file with environment variables for credentials
     // This prevents credentials from being visible in process listings
-    final serviceContent = '''
+    final serviceContent =
+        '''
 [Unit]
 Description=Altair Database Service
 After=network.target

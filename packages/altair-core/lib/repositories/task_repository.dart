@@ -42,9 +42,12 @@ class TaskRepository {
     await _ensureInitialized();
     final db = _connectionManager.client;
 
-    final result = await db.query('''
+    final result = await db.query(
+      '''
       SELECT * FROM \$taskId;
-    ''', {'taskId': id});
+    ''',
+      {'taskId': id},
+    );
 
     if (result == null || result is! List) return null;
     if (result.isEmpty) return null;
@@ -135,9 +138,7 @@ class TaskRepository {
     await _ensureInitialized();
     final db = _connectionManager.client;
 
-    final taskToUpdate = task.copyWith(
-      updatedAt: DateTime.now(),
-    );
+    final taskToUpdate = task.copyWith(updatedAt: DateTime.now());
 
     await db.update(task.id, _taskToMap(taskToUpdate));
 
@@ -157,12 +158,15 @@ class TaskRepository {
     await _ensureInitialized();
     final db = _connectionManager.client;
 
-    final result = await db.query('''
+    final result = await db.query(
+      '''
       SELECT * FROM task
       WHERE title @@ \$query OR description @@ \$query
       ORDER BY created_at DESC
       LIMIT 50;
-    ''', {'query': query});
+    ''',
+      {'query': query},
+    );
 
     if (result == null || result is! List) return [];
     if (result.isEmpty) return [];
@@ -183,11 +187,14 @@ class TaskRepository {
     await _ensureInitialized();
     final db = _connectionManager.client;
 
-    final result = await db.query('''
+    final result = await db.query(
+      '''
       SELECT * FROM task
       WHERE parent_task_id = \$parentTaskId
       ORDER BY created_at ASC;
-    ''', {'parentTaskId': parentTaskId});
+    ''',
+      {'parentTaskId': parentTaskId},
+    );
 
     if (result == null || result is! List) return [];
     if (result.isEmpty) return [];

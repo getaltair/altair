@@ -25,10 +25,7 @@ class TagRepository {
     // Generate ID if not provided
     final id = tag.id.isEmpty ? 'tag:${_uuid.v4()}' : tag.id;
 
-    final tagToInsert = tag.copyWith(
-      id: id,
-      createdAt: tag.createdAt,
-    );
+    final tagToInsert = tag.copyWith(id: id, createdAt: tag.createdAt);
 
     await db.create('tag', _tagToMap(tagToInsert));
 
@@ -40,9 +37,12 @@ class TagRepository {
     await _ensureInitialized();
     final db = _connectionManager.client;
 
-    final result = await db.query('''
+    final result = await db.query(
+      '''
       SELECT * FROM \$tagId;
-    ''', {'tagId': id});
+    ''',
+      {'tagId': id},
+    );
 
     if (result == null || result is! List) return null;
     if (result.isEmpty) return null;
@@ -61,11 +61,14 @@ class TagRepository {
     await _ensureInitialized();
     final db = _connectionManager.client;
 
-    final result = await db.query('''
+    final result = await db.query(
+      '''
       SELECT * FROM tag
       WHERE name = \$name
       LIMIT 1;
-    ''', {'name': name});
+    ''',
+      {'name': name},
+    );
 
     if (result == null || result is! List) return null;
     if (result.isEmpty) return null;
@@ -80,11 +83,7 @@ class TagRepository {
   }
 
   /// Get all tags
-  Future<List<Tag>> findAll({
-    int? limit,
-    int? offset,
-    String? orderBy,
-  }) async {
+  Future<List<Tag>> findAll({int? limit, int? offset, String? orderBy}) async {
     await _ensureInitialized();
     final db = _connectionManager.client;
 
@@ -138,12 +137,15 @@ class TagRepository {
     await _ensureInitialized();
     final db = _connectionManager.client;
 
-    final result = await db.query('''
+    final result = await db.query(
+      '''
       SELECT * FROM tag
       WHERE name @@ \$query OR description @@ \$query
       ORDER BY usage_count DESC, name ASC
       LIMIT 50;
-    ''', {'query': query});
+    ''',
+      {'query': query},
+    );
 
     if (result == null || result is! List) return [];
     if (result.isEmpty) return [];
@@ -190,9 +192,12 @@ class TagRepository {
     await _ensureInitialized();
     final db = _connectionManager.client;
 
-    await db.query('''
+    await db.query(
+      '''
       UPDATE \$tagId SET usage_count = usage_count + 1;
-    ''', {'tagId': tagId});
+    ''',
+      {'tagId': tagId},
+    );
   }
 
   /// Decrement the usage count of a tag
@@ -200,9 +205,12 @@ class TagRepository {
     await _ensureInitialized();
     final db = _connectionManager.client;
 
-    await db.query('''
+    await db.query(
+      '''
       UPDATE \$tagId SET usage_count = math::max(usage_count - 1, 0);
-    ''', {'tagId': tagId});
+    ''',
+      {'tagId': tagId},
+    );
   }
 
   /// Get tags by IDs
@@ -212,10 +220,13 @@ class TagRepository {
     await _ensureInitialized();
     final db = _connectionManager.client;
 
-    final result = await db.query('''
+    final result = await db.query(
+      '''
       SELECT * FROM tag
       WHERE id INSIDE \$ids;
-    ''', {'ids': ids});
+    ''',
+      {'ids': ids},
+    );
 
     if (result == null || result is! List) return [];
     if (result.isEmpty) return [];

@@ -16,10 +16,10 @@ class AuthService {
     required SecureStorageService storage,
     required String baseUrl,
     Logger? logger,
-  })  : _dio = dio,
-        _storage = storage,
-        _baseUrl = baseUrl,
-        _logger = logger ?? Logger();
+  }) : _dio = dio,
+       _storage = storage,
+       _baseUrl = baseUrl,
+       _logger = logger ?? Logger();
 
   final Dio _dio;
   final SecureStorageService _storage;
@@ -36,10 +36,7 @@ class AuthService {
 
       final response = await _dio.post<Map<String, dynamic>>(
         '$_baseUrl/auth/login',
-        data: {
-          'email': email,
-          'password': password,
-        },
+        data: {'email': email, 'password': password},
       );
 
       if (response.data == null) {
@@ -69,8 +66,11 @@ class AuthService {
       }
       rethrow;
     } catch (e, stackTrace) {
-      _logger.e('Login failed with unexpected error',
-          error: e, stackTrace: stackTrace);
+      _logger.e(
+        'Login failed with unexpected error',
+        error: e,
+        stackTrace: stackTrace,
+      );
       rethrow;
     }
   }
@@ -85,10 +85,7 @@ class AuthService {
 
       final response = await _dio.post<Map<String, dynamic>>(
         '$_baseUrl/auth/register',
-        data: {
-          'email': email,
-          'password': password,
-        },
+        data: {'email': email, 'password': password},
       );
 
       if (response.data == null) {
@@ -118,8 +115,11 @@ class AuthService {
       }
       rethrow;
     } catch (e, stackTrace) {
-      _logger.e('Registration failed with unexpected error',
-          error: e, stackTrace: stackTrace);
+      _logger.e(
+        'Registration failed with unexpected error',
+        error: e,
+        stackTrace: stackTrace,
+      );
       rethrow;
     }
   }
@@ -136,9 +136,7 @@ class AuthService {
 
       final response = await _dio.post<Map<String, dynamic>>(
         '$_baseUrl/auth/refresh',
-        data: {
-          'refresh_token': refreshToken,
-        },
+        data: {'refresh_token': refreshToken},
       );
 
       if (response.data == null) {
@@ -196,8 +194,11 @@ class AuthService {
       _logger.i('Current user fetched: ${user.email}');
       return user;
     } catch (e, stackTrace) {
-      _logger.e('Failed to fetch current user',
-          error: e, stackTrace: stackTrace);
+      _logger.e(
+        'Failed to fetch current user',
+        error: e,
+        stackTrace: stackTrace,
+      );
       rethrow;
     }
   }
