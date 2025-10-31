@@ -42,12 +42,9 @@ class ProjectRepository {
     await _ensureInitialized();
     final db = _connectionManager.client;
 
-    final result = await db.query(
-      '''
+    final result = await db.query('''
       SELECT * FROM \$projectId;
-    ''',
-      {'projectId': id},
-    );
+    ''', {'projectId': id});
 
     if (result == null || result is! List) return null;
     if (result.isEmpty) return null;
@@ -85,14 +82,12 @@ class ProjectRepository {
       params['tags'] = tags;
     }
 
-    final whereClause = conditions.isEmpty
-        ? ''
-        : 'WHERE ${conditions.join(' AND ')}';
+    final whereClause =
+        conditions.isEmpty ? '' : 'WHERE ${conditions.join(' AND ')}';
     final limitClause = limit != null ? 'LIMIT $limit' : '';
     final startClause = offset != null ? 'START $offset' : '';
 
-    final query =
-        '''
+    final query = '''
       SELECT * FROM project
       $whereClause
       ORDER BY created_at DESC
@@ -121,7 +116,9 @@ class ProjectRepository {
     await _ensureInitialized();
     final db = _connectionManager.client;
 
-    final projectToUpdate = project.copyWith(updatedAt: DateTime.now());
+    final projectToUpdate = project.copyWith(
+      updatedAt: DateTime.now(),
+    );
 
     await db.update(project.id, _projectToMap(projectToUpdate));
 
@@ -141,15 +138,12 @@ class ProjectRepository {
     await _ensureInitialized();
     final db = _connectionManager.client;
 
-    final result = await db.query(
-      '''
+    final result = await db.query('''
       SELECT * FROM project
       WHERE name @@ \$query OR description @@ \$query
       ORDER BY created_at DESC
       LIMIT 50;
-    ''',
-      {'query': query},
-    );
+    ''', {'query': query});
 
     if (result == null || result is! List) return [];
     if (result.isEmpty) return [];
@@ -170,14 +164,11 @@ class ProjectRepository {
     await _ensureInitialized();
     final db = _connectionManager.client;
 
-    final result = await db.query(
-      '''
+    final result = await db.query('''
       SELECT count() as count FROM task
       WHERE project_id = \$projectId
       GROUP ALL;
-    ''',
-      {'projectId': projectId},
-    );
+    ''', {'projectId': projectId});
 
     if (result == null || result is! List) return 0;
     if (result.isEmpty) return 0;
@@ -223,8 +214,7 @@ class ProjectRepository {
       name: map['name'] as String,
       description: map['description'] as String?,
       status: ProjectStatus.values.byName(map['status'] as String),
-      tags:
-          (map['tags'] as List<dynamic>?)?.map((e) => e as String).toList() ??
+      tags: (map['tags'] as List<dynamic>?)?.map((e) => e as String).toList() ??
           [],
       color: map['color'] as String?,
       createdAt: DateTime.parse(map['created_at'] as String),

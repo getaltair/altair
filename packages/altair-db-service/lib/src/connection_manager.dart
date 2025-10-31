@@ -118,21 +118,21 @@ class AltairConnectionManager {
     required String targetId,
     required String linkType,
   }) async {
-    await _db.query(
-      '''
+    await _db.query('''
       DELETE FROM link
       WHERE source = \$source
         AND target = \$target
         AND link_type = \$linkType
-    ''',
-      {'source': sourceId, 'target': targetId, 'linkType': linkType},
-    );
+    ''', {
+      'source': sourceId,
+      'target': targetId,
+      'linkType': linkType,
+    });
   }
 
   /// Get all resources linked to a given resource
   Future<List<dynamic>> getLinkedResources(String resourceId) async {
-    final result = await _db.query(
-      '''
+    final result = await _db.query('''
       -- Get all links where resource is source or target
       LET \$links = (
         SELECT * FROM link
@@ -149,9 +149,7 @@ class AltairConnectionManager {
         metadata,
         created_at
       FROM \$links;
-    ''',
-      {'resource': resourceId},
-    );
+    ''', {'resource': resourceId});
 
     if (result == null) return [];
     return (result as List).isNotEmpty ? (result[0] as List) : [];
@@ -159,8 +157,7 @@ class AltairConnectionManager {
 
   /// Search across all resource types
   Future<List<dynamic>> searchAll(String query) async {
-    final result = await _db.query(
-      '''
+    final result = await _db.query('''
       SELECT
         id,
         title,
@@ -194,9 +191,7 @@ class AltairConnectionManager {
 
       ORDER BY created_at DESC
       LIMIT 50;
-    ''',
-      {'query': query},
-    );
+    ''', {'query': query});
 
     if (result == null) return [];
     return (result as List).isNotEmpty ? (result[0] as List) : [];

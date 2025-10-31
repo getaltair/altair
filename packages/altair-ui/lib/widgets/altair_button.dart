@@ -87,9 +87,8 @@ class _AltairButtonState extends State<AltairButton> {
         backgroundColor = isDark
             ? AltairColors.darkTextPrimary
             : AltairColors.lightTextPrimary;
-        foregroundColor = isDark
-            ? AltairColors.darkBgPrimary
-            : AltairColors.lightBgSecondary;
+        foregroundColor =
+            isDark ? AltairColors.darkBgPrimary : AltairColors.lightBgSecondary;
         borderColor = isDark
             ? AltairColors.darkBorderColor
             : AltairColors.lightBorderColor;

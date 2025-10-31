@@ -30,7 +30,14 @@ void main() {
 
   group('AltairConnectionManager schema', () {
     test('required tables are defined', () {
-      final requiredTables = ['task', 'project', 'tag', 'note', 'item', 'link'];
+      final requiredTables = [
+        'task',
+        'project',
+        'tag',
+        'note',
+        'item',
+        'link',
+      ];
 
       // This is a documentation test - ensuring we know what tables
       // should exist when schema initialization runs

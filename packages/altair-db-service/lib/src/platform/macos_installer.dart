@@ -51,8 +51,7 @@ class MacOSServiceInstaller extends ServiceInstaller {
 
     // Generate plist file with environment variables for credentials
     // This prevents credentials from being visible in process listings
-    final plistContent =
-        '''<?xml version="1.0" encoding="UTF-8"?>
+    final plistContent = '''<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>

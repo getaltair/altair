@@ -50,7 +50,10 @@ void main() {
           return AuthBloc(authService: authService, logger: logger);
         },
         act: (bloc) => bloc.add(const AuthCheckRequested()),
-        expect: () => [const AuthLoading(), AuthAuthenticated(user: testUser)],
+        expect: () => [
+          const AuthLoading(),
+          AuthAuthenticated(user: testUser),
+        ],
         verify: (_) {
           verify(authService.isAuthenticated()).called(1);
           verify(authService.getCurrentUser()).called(1);
@@ -64,7 +67,10 @@ void main() {
           return AuthBloc(authService: authService, logger: logger);
         },
         act: (bloc) => bloc.add(const AuthCheckRequested()),
-        expect: () => [const AuthLoading(), const AuthUnauthenticated()],
+        expect: () => [
+          const AuthLoading(),
+          const AuthUnauthenticated(),
+        ],
         verify: (_) {
           verify(authService.isAuthenticated()).called(1);
           verifyNever(authService.getCurrentUser());
@@ -74,45 +80,47 @@ void main() {
       blocTest<AuthBloc, AuthState>(
         'emits [AuthLoading, AuthUnauthenticated] when auth check fails',
         build: () {
-          when(
-            authService.isAuthenticated(),
-          ).thenThrow(Exception('Auth check failed'));
+          when(authService.isAuthenticated())
+              .thenThrow(Exception('Auth check failed'));
           return AuthBloc(authService: authService, logger: logger);
         },
         act: (bloc) => bloc.add(const AuthCheckRequested()),
-        expect: () => [const AuthLoading(), const AuthUnauthenticated()],
+        expect: () => [
+          const AuthLoading(),
+          const AuthUnauthenticated(),
+        ],
       );
     });
 
     group('AuthLoginRequested', () {
-      final testUser = User(id: 'test-id', email: 'test@example.com');
+      final testUser = User(
+        id: 'test-id',
+        email: 'test@example.com',
+      );
 
       blocTest<AuthBloc, AuthState>(
         'emits [AuthLoading, AuthAuthenticated] when login succeeds',
         build: () {
-          when(
-            authService.login(
-              email: anyNamed('email'),
-              password: anyNamed('password'),
-            ),
-          ).thenAnswer((_) async => testToken);
+          when(authService.login(
+            email: anyNamed('email'),
+            password: anyNamed('password'),
+          )).thenAnswer((_) async => testToken);
           when(authService.getCurrentUser()).thenAnswer((_) async => testUser);
           return AuthBloc(authService: authService, logger: logger);
         },
-        act: (bloc) => bloc.add(
-          const AuthLoginRequested(
+        act: (bloc) => bloc.add(const AuthLoginRequested(
+          email: 'test@example.com',
+          password: 'password123',
+        )),
+        expect: () => [
+          const AuthLoading(),
+          AuthAuthenticated(user: testUser),
+        ],
+        verify: (_) {
+          verify(authService.login(
             email: 'test@example.com',
             password: 'password123',
-          ),
-        ),
-        expect: () => [const AuthLoading(), AuthAuthenticated(user: testUser)],
-        verify: (_) {
-          verify(
-            authService.login(
-              email: 'test@example.com',
-              password: 'password123',
-            ),
-          ).called(1);
+          )).called(1);
           verify(authService.getCurrentUser()).called(1);
         },
       );
@@ -120,20 +128,16 @@ void main() {
       blocTest<AuthBloc, AuthState>(
         'emits [AuthLoading, AuthFailure] when login fails',
         build: () {
-          when(
-            authService.login(
-              email: anyNamed('email'),
-              password: anyNamed('password'),
-            ),
-          ).thenThrow(Exception('Invalid credentials'));
+          when(authService.login(
+            email: anyNamed('email'),
+            password: anyNamed('password'),
+          )).thenThrow(Exception('Invalid credentials'));
           return AuthBloc(authService: authService, logger: logger);
         },
-        act: (bloc) => bloc.add(
-          const AuthLoginRequested(
-            email: 'test@example.com',
-            password: 'wrong-password',
-          ),
-        ),
+        act: (bloc) => bloc.add(const AuthLoginRequested(
+          email: 'test@example.com',
+          password: 'wrong-password',
+        )),
         expect: () => [
           const AuthLoading(),
           const AuthFailure(message: 'Exception: Invalid credentials'),
@@ -142,34 +146,34 @@ void main() {
     });
 
     group('AuthRegisterRequested', () {
-      final testUser = User(id: 'new-user-id', email: 'new@example.com');
+      final testUser = User(
+        id: 'new-user-id',
+        email: 'new@example.com',
+      );
 
       blocTest<AuthBloc, AuthState>(
         'emits [AuthLoading, AuthAuthenticated] when registration succeeds',
         build: () {
-          when(
-            authService.register(
-              email: anyNamed('email'),
-              password: anyNamed('password'),
-            ),
-          ).thenAnswer((_) async => testToken);
+          when(authService.register(
+            email: anyNamed('email'),
+            password: anyNamed('password'),
+          )).thenAnswer((_) async => testToken);
           when(authService.getCurrentUser()).thenAnswer((_) async => testUser);
           return AuthBloc(authService: authService, logger: logger);
         },
-        act: (bloc) => bloc.add(
-          const AuthRegisterRequested(
+        act: (bloc) => bloc.add(const AuthRegisterRequested(
+          email: 'new@example.com',
+          password: 'password123',
+        )),
+        expect: () => [
+          const AuthLoading(),
+          AuthAuthenticated(user: testUser),
+        ],
+        verify: (_) {
+          verify(authService.register(
             email: 'new@example.com',
             password: 'password123',
-          ),
-        ),
-        expect: () => [const AuthLoading(), AuthAuthenticated(user: testUser)],
-        verify: (_) {
-          verify(
-            authService.register(
-              email: 'new@example.com',
-              password: 'password123',
-            ),
-          ).called(1);
+          )).called(1);
           verify(authService.getCurrentUser()).called(1);
         },
       );
@@ -177,20 +181,16 @@ void main() {
       blocTest<AuthBloc, AuthState>(
         'emits [AuthLoading, AuthFailure] when registration fails',
         build: () {
-          when(
-            authService.register(
-              email: anyNamed('email'),
-              password: anyNamed('password'),
-            ),
-          ).thenThrow(Exception('Email already exists'));
+          when(authService.register(
+            email: anyNamed('email'),
+            password: anyNamed('password'),
+          )).thenThrow(Exception('Email already exists'));
           return AuthBloc(authService: authService, logger: logger);
         },
-        act: (bloc) => bloc.add(
-          const AuthRegisterRequested(
-            email: 'existing@example.com',
-            password: 'password123',
-          ),
-        ),
+        act: (bloc) => bloc.add(const AuthRegisterRequested(
+          email: 'existing@example.com',
+          password: 'password123',
+        )),
         expect: () => [
           const AuthLoading(),
           const AuthFailure(message: 'Exception: Email already exists'),
@@ -206,7 +206,10 @@ void main() {
           return AuthBloc(authService: authService, logger: logger);
         },
         act: (bloc) => bloc.add(const AuthLogoutRequested()),
-        expect: () => [const AuthLoading(), const AuthUnauthenticated()],
+        expect: () => [
+          const AuthLoading(),
+          const AuthUnauthenticated(),
+        ],
         verify: (_) {
           verify(authService.logout()).called(1);
         },
@@ -227,7 +230,10 @@ void main() {
     });
 
     group('AuthRefreshRequested', () {
-      final testUser = User(id: 'test-id', email: 'test@example.com');
+      final testUser = User(
+        id: 'test-id',
+        email: 'test@example.com',
+      );
 
       blocTest<AuthBloc, AuthState>(
         'emits [AuthAuthenticated] when token refresh succeeds',
@@ -237,7 +243,9 @@ void main() {
           return AuthBloc(authService: authService, logger: logger);
         },
         act: (bloc) => bloc.add(const AuthRefreshRequested()),
-        expect: () => [AuthAuthenticated(user: testUser)],
+        expect: () => [
+          AuthAuthenticated(user: testUser),
+        ],
         verify: (_) {
           verify(authService.refreshToken()).called(1);
           verify(authService.getCurrentUser()).called(1);
@@ -247,13 +255,14 @@ void main() {
       blocTest<AuthBloc, AuthState>(
         'emits [AuthUnauthenticated] when token refresh fails',
         build: () {
-          when(
-            authService.refreshToken(),
-          ).thenThrow(Exception('Refresh failed'));
+          when(authService.refreshToken())
+              .thenThrow(Exception('Refresh failed'));
           return AuthBloc(authService: authService, logger: logger);
         },
         act: (bloc) => bloc.add(const AuthRefreshRequested()),
-        expect: () => [const AuthUnauthenticated()],
+        expect: () => [
+          const AuthUnauthenticated(),
+        ],
       );
     });
   });

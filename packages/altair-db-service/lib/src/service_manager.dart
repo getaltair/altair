@@ -19,7 +19,9 @@ class AltairDatabaseService {
   Process? _process;
   SurrealDB? _connection;
 
-  AltairDatabaseService({this.config = AltairDatabaseConfig.defaultConfig}) {
+  AltairDatabaseService({
+    this.config = AltairDatabaseConfig.defaultConfig,
+  }) {
     _initializeInstaller();
   }
 
@@ -143,8 +145,7 @@ class AltairDatabaseService {
   Future<void> install() async {
     if (_installer == null) {
       throw UnsupportedError(
-        'System service installation not supported on ${Platform.operatingSystem}',
-      );
+          'System service installation not supported on ${Platform.operatingSystem}');
     }
 
     await _installer!.install();
@@ -154,8 +155,7 @@ class AltairDatabaseService {
   Future<void> uninstall() async {
     if (_installer == null) {
       throw UnsupportedError(
-        'System service installation not supported on ${Platform.operatingSystem}',
-      );
+          'System service installation not supported on ${Platform.operatingSystem}');
     }
 
     await _installer!.uninstall();
@@ -199,8 +199,7 @@ class AltairDatabaseService {
       await Future.delayed(const Duration(seconds: 1));
     }
     throw TimeoutException(
-      'Service failed to start within $maxAttempts seconds',
-    );
+        'Service failed to start within $maxAttempts seconds');
   }
 
   /// Get path to SurrealDB binary for current platform
@@ -233,8 +232,7 @@ class AltairDatabaseService {
       binaryName = 'surrealdb-android';
     } else {
       throw UnsupportedError(
-        'Platform ${Platform.operatingSystem} is not supported',
-      );
+          'Platform ${Platform.operatingSystem} is not supported');
     }
 
     final binaryPath = '$configDir/$binaryName';
@@ -243,8 +241,7 @@ class AltairDatabaseService {
     final file = File(binaryPath);
     if (!await file.exists()) {
       throw FileSystemException(
-        'SurrealDB binary not found at $binaryPath. Please install the database service.',
-      );
+          'SurrealDB binary not found at $binaryPath. Please install the database service.');
     }
 
     // Make executable on Unix-like systems
