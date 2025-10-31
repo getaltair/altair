@@ -9,7 +9,6 @@ on:
 
 permissions:
   contents: read
-  actions: write
 
 jobs:
   build-linux:
@@ -19,10 +18,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
 
       - name: Setup Flutter
-        uses: subosito/flutter-action@v2
+        uses: subosito/flutter-action@fd55f4c5af5b953cc57a2be44cb082c8f6635e8e # v2
         with:
           flutter-version: '3.35.6'
           channel: 'stable'
@@ -44,7 +43,7 @@ jobs:
         run: flutter build linux --release
 
       - name: Archive build artifacts
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
         with:
           name: linux-build
           path: apps/altair_guidance/build/linux/x64/release/bundle/
