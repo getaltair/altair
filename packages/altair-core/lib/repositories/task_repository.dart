@@ -161,7 +161,7 @@ class TaskRepository {
   /// This operation:
   /// - Detects circular references and throws an exception
   /// - Enforces maximum recursion depth (100 levels)
-  /// - Uses transactions for atomic operations
+  /// - Uses atomic transactions to prevent partial deletes
   /// - Prevents orphaned subtasks
   ///
   /// Throws:
@@ -170,16 +170,12 @@ class TaskRepository {
   /// - [Exception] if transaction fails
   Future<void> delete(String id) async {
     await _ensureInitialized();
-    final db = _connectionManager.client;
 
-    // Start transaction for atomic cascade delete
     try {
-      // Note: SurrealDB doesn't use BEGIN/COMMIT syntax
-      // Instead, we'll collect all IDs first, then delete in batch
       final visited = <String>{};
       const maxDepth = 100;
 
-      // Collect all task IDs in hierarchy
+      // Phase 1: Collect all task IDs in hierarchy (with safety checks)
       final idsToDelete = await _collectTaskHierarchyIds(
         id,
         visited: visited,
@@ -187,14 +183,57 @@ class TaskRepository {
         maxDepth: maxDepth,
       );
 
-      // Delete all tasks in batch (more efficient than individual deletes)
-      for (final taskId in idsToDelete) {
-        await db.delete(taskId);
-      }
+      // Phase 2: Delete all tasks atomically within a transaction
+      // This ensures either all tasks are deleted, or none are (atomicity)
+      await _deleteTasksInTransaction(idsToDelete);
     } catch (e) {
-      // If cascade delete fails, log and rethrow
-      // In a production system with transaction support, this would rollback
-      rethrow;
+      // Rethrow with context
+      if (e is StateError) {
+        rethrow; // Circular reference or max depth errors
+      }
+      throw Exception('Cascade delete failed: $e');
+    }
+  }
+
+  /// Delete multiple tasks atomically within a SurrealDB transaction
+  ///
+  /// This ensures that either ALL tasks are deleted successfully,
+  /// or NONE are deleted if any error occurs (atomic operation).
+  ///
+  /// Uses SurrealDB's BEGIN TRANSACTION / COMMIT TRANSACTION syntax.
+  ///
+  /// Throws:
+  /// - [Exception] if transaction fails
+  Future<void> _deleteTasksInTransaction(List<String> taskIds) async {
+    if (taskIds.isEmpty) return;
+
+    final db = _connectionManager.client;
+
+    // Build DELETE statements for all tasks
+    final deleteStatements = taskIds
+        .map((taskId) => 'DELETE \$taskId_${taskIds.indexOf(taskId)};')
+        .join('\n      ');
+
+    // Build parameter map for task IDs
+    final params = <String, dynamic>{};
+    for (var i = 0; i < taskIds.length; i++) {
+      params['taskId_$i'] = taskIds[i];
+    }
+
+    // Execute all deletes within a single transaction
+    final query = '''
+      BEGIN TRANSACTION;
+      $deleteStatements
+      COMMIT TRANSACTION;
+    ''';
+
+    try {
+      await db.query(query, params);
+    } catch (e) {
+      // Transaction automatically rolls back on error in SurrealDB
+      throw Exception(
+        'Transaction failed while deleting ${taskIds.length} tasks: $e',
+      );
     }
   }
 
