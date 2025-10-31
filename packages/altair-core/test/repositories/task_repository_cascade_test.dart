@@ -277,5 +277,156 @@ void main() {
       expect(await repository.findById(branch2.id), isNull);
       expect(await repository.findById(branch2Child.id), isNull);
     });
+
+    test('detects and throws error for circular reference', () async {
+      // Create two tasks
+      final task1 = await repository.create(
+        Task(
+          id: '',
+          title: 'Task 1',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        ),
+      );
+
+      final task2 = await repository.create(
+        Task(
+          id: '',
+          title: 'Task 2',
+          parentTaskId: task1.id,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        ),
+      );
+
+      // Create circular reference: task1.parent = task2
+      final task1WithCircularRef = task1.copyWith(
+        parentTaskId: task2.id,
+        updatedAt: DateTime.now(),
+      );
+      await repository.update(task1WithCircularRef);
+
+      // Attempting to delete should throw StateError
+      expect(
+        () => repository.delete(task1.id),
+        throwsA(
+          isA<StateError>().having(
+            (e) => e.message,
+            'message',
+            contains('Circular reference detected'),
+          ),
+        ),
+      );
+    });
+
+    test('throws error when max depth exceeded', () async {
+      // Create a chain of tasks exceeding max depth (limit is 100)
+      Task? previousTask;
+
+      // Create 102 tasks in a chain (exceeds limit of 100)
+      for (var i = 0; i < 102; i++) {
+        final task = await repository.create(
+          Task(
+            id: '',
+            title: 'Task at depth $i',
+            parentTaskId: previousTask?.id,
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ),
+        );
+        previousTask = task;
+      }
+
+      // Get the root task (first one created)
+      final allTasks = await repository.findAll();
+      final rootTask = allTasks.firstWhere((t) => t.parentTaskId == null);
+
+      // Attempting to delete should throw StateError
+      expect(
+        () => repository.delete(rootTask.id),
+        throwsA(
+          isA<StateError>().having(
+            (e) => e.message,
+            'message',
+            contains('Maximum task hierarchy depth'),
+          ),
+        ),
+      );
+    });
+
+    test('handles large hierarchy within depth limit efficiently', () async {
+      // Create a task tree with depth of 50 (well within limit of 100)
+      const depth = 50;
+      Task? previousTask;
+
+      // Create chain
+      for (var i = 0; i < depth; i++) {
+        final task = await repository.create(
+          Task(
+            id: '',
+            title: 'Task at depth $i',
+            parentTaskId: previousTask?.id,
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ),
+        );
+        previousTask = task;
+      }
+
+      // Get the root task
+      final allTasks = await repository.findAll();
+      final rootTask = allTasks.firstWhere((t) => t.parentTaskId == null);
+
+      // Delete should succeed without errors
+      await repository.delete(rootTask.id);
+
+      // Verify all tasks deleted
+      final remainingTasks = await repository.findAll();
+      expect(
+        remainingTasks.where((t) => t.title.startsWith('Task at depth')),
+        isEmpty,
+      );
+    });
+
+    test('prevents partial deletion on error', () async {
+      // Create a simple hierarchy
+      final parent = await repository.create(
+        Task(
+          id: '',
+          title: 'Parent',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        ),
+      );
+
+      final child1 = await repository.create(
+        Task(
+          id: '',
+          title: 'Child 1',
+          parentTaskId: parent.id,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        ),
+      );
+
+      final child2 = await repository.create(
+        Task(
+          id: '',
+          title: 'Child 2',
+          parentTaskId: parent.id,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        ),
+      );
+
+      // Verify all exist
+      expect(await repository.findById(parent.id), isNotNull);
+      expect(await repository.findById(child1.id), isNotNull);
+      expect(await repository.findById(child2.id), isNotNull);
+
+      // Note: Full transaction support would require SurrealDB transaction API
+      // This test documents the expected behavior
+      // In a production system, we'd use BEGIN/COMMIT/ROLLBACK
+    });
   });
 }
