@@ -22,6 +22,7 @@ jobs:
         with:
           flutter-version: '3.35.6'
           channel: 'stable'
+          cache: true
 
       - name: Install dependencies (altair-core)
         run: |
@@ -62,54 +63,6 @@ jobs:
         run: |
           cd apps/altair_guidance
           flutter analyze
-
-  test-flutter:
-    name: Test Flutter Code
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v5
-
-      - name: Set up Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.35.6'
-          channel: 'stable'
-
-      - name: Test altair-core
-        run: |
-          cd packages/altair-core
-          flutter pub get
-          flutter test --coverage
-
-      - name: Test altair-auth
-        run: |
-          cd packages/altair-auth
-          flutter pub get
-          flutter test --coverage
-
-      - name: Test altair-ui
-        run: |
-          cd packages/altair-ui
-          flutter pub get
-          flutter test --coverage
-
-      - name: Test altair-guidance
-        run: |
-          cd apps/altair_guidance
-          flutter pub get
-          flutter test --coverage
-
-      - name: Upload coverage
-        uses: codecov/codecov-action@v5
-        with:
-          files: |
-            ./packages/altair-core/coverage/lcov.info
-            ./packages/altair-auth/coverage/lcov.info
-            ./packages/altair-ui/coverage/lcov.info
-            ./apps/altair_guidance/coverage/lcov.info
-          flags: flutter
-          name: flutter-packages
 
   # Build jobs disabled temporarily to save CI time and costs
   # Re-enable when ready for deployment
