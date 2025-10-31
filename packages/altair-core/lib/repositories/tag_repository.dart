@@ -87,13 +87,41 @@ class TagRepository {
     await _ensureInitialized();
     final db = _connectionManager.client;
 
-    final orderByClause = orderBy ?? 'usage_count DESC, name ASC';
+    // Validate orderBy to prevent SQL injection
+    const allowedOrderBy = [
+      'name ASC',
+      'name DESC',
+      'usage_count ASC',
+      'usage_count DESC',
+      'usage_count DESC, name ASC',
+      'usage_count ASC, name DESC',
+      'created_at ASC',
+      'created_at DESC',
+    ];
+    final orderByValue = orderBy ?? 'usage_count DESC, name ASC';
+    if (!allowedOrderBy.contains(orderByValue)) {
+      throw ArgumentError(
+        'Invalid orderBy value. Allowed: ${allowedOrderBy.join(", ")}',
+      );
+    }
+
+    // Validate limit and offset to prevent DoS and ensure valid queries
+    if (limit != null && limit <= 0) {
+      throw ArgumentError('limit must be positive, got: $limit');
+    }
+    if (limit != null && limit > 10000) {
+      throw ArgumentError('limit too large (max 10000), got: $limit');
+    }
+    if (offset != null && offset < 0) {
+      throw ArgumentError('offset must be non-negative, got: $offset');
+    }
+
     final limitClause = limit != null ? 'LIMIT $limit' : '';
     final startClause = offset != null ? 'START $offset' : '';
 
     final query = '''
       SELECT * FROM tag
-      ORDER BY $orderByClause
+      ORDER BY $orderByValue
       $startClause
       $limitClause;
     ''';
@@ -165,6 +193,14 @@ class TagRepository {
   Future<List<Tag>> findMostUsed({int limit = 10}) async {
     await _ensureInitialized();
     final db = _connectionManager.client;
+
+    // Validate limit to prevent DoS
+    if (limit <= 0) {
+      throw ArgumentError('limit must be positive, got: $limit');
+    }
+    if (limit > 1000) {
+      throw ArgumentError('limit too large (max 1000), got: $limit');
+    }
 
     final result = await db.query('''
       SELECT * FROM tag

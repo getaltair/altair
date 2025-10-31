@@ -85,6 +85,17 @@ class ProjectRepository {
       params['tags'] = tags;
     }
 
+    // Validate limit and offset to prevent DoS and ensure valid queries
+    if (limit != null && limit <= 0) {
+      throw ArgumentError('limit must be positive, got: $limit');
+    }
+    if (limit != null && limit > 10000) {
+      throw ArgumentError('limit too large (max 10000), got: $limit');
+    }
+    if (offset != null && offset < 0) {
+      throw ArgumentError('offset must be non-negative, got: $offset');
+    }
+
     final whereClause =
         conditions.isEmpty ? '' : 'WHERE ${conditions.join(' AND ')}';
     final limitClause = limit != null ? 'LIMIT $limit' : '';
