@@ -15,17 +15,27 @@ import '../bloc/task/task_state.dart';
 /// On mobile/tablet, displays as a bottom sheet.
 /// On desktop, displays as a popup dialog.
 void showTaskFilterMenu(BuildContext context, {required bool isMobile}) {
+  // Capture the TaskBloc before creating the bottom sheet/dialog
+  // so it's available in the new widget tree
+  final taskBloc = context.read<TaskBloc>();
+
   if (isMobile) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => const _TaskFilterBottomSheet(),
+      builder: (context) => BlocProvider<TaskBloc>.value(
+        value: taskBloc,
+        child: const _TaskFilterBottomSheet(),
+      ),
     );
   } else {
     showDialog(
       context: context,
-      builder: (context) => const _TaskFilterDialog(),
+      builder: (context) => BlocProvider<TaskBloc>.value(
+        value: taskBloc,
+        child: const _TaskFilterDialog(),
+      ),
     );
   }
 }
@@ -89,10 +99,14 @@ class _TaskFilterBottomSheet extends StatelessWidget {
 
             const Divider(thickness: 2, color: Colors.black),
 
-            // Filter content
-            const Padding(
-              padding: EdgeInsets.all(16),
-              child: _TaskFilterContent(),
+            // Filter content - wrapped in flexible scrollable area
+            Flexible(
+              child: SingleChildScrollView(
+                child: const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: _TaskFilterContent(),
+                ),
+              ),
             ),
           ],
         ),
@@ -125,13 +139,16 @@ class _TaskFilterDialog extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Filter Tasks',
-                  style: theme.textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
+                Expanded(
+                  child: Text(
+                    'Filter Tasks',
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
                 Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     TextButton(
                       onPressed: () {
@@ -154,8 +171,12 @@ class _TaskFilterDialog extends StatelessWidget {
             const Divider(thickness: 2, color: Colors.black),
             const SizedBox(height: 16),
 
-            // Filter content
-            const _TaskFilterContent(),
+            // Filter content - scrollable to prevent overflow
+            const Flexible(
+              child: SingleChildScrollView(
+                child: _TaskFilterContent(),
+              ),
+            ),
 
             const SizedBox(height: 24),
 
