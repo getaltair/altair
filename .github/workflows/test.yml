@@ -89,23 +89,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
-    services:
-      surrealdb:
-        image: surrealdb/surrealdb:latest
-        ports:
-          - 8000:8000
-        options: >-
-          --health-cmd="curl -f http://localhost:8000/health || exit 1"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
-        # Start SurrealDB with in-memory storage for testing
-        # Uses namespace 'test' and database 'test'
-        # No authentication for CI/CD tests
-        env:
-          SURREAL_LOG: info
-          SURREAL_STRICT: true
-
     steps:
       - name: Checkout code
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
@@ -124,10 +107,20 @@ jobs:
             clang cmake ninja-build pkg-config libgtk-3-dev \
             liblzma-dev libstdc++-12-dev libsecret-1-dev
 
+      - name: Start SurrealDB
+        run: |
+          echo "Starting SurrealDB in background..."
+          docker run -d \
+            --name surrealdb \
+            -p 8000:8000 \
+            surrealdb/surrealdb:latest \
+            start --bind 0.0.0.0:8000 --user root --pass root memory
+          echo "SurrealDB container started"
+
       - name: Wait for SurrealDB to be ready
         run: |
           echo "Waiting for SurrealDB to be ready..."
-          timeout 30 sh -c 'until curl -f http://localhost:8000/health; do sleep 1; done'
+          timeout 60 sh -c 'until curl -f http://localhost:8000/health; do echo "Waiting..."; sleep 2; done'
           echo "SurrealDB is ready!"
 
       - name: Verify SurrealDB connection
@@ -164,6 +157,14 @@ jobs:
         with:
           name: database-test-results
           path: packages/altair-core/test/repositories/
+
+      - name: Cleanup SurrealDB
+        if: always()
+        run: |
+          echo "Stopping and removing SurrealDB container..."
+          docker stop surrealdb || true
+          docker rm surrealdb || true
+          echo "SurrealDB cleanup complete"
 
   integration-test:
     runs-on: ubuntu-latest
