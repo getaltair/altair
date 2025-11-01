@@ -18,6 +18,8 @@
 # IDE
 **/.idea/
 **/.vscode/
+**/.helix/
+**/.zed/
 *.swp
 *.swo
 *~
@@ -115,6 +117,7 @@ services/**/macos/
 **/tmp/
 **/temp/
 **/*.tmp
+**/test_output*.txt
 
 # ===================================
 # MCP

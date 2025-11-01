@@ -167,8 +167,11 @@ void main() {
       );
 
       final credentialFilePath = credentialManager.getCredentialFilePath();
-      final result =
-          await Process.run('stat', ['-c', '%a', credentialFilePath]);
+      final result = await Process.run('stat', [
+        '-c',
+        '%a',
+        credentialFilePath,
+      ]);
       final permissions = result.stdout.toString().trim();
 
       expect(permissions, equals('600'));
@@ -225,8 +228,9 @@ void main() {
     });
 
     test('handles very long passwords', () async {
-      final longPassword =
-          CredentialManager.generateSecurePassword(length: 128);
+      final longPassword = CredentialManager.generateSecurePassword(
+        length: 128,
+      );
       await credentialManager.storeCredentials(
         username: 'testuser',
         password: longPassword,

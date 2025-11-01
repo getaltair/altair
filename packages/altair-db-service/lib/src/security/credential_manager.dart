@@ -13,15 +13,11 @@ class CredentialManager {
   final String _configDirectory;
 
   CredentialManager(this._configDirectory)
-      : _secureStorage = const FlutterSecureStorage(
-          aOptions: AndroidOptions(
-            encryptedSharedPreferences: true,
-          ),
-          iOptions: IOSOptions(
-            accessibility: KeychainAccessibility.first_unlock,
-          ),
-          lOptions: LinuxOptions(),
-        );
+    : _secureStorage = const FlutterSecureStorage(
+        aOptions: AndroidOptions(encryptedSharedPreferences: true),
+        iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock),
+        lOptions: LinuxOptions(),
+      );
 
   /// Generate a cryptographically secure password
   ///
@@ -89,10 +85,7 @@ class CredentialManager {
 
     try {
       // Try platform-specific secure storage first
-      await _secureStorage.write(
-        key: _credentialKey,
-        value: credentials,
-      );
+      await _secureStorage.write(key: _credentialKey, value: credentials);
     } catch (e) {
       // Fallback to file-based storage with proper permissions
       await _storeCredentialsInFile(username, password);
@@ -100,10 +93,7 @@ class CredentialManager {
   }
 
   /// Fallback: Store credentials in a file with chmod 600
-  Future<void> _storeCredentialsInFile(
-    String username,
-    String password,
-  ) async {
+  Future<void> _storeCredentialsInFile(String username, String password) async {
     final credentialFilePath = path.join(_configDirectory, _credentialFileName);
     final file = File(credentialFilePath);
 
@@ -163,8 +153,11 @@ class CredentialManager {
 
     // Verify file permissions are secure
     if (Platform.isLinux || Platform.isMacOS) {
-      final result =
-          await Process.run('stat', ['-c', '%a', credentialFilePath]);
+      final result = await Process.run('stat', [
+        '-c',
+        '%a',
+        credentialFilePath,
+      ]);
       final permissions = result.stdout.toString().trim();
       if (permissions != '600') {
         throw SecurityException(
@@ -221,10 +214,7 @@ class Credentials {
   final String username;
   final String password;
 
-  const Credentials({
-    required this.username,
-    required this.password,
-  });
+  const Credentials({required this.username, required this.password});
 
   @override
   String toString() => 'Credentials(username: $username, password: ***)';
