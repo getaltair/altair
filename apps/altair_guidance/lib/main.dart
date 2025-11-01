@@ -27,6 +27,7 @@ import 'repositories/ai_settings_repository.dart';
 import 'shortcuts/intents.dart';
 import 'shortcuts/shortcuts_config.dart';
 import 'shortcuts/shortcuts_help_dialog.dart';
+import 'widgets/task_filter_menu.dart';
 
 Future<void> main() async {
   // Configure system UI overlays (status bar, navigation bar)
@@ -60,6 +61,70 @@ Future<void> main() async {
     projectRepository: projectRepository,
     tagRepository: tagRepository,
   ));
+}
+
+/// Recursively count all subtasks (direct and nested) for a given task.
+int _countAllSubtasks(String taskId, List<Task> allTasks) {
+  final directSubtasks =
+      allTasks.where((t) => t.parentTaskId == taskId).toList();
+
+  if (directSubtasks.isEmpty) return 0;
+
+  int count = directSubtasks.length;
+
+  // Recursively count nested subtasks
+  for (final subtask in directSubtasks) {
+    count += _countAllSubtasks(subtask.id, allTasks);
+  }
+
+  return count;
+}
+
+/// Show confirmation dialog before deleting a task.
+/// Returns true if user confirms deletion, false otherwise.
+Future<bool> _showDeleteConfirmation(
+  BuildContext context, {
+  required Task task,
+  required List<Task> allTasks,
+}) async {
+  final subtaskCount = _countAllSubtasks(task.id, allTasks);
+
+  final String message;
+  final String deleteButton;
+
+  if (subtaskCount > 0) {
+    message =
+        'Delete "${task.title}" and $subtaskCount subtask${subtaskCount == 1 ? '' : 's'}?\n\nThis cannot be undone.';
+    deleteButton = 'DELETE ALL';
+  } else {
+    message = 'Delete "${task.title}"?';
+    deleteButton = 'DELETE';
+  }
+
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (BuildContext dialogContext) {
+      return AlertDialog(
+        title: const Text('Delete Task'),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('CANCEL'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            style: TextButton.styleFrom(
+              foregroundColor: AltairColors.error,
+            ),
+            child: Text(deleteButton),
+          ),
+        ],
+      );
+    },
+  );
+
+  return confirmed ?? false;
 }
 
 /// Main application widget.
@@ -413,11 +478,15 @@ class _HomePageState extends State<HomePage> {
                                 : null,
                           ),
                           if (!focusModeState.isEnabled) ...[
-                            // Filter buttons
+                            // Filter button
                             IconButton(
                               icon: const Icon(Icons.filter_list),
+                              tooltip: 'Filter tasks',
                               onPressed: () {
-                                // TODO: Show filter menu
+                                showTaskFilterMenu(
+                                  context,
+                                  isMobile: isMobilePlatform,
+                                );
                               },
                             ),
                             // Keyboard shortcuts help (desktop only)
@@ -776,43 +845,10 @@ class _HomePageState extends State<HomePage> {
                                                 ),
                                                 confirmDismiss:
                                                     (direction) async {
-                                                  // Show confirmation dialog
-                                                  return await showDialog<bool>(
-                                                    context: context,
-                                                    builder: (BuildContext
-                                                        dialogContext) {
-                                                      return AlertDialog(
-                                                        title: const Text(
-                                                            'Delete Task'),
-                                                        content: Text(
-                                                          'Delete "${task.title}"?',
-                                                        ),
-                                                        actions: [
-                                                          TextButton(
-                                                            onPressed: () =>
-                                                                Navigator.of(
-                                                                        dialogContext)
-                                                                    .pop(false),
-                                                            child: const Text(
-                                                                'CANCEL'),
-                                                          ),
-                                                          TextButton(
-                                                            onPressed: () =>
-                                                                Navigator.of(
-                                                                        dialogContext)
-                                                                    .pop(true),
-                                                            style: TextButton
-                                                                .styleFrom(
-                                                              foregroundColor:
-                                                                  AltairColors
-                                                                      .error,
-                                                            ),
-                                                            child: const Text(
-                                                                'DELETE'),
-                                                          ),
-                                                        ],
-                                                      );
-                                                    },
+                                                  return await _showDeleteConfirmation(
+                                                    context,
+                                                    task: task,
+                                                    allTasks: state.tasks,
                                                   );
                                                 },
                                                 onDismissed: (direction) {
@@ -1054,11 +1090,20 @@ class _TaskListItemState extends State<_TaskListItem> {
                   'Delete Task',
                   style: TextStyle(color: AltairColors.error),
                 ),
-                onTap: () {
+                onTap: () async {
                   Navigator.pop(sheetContext);
-                  context.read<TaskBloc>().add(
-                        TaskDeleteRequested(taskId: widget.task.id),
-                      );
+
+                  final confirmed = await _showDeleteConfirmation(
+                    context,
+                    task: widget.task,
+                    allTasks: widget.allTasks,
+                  );
+
+                  if (confirmed && context.mounted) {
+                    context.read<TaskBloc>().add(
+                          TaskDeleteRequested(taskId: widget.task.id),
+                        );
+                  }
                 },
               ),
             ],
@@ -1267,10 +1312,18 @@ class _TaskListItemState extends State<_TaskListItem> {
                   Center(
                     child: IconButton(
                       icon: const Icon(Icons.delete_outline, size: 20),
-                      onPressed: () {
-                        context.read<TaskBloc>().add(
-                              TaskDeleteRequested(taskId: widget.task.id),
-                            );
+                      onPressed: () async {
+                        final confirmed = await _showDeleteConfirmation(
+                          context,
+                          task: widget.task,
+                          allTasks: widget.allTasks,
+                        );
+
+                        if (confirmed && context.mounted) {
+                          context.read<TaskBloc>().add(
+                                TaskDeleteRequested(taskId: widget.task.id),
+                              );
+                        }
                       },
                       color: AltairColors.error,
                       padding: const EdgeInsets.all(AltairSpacing.xs),

@@ -49,8 +49,7 @@ class WindowsServiceInstaller extends ServiceInstaller {
 
     // Create batch file with environment variables for credentials
     // This prevents credentials from being visible in process listings
-    final batchContent =
-        '''@echo off
+    final batchContent = '''@echo off
 echo Starting Altair Database Service...
 set SURREAL_USER=${credentials.username}
 set SURREAL_PASS=${credentials.password}
@@ -70,8 +69,7 @@ set SURREAL_PASS=${credentials.password}
 
     // Create shortcut using PowerShell
     final shortcut = await shortcutPath;
-    final psCommand =
-        '''
+    final psCommand = '''
 \$WshShell = New-Object -ComObject WScript.Shell
 \$Shortcut = \$WshShell.CreateShortcut('$shortcut')
 \$Shortcut.TargetPath = '$batchPath'
@@ -121,12 +119,15 @@ set SURREAL_PASS=${credentials.password}
     }
 
     // Start the batch file in the background
-    await Process.start('cmd', [
-      '/c',
-      'start',
-      '/B',
-      batchPath,
-    ], mode: ProcessStartMode.detached);
+    await Process.start(
+        'cmd',
+        [
+          '/c',
+          'start',
+          '/B',
+          batchPath,
+        ],
+        mode: ProcessStartMode.detached);
 
     print('Service started');
   }

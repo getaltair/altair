@@ -85,14 +85,23 @@ class ProjectRepository {
       params['tags'] = tags;
     }
 
-    final whereClause = conditions.isEmpty
-        ? ''
-        : 'WHERE ${conditions.join(' AND ')}';
+    // Validate limit and offset to prevent DoS and ensure valid queries
+    if (limit != null && limit <= 0) {
+      throw ArgumentError('limit must be positive, got: $limit');
+    }
+    if (limit != null && limit > 10000) {
+      throw ArgumentError('limit too large (max 10000), got: $limit');
+    }
+    if (offset != null && offset < 0) {
+      throw ArgumentError('offset must be non-negative, got: $offset');
+    }
+
+    final whereClause =
+        conditions.isEmpty ? '' : 'WHERE ${conditions.join(' AND ')}';
     final limitClause = limit != null ? 'LIMIT $limit' : '';
     final startClause = offset != null ? 'START $offset' : '';
 
-    final query =
-        '''
+    final query = '''
       SELECT * FROM project
       $whereClause
       ORDER BY created_at DESC
@@ -223,8 +232,7 @@ class ProjectRepository {
       name: map['name'] as String,
       description: map['description'] as String?,
       status: ProjectStatus.values.byName(map['status'] as String),
-      tags:
-          (map['tags'] as List<dynamic>?)?.map((e) => e as String).toList() ??
+      tags: (map['tags'] as List<dynamic>?)?.map((e) => e as String).toList() ??
           [],
       color: map['color'] as String?,
       createdAt: DateTime.parse(map['created_at'] as String),

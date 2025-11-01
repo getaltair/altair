@@ -12,9 +12,9 @@ import 'auth_state.dart';
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   /// Creates an authentication bloc.
   AuthBloc({required AuthService authService, Logger? logger})
-    : _authService = authService,
-      _logger = logger ?? Logger(),
-      super(const AuthInitial()) {
+      : _authService = authService,
+        _logger = logger ?? Logger(),
+        super(const AuthInitial()) {
     on<AuthCheckRequested>(_onAuthCheckRequested);
     on<AuthLoginRequested>(_onAuthLoginRequested);
     on<AuthRegisterRequested>(_onAuthRegisterRequested);

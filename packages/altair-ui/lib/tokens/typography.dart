@@ -13,24 +13,24 @@ class AltairTypography {
 
   /// Display large: 48px, weight 800
   static TextStyle get displayLarge => baseStyle.copyWith(
-    fontSize: 48,
-    fontWeight: FontWeight.w800,
-    letterSpacing: -2,
-  );
+        fontSize: 48,
+        fontWeight: FontWeight.w800,
+        letterSpacing: -2,
+      );
 
   /// Display medium: 36px, weight 700
   static TextStyle get displayMedium => baseStyle.copyWith(
-    fontSize: 36,
-    fontWeight: FontWeight.w700,
-    letterSpacing: -1.5,
-  );
+        fontSize: 36,
+        fontWeight: FontWeight.w700,
+        letterSpacing: -1.5,
+      );
 
   /// Display small: 28px, weight 700
   static TextStyle get displaySmall => baseStyle.copyWith(
-    fontSize: 28,
-    fontWeight: FontWeight.w700,
-    letterSpacing: -1,
-  );
+        fontSize: 28,
+        fontWeight: FontWeight.w700,
+        letterSpacing: -1,
+      );
 
   /// Headline large: 24px, weight 600
   static TextStyle get headlineLarge =>

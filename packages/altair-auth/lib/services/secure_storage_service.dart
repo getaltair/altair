@@ -8,8 +8,8 @@ import 'package:logger/logger.dart';
 class SecureStorageService {
   /// Creates a secure storage service.
   SecureStorageService({FlutterSecureStorage? storage, Logger? logger})
-    : _storage = storage ?? const FlutterSecureStorage(),
-      _logger = logger ?? Logger();
+      : _storage = storage ?? const FlutterSecureStorage(),
+        _logger = logger ?? Logger();
 
   final FlutterSecureStorage _storage;
   final Logger _logger;
