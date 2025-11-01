@@ -114,7 +114,7 @@ jobs:
             --name surrealdb \
             -p 8000:8000 \
             surrealdb/surrealdb:latest \
-            start --bind 0.0.0.0:8000 --auth --log debug memory
+            start --bind 0.0.0.0:8000 --log debug memory
           echo "SurrealDB container started"
 
       - name: Wait for SurrealDB to be ready
