@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entities/quest.dart' as domain;
 import 'quest_card.dart';
 import 'wip_limit_badge.dart';
+import 'quest_detail_view.dart';
 import '../providers/board_state_provider.dart';
 import '../providers/filter_provider.dart';
 import '../providers/drag_provider.dart';
@@ -100,18 +101,24 @@ class QuestColumnWidget extends ConsumerWidget {
                     itemBuilder: (context, index) {
                       final quest = quests[index];
                       final isDragging = dragState?.questId == quest.id;
-                      final isKeyboardFocusedQuest = keyboardNav.focusedQuestId == quest.id;
+                      final isKeyboardFocusedQuest =
+                          keyboardNav.focusedQuestId == quest.id;
                       return QuestCard(
                         quest: quest,
                         isDragging: isDragging,
                         isKeyboardFocused: isKeyboardFocusedQuest,
                         onTap: () {
                           // Focus quest for keyboard navigation
-                          ref.read(keyboardNavigationProvider.notifier).focusQuest(quest.id, column);
-                          // TODO: Open quest detail view
+                          ref
+                              .read(keyboardNavigationProvider.notifier)
+                              .focusQuest(quest.id, column);
                         },
                         onDoubleTap: () {
-                          // TODO: Open quest detail view
+                          // Open quest detail view
+                          showDialog(
+                            context: context,
+                            builder: (context) => QuestDetailView(quest: quest),
+                          );
                         },
                       );
                     },
@@ -146,8 +153,10 @@ class QuestColumnWidget extends ConsumerWidget {
         // Handle the drop
         // Validate drop (WIP=1 enforcement)
         if (column == domain.QuestColumn.inProgress && wipLimit != null) {
-          final currentInProgress = boardState.questsByColumn[domain.QuestColumn.inProgress] ?? [];
-          if (currentInProgress.isNotEmpty && currentInProgress.first.id != questId) {
+          final currentInProgress =
+              boardState.questsByColumn[domain.QuestColumn.inProgress] ?? [];
+          if (currentInProgress.isNotEmpty &&
+              currentInProgress.first.id != questId) {
             // Show error toast
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
@@ -162,14 +171,15 @@ class QuestColumnWidget extends ConsumerWidget {
 
         // Move the quest to the target column
         await ref.read(questBoardProvider.notifier).moveQuest(questId, column);
-        
+
         // Clear drag state
         ref.read(dragStateProvider.notifier).clearDragState();
       },
       builder: (context, candidateData, rejectedData) {
         final dragState = ref.watch(dragStateProvider);
-        final isDropTarget = dragState?.targetColumn == column && candidateData.isNotEmpty;
-        
+        final isDropTarget =
+            dragState?.targetColumn == column && candidateData.isNotEmpty;
+
         return AnimatedContainer(
           duration: const Duration(milliseconds: 150),
           decoration: BoxDecoration(
@@ -182,7 +192,8 @@ class QuestColumnWidget extends ConsumerWidget {
                     : isInProgress && isWipViolation
                         ? Border.all(color: Colors.red, width: 4)
                         : isInProgress
-                            ? Border.all(color: Colors.purple.shade300, width: 4)
+                            ? Border.all(
+                                color: Colors.purple.shade300, width: 4)
                             : null,
           ),
           child: columnContent,

@@ -4,6 +4,7 @@ import '../../domain/entities/quest.dart';
 import 'energy_indicator.dart';
 import '../providers/drag_provider.dart';
 import '../providers/board_state_provider.dart';
+import '../providers/bulk_operations_provider.dart';
 
 /// Draggable quest card widget
 class QuestCard extends ConsumerWidget {
@@ -26,6 +27,8 @@ class QuestCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isEpic = quest.epicId == null;
     final isSubquest = quest.subquests.isNotEmpty;
+    final bulkSelection = ref.watch(bulkSelectionProvider);
+    final isBulkSelected = bulkSelection.contains(quest.id);
 
     final cardContent = Card(
       elevation: isDragging ? 8 : 4,
@@ -44,8 +47,17 @@ class QuestCard extends ConsumerWidget {
           // Right-click context menu
           _showContextMenu(context, ref);
         },
+        onLongPress: () {
+          // Long press to toggle bulk selection
+          ref.read(bulkSelectionProvider.notifier).toggleSelection(quest.id);
+        },
         child: InkWell(
-          onTap: onTap,
+          onTap: bulkSelection.isNotEmpty
+              ? () {
+                  // In bulk mode, toggle selection
+                  ref.read(bulkSelectionProvider.notifier).toggleSelection(quest.id);
+                }
+              : onTap,
           onDoubleTap: onDoubleTap,
           borderRadius: BorderRadius.circular(8),
         child: Padding(
@@ -57,6 +69,14 @@ class QuestCard extends ConsumerWidget {
               // Header with icon and title
               Row(
                 children: [
+                  if (bulkSelection.isNotEmpty)
+                    Checkbox(
+                      value: isBulkSelected,
+                      onChanged: (value) {
+                        ref.read(bulkSelectionProvider.notifier).toggleSelection(quest.id);
+                      },
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
                   Icon(
                     isEpic
                         ? Icons.landscape

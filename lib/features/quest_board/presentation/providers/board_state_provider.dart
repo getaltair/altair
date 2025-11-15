@@ -89,8 +89,33 @@ class QuestBoardNotifier extends Notifier<QuestBoardState> {
   @override
   QuestBoardState build() {
     // Load quests after initial build
-    Future.microtask(() => loadQuests());
+    Future.microtask(() {
+      loadQuests();
+      // Start auto-archive timer
+      _startAutoArchiveTimer();
+    });
     return QuestBoardState();
+  }
+
+  void _startAutoArchiveTimer() {
+    // Check for old quests to archive every hour
+    Future.delayed(const Duration(hours: 1), () {
+      _archiveOldQuests();
+      _startAutoArchiveTimer(); // Schedule next check
+    });
+  }
+
+  Future<void> _archiveOldQuests() async {
+    try {
+      // Archive quests completed more than 24 hours ago (configurable)
+      const daysOld = 1; // Default: 24 hours
+      await _repository.archiveOldQuests(daysOld);
+      // Reload quests to reflect archived state
+      await loadQuests();
+    } catch (e) {
+      // Silently fail - don't disrupt user experience
+      print('Auto-archive error: $e');
+    }
   }
 
   Future<void> loadQuests() async {

@@ -7,6 +7,7 @@ import '../widgets/board_header.dart';
 import '../providers/board_state_provider.dart';
 import '../providers/keyboard_navigation_provider.dart';
 import '../providers/drag_provider.dart';
+import '../providers/bulk_operations_provider.dart';
 
 /// Main board screen
 class BoardScreen extends ConsumerStatefulWidget {
@@ -57,6 +58,9 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
               onRedo: () => ref.read(questBoardProvider.notifier).redo(),
               canUndo: boardState.undoStack.isNotEmpty,
               canRedo: boardState.redoStack.isNotEmpty,
+              onBulkMove: () => _showBulkMoveDialog(context, ref),
+              onBulkDelete: () => _showBulkDeleteConfirmation(context, ref),
+              onBulkArchive: () => _performBulkArchive(ref),
             ),
             Expanded(
               child: QuestBoard(),
@@ -210,6 +214,101 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
         },
       ),
     );
+  }
+
+  void _showBulkMoveDialog(BuildContext context, WidgetRef ref) {
+    final selectedIds = ref.read(bulkSelectionProvider);
+    if (selectedIds.isEmpty) return;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Move ${selectedIds.length} quest${selectedIds.length > 1 ? 's' : ''}'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: QuestColumn.values.map((column) {
+            return ListTile(
+              title: Text(_getColumnName(column)),
+              onTap: () {
+                final boardNotifier = ref.read(questBoardProvider.notifier);
+                for (final questId in selectedIds) {
+                  boardNotifier.moveQuest(questId, column);
+                }
+                ref.read(bulkSelectionProvider.notifier).clearSelection();
+                Navigator.pop(context);
+              },
+            );
+          }).toList(),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showBulkDeleteConfirmation(BuildContext context, WidgetRef ref) {
+    final selectedIds = ref.read(bulkSelectionProvider);
+    if (selectedIds.isEmpty) return;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Quests'),
+        content: Text(
+          'Are you sure you want to delete ${selectedIds.length} quest${selectedIds.length > 1 ? 's' : ''}? This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              final boardNotifier = ref.read(questBoardProvider.notifier);
+              for (final questId in selectedIds) {
+                boardNotifier.deleteQuest(questId);
+              }
+              ref.read(bulkSelectionProvider.notifier).clearSelection();
+              Navigator.pop(context);
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _performBulkArchive(WidgetRef ref) {
+    final selectedIds = ref.read(bulkSelectionProvider);
+    if (selectedIds.isEmpty) return;
+
+    final boardNotifier = ref.read(questBoardProvider.notifier);
+    for (final questId in selectedIds) {
+      boardNotifier.archiveQuest(questId);
+    }
+    ref.read(bulkSelectionProvider.notifier).clearSelection();
+  }
+
+  String _getColumnName(QuestColumn column) {
+    switch (column) {
+      case QuestColumn.ideaGreenhouse:
+        return 'Idea Greenhouse';
+      case QuestColumn.questLog:
+        return 'Quest Log';
+      case QuestColumn.thisCycle:
+        return "This Cycle's Quest";
+      case QuestColumn.nextUp:
+        return 'Next Up';
+      case QuestColumn.inProgress:
+        return 'In-Progress';
+      case QuestColumn.harvested:
+        return 'Harvested';
+    }
   }
 }
 
