@@ -5,6 +5,7 @@ import 'energy_indicator.dart';
 import '../providers/drag_provider.dart';
 import '../providers/board_state_provider.dart';
 import '../providers/bulk_operations_provider.dart';
+import '../../../../core/security/input_sanitizer.dart';
 
 /// Draggable quest card widget
 class QuestCard extends ConsumerWidget {
@@ -338,7 +339,10 @@ class _EditQuestDialogState extends State<_EditQuestDialog> {
             autofocus: true,
             onSubmitted: (value) {
               if (value.isNotEmpty) {
-                widget.onSave(value, _energyPoints);
+                // Sanitize input before saving
+                final sanitizedTitle = InputSanitizer.sanitizeTitle(value);
+                final sanitizedEnergy = InputSanitizer.sanitizeEnergyPoints(_energyPoints);
+                widget.onSave(sanitizedTitle, sanitizedEnergy);
                 Navigator.pop(context);
               }
             },
@@ -370,12 +374,15 @@ class _EditQuestDialogState extends State<_EditQuestDialog> {
           child: const Text('Cancel'),
         ),
         ElevatedButton(
-          onPressed: () {
-            if (_titleController.text.isNotEmpty) {
-              widget.onSave(_titleController.text, _energyPoints);
-              Navigator.pop(context);
-            }
-          },
+                  onPressed: () {
+                    if (_titleController.text.isNotEmpty) {
+                      // Sanitize input before saving
+                      final sanitizedTitle = InputSanitizer.sanitizeTitle(_titleController.text);
+                      final sanitizedEnergy = InputSanitizer.sanitizeEnergyPoints(_energyPoints);
+                      widget.onSave(sanitizedTitle, sanitizedEnergy);
+                      Navigator.pop(context);
+                    }
+                  },
           child: const Text('Save'),
         ),
       ],

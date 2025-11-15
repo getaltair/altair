@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entities/quest.dart';
 import '../../domain/repositories/quest_repository.dart';
 import '../../data/repositories/quest_repository_impl.dart';
+import '../../../../core/database/database_provider.dart';
 import 'filter_provider.dart';
 import 'dart:collection';
 
@@ -79,7 +80,8 @@ class QuestBoardAction {
 
 /// Repository provider
 final questRepositoryProvider = Provider<QuestRepository>((ref) {
-  return QuestRepositoryImpl();
+  final datasource = ref.watch(surrealdbDatasourceProvider);
+  return QuestRepositoryImpl(datasource);
 });
 
 /// Board state notifier

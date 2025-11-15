@@ -8,6 +8,7 @@ import '../providers/board_state_provider.dart';
 import '../providers/keyboard_navigation_provider.dart';
 import '../providers/drag_provider.dart';
 import '../providers/bulk_operations_provider.dart';
+import '../../../../core/security/input_sanitizer.dart';
 
 /// Main board screen
 class BoardScreen extends ConsumerStatefulWidget {
@@ -203,10 +204,14 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
       context: context,
       builder: (context) => _NewQuestDialog(
         onSave: (title, energyPoints) {
+          // Sanitize input
+          final sanitizedTitle = InputSanitizer.sanitizeTitle(title);
+          final sanitizedEnergy = InputSanitizer.sanitizeEnergyPoints(energyPoints);
+          
           final quest = Quest(
             id: DateTime.now().millisecondsSinceEpoch.toString(),
-            title: title,
-            energyPoints: energyPoints,
+            title: sanitizedTitle,
+            energyPoints: sanitizedEnergy,
             column: QuestColumn.ideaGreenhouse,
             createdAt: DateTime.now(),
           );
