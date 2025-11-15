@@ -33,7 +33,7 @@ class QuestColumnWidget extends ConsumerWidget {
     final isWipViolation = wipLimit != null && currentCount > wipLimit!;
     final isInProgress = column == domain.QuestColumn.inProgress;
 
-    return Container(
+    final columnContent = Container(
       width: 280,
       margin: const EdgeInsets.symmetric(horizontal: 8),
       decoration: BoxDecoration(
@@ -112,6 +112,73 @@ class QuestColumnWidget extends ConsumerWidget {
           ),
         ],
       ),
+    );
+
+    // Make the column a drop target using Flutter's built-in DragTarget
+    return DragTarget<String>(
+      onWillAccept: (data) {
+        // Update drag state to show target column
+        final currentDragState = dragState;
+        if (currentDragState != null && data == currentDragState.questId) {
+          ref.read(dragStateProvider.notifier).setDragState(
+                currentDragState.copyWith(targetColumn: column),
+              );
+        }
+        return true;
+      },
+      onLeave: (data) {
+        // Clear target column when drag leaves
+        final currentDragState = dragState;
+        if (currentDragState != null) {
+          ref.read(dragStateProvider.notifier).setDragState(
+                currentDragState.copyWith(targetColumn: null),
+              );
+        }
+      },
+      onAccept: (questId) async {
+        // Handle the drop
+        // Validate drop (WIP=1 enforcement)
+        if (column == domain.QuestColumn.inProgress && wipLimit != null) {
+          final currentInProgress = boardState.questsByColumn[domain.QuestColumn.inProgress] ?? [];
+          if (currentInProgress.isNotEmpty && currentInProgress.first.id != questId) {
+            // Show error toast
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('WIP limit reached! Move current item first.'),
+                backgroundColor: Colors.red,
+              ),
+            );
+            ref.read(dragStateProvider.notifier).clearDragState();
+            return;
+          }
+        }
+
+        // Move the quest to the target column
+        await ref.read(questBoardProvider.notifier).moveQuest(questId, column);
+        
+        // Clear drag state
+        ref.read(dragStateProvider.notifier).clearDragState();
+      },
+      builder: (context, candidateData, rejectedData) {
+        final dragState = ref.watch(dragStateProvider);
+        final isDropTarget = dragState?.targetColumn == column && candidateData.isNotEmpty;
+        
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          decoration: BoxDecoration(
+            color: backgroundColor,
+            borderRadius: BorderRadius.circular(8),
+            border: isDropTarget
+                ? Border.all(color: Colors.blue, width: 3)
+                : isInProgress && isWipViolation
+                    ? Border.all(color: Colors.red, width: 4)
+                    : isInProgress
+                        ? Border.all(color: Colors.purple.shade300, width: 4)
+                        : null,
+          ),
+          child: columnContent,
+        );
+      },
     );
   }
 }

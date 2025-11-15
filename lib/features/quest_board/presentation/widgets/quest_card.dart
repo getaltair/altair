@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entities/quest.dart';
 import 'energy_indicator.dart';
+import '../providers/drag_provider.dart';
 
 /// Draggable quest card widget
 class QuestCard extends ConsumerWidget {
@@ -23,7 +24,7 @@ class QuestCard extends ConsumerWidget {
     final isEpic = quest.epicId == null;
     final isSubquest = quest.subquests.isNotEmpty;
 
-    return Card(
+    final cardContent = Card(
       elevation: isDragging ? 8 : 4,
       margin: const EdgeInsets.only(bottom: 8),
       shape: RoundedRectangleBorder(
@@ -101,6 +102,40 @@ class QuestCard extends ConsumerWidget {
           ),
         ),
       ),
+    );
+
+    // Make the card draggable using Flutter's built-in Draggable
+    return Draggable<String>(
+      data: quest.id,
+      feedback: Material(
+        elevation: 8,
+        borderRadius: BorderRadius.circular(8),
+        child: Opacity(
+          opacity: 0.8,
+          child: SizedBox(
+            width: 260,
+            child: cardContent,
+          ),
+        ),
+      ),
+      childWhenDragging: Opacity(
+        opacity: 0.3,
+        child: cardContent,
+      ),
+      onDragStarted: () {
+        // Update drag state when drag starts
+        ref.read(dragStateProvider.notifier).setDragState(
+              DragState(
+                questId: quest.id,
+                sourceColumn: quest.column,
+              ),
+            );
+      },
+      onDragEnd: (details) {
+        // Clear drag state when drag ends
+        ref.read(dragStateProvider.notifier).clearDragState();
+      },
+      child: cardContent,
     );
   }
 }

@@ -78,34 +78,71 @@ class _EnergyFilterChip extends ConsumerWidget {
   }
 
   void _showEnergyFilterDialog(BuildContext context, WidgetRef ref) {
+    final currentFilters = ref.read(activeFiltersProvider);
+    final selectedLevels = currentFilters.energyLevels?.toSet() ?? <int>{};
+
     showDialog(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          title: const Text('Filter by Energy Level'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: List.generate(5, (index) {
-              final level = index + 1;
-              return CheckboxListTile(
-                title: Text('Level $level'),
-                value: false,
-                onChanged: (checked) {
-                  // TODO: Implement energy level selection
-                },
-              );
-            }),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Apply'),
-            ),
-          ],
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('Filter by Energy Level'),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: List.generate(5, (index) {
+                    final level = index + 1;
+                    return CheckboxListTile(
+                      title: Row(
+                        children: [
+                          Text('Level $level'),
+                          const SizedBox(width: 8),
+                          ...List.generate(5, (i) {
+                            return Icon(
+                              Icons.bolt,
+                              size: 16,
+                              color: i < level ? Colors.amber : Colors.grey.shade300,
+                            );
+                          }),
+                        ],
+                      ),
+                      value: selectedLevels.contains(level),
+                      onChanged: (checked) {
+                        if (checked != null) {
+                          setState(() {
+                            if (checked) {
+                              selectedLevels.add(level);
+                            } else {
+                              selectedLevels.remove(level);
+                            }
+                          });
+                        }
+                      },
+                    );
+                  }),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancel'),
+                ),
+                TextButton(
+                  onPressed: () {
+                    ref.read(activeFiltersProvider.notifier).updateFilters(
+                          currentFilters.copyWith(
+                            energyLevels: selectedLevels.isEmpty ? null : selectedLevels,
+                          ),
+                        );
+                    Navigator.pop(context);
+                  },
+                  child: const Text('Apply'),
+                ),
+              ],
+            );
+          },
         );
       },
     );
