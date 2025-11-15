@@ -41,30 +41,30 @@ THEN user sees tasks organized in 6 columns with WIP=1 enforcement on In-Progres
 ### Visual Design
 
 - **Layout:** 6-column grid with 16px gaps, 280px min column width
-- **Colors:** 
+- **Colors:**
   - Idea Greenhouse: `#E8F5E9`
-  - Quest Log: `#E3F2FD` 
+  - Quest Log: `#E3F2FD`
   - This Cycle: `#FFF3E0`
   - Next Up: `#FCE4EC`
   - In-Progress: `#F3E5F5` with 4px border
   - Harvested: `#F5F5F5` with 50% opacity
-- **Typography:** 
+- **Typography:**
   - Column headers: 16px semi-bold
   - Card titles: 14px medium
   - Metadata: 12px regular
-- **Iconography:** 
+- **Iconography:**
   - Energy: Lightning bolt icons (16x16)
   - Epic: Mountain icon
   - Quest: Flag icon
   - Subquest: Checkbox icon
-- **Borders/Shadows:** 
+- **Borders/Shadows:**
   - Cards: 2px solid black border, 4px offset shadow
   - Hover: 6px offset shadow
   - Dragging: 8px blur shadow
 
 ### User Interactions
 
-- **Input Methods:** 
+- **Input Methods:**
   - Drag-and-drop with mouse/touch
   - Keyboard navigation (Arrow keys + Space to grab/drop)
   - Right-click context menu
@@ -93,12 +93,14 @@ THEN user sees tasks organized in 6 columns with WIP=1 enforcement on In-Progres
   - Expanded/collapsed cards
   - Selected filters
 - **Global State:**
+
   ```dart
   final questBoardProvider = StateNotifierProvider<QuestBoardNotifier, QuestBoardState>
   final activeFiltersProvider = StateProvider<BoardFilters>
   final boardLayoutProvider = StateProvider<BoardLayout>
   final dragStateProvider = StateProvider<DragState?>
   ```
+
 - **Persistence:**
   - Board state saved on every change
   - Filter preferences saved per user
@@ -114,7 +116,7 @@ THEN user sees tasks organized in 6 columns with WIP=1 enforcement on In-Progres
 
 ### Accessibility Requirements
 
-- **Screen Reader:** 
+- **Screen Reader:**
   - Announce column names and item count
   - Describe drag operations
   - Read card metadata on focus
@@ -128,7 +130,7 @@ THEN user sees tasks organized in 6 columns with WIP=1 enforcement on In-Progres
 
 ### ADHD-Specific UI Requirements
 
-- **Cognitive Load:** 
+- **Cognitive Load:**
   - Hide completed items after 24 hours
   - Collapse card details by default
   - Maximum 5 items visible per column (scroll for more)
@@ -178,7 +180,7 @@ THEN user sees tasks organized in 6 columns with WIP=1 enforcement on In-Progres
 
 ### Code Structure
 
-```
+```text
 lib/
 ├── features/
 │   └── quest_board/
@@ -241,31 +243,31 @@ dev_dependencies:
 - [x] WIP=1 enforcement logic
 - [x] Column transition rules
 - [x] Energy calculation
-- [x] Filter combinations
-- [x] Drag validation rules
+- [ ] Filter combinations
+- [ ] Drag validation rules
 
 ### Widget Tests
 
-- [x] Board rendering with different item counts
-- [x] Drag and drop operations
-- [x] Filter application
-- [x] Responsive layout changes
+- [ ] Board rendering with different item counts
+- [ ] Drag and drop operations
+- [ ] Filter application
+- [ ] Responsive layout changes
 - [x] Keyboard navigation
 
 ### Integration Tests
 
-- [x] Create quest → Move through columns → Archive
-- [x] Apply filters → Drag filtered item
-- [x] Bulk operations on multiple items
-- [x] Undo/redo sequence
-- [x] Board state persistence
+- [ ] Create quest → Move through columns → Archive
+- [ ] Apply filters → Drag filtered item
+- [ ] Bulk operations on multiple items
+- [ ] Undo/redo sequence
+- [ ] Board state persistence
 
 ### Accessibility Tests
 
-- [x] Screen reader navigation
+- [ ] Screen reader navigation
 - [x] Keyboard-only operation
-- [x] Color contrast validation
-- [x] Focus management
+- [ ] Color contrast validation
+- [ ] Focus management
 
 ## Definition of Done
 
@@ -274,8 +276,8 @@ dev_dependencies:
 - [x] Energy-based filtering operational
 - [x] Responsive design implemented
 - [x] Keyboard navigation complete
-- [x] Performance targets met
-- [x] All tests passing
-- [x] Accessibility audit passed
+- [ ] Performance targets met
+- [ ] All tests passing
+- [ ] Accessibility audit passed
 - [x] Backend gRPC endpoints integrated
 - [x] SurrealDB persistence working

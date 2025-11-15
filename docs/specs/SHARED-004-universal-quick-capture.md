@@ -290,44 +290,44 @@ class RoutingEngine {
 
 ### Unit Tests
 
-- [x] Routing engine accuracy
-- [x] Voice recording logic
-- [x] Transcription processing
-- [x] Queue management
-- [x] Hotkey registration
+- [ ] Routing engine accuracy
+- [ ] Voice recording logic
+- [ ] Transcription processing
+- [ ] Queue management
+- [ ] Hotkey registration
 
 ### Widget Tests
 
-- [x] Overlay appearance
-- [x] Input field behavior
-- [x] Voice button states
-- [x] Routing indicator
-- [x] Success animations
+- [ ] Overlay appearance
+- [ ] Input field behavior
+- [ ] Voice button states
+- [ ] Routing indicator
+- [ ] Success animations
 
 ### Integration Tests
 
-- [x] Hotkey → Capture → Route
-- [x] Voice → Transcribe → Save
-- [x] Offline → Queue → Sync
-- [x] Multi-app routing
-- [x] Widget interaction
+- [ ] Hotkey → Capture → Route
+- [ ] Voice → Transcribe → Save
+- [ ] Offline → Queue → Sync
+- [ ] Multi-app routing
+- [ ] Widget interaction
 
 ### Accessibility Tests
 
-- [x] Screen reader flow
-- [x] Keyboard operation
-- [x] Voice-only usage
-- [x] High contrast mode
+- [ ] Screen reader flow
+- [ ] Keyboard operation
+- [ ] Voice-only usage
+- [ ] High contrast mode
 
 ## Definition of Done
 
-- [x] Global hotkey working
-- [x] Voice input functional
-- [x] Routing accurate >90%
-- [x] Mobile widget active
-- [x] System tray operational
-- [x] Offline queue working
-- [x] Whisper transcription fast
-- [x] All platforms supported
-- [x] Tests passing
-- [x] Performance metrics met
+- [ ] Global hotkey working
+- [ ] Voice input functional
+- [ ] Routing accurate >90%
+- [ ] Mobile widget active
+- [ ] System tray operational
+- [ ] Offline queue working
+- [ ] Whisper transcription fast
+- [ ] All platforms supported
+- [ ] Tests passing
+- [ ] Performance metrics met

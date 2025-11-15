@@ -272,45 +272,45 @@ rand = "0.8"
 
 ### Unit Tests
 
-- [x] XP calculation formulas
-- [x] Level progression curve
-- [x] Achievement unlock conditions
-- [x] Streak pause logic
-- [x] Reward redemption rules
+- [ ] XP calculation formulas
+- [ ] Level progression curve
+- [ ] Achievement unlock conditions
+- [ ] Streak pause logic
+- [ ] Reward redemption rules
 
 ### Widget Tests
 
-- [x] XP bar animation
-- [x] Level up modal display
-- [x] Achievement toast queue
-- [x] Reward shop interaction
-- [x] Streak counter updates
+- [ ] XP bar animation
+- [ ] Level up modal display
+- [ ] Achievement toast queue
+- [ ] Reward shop interaction
+- [ ] Streak counter updates
 
 ### Integration Tests
 
-- [x] Complete quest → XP gain → Level up
-- [x] Trigger achievement → Toast → Gallery
-- [x] Accumulate points → Shop → Redeem
-- [x] Daily login → Streak increment
-- [x] Settings toggle → Hide all gamification
+- [ ] Complete quest → XP gain → Level up
+- [ ] Trigger achievement → Toast → Gallery
+- [ ] Accumulate points → Shop → Redeem
+- [ ] Daily login → Streak increment
+- [ ] Settings toggle → Hide all gamification
 
 ### Accessibility Tests
 
-- [x] Screen reader XP announcements
-- [x] Keyboard shop navigation
-- [x] Motion-reduced animations
-- [x] Color-blind safe badges
+- [ ] Screen reader XP announcements
+- [ ] Keyboard shop navigation
+- [ ] Motion-reduced animations
+- [ ] Color-blind safe badges
 
 ## Definition of Done
 
-- [x] XP system functional
-- [x] Achievements unlocking
-- [x] Level progression working
-- [x] Reward shop operational
-- [x] Streaks tracking correctly
-- [x] Challenges generating daily
-- [x] Stats dashboard complete
-- [x] Optional toggle working
-- [x] All animations smooth
-- [x] Performance targets met
-- [x] Backend integration complete
+- [ ] XP system functional
+- [ ] Achievements unlocking
+- [ ] Level progression working
+- [ ] Reward shop operational
+- [ ] Streaks tracking correctly
+- [ ] Challenges generating daily
+- [ ] Stats dashboard complete
+- [ ] Optional toggle working
+- [ ] All animations smooth
+- [ ] Performance targets met
+- [ ] Backend integration complete

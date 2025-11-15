@@ -313,42 +313,42 @@ tonic-build = "0.12"
 
 ### Unit Tests
 
-- [x] Service discovery logic
-- [x] Message serialization
-- [x] Queue management
-- [x] Reconnection logic
-- [x] Rate limiting
+- [ ] Service discovery logic
+- [ ] Message serialization
+- [ ] Queue management
+- [ ] Reconnection logic
+- [ ] Rate limiting
 
 ### Widget Tests
 
-- [x] Status indicator updates
-- [x] Connection dialog
-- [x] Debug panel display
-- [x] Error notifications
+- [ ] Status indicator updates
+- [ ] Connection dialog
+- [ ] Debug panel display
+- [ ] Error notifications
 
 ### Integration Tests
 
-- [x] Multi-app communication
-- [x] Message delivery guarantee
-- [x] Offline queue sync
-- [x] Service health checks
-- [x] Version compatibility
+- [ ] Multi-app communication
+- [ ] Message delivery guarantee
+- [ ] Offline queue sync
+- [ ] Service health checks
+- [ ] Version compatibility
 
 ### Accessibility Tests
 
-- [x] Status announcements
-- [x] Keyboard control
-- [x] Screen reader support
+- [ ] Status announcements
+- [ ] Keyboard control
+- [ ] Screen reader support
 
 ## Definition of Done
 
-- [x] gRPC servers running
-- [x] Service discovery working
-- [x] Message passing functional
-- [x] Event streaming active
-- [x] Health checks operational
-- [x] Queue persistence working
-- [x] Reconnection automatic
-- [x] All proto files generated
-- [x] Tests passing
-- [x] Performance metrics met
+- [ ] gRPC servers running
+- [ ] Service discovery working
+- [ ] Message passing functional
+- [ ] Event streaming active
+- [ ] Health checks operational
+- [ ] Queue persistence working
+- [ ] Reconnection automatic
+- [ ] All proto files generated
+- [ ] Tests passing
+- [ ] Performance metrics met

@@ -270,44 +270,44 @@ printpdf = "0.7"
 
 ### Unit Tests
 
-- [x] Wizard step navigation logic
-- [x] Archive selection rules
-- [x] Metrics calculation accuracy
-- [x] Schedule configuration
-- [x] Export generation
+- [ ] Wizard step navigation logic
+- [ ] Archive selection rules
+- [ ] Metrics calculation accuracy
+- [ ] Schedule configuration
+- [ ] Export generation
 
 ### Widget Tests
 
-- [x] Wizard flow completion
-- [x] Card selection states
-- [x] Animation triggers
-- [x] Form validation
-- [x] Responsive layouts
+- [ ] Wizard flow completion
+- [ ] Card selection states
+- [ ] Animation triggers
+- [ ] Form validation
+- [ ] Responsive layouts
 
 ### Integration Tests
 
-- [x] Complete harvest ritual flow
-- [x] Archive → Confirmation → Success
-- [x] Metrics → Export PDF
-- [x] Schedule → Notification → Open
-- [x] Skip → Resume later
+- [ ] Complete harvest ritual flow
+- [ ] Archive → Confirmation → Success
+- [ ] Metrics → Export PDF
+- [ ] Schedule → Notification → Open
+- [ ] Skip → Resume later
 
 ### Accessibility Tests
 
-- [x] Screen reader wizard navigation
-- [x] Keyboard-only completion
-- [x] Reduced motion mode
-- [x] High contrast verification
+- [ ] Screen reader wizard navigation
+- [ ] Keyboard-only completion
+- [ ] Reduced motion mode
+- [ ] High contrast verification
 
 ## Definition of Done
 
-- [x] Wizard fully functional
-- [x] Celebration animations working
-- [x] Archive system operational
-- [x] Metrics calculating correctly
-- [x] Export to PDF working
-- [x] Schedule notifications active
-- [x] History view complete
-- [x] All tests passing
-- [x] Accessibility verified
-- [x] Backend integration complete
+- [ ] Wizard fully functional
+- [ ] Celebration animations working
+- [ ] Archive system operational
+- [ ] Metrics calculating correctly
+- [ ] Export to PDF working
+- [ ] Schedule notifications active
+- [ ] History view complete
+- [ ] All tests passing
+- [ ] Accessibility verified
+- [ ] Backend integration complete

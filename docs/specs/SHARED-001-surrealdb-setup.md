@@ -282,41 +282,41 @@ DEFINE INDEX idx_contains ON contains COLUMNS in, out UNIQUE;
 
 ### Unit Tests
 
-- [x] Connection establishment
-- [x] Schema migration logic
-- [x] Query building
-- [x] Transaction rollback
-- [x] Backup/restore cycle
+- [ ] Connection establishment
+- [ ] Schema migration logic
+- [ ] Query building
+- [ ] Transaction rollback
+- [ ] Backup/restore cycle
 
 ### Widget Tests
 
-- [x] Status indicator states
-- [x] Migration progress display
-- [x] Backup dialog interaction
-- [x] Error message display
+- [ ] Status indicator states
+- [ ] Migration progress display
+- [ ] Backup dialog interaction
+- [ ] Error message display
 
 ### Integration Tests
 
-- [x] Full database initialization
-- [x] Multi-namespace operations
-- [x] Concurrent connections
-- [x] Large data operations
-- [x] Recovery from corruption
+- [ ] Full database initialization
+- [ ] Multi-namespace operations
+- [ ] Concurrent connections
+- [ ] Large data operations
+- [ ] Recovery from corruption
 
 ### Accessibility Tests
 
-- [x] Status announcements
-- [x] Keyboard navigation
-- [x] Screen reader compatibility
+- [ ] Status announcements
+- [ ] Keyboard navigation
+- [ ] Screen reader compatibility
 
 ## Definition of Done
 
-- [x] SurrealDB embedded working
-- [x] Schema migrations functional
-- [x] All namespaces created
-- [x] Backup/restore operational
-- [x] Connection pooling active
-- [x] Performance targets met
-- [x] Error recovery working
-- [x] Tests passing
-- [x] Documentation complete
+- [ ] SurrealDB embedded working
+- [ ] Schema migrations functional
+- [ ] All namespaces created
+- [ ] Backup/restore operational
+- [ ] Connection pooling active
+- [ ] Performance targets met
+- [ ] Error recovery working
+- [ ] Tests passing
+- [ ] Documentation complete

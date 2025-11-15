@@ -285,44 +285,44 @@ Be encouraging and break complex tasks into very small, concrete steps.
 
 ### Unit Tests
 
-- [x] Prompt generation
-- [x] Response parsing
-- [x] Energy estimation logic
-- [x] Provider switching
-- [x] Error handling
+- [ ] Prompt generation
+- [ ] Response parsing
+- [ ] Energy estimation logic
+- [ ] Provider switching
+- [ ] Error handling
 
 ### Widget Tests
 
-- [x] Breakdown button states
-- [x] Preview modal interaction
-- [x] Task selection
-- [x] Loading states
-- [x] Error display
+- [ ] Breakdown button states
+- [ ] Preview modal interaction
+- [ ] Task selection
+- [ ] Loading states
+- [ ] Error display
 
 ### Integration Tests
 
-- [x] Full breakdown flow
-- [x] Multiple provider testing
-- [x] Offline fallback
-- [x] Batch processing
-- [x] Template learning
+- [ ] Full breakdown flow
+- [ ] Multiple provider testing
+- [ ] Offline fallback
+- [ ] Batch processing
+- [ ] Template learning
 
 ### Accessibility Tests
 
-- [x] Screen reader flow
-- [x] Keyboard navigation
-- [x] Focus management
-- [x] Motion preferences
+- [ ] Screen reader flow
+- [ ] Keyboard navigation
+- [ ] Focus management
+- [ ] Motion preferences
 
 ## Definition of Done
 
-- [x] AI breakdown functional
-- [x] Multiple providers working
-- [x] Energy estimation accurate
-- [x] ADHD-optimized prompts
-- [x] Local LLM option available
-- [x] Streaming responses working
-- [x] Error handling robust
-- [x] Cache system operational
-- [x] All tests passing
-- [x] Performance targets met
+- [ ] AI breakdown functional
+- [ ] Multiple providers working
+- [ ] Energy estimation accurate
+- [ ] ADHD-optimized prompts
+- [ ] Local LLM option available
+- [ ] Streaming responses working
+- [ ] Error handling robust
+- [ ] Cache system operational
+- [ ] All tests passing
+- [ ] Performance targets met

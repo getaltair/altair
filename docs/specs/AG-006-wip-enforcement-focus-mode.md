@@ -369,44 +369,44 @@ class FocusModeOverlay extends ConsumerWidget {
 
 ### Unit Tests
 
-- [x] WIP limit enforcement
-- [x] Context preservation
-- [x] Distraction logging
-- [x] Focus session tracking
-- [x] Emergency override logic
+- [ ] WIP limit enforcement
+- [ ] Context preservation
+- [ ] Distraction logging
+- [ ] Focus session tracking
+- [ ] Emergency override logic
 
 ### Widget Tests
 
-- [x] Focus mode UI
-- [x] Switch dialog interaction
-- [x] Context save trigger
-- [x] Statistics display
-- [x] Break mode toggle
+- [ ] Focus mode UI
+- [ ] Switch dialog interaction
+- [ ] Context save trigger
+- [ ] Statistics display
+- [ ] Break mode toggle
 
 ### Integration Tests
 
-- [x] Task switch → Context save → Log
-- [x] Focus mode → Complete → Exit
-- [x] WIP block → Override → Switch
-- [x] Break → Return → Resume
-- [x] Multiple switch attempts
+- [ ] Task switch → Context save → Log
+- [ ] Focus mode → Complete → Exit
+- [ ] WIP block → Override → Switch
+- [ ] Break → Return → Resume
+- [ ] Multiple switch attempts
 
 ### Accessibility Tests
 
-- [x] Screen reader in focus mode
-- [x] Keyboard-only operation
-- [x] Escape routes clear
-- [x] Color-blind safe
+- [ ] Screen reader in focus mode
+- [ ] Keyboard-only operation
+- [ ] Escape routes clear
+- [ ] Color-blind safe
 
 ## Definition of Done
 
-- [x] WIP=1 strictly enforced
-- [x] Focus mode implemented
-- [x] Context preservation working
-- [x] Distraction logging active
-- [x] Emergency override functional
-- [x] Break mode operational
-- [x] Statistics tracking
-- [x] All tests passing
-- [x] Accessibility verified
-- [x] Performance optimal
+- [ ] WIP=1 strictly enforced
+- [ ] Focus mode implemented
+- [ ] Context preservation working
+- [ ] Distraction logging active
+- [ ] Emergency override functional
+- [ ] Break mode operational
+- [ ] Statistics tracking
+- [ ] All tests passing
+- [ ] Accessibility verified
+- [ ] Performance optimal

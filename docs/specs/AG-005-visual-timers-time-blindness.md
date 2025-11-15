@@ -294,44 +294,44 @@ class TimerVisualizer {
 
 ### Unit Tests
 
-- [x] Timer accuracy
-- [x] State transitions
-- [x] Break scheduling
-- [x] Estimation calculations
-- [x] Multi-timer management
+- [ ] Timer accuracy
+- [ ] State transitions
+- [ ] Break scheduling
+- [ ] Estimation calculations
+- [ ] Multi-timer management
 
 ### Widget Tests
 
-- [x] Timer visualizations
-- [x] Animation performance
-- [x] User interactions
-- [x] Break screen blocking
-- [x] Alert triggering
+- [ ] Timer visualizations
+- [ ] Animation performance
+- [ ] User interactions
+- [ ] Break screen blocking
+- [ ] Alert triggering
 
 ### Integration Tests
 
-- [x] Start timer → Complete → Record
-- [x] Estimation → Actual → Calibration
-- [x] Break reminder → Enforcement
-- [x] Multiple timers simultaneously
-- [x] Background notifications
+- [ ] Start timer → Complete → Record
+- [ ] Estimation → Actual → Calibration
+- [ ] Break reminder → Enforcement
+- [ ] Multiple timers simultaneously
+- [ ] Background notifications
 
 ### Accessibility Tests
 
-- [x] Screen reader time announcements
-- [x] Keyboard timer control
-- [x] Non-visual alerts
-- [x] High contrast modes
+- [ ] Screen reader time announcements
+- [ ] Keyboard timer control
+- [ ] Non-visual alerts
+- [ ] High contrast modes
 
 ## Definition of Done
 
-- [x] All timer styles implemented
-- [x] Smooth 60fps animations
-- [x] Break system working
-- [x] Estimation tracking functional
-- [x] Hyperfocus guard active
-- [x] Multi-timer support complete
-- [x] Accessibility verified
-- [x] Battery efficient
-- [x] All tests passing
-- [x] Performance optimized
+- [ ] All timer styles implemented
+- [ ] Smooth 60fps animations
+- [ ] Break system working
+- [ ] Estimation tracking functional
+- [ ] Hyperfocus guard active
+- [ ] Multi-timer support complete
+- [ ] Accessibility verified
+- [ ] Battery efficient
+- [ ] All tests passing
+- [ ] Performance optimized

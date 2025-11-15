@@ -258,44 +258,44 @@ serde = { version = "1.0", features = ["derive"] }
 
 ### Unit Tests
 
-- [x] Energy level validation (1-5)
-- [x] Spoon allocation logic
-- [x] Pattern detection algorithms
-- [x] Filter application rules
-- [x] Energy prediction accuracy
+- [ ] Energy level validation (1-5)
+- [ ] Spoon allocation logic
+- [ ] Pattern detection algorithms
+- [ ] Filter application rules
+- [ ] Energy prediction accuracy
 
 ### Widget Tests
 
-- [x] Check-in modal interaction
-- [x] Spoon counter updates
-- [x] Graph rendering with data
-- [x] Filter state changes
-- [x] Badge display logic
+- [ ] Check-in modal interaction
+- [ ] Spoon counter updates
+- [ ] Graph rendering with data
+- [ ] Filter state changes
+- [ ] Badge display logic
 
 ### Integration Tests
 
-- [x] Daily check-in → Task filtering flow
-- [x] Spoon allocation → Task completion
-- [x] Historical data → Pattern insights
-- [x] Energy tracking over week
-- [x] Low energy mode activation
+- [ ] Daily check-in → Task filtering flow
+- [ ] Spoon allocation → Task completion
+- [ ] Historical data → Pattern insights
+- [ ] Energy tracking over week
+- [ ] Low energy mode activation
 
 ### Accessibility Tests
 
-- [x] Screen reader check-in flow
-- [x] Keyboard-only operation
-- [x] Color-blind safe indicators
-- [x] Touch target sizes
+- [ ] Screen reader check-in flow
+- [ ] Keyboard-only operation
+- [ ] Color-blind safe indicators
+- [ ] Touch target sizes
 
 ## Definition of Done
 
-- [x] Daily check-in functional
-- [x] Spoon theory implemented
-- [x] Energy filtering working
-- [x] Pattern recognition operational
-- [x] Historical graphs displaying
-- [x] Low energy mode active
-- [x] All tests passing
-- [x] Performance metrics met
-- [x] Backend integration complete
-- [x] Data persistence verified
+- [ ] Daily check-in functional
+- [ ] Spoon theory implemented
+- [ ] Energy filtering working
+- [ ] Pattern recognition operational
+- [ ] Historical graphs displaying
+- [ ] Low energy mode active
+- [ ] All tests passing
+- [ ] Performance metrics met
+- [ ] Backend integration complete
+- [ ] Data persistence verified
