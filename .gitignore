@@ -1,7 +1,67 @@
+# Flutter/Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/
+**/build/
+*.iml
+.metadata
+*.lock
+# Keep pubspec.lock for apps, uncomment if you want to ignore it
+# pubspec.lock
+
 # Rust
 target/
+**/target/
 Cargo.lock
 **/*.rs.bk
+**/*.rs.bak
+*.pdb
+*.exe
+*.dll
+*.so
+*.dylib
+*.rlib
+*.rmeta
+
+# gRPC/Protobuf
+# Generated files (language-specific patterns)
+**/*_pb2.py
+**/*_pb2_grpc.py
+**/*.pb.go
+**/*.pb.rs
+**/*_pb.d.ts
+**/*_pb.js
+**/*_pb.js.map
+**/*_pb.dart
+**/*_grpc.dart
+**/*_pb.cc
+**/*_pb.h
+**/*_pb.java
+**/*_pb.rb
+**/*_pb.php
+**/*_pb.cs
+# Generated directories
+**/generated/
+**/gen/
+**/proto_gen/
+
+# SurrealDB
+*.surreal
+*.surreal.db
+*.surreal.tmp
+surreal_data/
+**/surreal_data/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+*.db-shm
+*.db-wal
 
 # IDE
 .idea/
@@ -9,16 +69,55 @@ Cargo.lock
 *.swp
 *.swo
 *~
-.dart_tool/
+.project
+.classpath
+.settings/
+*.sublime-project
+*.sublime-workspace
 
 # OS
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
-
-# Database
-*.db
-*.surreal
+Desktop.ini
 
 # Build artifacts
-*.pdb
+*.o
+*.a
+*.lib
+*.class
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+*.rar
+dist/
+out/
 
+# Logs
+*.log
+logs/
+**/logs/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+*.env
+
+# Coverage
+coverage/
+*.lcov
+.nyc_output/
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup
+*~
