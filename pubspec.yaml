@@ -1,0 +1,40 @@
+name: altair
+description: Altair - ADHD-focused productivity ecosystem
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # State Management
+  flutter_riverpod: ^3.0.3
+  
+  # Local Persistence
+  drift: ^2.12.0
+  
+  # Drag and Drop
+  super_drag_and_drop: ^0.9.1
+  
+  # Animations
+  flutter_animate: ^4.2.0
+  
+  # Utilities
+  collection: ^1.17.0
+  
+  # Icons
+  cupertino_icons: ^1.0.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  build_runner: ^2.4.0
+  drift_dev: ^2.12.0
+
+flutter:
+  uses-material-design: true
+
