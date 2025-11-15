@@ -1,0 +1,265 @@
+syntax = "proto3";
+
+package altair.guidance;
+
+import "google/protobuf/timestamp.proto";
+
+// Quest Board Service
+service QuestBoardService {
+  // Quest operations
+  rpc CreateQuest(CreateQuestRequest) returns (QuestResponse);
+  rpc GetQuest(GetQuestRequest) returns (QuestResponse);
+  rpc UpdateQuest(UpdateQuestRequest) returns (QuestResponse);
+  rpc DeleteQuest(DeleteQuestRequest) returns (DeleteQuestResponse);
+  rpc ListQuests(ListQuestsRequest) returns (ListQuestsResponse);
+  rpc MoveQuest(MoveQuestRequest) returns (QuestResponse);
+  
+  // Epic operations
+  rpc CreateEpic(CreateEpicRequest) returns (EpicResponse);
+  rpc GetEpic(GetEpicRequest) returns (EpicResponse);
+  rpc UpdateEpic(UpdateEpicRequest) returns (EpicResponse);
+  rpc ListEpics(ListEpicsRequest) returns (ListEpicsResponse);
+  
+  // Subquest operations
+  rpc CreateSubquest(CreateSubquestRequest) returns (SubquestResponse);
+  rpc UpdateSubquest(UpdateSubquestRequest) returns (SubquestResponse);
+  rpc ListSubquests(ListSubquestsRequest) returns (ListSubquestsResponse);
+  
+  // Bulk operations
+  rpc BulkMoveQuests(BulkMoveQuestsRequest) returns (BulkOperationResponse);
+  rpc BulkDeleteQuests(BulkDeleteQuestsRequest) returns (BulkOperationResponse);
+  rpc BulkArchiveQuests(BulkArchiveQuestsRequest) returns (BulkOperationResponse);
+  
+  // Utility operations
+  rpc ArchiveOldQuests(ArchiveOldQuestsRequest) returns (ArchiveOldQuestsResponse);
+  rpc GetQuestsByColumn(GetQuestsByColumnRequest) returns (ListQuestsResponse);
+  
+  // Health check
+  rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);
+}
+
+// Quest messages
+message Quest {
+  string id = 1;
+  string epic_id = 2;
+  string title = 3;
+  string description = 4;
+  int32 energy_points = 5;
+  QuestColumn column = 6;
+  google.protobuf.Timestamp created_at = 7;
+  google.protobuf.Timestamp updated_at = 8;
+  google.protobuf.Timestamp completed_at = 9;
+  repeated string tags = 10;
+  string assignee_id = 11;
+  repeated Subquest subquests = 12;
+  bool is_archived = 13;
+}
+
+enum QuestColumn {
+  QUEST_COLUMN_UNSPECIFIED = 0;
+  QUEST_COLUMN_IDEA_GREENHOUSE = 1;
+  QUEST_COLUMN_QUEST_LOG = 2;
+  QUEST_COLUMN_THIS_CYCLE = 3;
+  QUEST_COLUMN_NEXT_UP = 4;
+  QUEST_COLUMN_IN_PROGRESS = 5;
+  QUEST_COLUMN_HARVESTED = 6;
+}
+
+// Epic messages
+message Epic {
+  string id = 1;
+  string title = 2;
+  string description = 3;
+  google.protobuf.Timestamp created_at = 4;
+  google.protobuf.Timestamp updated_at = 5;
+  repeated string tags = 6;
+  string assignee_id = 7;
+}
+
+// Subquest messages
+message Subquest {
+  string id = 1;
+  string quest_id = 2;
+  string title = 3;
+  string description = 4;
+  int32 energy_points = 5;
+  google.protobuf.Timestamp created_at = 6;
+  google.protobuf.Timestamp updated_at = 7;
+  google.protobuf.Timestamp completed_at = 8;
+  repeated string tags = 9;
+  string assignee_id = 10;
+  bool is_completed = 11;
+}
+
+// Request messages
+message CreateQuestRequest {
+  string epic_id = 1;
+  string title = 2;
+  string description = 3;
+  int32 energy_points = 4;
+  QuestColumn column = 5;
+  repeated string tags = 6;
+  string assignee_id = 7;
+}
+
+message GetQuestRequest {
+  string id = 1;
+}
+
+message UpdateQuestRequest {
+  string id = 1;
+  string title = 2;
+  string description = 3;
+  int32 energy_points = 4;
+  repeated string tags = 5;
+  string assignee_id = 6;
+}
+
+message DeleteQuestRequest {
+  string id = 1;
+}
+
+message ListQuestsRequest {
+  QuestColumn column = 1;
+  repeated int32 energy_levels = 2;
+  repeated string tags = 3;
+  string epic_id = 4;
+  string assignee_id = 5;
+  bool include_archived = 6;
+}
+
+message MoveQuestRequest {
+  string id = 1;
+  QuestColumn target_column = 2;
+}
+
+message CreateEpicRequest {
+  string title = 1;
+  string description = 2;
+  repeated string tags = 3;
+  string assignee_id = 4;
+}
+
+message GetEpicRequest {
+  string id = 1;
+}
+
+message UpdateEpicRequest {
+  string id = 1;
+  string title = 2;
+  string description = 3;
+  repeated string tags = 4;
+  string assignee_id = 5;
+}
+
+message ListEpicsRequest {
+  repeated string tags = 1;
+  string assignee_id = 2;
+}
+
+message CreateSubquestRequest {
+  string quest_id = 1;
+  string title = 2;
+  string description = 3;
+  int32 energy_points = 4;
+  repeated string tags = 5;
+  string assignee_id = 6;
+}
+
+message UpdateSubquestRequest {
+  string id = 1;
+  string title = 2;
+  string description = 3;
+  int32 energy_points = 4;
+  repeated string tags = 5;
+  string assignee_id = 6;
+  bool is_completed = 7;
+}
+
+message ListSubquestsRequest {
+  string quest_id = 1;
+}
+
+message BulkMoveQuestsRequest {
+  repeated string quest_ids = 1;
+  QuestColumn target_column = 2;
+}
+
+message BulkDeleteQuestsRequest {
+  repeated string quest_ids = 1;
+}
+
+message BulkArchiveQuestsRequest {
+  repeated string quest_ids = 1;
+}
+
+message ArchiveOldQuestsRequest {
+  int32 days_old = 1;
+}
+
+message GetQuestsByColumnRequest {
+  QuestColumn column = 1;
+}
+
+message HealthCheckRequest {}
+
+// Response messages
+message QuestResponse {
+  Quest quest = 1;
+  bool success = 2;
+  string error_message = 3;
+}
+
+message DeleteQuestResponse {
+  bool success = 1;
+  string error_message = 2;
+}
+
+message ListQuestsResponse {
+  repeated Quest quests = 1;
+  bool success = 2;
+  string error_message = 3;
+}
+
+message EpicResponse {
+  Epic epic = 1;
+  bool success = 2;
+  string error_message = 3;
+}
+
+message ListEpicsResponse {
+  repeated Epic epics = 1;
+  bool success = 2;
+  string error_message = 3;
+}
+
+message SubquestResponse {
+  Subquest subquest = 1;
+  bool success = 2;
+  string error_message = 3;
+}
+
+message ListSubquestsResponse {
+  repeated Subquest subquests = 1;
+  bool success = 2;
+  string error_message = 3;
+}
+
+message BulkOperationResponse {
+  int32 success_count = 1;
+  int32 failure_count = 2;
+  repeated string errors = 3;
+}
+
+message ArchiveOldQuestsResponse {
+  int32 archived_count = 1;
+  bool success = 2;
+  string error_message = 3;
+}
+
+message HealthCheckResponse {
+  bool healthy = 1;
+  string version = 2;
+  int64 uptime_seconds = 3;
+}
+
