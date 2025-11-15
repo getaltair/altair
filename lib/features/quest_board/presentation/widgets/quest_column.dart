@@ -6,6 +6,7 @@ import 'wip_limit_badge.dart';
 import '../providers/board_state_provider.dart';
 import '../providers/filter_provider.dart';
 import '../providers/drag_provider.dart';
+import '../providers/keyboard_navigation_provider.dart';
 
 /// Individual column component for the quest board
 class QuestColumnWidget extends ConsumerWidget {
@@ -27,11 +28,13 @@ class QuestColumnWidget extends ConsumerWidget {
     final boardState = ref.watch(questBoardProvider);
     final filters = ref.watch(activeFiltersProvider);
     final dragState = ref.watch(dragStateProvider);
+    final keyboardNav = ref.watch(keyboardNavigationProvider);
 
     final quests = boardState.getFilteredQuestsForColumn(column, filters);
     final currentCount = quests.length;
     final isWipViolation = wipLimit != null && currentCount > wipLimit!;
     final isInProgress = column == domain.QuestColumn.inProgress;
+    final isKeyboardFocused = keyboardNav.focusedColumn == column;
 
     final columnContent = Container(
       width: 280,
@@ -97,10 +100,14 @@ class QuestColumnWidget extends ConsumerWidget {
                     itemBuilder: (context, index) {
                       final quest = quests[index];
                       final isDragging = dragState?.questId == quest.id;
+                      final isKeyboardFocusedQuest = keyboardNav.focusedQuestId == quest.id;
                       return QuestCard(
                         quest: quest,
                         isDragging: isDragging,
+                        isKeyboardFocused: isKeyboardFocusedQuest,
                         onTap: () {
+                          // Focus quest for keyboard navigation
+                          ref.read(keyboardNavigationProvider.notifier).focusQuest(quest.id, column);
                           // TODO: Open quest detail view
                         },
                         onDoubleTap: () {
@@ -170,11 +177,13 @@ class QuestColumnWidget extends ConsumerWidget {
             borderRadius: BorderRadius.circular(8),
             border: isDropTarget
                 ? Border.all(color: Colors.blue, width: 3)
-                : isInProgress && isWipViolation
-                    ? Border.all(color: Colors.red, width: 4)
-                    : isInProgress
-                        ? Border.all(color: Colors.purple.shade300, width: 4)
-                        : null,
+                : isKeyboardFocused
+                    ? Border.all(color: Colors.orange, width: 3)
+                    : isInProgress && isWipViolation
+                        ? Border.all(color: Colors.red, width: 4)
+                        : isInProgress
+                            ? Border.all(color: Colors.purple.shade300, width: 4)
+                            : null,
           ),
           child: columnContent,
         );

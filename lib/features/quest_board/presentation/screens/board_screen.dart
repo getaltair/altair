@@ -5,6 +5,8 @@ import '../../domain/entities/quest.dart';
 import '../widgets/quest_board.dart';
 import '../widgets/board_header.dart';
 import '../providers/board_state_provider.dart';
+import '../providers/keyboard_navigation_provider.dart';
+import '../providers/drag_provider.dart';
 
 /// Main board screen
 class BoardScreen extends ConsumerStatefulWidget {
@@ -15,13 +17,23 @@ class BoardScreen extends ConsumerStatefulWidget {
 }
 
 class _BoardScreenState extends ConsumerState<BoardScreen> {
+  final FocusNode _boardFocusNode = FocusNode();
+
   @override
   void initState() {
     super.initState();
     // Load initial quests
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(questBoardProvider.notifier).loadQuests();
+      // Focus the board for keyboard navigation
+      _boardFocusNode.requestFocus();
     });
+  }
+
+  @override
+  void dispose() {
+    _boardFocusNode.dispose();
+    super.dispose();
   }
 
   @override
@@ -29,7 +41,8 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
     final boardState = ref.watch(questBoardProvider);
 
     return KeyboardListener(
-      focusNode: FocusNode(),
+      focusNode: _boardFocusNode,
+      autofocus: true,
       onKeyEvent: (event) {
         if (event is KeyDownEvent) {
           _handleKeyboardShortcut(event);
@@ -62,13 +75,122 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
   void _handleKeyboardShortcut(KeyDownEvent event) {
     final isModifierPressed = HardwareKeyboard.instance.isControlPressed ||
         HardwareKeyboard.instance.isMetaPressed;
-    
+    final keyboardNavNotifier = ref.read(keyboardNavigationProvider.notifier);
+    final boardNotifier = ref.read(questBoardProvider.notifier);
+    final dragNotifier = ref.read(dragStateProvider.notifier);
+    final keyboardNav = ref.read(keyboardNavigationProvider);
+
+    // Number keys 1-6: Jump to column
+    if (event.logicalKey == LogicalKeyboardKey.digit1 ||
+        event.logicalKey == LogicalKeyboardKey.digit2 ||
+        event.logicalKey == LogicalKeyboardKey.digit3 ||
+        event.logicalKey == LogicalKeyboardKey.digit4 ||
+        event.logicalKey == LogicalKeyboardKey.digit5 ||
+        event.logicalKey == LogicalKeyboardKey.digit6) {
+      final number = int.tryParse(event.logicalKey.keyLabel);
+      if (number != null) {
+        final column = keyboardNavNotifier.getColumnByNumber(number);
+        if (column != null) {
+          keyboardNavNotifier.focusColumn(column);
+        }
+      }
+      return;
+    }
+
+    // Tab: Navigate to next column
+    if (event.logicalKey == LogicalKeyboardKey.tab && !isModifierPressed) {
+      final currentColumn = keyboardNav.focusedColumn ?? QuestColumn.ideaGreenhouse;
+      final nextColumn = keyboardNavNotifier.getNextColumn(currentColumn);
+      if (nextColumn != null) {
+        keyboardNavNotifier.focusColumn(nextColumn);
+      } else {
+        // Wrap to first column
+        keyboardNavNotifier.focusColumn(QuestColumn.ideaGreenhouse);
+      }
+      return;
+    }
+
+    // Shift+Tab: Navigate to previous column
+    if (event.logicalKey == LogicalKeyboardKey.tab && 
+        HardwareKeyboard.instance.isShiftPressed) {
+      final currentColumn = keyboardNav.focusedColumn ?? QuestColumn.harvested;
+      final prevColumn = keyboardNavNotifier.getPreviousColumn(currentColumn);
+      if (prevColumn != null) {
+        keyboardNavNotifier.focusColumn(prevColumn);
+      } else {
+        // Wrap to last column
+        keyboardNavNotifier.focusColumn(QuestColumn.harvested);
+      }
+      return;
+    }
+
+    // Arrow keys: Navigate quests or columns
+    if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
+      if (keyboardNav.isDraggingWithKeyboard && keyboardNav.focusedColumn != null) {
+        // Move to next column while dragging
+        final nextColumn = keyboardNavNotifier.getNextColumn(keyboardNav.focusedColumn!);
+        if (nextColumn != null) {
+          keyboardNavNotifier.focusColumn(nextColumn);
+        }
+      }
+      return;
+    }
+
+    if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+      if (keyboardNav.isDraggingWithKeyboard && keyboardNav.focusedColumn != null) {
+        // Move to previous column while dragging
+        final prevColumn = keyboardNavNotifier.getPreviousColumn(keyboardNav.focusedColumn!);
+        if (prevColumn != null) {
+          keyboardNavNotifier.focusColumn(prevColumn);
+        }
+      }
+      return;
+    }
+
+    // Space: Grab/drop quest
+    if (event.logicalKey == LogicalKeyboardKey.space) {
+      if (keyboardNav.isDraggingWithKeyboard) {
+        // Drop the quest
+        if (keyboardNav.focusedQuestId != null && keyboardNav.focusedColumn != null) {
+          boardNotifier.moveQuest(keyboardNav.focusedQuestId!, keyboardNav.focusedColumn!);
+          keyboardNavNotifier.stopKeyboardDrag();
+          dragNotifier.clearDragState();
+        }
+      } else if (keyboardNav.focusedQuestId != null && keyboardNav.focusedColumn != null) {
+        // Start dragging
+        keyboardNavNotifier.startKeyboardDrag(
+          keyboardNav.focusedQuestId!,
+          keyboardNav.focusedColumn!,
+        );
+        dragNotifier.setDragState(
+          DragState(
+            questId: keyboardNav.focusedQuestId!,
+            sourceColumn: keyboardNav.focusedColumn!,
+          ),
+        );
+      }
+      return;
+    }
+
+    // Escape: Cancel drag
+    if (event.logicalKey == LogicalKeyboardKey.escape) {
+      if (keyboardNav.isDraggingWithKeyboard) {
+        keyboardNavNotifier.stopKeyboardDrag();
+        dragNotifier.clearDragState();
+      }
+      return;
+    }
+
+    // Ctrl+N: New quest
     if (event.logicalKey == LogicalKeyboardKey.keyN && isModifierPressed) {
       _showNewQuestDialog();
-    } else if (event.logicalKey == LogicalKeyboardKey.keyF && isModifierPressed) {
-      // TODO: Focus filter bar
-    } else if (event.logicalKey == LogicalKeyboardKey.escape) {
-      // TODO: Cancel drag
+      return;
+    }
+
+    // Ctrl+F: Focus filter (placeholder - would need filter bar focus)
+    if (event.logicalKey == LogicalKeyboardKey.keyF && isModifierPressed) {
+      // TODO: Focus filter bar when implemented
+      return;
     }
   }
 
@@ -124,6 +246,12 @@ class _NewQuestDialogState extends State<_NewQuestDialog> {
               border: OutlineInputBorder(),
             ),
             autofocus: true,
+            onSubmitted: (value) {
+              if (value.isNotEmpty) {
+                widget.onSave(value, _energyPoints);
+                Navigator.pop(context);
+              }
+            },
           ),
           const SizedBox(height: 16),
           const Text('Energy Points:'),

@@ -234,6 +234,103 @@ class QuestBoardNotifier extends Notifier<QuestBoardState> {
       redoStack: newRedoStack,
     );
   }
+
+  Future<void> deleteQuest(String questId) async {
+    try {
+      await _repository.deleteQuest(questId);
+      final newQuests = state.quests.where((q) => q.id != questId).toList();
+      final newQuestsByColumn = <QuestColumn, List<Quest>>{};
+      for (final column in QuestColumn.values) {
+        newQuestsByColumn[column] = newQuests
+            .where((q) => q.column == column && !q.isArchived)
+            .toList();
+      }
+      state = state.copyWith(
+        quests: newQuests,
+        questsByColumn: newQuestsByColumn,
+      );
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+    }
+  }
+
+  Future<void> duplicateQuest(String questId) async {
+    try {
+      final originalQuest = await _repository.getQuestById(questId);
+      if (originalQuest == null) return;
+
+      final duplicatedQuest = originalQuest.copyWith(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        title: '${originalQuest.title} (Copy)',
+        createdAt: DateTime.now(),
+        updatedAt: null,
+        completedAt: null,
+      );
+
+      await createQuest(duplicatedQuest);
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+    }
+  }
+
+  Future<void> archiveQuest(String questId) async {
+    try {
+      final quest = await _repository.getQuestById(questId);
+      if (quest == null) return;
+
+      final archivedQuest = quest.copyWith(
+        isArchived: true,
+        updatedAt: DateTime.now(),
+      );
+
+      await _repository.updateQuest(archivedQuest);
+
+      final newQuests = List<Quest>.from(state.quests);
+      final index = newQuests.indexWhere((q) => q.id == questId);
+      if (index != -1) {
+        newQuests[index] = archivedQuest;
+      }
+
+      final newQuestsByColumn = Map<QuestColumn, List<Quest>>.from(state.questsByColumn);
+      newQuestsByColumn[quest.column] = newQuestsByColumn[quest.column]!
+          .where((q) => q.id != questId)
+          .toList();
+
+      state = state.copyWith(
+        quests: newQuests,
+        questsByColumn: newQuestsByColumn,
+      );
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+    }
+  }
+
+  Future<void> updateQuest(Quest quest) async {
+    try {
+      final updatedQuest = await _repository.updateQuest(quest);
+      final newQuests = List<Quest>.from(state.quests);
+      final index = newQuests.indexWhere((q) => q.id == quest.id);
+      if (index != -1) {
+        newQuests[index] = updatedQuest;
+      } else {
+        newQuests.add(updatedQuest);
+      }
+
+      final newQuestsByColumn = <QuestColumn, List<Quest>>{};
+      for (final column in QuestColumn.values) {
+        newQuestsByColumn[column] = newQuests
+            .where((q) => q.column == column && !q.isArchived)
+            .toList();
+      }
+
+      state = state.copyWith(
+        quests: newQuests,
+        questsByColumn: newQuestsByColumn,
+      );
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+    }
+  }
 }
 
 /// Board state provider

@@ -65,14 +65,8 @@ class _EnergyFilterChip extends ConsumerWidget {
       label: const Text('Energy'),
       selected: hasEnergyFilter,
       onSelected: (selected) {
-        if (selected) {
-          // Show energy level picker
-          _showEnergyFilterDialog(context, ref);
-        } else {
-          ref
-              .read(activeFiltersProvider.notifier)
-              .updateFilters(filters.copyWith(energyLevels: null));
-        }
+        // Always open the dialog to allow modification of selections
+        _showEnergyFilterDialog(context, ref);
       },
     );
   }
