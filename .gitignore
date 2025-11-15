@@ -1,0 +1,24 @@
+# Rust
+target/
+Cargo.lock
+**/*.rs.bk
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.dart_tool/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Database
+*.db
+*.surreal
+
+# Build artifacts
+*.pdb
+
