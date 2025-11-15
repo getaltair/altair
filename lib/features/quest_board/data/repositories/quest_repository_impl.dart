@@ -2,113 +2,175 @@ import '../../domain/entities/quest.dart';
 import '../../domain/entities/epic.dart';
 import '../../domain/entities/subquest.dart';
 import '../../domain/repositories/quest_repository.dart';
+import '../datasources/surrealdb_datasource.dart';
 
-/// In-memory implementation of QuestRepository (for MVP)
-/// TODO: Replace with SurrealDB implementation
+/// SurrealDB implementation of QuestRepository
 class QuestRepositoryImpl implements QuestRepository {
-  final Map<String, Quest> _quests = {};
-  final Map<String, Epic> _epics = {};
-  final Map<String, List<Subquest>> _subquests = {};
+  final SurrealDbDatasource _datasource;
+
+  QuestRepositoryImpl(this._datasource);
 
   @override
   Future<List<Quest>> getAllQuests() async {
-    return _quests.values.toList();
+    final records = await _datasource.getAllQuests();
+    return records.map((record) => _questFromRecord(record)).toList();
   }
 
   @override
   Future<Quest?> getQuestById(String id) async {
-    return _quests[id];
+    final record = await _datasource.getQuestById(id);
+    if (record == null) return null;
+    return _questFromRecord(record);
   }
 
   @override
   Future<Quest> createQuest(Quest quest) async {
-    _quests[quest.id] = quest;
-    return quest;
+    final record = await _datasource.createQuest(quest);
+    return _questFromRecord(record);
   }
 
   @override
   Future<Quest> updateQuest(Quest quest) async {
-    _quests[quest.id] = quest.copyWith(updatedAt: DateTime.now());
-    return _quests[quest.id]!;
+    final record = await _datasource.updateQuest(quest);
+    return _questFromRecord(record);
   }
 
   @override
   Future<void> deleteQuest(String id) async {
-    _quests.remove(id);
-    _subquests.remove(id);
+    await _datasource.deleteQuest(id);
   }
 
   @override
   Future<Quest> moveQuestToColumn(String questId, QuestColumn column) async {
-    final quest = _quests[questId];
-    if (quest == null) {
-      throw Exception('Quest not found: $questId');
-    }
-    final updatedQuest =
-        quest.copyWith(column: column, updatedAt: DateTime.now());
-    _quests[questId] = updatedQuest;
-    return updatedQuest;
+    final record = await _datasource.moveQuestToColumn(questId, column);
+    return _questFromRecord(record);
   }
 
   @override
   Future<List<Epic>> getAllEpics() async {
-    return _epics.values.toList();
+    final records = await _datasource.getAllEpics();
+    return records.map((record) => _epicFromRecord(record)).toList();
   }
 
   @override
   Future<Epic?> getEpicById(String id) async {
-    return _epics[id];
+    final record = await _datasource.getEpicById(id);
+    if (record == null) return null;
+    return _epicFromRecord(record);
   }
 
   @override
   Future<Epic> createEpic(Epic epic) async {
-    _epics[epic.id] = epic;
-    return epic;
+    final record = await _datasource.createEpic(epic);
+    return _epicFromRecord(record);
   }
 
   @override
   Future<Epic> updateEpic(Epic epic) async {
-    _epics[epic.id] = epic.copyWith(updatedAt: DateTime.now());
-    return _epics[epic.id]!;
+    final record = await _datasource.updateEpic(epic);
+    return _epicFromRecord(record);
   }
 
   @override
   Future<List<Subquest>> getSubquestsByQuestId(String questId) async {
-    return _subquests[questId] ?? [];
+    final records = await _datasource.getSubquestsByQuestId(questId);
+    return records.map((record) => _subquestFromRecord(record)).toList();
   }
 
   @override
   Future<Subquest> createSubquest(Subquest subquest) async {
-    _subquests.putIfAbsent(subquest.questId, () => []).add(subquest);
-    return subquest;
+    final record = await _datasource.createSubquest(subquest);
+    return _subquestFromRecord(record);
   }
 
   @override
   Future<Subquest> updateSubquest(Subquest subquest) async {
-    final subquests = _subquests[subquest.questId] ?? [];
-    final index = subquests.indexWhere((s) => s.id == subquest.id);
-    if (index != -1) {
-      subquests[index] = subquest.copyWith(updatedAt: DateTime.now());
-    }
-    return subquest;
+    final record = await _datasource.updateSubquest(subquest);
+    return _subquestFromRecord(record);
   }
 
   @override
   Future<List<Quest>> getQuestsByColumn(QuestColumn column) async {
-    return _quests.values
-        .where((q) => q.column == column && !q.isArchived)
-        .toList();
+    final records = await _datasource.getQuestsByColumn(column);
+    return records.map((record) => _questFromRecord(record)).toList();
   }
 
   @override
   Future<void> archiveOldQuests(int daysOld) async {
-    final cutoffDate = DateTime.now().subtract(Duration(days: daysOld));
-    for (final quest in _quests.values) {
-      if (quest.completedAt != null &&
-          quest.completedAt!.isBefore(cutoffDate) &&
-          !quest.isArchived) {
-        _quests[quest.id] = quest.copyWith(isArchived: true);
+    await _datasource.archiveOldQuests(daysOld);
+  }
+
+  /// Convert SurrealDB record to Quest entity
+  Quest _questFromRecord(Map<String, dynamic> record) {
+    // Handle nested subquests if present
+    List<Subquest> subquests = [];
+    if (record['subquests'] != null) {
+      final subquestList = record['subquests'] as List<dynamic>?;
+      if (subquestList != null) {
+        subquests = subquestList
+            .whereType<Map<String, dynamic>>()
+            .map((s) => _subquestFromRecord(s))
+            .toList();
       }
     }
+
+    return Quest(
+      id: record['id'] as String,
+      epicId: record['epicId'] as String?,
+      title: record['title'] as String,
+      description: record['description'] as String?,
+      energyPoints: record['energyPoints'] as int,
+      column: QuestColumn.values.firstWhere(
+        (c) => c.name == (record['column'] as String),
+        orElse: () => QuestColumn.ideaGreenhouse,
+      ),
+      createdAt: DateTime.parse(record['createdAt'] as String),
+      updatedAt: record['updatedAt'] != null
+          ? DateTime.parse(record['updatedAt'] as String)
+          : null,
+      completedAt: record['completedAt'] != null
+          ? DateTime.parse(record['completedAt'] as String)
+          : null,
+      tags: (record['tags'] as List<dynamic>?)?.cast<String>() ?? [],
+      assigneeId: record['assigneeId'] as String?,
+      subquests: subquests,
+      isArchived: record['isArchived'] as bool? ?? false,
+    );
+  }
+
+  /// Convert SurrealDB record to Epic entity
+  Epic _epicFromRecord(Map<String, dynamic> record) {
+    return Epic(
+      id: record['id'] as String,
+      title: record['title'] as String,
+      description: record['description'] as String?,
+      createdAt: DateTime.parse(record['createdAt'] as String),
+      updatedAt: record['updatedAt'] != null
+          ? DateTime.parse(record['updatedAt'] as String)
+          : null,
+      tags: (record['tags'] as List<dynamic>?)?.cast<String>() ?? [],
+      assigneeId: record['assigneeId'] as String?,
+    );
+  }
+
+  /// Convert SurrealDB record to Subquest entity
+  Subquest _subquestFromRecord(Map<String, dynamic> record) {
+    return Subquest(
+      id: record['id'] as String,
+      questId: record['questId'] as String,
+      title: record['title'] as String,
+      description: record['description'] as String?,
+      energyPoints: record['energyPoints'] as int,
+      createdAt: DateTime.parse(record['createdAt'] as String),
+      updatedAt: record['updatedAt'] != null
+          ? DateTime.parse(record['updatedAt'] as String)
+          : null,
+      completedAt: record['completedAt'] != null
+          ? DateTime.parse(record['completedAt'] as String)
+          : null,
+      tags: (record['tags'] as List<dynamic>?)?.cast<String>() ?? [],
+      assigneeId: record['assigneeId'] as String?,
+      isCompleted: record['isCompleted'] as bool? ?? false,
+    );
   }
 }
