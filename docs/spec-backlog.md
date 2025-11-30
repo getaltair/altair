@@ -66,7 +66,7 @@
 - App scaffolding (guidance, knowledge, tracking, mobile)
 - Package scaffolding (ui, bindings, db, sync, storage, search)
 - Shared TypeScript/ESLint/Prettier config
-- Git hooks (husky, lint-staged)
+- Use `prek` for pre-commit linting, formatting, and type-checking
 
 **Does NOT cover:**
 
