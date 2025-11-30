@@ -1,0 +1,13 @@
+{
+	"chat.promptFilesRecommendations": {
+		"spectrena.constitution": true,
+		"spectrena.specify": true,
+		"spectrena.plan": true,
+		"spectrena.tasks": true,
+		"spectrena.implement": true
+	},
+	"chat.tools.terminal.autoApprove": {
+		".spectrena/scripts/bash/": true,
+		".spectrena/scripts/powershell/": true
+	}
+}

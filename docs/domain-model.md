@@ -1,19 +1,24 @@
 # Altair Domain Model
 
-> **Bounded contexts, entity relationships, and cross-domain rules** for the
-> Altair productivity ecosystem
+**Version**: 2.0  
+**Status**: APPROVED  
+**Created**: 2025-11-29  
+**Author**: Robert Hamilton
+
+> **Bounded contexts, entity relationships, and cross-domain rules** for the Altair productivity ecosystem
 
 ---
 
 ## Quick Reference
 
-| Domain        | Primary App | Core Entities         | Key Responsibility                     |
-| ------------- | ----------- | --------------------- | -------------------------------------- |
-| **Quest**     | Guidance    | Campaign, Quest       | Task lifecycle, ADHD prioritization    |
-| **Knowledge** | Knowledge   | Note, Folder          | Content, wiki-links, semantic search   |
-| **Inventory** | Tracking    | Item, Location        | Physical asset tracking                |
-| **Capture**   | All         | Capture               | Zero-friction input → deferred routing |
-| **Shared**    | All         | User, Attachment, Tag | Identity, media, cross-cutting         |
+| Domain | Primary App | Core Entities | Key Responsibility |
+|--------|-------------|---------------|-------------------|
+| **Quest** | Guidance | Campaign, Quest, FocusSession, EnergyCheckIn | QBA board, focus mode, energy management |
+| **Knowledge** | Knowledge | Note, Folder, DailyNote | PKM, wiki-links, mind maps, semantic search |
+| **Inventory** | Tracking | Item, Location, Reservation, MaintenanceSchedule | Asset tracking, reservations, maintenance |
+| **Capture** | All | Capture | Zero-friction input → deferred routing |
+| **Gamification** | All | UserProgress, Achievement, Streak | XP, levels, badges, motivation |
+| **Shared** | All | User, Attachment, Tag | Identity, media, cross-cutting |
 
 ---
 
@@ -24,45 +29,62 @@ flowchart TB
     subgraph Capture["📥 Capture Domain"]
         CAP[Capture]
     end
-
+    
     subgraph Quest["🎯 Quest Domain (Guidance)"]
         CAMP[Campaign]
         Q[Quest]
+        FS[FocusSession]
+        EC[EnergyCheckIn]
         CAMP -->|contains| Q
+        Q -->|has_session| FS
     end
-
+    
     subgraph Knowledge["📚 Knowledge Domain"]
         F[Folder]
         N[Note]
+        DN[DailyNote]
         F -->|contains| N
         N -->|links_to| N
+        DN -->|"is_a"| N
     end
-
+    
     subgraph Inventory["📦 Inventory Domain (Tracking)"]
         I[Item]
         L[Location]
+        RES[Reservation]
+        MS[MaintenanceSchedule]
         I -->|stored_in| L
         L -->|parent| L
+        I -->|has_reservation| RES
+        I -->|has_maintenance| MS
     end
-
+    
+    subgraph Gamification["🏆 Gamification Domain"]
+        UP[UserProgress]
+        ACH[Achievement]
+        STR[Streak]
+    end
+    
     subgraph Shared["🔗 Shared Domain"]
         U[User]
         A[Attachment]
         T[Tag]
     end
-
-    CAP -.->|"routes to"| Q
-    CAP -.->|"routes to"| N
-    CAP -.->|"routes to"| I
-
+    
+    CAP -.->|"routes to"| Q & N & I
+    
     Q -->|references| N
     N -->|documents| I
     Q -->|requires| I
-
+    RES -->|reserved_for| Q
+    
     Q & N & I -->|has_attachment| A
     Q & N & I -->|tagged| T
-    Q & N & I -->|location| L
-
+    
+    U -->|has_progress| UP
+    UP -->|earned| ACH
+    UP -->|has_streak| STR
+    
     CAMP & Q & F & N & I & L -->|owner| U
 ```
 
@@ -72,121 +94,366 @@ flowchart TB
 
 ### 🎯 Quest Domain (Guidance App)
 
-**Responsibility:** Task and project management with ADHD-optimized workflows
-using Quest-Based Agile (QBA) methodology.
+**Responsibility:** Quest-Based Agile (QBA) task management with 6-column Kanban, focus mode, and energy management.
+
+#### QBA Board — Six Columns
+
+```mermaid
+flowchart LR
+    IG["💡 Idea Greenhouse"]
+    QL["📋 Quest Log"]
+    TC["🎯 This Cycle"]
+    NU["⏭️ Next Up"]
+    IP["🔥 In Progress"]
+    H["🌾 Harvested"]
+    
+    IG -->|refine| QL
+    QL -->|plan| TC
+    TC -->|prioritize| NU
+    NU -->|start| IP
+    IP -->|complete| H
+    
+    style IP fill:#D1E9FF,stroke:#007AFF
+```
+
+| Column | Purpose | Limits |
+|--------|---------|--------|
+| **Idea Greenhouse** | Unrefined ideas and thoughts | Unlimited |
+| **Quest Log** | Refined, actionable quests | Unlimited |
+| **This Cycle's Quest** | Current cycle focus | Max 1 |
+| **Next Up** | Priority queue | Max 5 |
+| **In Progress** | Active work (WIP=1) | **Strictly 1** |
+| **Harvested** | Completed quests | Unlimited |
 
 #### Entities
 
-| Entity       | Description                               | Lifecycle States                                |
-| ------------ | ----------------------------------------- | ----------------------------------------------- |
-| **Campaign** | Container for related quests (like epics) | `active` → `completed` → `archived`             |
-| **Quest**    | Individual task with energy cost          | `backlog` → `active` → `completed` → `archived` |
+| Entity | Description | Key Fields |
+|--------|-------------|------------|
+| **Campaign** | Container for related quests (epic) | title, status, color |
+| **Quest** | Individual task with energy cost | title, column, energy_level, estimated_minutes, xp_value |
+| **FocusSession** | Active work session on a quest | quest, start_time, duration, completed_steps |
+| **EnergyCheckIn** | Daily energy self-assessment | date, level, notes |
+
+#### Quest States (Column-Based)
+
+```surql
+DEFINE FIELD column ON quest TYPE string
+    ASSERT $value IN [
+        'idea_greenhouse',
+        'quest_log', 
+        'this_cycle',
+        'next_up',
+        'in_progress',
+        'harvested',
+        'archived'
+    ];
+```
+
+#### Energy Levels (5-Point Scale)
+
+| Level | Icon | Description | Typical Tasks |
+|-------|------|-------------|---------------|
+| **Tiny** | ⚡ | Minimal cognitive load | Reply to message, file document |
+| **Small** | ⚡⚡ | Light work | Review notes, simple fixes |
+| **Medium** | ⚡⚡⚡ | Standard tasks | Write documentation, code review |
+| **Large** | ⚡⚡⚡⚡ | Complex work | Feature implementation |
+| **Huge** | ⚡⚡⚡⚡⚡ | Major projects | Architecture design, deep research |
+
+```surql
+DEFINE FIELD energy_level ON quest TYPE string
+    ASSERT $value IN ['tiny', 'small', 'medium', 'large', 'huge'];
+```
 
 #### Domain Rules
 
-- **Campaigns group quests** — A quest belongs to zero or one campaign
-- **Energy cost is required** — Every quest has `low`, `medium`, `high`, or
-  `variable` energy
-- **Priority is relative** — 0-100 scale, used for sorting within energy level
-- **Time estimates are optional** — `estimated_minutes` for planning, not enforcement
-- **Due dates are soft** — Guidance, not guilt
+- **WIP = 1 strictly enforced** — Only one quest in "In Progress" at a time
+- **This Cycle max 1** — Focus on single cycle goal
+- **Next Up max 5** — Prevents overwhelm
+- **Energy required** — Every quest has an energy level
+- **Campaigns group quests** — Optional grouping for related work
+- **XP on completion** — Quests award XP when harvested
 
-#### Aggregate Root
+#### Focus Session (Zen Mode)
 
-`Campaign` is the aggregate root. Deleting a campaign offers:
+```
+FocusSession
+├── quest: record<quest>
+├── started_at: datetime
+├── planned_duration: duration (e.g., 25m)
+├── actual_duration: duration
+├── completed_steps: array<string>
+├── status: 'active' | 'paused' | 'completed' | 'abandoned'
+└── notes: string
+```
 
-- Archive contained quests (default)
-- Delete contained quests (user choice)
+**Focus Mode UI Elements:**
+
+- Full-screen single quest view
+- Visual timer (progress bar, not just numbers)
+- Progressive disclosure of quest steps
+- "On Deck" preview (Next Up queue)
+- Large "MARK COMPLETE" button
+- Energy status indicator
+- Level indicator
+
+#### Weekly Harvest Ritual
+
+Triggered Sunday evening (configurable):
+
+1. Review completed quests from the week
+2. Celebrate achievements (XP summary, badges earned)
+3. Archive old quests from Harvested
+4. Plan next cycle's focus
+5. Reflect on patterns (energy accuracy, estimates vs actual)
+
+#### Quest Dependency Graph
+
+Quests can have relationships with other quests:
+
+| Relationship | Meaning |
+|--------------|---------|
+| `blocks` | This quest must complete before target |
+| `blocked_by` | This quest waits on target |
+| `related_to` | Informational link |
+| `parent_of` | Epic/sub-quest relationship |
+| `follows` | Sequential ordering |
+
+**Visualization Options:**
+
+- Top-to-bottom tree
+- Left-to-right timeline
+- Force-directed network
+- Gantt-style view
+- Critical path highlighting
 
 ---
 
 ### 📚 Knowledge Domain (Knowledge App)
 
-**Responsibility:** Personal knowledge management with wiki-style linking and
-semantic search.
+**Responsibility:** Personal knowledge management with daily notes, wiki-links, mind mapping, and semantic search.
 
 #### Entities
 
-| Entity     | Description                        | Key Features                    |
-| ---------- | ---------------------------------- | ------------------------------- |
-| **Note**   | Content unit with markdown         | Wiki-links, embeddings, tags    |
-| **Folder** | Optional hierarchical organization | Nested folders, flat by default |
+| Entity | Description | Key Fields |
+|--------|-------------|------------|
+| **Note** | Markdown content unit | title, content, embedding, is_daily |
+| **DailyNote** | Auto-created daily entry point | date, note_id |
+| **Folder** | Optional hierarchical organization | name, parent, color |
+
+#### Daily Notes
+
+Daily notes are the **default entry point** to Knowledge:
+
+```
+DailyNote
+├── date: datetime (date only, unique)
+├── note: record<note>
+└── auto_created: boolean
+
+-- Auto-created on first access each day
+-- Title format: "2024-11-29" or "Friday, November 29, 2024"
+-- Serves as scratch pad and daily log
+```
+
+#### Note Features
+
+| Feature | Description |
+|---------|-------------|
+| **Markdown editor** | Live preview, split view, syntax highlighting |
+| **Wiki-links** | `[[Note Title]]` with autocomplete |
+| **Backlinks** | Panel showing all notes linking to current |
+| **Unlinked mentions** | Detect references without explicit links |
+| **Aliases** | `[[note\|Display Name]]` support |
+| **Embeddings** | Auto-generated vector for semantic search |
+| **Templates** | Reusable note structures |
+| **Version history** | Track changes over time |
+| **LaTeX math** | Mathematical notation support |
+| **Mermaid diagrams** | Embedded diagram rendering |
+| **Code blocks** | Syntax highlighted code |
+
+#### Mind Mapping (Graph Visualization)
+
+Mind maps are a **view**, not a separate entity. They visualize relationships:
+
+```mermaid
+flowchart TB
+    subgraph MindMap["Mind Map View"]
+        N1["📚 Note"]
+        N2["📚 Note"]
+        Q1["🎯 Quest"]
+        I1["📦 Item"]
+        T1["🏷️ Tag"]
+    end
+    
+    N1 -->|links_to| N2
+    Q1 -->|references| N1
+    N1 -->|documents| I1
+    N1 -->|tagged| T1
+```
+
+**Node Types:**
+
+- Note nodes (with title preview)
+- Quest nodes (from Guidance)
+- Item nodes (from Tracking)
+- Tag/topic nodes
+
+**Features:**
+
+- Interactive zoom/pan navigation
+- Force-directed or manual layout
+- Layout persistence (save manual arrangements)
+- Color coding by type
+- Expandable node details
+- Cluster detection
+- Local graph (current note) or global graph (all)
+- Canvas/whiteboard mode
+
+#### Auto-Discovery of Relationships
+
+System automatically suggests relationships:
+
+| Mechanism | Threshold | Example |
+|-----------|-----------|---------|
+| Semantic similarity | Cosine > 0.7 | Similar topic notes |
+| Fuzzy title matching | Levenshtein < 3 | "RPi" ≈ "Raspberry Pi" |
+| Smart aliasing | Dictionary | "JS" ≈ "JavaScript" |
+| Entity recognition | NLP extraction | Mentions of known items |
+| Shared keywords | TF-IDF overlap | Common terminology |
 
 #### Domain Rules
 
-- **Notes are independent** — Can exist without folder (Inbox default)
-- **Wiki-links are bidirectional** — `[[Note Title]]` creates `links_to` edge
-  both ways
-- **Folders are optional** — Flat organization is valid and encouraged
-- **Search is primary navigation** — Folders are secondary organization
-- **Embeddings auto-generate** — Every note gets vector embedding on save
-
-#### Folder Structure (Suggested, Not Enforced)
-
-```text
-Knowledge/
-├── Inbox/              ← Default for new notes
-├── Projects/           ← Active work
-├── Areas/              ← Ongoing responsibilities
-├── Resources/          ← Reference material
-└── Archive/            ← Completed/inactive
-```
-
-#### Aggregate Root
-
-`Note` is independent (no aggregate root). Folders are organizational only.
+- **Daily note is default** — Opening Knowledge creates/opens today's note
+- **Wiki-links are bidirectional** — `[[Note]]` creates link both directions
+- **Folders are optional** — Flat organization valid, search is primary nav
+- **Embeddings auto-generate** — Background processing on save
+- **Templates speed capture** — Pre-defined structures for common note types
 
 ---
 
 ### 📦 Inventory Domain (Tracking App)
 
-**Responsibility:** Physical asset tracking with location hierarchy and quantity
-management.
+**Responsibility:** Physical asset tracking with locations, reservations, maintenance schedules, and BoM intelligence.
 
 #### Entities
 
-| Entity       | Description                   | Key Features                 |
-| ------------ | ----------------------------- | ---------------------------- |
-| **Item**     | Physical object or consumable | Quantity, category, location |
-| **Location** | Where items are stored        | Hierarchical, optional geo   |
+| Entity | Description | Key Fields |
+|--------|-------------|------------|
+| **Item** | Physical object or consumable | name, quantity, status, category |
+| **Location** | Hierarchical storage place | name, parent, geo |
+| **Reservation** | Item reserved for a quest | item, quest, quantity, status |
+| **MaintenanceSchedule** | Recurring maintenance tasks | item, interval, last_performed, next_due |
+
+#### Item Status
+
+```surql
+DEFINE FIELD status ON item TYPE string DEFAULT 'available'
+    ASSERT $value IN ['available', 'reserved', 'in_use', 'depleted', 'archived'];
+```
+
+| Status | Description |
+|--------|-------------|
+| **available** | Ready for use |
+| **reserved** | Reserved for a specific quest |
+| **in_use** | Currently being used |
+| **depleted** | Quantity = 0 |
+| **archived** | Soft deleted |
+
+#### Reservation System
+
+```
+Reservation
+├── item: record<item>
+├── quest: record<quest>
+├── quantity: int (how many reserved)
+├── status: 'pending' | 'active' | 'released'
+├── reserved_at: datetime
+└── released_at: datetime?
+```
+
+**Flow:**
+
+1. Quest requires item → Create reservation (pending)
+2. Quest moves to In Progress → Reservation becomes active
+3. Quest completed/cancelled → Reservation released
+4. Item status updates based on active reservations
+
+#### Bill of Materials (BoM) Intelligence
+
+Auto-detect item mentions in notes and quests:
+
+```
+Note content: "Need 2x Raspberry Pi 4 and 1x 32GB SD card for the project"
+
+Auto-detected:
+┌──────────────────────────────────────┐
+│ Found in inventory:                  │
+│ ├── 2x Raspberry Pi 4  (3 available) │
+│ └── 1x 32GB SD Card    (5 available) │
+│                                      │
+│ [Create Reservations] [Dismiss]      │
+└──────────────────────────────────────┘
+```
+
+#### Maintenance Tracking
+
+```
+MaintenanceSchedule
+├── item: record<item>
+├── task_name: string (e.g., "Oil change", "Battery check")
+├── interval: duration (e.g., 90d, 1y)
+├── last_performed: datetime?
+├── next_due: datetime
+├── notes: string?
+└── notify_days_before: int (default 7)
+```
+
+**Triggers:**
+
+- Push notification when maintenance due
+- Badge on item showing overdue status
+- Dashboard widget for upcoming maintenance
 
 #### Domain Rules
 
-- **Items require quantity** — Minimum 0, tracks "have" vs "need"
-- **Locations are hierarchical** — `Home > Office > Desk > Top Drawer`
-- **Categories are flat** — Single category per item, no hierarchy
-- **Items can be location-less** — For items without fixed storage
-- **Geo is optional** — GPS coordinates for locations (privacy setting)
-
-#### Location Hierarchy Example
-
-```text
-Home (geo: optional)
-├── Kitchen
-│   ├── Pantry
-│   └── Fridge
-├── Office
-│   ├── Desk
-│   │   ├── Top Drawer
-│   │   └── Bottom Drawer
-│   └── Shelf
-└── Garage
-    └── Toolbox
-```
-
-#### Aggregate Root
-
-`Location` is an aggregate root for its hierarchy. Deleting a location:
-
-- Moves child locations up one level (default)
-- Deletes children recursively (user choice)
-- Items in deleted location become location-less
+- **Items require quantity** — Minimum 0
+- **Locations are hierarchical** — `Home > Office > Desk`
+- **Reservations track allocation** — Items can be reserved for quests
+- **Maintenance is optional** — Not all items need schedules
+- **Categories are flat** — Single category per item
+- **Custom fields supported** — Flexible schema for item-specific data
+- **QR/barcode support** — Generate and scan codes for items
 
 ---
 
 ### 📥 Capture Domain (Quick Capture)
 
-**Responsibility:** Zero-friction input capture with deferred classification.
+**Responsibility:** Zero-friction multi-modal capture with deferred classification.
+
+#### Capture Modes
+
+| Mode | Icon | Max Size | Notes |
+|------|------|----------|-------|
+| **Text** | 📝 | Unlimited | Quick note field with auto-save |
+| **Voice** | 🎤 | 5 minutes | AI transcription available |
+| **Photo** | 📸 | 10MB | Camera or gallery |
+| **Video** | 📹 | 2 minutes | Compressed storage, thumbnail generation |
+
+#### Entity
+
+```
+Capture
+├── type: 'text' | 'voice' | 'photo' | 'video' | 'mixed'
+├── text_content: string?
+├── attachments: array<record<attachment>>
+├── status: 'pending' | 'processed' | 'discarded'
+├── processed_to: record<quest|note|item>?
+├── ai_suggestion: string? (quest/note/item)
+├── ai_confidence: float?
+├── captured_at: datetime
+├── location: geo? (if enabled)
+└── source: 'desktop' | 'mobile' | 'widget' | 'voice_assistant'
+```
 
 #### The Inbox Pattern
 
@@ -198,62 +465,108 @@ flowchart LR
         C["✏️ Text"]
         D["📹 Video"]
     end
-
+    
     subgraph Inbox["Capture Inbox"]
         CAP["Pending Captures"]
     end
-
+    
     subgraph Later["Classification (Later)"]
         R["Review Prompt"]
         AI["AI Suggestion"]
     end
-
+    
     subgraph Dest["Destinations"]
         Q["Quest"]
         N["Note"]
         I["Item"]
         X["Discard"]
     end
-
+    
     A & B & C & D -->|"ONE tap"| CAP
     CAP --> R
     R --> AI
     AI -->|"pre-selected"| Dest
 ```
 
-#### Entity
+#### Domain Rules
 
-| Entity      | Description                       | States                                |
-| ----------- | --------------------------------- | ------------------------------------- |
-| **Capture** | Raw input awaiting classification | `pending` → `processed` / `discarded` |
+- **Zero decisions at capture** — One tap, no categorization
+- **Deferred classification** — Process later with full attention
+- **AI assists, user decides** — Suggestions highlighted, not auto-applied
+- **30-day retention** — Unprocessed captures auto-archive
+- **Video limits enforced** — 2-minute max, compressed storage
+
+---
+
+### 🏆 Gamification Domain
+
+**Responsibility:** XP, levels, achievements, and streaks to motivate without pressure.
+
+#### Entities
+
+| Entity | Description | Key Fields |
+|--------|-------------|------------|
+| **UserProgress** | Overall progress tracking | xp_total, level, title |
+| **Achievement** | Unlockable badges | name, description, icon, unlocked_at |
+| **Streak** | Consecutive day tracking | type, current_count, longest_count |
+
+#### XP System
+
+| Action | XP Awarded |
+|--------|------------|
+| Complete tiny quest | 10 XP |
+| Complete small quest | 25 XP |
+| Complete medium quest | 50 XP |
+| Complete large quest | 100 XP |
+| Complete huge quest | 200 XP |
+| Daily energy check-in | 5 XP |
+| Weekly harvest completed | 50 XP |
+| Create note | 5 XP |
+| Complete focus session | 15 XP |
+
+#### Levels
+
+| Level | XP Required | Title |
+|-------|-------------|-------|
+| 1 | 0 | Apprentice |
+| 2 | 100 | Novice |
+| 3 | 300 | Journeyman |
+| 4 | 600 | Adept |
+| 5 | 1000 | Expert |
+| 10 | 5000 | Master |
+| 20 | 20000 | Grandmaster |
+
+#### Achievements (Examples)
+
+| Achievement | Condition | Icon |
+|-------------|-----------|------|
+| First Quest | Complete first quest | 🌱 |
+| Week Warrior | 7-day streak | 🔥 |
+| Focus Master | 10 focus sessions | 🧘 |
+| Knowledge Seeker | 50 notes created | 📚 |
+| Inventory Pro | 100 items tracked | 📦 |
+| Harvester | Complete weekly harvest 4x | 🌾 |
+
+#### Streaks
+
+```
+Streak
+├── type: 'daily_checkin' | 'quest_completion' | 'focus_session'
+├── current_count: int
+├── longest_count: int
+├── last_activity: datetime
+└── started_at: datetime
+```
+
+**Forgiveness Mechanism:** Streaks have a 24-hour grace period before breaking.
 
 #### Domain Rules
 
-- **Zero decisions at capture** — One tap/click, no destination selection
-- **Deferred classification** — User decides later when they have bandwidth
-- **AI assists, doesn't decide** — Suggests destination, user confirms
-- **Batch processing** — Review multiple captures at once
-- **Prompts are gentle** — "3 captures to review" badge, not interruptions
-- **30-day retention** — Unprocessed captures auto-archive after 30 days
-
-#### Classification Flow
-
-1. User opens app with pending captures
-2. Badge shows count: "3 captures to review"
-3. Review screen shows capture with AI suggestion highlighted
-4. User taps destination (Quest/Note/Item) or discards
-5. System creates entity in target domain
-6. Capture marked `processed`, links to created entity
-
-#### AI Classification Signals
-
-| Signal           | Weight | Example                 |
-| ---------------- | ------ | ----------------------- |
-| Content keywords | High   | "buy", "todo" → Quest   |
-| Recent context   | Medium | Was in Tracking → Item  |
-| Time of day      | Low    | Morning capture → Quest |
-| Location         | Low    | At store → Item         |
-| Media type       | Medium | Photo of receipt → Item |
+- **XP never decreases** — Progress is permanent
+- **Achievements are celebratory** — No shame for missing them
+- **Streaks have grace periods** — Life happens
+- **Opt-out available** — Gamification can be disabled entirely
+- **Customizable rewards** — Users can set personal milestones
 
 ---
 
@@ -263,90 +576,60 @@ flowchart LR
 
 #### Entities
 
-| Entity         | Used By              | Purpose                                  |
-| -------------- | -------------------- | ---------------------------------------- |
-| **User**       | All                  | Identity, preferences, ownership         |
-| **Attachment** | All                  | Media files (photos, audio, video, docs) |
-| **Tag**        | All                  | Cross-domain categorization              |
-| **Location**   | Knowledge, Inventory | Shared location hierarchy                |
+| Entity | Used By | Purpose |
+|--------|---------|---------|
+| **User** | All | Identity, preferences, ownership |
+| **Attachment** | All | Media files (photos, audio, video, docs) |
+| **Tag** | All | Cross-domain categorization |
+| **Location** | Knowledge, Inventory | Shared location hierarchy |
 
 #### User
 
-Single-user system with potential for sharing:
-
-```text
+```
 User
 ├── email (unique identifier)
 ├── display_name
-├── role: owner | viewer
-└── preferences
-    ├── theme
-    ├── default_energy_filter
-    ├── location_auto_tag: boolean
-    ├── location_precision: city | neighborhood | exact
-    └── ...
+├── role: 'owner' | 'viewer'
+├── preferences
+│   ├── theme: 'light' | 'dark' | 'system'
+│   ├── energy_filter_default: energy_level?
+│   ├── location_auto_tag: boolean
+│   ├── location_precision: 'city' | 'neighborhood' | 'exact'
+│   ├── gamification_enabled: boolean
+│   ├── weekly_harvest_day: 'sunday' | 'saturday' | 'friday'
+│   ├── weekly_harvest_time: time
+│   ├── focus_session_duration: duration (default 25m)
+│   └── pomodoro_break_duration: duration (default 5m)
+├── created_at
+└── updated_at
 ```
 
 #### Attachment
 
-Polymorphic attachment to any entity:
+Polymorphic attachment supporting all capture types:
 
-```mermaid
-flowchart LR
-    Q[Quest] -->|has_attachment| A[Attachment]
-    N[Note] -->|has_attachment| A
-    I[Item] -->|has_attachment| A
-    CAP[Capture] -->|has_attachment| A
-
-    A --> S3["S3 Storage"]
-```
-
-| Field         | Purpose                               |
-| ------------- | ------------------------------------- |
-| `filename`    | Original filename                     |
-| `mime_type`   | Content type                          |
-| `size_bytes`  | For quota/limits                      |
-| `storage_key` | S3 object key                         |
-| `checksum`    | SHA-256 for dedup                     |
-| `media_type`  | `photo`, `audio`, `video`, `document` |
+| Field | Purpose |
+|-------|---------|
+| `filename` | Original filename |
+| `mime_type` | Content type |
+| `size_bytes` | For quota/limits |
+| `storage_key` | S3 object key |
+| `checksum` | SHA-256 for dedup |
+| `media_type` | `photo`, `audio`, `video`, `document` |
+| `duration` | For audio/video |
+| `thumbnail_key` | S3 key for video thumbnails |
+| `transcription` | AI transcription for voice |
 
 #### Tags
 
 Global tags with optional namespace:
 
-```text
-Tags (examples)
-├── #urgent              ← Global
-├── #guidance/sprint-1   ← Namespaced
-├── #knowledge/research  ← Namespaced
-├── #tracking/consumable ← Namespaced
-└── #home                ← Global
 ```
-
-**Rules:**
-
-- Tags are globally searchable
-- Optional `app/` prefix for namespacing
-- Auto-complete suggests existing tags
-- Unused tags are not auto-deleted
-
-#### Location (Shared)
-
-Used by Inventory (required) and Knowledge (optional):
-
-| App           | Usage                  | Auto-tag                |
-| ------------- | ---------------------- | ----------------------- |
-| **Tracking**  | Where items are stored | N/A (manual)            |
-| **Knowledge** | Where note was created | Optional (user setting) |
-| **Guidance**  | Context for quest      | Optional (user setting) |
-
-**Privacy settings per user:**
-
-```
-☐ Auto-tag location on notes
-  └── Precision: [City ▾]
-☐ Auto-tag location on captures
-☑ Enable location for inventory items
+#urgent                 ← Global
+#guidance/sprint-1      ← Namespaced  
+#knowledge/research     ← Namespaced
+#tracking/consumable    ← Namespaced
+#projects/altair/backend ← Hierarchical
 ```
 
 ---
@@ -355,37 +638,43 @@ Used by Inventory (required) and Knowledge (optional):
 
 ### Reference Types
 
-All cross-domain links are **references**, not containment:
+| Relationship | From | To | Semantics |
+|--------------|------|-----|-----------|
+| `contains` | Campaign | Quest | Parent-child |
+| `contains` | Folder | Note | Organization |
+| `references` | Quest | Note | Related documentation |
+| `requires` | Quest | Item | Materials needed |
+| `documents` | Note | Item | Note describes item |
+| `links_to` | Note | Note | Wiki-style link (bidirectional) |
+| `stored_in` | Item | Location | Physical location |
+| `reserved_for` | Reservation | Quest | Item allocation |
+| `blocks` | Quest | Quest | Dependency |
+| `has_attachment` | Any | Attachment | Media association |
+| `tagged` | Any | Tag | Categorization |
 
-| Relationship     | From  | To         | Semantics                    |
-| ---------------- | ----- | ---------- | ---------------------------- |
-| `references`     | Quest | Note       | "Related documentation"      |
-| `documents`      | Note  | Item       | "Note describes this item"   |
-| `requires`       | Quest | Item       | "Need this item to complete" |
-| `links_to`       | Note  | Note       | "Wiki-style link"            |
-| `stored_in`      | Item  | Location   | "Physical location"          |
-| `has_attachment` | Any   | Attachment | "Associated media"           |
-
-### Reference Rules
+### Cross-App Intelligence
 
 ```mermaid
-flowchart TD
-    subgraph Rules
-        R1["References are soft links"]
-        R2["Deleting source preserves target"]
-        R3["Deleting target shows 'archived' in source"]
-        R4["User can optionally cascade delete"]
+flowchart LR
+    subgraph Guidance
+        Q[Quest]
     end
-```
-
-#### Example: Quest with linked Notes
-
-```text
-Quest:project-alpha [DELETED]
-  └── references → Note:requirements [ACTIVE] ← Still exists
-  └── references → Note:meeting-notes [ACTIVE] ← Still exists
-
-Note view shows: "Referenced by: Quest:project-alpha (archived)"
+    
+    subgraph Knowledge
+        N[Note]
+    end
+    
+    subgraph Tracking
+        I[Item]
+        R[Reservation]
+    end
+    
+    Q -->|"references"| N
+    Q -->|"requires"| I
+    N -->|"documents"| I
+    N -.->|"auto-detect BoM"| I
+    R -->|"reserved_for"| Q
+    I -->|"status affected by"| R
 ```
 
 ---
@@ -394,113 +683,28 @@ Note view shows: "Referenced by: Quest:project-alpha (archived)"
 
 ### Soft Delete Everywhere
 
-All entities use soft delete:
+| State | Visible | Recoverable | Sync |
+|-------|---------|-------------|------|
+| `active` | Yes | N/A | Yes |
+| `archived` | Archive view | Yes | Yes |
+| `deleted` | No | Empty Archive | Tombstone |
 
-| State      | Visible         | Recoverable         | Sync           |
-| ---------- | --------------- | ------------------- | -------------- |
-| `active`   | Yes             | N/A                 | Yes            |
-| `archived` | In Archive view | Yes                 | Yes            |
-| `deleted`  | No              | Via "Empty Archive" | Tombstone only |
+### Cascade Behavior (User-Configurable)
 
-### Cascade Behavior
-
-User-configurable in settings:
-
-```text
-When deleting a Campaign:
+```
+When archiving a Campaign:
 ○ Archive contained quests (default)
-○ Delete contained quests
+○ Move quests to Quest Log
 
-When deleting a Folder:
+When archiving a Folder:
 ○ Move notes to parent folder (default)
 ○ Move notes to Inbox
-○ Delete contained notes
 
-When deleting a Location:
-○ Move child locations up (default)
-○ Delete children recursively
-○ Items become locationless
-```
+When archiving a Quest with reservations:
+→ Auto-release all reservations
 
-### Archive Flow
-
-```mermaid
-flowchart LR
-    A[Active] -->|"archive"| B[Archived]
-    B -->|"restore"| A
-    B -->|"permanent delete"| C[Deleted]
-    C -->|"Empty Archive"| D[Purged]
-```
-
----
-
-## Event Flows
-
-### Capture → Classification
-
-```mermaid
-sequenceDiagram
-    participant U as User
-    participant QC as Quick Capture
-    participant AI as AI Classifier
-    participant D as Destination App
-
-    U->>QC: Capture (photo/voice/text)
-    QC->>QC: Store with status=pending
-
-    Note over U,QC: Later...
-
-    U->>QC: Open review
-    QC->>AI: Analyze capture
-    AI->>QC: Suggest: Quest (85%)
-    QC->>U: Show with Quest highlighted
-    U->>QC: Confirm Quest
-    QC->>D: Create Quest from capture
-    D->>QC: Quest created
-    QC->>QC: Mark processed, link to quest
-```
-
-### Cross-App Reference
-
-```mermaid
-sequenceDiagram
-    participant G as Guidance
-    participant K as Knowledge
-    participant DB as Database
-
-    G->>G: User creates Quest
-    G->>K: "Link Note" dialog
-    K->>DB: Search notes
-    DB->>K: Results
-    K->>G: User selects Note
-    G->>DB: CREATE references edge
-    DB->>G: Edge created
-
-    Note over G,K: Later...
-
-    K->>K: User views Note
-    K->>DB: Query incoming references
-    DB->>K: "Referenced by Quest:X"
-```
-
-### Sync with References
-
-```mermaid
-sequenceDiagram
-    participant D1 as Desktop
-    participant C as Cloud
-    participant D2 as Mobile
-
-    D1->>D1: Create Quest + Note reference
-    D1->>C: Sync Quest
-    D1->>C: Sync Note
-    D1->>C: Sync references edge
-
-    C->>D2: Push Quest
-    C->>D2: Push Note
-    C->>D2: Push references edge
-
-    Note over D2: Mobile sees Quest with linked Note
+When archiving an Item with active reservations:
+→ Warn user, require confirmation
 ```
 
 ---
@@ -509,170 +713,101 @@ sequenceDiagram
 
 ### Unified Search
 
-Single search bar queries all domains:
-
-```text
-Search: "project alpha"
+```
+Search: "raspberry pi"
 
 Results:
 ─────────
-🎯 Quest: Project Alpha Setup
-   Campaign: Q4 Goals
-
-📚 Note: Project Alpha Requirements
-   Folder: Projects/Alpha
-
-📚 Note: Alpha Meeting Notes
-   Folder: Projects/Alpha
-
-📦 Item: Alpha Prototype Board
-   Location: Office > Shelf
+🎯 Quest: Set up Raspberry Pi cluster
+   Campaign: Home Lab | Energy: Large
+   
+📚 Note: Raspberry Pi GPIO Pinout
+   Folder: Projects/Home Lab
+   
+📦 Item: Raspberry Pi 4 Model B
+   Location: Office > Shelf | Qty: 3
 ```
 
 ### Search Modes
 
-| Mode              | Syntax     | Example                         |
-| ----------------- | ---------- | ------------------------------- |
-| **Global**        | (default)  | `project alpha`                 |
-| **Domain filter** | `in:quest` | `in:quest project`              |
-| **Tag filter**    | `#tag`     | `#urgent`                       |
-| **Semantic**      | `~query`   | `~how to set up authentication` |
-
-### Hybrid Search Implementation
-
-```text
-Query: "authentication setup"
-
-1. BM25 (keyword)     → Score documents by term frequency
-2. Vector (semantic)  → Score by embedding similarity
-3. Reciprocal Rank Fusion (k=60)
-4. Return merged results
-```
+| Mode | Syntax | Example |
+|------|--------|---------|
+| Global | (default) | `raspberry pi` |
+| Domain filter | `in:quest` | `in:quest raspberry` |
+| Tag filter | `#tag` | `#projects/homelab` |
+| Semantic | `~query` | `~single board computer setup` |
+| Status filter | `status:reserved` | Items only |
+| Energy filter | `energy:tiny` | Quests only |
 
 ---
 
-## Domain Boundaries Summary
-
-```mermaid
-flowchart TB
-    subgraph Capture["Capture Context"]
-        direction TB
-        C1["Capture entity"]
-        C2["Classification logic"]
-        C3["AI suggestions"]
-    end
-
-    subgraph Quest["Quest Context"]
-        direction TB
-        Q1["Campaign entity"]
-        Q2["Quest entity"]
-        Q3["QBA workflow"]
-        Q4["Energy-based prioritization"]
-    end
-
-    subgraph Knowledge["Knowledge Context"]
-        direction TB
-        K1["Note entity"]
-        K2["Folder entity"]
-        K3["Wiki-link resolution"]
-        K4["Embedding generation"]
-    end
-
-    subgraph Inventory["Inventory Context"]
-        direction TB
-        I1["Item entity"]
-        I2["Location hierarchy"]
-        I3["Quantity tracking"]
-    end
-
-    subgraph Shared["Shared Context"]
-        direction TB
-        S1["User entity"]
-        S2["Attachment entity"]
-        S3["Tag entity"]
-        S4["Location entity"]
-        S5["Search service"]
-        S6["Sync service"]
-    end
-
-    Capture -->|"routes to"| Quest & Knowledge & Inventory
-    Quest & Knowledge & Inventory -->|"uses"| Shared
-```
-
----
-
-## Implementation Notes
-
-### Module Boundaries
-
-```text
-packages/
-├── domain-capture/     # Capture entity, classification
-├── domain-quest/       # Campaign, Quest, QBA logic
-├── domain-knowledge/   # Note, Folder, wiki-links
-├── domain-inventory/   # Item, Location hierarchy
-└── domain-shared/      # User, Attachment, Tag, Search
-```
-
-### API Boundaries
-
-Each domain exposes:
-
-- **Commands** — Create, Update, Archive, Delete
-- **Queries** — Get, List, Search
-- **Events** — Created, Updated, Archived, Deleted
-
-Cross-domain operations go through Shared domain services.
-
-### Database Organization
-
-All tables in single SurrealDB namespace, prefixed by domain:
+## Database Schema
 
 ```surql
 -- Quest domain
-DEFINE TABLE campaign ...
-DEFINE TABLE quest ...
+DEFINE TABLE campaign SCHEMAFULL CHANGEFEED 7d;
+DEFINE TABLE quest SCHEMAFULL CHANGEFEED 7d;
+DEFINE TABLE focus_session SCHEMAFULL CHANGEFEED 7d;
+DEFINE TABLE energy_checkin SCHEMAFULL CHANGEFEED 7d;
 
--- Knowledge domain
-DEFINE TABLE note ...
-DEFINE TABLE folder ...
+-- Knowledge domain  
+DEFINE TABLE note SCHEMAFULL CHANGEFEED 7d;
+DEFINE TABLE folder SCHEMAFULL CHANGEFEED 7d;
+DEFINE TABLE daily_note SCHEMAFULL CHANGEFEED 7d;
 
 -- Inventory domain
-DEFINE TABLE item ...
-DEFINE TABLE location ...
+DEFINE TABLE item SCHEMAFULL CHANGEFEED 7d;
+DEFINE TABLE location SCHEMAFULL CHANGEFEED 7d;
+DEFINE TABLE reservation SCHEMAFULL CHANGEFEED 7d;
+DEFINE TABLE maintenance_schedule SCHEMAFULL CHANGEFEED 7d;
 
 -- Capture domain
-DEFINE TABLE capture ...
+DEFINE TABLE capture SCHEMAFULL CHANGEFEED 7d;
+
+-- Gamification domain
+DEFINE TABLE user_progress SCHEMAFULL CHANGEFEED 7d;
+DEFINE TABLE achievement SCHEMAFULL CHANGEFEED 7d;
+DEFINE TABLE streak SCHEMAFULL CHANGEFEED 7d;
 
 -- Shared domain
-DEFINE TABLE user ...
-DEFINE TABLE attachment ...
-DEFINE TABLE tag ...
+DEFINE TABLE user SCHEMAFULL CHANGEFEED 7d;
+DEFINE TABLE attachment SCHEMAFULL CHANGEFEED 7d;
+DEFINE TABLE tag SCHEMAFULL CHANGEFEED 7d;
 
--- Graph edges (cross-domain)
-DEFINE TABLE contains ...     -- campaign->quest, folder->note
-DEFINE TABLE references ...   -- quest->note
-DEFINE TABLE links_to ...     -- note->note
-DEFINE TABLE requires ...     -- quest->item
-DEFINE TABLE stored_in ...    -- item->location
-DEFINE TABLE documents ...    -- note->item
-DEFINE TABLE has_attachment . -- *->attachment
-DEFINE TABLE tagged ...       -- *->tag
+-- Graph edges
+DEFINE TABLE contains SCHEMAFULL CHANGEFEED 7d;
+DEFINE TABLE references SCHEMAFULL CHANGEFEED 7d;
+DEFINE TABLE links_to SCHEMAFULL CHANGEFEED 7d;
+DEFINE TABLE requires SCHEMAFULL CHANGEFEED 7d;
+DEFINE TABLE stored_in SCHEMAFULL CHANGEFEED 7d;
+DEFINE TABLE documents SCHEMAFULL CHANGEFEED 7d;
+DEFINE TABLE reserved_for SCHEMAFULL CHANGEFEED 7d;
+DEFINE TABLE blocks SCHEMAFULL CHANGEFEED 7d;
+DEFINE TABLE has_attachment SCHEMAFULL CHANGEFEED 7d;
+DEFINE TABLE tagged SCHEMAFULL CHANGEFEED 7d;
 ```
 
 ---
 
 ## Appendix: Entity Summary
 
-| Entity         | Domain    | Fields (Key)                                   | Relations                      |
-| -------------- | --------- | ---------------------------------------------- | ------------------------------ |
-| **User**       | Shared    | email, display_name, role, preferences         | owns all                       |
-| **Campaign**   | Quest     | title, status, color                           | contains→Quest                 |
-| **Quest**      | Quest     | title, status, energy_cost, priority, due_date | references→Note, requires→Item |
-| **Note**       | Knowledge | title, content, embedding                      | links_to→Note, documents→Item  |
-| **Folder**     | Knowledge | name, parent, color                            | contains→Note                  |
-| **Item**       | Inventory | name, quantity, category                       | stored_in→Location             |
-| **Location**   | Shared    | name, parent, geo                              | parent→Location                |
-| **Capture**    | Capture   | type, content, status, processed_to            | has_attachment→Attachment      |
-| **Attachment** | Shared    | filename, mime_type, storage_key               | —                              |
-| **Tag**        | Shared    | name                                           | —                              |
+| Entity | Domain | Key Fields | Relations |
+|--------|--------|------------|-----------|
+| **User** | Shared | email, display_name, preferences | owns all |
+| **Campaign** | Quest | title, status, color | contains→Quest |
+| **Quest** | Quest | title, column, energy_level, xp_value | references→Note, requires→Item, blocks→Quest |
+| **FocusSession** | Quest | quest, duration, completed_steps | belongs_to→Quest |
+| **EnergyCheckIn** | Quest | date, level, notes | belongs_to→User |
+| **Note** | Knowledge | title, content, embedding, is_daily | links_to→Note, documents→Item |
+| **DailyNote** | Knowledge | date | references→Note |
+| **Folder** | Knowledge | name, parent, color | contains→Note |
+| **Item** | Inventory | name, quantity, status, category | stored_in→Location |
+| **Location** | Shared | name, parent, geo | parent→Location |
+| **Reservation** | Inventory | quantity, status | item→Item, reserved_for→Quest |
+| **MaintenanceSchedule** | Inventory | interval, next_due | belongs_to→Item |
+| **Capture** | Capture | type, content, status | processed_to→Quest/Note/Item |
+| **UserProgress** | Gamification | xp_total, level | belongs_to→User |
+| **Achievement** | Gamification | name, unlocked_at | earned_by→User |
+| **Streak** | Gamification | type, current_count | belongs_to→User |
+| **Attachment** | Shared | filename, storage_key, media_type | — |
+| **Tag** | Shared | name, namespace | — |

@@ -1,25 +1,30 @@
 # Altair Decision Log
 
+**Version**: 1.0  
+**Status**: APPROVED  
+**Created**: 2025-11-29  
+**Author**: Robert Hamilton
+
 > **Architectural Decision Records (ADRs)** — Why we made the choices we made
 
 ---
 
 ## Quick Reference
 
-| ADR                                        | Decision                              | Date       |
-| ------------------------------------------ | ------------------------------------- | ---------- |
-| [ADR-001](#adr-001-surrealdb-over-sqlite)  | SurrealDB over SQLite                 | 2024-11-29 |
-| [ADR-002](#adr-002-tauri-over-electron)    | Tauri over Electron                   | 2024-11-29 |
-| [ADR-003](#adr-003-rust-backend)           | Rust for backend                      | 2024-11-29 |
-| [ADR-004](#adr-004-s3-compatible-storage)  | S3-compatible object storage          | 2024-11-29 |
-| [ADR-005](#adr-005-local-embeddings)       | Local ONNX embeddings as core         | 2024-11-29 |
-| [ADR-006](#adr-006-plugin-architecture)    | Plugin architecture for Auth and AI   | 2024-11-29 |
-| [ADR-007](#adr-007-last-write-wins-sync)   | Last-Write-Wins sync strategy         | 2024-11-29 |
-| [ADR-008](#adr-008-tauri-ipc-over-rest)    | Tauri IPC over REST for desktop       | 2024-11-29 |
-| [ADR-009](#adr-009-inbox-pattern-capture)  | Inbox pattern for Quick Capture       | 2024-11-29 |
-| [ADR-010](#adr-010-soft-delete)            | Soft delete with configurable cascade | 2024-11-29 |
-| [ADR-011](#adr-011-shared-location-domain) | Shared location domain across apps    | 2024-11-29 |
-| [ADR-012](#adr-012-global-tags)            | Global tags with optional namespace   | 2024-11-29 |
+| ADR | Decision | Date |
+|-----|----------|------|
+| [ADR-001](#adr-001-surrealdb-over-sqlite) | SurrealDB over SQLite | 2024-11-29 |
+| [ADR-002](#adr-002-tauri-over-electron) | Tauri over Electron | 2024-11-29 |
+| [ADR-003](#adr-003-rust-backend) | Rust for backend | 2024-11-29 |
+| [ADR-004](#adr-004-s3-compatible-storage) | S3-compatible object storage | 2024-11-29 |
+| [ADR-005](#adr-005-local-embeddings) | Local ONNX embeddings as core | 2024-11-29 |
+| [ADR-006](#adr-006-plugin-architecture) | Plugin architecture for Auth and AI | 2024-11-29 |
+| [ADR-007](#adr-007-last-write-wins-sync) | Last-Write-Wins sync strategy | 2024-11-29 |
+| [ADR-008](#adr-008-tauri-ipc-over-rest) | Tauri IPC over REST for desktop | 2024-11-29 |
+| [ADR-009](#adr-009-inbox-pattern-capture) | Inbox pattern for Quick Capture | 2024-11-29 |
+| [ADR-010](#adr-010-soft-delete) | Soft delete with configurable cascade | 2024-11-29 |
+| [ADR-011](#adr-011-shared-location-domain) | Shared location domain across apps | 2024-11-29 |
+| [ADR-012](#adr-012-global-tags) | Global tags with optional namespace | 2024-11-29 |
 
 ---
 
@@ -27,8 +32,7 @@
 
 **Status:** Accepted  
 **Date:** 2024-11-29  
-**Context:** Need embedded database with sync capability for
-offline-first apps
+**Context:** Need embedded database with sync capability for offline-first apps
 
 ### Decision
 
@@ -36,22 +40,18 @@ Use SurrealDB 2.x as the primary database.
 
 ### Options Considered
 
-| Option                 | Pros                                                        | Cons                                                  |
-| ---------------------- | ----------------------------------------------------------- | ----------------------------------------------------- |
-| **SQLite + cr-sqlite** | Battle-tested, CRDT sync                                    | No native graph, no vector search, complex sync setup |
-| **SurrealDB**          | Native graph, vector search, change feeds, embedded + cloud | Less mature, smaller ecosystem                        |
-| **PouchDB/CouchDB**    | Proven sync                                                 | JavaScript-only, no graph queries                     |
+| Option | Pros | Cons |
+|--------|------|------|
+| **SQLite + cr-sqlite** | Battle-tested, CRDT sync | No native graph, no vector search, complex sync setup |
+| **SurrealDB** | Native graph, vector search, change feeds, embedded + cloud | Less mature, smaller ecosystem |
+| **PouchDB/CouchDB** | Proven sync | JavaScript-only, no graph queries |
 
 ### Rationale
 
-- **Native graph queries** — Quest→Note→Item relationships without
-  JOIN tables
-- **Built-in vector search** — HNSW indexes for semantic search,
-  no external service
-- **Change feeds** — Built-in change tracking enables simple sync
-  without CRDT complexity
-- **Same database everywhere** — Embedded (desktop/mobile) and
-  server (cloud) modes
+- **Native graph queries** — Quest→Note→Item relationships without JOIN tables
+- **Built-in vector search** — HNSW indexes for semantic search, no external service
+- **Change feeds** — Built-in change tracking enables simple sync without CRDT complexity
+- **Same database everywhere** — Embedded (desktop/mobile) and server (cloud) modes
 - **SurrealQL** — Powerful query language with graph traversal
 
 ### Consequences
@@ -69,8 +69,7 @@ Use SurrealDB 2.x as the primary database.
 
 **Status:** Accepted  
 **Date:** 2024-11-29  
-**Context:** Need cross-platform desktop framework with mobile
-support
+**Context:** Need cross-platform desktop framework with mobile support
 
 ### Decision
 
@@ -78,11 +77,11 @@ Use Tauri 2.0 with Svelte for all frontend apps.
 
 ### Options Considered
 
-| Option       | Bundle Size | RAM Usage | Mobile        |
-| ------------ | ----------- | --------- | ------------- |
-| **Electron** | ~100MB+     | 200-300MB | No            |
-| **Tauri**    | ~10MB       | ~50MB     | Yes (Android) |
-| **Flutter**  | ~15MB       | ~80MB     | Yes           |
+| Option | Bundle Size | RAM Usage | Mobile |
+|--------|-------------|-----------|--------|
+| **Electron** | ~100MB+ | 200-300MB | No |
+| **Tauri** | ~10MB | ~50MB | Yes (Android) |
+| **Flutter** | ~15MB | ~80MB | Yes |
 
 ### Rationale
 
@@ -99,8 +98,7 @@ Use Tauri 2.0 with Svelte for all frontend apps.
 - ✅ Rust backend for type safety
 - ⚠️ Tauri mobile is newer (production since Oct 2024)
 - ⚠️ System webview differences across platforms
-- 🔄 Mitigation: Native fallback for critical mobile features
-  if needed
+- 🔄 Mitigation: Native fallback for critical mobile features if needed
 
 ---
 
@@ -108,8 +106,7 @@ Use Tauri 2.0 with Svelte for all frontend apps.
 
 **Status:** Accepted  
 **Date:** 2024-11-29  
-**Context:** Need backend language for local service handling DB,
-sync, embeddings
+**Context:** Need backend language for local service handling DB, sync, embeddings
 
 ### Decision
 
@@ -117,16 +114,15 @@ Use Rust with Axum for the local backend service.
 
 ### Options Considered
 
-| Option              | Pros                                      | Cons                           |
-| ------------------- | ----------------------------------------- | ------------------------------ |
-| **Rust**            | Same as Tauri/SurrealDB, no GC, type-safe | Steeper learning curve         |
-| **TypeScript/Node** | Familiar, fast iteration                  | GC pauses, different ecosystem |
-| **Go**              | Fast, simple                              | Different language from Tauri  |
+| Option | Pros | Cons |
+|--------|------|------|
+| **Rust** | Same as Tauri/SurrealDB, no GC, type-safe | Steeper learning curve |
+| **TypeScript/Node** | Familiar, fast iteration | GC pauses, different ecosystem |
+| **Go** | Fast, simple | Different language from Tauri |
 
 ### Rationale
 
-- **Language consistency** — Same as Tauri sidecar and
-  SurrealDB driver
+- **Language consistency** — Same as Tauri sidecar and SurrealDB driver
 - **No GC pauses** — Important for timer accuracy (Pomodoro, etc.)
 - **Type safety** — Catches errors at compile time
 - **Performance** — Native speed for embeddings and sync
@@ -150,21 +146,19 @@ Use Rust with Axum for the local backend service.
 
 ### Decision
 
-Use S3-compatible API with Minio locally, any S3 provider for
-cloud.
+Use S3-compatible API with Minio locally, any S3 provider for cloud.
 
 ### Options Considered
 
-| Option                             | Pros                   | Cons              |
-| ---------------------------------- | ---------------------- | ----------------- |
-| **Local filesystem**               | Simple                 | No sync, no cloud |
-| **S3-compatible (Minio)**          | Standard API, portable | Extra service     |
-| **Proprietary (Firebase Storage)** | Managed                | Vendor lock-in    |
+| Option | Pros | Cons |
+|--------|------|------|
+| **Local filesystem** | Simple | No sync, no cloud |
+| **S3-compatible (Minio)** | Standard API, portable | Extra service |
+| **Proprietary (Firebase Storage)** | Managed | Vendor lock-in |
 
 ### Rationale
 
-- **Standard API** — Same code works with Minio, Backblaze B2,
-  Cloudflare R2, AWS S3
+- **Standard API** — Same code works with Minio, Backblaze B2, Cloudflare R2, AWS S3
 - **Portable** — Can switch providers by changing config
 - **Presigned URLs** — Direct upload without proxying through backend
 - **Minio embedded** — Runs locally for offline-first
@@ -187,16 +181,15 @@ cloud.
 
 ### Decision
 
-Local ONNX embeddings (all-MiniLM-L6-v2) as core infrastructure,
-always enabled.
+Local ONNX embeddings (all-MiniLM-L6-v2) as core infrastructure, always enabled.
 
 ### Options Considered
 
-| Option                 | Latency   | Cost           | Privacy            |
-| ---------------------- | --------- | -------------- | ------------------ |
+| Option | Latency | Cost | Privacy |
+|--------|---------|------|---------|
 | **Cloud API (OpenAI)** | 200-500ms | ~$0.0001/embed | Data leaves device |
-| **Local ONNX**         | 50-100ms  | Free           | Fully local        |
-| **Optional/hybrid**    | Varies    | Varies         | Configurable       |
+| **Local ONNX** | 50-100ms | Free | Fully local |
+| **Optional/hybrid** | Varies | Varies | Configurable |
 
 ### Rationale
 
@@ -211,11 +204,9 @@ always enabled.
 - ✅ Semantic search works out of box
 - ✅ No configuration required
 - ✅ Privacy by default
-- ⚠️ Desktop generates embeddings, mobile receives via sync
-  (battery constraint)
+- ⚠️ Desktop generates embeddings, mobile receives via sync (battery constraint)
 - ⚠️ Model quality may be lower than cloud options
-- 🔄 Mitigation: Can add cloud provider option later for
-  power users
+- 🔄 Mitigation: Can add cloud provider option later for power users
 
 ---
 
@@ -231,11 +222,11 @@ Use trait-based plugin architecture for both Auth and AI providers.
 
 ### Options Considered
 
-| Option                     | Pros                    | Cons                              |
-| -------------------------- | ----------------------- | --------------------------------- |
-| **Hardcoded providers**    | Simple                  | Can't extend without code changes |
-| **Plugin architecture**    | Extensible, user choice | More complex                      |
-| **External plugin system** | Maximum flexibility     | Overkill, security concerns       |
+| Option | Pros | Cons |
+|--------|------|------|
+| **Hardcoded providers** | Simple | Can't extend without code changes |
+| **Plugin architecture** | Extensible, user choice | More complex |
+| **External plugin system** | Maximum flexibility | Overkill, security concerns |
 
 ### Rationale
 
@@ -251,8 +242,7 @@ Use trait-based plugin architecture for both Auth and AI providers.
 - ✅ Clean abstraction boundaries
 - ⚠️ More upfront design work
 - ⚠️ Plugin security requires audit
-- 🔄 Mitigation: Built-in providers are trusted; user plugins
-  future consideration
+- 🔄 Mitigation: Built-in providers are trusted; user plugins future consideration
 
 ---
 
@@ -268,11 +258,11 @@ Use Last-Write-Wins (LWW) with SurrealDB change feeds.
 
 ### Options Considered
 
-| Option                | Complexity | Conflict Handling     |
-| --------------------- | ---------- | --------------------- |
-| **CRDTs**             | High       | Automatic merge       |
-| **Last-Write-Wins**   | Low        | Latest timestamp wins |
-| **Manual resolution** | Medium     | User decides          |
+| Option | Complexity | Conflict Handling |
+|--------|------------|-------------------|
+| **CRDTs** | High | Automatic merge |
+| **Last-Write-Wins** | Low | Latest timestamp wins |
+| **Manual resolution** | Medium | User decides |
 
 ### Rationale
 
@@ -288,8 +278,7 @@ Use Last-Write-Wins (LWW) with SurrealDB change feeds.
 - ✅ Works with SurrealDB change feeds
 - ⚠️ Concurrent edits on same record → last one wins
 - ⚠️ No field-level merge (whole record replaced)
-- 🔄 Mitigation: Offline queue tracks pending changes;
-  conflicts are rare in single-user
+- 🔄 Mitigation: Offline queue tracks pending changes; conflicts are rare in single-user
 
 ---
 
@@ -301,24 +290,22 @@ Use Last-Write-Wins (LWW) with SurrealDB change feeds.
 
 ### Decision
 
-Use Tauri Commands (IPC) for desktop, REST + WebSocket for
-mobile/cloud.
+Use Tauri Commands (IPC) for desktop, REST + WebSocket for mobile/cloud.
 
 ### Options Considered
 
-| Option              | Overhead             | Type Safety                    |
-| ------------------- | -------------------- | ------------------------------ |
-| **REST everywhere** | HTTP serialization   | Manual types                   |
-| **Tauri IPC**       | Direct function call | `tauri-specta` generates types |
-| **gRPC**            | Binary protocol      | Proto files                    |
+| Option | Overhead | Type Safety |
+|--------|----------|-------------|
+| **REST everywhere** | HTTP serialization | Manual types |
+| **Tauri IPC** | Direct function call | tauri-specta generates types |
+| **gRPC** | Binary protocol | Proto files |
 
 ### Rationale
 
 - **No HTTP overhead** — Direct IPC is faster than localhost HTTP
-- **Type safety** — `tauri-specta` generates TypeScript from Rust
+- **Type safety** — tauri-specta generates TypeScript from Rust
 - **No port management** — IPC doesn't need network ports
-- **Same logic** — Commands wrap same business logic as
-  REST endpoints
+- **Same logic** — Commands wrap same business logic as REST endpoints
 
 ### Consequences
 
@@ -338,22 +325,20 @@ mobile/cloud.
 
 ### Decision
 
-Capture to inbox with deferred classification,
-AI-assisted suggestions.
+Capture to inbox with deferred classification, AI-assisted suggestions.
 
 ### Options Considered
 
-| Option                 | Friction at Capture | Friction at Classification |
-| ---------------------- | ------------------- | -------------------------- |
-| **Inline destination** | High (choose now)   | None                       |
-| **Inbox pattern**      | Zero (capture only) | Low (batch review)         |
-| **AI auto-route**      | Zero                | Zero but less control      |
+| Option | Friction at Capture | Friction at Classification |
+|--------|---------------------|---------------------------|
+| **Inline destination** | High (choose now) | None |
+| **Inbox pattern** | Zero (capture only) | Low (batch review) |
+| **AI auto-route** | Zero | Zero but less control |
 
 ### Rationale
 
 - **Zero decisions at capture** — One tap, no destination selection
-- **Deferred classification** — Decide when you have executive
-  function
+- **Deferred classification** — Decide when you have executive function
 - **Batch processing** — More efficient than per-capture decisions
 - **AI assists** — Suggests destination, user confirms with one click
 - **ADHD-friendly** — Reduces decision fatigue
@@ -376,22 +361,20 @@ AI-assisted suggestions.
 
 ### Decision
 
-Soft delete everywhere with user-configurable cascade
-behavior.
+Soft delete everywhere with user-configurable cascade behavior.
 
 ### Options Considered
 
-| Option          | Recovery      | Complexity |
-| --------------- | ------------- | ---------- |
-| **Hard delete** | None          | Simple     |
-| **Soft delete** | Full recovery | Medium     |
-| **Versioning**  | Full history  | High       |
+| Option | Recovery | Complexity |
+|--------|----------|------------|
+| **Hard delete** | None | Simple |
+| **Soft delete** | Full recovery | Medium |
+| **Versioning** | Full history | High |
 
 ### Rationale
 
 - **Recovery** — "Archived" items can be restored
-- **User control** — Configurable cascade
-  (archive children vs delete)
+- **User control** — Configurable cascade (archive children vs delete)
 - **Sync-friendly** — Tombstones sync properly
 - **Audit trail** — Know what was deleted and when
 
@@ -409,20 +392,18 @@ behavior.
 
 **Status:** Accepted  
 **Date:** 2024-11-29  
-**Context:** Locations used by Inventory (required) and potentially
-Knowledge/Guidance
+**Context:** Locations used by Inventory (required) and potentially Knowledge/Guidance
 
 ### Decision
 
-Single shared `location` table used across all apps with
-privacy settings.
+Single shared `location` table used across all apps with privacy settings.
 
 ### Options Considered
 
-| Option                | Pros             | Cons                            |
-| --------------------- | ---------------- | ------------------------------- |
+| Option | Pros | Cons |
+|--------|------|------|
 | **Per-app locations** | Clear separation | Duplication, no cross-reference |
-| **Shared locations**  | Reuse, cross-app | Privacy concerns                |
+| **Shared locations** | Reuse, cross-app | Privacy concerns |
 
 ### Rationale
 
@@ -453,11 +434,11 @@ Global tags with optional namespace prefix.
 
 ### Options Considered
 
-| Option                 | Cross-App Filter | Namespace       |
-| ---------------------- | ---------------- | --------------- |
-| **Per-domain tags**    | No               | Implicit        |
-| **Global tags**        | Yes              | None            |
-| **Global + namespace** | Yes              | Optional prefix |
+| Option | Cross-App Filter | Namespace |
+|--------|-----------------|-----------|
+| **Per-domain tags** | No | Implicit |
+| **Global tags** | Yes | None |
+| **Global + namespace** | Yes | Optional prefix |
 
 ### Rationale
 
@@ -478,11 +459,11 @@ Global tags with optional namespace prefix.
 
 ## Template
 
-```text
+```markdown
 ## ADR-XXX: [Title]
 
-**Status:** Proposed | Accepted | Deprecated | Superseded
-**Date:** YYYY-MM-DD
+**Status:** Proposed | Accepted | Deprecated | Superseded  
+**Date:** YYYY-MM-DD  
 **Context:** [Brief description of the problem]
 
 ### Decision

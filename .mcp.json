@@ -1,0 +1,11 @@
+{
+	"mcpServers": {
+		"spectrena": {
+			"command": "spectrena-mcp"
+		},
+		"serena": {
+			"command": "serena",
+			"args": ["start-mcp-server", "--transport", "stdio"]
+		}
+	}
+}

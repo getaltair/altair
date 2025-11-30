@@ -1,5 +1,10 @@
 # Altair User Flows
 
+**Version**: 2.0  
+**Status**: APPROVED  
+**Created**: 2025-11-29  
+**Author**: Robert Hamilton
+
 > **Core user workflows** for Guidance, Knowledge, Tracking, and Quick Capture
 
 ---
@@ -8,10 +13,10 @@
 
 | App | Primary Flows | Key Interaction |
 |-----|---------------|-----------------|
-| **Guidance** | Quest lifecycle, daily planning | Energy-based task selection |
-| **Knowledge** | Note creation, wiki-linking | `[[wiki-links]]` while typing |
-| **Tracking** | Item management, location | Quantity adjustments |
-| **Quick Capture** | Capture → classify | One tap in, batch review out |
+| **Guidance** | QBA Board, Focus Mode, Energy Check-in, Weekly Harvest | 6-column Kanban with WIP=1 |
+| **Knowledge** | Daily Notes, Wiki-linking, Mind Maps | `[[wiki-links]]` while typing |
+| **Tracking** | Items, Reservations, Maintenance | Quantity + location management |
+| **Quick Capture** | Multi-modal capture → classify | One tap in, batch review out |
 
 ---
 
@@ -28,7 +33,7 @@
 │  Quick Capture                   ×  │
 ├─────────────────────────────────────┤
 │                                     │
-│  [📸 Photo] [🎤 Voice] [✏️ Text]   │
+│  [📝 Text] [🎤 Voice] [📸 Photo] [📹 Video]
 │                                     │
 │  ─────────────────────────────────  │
 │  │ Type or paste...             │  │
@@ -46,7 +51,8 @@
 3. User either:
    - Types/pastes text → presses Enter
    - Clicks Photo → takes/selects photo
-   - Clicks Voice → records audio
+   - Clicks Voice → records audio (max 5 min)
+   - Clicks Video → records video (max 2 min)
 4. Capture saved with `status: pending`
 5. Window closes immediately
 6. Badge updates on all apps: "1 pending capture"
@@ -57,12 +63,15 @@
 - No required fields except content
 - Auto-captures: timestamp, location (if enabled), source app
 - Window closes on capture — user returns to what they were doing
+- Video auto-compresses, generates thumbnail
+
+**Keyboard:** `Cmd+Shift+C` (global)
 
 ---
 
 ### QC-2: Review Pending Captures
 
-**Trigger:** User opens any app with pending captures, or scheduled review time
+**Trigger:** User opens any app with pending captures, or scheduled review
 
 **Goal:** Efficiently classify captures to their destination
 
@@ -80,7 +89,7 @@
 │                                                     │
 │  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐   │
 │  │🎯 Quest │ │📚 Note  │ │📦 Item  │ │🗑 Skip  │   │
-│  │         │ │         │ │         │ │         │   │
+│  │   (1)   │ │   (2)   │ │   (3)   │ │  (0/d)  │   │
 │  └─────────┘ └─────────┘ └─────────┘ └─────────┘   │
 │       ↑                                             │
 │  highlighted                                        │
@@ -102,7 +111,7 @@
 5. After selection, next capture auto-loads
 6. When done: "All caught up! 🎉"
 
-**Keyboard shortcuts:**
+**Keyboard:**
 
 - `1` — Quest
 - `2` — Note
@@ -121,11 +130,68 @@
 
 ## 🎯 Guidance (Quest Management)
 
-### G-1: Quick Add Quest
+### G-1: QBA Board Overview
+
+**Trigger:** User opens Guidance app
+
+**Goal:** See quest pipeline at a glance
+
+```
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  Guidance                                        Energy: [Medium ▾]  👤 Lv.5     │
+├──────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                  │
+│  💡 Idea       📋 Quest Log    🎯 This Cycle   ⏭️ Next Up    🔥 In Progress  🌾 Harvested
+│  Greenhouse    (12)           (1)            (3/5)        (1/1)          (8)
+│  ┌──────────┐  ┌──────────┐   ┌──────────┐   ┌──────────┐  ┌──────────┐   ┌──────────┐
+│  │ Learn    │  │ Fix auth │   │ Launch   │   │ Write    │  │ ████████ │   │ ✓ Setup  │
+│  │ Rust     │  │ bug      │   │ MVP      │   │ tests    │  │ Review   │   │ CI/CD    │
+│  │          │  │ ⚡⚡⚡ 45m │   │ ⚡⚡⚡⚡⚡   │   │ ⚡⚡⚡ 60m │  │ PR       │   │          │
+│  ├──────────┤  ├──────────┤   └──────────┘   ├──────────┤  │ ⚡⚡ 30m  │   ├──────────┤
+│  │ Try new  │  │ Refactor │                  │ Update   │  │          │   │ ✓ Write  │
+│  │ editor   │  │ DB layer │                  │ docs     │  │ 🔥 Focus │   │ specs    │
+│  │          │  │ ⚡⚡⚡⚡120m│                  │ ⚡⚡ 30m  │  └──────────┘   │          │
+│  ├──────────┤  ├──────────┤                  ├──────────┤                 ├──────────┤
+│  │ ...      │  │ ...      │                  │ Email    │                 │ ...      │
+│  └──────────┘  └──────────┘                  │ team     │                 └──────────┘
+│                                              │ ⚡ 15m   │
+│                                              └──────────┘
+│                                                                                  │
+│  [+ Add Quest]                               [📊 Stats]  [🌾 Weekly Harvest]     │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Columns:**
+
+| Column | Purpose | Limit |
+|--------|---------|-------|
+| 💡 Idea Greenhouse | Unrefined ideas | Unlimited |
+| 📋 Quest Log | Refined, actionable | Unlimited |
+| 🎯 This Cycle | Current cycle focus | **Max 1** |
+| ⏭️ Next Up | Priority queue | **Max 5** |
+| 🔥 In Progress | Active work (WIP=1) | **Strictly 1** |
+| 🌾 Harvested | Completed | Unlimited |
+
+**Interactions:**
+
+- Drag-and-drop between columns
+- Double-click to edit
+- Right-click for context menu
+- Click quest → detail panel
+
+**Rules:**
+
+- WIP=1 strictly enforced (warning if trying to add second)
+- Visual warnings when limits exceeded
+- Energy filter hides quests above current level
+
+---
+
+### G-2: Quick Add Quest
 
 **Trigger:** User thinks of something they need to do
 
-**Goal:** Capture task with minimal friction, add details later
+**Keyboard:** `Cmd+N`
 
 ```
 ┌─────────────────────────────────────────────────────┐
@@ -137,416 +203,508 @@
 │  │ Fix authentication bug in login flow          │  │
 │  └───────────────────────────────────────────────┘  │
 │                                                     │
-│  Energy    ○ Low   ● Medium   ○ High   ○ Variable  │
+│  Energy                                             │
+│  [⚡] [⚡⚡] [⚡⚡⚡] [⚡⚡⚡⚡] [⚡⚡⚡⚡⚡]               │
+│  Tiny Small  Med   Large  Huge                     │
+│              ↑ selected                            │
 │                                                     │
-│  Campaign  [None ▾]                                 │
+│  Add to: [💡 Idea Greenhouse ▾]                    │
+│                                                     │
+│  Campaign: [None ▾]                                │
 │                                                     │
 │            [Create Quest ↵]    [More Options...]    │
-│                                                     │
 └─────────────────────────────────────────────────────┘
 ```
 
 **Flow:**
 
-1. User triggers Quick Add (`Cmd+N`, `+` button, or hotkey)
+1. User triggers Quick Add (`Cmd+N`)
 2. Modal appears with title focused
 3. User types title
-4. User optionally selects energy level (defaults to Medium)
-5. User optionally assigns to campaign
-6. User presses Enter or clicks Create
-7. Quest created with `status: backlog`
-8. Modal closes, quest appears in list
+4. User selects energy level (5 options)
+5. User selects column (defaults to Idea Greenhouse)
+6. User optionally assigns campaign
+7. User presses Enter or clicks Create
+8. Quest created, modal closes
 
 **More Options expands to:**
 
 - Description (markdown)
-- Due date
-- Priority (0-100 slider)
+- Due date (soft guidance)
 - Estimated time
 - Tags
+- Dependencies (blocks/blocked by)
 - Link notes/items
 
 ---
 
-### G-2: Daily Planning (Energy-Based)
+### G-3: Daily Energy Check-In
 
-**Trigger:** Start of day or planning session
+**Trigger:** Start of day (prompted) or manual
 
-**Goal:** Select quests based on current energy level
+**Goal:** Set energy level to filter appropriate quests
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│  Today's Quests                    Energy: [Med ▾]  │
+│  How's your energy today?                           │
 ├─────────────────────────────────────────────────────┤
 │                                                     │
-│  How's your energy today?                           │
-│  [😴 Low] [😊 Medium] [🔥 High]                     │
+│    ┌─────┐  ┌─────┐  ┌─────┐  ┌─────┐  ┌─────┐    │
+│    │ 😴  │  │ 🙂  │  │ 😊  │  │ 💪  │  │ 🔥  │    │
+│    │Tiny │  │Small│  │ Med │  │Large│  │Huge │    │
+│    │ ⚡  │  │ ⚡⚡ │  │⚡⚡⚡ │  │⚡⚡⚡⚡│  │⚡⚡⚡⚡⚡│   │
+│    └─────┘  └─────┘  └─────┘  └─────┘  └─────┘    │
+│                        ↑                            │
+│                    selected                         │
 │                                                     │
-│  ─────────────────────────────────────────────────  │
+│  Optional: How are you feeling?                     │
+│  ┌───────────────────────────────────────────────┐  │
+│  │ Good sleep, ready to tackle that refactor     │  │
+│  └───────────────────────────────────────────────┘  │
 │                                                     │
-│  Suggested for Medium Energy:              3 quests │
+│            [Save & Show My Quests]                  │
 │                                                     │
-│  ☐ Fix authentication bug             ⚡ Med  45m   │
-│  ☐ Review PR from teammate            ⚡ Med  30m   │
-│  ☐ Write unit tests for sync          ⚡ Med  60m   │
-│                                                     │
-│  ─────────────────────────────────────────────────  │
-│                                                     │
-│  Also available:                                    │
-│  ☐ Refactor database schema           ⚡ High 120m  │
-│  ☐ Organize desktop files             ⚡ Low  20m   │
-│                                                     │
+│  Your pattern: Usually Medium on Mondays           │
 └─────────────────────────────────────────────────────┘
 ```
 
 **Flow:**
 
-1. User opens Guidance or navigates to "Today" view
-2. Energy selector shown (remembers last selection)
-3. User selects current energy level
-4. Quests filtered and sorted by:
-   - Energy match (primary)
-   - Priority (secondary)
-   - Due date (tertiary)
-5. User checks quests to commit to today
-6. Checked quests move to "Active" status
+1. User prompted at configurable time (default: 9am)
+2. User selects current energy level
+3. Optional: Add notes about how they're feeling
+4. System records check-in
+5. Board filters to show appropriate quests
+6. Pattern recognition over time
 
 **Rules:**
 
-- Selecting "Low" shows only Low energy quests
-- Selecting "Medium" shows Low + Medium
-- Selecting "High" shows all
-- Time estimates help user gauge capacity
-- "Also available" shows other energy levels collapsed
+- Check-in awards 5 XP
+- Patterns help predict capacity
+- Can change energy during day
+- Not mandatory — just helpful
 
 ---
 
-### G-3: Complete Quest
+### G-4: Enter Focus Mode (Zen Mode)
+
+**Trigger:** User starts working on In Progress quest
+
+**Keyboard:** `Cmd+Shift+F` or click "🔥 Focus" button
+
+```
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  ┌────┐                                                          ┌────────────┐ │
+│  │Lv.5│                    FOCUS MODE                            │ ⚡⚡⚡ Med   │ │
+│  └────┘                                                          └────────────┘ │
+├──────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                  │
+│                                                                                  │
+│                         ┌────────────────────────────┐                          │
+│                         │                            │                          │
+│                         │    Review PR from team     │                          │
+│                         │                            │                          │
+│                         │    ⚡⚡ Medium • 30 min     │                          │
+│                         │                            │                          │
+│                         └────────────────────────────┘                          │
+│                                                                                  │
+│                    ════════════════════════════════                              │
+│                    ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░░░░░░░░░░░░░░░  18m remaining              │
+│                    ════════════════════════════════                              │
+│                                                                                  │
+│                         ☑ Open PR in browser                                    │
+│                         ☐ Review code changes                                   │
+│                         ☐ Test locally                                          │
+│                         ☐ Leave comments                                        │
+│                         ☐ Approve or request changes                            │
+│                                                                                  │
+│                                                                                  │
+│                    ┌──────────────────────────────┐                              │
+│                    │      MARK COMPLETE ✓         │                              │
+│                    └──────────────────────────────┘                              │
+│                                                                                  │
+├──────────────────────────────────────────────────────────────────────────────────┤
+│  On Deck:  Write tests (60m)  •  Update docs (30m)  •  Email team (15m)         │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Flow:**
+
+1. User clicks Focus button on In Progress quest
+2. Full-screen focus mode opens
+3. Timer starts automatically (Pomodoro: 25m default)
+4. User works through steps (checkboxes)
+5. Timer shows visual progress bar
+6. On completion or timer end:
+   - Click "MARK COMPLETE" → Quest moves to Harvested
+   - Or extend timer / take break
+
+**UI Elements:**
+
+- Level indicator (top left)
+- Energy indicator (top right)
+- Large quest title
+- Visual timer (progress bar, not just numbers)
+- Progressive disclosure of quest steps
+- "On Deck" preview (Next Up queue)
+- Large completion button
+
+**Keyboard:**
+
+- `Space` — Pause/resume timer
+- `Enter` — Mark complete
+- `Esc` — Exit focus mode (with confirmation)
+- `1-9` — Check step 1-9
+
+**Rules:**
+
+- Focus session awards 15 XP on completion
+- Steps checked off are saved immediately
+- Can exit without completing (saves progress)
+- Auto-advance to next quest option
+
+---
+
+### G-5: Complete Quest
 
 **Trigger:** User finishes a task
 
-**Goal:** Mark complete with optional reflection
-
 ```
 ┌─────────────────────────────────────────────────────┐
-│  ✓ Quest Completed!                                 │
+│  ✓ Quest Completed!                         +50 XP  │
 ├─────────────────────────────────────────────────────┤
 │                                                     │
-│  Fix authentication bug                             │
-│  ⏱ Estimated: 45m  •  Actual: 52m                   │
+│  🎉 "Review PR from team"                          │
 │                                                     │
-│  Quick note (optional):                             │
+│  Time spent: 28 minutes (estimated: 30m)           │
+│                                                     │
+│  ─────────────────────────────────────────────────  │
+│                                                     │
+│  Any notes or follow-ups?                           │
 │  ┌───────────────────────────────────────────────┐  │
-│  │ Root cause was session timeout config         │  │
+│  │ Found a bug, created follow-up quest          │  │
 │  └───────────────────────────────────────────────┘  │
 │                                                     │
 │  ☐ Create follow-up quest                          │
-│  ☐ Link to note                                    │
+│  ☐ Link to a note                                  │
 │                                                     │
-│            [Done ↵]              [Just Complete]    │
-│                                                     │
+│            [Done 🎉]                                │
 └─────────────────────────────────────────────────────┘
 ```
 
 **Flow:**
 
-1. User clicks checkbox or completion button on quest
-2. Completion modal appears (can be disabled in settings)
-3. User optionally:
-   - Adds completion note
-   - Creates follow-up quest
-   - Links to existing/new note
-4. User clicks Done or Just Complete
-5. Quest moves to `status: completed`
-6. Celebration moment (subtle animation)
+1. User completes quest (checkbox, button, or keyboard)
+2. Celebration modal appears with XP gained
+3. User optionally adds notes
+4. User optionally creates follow-up or links note
+5. Quest moves to Harvested column
+6. XP added to profile
 
-**Quick complete:** If user holds Shift while clicking checkbox, skips modal entirely.
+**Rules:**
 
----
-
-### G-4: Manage Campaigns
-
-**Trigger:** User wants to group related quests
-
-**Goal:** Create/organize quest containers
-
-```
-┌─────────────────────────────────────────────────────┐
-│  Campaigns                                     [+]  │
-├─────────────────────────────────────────────────────┤
-│                                                     │
-│  ● Active                                           │
-│    ├── 🟣 Altair Development         12 quests     │
-│    ├── 🟢 Q4 Goals                    5 quests     │
-│    └── 🔵 Home Renovation             8 quests     │
-│                                                     │
-│  ○ Completed                                        │
-│    └── 🟡 Website Redesign            0 active     │
-│                                                     │
-│  ○ Archived                                         │
-│                                                     │
-└─────────────────────────────────────────────────────┘
-```
-
-**Flow — Create Campaign:**
-
-1. User clicks `+` in Campaigns view
-2. Modal: Title, Color, Description (optional)
-3. Campaign created as `active`
-4. User can drag quests into campaign or assign via quest edit
-
-**Flow — Complete Campaign:**
-
-1. User clicks campaign → "Mark Complete"
-2. Prompt: "Archive X remaining quests?"
-3. Campaign moves to Completed section
-4. Can still view quests within
+- XP based on energy level (Tiny=10, Small=25, Med=50, Large=100, Huge=200)
+- Quick complete: Shift+click skips modal
+- Check for achievements after completion
 
 ---
 
-### G-5: Link Quest to Note/Item
+### G-6: Weekly Harvest Ritual
 
-**Trigger:** Quest relates to documentation or requires materials
-
-**Goal:** Create cross-app references
+**Trigger:** Sunday evening (configurable) or manual
 
 ```
-┌─────────────────────────────────────────────────────┐
-│  Link to Quest: Fix authentication bug              │
-├─────────────────────────────────────────────────────┤
-│                                                     │
-│  Search notes and items...                          │
-│  ┌───────────────────────────────────────────────┐  │
-│  │ auth                                          │  │
-│  └───────────────────────────────────────────────┘  │
-│                                                     │
-│  📚 Notes                                           │
-│    ├── Authentication Architecture     ☐ Link      │
-│    └── Login Flow Documentation        ☐ Link      │
-│                                                     │
-│  📦 Items                                           │
-│    └── YubiKey Security Key            ☐ Requires  │
-│                                                     │
-│  [+ Create New Note]    [+ Create New Item]         │
-│                                                     │
-└─────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│  🌾 Weekly Harvest                                           Sunday, Nov 24     │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                 │
+│  This Week's Harvest: 12 quests completed! 🎉                                  │
+│                                                                                 │
+│  ┌─────────────────────────────────────────────────────────────────────────┐   │
+│  │  ⚡ Tiny: 3    ⚡⚡ Small: 4    ⚡⚡⚡ Med: 4    ⚡⚡⚡⚡ Large: 1            │   │
+│  │                                                                         │   │
+│  │  XP Earned: 385 XP          Focus Time: 4h 20m                         │   │
+│  │  Streak: 🔥 14 days                                                     │   │
+│  └─────────────────────────────────────────────────────────────────────────┘   │
+│                                                                                 │
+│  📈 Patterns:                                                                   │
+│  • Most productive on Tuesday (4 quests)                                       │
+│  • Energy estimates were accurate 80% of the time                              │
+│  • Average focus session: 22 minutes                                           │
+│                                                                                 │
+│  ─────────────────────────────────────────────────────────────────────────────  │
+│                                                                                 │
+│  🗑️ Archive old harvested quests?                                              │
+│  ☑ Archive 8 quests older than 7 days                                          │
+│                                                                                 │
+│  🎯 Set This Cycle's focus for next week:                                      │
+│  [Launch MVP ▾]                                                                │
+│                                                                                 │
+│  📝 Reflection (optional):                                                      │
+│  ┌─────────────────────────────────────────────────────────────────────────┐   │
+│  │ Good week! Finally got the auth system working.                        │   │
+│  └─────────────────────────────────────────────────────────────────────────┘   │
+│                                                                                 │
+│            [Complete Harvest +50 XP]                                           │
+└─────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 **Flow:**
 
-1. User opens quest → clicks "Link"
-2. Search modal appears
-3. User types to filter notes/items
-4. User checks items to link:
-   - Notes: `references` relationship
-   - Items: `requires` relationship
-5. Links created, visible in quest detail view
+1. Reminder appears Sunday evening
+2. Summary shows week's achievements
+3. Patterns displayed for reflection
+4. User archives old quests
+5. User sets next week's cycle focus
+6. Optional reflection notes
+7. Complete awards 50 XP
+
+**Rules:**
+
+- Non-judgmental tone
+- Celebrates all progress
+- Patterns help adjust future planning
+- Reflection is optional
+
+---
+
+### G-7: View Quest Dependencies
+
+**Trigger:** User wants to see quest relationships
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│  Quest Dependencies                                    [Tree ▾] [Gantt] [Graph] │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                 │
+│                         ┌──────────────────┐                                   │
+│                         │ 🔴 Launch MVP     │                                   │
+│                         │ This Cycle       │                                   │
+│                         └────────┬─────────┘                                   │
+│                    ┌─────────────┼─────────────┐                               │
+│                    ▼             ▼             ▼                               │
+│          ┌─────────────┐ ┌─────────────┐ ┌─────────────┐                       │
+│          │ ✅ Setup    │ │ 🟡 Fix auth │ │ ⬜ Write    │                       │
+│          │ CI/CD       │ │ In Progress │ │ docs        │                       │
+│          └─────────────┘ └──────┬──────┘ └─────────────┘                       │
+│                                 │                                               │
+│                                 ▼                                               │
+│                          ┌─────────────┐                                       │
+│                          │ ⬜ Deploy   │                                       │
+│                          │ staging     │                                       │
+│                          └─────────────┘                                       │
+│                                                                                 │
+│  Legend: ✅ Completed  🟡 In Progress  🔴 Blocked  ⬜ Not Started              │
+│                                                                                 │
+│  Critical Path: Setup CI/CD → Fix auth → Deploy staging → Launch MVP           │
+└─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Layout Options:**
+
+- **Tree** — Top-to-bottom hierarchy
+- **Gantt** — Timeline view with dependencies
+- **Graph** — Force-directed network
+
+**Interactions:**
+
+- Click node → Quest detail
+- Drag to reorder (updates dependencies)
+- Right-click → Add dependency
 
 ---
 
 ## 📚 Knowledge (PKM)
 
-### K-1: Create Note
+### K-1: Open Today's Daily Note
 
-**Trigger:** User wants to capture knowledge
+**Trigger:** User opens Knowledge app
 
-**Goal:** Create note with minimal friction, rich editing
-
-```
-┌─────────────────────────────────────────────────────┐
-│  ← Back                              📁 Inbox   ⋮   │
-├─────────────────────────────────────────────────────┤
-│                                                     │
-│  # Authentication Flow Design                       │
-│  ─────────────────────────────────────────────────  │
-│                                                     │
-│  The auth system uses JWT tokens with refresh       │
-│  rotation. See [[Session Management]] for details.  │
-│                                                     │
-│  ## Components                                      │
-│                                                     │
-│  - Auth Provider Plugin                             │
-│  - Token Store                                      │
-│  - Session Manager                                  │
-│                                                     │
-│  Related: [[API Security]], [[OAuth Setup]]         │
-│                                                     │
-│                                                     │
-├─────────────────────────────────────────────────────┤
-│  Tags: #architecture #security                      │
-└─────────────────────────────────────────────────────┘
-```
-
-**Flow:**
-
-1. User triggers New Note (`Cmd+N`, `+` button)
-2. Editor opens with title focused
-3. User types title, presses Enter
-4. Cursor moves to body
-5. User writes in markdown
-6. Auto-save triggers on pause (debounced 1s)
-7. Embedding generates in background
-
-**Wiki-link flow:**
-
-1. User types `[[`
-2. Autocomplete dropdown appears
-3. User types to filter existing notes
-4. User selects note or presses Enter to create new
-5. Link inserted: `[[Note Title]]`
-
----
-
-### K-2: Navigate Wiki-Links
-
-**Trigger:** User sees `[[linked note]]` and wants to follow
-
-**Goal:** Seamless navigation between connected notes
-
-**Flow:**
-
-1. User clicks wiki-link in note
-2. If note exists: Opens linked note
-3. If note doesn't exist: Prompt to create
-4. Backlinks panel shows "Referenced by: X notes"
-
-**Keyboard:** `Cmd+Click` opens in split view
-
----
-
-### K-3: Search Notes
-
-**Trigger:** User looking for specific knowledge
-
-**Goal:** Find notes by keyword or semantic meaning
+**Goal:** Start with daily note as scratch pad
 
 ```
-┌─────────────────────────────────────────────────────┐
-│  Search Knowledge                                   │
-├─────────────────────────────────────────────────────┤
-│                                                     │
-│  ┌───────────────────────────────────────────────┐  │
-│  │ 🔍 authentication token refresh               │  │
-│  └───────────────────────────────────────────────┘  │
-│                                                     │
-│  ○ Keyword   ● Semantic   ○ Both                   │
-│                                                     │
-│  Results (5)                                        │
-│  ─────────────────────────────────────────────────  │
-│                                                     │
-│  📚 Session Management                    92% match │
-│     "...refresh tokens are rotated on each..."      │
-│                                                     │
-│  📚 Authentication Architecture           87% match │
-│     "...JWT tokens with configurable expiry..."     │
-│                                                     │
-│  📚 API Security                          71% match │
-│     "...validates token signature before..."        │
-│                                                     │
-└─────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│  Knowledge                                    [🔍 Search]  [📊 Graph]  [+ Note] │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│  Folders          │  Friday, November 29, 2024                                  │
+│  ─────────────    │  ─────────────────────────────────────────────────────────  │
+│  📁 Inbox         │                                                             │
+│  📁 Projects      │  ## Morning                                                 │
+│    └ Altair       │                                                             │
+│    └ Home Lab     │  - Meeting with team at 10am                               │
+│  📁 Areas         │  - Need to review [[Authentication Architecture]]          │
+│  📁 Resources     │  - [[Fix auth bug]] is blocking launch                     │
+│  📁 Archive       │                                                             │
+│  ─────────────    │  ## Notes                                                   │
+│  Recent Notes     │                                                             │
+│  ─────────────    │  Learned about [[SurrealDB]] change feeds today.           │
+│  • Nov 28         │  Could be useful for the sync engine.                      │
+│  • Nov 27         │                                                             │
+│  • Nov 26         │  ## Tasks captured                                         │
+│                   │                                                             │
+│                   │  - [ ] Email team about deployment                         │
+│                   │  - [x] Review PR                                           │
+│                   │                                                             │
+│                   │─────────────────────────────────────────────────────────────│
+│                   │  Backlinks (2)                                              │
+│                   │  ← Nov 28 daily note                                       │
+│                   │  ← Project Altair                                          │
+└─────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 **Flow:**
 
-1. User triggers search (`Cmd+K` or `/`)
-2. Search bar appears/focuses
-3. User types query
-4. Results update in real-time (debounced)
-5. User clicks result or uses arrow keys + Enter
-6. Note opens
-
-**Search modes:**
-
-- **Keyword:** Traditional BM25 text matching
-- **Semantic:** Vector similarity (embeddings)
-- **Both:** Hybrid with rank fusion (default)
-
----
-
-### K-4: Organize with Folders
-
-**Trigger:** User wants to structure their knowledge
-
-**Goal:** Move notes into hierarchical folders
-
-```
-┌─────────────────────────────────────────────────────┐
-│  Folders                                       [+]  │
-├─────────────────────────────────────────────────────┤
-│                                                     │
-│  📁 Inbox                                  12       │
-│  📁 Projects                               ▶        │
-│     ├── 📁 Altair                          24       │
-│     └── 📁 Work                            18       │
-│  📁 Areas                                  ▶        │
-│     ├── 📁 Health                           8       │
-│     └── 📁 Finance                          5       │
-│  📁 Resources                              31       │
-│  📁 Archive                                ▶        │
-│                                                     │
-│  ─────────────────────────────────────────────────  │
-│  📝 Unfiled Notes                           3       │
-│                                                     │
-└─────────────────────────────────────────────────────┘
-```
-
-**Flow — Move Note:**
-
-1. User opens note or selects in list
-2. User clicks folder icon or drags note
-3. Folder picker appears
-4. User selects destination folder
-5. Note moved, UI updates
-
-**Flow — Create Folder:**
-
-1. User clicks `+` in folder panel
-2. User types folder name
-3. User optionally selects parent folder
-4. Folder created
+1. User opens Knowledge
+2. Today's daily note auto-opens (created if doesn't exist)
+3. User types freely — scratch pad for the day
+4. Wiki-links auto-complete as user types `[[`
+5. Backlinks panel shows incoming links
+6. Auto-save on every change (debounced)
 
 **Rules:**
 
-- Notes can exist without folders (shown in "Unfiled")
-- Folders can nest (no arbitrary limit, recommend ≤3 deep)
-- Deleting folder moves notes to parent (configurable)
+- Daily note created automatically
+- Previous daily notes accessible in sidebar
+- Format: `YYYY-MM-DD` or localized
+- Serves as daily log and scratch pad
 
 ---
 
-### K-5: Link Note to Item
+### K-2: Create Wiki-Link
 
-**Trigger:** Note documents a physical item
-
-**Goal:** Create `documents` relationship
+**Trigger:** User types `[[` in any note
 
 ```
-┌─────────────────────────────────────────────────────┐
-│  Link Note to Item                                  │
-├─────────────────────────────────────────────────────┤
-│                                                     │
-│  Note: YubiKey Setup Guide                          │
-│                                                     │
-│  Search items...                                    │
-│  ┌───────────────────────────────────────────────┐  │
-│  │ yubikey                                       │  │
-│  └───────────────────────────────────────────────┘  │
-│                                                     │
-│  📦 Items                                           │
-│    └── YubiKey 5 NFC                   ☐ Documents │
-│                                                     │
-│  [+ Create New Item]                                │
-│                                                     │
-└─────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│  ...working on the [[                                                           │
+│                    ┌─────────────────────────────────────┐                      │
+│                    │ 🔍 Search notes...                  │                      │
+│                    ├─────────────────────────────────────┤                      │
+│                    │ 📚 Authentication Architecture      │ ← Recent            │
+│                    │ 📚 SurrealDB                        │                      │
+│                    │ 📚 Sync Engine Design               │                      │
+│                    ├─────────────────────────────────────┤                      │
+│                    │ + Create "auth flow"                │ ← New note          │
+│                    └─────────────────────────────────────┘                      │
+│                                                                                 │
+└─────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 **Flow:**
 
-1. User opens note → clicks "Link Item"
-2. Search modal appears
-3. User finds/creates item
-4. `documents` edge created
-5. Item shows "Documented by: Note X"
-6. Note shows "Documents: Item Y"
+1. User types `[[`
+2. Autocomplete popup appears
+3. User types to filter
+4. Select existing note or create new
+5. Link inserted: `[[Note Title]]`
+6. Bidirectional link created automatically
+
+**Alias Support:**
+
+- `[[note|Display Text]]` — Shows "Display Text" but links to "note"
+
+---
+
+### K-3: View Mind Map (Graph View)
+
+**Trigger:** User clicks Graph button or `Cmd+G`
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│  Graph View                               [Local ▾] [Filter...] [Layout: Force] │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                 │
+│                        ┌──────────┐                                            │
+│              ┌─────────│ Altair   │─────────┐                                  │
+│              │         │ Project  │         │                                  │
+│              ▼         └──────────┘         ▼                                  │
+│      ┌──────────┐                    ┌──────────┐                              │
+│      │ Auth     │                    │ Sync     │                              │
+│      │ Design   │◄───────────────────│ Engine   │                              │
+│      └────┬─────┘                    └────┬─────┘                              │
+│           │                               │                                     │
+│           ▼                               ▼                                     │
+│      ┌──────────┐                    ┌──────────┐                              │
+│      │🎯Fix auth│                    │ SurrealDB│◄──────┐                      │
+│      │  quest   │                    │          │       │                      │
+│      └──────────┘                    └──────────┘       │                      │
+│                                                   ┌──────────┐                  │
+│                                                   │ Change   │                  │
+│                                                   │ Feeds    │                  │
+│                                                   └──────────┘                  │
+│                                                                                 │
+│  Legend: 📚 Note  🎯 Quest  📦 Item  🏷️ Tag                                    │
+│                                                                                 │
+│  [Zoom: ────●────] [Reset View]                                                │
+└─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+**View Options:**
+
+- **Local** — Current note's connections
+- **Global** — All notes and relationships
+
+**Node Types:**
+
+- 📚 Notes (blue)
+- 🎯 Quests (green)
+- 📦 Items (orange)
+- 🏷️ Tags (gray)
+
+**Interactions:**
+
+- Drag to move nodes
+- Scroll to zoom
+- Click node → open entity
+- Layout persists between sessions
+
+---
+
+### K-4: Semantic Search
+
+**Trigger:** User searches with `~` prefix or toggle
+
+**Keyboard:** `Cmd+K`
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│  Search Notes                                                          Cmd+K   │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                 │
+│  ┌───────────────────────────────────────────────────────────────────────────┐  │
+│  │ ~how to handle user authentication                                       │  │
+│  └───────────────────────────────────────────────────────────────────────────┘  │
+│                                                                                 │
+│  Mode: [Keyword] [Semantic] [●Hybrid]                                          │
+│                                                                                 │
+│  Results (semantic match):                                                      │
+│  ─────────────────────────────────────────────────────────────────────────────  │
+│                                                                                 │
+│  📚 Authentication Architecture                              98% match         │
+│     "OAuth 2.0 flow with PKCE for secure login..."                            │
+│                                                                                 │
+│  📚 Session Management                                       92% match         │
+│     "JWT tokens with refresh rotation..."                                      │
+│                                                                                 │
+│  📚 Security Best Practices                                  85% match         │
+│     "Password hashing with Argon2..."                                         │
+│                                                                                 │
+└─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Search Modes:**
+
+| Mode | Behavior |
+|------|----------|
+| **Keyword** | Traditional BM25 text search |
+| **Semantic** | Vector embedding similarity |
+| **Hybrid** | Combined (default), best of both |
+
+**Syntax:**
+
+- `~query` — Force semantic mode
+- `in:note` — Filter to notes
+- `#tag` — Filter by tag
 
 ---
 
@@ -554,197 +712,167 @@
 
 ### T-1: Add Item
 
-**Trigger:** User acquires something or wants to track existing item
+**Trigger:** User wants to track new item
 
-**Goal:** Record item with location and quantity
+**Keyboard:** `Cmd+N`
 
 ```
-┌─────────────────────────────────────────────────────┐
-│  New Item                                        ×  │
-├─────────────────────────────────────────────────────┤
-│                                                     │
-│  Name                                               │
-│  ┌───────────────────────────────────────────────┐  │
-│  │ USB-C to HDMI Adapter                         │  │
-│  └───────────────────────────────────────────────┘  │
-│                                                     │
-│  Quantity        Category                           │
-│  ┌─────────┐     ┌────────────────────────────────┐ │
-│  │    1    │     │ Electronics               ▾   │ │
-│  └─────────┘     └────────────────────────────────┘ │
-│                                                     │
-│  Location                                           │
-│  ┌───────────────────────────────────────────────┐  │
-│  │ Office > Desk > Top Drawer               ▾   │  │
-│  └───────────────────────────────────────────────┘  │
-│                                                     │
-│            [Create Item ↵]       [More Options...]  │
-│                                                     │
-└─────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│  Add Item                                                                    ×  │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                 │
+│  Name                                                                           │
+│  ┌───────────────────────────────────────────────────────────────────────────┐  │
+│  │ Raspberry Pi 4 Model B 8GB                                               │  │
+│  └───────────────────────────────────────────────────────────────────────────┘  │
+│                                                                                 │
+│  Quantity        Category                                                       │
+│  ┌────────┐      ┌──────────────────────────────────┐                          │
+│  │ [3]    │      │ Electronics ▾                    │                          │
+│  └────────┘      └──────────────────────────────────┘                          │
+│                                                                                 │
+│  Location                                                                       │
+│  ┌───────────────────────────────────────────────────────────────────────────┐  │
+│  │ 🔍 Office > Shelf                                                        │  │
+│  └───────────────────────────────────────────────────────────────────────────┘  │
+│                                                                                 │
+│            [Create Item]    [More Options...]                                   │
+└─────────────────────────────────────────────────────────────────────────────────┘
 ```
-
-**Flow:**
-
-1. User triggers Add Item (`Cmd+N`, `+` button)
-2. Modal appears with name focused
-3. User enters name
-4. User sets quantity (defaults to 1)
-5. User selects category (optional)
-6. User selects location (optional, searchable tree)
-7. User clicks Create
-8. Item saved, appears in list
 
 **More Options:**
 
 - Description
-- Photo (attachment)
+- Photo (camera or gallery)
 - Tags
+- Custom fields
+- QR/barcode generation
 - Link to notes
-- Barcode/SKU
 
 ---
 
-### T-2: Adjust Quantity
+### T-2: Reserve Item for Quest
 
-**Trigger:** User uses/acquires more of an item
-
-**Goal:** Update quantity with optional note
+**Trigger:** Quest requires specific items
 
 ```
-┌─────────────────────────────────────────────────────┐
-│  USB-C to HDMI Adapter                              │
-├─────────────────────────────────────────────────────┤
-│                                                     │
-│              ┌─────────────────┐                    │
-│      [-]     │       3         │     [+]            │
-│              └─────────────────┘                    │
-│                                                     │
-│  Quick adjust:  [-5] [-1]  [+1] [+5]               │
-│                                                     │
-│  Note: ________________________________            │
-│                                                     │
-└─────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│  Reserve Items for Quest                                                        │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                 │
+│  Quest: Build Home Lab Cluster                                                  │
+│                                                                                 │
+│  ┌───────────────────────────────────────────────────────────────────────────┐  │
+│  │ 🔍 Search items...                                                       │  │
+│  └───────────────────────────────────────────────────────────────────────────┘  │
+│                                                                                 │
+│  Selected for reservation:                                                      │
+│  ─────────────────────────────────────────────────────────────────────────────  │
+│                                                                                 │
+│  📦 Raspberry Pi 4                    [2] of 3 available              [Remove] │
+│  📦 32GB SD Card                      [2] of 5 available              [Remove] │
+│  📦 USB-C Power Supply                [2] of 4 available              [Remove] │
+│                                                                                 │
+│  ─────────────────────────────────────────────────────────────────────────────  │
+│                                                                                 │
+│            [Create Reservations]                                               │
+└─────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 **Flow:**
 
-1. User opens item or clicks quantity in list
-2. Quantity adjuster appears
-3. User clicks +/- or types number
-4. User optionally adds note ("Gave one to Alex")
-5. Quantity updated
-6. History logged (not shown to user by default)
+1. From Quest → Link Items, or from Item → Reserve
+2. Search and select items
+3. Specify quantity to reserve
+4. Create reservations
+5. Item status updates (reserved)
+6. Quest shows required items
 
 **Rules:**
 
-- Quantity minimum is 0
-- At 0, item remains (not deleted)
-- Optional low-stock alert threshold
+- Reservations are pending until quest In Progress
+- Auto-released when quest completed
+- Warning if trying to reserve unavailable items
 
 ---
 
-### T-3: Move Item
+### T-3: Auto-Detect BoM (Bill of Materials)
 
-**Trigger:** User relocates a physical item
-
-**Goal:** Update item's location
-
-**Flow:**
-
-1. User opens item → clicks location
-2. Location tree picker appears
-3. User navigates/searches for new location
-4. User selects location
-5. Location updated
-
-**Alternate:** Drag item to location in sidebar
-
----
-
-### T-4: Manage Locations
-
-**Trigger:** User needs to define where things are stored
-
-**Goal:** Create/organize location hierarchy
+**Trigger:** User writes note mentioning inventory items
 
 ```
-┌─────────────────────────────────────────────────────┐
-│  Locations                                     [+]  │
-├─────────────────────────────────────────────────────┤
-│                                                     │
-│  📍 Home                                            │
-│     ├── 📍 Kitchen                                  │
-│     │   ├── 📍 Pantry                    8 items   │
-│     │   └── 📍 Fridge                    12 items  │
-│     ├── 📍 Office                                   │
-│     │   ├── 📍 Desk                                │
-│     │   │   ├── 📍 Top Drawer            5 items   │
-│     │   │   └── 📍 Bottom Drawer         3 items   │
-│     │   └── 📍 Shelf                     14 items  │
-│     └── 📍 Garage                                   │
-│         └── 📍 Toolbox                   22 items  │
-│                                                     │
-│  📍 Work                                            │
-│     └── 📍 Desk                          4 items   │
-│                                                     │
-└─────────────────────────────────────────────────────┘
-```
-
-**Flow — Create Location:**
-
-1. User clicks `+` or right-clicks parent location
-2. Modal: Name, Parent (pre-filled if right-clicked), Geo (optional)
-3. Location created
-
-**Flow — Delete Location:**
-
-1. User right-clicks location → Delete
-2. Prompt: "Move X items to parent location?"
-3. Options: Move to parent / Move to no location / Cancel
-4. Location deleted, items reassigned
-
----
-
-### T-5: Search Items
-
-**Trigger:** User looking for something
-
-**Goal:** Find items by name, category, or location
-
-```
-┌─────────────────────────────────────────────────────┐
-│  Search Inventory                                   │
-├─────────────────────────────────────────────────────┤
-│                                                     │
-│  ┌───────────────────────────────────────────────┐  │
-│  │ 🔍 hdmi                                       │  │
-│  └───────────────────────────────────────────────┘  │
-│                                                     │
-│  Filters: [Category ▾] [Location ▾] [In Stock ▾]   │
-│                                                     │
-│  Results (3)                                        │
-│  ─────────────────────────────────────────────────  │
-│                                                     │
-│  📦 USB-C to HDMI Adapter              Qty: 3      │
-│     📍 Office > Desk > Top Drawer                  │
-│                                                     │
-│  📦 HDMI Cable 6ft                     Qty: 2      │
-│     📍 Office > Shelf                              │
-│                                                     │
-│  📦 HDMI Cable 10ft                    Qty: 1      │
-│     📍 Garage > Toolbox                            │
-│                                                     │
-└─────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│  Note: Home Lab Build Plan                                                      │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                 │
+│  ## Parts List                                                                  │
+│                                                                                 │
+│  For this project I'll need:                                                   │
+│  - 2x Raspberry Pi 4                                                           │
+│  - 2x 32GB SD cards                                                            │
+│  - 1x network switch                                                           │
+│  - 1x USB hub                                                                  │
+│                                                                                 │
+│  ┌─────────────────────────────────────────────────────────────────────────┐   │
+│  │ 📦 Found in inventory:                                                  │   │
+│  │                                                                         │   │
+│  │   2x Raspberry Pi 4          ✓ 3 available                             │   │
+│  │   2x 32GB SD Card            ✓ 5 available                             │   │
+│  │   1x Network Switch          ✗ 0 available (need to acquire)           │   │
+│  │   1x USB Hub                 ✓ 2 available                             │   │
+│  │                                                                         │   │
+│  │   [Create Reservations]  [Add Missing Items]  [Dismiss]                │   │
+│  └─────────────────────────────────────────────────────────────────────────┘   │
+│                                                                                 │
+└─────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 **Flow:**
 
-1. User triggers search (`Cmd+K` or `/`)
-2. Search bar focuses
-3. User types query
-4. Results filter in real-time
-5. User optionally applies filters
-6. User clicks result to open item
+1. User writes note with item mentions
+2. System detects quantities and item names
+3. Non-intrusive popup shows matches
+4. User can:
+   - Create reservations for available items
+   - Add missing items to inventory (quantity 0)
+   - Dismiss suggestion
+
+**Rules:**
+
+- Real-time detection (debounced)
+- Pattern matching for quantities (2x, x2, two)
+- Fuzzy matching to inventory
+- Context-aware (RPi = Raspberry Pi)
+
+---
+
+### T-4: Maintenance Reminder
+
+**Trigger:** Scheduled maintenance due
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│  🔧 Maintenance Due                                                             │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                 │
+│  3D Printer - Bed Leveling                                                      │
+│                                                                                 │
+│  Due: Today                                                                     │
+│  Last performed: 30 days ago                                                    │
+│  Interval: Every 30 days                                                        │
+│                                                                                 │
+│  Notes: Level all four corners, then center. Use paper test.                   │
+│                                                                                 │
+│            [Mark Complete]    [Snooze 7 days]    [Skip]                        │
+└─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Flow:**
+
+1. Notification appears when maintenance due
+2. User can mark complete (updates schedule)
+3. Or snooze for later
+4. Dashboard shows upcoming maintenance
 
 ---
 
@@ -752,205 +880,171 @@
 
 ### X-1: Global Search
 
-**Trigger:** User looking for something, doesn't know which app
+**Trigger:** User looking for something across all apps
 
-**Goal:** Search across all domains
+**Keyboard:** `Cmd+Space` (global)
 
 ```
-┌─────────────────────────────────────────────────────┐
-│  Search Everything                       Cmd+Space  │
-├─────────────────────────────────────────────────────┤
-│                                                     │
-│  ┌───────────────────────────────────────────────┐  │
-│  │ 🔍 authentication                             │  │
-│  └───────────────────────────────────────────────┘  │
-│                                                     │
-│  🎯 Quests                                          │
-│     Fix authentication bug                          │
-│     Implement OAuth flow                            │
-│                                                     │
-│  📚 Notes                                           │
-│     Authentication Architecture                     │
-│     Session Management                              │
-│     OAuth Setup Guide                               │
-│                                                     │
-│  📦 Items                                           │
-│     YubiKey 5 NFC                                  │
-│                                                     │
-└─────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│  Search Everything                                                    Cmd+Space │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                 │
+│  ┌───────────────────────────────────────────────────────────────────────────┐  │
+│  │ 🔍 raspberry                                                             │  │
+│  └───────────────────────────────────────────────────────────────────────────┘  │
+│                                                                                 │
+│  🎯 Quests                                                                      │
+│     Build Raspberry Pi cluster                    ⚡⚡⚡⚡ Large                  │
+│     Set up Pi-hole                                ⚡⚡⚡ Medium                   │
+│                                                                                 │
+│  📚 Notes                                                                       │
+│     Raspberry Pi GPIO Pinout                                                   │
+│     RPi Network Configuration                                                  │
+│     Home Lab Architecture                                                      │
+│                                                                                 │
+│  📦 Items                                                                       │
+│     Raspberry Pi 4 Model B                        Qty: 3 • Office > Shelf      │
+│     Raspberry Pi Zero W                           Qty: 2 • Office > Drawer     │
+│                                                                                 │
+│  [in:quest] [in:note] [in:item] [#tag]                                        │
+└─────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-**Flow:**
+**Syntax:**
 
-1. User triggers global search (hotkey from anywhere)
-2. Omnibar appears
-3. User types query
-4. Results grouped by domain
-5. User selects result → opens in appropriate app
-
-**Shortcuts:**
-
-- `in:quest` — Filter to quests only
-- `in:note` — Filter to notes only
-- `in:item` — Filter to items only
+- `in:quest` — Filter to quests
+- `in:note` — Filter to notes
+- `in:item` — Filter to items
 - `#tag` — Filter by tag
+- `~semantic query` — Semantic search
 
 ---
 
-### X-2: View Linked Entities
+### X-2: Gamification Dashboard
 
-**Trigger:** User viewing entity with cross-app links
-
-**Goal:** See and navigate relationships
+**Trigger:** User views profile or level indicator
 
 ```
-┌─────────────────────────────────────────────────────┐
-│  Quest: Fix authentication bug                      │
-├─────────────────────────────────────────────────────┤
-│                                                     │
-│  [...quest details...]                              │
-│                                                     │
-│  ─────────────────────────────────────────────────  │
-│                                                     │
-│  🔗 Linked                                          │
-│                                                     │
-│  📚 References (2 notes)                            │
-│     ├── Authentication Architecture      →         │
-│     └── Session Management               →         │
-│                                                     │
-│  📦 Requires (1 item)                               │
-│     └── YubiKey 5 NFC                    →         │
-│                                                     │
-│  [+ Link Note]  [+ Link Item]                       │
-│                                                     │
-└─────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│  Your Progress                                                                  │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                 │
+│  ┌─────────────────────────────────────────────────────────────────────────┐   │
+│  │                                                                         │   │
+│  │      Level 5: Expert                                                   │   │
+│  │      ════════════════════════════════════════                          │   │
+│  │      ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░░░░░░░░░  1,385 / 2,000 XP             │   │
+│  │                                                                         │   │
+│  └─────────────────────────────────────────────────────────────────────────┘   │
+│                                                                                 │
+│  🔥 Streaks                                                                     │
+│  ├── Daily Check-in: 14 days (🔥 longest: 21)                                  │
+│  ├── Quest Completion: 7 days                                                  │
+│  └── Focus Sessions: 5 days                                                    │
+│                                                                                 │
+│  🏆 Recent Achievements                                                         │
+│  ├── 🧘 Focus Master (10 focus sessions)                     Nov 28           │
+│  ├── 📚 Knowledge Seeker (50 notes)                          Nov 25           │
+│  └── 🔥 Week Warrior (7-day streak)                          Nov 22           │
+│                                                                                 │
+│  📊 This Week                                                                   │
+│  ├── Quests completed: 12                                                      │
+│  ├── XP earned: 485                                                            │
+│  ├── Focus time: 4h 20m                                                        │
+│  └── Notes created: 8                                                          │
+│                                                                                 │
+│  [View All Achievements]  [Customize Gamification]                             │
+└─────────────────────────────────────────────────────────────────────────────────┘
 ```
-
-**Flow:**
-
-1. User views quest/note/item with links
-2. Linked section shows relationships grouped by type
-3. User clicks `→` to navigate to linked entity
-4. Opens in appropriate app/view
-
----
-
-### X-3: Quick Capture from Any App
-
-**Trigger:** User in any app, wants to capture without leaving
-
-**Goal:** Capture without context switch
-
-**Flow:**
-
-1. User presses capture hotkey (e.g., `Cmd+Shift+C`)
-2. Quick Capture overlay appears
-3. User types/records
-4. Presses Enter
-5. Overlay closes, user remains in current app
-6. Badge updates across all apps
 
 ---
 
 ## ⚙️ Settings Flows
 
-### S-1: Configure Location Privacy
-
-**Trigger:** User wants control over location tracking
+### S-1: Configure Energy Check-in
 
 ```
-┌─────────────────────────────────────────────────────┐
-│  Location Settings                                  │
-├─────────────────────────────────────────────────────┤
-│                                                     │
-│  Auto-tag location on:                              │
-│  ☐ Notes                                           │
-│  ☐ Captures                                        │
-│  ☑ Items (manual only)                             │
-│                                                     │
-│  Precision:                                         │
-│  ○ City          (e.g., "Houston")                 │
-│  ● Neighborhood  (e.g., "Clear Lake")              │
-│  ○ Exact         (GPS coordinates)                 │
-│                                                     │
-└─────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│  Energy Check-in Settings                                                       │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                 │
+│  Daily Reminder                                                                 │
+│  ☑ Enable daily energy check-in prompt                                         │
+│  Time: [9:00 AM ▾]                                                             │
+│                                                                                 │
+│  Default Energy Filter                                                          │
+│  When no check-in today, default to: [Medium ▾]                                │
+│                                                                                 │
+│  Pattern Learning                                                               │
+│  ☑ Show energy patterns in check-in                                           │
+│  ☑ Suggest based on day of week                                               │
+│                                                                                 │
+└─────────────────────────────────────────────────────────────────────────────────┘
 ```
 
----
-
-### S-2: Configure AI Features
-
-**Trigger:** User wants to enable/disable AI assistance
+### S-2: Configure Gamification
 
 ```
-┌─────────────────────────────────────────────────────┐
-│  AI Settings                                        │
-├─────────────────────────────────────────────────────┤
-│                                                     │
-│  Capture Classification                             │
-│  ☑ Enable AI suggestions                           │
-│     Provider: [Claude ▾]                           │
-│                                                     │
-│  Semantic Search                                    │
-│  ☑ Enable (uses local embeddings)                  │
-│                                                     │
-│  Rate Limits                                        │
-│     Daily requests: [100    ]                      │
-│     Daily cost cap: [$5.00  ]                      │
-│                                                     │
-│  Providers                                          │
-│  ├── claude     [Configure...]    ● Connected      │
-│  ├── openai     [Configure...]    ○ Not configured │
-│  └── ollama     [Configure...]    ○ Not configured │
-│                                                     │
-└─────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│  Gamification Settings                                                          │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                 │
+│  ☑ Enable gamification features                                                │
+│                                                                                 │
+│  Visible Elements                                                               │
+│  ☑ XP and level indicator                                                      │
+│  ☑ Streak counters                                                             │
+│  ☑ Achievement notifications                                                   │
+│  ☐ Leaderboard (future: if sharing enabled)                                   │
+│                                                                                 │
+│  Celebration Intensity                                                          │
+│  [Subtle ───●─── Festive]                                                      │
+│                                                                                 │
+│  Streak Grace Period                                                            │
+│  Hours before streak breaks: [24 ▾]                                            │
+│                                                                                 │
+└─────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Flow Summary by App
+## Flow Summary
 
-### Guidance (Quest Management)
-
+### Guidance
 | Flow | Hotkey | Priority |
 |------|--------|----------|
-| G-1: Quick Add Quest | `Cmd+N` | Essential |
-| G-2: Daily Planning | — | Essential |
-| G-3: Complete Quest | `Cmd+Enter` | Essential |
-| G-4: Manage Campaigns | — | Important |
-| G-5: Link to Note/Item | `Cmd+L` | Important |
+| G-1: QBA Board Overview | — | Essential |
+| G-2: Quick Add Quest | `Cmd+N` | Essential |
+| G-3: Daily Energy Check-in | — | Essential |
+| G-4: Focus Mode | `Cmd+Shift+F` | Essential |
+| G-5: Complete Quest | `Cmd+Enter` | Essential |
+| G-6: Weekly Harvest | — | Important |
+| G-7: Quest Dependencies | — | Important |
 
-### Knowledge (PKM)
-
+### Knowledge
 | Flow | Hotkey | Priority |
 |------|--------|----------|
-| K-1: Create Note | `Cmd+N` | Essential |
-| K-2: Navigate Wiki-Links | `Click` / `Cmd+Click` | Essential |
-| K-3: Search Notes | `Cmd+K` | Essential |
-| K-4: Organize Folders | — | Important |
-| K-5: Link to Item | `Cmd+L` | Nice-to-have |
+| K-1: Daily Note | — | Essential |
+| K-2: Wiki-Links | `[[` | Essential |
+| K-3: Mind Map/Graph | `Cmd+G` | Important |
+| K-4: Semantic Search | `Cmd+K` | Essential |
 
-### Tracking (Inventory)
-
+### Tracking
 | Flow | Hotkey | Priority |
 |------|--------|----------|
 | T-1: Add Item | `Cmd+N` | Essential |
-| T-2: Adjust Quantity | — | Essential |
-| T-3: Move Item | — | Important |
-| T-4: Manage Locations | — | Important |
-| T-5: Search Items | `Cmd+K` | Essential |
+| T-2: Reserve for Quest | `Cmd+L` | Important |
+| T-3: Auto-Detect BoM | — | Important |
+| T-4: Maintenance | — | Nice-to-have |
 
 ### Quick Capture
-
 | Flow | Hotkey | Priority |
 |------|--------|----------|
-| QC-1: Capture Something | `Cmd+Shift+C` | Essential |
-| QC-2: Review Captures | — | Essential |
+| QC-1: Capture | `Cmd+Shift+C` | Essential |
+| QC-2: Review | — | Essential |
 
 ### Cross-App
-
 | Flow | Hotkey | Priority |
 |------|--------|----------|
 | X-1: Global Search | `Cmd+Space` | Essential |
-| X-2: View Linked Entities | — | Important |
-| X-3: Quick Capture Overlay | `Cmd+Shift+C` | Essential |
+| X-2: Gamification | — | Important |
