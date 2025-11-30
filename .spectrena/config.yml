@@ -1,0 +1,12 @@
+# Spectrena Configuration
+
+spec_id:
+  template: "{component}-{NNN}-{slug}"
+  padding: 3
+  components:
+    - CORE
+    - GUIDANCE
+    - TRACKING
+    - KNOWLEDGE
+    - PLATFORM
+  numbering_source: "directory"
