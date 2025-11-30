@@ -1,3 +1,5 @@
+<!-- prettier-ignore-start -->
+
 <!--
 ================================================================================
 SYNC IMPACT REPORT
@@ -23,6 +25,8 @@ Templates Requiring Updates:
 Follow-up TODOs: None
 ================================================================================
 -->
+
+<!-- prettier-ignore-end -->
 
 # Altair Constitution
 

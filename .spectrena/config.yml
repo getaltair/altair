@@ -10,3 +10,8 @@ spec_id:
     - KNOWLEDGE
     - PLATFORM
   numbering_source: "directory"
+
+lineage:
+  enabled: true
+  lineage_db: "surrealkv://.spectrena/lineage"
+  auto_register: true
