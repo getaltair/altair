@@ -1,205 +1,233 @@
 <!--
+================================================================================
 SYNC IMPACT REPORT
-==================
-Version Change: 0.0.0 → 1.0.0 (MAJOR - initial constitution)
-Modified Principles: N/A (new)
-Added Sections: Core Principles (7), ADHD Design Requirements, Technology Constraints, Governance
-Removed Sections: None
+================================================================================
+Version Change: 0.0.0 → 1.0.0 (Initial constitution)
+Modified Principles: N/A (new document)
+Added Sections:
+  - I. Local-First Architecture
+  - II. ADHD-Friendly Design
+  - III. Ubiquitous Language
+  - IV. Soft Delete & Data Recovery
+  - V. Plugin Architecture for Extensibility
+  - VI. Privacy by Default
+  - VII. Spec-Driven Development
+  - Development Standards section
+  - Workflow Requirements section
+  - Governance section
+Removed Sections: N/A
 Templates Requiring Updates:
-  - .spectrena/templates/plan-template.md: ✅ No updates needed (generic template)
-  - .spectrena/templates/spec-template.md: ✅ No updates needed (generic template)
-  - .spectrena/templates/tasks-template.md: ✅ No updates needed (generic template)
+  - .spectrena/templates/plan-template.md ✅ (Constitution Check section present)
+  - .spectrena/templates/spec-template.md ✅ (No constitution-specific sections needed)
+  - .spectrena/templates/tasks-template.md ✅ (No constitution-specific sections needed)
 Follow-up TODOs: None
+================================================================================
 -->
 
 # Altair Constitution
 
-> **Governing principles for the ADHD-focused productivity ecosystem**
+> **Guiding principles for the Altair ADHD-focused productivity ecosystem**
 
 ## Core Principles
 
-### I. ADHD-First Design (NON-NEGOTIABLE)
+### I. Local-First Architecture
 
-Every feature MUST externalize executive function, not demand it. This is the foundational
-principle that shapes all design decisions.
+All features MUST work fully offline. Cloud connectivity is an enhancement, never a requirement.
 
-**Rules:**
-- Reduce cognitive load — minimize decisions, provide clear paths
-- External structure — system-enforced limits (WIP=1), not willpower
-- Variable capacity — adapt to daily energy levels via Energy Management
-- Forgiveness mechanisms — no shame for incomplete tasks, streaks have grace periods
-- Immediate feedback — visual and auditory confirmations
-- Progressive disclosure — show only what's needed
-- Time blindness support — visual timers, reminders, progress indicators
+**Non-negotiable rules:**
 
-**Rationale:** Users with ADHD need the system to be a supportive partner, not a demanding
-boss. The UI must reduce friction, not add it.
+- Embedded SurrealDB for all data storage
+- Local ONNX embeddings for semantic search (~25MB model)
+- S3-compatible object storage runs locally (Minio)
+- Cloud sync is optional and user-initiated
+- No feature may require network connectivity to function
 
-### II. Local-First Architecture
+**Rationale:** ADHD users need reliability without distractions. Network failures, cloud outages,
+or connectivity issues MUST NOT interrupt a user's focus session or data access.
 
-All core functionality MUST work offline. Cloud sync is optional enhancement, not requirement.
+### II. ADHD-Friendly Design
 
-**Rules:**
-- Embedded database (SurrealDB) runs locally on every device
-- Local S3-compatible storage (Minio) for media
-- Local ONNX embeddings (~25MB) for semantic search — no cloud dependency
-- Sync is additive — features work without it
-- User data stays on device unless user explicitly enables cloud backup
-- Privacy by default — embeddings never leave device
+All user-facing features MUST reduce cognitive load and support variable executive function.
 
-**Rationale:** Per ADR-001, ADR-004, ADR-005. Users must trust the system with their
-data. Offline-first ensures the app is useful anywhere, anytime.
+**Non-negotiable rules:**
 
-### III. Quest-Based Agile (QBA) Board
+- WIP = 1 strictly enforced (only one quest "In Progress" at a time)
+- Progressive disclosure: show only what's needed, hide complexity
+- Zero-friction capture: one tap, no decisions required at capture time
+- Energy system respects daily capacity variations
+- Visual timers combat time blindness (not just numbers)
+- Forgiveness mechanisms: grace periods for streaks, soft delete for recovery
 
-The six-column Kanban with strict WIP=1 is the heart of Guidance. Do not compromise it.
+**Rationale:** The target users have ADHD. The system externalizes executive function rather
+than demanding willpower. Every feature must answer: "Does this reduce cognitive load?"
 
-**Rules:**
-- Six columns: Idea Greenhouse → Quest Log → This Cycle (max 1) → Next Up (max 5) →
-  In Progress (max 1) → Harvested
-- WIP=1 strictly enforced — only one quest can be "In Progress" at any time
-- Energy levels required on every quest (Tiny/Small/Medium/Large/Huge)
-- Focus mode provides distraction-free single-task view
-- Weekly Harvest ritual for reflection without judgment
+### III. Ubiquitous Language
 
-**Rationale:** Per requirements.md Section 1.1. ADHD brains struggle with task switching.
-Enforcing WIP=1 at the system level removes the burden of self-regulation.
+All documentation, code, and UI MUST use consistent terminology from docs/glossary.md.
 
-### IV. Soft Delete Everywhere
+**Non-negotiable rules:**
 
-Never hard delete user data. All deletions MUST be recoverable.
+- Quest (not Task, Todo, or Ticket)
+- Campaign (not Project or Epic)
+- Note (not Document or Page)
+- Item (not Product or Asset)
+- Capture (not Inbox item or Draft)
+- Archive (not Delete) for soft deletion
+- Energy levels: Tiny, Small, Medium, Large, Huge (not Low/Medium/High)
 
-**Rules:**
-- Use `status: archived` for deletion, never DROP/DELETE
-- Archived items visible in Archive view
-- Cascade behavior is user-configurable (archive children or move to parent)
-- "Empty Archive" for permanent deletion (explicit user action)
-- All tables include `CHANGEFEED 7d` for sync support
-- Tombstones sync to other devices
+**Rationale:** Consistent language reduces confusion for users and developers. The Quest-Based
+Agile metaphor creates an adventure framing that supports ADHD engagement.
 
-**Rationale:** Per ADR-010. ADHD users may impulsively delete and regret it. The system
-must protect against permanent data loss.
+### IV. Soft Delete & Data Recovery
 
-### V. Graph Relationships Over Junction Tables
+All deletions MUST be soft deletes. Hard deletion requires explicit user action.
 
-Use SurrealDB graph edges for entity relationships, not SQL-style junction tables.
+**Non-negotiable rules:**
 
-**Rules:**
-- Campaign →contains→ Quest, Quest →references→ Note, Note →links_to→ Note
-- Quest →requires→ Item (Bill of Materials)
-- Item →stored_in→ Location
-- has_attachment edge connects any entity to Attachment
-- All edges are SCHEMAFULL with CHANGEFEED 7d
-- References are soft links — deleting source does not delete target
+- All entities use `status: archived` instead of hard delete
+- Archived items remain in database with sync support (tombstones)
+- "Empty Archive" action required for permanent deletion
+- Change feeds track all state changes including archives
+- Cascade behavior is user-configurable
 
-**Rationale:** Per ADR-001 and domain-model.md. SurrealDB's native graph queries
-simplify the data model and enable powerful traversals without JOIN complexity.
+**Rationale:** ADHD users often act impulsively. Permanent data loss from accidental deletion
+causes anxiety and breaks trust. Recovery must always be possible.
 
-### VI. Type Safety Across Boundaries
+### V. Plugin Architecture for Extensibility
 
-Rust types MUST generate TypeScript types. No manual type synchronization.
+Auth providers and AI providers MUST be implemented as plugins, not hardcoded.
 
-**Rules:**
-- Use tauri-specta to generate TypeScript from Rust structs
-- Desktop apps use Tauri IPC commands, not HTTP (per ADR-008)
-- Mobile apps use REST + WebSocket to cloud backend
-- All DTOs derive Serialize, Deserialize, and specta::Type
-- Generated bindings live in packages/bindings/
+**Non-negotiable rules:**
 
-**Rationale:** Per ADR-008 and technical-architecture.md. Manual type synchronization
-leads to drift. Codegen eliminates entire classes of bugs.
+- All providers implement trait-based interfaces (AuthProvider, AiProvider)
+- Built-in providers: local auth, OAuth (Google, GitHub), OIDC for auth
+- Built-in providers: Ollama, OpenAI, Anthropic, whisper-local for AI
+- Users choose which providers to enable via configuration
+- New providers can be added without core code changes
 
-### VII. Plugin Architecture for Extensibility
+**Rationale:** User choice is paramount. No vendor lock-in. Different users have different
+requirements for auth (offline vs SSO) and AI (local vs cloud, cost vs capability).
 
-Auth providers and AI providers MUST use trait-based plugins. No hardcoding.
+### VI. Privacy by Default
 
-**Rules:**
-- AuthProvider trait: authenticate, validate, refresh, logout
-- AiProvider trait: complete, transcribe, generate_image (optional per provider)
-- Built-in providers: local auth, OAuth (Google, GitHub), OIDC
-- AI is OPTIONAL — core features work without any AI provider
-- Rate limiting protects against API cost overruns
-- API keys stored in OS keychain, never in config files
+User data MUST stay local unless explicitly configured otherwise.
 
-**Rationale:** Per ADR-006. Users have different preferences and constraints. Plugin
-architecture lets them choose without forking the codebase.
+**Non-negotiable rules:**
 
-## ADHD Design Requirements
+- Local ONNX embeddings (data never leaves device for semantic search)
+- AI providers are optional and user-configured
+- Secrets stored in OS-native keychains (never in config files)
+- No telemetry without explicit opt-in
+- Health integrations are read-only plugins, not built-in tracking
 
-These requirements apply to ALL user-facing features:
+**Rationale:** ADHD users track sensitive information (energy levels, productivity patterns).
+This data must be protected. Cloud features are enhancements, not requirements.
 
-| Requirement | Implementation |
-|------------|----------------|
-| Zero-friction capture | Quick Capture: one tap, no destination choice |
-| Deferred classification | Inbox pattern — decide later when you have spoons |
-| Energy-based filtering | Show only tasks matching current energy level |
-| Visual timers | Progress bars, not just countdown numbers |
-| Celebration | XP, achievements, level-ups for completed work |
-| No shame mechanics | Streaks have 24-hour grace period |
-| Opt-out gamification | Users can disable XP/achievements entirely |
-| Auto-discovery | System suggests relationships, user confirms |
+### VII. Spec-Driven Development
 
-## Technology Constraints
+All significant features MUST follow the spectrena workflow: specify → clarify → plan → tasks → implement.
 
-| Layer | Technology | Why |
-|-------|------------|-----|
-| Database | SurrealDB 2.x | Graph queries, vector search, change feeds (ADR-001) |
-| Object Storage | S3-compatible | Portable, no vendor lock-in (ADR-004) |
-| Desktop | Tauri 2.0 + Svelte | 10x smaller than Electron (ADR-002) |
-| Mobile | Tauri 2.0 Android | Same codebase as desktop |
-| Backend | Rust + Axum | No GC pauses, same language as Tauri (ADR-003) |
-| Embeddings | Local ONNX | Always-on, no cloud dependency (ADR-005) |
-| Sync | LWW + Change Feeds | Simple, single-user optimized (ADR-007) |
+**Non-negotiable rules:**
 
-## Terminology
+- Features start with a specification in specs/ directory
+- Ambiguities resolved via /spectrena.clarify before planning
+- Implementation plans include Constitution Check gate
+- Tasks organized by user story for independent testing
+- Lineage tracking connects requirements → tasks → code changes
 
-Use these terms consistently. See docs/glossary.md for full definitions.
+**Rationale:** ADHD developers benefit from externalized structure just like ADHD users.
+The workflow prevents scope creep, ensures requirements traceability, and supports
+incremental delivery.
 
-| Use | Don't Use | Why |
-|-----|-----------|-----|
-| Quest | Task, Todo | Quest has energy cost, adventure framing |
-| Campaign | Project, Epic | Campaign contains quests |
-| Note | Document, Page | Note is the PKM entity |
-| Item | Product, Asset | Item is the inventory entity |
-| Capture | Inbox item | Capture is pending classification |
-| Archive | Delete | Soft delete, recoverable |
-| Harvest | Complete, Done | Weekly ritual framing |
+## Development Standards
+
+### Code Quality
+
+- Rust backend: `cargo fmt` and `cargo clippy` before every commit
+- TypeScript/Svelte: `pnpm lint` before every commit
+- All Tauri commands use tauri-specta for type generation
+- SurrealDB tables: `SCHEMAFULL` with `CHANGEFEED 7d` for sync support
+- No secrets in code or config files (use OS keychain references)
+
+### Architecture Patterns
+
+- Desktop apps: Tauri IPC (not REST) for frontend-backend communication
+- Mobile apps: REST + WebSocket to cloud backend
+- Graph edges for relationships (not junction tables)
+- Last-Write-Wins sync with change feeds
+- Presigned URLs for direct S3 uploads (no backend proxy)
+
+### Testing Requirements
+
+- User stories must be independently testable
+- TDD encouraged: write failing tests before implementation
+- Integration tests for cross-domain features (Quest → Note → Item)
+- Performance targets defined in docs/requirements.md
+
+## Workflow Requirements
+
+### Tauri Command Pattern
+
+All desktop features expose functionality via Tauri commands:
+
+```rust
+#[tauri::command]
+async fn operation_name(
+    state: State<'_, AppState>,
+    param: Type,
+) -> Result<Response, ApiError> {
+    // Implementation
+}
+```
+
+TypeScript types auto-generate via tauri-specta to packages/bindings/.
+
+### Database Schema Pattern
+
+All synced tables include change feed:
+
+```surql
+DEFINE TABLE entity SCHEMAFULL CHANGEFEED 7d;
+DEFINE FIELD owner ON entity TYPE record<user>;
+DEFINE FIELD status ON entity TYPE string DEFAULT 'active';
+DEFINE FIELD created_at ON entity TYPE datetime DEFAULT time::now();
+DEFINE FIELD updated_at ON entity TYPE datetime VALUE time::now();
+DEFINE FIELD device_id ON entity TYPE string;
+```
+
+### Embedding Generation
+
+- Desktop: Local ONNX model generates embeddings on note save
+- Mobile: Receives embeddings via sync (no on-device generation)
+- Embedding dimension: 384 (all-MiniLM-L6-v2)
 
 ## Governance
 
-### Amendment Procedure
+This constitution supersedes all other development practices for the Altair project.
 
-1. Propose change via PR with rationale
-2. Update relevant ADR in docs/decision-log.md if architectural
-3. Review against ADHD-First principle (Principle I)
-4. If approved, increment constitution version
-5. Update all dependent artifacts (templates, docs)
+### Amendment Process
 
-### Version Policy
+1. Propose change with rationale in GitHub discussion or PR
+2. Document impact on existing code and templates
+3. Approval required from project maintainer
+4. Amendment includes migration plan for affected code
+5. Update version according to semantic versioning
 
-- **MAJOR**: Backward-incompatible principle changes, principle removal
-- **MINOR**: New principle added, significant guidance expansion
-- **PATCH**: Clarifications, typo fixes, non-semantic refinements
+### Versioning Policy
 
-### Compliance Verification
+- **MAJOR**: Backward incompatible changes (principle removal/redefinition)
+- **MINOR**: New principles added or materially expanded guidance
+- **PATCH**: Clarifications, wording fixes, non-semantic refinements
 
-All PRs MUST verify:
-- [ ] ADHD-First: Does this reduce cognitive load?
-- [ ] Local-First: Does this work offline?
-- [ ] Soft Delete: Is data recoverable?
-- [ ] Type Safety: Are types generated, not manual?
-- [ ] Terminology: Are terms used correctly per glossary?
+### Compliance Review
 
-### Reference Documents
+All PRs and code reviews MUST verify:
 
-| Document | Purpose |
-|----------|---------|
-| docs/requirements.md | Full feature specifications |
-| docs/technical-architecture.md | Implementation details |
-| docs/domain-model.md | Entity relationships |
-| docs/decision-log.md | ADRs with rationale |
-| docs/glossary.md | Consistent terminology |
-| docs/design-system.md | Calm Focus visual language |
-| CLAUDE.md | Runtime development guidance |
+- Terminology matches glossary (Principle III)
+- No hard deletes (Principle IV)
+- Offline functionality preserved (Principle I)
+- Cognitive load reduced, not increased (Principle II)
 
-**Version**: 1.0.0 | **Ratified**: 2025-11-29 | **Last Amended**: 2025-11-29
+Use CLAUDE.md and AGENTS.md for runtime development guidance.
+
+**Version**: 1.0.0 | **Ratified**: 2025-11-30 | **Last Amended**: 2025-11-30

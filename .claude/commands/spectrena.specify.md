@@ -8,10 +8,10 @@ Create or generate content for a specification from the spec backlog.
 # Create spec from backlog entry (preferred)
 /spectrena.specify core-001-project-setup
 
-# Create spec with custom description (not in backlog)
+# Create new spec with custom description (not in backlog)
 /spectrena.specify "Brief description" -c COMPONENT
 
-# Generate content for existing spec (after spectrena new)
+# Generate content for existing spec OR create new interactively
 /spectrena.specify
 ```
 
@@ -22,6 +22,8 @@ Create or generate content for a specification from the spec backlog.
 | spec-id         | No       | Spec ID from backlog (e.g., `core-001-project-setup`) |
 | description     | No       | Brief title/description (if not using backlog)        |
 | --component, -c | No       | Component prefix (only needed if not using backlog)   |
+
+---
 
 ## Spec Backlog Integration
 
@@ -39,12 +41,12 @@ The spec backlog is at `docs/altair-spec-backlog.md` (or project root). It conta
 
 When given a spec ID like `core-001-project-setup`:
 
-1. **Find the spec section** — Search for `### {spec-id}` heading
-2. **Extract the scope line** — First line after heading describes the scope
-3. **Parse the attribute table** — Extract Weight, Status, Depends On, References
-4. **Extract "Covers" list** — Bullet points under "Covers:"
-5. **Extract "Does NOT cover" list** — Bullet points (if present)
-6. **Note any code blocks** — May contain schema hints, file structures, etc.
+1. **Find the spec section** — Search for `### {spec-id}` heading (exact match, case-insensitive)
+2. **Extract the scope line** — Line starting with `**Scope:**` after the heading
+3. **Parse the attribute table** — Extract Weight, Status, Depends On, References from markdown table
+4. **Extract "Covers" list** — Bullet points after `**Covers:**`
+5. **Extract "Does NOT cover" list** — Bullet points after `**Does NOT cover:**` (if present)
+6. **Capture code blocks** — May contain schema hints, file structures, table names
 
 **Example backlog entry:**
 
@@ -75,18 +77,38 @@ When given a spec ID like `core-001-project-setup`:
 - UI components
 ```
 
-### Extracting Information
+### Field Mapping
 
-From the backlog entry, extract:
+Extract and map these fields:
 
-| Field        | Source           | Maps To                |
-| ------------ | ---------------- | ---------------------- |
-| Title        | Scope line       | Spec title             |
-| Weight       | Attribute table  | Spec weight            |
-| Dependencies | "Depends On" row | Dependencies section   |
-| References   | "References" row | Reference docs to read |
-| Scope items  | "Covers" bullets | Requirements/scope     |
-| Out of scope | "Does NOT cover" | Non-goals              |
+| Backlog Field    | Spec Section           | Notes                             |
+| ---------------- | ---------------------- | --------------------------------- |
+| Spec ID          | Folder name, branch    | `specs/{spec-id}/`                |
+| Scope line       | Title, Description     | Primary description               |
+| Weight           | Metadata               | LIGHTWEIGHT / STANDARD / FORMAL   |
+| Depends On       | Dependencies           | Spec IDs, check their status      |
+| References       | Reference docs to load | Parse doc abbreviations           |
+| "Covers" bullets | Requirements           | Expand into detailed requirements |
+| "Does NOT cover" | Non-Goals              | Explicit boundaries               |
+| Code blocks      | Technical Notes        | Schema hints, structures          |
+
+### Reference Doc Abbreviations
+
+When the backlog specifies references like `ARCH §Project Structure, DOM §Quest`:
+
+| Abbrev  | Document               | Path                                    |
+| ------- | ---------------------- | --------------------------------------- |
+| `REQ`   | Requirements           | `docs/altair-requirements-v2.md`        |
+| `ARCH`  | Technical Architecture | `docs/altair-technical-architecture.md` |
+| `DOM`   | Domain Model           | `docs/altair-domain-model.md`           |
+| `UF`    | User Flows             | `docs/altair-user-flows.md`             |
+| `DS`    | Design System          | `docs/altair-design-system.md`          |
+| `ADR`   | Decision Log           | `docs/altair-decision-log.md`           |
+| `GLOSS` | Glossary               | `docs/altair-glossary.md`               |
+
+If `§Section Name` is specified, focus on that section when loading the doc.
+
+---
 
 ## Behavior
 
@@ -96,171 +118,122 @@ From the backlog entry, extract:
 /spectrena.specify core-001-project-setup
 ```
 
-1. **Parse backlog** — Find and extract spec entry
-2. **Read reference docs** — Load docs listed in References
-3. **Check dependencies** — Warn if dependent specs incomplete
-4. **Generate spec** — Use backlog scope + reference docs
-5. **Create files** — `specs/{spec-id}/spec.md`
-6. **Update backlog** — Change status from ⬜ to 🟨
+1. **Parse backlog** — Find and extract spec entry by ID
+2. **Check dependencies** — Warn if "Depends On" specs are incomplete (⬜)
+3. **Load reference docs** — Read docs listed in References field
+4. **Create spec using CLI:**
+   ```
+   $ spectrena new -c {component} "{scope}"
+   ✓ Created specs/{spec-id}/
+   ✓ Created branch spec/{spec-id}
+   ```
+5. **Generate full spec content** — Use backlog scope + reference docs
+6. **Save to spec.md**
+7. **Update backlog status** — Change ⬜ to 🟨
 
 ### Mode 2: Custom Description (Not in Backlog)
 
 ```
-/spectrena.specify "Custom feature" -c PLATFORM
+/spectrena.specify "Brief description" -c COMPONENT
 ```
 
-1. Validate component prefix
-2. If brief (< 20 words), ask 2-3 clarifying questions
-3. Generate spec ID (e.g., `platform-099-custom-feature`)
+1. Validate component (prompt if missing)
+2. **Create spec using CLI:** `spectrena new -c {component} "{description}"`
+3. If description is brief (< 20 words), ask 2-3 clarifying questions
 4. Generate full spec content
-5. Save to `specs/{spec-id}/spec.md`
+5. Save to spec.md
 
-### Mode 3: Fill Existing Spec
+### Mode 3: Without Arguments
 
-```
-/spectrena.specify
-```
+**If in a spec directory (spec.md exists):**
 
-1. Read existing `spec.md` in current directory
-2. Extract description from `## Description`
-3. If brief, ask clarifying questions
+1. Read existing spec.md
+2. Check if spec ID exists in backlog — if so, use backlog context
+3. Extract/enhance description
 4. Generate content for empty sections
-5. Update `spec.md` in place
+5. Update spec.md in place
 
-## Reference Doc Loading
+**If NOT in a spec directory:**
 
-When the backlog specifies references like `ARCH §Project Structure, DOM §Quest`:
+1. Ask: "Do you have a spec ID from the backlog, or creating something new?"
+2. If backlog ID provided → Mode 1
+3. If new → ask clarifying questions, then Mode 2
 
-1. **Map abbreviations to files:**
-   - `REQ` → `altair-requirements-v2.md`
-   - `ARCH` → `altair-technical-architecture.md`
-   - `DOM` → `altair-domain-model.md`
-   - `UF` → `altair-user-flows.md`
-   - `DS` → `altair-design-system.md`
-   - `ADR` → `altair-decision-log.md`
-   - `GLOSS` → `altair-glossary.md`
-
-2. **Extract relevant sections** — If `§Section Name` specified, focus on that section
-
-3. **Use for context** — Reference docs inform the spec content
-
-## Content Generation
-
-Generate these sections based on backlog + references:
-
-| Section             | Source              | Guidelines                        |
-| ------------------- | ------------------- | --------------------------------- |
-| **Title**           | Backlog scope       | Clear, concise name               |
-| **Weight**          | Backlog attribute   | LIGHTWEIGHT / STANDARD / FORMAL   |
-| **Problem**         | Inferred from scope | What pain point? Who affected?    |
-| **Solution**        | Reference docs      | High-level approach               |
-| **Requirements**    | "Covers" bullets    | Numbered list, testable           |
-| **Non-Goals**       | "Does NOT cover"    | Explicit boundaries               |
-| **Dependencies**    | "Depends On"        | Spec IDs that must complete first |
-| **Technical Notes** | Reference docs      | Architecture constraints          |
-| **Open Questions**  | Gaps in backlog     | Decisions still needed            |
+---
 
 ## Clarification Guidelines
 
-**Only ask if backlog entry is incomplete.** The backlog should provide enough context.
+### When Using Backlog (Mode 1)
 
-If clarification needed, ask focused questions:
+**Minimal clarification needed** — the backlog provides context. Only ask if:
 
-```
-I found core-001-project-setup in the backlog. The scope covers monorepo setup, but I have a quick question:
-
-1. The backlog mentions Turborepo - should I also document alternative evaluation, or assume Turborepo is decided?
-
-Or I can proceed assuming Turborepo is final (per ADR in decision log).
-```
-
-**Max 2 clarification rounds** when using backlog. Then generate with stated assumptions.
-
-**Always offer to proceed with defaults** — don't block on answers.
-
-## Examples
-
-### From Backlog (Standard Flow)
+- Backlog entry is unusually brief
+- Technical decision isn't covered by reference docs
+- Ambiguity in scope boundaries
 
 ```
-User: /spectrena.specify guidance-001-quest-crud
+Found core-001-project-setup in backlog. One quick question:
 
-Claude: Found guidance-001-quest-crud in backlog:
-- Scope: Quest entity operations with QBA board columns
-- Weight: STANDARD
-- Depends On: core-002, core-003
-- References: REQ §1.1, DOM §Quest, UF §G-1 §G-2, GLOSS §QBA Board Columns
+The scope mentions "Turborepo build pipeline" but I don't see this in the decision log. Should I:
+1. Document it as the decided choice
+2. Include alternatives evaluation in the spec
 
-Loading reference docs...
-
-Creating specs/guidance-001-quest-crud/spec.md...
-
-[generates full spec with requirements from backlog "Covers" list,
- technical details from DOM and ARCH, UI patterns from UF]
+Or I can proceed assuming Turborepo is decided per project conventions.
 ```
 
-### From Backlog with Dependency Warning
+**Max 2 clarification rounds** for backlog specs. Then proceed with stated assumptions.
+
+### When Not Using Backlog (Mode 2/3)
+
+Ask 2-3 focused questions if description is brief:
+
+| Input              | Questions to Ask                                |
+| ------------------ | ----------------------------------------------- |
+| `"User auth"`      | "OAuth? Username/password? What providers?"     |
+| `"Monorepo setup"` | "What tools? Melos? Nx? What's being shared?"   |
+| `"REST API"`       | "What resources? Auth required? Rate limiting?" |
+| (no input)         | "What feature? What problem? Which component?"  |
+
+**Max 3 clarification rounds.** Then generate with stated assumptions.
+
+**Always offer to proceed with defaults:**
 
 ```
-User: /spectrena.specify guidance-004-focus-mode
-
-Claude: Found guidance-004-focus-mode in backlog.
-
-⚠️ Dependency check:
-- guidance-001-quest-crud: ⬜ Not started
-
-This spec depends on guidance-001. Options:
-1. Proceed anyway (will note dependency in spec)
-2. Start with guidance-001 first
-
-User: Proceed anyway
-
-Claude: Creating specs/guidance-004-focus-mode/spec.md...
-[generates spec with dependency clearly noted]
+I can generate with reasonable defaults if you prefer, or answer these quick questions for a more tailored spec.
 ```
 
-### Custom Spec (Not in Backlog)
+---
 
-```
-User: /spectrena.specify "Email notifications" -c PLATFORM
+## Content Generation
 
-Claude: I don't see "email notifications" in the backlog. I'll create a new spec.
+### From Backlog
 
-Quick questions:
-1. What triggers notifications? (quest due, capture pending, etc.)
-2. Email provider preference? (SendGrid, SES, self-hosted?)
-3. User preferences for notification frequency?
+| Section             | Source                       | Guidelines                      |
+| ------------------- | ---------------------------- | ------------------------------- |
+| **Title**           | Backlog scope line           | Clear, concise name             |
+| **Weight**          | Backlog attribute table      | LIGHTWEIGHT / STANDARD / FORMAL |
+| **Description**     | Scope + "Covers" summary     | 2-3 sentence overview           |
+| **Problem**         | Inferred from scope          | What pain point? Who affected?  |
+| **Solution**        | Reference docs (ARCH)        | High-level approach             |
+| **Requirements**    | "Covers" bullets expanded    | Numbered, testable criteria     |
+| **Non-Goals**       | "Does NOT cover" bullets     | Explicit boundaries             |
+| **Dependencies**    | "Depends On" field           | Spec IDs with status            |
+| **Technical Notes** | Reference docs + code blocks | Architecture constraints        |
+| **Open Questions**  | Gaps in backlog              | Decisions still needed          |
 
-Or I can generate with sensible defaults.
+### From Custom Description
 
-User: Quest due dates and weekly harvest reminder, SES, user configurable
+| Section            | Guidelines                                               |
+| ------------------ | -------------------------------------------------------- |
+| **Description**    | Preserved from input or generated from clarifications    |
+| **Problem**        | What pain point? Who is affected? 2-3 sentences.         |
+| **Solution**       | High-level approach (not implementation). 2-3 sentences. |
+| **Dependencies**   | Other spec IDs that must complete first.                 |
+| **Open Questions** | Unresolved decisions (from clarification gaps).          |
 
-Claude: Creating specs/platform-050-email-notifications/spec.md...
-[generates full spec]
-```
-
-### Fill Existing Spec
-
-```
-User: /spectrena.specify
-
-Claude: Reading specs/core-010-auth-local/spec.md...
-
-Found partial spec with:
-- Title: Local Authentication
-- Weight: STANDARD
-- Empty sections: Requirements, Technical Notes
-
-Checking backlog for core-010-auth-local...
-Found entry with "Covers" list and references.
-
-Filling empty sections from backlog context...
-[updates spec.md in place]
-```
+---
 
 ## Spec Template
-
-When generating, use this structure:
 
 ```markdown
 # {spec-id}: {Title}
@@ -269,11 +242,11 @@ When generating, use this structure:
 **Status**: DRAFT  
 **Weight**: {LIGHTWEIGHT|STANDARD|FORMAL}  
 **Created**: {date}  
-**Author**: {from git config or prompt}
+**Author**: {from git config}
 
 ## Summary
 
-{2-3 sentence overview}
+{2-3 sentence overview from backlog scope + covers}
 
 ## Problem
 
@@ -281,53 +254,202 @@ When generating, use this structure:
 
 ## Solution
 
-{High-level approach, not implementation details}
+{High-level approach from reference docs, not implementation details}
 
 ## Requirements
 
-{Numbered list from backlog "Covers" section, expanded with details}
+{Expanded from backlog "Covers" bullets}
 
 1. **{Requirement name}**
    - {Details}
    - {Acceptance criteria}
 
+2. **{Requirement name}**
+   - {Details}
+   - {Acceptance criteria}
+
 ## Non-Goals
 
-{From backlog "Does NOT cover" section}
+{From backlog "Does NOT cover"}
 
+- {Item explicitly out of scope}
 - {Item explicitly out of scope}
 
 ## Dependencies
 
-{From backlog "Depends On"}
-
-| Spec ID | Status   | Why Needed     |
-| ------- | -------- | -------------- |
-| {id}    | {status} | {brief reason} |
+| Spec ID | Status     | Why Needed     |
+| ------- | ---------- | -------------- |
+| {id}    | {⬜/🟨/🟩} | {brief reason} |
 
 ## Technical Notes
 
-{From reference docs - architecture constraints, patterns to follow}
+{From reference docs - architecture constraints, patterns, decisions}
+
+### {Subsection if needed}
+
+{Details}
 
 ## Open Questions
 
-{Unresolved decisions, gaps identified during generation}
-
-1. {Question}
-2. {Question}
+1. {Unresolved decision}
+2. {Gap identified during generation}
 
 ## References
 
-{Links to reference docs used}
-
-- [{Doc name}](./path) — §{Section}
+- [Technical Architecture](../docs/altair-technical-architecture.md) — §{Section}
+- [Domain Model](../docs/altair-domain-model.md) — §{Section}
 ```
+
+---
+
+## Examples
+
+### Example 1: From Backlog (Standard Flow)
+
+```
+User: /spectrena.specify guidance-001-quest-crud
+
+Claude: Found guidance-001-quest-crud in backlog:
+
+  Scope: Quest entity operations with QBA board columns
+  Weight: STANDARD
+  Depends On: core-002, core-003
+  References: REQ §1.1, DOM §Quest, UF §G-1 §G-2, GLOSS §QBA Board Columns
+
+Checking dependencies...
+  ⚠️ core-002-schema-migrations: ⬜ Not started
+  ⚠️ core-003-backend-skeleton: ⬜ Not started
+
+Dependencies incomplete. Options:
+1. Proceed anyway (dependency noted in spec)
+2. Start with core-002 first
+
+User: Proceed anyway
+
+Claude: Loading reference docs...
+Creating spec...
+
+$ spectrena new -c guidance "Quest entity operations with QBA board columns"
+✓ Created specs/guidance-001-quest-crud/
+✓ Created branch spec/guidance-001-quest-crud
+
+[generates full spec with requirements from "Covers" list,
+ technical details from DOM and ARCH, UI patterns from UF]
+
+✓ Spec ready: specs/guidance-001-quest-crud/spec.md
+  Branch: spec/guidance-001-quest-crud
+
+Updating backlog status: ⬜ → 🟨
+```
+
+### Example 2: From Backlog (No Issues)
+
+```
+User: /spectrena.specify core-001-project-setup
+
+Claude: Found core-001-project-setup in backlog:
+
+  Scope: Monorepo structure, build system, tooling
+  Weight: STANDARD
+  Depends On: (none)
+  References: ARCH §Project Structure
+
+No dependencies - ready to create.
+
+$ spectrena new -c core "Monorepo structure, build system, tooling"
+✓ Created specs/core-001-project-setup/
+✓ Created branch spec/core-001-project-setup
+
+[generates full spec]
+
+✓ Spec ready: specs/core-001-project-setup/spec.md
+  Branch: spec/core-001-project-setup
+
+Updating backlog status: ⬜ → 🟨
+```
+
+### Example 3: Custom Spec (Not in Backlog)
+
+```
+User: /spectrena.specify "Email notifications" -c platform
+
+Claude: I don't see "email notifications" in the backlog. Creating custom spec.
+
+Quick questions:
+1. What triggers notifications? (quest due, capture pending, etc.)
+2. Email provider? (SES, SendGrid, self-hosted?)
+3. User preferences for frequency?
+
+Or I can generate with sensible defaults.
+
+User: Quest due dates and weekly harvest reminder, SES, user configurable
+
+Claude: Creating spec...
+
+$ spectrena new -c platform "Email notifications for quest reminders"
+✓ Created specs/platform-050-email-notifications/
+✓ Created branch spec/platform-050-email-notifications
+
+[generates full spec]
+
+✓ Spec ready: specs/platform-050-email-notifications/spec.md
+  Branch: spec/platform-050-email-notifications
+```
+
+### Example 4: Fill Existing Spec
+
+```
+User: /spectrena.specify
+
+Claude: Reading specs/core-010-auth-local/spec.md...
+
+Found partial spec. Checking backlog for core-010-auth-local...
+✓ Found in backlog with "Covers" list and references.
+
+Current spec has empty sections:
+- Requirements (will fill from backlog "Covers")
+- Technical Notes (will fill from ARCH references)
+
+Filling empty sections...
+
+✓ Updated: specs/core-010-auth-local/spec.md
+```
+
+### Example 5: Interactive (No Context)
+
+```
+User: /spectrena.specify
+
+Claude: No spec found in current directory.
+
+Do you have a spec ID from the backlog (e.g., core-001-project-setup)?
+Or are you creating something new?
+
+User: knowledge-003-wiki-links
+
+Claude: Found knowledge-003-wiki-links in backlog:
+
+  Scope: Bidirectional wiki-style linking
+  Weight: STANDARD
+  ...
+
+[proceeds with Mode 1 flow]
+```
+
+---
 
 ## Updating Backlog Status
 
-After creating a spec, update the backlog:
+After creating a spec:
 
-1. Change status from `⬜` to `🟨` (in progress)
-2. Add "Spec created: {date}" note if desired
+1. **Find the spec entry** in `docs/altair-spec-backlog.md`
+2. **Update status** in the attribute table:
+   - `⬜` → `🟨` (in progress)
+3. **Optionally add note**: `<!-- Spec created: YYYY-MM-DD -->`
 
-When spec is approved, status changes to `🟩`.
+Status progression:
+
+- `⬜` Not started
+- `🟨` In progress (spec being written)
+- `🟩` Complete (spec approved, ready for implementation)
+- `🚫` Blocked
