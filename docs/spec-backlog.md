@@ -1,11 +1,12 @@
 # Altair Spec Backlog
 
-**Version**: 2.0  
+**Version**: 2.1  
 **Status**: APPROVED  
 **Created**: 2025-11-29  
 **Author**: Robert Hamilton
 
-> **Ordered specifications with scope and references** — What to spec, what each covers, which docs to consult
+> **Ordered specifications with scope and references** — What to spec, what
+> each covers, which docs to consult
 
 ---
 
@@ -13,34 +14,34 @@
 
 ### Component Prefixes
 
-| Prefix | Scope |
-|--------|-------|
-| `core-` | Infrastructure all apps depend on |
-| `guidance-` | Quest/campaign management (Guidance app) |
-| `knowledge-` | Notes/PKM (Knowledge app) |
-| `tracking-` | Items/inventory (Tracking app) |
-| `platform-` | Cross-app features |
+| Prefix       | Scope                                    |
+| ------------ | ---------------------------------------- |
+| `core-`      | Infrastructure all apps depend on        |
+| `guidance-`  | Quest/campaign management (Guidance app) |
+| `knowledge-` | Notes/PKM (Knowledge app)                |
+| `tracking-`  | Items/inventory (Tracking app)           |
+| `platform-`  | Cross-app features                       |
 
 ### Status Legend
 
-| Status | Meaning |
-|--------|---------|
-| ⬜ | Not started |
-| 🟨 | In progress |
-| 🟩 | Complete |
-| 🚫 | Blocked |
+| Status | Meaning     |
+| ------ | ----------- |
+| ⬜     | Not started |
+| 🟨     | In progress |
+| 🟩     | Complete    |
+| 🚫     | Blocked     |
 
 ### Reference Documents
 
-| Abbrev | Document | Purpose |
-|--------|----------|---------|
-| **REQ** | `altair-requirements-v2.md` | Full requirements |
-| **ARCH** | `altair-technical-architecture.md` | Technical design |
-| **DOM** | `altair-domain-model.md` | Entities & relationships |
-| **UF** | `altair-user-flows.md` | User interactions |
-| **GLOSS** | `altair-glossary.md` | Terminology |
-| **DS** | `altair-design-system.md` | UI/UX guidelines |
-| **ADR** | `altair-decision-log.md` | Design decisions |
+| Abbrev    | Document                    | Purpose                  |
+| --------- | --------------------------- | ------------------------ |
+| **REQ**   | `requirements.md`           | Full requirements        |
+| **ARCH**  | `technical-architecture.md` | Technical design         |
+| **DOM**   | `domain-model.md`           | Entities & relationships |
+| **UF**    | `user-flows.md`             | User interactions        |
+| **GLOSS** | `glossary.md`               | Terminology              |
+| **DS**    | `design-system.md`          | UI/UX guidelines         |
+| **ADR**   | `decision-log.md`           | Design decisions         |
 
 ---
 
@@ -52,13 +53,14 @@
 
 **Scope:** Monorepo structure, build system, tooling
 
-| Attribute | Value |
-|-----------|-------|
-| **Weight** | STANDARD |
-| **Status** | ⬜ |
+| Attribute      | Value                   |
+| -------------- | ----------------------- |
+| **Weight**     | STANDARD                |
+| **Status**     | ⬜                      |
 | **References** | ARCH §Project Structure |
 
 **Covers:**
+
 - pnpm workspace configuration
 - Turborepo build pipeline
 - App scaffolding (guidance, knowledge, tracking, mobile)
@@ -67,6 +69,7 @@
 - Git hooks (husky, lint-staged)
 
 **Does NOT cover:**
+
 - Actual app implementation
 - Database schema
 - UI components
@@ -77,14 +80,15 @@
 
 **Scope:** SurrealDB schema definition and migration system
 
-| Attribute | Value |
-|-----------|-------|
-| **Weight** | STANDARD |
-| **Status** | ⬜ |
-| **Depends On** | core-001 |
+| Attribute      | Value                                       |
+| -------------- | ------------------------------------------- |
+| **Weight**     | STANDARD                                    |
+| **Status**     | ⬜                                          |
+| **Depends On** | core-001                                    |
 | **References** | DOM (all entities), ARCH §Database, ADR-001 |
 
 **Covers:**
+
 - All table definitions (SCHEMAFULL)
 - Field constraints and assertions
 - Graph edge tables
@@ -94,6 +98,7 @@
 - Initial seed data (if any)
 
 **Tables to define:**
+
 ```
 Quest domain: campaign, quest, focus_session, energy_checkin
 Knowledge domain: note, folder, daily_note
@@ -110,14 +115,15 @@ Edges: contains, references, links_to, requires, stored_in, documents, reserved_
 
 **Scope:** Tauri backend service foundation
 
-| Attribute | Value |
-|-----------|-------|
-| **Weight** | STANDARD |
-| **Status** | ⬜ |
-| **Depends On** | core-001 |
+| Attribute      | Value                                          |
+| -------------- | ---------------------------------------------- |
+| **Weight**     | STANDARD                                       |
+| **Status**     | ⬜                                             |
+| **Depends On** | core-001                                       |
 | **References** | ARCH §Communication Patterns, ADR-003, ADR-008 |
 
 **Covers:**
+
 - Tauri 2.0 project setup
 - Embedded SurrealDB initialization
 - Tauri command registration pattern
@@ -128,6 +134,7 @@ Edges: contains, references, links_to, requires, stored_in, documents, reserved_
 - Configuration loading
 
 **Does NOT cover:**
+
 - Specific domain commands (quest CRUD, etc.)
 - Sync, auth, embeddings
 
@@ -137,14 +144,15 @@ Edges: contains, references, links_to, requires, stored_in, documents, reserved_
 
 **Scope:** Type-safe Rust ↔ TypeScript boundary
 
-| Attribute | Value |
-|-----------|-------|
-| **Weight** | LIGHTWEIGHT |
-| **Status** | ⬜ |
-| **Depends On** | core-003 |
+| Attribute      | Value             |
+| -------------- | ----------------- |
+| **Weight**     | LIGHTWEIGHT       |
+| **Status**     | ⬜                |
+| **Depends On** | core-003          |
 | **References** | ARCH §Type Safety |
 
 **Covers:**
+
 - tauri-specta integration
 - Type generation pipeline
 - packages/bindings output
@@ -161,14 +169,15 @@ Edges: contains, references, links_to, requires, stored_in, documents, reserved_
 
 **Scope:** Local authentication and user management
 
-| Attribute | Value |
-|-----------|-------|
-| **Weight** | STANDARD |
-| **Status** | ⬜ |
-| **Depends On** | core-002, core-003 |
+| Attribute      | Value                 |
+| -------------- | --------------------- |
+| **Weight**     | STANDARD              |
+| **Status**     | ⬜                    |
+| **Depends On** | core-002, core-003    |
 | **References** | ARCH §Auth, DOM §User |
 
 **Covers:**
+
 - Local user creation (single-user default)
 - Password hashing (Argon2)
 - Session management
@@ -176,6 +185,7 @@ Edges: contains, references, links_to, requires, stored_in, documents, reserved_
 - Auth plugin trait definition
 
 **Does NOT cover:**
+
 - OAuth (future: core-040)
 - Multi-user/sharing
 
@@ -185,14 +195,15 @@ Edges: contains, references, links_to, requires, stored_in, documents, reserved_
 
 **Scope:** S3-compatible object storage
 
-| Attribute | Value |
-|-----------|-------|
-| **Weight** | STANDARD |
-| **Status** | ⬜ |
-| **Depends On** | core-003 |
+| Attribute      | Value                         |
+| -------------- | ----------------------------- |
+| **Weight**     | STANDARD                      |
+| **Status**     | ⬜                            |
+| **Depends On** | core-003                      |
 | **References** | ARCH §Object Storage, ADR-004 |
 
 **Covers:**
+
 - Minio local setup
 - aws-sdk-s3 integration
 - Presigned URL generation
@@ -207,14 +218,15 @@ Edges: contains, references, links_to, requires, stored_in, documents, reserved_
 
 **Scope:** Local ONNX embeddings for semantic search
 
-| Attribute | Value |
-|-----------|-------|
-| **Weight** | STANDARD |
-| **Status** | ⬜ |
-| **Depends On** | core-003 |
+| Attribute      | Value                     |
+| -------------- | ------------------------- |
+| **Weight**     | STANDARD                  |
+| **Status**     | ⬜                        |
+| **Depends On** | core-003                  |
 | **References** | ARCH §Embeddings, ADR-005 |
 
 **Covers:**
+
 - ONNX runtime integration
 - all-MiniLM-L6-v2 model loading
 - Embedding generation API
@@ -228,14 +240,15 @@ Edges: contains, references, links_to, requires, stored_in, documents, reserved_
 
 **Scope:** Change feed synchronization
 
-| Attribute | Value |
-|-----------|-------|
-| **Weight** | FORMAL |
-| **Status** | ⬜ |
-| **Depends On** | core-002, core-003 |
+| Attribute      | Value               |
+| -------------- | ------------------- |
+| **Weight**     | FORMAL              |
+| **Status**     | ⬜                  |
+| **Depends On** | core-002, core-003  |
 | **References** | ARCH §Sync, ADR-007 |
 
 **Covers:**
+
 - Change feed polling
 - LWW conflict resolution
 - Offline queue management
@@ -253,14 +266,15 @@ Edges: contains, references, links_to, requires, stored_in, documents, reserved_
 
 **Scope:** Quest entity operations with QBA board columns
 
-| Attribute | Value |
-|-----------|-------|
-| **Weight** | STANDARD |
-| **Status** | ⬜ |
-| **Depends On** | core-002, core-003 |
+| Attribute      | Value                                                        |
+| -------------- | ------------------------------------------------------------ |
+| **Weight**     | STANDARD                                                     |
+| **Status**     | ⬜                                                           |
+| **Depends On** | core-002, core-003                                           |
 | **References** | REQ §1.1, DOM §Quest, UF §G-1 §G-2, GLOSS §QBA Board Columns |
 
 **Covers:**
+
 - Quest create/read/update/archive
 - 6-column state machine (idea_greenhouse → harvested)
 - Energy level (5-point: tiny → huge)
@@ -272,6 +286,7 @@ Edges: contains, references, links_to, requires, stored_in, documents, reserved_
 - Due dates (soft guidance)
 
 **UI Components:**
+
 - QBA Board (6-column Kanban)
 - Quest Card
 - Quick Add Quest modal
@@ -283,14 +298,15 @@ Edges: contains, references, links_to, requires, stored_in, documents, reserved_
 
 **Scope:** Campaign management
 
-| Attribute | Value |
-|-----------|-------|
-| **Weight** | STANDARD |
-| **Status** | ⬜ |
-| **Depends On** | guidance-001 |
+| Attribute      | Value                  |
+| -------------- | ---------------------- |
+| **Weight**     | STANDARD               |
+| **Status**     | ⬜                     |
+| **Depends On** | guidance-001           |
 | **References** | DOM §Campaign, UF §G-4 |
 
 **Covers:**
+
 - Campaign create/read/update/archive
 - Quest assignment to campaigns
 - Campaign filtering on board
@@ -303,14 +319,15 @@ Edges: contains, references, links_to, requires, stored_in, documents, reserved_
 
 **Scope:** Daily energy self-assessment
 
-| Attribute | Value |
-|-----------|-------|
-| **Weight** | STANDARD |
-| **Status** | ⬜ |
-| **Depends On** | guidance-001, core-010 |
+| Attribute      | Value                                                    |
+| -------------- | -------------------------------------------------------- |
+| **Weight**     | STANDARD                                                 |
+| **Status**     | ⬜                                                       |
+| **Depends On** | guidance-001, core-010                                   |
 | **References** | REQ §1.3, DOM §EnergyCheckIn, UF §G-3, DS §Tangible Time |
 
 **Covers:**
+
 - Energy check-in entity
 - 5-level selection UI
 - Optional notes field
@@ -325,14 +342,15 @@ Edges: contains, references, links_to, requires, stored_in, documents, reserved_
 
 **Scope:** Zen Mode distraction-free interface
 
-| Attribute | Value |
-|-----------|-------|
-| **Weight** | FORMAL |
-| **Status** | ⬜ |
-| **Depends On** | guidance-001 |
+| Attribute      | Value                                                |
+| -------------- | ---------------------------------------------------- |
+| **Weight**     | FORMAL                                               |
+| **Status**     | ⬜                                                   |
+| **Depends On** | guidance-001                                         |
 | **References** | REQ §1.2, DOM §FocusSession, UF §G-4, DS §Focus Mode |
 
 **Covers:**
+
 - Full-screen focus view
 - Visual timer (progress bar, not just numbers)
 - Pomodoro timer integration (configurable cycles)
@@ -345,6 +363,7 @@ Edges: contains, references, links_to, requires, stored_in, documents, reserved_
 - XP award on completion (15 XP)
 
 **UI Elements:**
+
 - Level indicator
 - Energy indicator
 - Large completion button
@@ -356,14 +375,15 @@ Edges: contains, references, links_to, requires, stored_in, documents, reserved_
 
 **Scope:** Quest completion flow with celebration
 
-| Attribute | Value |
-|-----------|-------|
-| **Weight** | LIGHTWEIGHT |
-| **Status** | ⬜ |
+| Attribute      | Value                                   |
+| -------------- | --------------------------------------- |
+| **Weight**     | LIGHTWEIGHT                             |
+| **Status**     | ⬜                                      |
 | **Depends On** | guidance-001, platform-010-gamification |
-| **References** | UF §G-5, DOM §Gamification |
+| **References** | UF §G-5, DOM §Gamification              |
 
 **Covers:**
+
 - Completion modal
 - XP award display
 - Optional notes/reflection
@@ -378,14 +398,15 @@ Edges: contains, references, links_to, requires, stored_in, documents, reserved_
 
 **Scope:** Weekly reflection and planning ritual
 
-| Attribute | Value |
-|-----------|-------|
-| **Weight** | STANDARD |
-| **Status** | ⬜ |
+| Attribute      | Value                                   |
+| -------------- | --------------------------------------- |
+| **Weight**     | STANDARD                                |
+| **Status**     | ⬜                                      |
 | **Depends On** | guidance-001, platform-010-gamification |
-| **References** | REQ §1.4, UF §G-6 |
+| **References** | REQ §1.4, UF §G-6                       |
 
 **Covers:**
+
 - Weekly summary view
 - Quest completion stats
 - XP earned display
@@ -403,14 +424,15 @@ Edges: contains, references, links_to, requires, stored_in, documents, reserved_
 
 **Scope:** Quest relationship graph (blocks/blocked by)
 
-| Attribute | Value |
-|-----------|-------|
-| **Weight** | STANDARD |
-| **Status** | ⬜ |
-| **Depends On** | guidance-001 |
+| Attribute      | Value                                       |
+| -------------- | ------------------------------------------- |
+| **Weight**     | STANDARD                                    |
+| **Status**     | ⬜                                          |
+| **Depends On** | guidance-001                                |
 | **References** | REQ §1.6, DOM §blocks relationship, UF §G-7 |
 
 **Covers:**
+
 - Dependency edge (blocks)
 - DAG visualization
 - Layout options (tree, Gantt, force-directed)
@@ -428,14 +450,15 @@ Edges: contains, references, links_to, requires, stored_in, documents, reserved_
 
 **Scope:** Note entity operations with markdown editor
 
-| Attribute | Value |
-|-----------|-------|
-| **Weight** | STANDARD |
-| **Status** | ⬜ |
-| **Depends On** | core-002, core-003 |
+| Attribute      | Value                        |
+| -------------- | ---------------------------- |
+| **Weight**     | STANDARD                     |
+| **Status**     | ⬜                           |
+| **Depends On** | core-002, core-003           |
 | **References** | REQ §2.1, DOM §Note, UF §K-1 |
 
 **Covers:**
+
 - Note create/read/update/archive
 - Markdown editor (live preview)
 - Split view (edit/preview)
@@ -453,14 +476,15 @@ Edges: contains, references, links_to, requires, stored_in, documents, reserved_
 
 **Scope:** Auto-created daily note as entry point
 
-| Attribute | Value |
-|-----------|-------|
-| **Weight** | LIGHTWEIGHT |
-| **Status** | ⬜ |
-| **Depends On** | knowledge-001 |
+| Attribute      | Value                             |
+| -------------- | --------------------------------- |
+| **Weight**     | LIGHTWEIGHT                       |
+| **Status**     | ⬜                                |
+| **Depends On** | knowledge-001                     |
 | **References** | REQ §2.1, DOM §DailyNote, UF §K-1 |
 
 **Covers:**
+
 - DailyNote entity
 - Auto-creation on app open
 - Date-based title format
@@ -473,14 +497,15 @@ Edges: contains, references, links_to, requires, stored_in, documents, reserved_
 
 **Scope:** Bidirectional wiki-style linking
 
-| Attribute | Value |
-|-----------|-------|
-| **Weight** | STANDARD |
-| **Status** | ⬜ |
-| **Depends On** | knowledge-001 |
+| Attribute      | Value                            |
+| -------------- | -------------------------------- |
+| **Weight**     | STANDARD                         |
+| **Status**     | ⬜                               |
+| **Depends On** | knowledge-001                    |
 | **References** | REQ §2.3, DOM §links_to, UF §K-2 |
 
 **Covers:**
+
 - `[[Note Title]]` syntax
 - Autocomplete popup
 - Create new note from link
@@ -496,14 +521,15 @@ Edges: contains, references, links_to, requires, stored_in, documents, reserved_
 
 **Scope:** Optional hierarchical organization
 
-| Attribute | Value |
-|-----------|-------|
-| **Weight** | LIGHTWEIGHT |
-| **Status** | ⬜ |
-| **Depends On** | knowledge-001 |
+| Attribute      | Value                |
+| -------------- | -------------------- |
+| **Weight**     | LIGHTWEIGHT          |
+| **Status**     | ⬜                   |
+| **Depends On** | knowledge-001        |
 | **References** | DOM §Folder, UF §K-4 |
 
 **Covers:**
+
 - Folder create/rename/delete
 - Nested folders
 - Move notes to folder
@@ -517,14 +543,15 @@ Edges: contains, references, links_to, requires, stored_in, documents, reserved_
 
 **Scope:** Hybrid search (keyword + semantic)
 
-| Attribute | Value |
-|-----------|-------|
-| **Weight** | STANDARD |
-| **Status** | ⬜ |
-| **Depends On** | knowledge-001, core-012 |
+| Attribute      | Value                                 |
+| -------------- | ------------------------------------- |
+| **Weight**     | STANDARD                              |
+| **Status**     | ⬜                                    |
+| **Depends On** | knowledge-001, core-012               |
 | **References** | REQ §2.5, DOM §Hybrid Search, UF §K-4 |
 
 **Covers:**
+
 - BM25 keyword search
 - Vector semantic search
 - Hybrid mode (RRF fusion)
@@ -539,14 +566,15 @@ Edges: contains, references, links_to, requires, stored_in, documents, reserved_
 
 **Scope:** Graph visualization of relationships
 
-| Attribute | Value |
-|-----------|-------|
-| **Weight** | STANDARD |
-| **Status** | ⬜ |
-| **Depends On** | knowledge-003 |
+| Attribute      | Value             |
+| -------------- | ----------------- |
+| **Weight**     | STANDARD          |
+| **Status**     | ⬜                |
+| **Depends On** | knowledge-003     |
 | **References** | REQ §2.2, UF §K-3 |
 
 **Covers:**
+
 - Interactive node-based visualization
 - Local graph (current note connections)
 - Global graph (all notes)
@@ -563,14 +591,15 @@ Edges: contains, references, links_to, requires, stored_in, documents, reserved_
 
 **Scope:** Automatic relationship suggestions
 
-| Attribute | Value |
-|-----------|-------|
-| **Weight** | STANDARD |
-| **Status** | ⬜ |
+| Attribute      | Value                   |
+| -------------- | ----------------------- |
+| **Weight**     | STANDARD                |
+| **Status**     | ⬜                      |
 | **Depends On** | knowledge-001, core-012 |
-| **References** | REQ §2.6 |
+| **References** | REQ §2.6                |
 
 **Covers:**
+
 - Semantic similarity detection (cosine > 0.7)
 - Fuzzy title matching
 - Smart aliasing ("RPi" ≈ "Raspberry Pi")
@@ -588,14 +617,15 @@ Edges: contains, references, links_to, requires, stored_in, documents, reserved_
 
 **Scope:** Item entity operations
 
-| Attribute | Value |
-|-----------|-------|
-| **Weight** | STANDARD |
-| **Status** | ⬜ |
-| **Depends On** | core-002, core-003 |
+| Attribute      | Value                        |
+| -------------- | ---------------------------- |
+| **Weight**     | STANDARD                     |
+| **Status**     | ⬜                           |
+| **Depends On** | core-002, core-003           |
 | **References** | REQ §3.1, DOM §Item, UF §T-1 |
 
 **Covers:**
+
 - Item create/read/update/archive
 - Name, quantity, category
 - Status (available, reserved, in_use, depleted)
@@ -612,14 +642,15 @@ Edges: contains, references, links_to, requires, stored_in, documents, reserved_
 
 **Scope:** Hierarchical location management
 
-| Attribute | Value |
-|-----------|-------|
-| **Weight** | STANDARD |
-| **Status** | ⬜ |
-| **Depends On** | core-002 |
+| Attribute      | Value                  |
+| -------------- | ---------------------- |
+| **Weight**     | STANDARD               |
+| **Status**     | ⬜                     |
+| **Depends On** | core-002               |
 | **References** | DOM §Location, UF §T-4 |
 
 **Covers:**
+
 - Location create/rename/delete
 - Nested locations (tree)
 - Location picker UI
@@ -633,14 +664,15 @@ Edges: contains, references, links_to, requires, stored_in, documents, reserved_
 
 **Scope:** Quantity tracking and adjustments
 
-| Attribute | Value |
-|-----------|-------|
-| **Weight** | LIGHTWEIGHT |
-| **Status** | ⬜ |
+| Attribute      | Value        |
+| -------------- | ------------ |
+| **Weight**     | LIGHTWEIGHT  |
+| **Status**     | ⬜           |
 | **Depends On** | tracking-001 |
-| **References** | UF §T-2 |
+| **References** | UF §T-2      |
 
 **Covers:**
+
 - Quantity adjustment UI
 - Adjustment history
 - Quick adjust buttons (+1, -1, +5, -5)
@@ -653,14 +685,15 @@ Edges: contains, references, links_to, requires, stored_in, documents, reserved_
 
 **Scope:** Item reservation for quests
 
-| Attribute | Value |
-|-----------|-------|
-| **Weight** | STANDARD |
-| **Status** | ⬜ |
-| **Depends On** | tracking-001, guidance-001 |
+| Attribute      | Value                               |
+| -------------- | ----------------------------------- |
+| **Weight**     | STANDARD                            |
+| **Status**     | ⬜                                  |
+| **Depends On** | tracking-001, guidance-001          |
 | **References** | REQ §3.2, DOM §Reservation, UF §T-2 |
 
 **Covers:**
+
 - Reservation entity (item, quest, quantity, status)
 - Reserve from Quest (requires relationship)
 - Reserve from Item
@@ -675,14 +708,15 @@ Edges: contains, references, links_to, requires, stored_in, documents, reserved_
 
 **Scope:** Auto-detect item mentions (Bill of Materials)
 
-| Attribute | Value |
-|-----------|-------|
-| **Weight** | STANDARD |
-| **Status** | ⬜ |
+| Attribute      | Value                       |
+| -------------- | --------------------------- |
+| **Weight**     | STANDARD                    |
+| **Status**     | ⬜                          |
 | **Depends On** | tracking-001, knowledge-001 |
-| **References** | REQ §3.2, UF §T-3 |
+| **References** | REQ §3.2, UF §T-3           |
 
 **Covers:**
+
 - Real-time text analysis
 - Quantity pattern matching (2x, x2, two)
 - Fuzzy item name matching
@@ -697,14 +731,15 @@ Edges: contains, references, links_to, requires, stored_in, documents, reserved_
 
 **Scope:** Maintenance schedules and reminders
 
-| Attribute | Value |
-|-----------|-------|
-| **Weight** | STANDARD |
-| **Status** | ⬜ |
-| **Depends On** | tracking-001 |
+| Attribute      | Value                                                 |
+| -------------- | ----------------------------------------------------- |
+| **Weight**     | STANDARD                                              |
+| **Status**     | ⬜                                                    |
+| **Depends On** | tracking-001                                          |
 | **References** | REQ §3.2 (implied), DOM §MaintenanceSchedule, UF §T-4 |
 
 **Covers:**
+
 - MaintenanceSchedule entity
 - Interval configuration (days, weeks, months)
 - Due date calculation
@@ -720,14 +755,15 @@ Edges: contains, references, links_to, requires, stored_in, documents, reserved_
 
 **Scope:** Item search with filters
 
-| Attribute | Value |
-|-----------|-------|
-| **Weight** | LIGHTWEIGHT |
-| **Status** | ⬜ |
+| Attribute      | Value        |
+| -------------- | ------------ |
+| **Weight**     | LIGHTWEIGHT  |
+| **Status**     | ⬜           |
 | **Depends On** | tracking-001 |
-| **References** | UF §T-5 |
+| **References** | UF §T-5      |
 
 **Covers:**
+
 - Full-text item search
 - Category filter
 - Location filter
@@ -744,14 +780,15 @@ Edges: contains, references, links_to, requires, stored_in, documents, reserved_
 
 **Scope:** Multi-modal capture with deferred classification
 
-| Attribute | Value |
-|-----------|-------|
-| **Weight** | FORMAL |
-| **Status** | ⬜ |
-| **Depends On** | guidance-001 OR knowledge-001 OR tracking-001 |
+| Attribute      | Value                                                            |
+| -------------- | ---------------------------------------------------------------- |
+| **Weight**     | FORMAL                                                           |
+| **Status**     | ⬜                                                               |
+| **Depends On** | guidance-001 OR knowledge-001 OR tracking-001                    |
 | **References** | REQ §2.4, DOM §Capture, UF §QC-1 §QC-2, DS §Frictionless Capture |
 
 **Covers:**
+
 - Capture modes: text, voice, photo, video
 - Video recording (2 min max, compression)
 - Voice transcription (AI)
@@ -771,14 +808,15 @@ Edges: contains, references, links_to, requires, stored_in, documents, reserved_
 
 **Scope:** Cross-app unified search
 
-| Attribute | Value |
-|-----------|-------|
-| **Weight** | STANDARD |
-| **Status** | ⬜ |
+| Attribute      | Value                                     |
+| -------------- | ----------------------------------------- |
+| **Weight**     | STANDARD                                  |
+| **Status**     | ⬜                                        |
 | **Depends On** | guidance-001, knowledge-001, tracking-001 |
-| **References** | DOM §Search, UF §X-1 |
+| **References** | DOM §Search, UF §X-1                      |
 
 **Covers:**
+
 - Omnibar UI
 - Global hotkey (Cmd+Space)
 - Results grouped by domain
@@ -793,14 +831,15 @@ Edges: contains, references, links_to, requires, stored_in, documents, reserved_
 
 **Scope:** Quest ↔ Note ↔ Item references
 
-| Attribute | Value |
-|-----------|-------|
-| **Weight** | STANDARD |
-| **Status** | ⬜ |
+| Attribute      | Value                                     |
+| -------------- | ----------------------------------------- |
+| **Weight**     | STANDARD                                  |
+| **Status**     | ⬜                                        |
 | **Depends On** | guidance-001, knowledge-001, tracking-001 |
-| **References** | DOM §Cross-Domain Relationships, UF §X-2 |
+| **References** | DOM §Cross-Domain Relationships, UF §X-2  |
 
 **Covers:**
+
 - Link Note from Quest (references)
 - Link Item from Quest (requires)
 - Link Item from Note (documents)
@@ -815,14 +854,15 @@ Edges: contains, references, links_to, requires, stored_in, documents, reserved_
 
 **Scope:** XP, levels, achievements, streaks
 
-| Attribute | Value |
-|-----------|-------|
-| **Weight** | STANDARD |
-| **Status** | ⬜ |
-| **Depends On** | core-010 |
+| Attribute      | Value                                                     |
+| -------------- | --------------------------------------------------------- |
+| **Weight**     | STANDARD                                                  |
+| **Status**     | ⬜                                                        |
+| **Depends On** | core-010                                                  |
 | **References** | REQ §1.5, DOM §Gamification, UF §X-2, GLOSS §Gamification |
 
 **Covers:**
+
 - UserProgress entity (xp_total, level)
 - XP award system
 - Level calculation
@@ -845,14 +885,15 @@ Edges: contains, references, links_to, requires, stored_in, documents, reserved_
 
 **Scope:** Offline operation handling
 
-| Attribute | Value |
-|-----------|-------|
-| **Weight** | STANDARD |
-| **Status** | ⬜ |
-| **Depends On** | core-013 |
+| Attribute      | Value      |
+| -------------- | ---------- |
+| **Weight**     | STANDARD   |
+| **Status**     | ⬜         |
+| **Depends On** | core-013   |
 | **References** | ARCH §Sync |
 
 **Covers:**
+
 - Operation queue for offline changes
 - Queue persistence
 - Retry with backoff
@@ -865,14 +906,15 @@ Edges: contains, references, links_to, requires, stored_in, documents, reserved_
 
 **Scope:** LWW conflict handling
 
-| Attribute | Value |
-|-----------|-------|
-| **Weight** | STANDARD |
-| **Status** | ⬜ |
+| Attribute      | Value    |
+| -------------- | -------- |
+| **Weight**     | STANDARD |
+| **Status**     | ⬜       |
 | **Depends On** | core-013 |
-| **References** | ADR-007 |
+| **References** | ADR-007  |
 
 **Covers:**
+
 - LWW implementation
 - Timestamp comparison
 - Conflict logging
@@ -884,14 +926,15 @@ Edges: contains, references, links_to, requires, stored_in, documents, reserved_
 
 **Scope:** Cloud backend deployment
 
-| Attribute | Value |
-|-----------|-------|
-| **Weight** | FORMAL |
-| **Status** | ⬜ |
-| **Depends On** | core-013, core-020 |
+| Attribute      | Value                        |
+| -------------- | ---------------------------- |
+| **Weight**     | FORMAL                       |
+| **Status**     | ⬜                           |
+| **Depends On** | core-013, core-020           |
 | **References** | ARCH §Mobile↔Cloud, REQ §5.5 |
 
 **Covers:**
+
 - Cloud SurrealDB setup
 - REST API for mobile
 - WebSocket sync channel
@@ -909,14 +952,15 @@ Edges: contains, references, links_to, requires, stored_in, documents, reserved_
 
 **Scope:** Tauri Android application
 
-| Attribute | Value |
-|-----------|-------|
-| **Weight** | FORMAL |
-| **Status** | ⬜ |
-| **Depends On** | core-022 |
+| Attribute      | Value                |
+| -------------- | -------------------- |
+| **Weight**     | FORMAL               |
+| **Status**     | ⬜                   |
+| **Depends On** | core-022             |
 | **References** | REQ §5, ARCH §Mobile |
 
 **Covers:**
+
 - Tauri Android project
 - Shared UI components
 - Touch-optimized layouts
@@ -930,14 +974,15 @@ Edges: contains, references, links_to, requires, stored_in, documents, reserved_
 
 **Scope:** Mobile-optimized capture
 
-| Attribute | Value |
-|-----------|-------|
-| **Weight** | STANDARD |
-| **Status** | ⬜ |
+| Attribute      | Value                  |
+| -------------- | ---------------------- |
+| **Weight**     | STANDARD               |
+| **Status**     | ⬜                     |
 | **Depends On** | core-030, platform-001 |
-| **References** | REQ §5.4 |
+| **References** | REQ §5.4               |
 
 **Covers:**
+
 - Quick capture widget
 - Batch photo mode
 - Voice capture
@@ -954,14 +999,15 @@ Edges: contains, references, links_to, requires, stored_in, documents, reserved_
 
 **Scope:** Cross-app tagging system
 
-| Attribute | Value |
-|-----------|-------|
-| **Weight** | STANDARD |
-| **Status** | ⬜ |
+| Attribute      | Value                                     |
+| -------------- | ----------------------------------------- |
+| **Weight**     | STANDARD                                  |
+| **Status**     | ⬜                                        |
 | **Depends On** | guidance-001, knowledge-001, tracking-001 |
-| **References** | DOM §Tags, ADR-012 |
+| **References** | DOM §Tags, ADR-012                        |
 
 **Covers:**
+
 - Tag entity
 - Tag CRUD
 - Namespaced tags
@@ -975,14 +1021,15 @@ Edges: contains, references, links_to, requires, stored_in, documents, reserved_
 
 **Scope:** Note templates
 
-| Attribute | Value |
-|-----------|-------|
-| **Weight** | LIGHTWEIGHT |
-| **Status** | ⬜ |
+| Attribute      | Value         |
+| -------------- | ------------- |
+| **Weight**     | LIGHTWEIGHT   |
+| **Status**     | ⬜            |
 | **Depends On** | knowledge-001 |
-| **References** | REQ §2.1 |
+| **References** | REQ §2.1      |
 
 **Covers:**
+
 - Template entity
 - Template CRUD
 - Insert template on new note
@@ -994,14 +1041,15 @@ Edges: contains, references, links_to, requires, stored_in, documents, reserved_
 
 **Scope:** Recurring quests
 
-| Attribute | Value |
-|-----------|-------|
-| **Weight** | STANDARD |
-| **Status** | ⬜ |
+| Attribute      | Value        |
+| -------------- | ------------ |
+| **Weight**     | STANDARD     |
+| **Status**     | ⬜           |
 | **Depends On** | guidance-001 |
-| **References** | — |
+| **References** | —            |
 
 **Covers:**
+
 - Recurrence pattern (daily, weekly, monthly)
 - Auto-create new quest
 - Skip/complete handling
@@ -1013,14 +1061,15 @@ Edges: contains, references, links_to, requires, stored_in, documents, reserved_
 
 **Scope:** OAuth authentication
 
-| Attribute | Value |
-|-----------|-------|
-| **Weight** | STANDARD |
-| **Status** | ⬜ |
-| **Depends On** | core-010 |
+| Attribute      | Value                       |
+| -------------- | --------------------------- |
+| **Weight**     | STANDARD                    |
+| **Status**     | ⬜                          |
+| **Depends On** | core-010                    |
 | **References** | ARCH §Auth plugins, ADR-006 |
 
 **Covers:**
+
 - OAuth plugin implementation
 - Google provider
 - GitHub provider
@@ -1032,14 +1081,15 @@ Edges: contains, references, links_to, requires, stored_in, documents, reserved_
 
 **Scope:** AI provider plugins
 
-| Attribute | Value |
-|-----------|-------|
-| **Weight** | STANDARD |
-| **Status** | ⬜ |
-| **Depends On** | core-003 |
+| Attribute      | Value                     |
+| -------------- | ------------------------- |
+| **Weight**     | STANDARD                  |
+| **Status**     | ⬜                        |
+| **Depends On** | core-003                  |
 | **References** | ARCH §AI plugins, ADR-006 |
 
 **Covers:**
+
 - AI provider trait
 - Claude provider
 - OpenAI provider
@@ -1057,10 +1107,10 @@ Edges: contains, references, links_to, requires, stored_in, documents, reserved_
 
 **Scope:** Item photos and documents
 
-| Attribute | Value |
-|-----------|-------|
-| **Weight** | STANDARD |
-| **Status** | ⬜ |
+| Attribute      | Value                  |
+| -------------- | ---------------------- |
+| **Weight**     | STANDARD               |
+| **Status**     | ⬜                     |
 | **Depends On** | tracking-001, core-011 |
 
 ---
@@ -1069,12 +1119,12 @@ Edges: contains, references, links_to, requires, stored_in, documents, reserved_
 
 **Scope:** Whiteboard/canvas mode
 
-| Attribute | Value |
-|-----------|-------|
-| **Weight** | FORMAL |
-| **Status** | ⬜ |
+| Attribute      | Value         |
+| -------------- | ------------- |
+| **Weight**     | FORMAL        |
+| **Status**     | ⬜            |
 | **Depends On** | knowledge-006 |
-| **References** | REQ §2.3 |
+| **References** | REQ §2.3      |
 
 ---
 
@@ -1082,10 +1132,10 @@ Edges: contains, references, links_to, requires, stored_in, documents, reserved_
 
 **Scope:** Data backup and export
 
-| Attribute | Value |
-|-----------|-------|
-| **Weight** | STANDARD |
-| **Status** | ⬜ |
+| Attribute      | Value    |
+| -------------- | -------- |
+| **Weight**     | STANDARD |
+| **Status**     | ⬜       |
 | **Depends On** | core-002 |
 
 ---
@@ -1102,14 +1152,14 @@ flowchart TB
         C3[core-003-backend]
         C4[core-004-types]
     end
-    
+
     subgraph P2["Phase 2: Services"]
         C10[core-010-auth]
         C11[core-011-storage]
         C12[core-012-embeddings]
         C13[core-013-sync]
     end
-    
+
     subgraph P3["Phase 3: Guidance"]
         G1[guidance-001-quest-crud]
         G2[guidance-002-campaigns]
@@ -1119,7 +1169,7 @@ flowchart TB
         G6[guidance-006-harvest]
         G7[guidance-007-dependencies]
     end
-    
+
     subgraph P4["Phase 4: Knowledge"]
         K1[knowledge-001-notes]
         K2[knowledge-002-daily]
@@ -1128,7 +1178,7 @@ flowchart TB
         K5[knowledge-005-search]
         K6[knowledge-006-mind-map]
     end
-    
+
     subgraph P5["Phase 5: Tracking"]
         T1[tracking-001-items]
         T2[tracking-002-locations]
@@ -1136,31 +1186,31 @@ flowchart TB
         T4[tracking-004-reservations]
         T5[tracking-005-bom]
     end
-    
+
     subgraph P6["Phase 6: Platform"]
         PL1[platform-001-capture]
         PL2[platform-002-search]
         PL3[platform-003-linking]
         PL10[platform-010-gamification]
     end
-    
+
     C1 --> C2 & C3
     C3 --> C4
     C2 & C3 --> C10 & C11 & C12 & C13
-    
+
     C2 & C3 --> G1 & K1 & T1
     G1 --> G2 & G3 & G4 & G7
     G4 --> G5
     G1 & PL10 --> G5 & G6
-    
+
     K1 --> K2 & K3 & K4
     K1 & C12 --> K5
     K3 --> K6
-    
+
     T1 --> T2 & T3 & T4
     T1 & K1 --> T5
     T4 --> G1
-    
+
     G1 & K1 & T1 --> PL1 & PL2 & PL3
     C10 --> PL10
 ```
