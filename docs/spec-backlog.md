@@ -56,7 +56,7 @@
 | Attribute      | Value                   |
 | -------------- | ----------------------- |
 | **Weight**     | STANDARD                |
-| **Status**     | ⬜                      |
+| **Status**     | 🟨                      |
 | **References** | ARCH §Project Structure |
 
 **Covers:**
