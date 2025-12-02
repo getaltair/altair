@@ -19,7 +19,7 @@
   - **Files**: `turbo.json`
   - **Verification**: Turborepo can parse config without errors
 
-- [ ] **1.4**: Create shared TypeScript configs
+- [x] **1.4**: Create shared TypeScript configs
   - **Acceptance**: Base config with strict mode, extends for apps/packages
   - **Files**: `tsconfig.json`, `tsconfig.base.json`
   - **Verification**: Valid TypeScript configuration that can be extended
