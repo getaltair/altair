@@ -9,7 +9,7 @@
   - **Files**: `pnpm-workspace.yaml`
   - **Verification**: File contains `apps/*` and `packages/*` patterns
 
-- [ ] **1.2**: Create root package.json with scripts and pnpm.overrides
+- [x] **1.2**: Create root package.json with scripts and pnpm.overrides
   - **Acceptance**: Root package.json has dev/build/lint/test scripts, pnpm.overrides for version consistency
   - **Files**: `package.json`
   - **Verification**: `pnpm install` resolves dependencies without conflicts
