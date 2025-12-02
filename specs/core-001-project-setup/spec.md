@@ -150,7 +150,7 @@ Development tooling uses:
 | ID      | Requirement                                       | Priority | Notes                           |
 | ------- | ------------------------------------------------- | -------- | ------------------------------- |
 | NFR-001 | Clean build shall complete in under 2 minutes     | HIGH     | On standard developer machine   |
-| NFR-002 | Cached rebuild shall complete in under 10 seconds | HIGH     | With Turborepo remote cache     |
+| NFR-002 | Cached rebuild shall complete in under 10 seconds | HIGH     | With Turborepo local cache      |
 | NFR-003 | Pre-commit hooks shall complete in under 5 seconds| MEDIUM   | For staged files only           |
 | NFR-004 | All TypeScript shall use strict mode              | HIGH     | strictNullChecks, noImplicitAny |
 | NFR-005 | pnpm install shall complete in under 30 seconds   | MEDIUM   | With warm cache                 |
@@ -276,6 +276,7 @@ This specification does not introduce persistent data entities. Configuration fi
 
 | File                  | Purpose                          |
 | --------------------- | -------------------------------- |
+| `package.json`        | Root package with pnpm.overrides for shared deps (svelte, typescript) |
 | `pnpm-workspace.yaml` | Define workspace packages        |
 | `turbo.json`          | Turborepo pipeline configuration |
 | `tsconfig.json`       | Root TypeScript config           |
@@ -432,6 +433,15 @@ And I see an error message explaining the violation
 | pnpm workspace edge cases    | Low        | Low    | Well-tested in large monorepos    |
 | Turborepo cache invalidation | Low        | Low    | Configure proper input hashes     |
 | Svelte 5 ecosystem maturity  | Low        | Medium | Svelte 5 is stable, monitor ecosystem |
+
+---
+
+## Clarifications
+
+### Session 2025-12-01
+
+- Q: Should Turborepo remote cache be configured as part of this spec? → A: Local cache only; defer remote cache to future CI/CD spec
+- Q: How should conflicting dependency versions be handled? → A: Use pnpm.overrides for shared deps (svelte, typescript)
 
 ---
 
