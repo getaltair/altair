@@ -24,7 +24,7 @@
   - **Files**: `tsconfig.json`, `tsconfig.base.json`
   - **Verification**: Valid TypeScript configuration that can be extended
 
-- [ ] **1.5**: Configure ESLint (flat config for Svelte 5)
+- [x] **1.5**: Configure ESLint (flat config for Svelte 5)
   - **Acceptance**: Flat ESLint config with Svelte 5 parser, TypeScript support
   - **Files**: `eslint.config.js`
   - **Verification**: `pnpm eslint --version` works, config is valid
