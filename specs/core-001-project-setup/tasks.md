@@ -29,7 +29,7 @@
   - **Files**: `eslint.config.js`
   - **Verification**: `pnpm eslint --version` works, config is valid
 
-- [ ] **1.6**: Configure Prettier
+- [x] **1.6**: Configure Prettier
   - **Acceptance**: Prettier config with Svelte plugin, ignore file excludes build artifacts
   - **Files**: `.prettierrc`, `.prettierignore`
   - **Verification**: `pnpm prettier --check .` runs without errors

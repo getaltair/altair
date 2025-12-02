@@ -1,0 +1,40 @@
+# Dependencies
+node_modules
+pnpm-lock.yaml
+
+# Build outputs
+dist
+build
+.svelte-kit
+target
+gen
+out
+
+# Turborepo
+.turbo
+
+# Coverage
+coverage
+
+# Generated files
+packages/bindings/src/generated.ts
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+
+# Rust
+Cargo.lock
+
+# Temporary files
+*.tmp
+*.temp
