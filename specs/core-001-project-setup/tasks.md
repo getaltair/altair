@@ -14,7 +14,7 @@
   - **Files**: `package.json`
   - **Verification**: `pnpm install` resolves dependencies without conflicts
 
-- [ ] **1.3**: Configure Turborepo pipeline
+- [x] **1.3**: Configure Turborepo pipeline
   - **Acceptance**: `turbo.json` defines build/dev/lint/test tasks with correct dependencies and cache settings
   - **Files**: `turbo.json`
   - **Verification**: Turborepo can parse config without errors
