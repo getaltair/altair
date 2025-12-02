@@ -4,7 +4,7 @@
 
 ## Phase 1: Root Configuration (Foundation)
 
-- [ ] **1.1**: Initialize pnpm workspace
+- [x] **1.1**: Initialize pnpm workspace
   - **Acceptance**: `pnpm-workspace.yaml` exists with correct workspace patterns
   - **Files**: `pnpm-workspace.yaml`
   - **Verification**: File contains `apps/*` and `packages/*` patterns

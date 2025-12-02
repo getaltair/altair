@@ -1,0 +1,9 @@
+# pnpm workspace configuration for Altair monorepo
+# Defines workspace patterns for apps and shared packages
+
+packages:
+  # Tauri applications (Guidance, Knowledge, Tracking, Mobile)
+  - 'apps/*'
+
+  # Shared packages (ui, bindings, db, sync, storage, search)
+  - 'packages/*'
