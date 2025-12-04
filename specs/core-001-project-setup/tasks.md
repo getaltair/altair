@@ -34,9 +34,9 @@
   - **Files**: `.prettierrc`, `.prettierignore`
   - **Verification**: `pnpm prettier --check .` runs without errors
 
-- [ ] **1.7**: Set up prek pre-commit hooks
-  - **Acceptance**: `.prek.yaml` hooks for format, lint, type-check (Rust and TS)
-  - **Files**: `.prek.yaml`
+- [x] **1.7**: Set up prek pre-commit hooks
+  - **Acceptance**: `.pre-commit-config.yaml` hooks for format, lint, type-check (Rust and TS)
+  - **Files**: `.pre-commit-config.yaml`
   - **Verification**: Hooks can be registered with `prek install`
 
 - [ ] **1.8**: Create .gitignore and .editorconfig
