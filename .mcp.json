@@ -5,7 +5,15 @@
 		},
 		"serena": {
 			"command": "serena",
-			"args": ["start-mcp-server", "--transport", "stdio"]
+			"args": [
+				"start-mcp-server",
+				"--transport",
+				"stdio",
+				"--context",
+				"ide-assistant",
+				"--project",
+				"/home/rghamilton3/workspace/getaltair/altair/"
+			]
 		}
 	}
 }

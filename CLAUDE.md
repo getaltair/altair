@@ -303,3 +303,4 @@ S3_BUCKET=altair-local
 | `packages/db/src/schema.ts` | TypeScript schema types |
 | `packages/bindings/src/` | Generated Tauri command types |
 | `apps/*/src/routes/` | Svelte routes |
+- Always use 'pnpm'. NEVER use 'npm' or 'npx'.

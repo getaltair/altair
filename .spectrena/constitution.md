@@ -1,0 +1,1 @@
+.spectrena/memory/constitution.md
