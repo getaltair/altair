@@ -39,7 +39,7 @@
   - **Files**: `.pre-commit-config.yaml`
   - **Verification**: Hooks can be registered with `prek install`
 
-- [ ] **1.8**: Create .gitignore and .editorconfig
+- [x] **1.8**: Create .gitignore and .editorconfig
   - **Acceptance**: Standard patterns for Node, Rust, Tauri; EditorConfig for consistent formatting
   - **Files**: `.gitignore`, `.editorconfig`
   - **Verification**: Files exist and contain expected patterns

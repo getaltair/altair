@@ -114,8 +114,16 @@ Cargo.lock
 build/
 
 # Tauri
-src-tauri/target/
+**/src-tauri/target/
+**/src-tauri/gen/
 src-tauri/Cargo.lock
+*.AppImage
+*.dmg
+*.deb
+*.msi
+
+# Turborepo
+.turbo/
 
 # Python
 __pycache__/
@@ -183,3 +191,6 @@ out/
 # Local development
 .local/
 local/
+
+# Generated files
+packages/bindings/src/generated.ts
