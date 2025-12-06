@@ -175,7 +175,7 @@
   - **Files**: `apps/mobile/package.json`, `apps/mobile/src/`, `apps/mobile/src-tauri/`, Android configs
   - **Verification**: `pnpm --filter mobile build` produces APK (or `dev` opens in emulator)
 
-- [ ] **4.5**: Configure tauri-specta for bindings generation
+- [x] **4.5**: Configure tauri-specta for bindings generation
 
   - **Acceptance**: Build script generates TypeScript bindings to `packages/bindings/src/`
   - **Files**: Update `apps/*/src-tauri/build.rs`, `packages/bindings/src/generated.ts`
