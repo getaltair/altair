@@ -181,7 +181,7 @@
   - **Files**: Update `apps/*/src-tauri/build.rs`, `packages/bindings/src/generated.ts`
   - **Verification**: Build produces `generated.ts` with command types
 
-- [ ] **4.6**: Wire src-tauri as Cargo workspace members
+- [x] **4.6**: Wire src-tauri as Cargo workspace members
   - **Acceptance**: Each app's `src-tauri/Cargo.toml` depends on backend crates, all part of workspace
   - **Files**: `backend/Cargo.toml` (add members), `apps/*/src-tauri/Cargo.toml` (add dependencies)
   - **Verification**: `cargo check` in workspace resolves all app backends
