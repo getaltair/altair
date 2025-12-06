@@ -2,8 +2,8 @@
 resolver = "2"
 members = [
   "crates/altair-core",
+  "crates/altair-db",
   # Uncomment as crates are created:
-  # "crates/altair-db",
   # "crates/altair-sync",
   # "crates/altair-storage",
   # "crates/altair-search",

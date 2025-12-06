@@ -69,7 +69,7 @@
   - **Files**: `backend/crates/altair-core/Cargo.toml`, `backend/crates/altair-core/src/lib.rs`
   - **Verification**: `cargo build -p altair-core` succeeds
 
-- [ ] **2.3**: Scaffold altair-db crate (placeholder)
+- [x] **2.3**: Scaffold altair-db crate (placeholder)
 
   - **Acceptance**: Lib crate depending on altair-core, placeholder for SurrealDB integration
   - **Files**: `backend/crates/altair-db/Cargo.toml`, `backend/crates/altair-db/src/lib.rs`
