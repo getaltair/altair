@@ -137,8 +137,10 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
+/lib/
 lib64/
+# Allow src/lib (Svelte library convention)
+!**/src/lib/
 parts/
 sdist/
 var/

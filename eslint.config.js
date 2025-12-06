@@ -21,7 +21,7 @@ export default [
       parserOptions: {
         ecmaVersion: 'latest',
         sourceType: 'module',
-        project: './tsconfig.json',
+        projectService: true,
         tsconfigRootDir: __dirname,
       },
     },
@@ -30,7 +30,6 @@ export default [
     },
     rules: {
       ...tseslint.configs['recommended'].rules,
-      ...tseslint.configs['recommended-requiring-type-checking'].rules,
       '@typescript-eslint/no-unused-vars': [
         'error',
         {

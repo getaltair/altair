@@ -110,7 +110,7 @@
 
 ## Phase 3: Shared TypeScript Packages
 
-- [ ] **3.1**: Scaffold ui package (Svelte 5 components)
+- [x] **3.1**: Scaffold ui package (Svelte 5 components)
 
   - **Acceptance**: Package with `src/index.ts` exporting placeholder Button component
   - **Files**: `packages/ui/package.json`, `packages/ui/src/index.ts`, `packages/ui/tsconfig.json`, `packages/ui/svelte.config.js`
