@@ -163,7 +163,7 @@
   - **Files**: `apps/knowledge/package.json`, `apps/knowledge/src/`, `apps/knowledge/src-tauri/`, full Tauri app structure
   - **Verification**: `pnpm --filter knowledge dev` opens app window
 
-- [ ] **4.3**: Scaffold Tracking app (Tauri 2 + Svelte 5)
+- [x] **4.3**: Scaffold Tracking app (Tauri 2 + Svelte 5)
 
   - **Acceptance**: App with Tauri 2.9.3+, Svelte 5 frontend, basic routing, launches successfully
   - **Files**: `apps/tracking/package.json`, `apps/tracking/src/`, `apps/tracking/src-tauri/`, full Tauri app structure

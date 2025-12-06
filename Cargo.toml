@@ -10,6 +10,7 @@ members = [
   "backend/crates/altair-commands",
   "apps/guidance/src-tauri",
   "apps/knowledge/src-tauri",
+  "apps/tracking/src-tauri",
 ]
 
 [workspace.package]
