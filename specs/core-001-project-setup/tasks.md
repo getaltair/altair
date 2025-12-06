@@ -50,7 +50,7 @@
 
 ## Phase 2: Rust Backend Workspace
 
-- [ ] **2.1**: Create backend Cargo workspace
+- [x] **2.1**: Create backend Cargo workspace
   - **Acceptance**: `backend/Cargo.toml` defines workspace with `crates/*` members
   - **Files**: `backend/Cargo.toml`
   - **Verification**: `cargo metadata` shows workspace structure

@@ -1,0 +1,25 @@
+[workspace]
+resolver = "2"
+members = [
+  "crates/altair-core",
+  "crates/altair-db",
+  "crates/altair-sync",
+  "crates/altair-storage",
+  "crates/altair-search",
+  "crates/altair-auth",
+  "crates/altair-commands",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+authors = ["Altair Contributors"]
+license = "MIT OR Apache-2.0"
+
+[workspace.dependencies]
+# Error handling
+anyhow = "1.0"
+thiserror = "2.0"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
