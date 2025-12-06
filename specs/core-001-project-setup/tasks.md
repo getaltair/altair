@@ -134,7 +134,7 @@
   - **Files**: `packages/sync/package.json`, `packages/sync/src/index.ts`, `packages/sync/tsconfig.json`
   - **Verification**: Package builds successfully
 
-- [ ] **3.5**: Scaffold storage package (S3 utilities)
+- [x] **3.5**: Scaffold storage package (S3 utilities)
 
   - **Acceptance**: Package with `src/index.ts` exporting placeholder S3 client wrapper
   - **Files**: `packages/storage/package.json`, `packages/storage/src/index.ts`, `packages/storage/tsconfig.json`
