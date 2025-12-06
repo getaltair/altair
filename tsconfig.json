@@ -7,5 +7,9 @@
     "sourceMap": true
   },
   "files": [],
-  "references": [{ "path": "./packages/ui" }, { "path": "./packages/bindings" }]
+  "references": [
+    { "path": "./packages/ui" },
+    { "path": "./packages/bindings" },
+    { "path": "./packages/db" }
+  ]
 }

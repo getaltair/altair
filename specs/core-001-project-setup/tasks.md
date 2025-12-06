@@ -122,7 +122,7 @@
   - **Files**: `packages/bindings/package.json`, `packages/bindings/src/index.ts`, `packages/bindings/tsconfig.json`, `packages/bindings/README.md`
   - **Verification**: Package builds, types are valid TypeScript
 
-- [ ] **3.3**: Scaffold db package (SurrealDB utilities)
+- [x] **3.3**: Scaffold db package (SurrealDB utilities)
 
   - **Acceptance**: Package with `src/index.ts` exporting placeholder schema types
   - **Files**: `packages/db/package.json`, `packages/db/src/index.ts`, `packages/db/tsconfig.json`
