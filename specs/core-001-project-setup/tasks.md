@@ -75,7 +75,7 @@
   - **Files**: `backend/crates/altair-db/Cargo.toml`, `backend/crates/altair-db/src/lib.rs`
   - **Verification**: `cargo build -p altair-db` succeeds
 
-- [ ] **2.4**: Scaffold altair-sync crate (placeholder)
+- [x] **2.4**: Scaffold altair-sync crate (placeholder)
 
   - **Acceptance**: Lib crate depending on altair-core, placeholder for change feed sync
   - **Files**: `backend/crates/altair-sync/Cargo.toml`, `backend/crates/altair-sync/src/lib.rs`
