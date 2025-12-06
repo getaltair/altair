@@ -87,7 +87,7 @@
   - **Files**: `backend/crates/altair-storage/Cargo.toml`, `backend/crates/altair-storage/src/lib.rs`
   - **Verification**: `cargo build -p altair-storage` succeeds
 
-- [ ] **2.6**: Scaffold altair-search crate (placeholder)
+- [x] **2.6**: Scaffold altair-search crate (placeholder)
 
   - **Acceptance**: Lib crate depending on altair-core, placeholder for embeddings
   - **Files**: `backend/crates/altair-search/Cargo.toml`, `backend/crates/altair-search/src/lib.rs`
