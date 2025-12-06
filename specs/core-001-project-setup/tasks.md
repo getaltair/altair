@@ -151,7 +151,7 @@
 
 ## Phase 4: Tauri Applications
 
-- [ ] **4.1**: Scaffold Guidance app (Tauri 2 + Svelte 5)
+- [x] **4.1**: Scaffold Guidance app (Tauri 2 + Svelte 5)
 
   - **Acceptance**: App with Tauri 2.9.3+, Svelte 5 frontend, basic routing, launches successfully
   - **Files**: `apps/guidance/package.json`, `apps/guidance/src/`, `apps/guidance/src-tauri/`, full Tauri app structure
