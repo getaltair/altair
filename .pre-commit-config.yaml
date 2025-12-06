@@ -3,7 +3,7 @@
 repos:
   # Prettier - Format TypeScript, JavaScript, Svelte, JSON, YAML, Markdown
   - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: v3.3.3
+    rev: v3.1.0
     hooks:
       - id: prettier
         types_or: [javascript, jsx, ts, tsx, json, yaml, markdown, svelte]
@@ -13,7 +13,7 @@ repos:
 
   # ESLint - Lint TypeScript and Svelte files
   - repo: https://github.com/pre-commit/mirrors-eslint
-    rev: v9.17.0
+    rev: v9.39.1
     hooks:
       - id: eslint
         files: \.(js|ts|tsx|svelte)$
@@ -27,14 +27,15 @@ repos:
           - svelte-eslint-parser@1.4.0
           - typescript@5.7.2
 
-  # TypeScript - Type checking
-  - repo: https://github.com/pre-commit/mirrors-typescript
-    rev: v5.7.2
+  # TypeScript - Type checking (local hook, no mirror repo exists)
+  - repo: local
     hooks:
       - id: tsc
         name: TypeScript type-check
+        entry: pnpm exec tsc --noEmit --skipLibCheck
+        language: system
+        types_or: [ts, tsx]
         pass_filenames: false
-        args: [--noEmit, --skipLibCheck]
 
   # Rust formatting
   - repo: https://github.com/doublify/pre-commit-rust
