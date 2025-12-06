@@ -52,6 +52,18 @@ importers:
         specifier: ^6.0.5
         version: 6.4.1(@types/node@24.10.1)
 
+  packages/bindings:
+    devDependencies:
+      eslint:
+        specifier: ^9.17.0
+        version: 9.39.1
+      prettier:
+        specifier: ^3.4.2
+        version: 3.7.3
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+
   packages/ui:
     devDependencies:
       '@sveltejs/package':

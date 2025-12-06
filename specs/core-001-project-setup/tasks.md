@@ -116,7 +116,7 @@
   - **Files**: `packages/ui/package.json`, `packages/ui/src/index.ts`, `packages/ui/tsconfig.json`, `packages/ui/svelte.config.js`
   - **Verification**: Package builds successfully, exports are importable
 
-- [ ] **3.2**: Scaffold bindings package (tauri-specta output)
+- [x] **3.2**: Scaffold bindings package (tauri-specta output)
 
   - **Acceptance**: Package with `src/index.ts` and placeholder types, README explains generation
   - **Files**: `packages/bindings/package.json`, `packages/bindings/src/index.ts`, `packages/bindings/tsconfig.json`, `packages/bindings/README.md`
