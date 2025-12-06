@@ -1,0 +1,26 @@
+[package]
+name = "altair-commands"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.91.1"
+
+[dependencies]
+# Internal dependencies
+altair-core = { path = "../altair-core" }
+
+# Async runtime
+tokio = { version = "1.42", features = ["sync"] }
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Observability
+tracing = "0.1"
+
+# Tauri dependencies (placeholders for future use)
+# tauri = "2.9"
+# tauri-specta = "2.0"
+
+[dev-dependencies]
+tokio = { version = "1.42", features = ["full"] }

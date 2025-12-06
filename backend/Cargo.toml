@@ -7,8 +7,7 @@ members = [
   "crates/altair-storage",
   "crates/altair-search",
   "crates/altair-auth",
-  # Uncomment as crates are created:
-  # "crates/altair-commands",
+  "crates/altair-commands",
 ]
 
 [workspace.package]

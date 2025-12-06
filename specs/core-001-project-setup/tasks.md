@@ -99,7 +99,7 @@
   - **Files**: `backend/crates/altair-auth/Cargo.toml`, `backend/crates/altair-auth/src/lib.rs`
   - **Verification**: `cargo build -p altair-auth` succeeds
 
-- [ ] **2.8**: Scaffold altair-commands crate (Tauri commands)
+- [x] **2.8**: Scaffold altair-commands crate (Tauri commands)
   - **Acceptance**: Lib crate depending on altair-core, exports empty command handlers
   - **Files**: `backend/crates/altair-commands/Cargo.toml`, `backend/crates/altair-commands/src/lib.rs`
   - **Verification**: `cargo build -p altair-commands` succeeds
