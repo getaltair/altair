@@ -33,7 +33,7 @@ type __EventObj__<T> = {
 
 export type Result<T, E> = { status: 'ok'; data: T } | { status: 'error'; error: E };
 
-function __makeEvents__<T extends Record<string, any>>(mappings: Record<keyof T, string>) {
+function _unused__makeEvents__<T extends Record<string, any>>(mappings: Record<keyof T, string>) {
   return new Proxy(
     {} as unknown as {
       [K in keyof T]: __EventObj__<T[K]> & {

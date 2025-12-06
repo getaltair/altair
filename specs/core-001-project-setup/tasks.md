@@ -192,31 +192,31 @@
 
 ## Phase 5: Verification & Documentation
 
-- [ ] **5.1**: Verify fresh clone + install + dev workflow
+- [x] **5.1**: Verify fresh clone + install + dev workflow
 
   - **Acceptance**: New clone, `pnpm install`, all dev servers start without errors
   - **Verification**: Manual test in clean directory
   - **Command**: `git clone <repo> test-clone && cd test-clone && pnpm install && pnpm dev`
 
-- [ ] **5.2**: Verify build produces all artifacts
+- [x] **5.2**: Verify build produces all artifacts
 
   - **Acceptance**: Desktop binaries in `apps/*/src-tauri/target/`, APK in `apps/mobile/src-tauri/gen/android/`
   - **Verification**: Check filesystem after `pnpm build`
   - **Command**: `pnpm build && find . -name "*.AppImage" -o -name "*.dmg" -o -name "*.msi" -o -name "*.apk"`
 
-- [ ] **5.3**: Verify pre-commit blocks bad formatting
+- [x] **5.3**: Verify pre-commit blocks bad formatting
 
   - **Acceptance**: Committing unformatted code triggers prek and fails
   - **Verification**: Stage intentionally bad file, attempt commit
   - **Command**: `echo "bad()" > test.ts && git add test.ts && git commit -m "test"`
 
-- [ ] **5.4**: Verify Turborepo cache reduces rebuild time
+- [x] **5.4**: Verify Turborepo cache reduces rebuild time
 
   - **Acceptance**: Second build after no changes is < 10 seconds
   - **Verification**: Time comparison: `time pnpm build` (twice)
   - **Command**: `pnpm build && pnpm build` (second should show cache hits)
 
-- [ ] **5.5**: Update docs/technical-architecture.md if needed
+- [x] **5.5**: Update docs/technical-architecture.md if needed
   - **Acceptance**: Architecture doc reflects actual monorepo structure
   - **Verification**: Review doc against implementation, update if outdated
   - **Files**: `docs/technical-architecture.md`

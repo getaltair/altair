@@ -1375,7 +1375,10 @@ altair/
 ├── packages/
 │   ├── ui/                     # Calm Focus design system (Svelte)
 │   ├── bindings/               # Generated TypeScript types (tauri-specta)
-│   └── shared/                 # Shared TypeScript utilities
+│   ├── db/                     # SurrealDB utilities and schema types
+│   ├── sync/                   # Change feed sync utilities
+│   ├── storage/                # S3-compatible storage client wrapper
+│   └── search/                 # Embedding and search utilities
 ├── migrations/                 # SurrealDB schema migrations
 ├── pnpm-workspace.yaml
 └── turbo.json
@@ -1423,6 +1426,10 @@ tauri = { version = "2", features = ["devtools"] }
 | `apps/server/src/api/`    | REST handlers for cloud/mobile sync             |
 | `packages/bindings/`      | Auto-generated TypeScript types from Rust       |
 | `packages/ui/`            | Shared Svelte components                        |
+| `packages/db/`            | SurrealDB utilities and schema types            |
+| `packages/sync/`          | Change feed sync utilities                      |
+| `packages/storage/`       | S3-compatible storage client wrapper            |
+| `packages/search/`        | Embedding and search utilities                  |
 | `migrations/`             | SurrealDB schema files                          |
 
 ### Why This Structure
