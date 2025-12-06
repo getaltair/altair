@@ -11,6 +11,7 @@ members = [
   "apps/guidance/src-tauri",
   "apps/knowledge/src-tauri",
   "apps/tracking/src-tauri",
+  "apps/mobile/src-tauri",
 ]
 
 [workspace.package]

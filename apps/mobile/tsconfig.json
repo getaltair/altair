@@ -1,0 +1,21 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "allowJs": true,
+    "checkJs": true,
+    "isolatedModules": true,
+    "skipLibCheck": true,
+    "types": ["svelte", "vite/client"],
+    "paths": {
+      "@altair/ui": ["../../packages/ui/src"],
+      "@altair/bindings": ["../../packages/bindings/src"]
+    }
+  },
+  "include": ["src/**/*.ts", "src/**/*.svelte", "*.ts", "*.js"],
+  "exclude": ["node_modules", "dist", "src-tauri"]
+}

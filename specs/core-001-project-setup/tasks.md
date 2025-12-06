@@ -169,7 +169,7 @@
   - **Files**: `apps/tracking/package.json`, `apps/tracking/src/`, `apps/tracking/src-tauri/`, full Tauri app structure
   - **Verification**: `pnpm --filter tracking dev` opens app window
 
-- [ ] **4.4**: Scaffold Mobile app (Tauri Android)
+- [x] **4.4**: Scaffold Mobile app (Tauri Android)
 
   - **Acceptance**: Tauri 2 Android app with Svelte 5 frontend, builds APK
   - **Files**: `apps/mobile/package.json`, `apps/mobile/src/`, `apps/mobile/src-tauri/`, Android configs
