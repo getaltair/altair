@@ -12,6 +12,7 @@
     { "path": "./packages/bindings" },
     { "path": "./packages/db" },
     { "path": "./packages/sync" },
-    { "path": "./packages/storage" }
+    { "path": "./packages/storage" },
+    { "path": "./packages/search" }
   ]
 }

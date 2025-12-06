@@ -140,7 +140,7 @@
   - **Files**: `packages/storage/package.json`, `packages/storage/src/index.ts`, `packages/storage/tsconfig.json`
   - **Verification**: Package builds successfully
 
-- [ ] **3.6**: Scaffold search package (embedding utilities)
+- [x] **3.6**: Scaffold search package (embedding utilities)
   - **Acceptance**: Package with `src/index.ts` exporting placeholder embedding functions
   - **Files**: `packages/search/package.json`, `packages/search/src/index.ts`, `packages/search/tsconfig.json`
   - **Verification**: Package builds successfully
