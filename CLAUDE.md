@@ -1,5 +1,7 @@
 # CLAUDE.md
 
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
 > **Project context for Claude Code** — Read this first
 
 ---
@@ -67,14 +69,13 @@ altair/
 │   ├── storage/            # S3 client
 │   └── search/             # Embeddings + hybrid search
 ├── backend/
-│   ├── src/
-│   │   ├── commands/       # Tauri IPC handlers
-│   │   ├── api/            # REST handlers (mobile only)
-│   │   ├── auth/           # Auth plugins
-│   │   ├── sync/           # Sync engine
-│   │   ├── embeddings/     # ONNX inference
-│   │   ├── providers/      # AI plugins (optional)
-│   │   └── storage/        # S3 integration
+│   ├── crates/
+│   │   ├── altair-core/    # Shared types, errors, utilities
+│   │   ├── altair-db/      # SurrealDB client + queries
+│   │   ├── altair-sync/    # Change feed sync engine
+│   │   ├── altair-storage/ # S3-compatible storage client
+│   │   ├── altair-search/  # ONNX embeddings + hybrid search
+│   │   └── altair-auth/    # Auth plugins (trait-based)
 │   └── migrations/         # SurrealDB migrations
 ├── specs/                  # Specifications (SDD)
 ├── docs/                   # Architecture, domain model, etc.
@@ -194,30 +195,61 @@ Follow spec-driven development:
 
 ## Common Tasks
 
-### Run Development
+### Build & Development
 
 ```bash
-# Start backend + all apps
+# Build all packages and apps
+pnpm build
+
+# Start development (backend + all apps in parallel)
 pnpm dev
 
-# Start specific app
+# Start specific app only
 pnpm --filter guidance dev
 
 # Run backend only
+cd backend && cargo build
 cd backend && cargo run
 ```
 
 ### Run Tests
 
 ```bash
-# All tests
+# All tests via turbo
 pnpm test
 
-# Rust tests
+# Rust tests (all crates)
 cd backend && cargo test
+
+# Single Rust test
+cd backend && cargo test test_name
+cd backend && cargo test -p altair-db test_name
 
 # Specific package
 pnpm --filter @altair/db test
+```
+
+### Code Quality
+
+```bash
+# Format all code
+pnpm format
+
+# Check formatting without writing
+pnpm format:check
+
+# Lint TypeScript/Svelte
+pnpm lint
+
+# Type check
+pnpm typecheck
+
+# Rust formatting and linting (required before commits)
+cd backend && cargo fmt
+cd backend && cargo clippy
+
+# Clean all build artifacts
+pnpm clean
 ```
 
 ### Database Operations
@@ -304,5 +336,9 @@ S3_BUCKET=altair-local
 | `packages/bindings/src/`    | Generated Tauri command types |
 | `apps/*/src/routes/`        | Svelte routes                 |
 
-- Always use 'pnpm'. NEVER use 'npm' or 'npx'.
-- Use rust edition 2024
+### Tool Preferences
+
+- Always use `pnpm` — never `npm` or `npx`
+- Use `rg` over `grep` for content search
+- Use `fd` over `find` for file search
+- Use Rust edition 2024
