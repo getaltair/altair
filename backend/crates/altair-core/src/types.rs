@@ -69,37 +69,27 @@ impl From<&str> for EntityId {
 pub type Timestamp = DateTime<Utc>;
 
 /// Energy cost for quests (ADHD-focused task management)
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
 #[serde(rename_all = "lowercase")]
 pub enum EnergyCost {
     /// Low energy task (quick, easy)
     Low,
     /// Medium energy task (moderate effort)
+    #[default]
     Medium,
     /// High energy task (challenging, draining)
     High,
 }
 
-impl Default for EnergyCost {
-    fn default() -> Self {
-        Self::Medium
-    }
-}
-
 /// Generic entity status (for soft deletes)
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
 #[serde(rename_all = "lowercase")]
 pub enum EntityStatus {
     /// Active entity
+    #[default]
     Active,
     /// Archived/soft-deleted entity
     Archived,
-}
-
-impl Default for EntityStatus {
-    fn default() -> Self {
-        Self::Active
-    }
 }
 
 impl EntityStatus {

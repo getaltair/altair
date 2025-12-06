@@ -8,11 +8,11 @@
 
 **Altair** is an ADHD-focused productivity ecosystem with three apps:
 
-| App | Purpose | Key Entities |
-|-----|---------|--------------|
-| **Guidance** | Task management (Quest-Based Agile) | Quest, Campaign |
-| **Knowledge** | Personal knowledge management | Note, Folder |
-| **Tracking** | Inventory management | Item, Location |
+| App           | Purpose                             | Key Entities    |
+| ------------- | ----------------------------------- | --------------- |
+| **Guidance**  | Task management (Quest-Based Agile) | Quest, Campaign |
+| **Knowledge** | Personal knowledge management       | Note, Folder    |
+| **Tracking**  | Inventory management                | Item, Location  |
 
 Plus **Quick Capture** for zero-friction input across all apps.
 
@@ -20,16 +20,16 @@ Plus **Quick Capture** for zero-friction input across all apps.
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|------------|
-| Database | SurrealDB 2.x (embedded + cloud) |
+| Layer          | Technology                                      |
+| -------------- | ----------------------------------------------- |
+| Database       | SurrealDB 2.x (embedded + cloud)                |
 | Object Storage | S3-compatible (Minio local, Backblaze B2 cloud) |
-| Desktop | Tauri 2.0 + Svelte |
-| Backend | Rust + Axum (localhost:3847) |
-| Mobile | Tauri 2.0 Android |
-| IPC | Tauri Commands (not REST for desktop) |
-| Type Safety | tauri-specta (Rust → TypeScript) |
-| Embeddings | Local ONNX (all-MiniLM-L6-v2) |
+| Desktop        | Tauri 2.0 + Svelte                              |
+| Backend        | Rust + Axum (localhost:3847)                    |
+| Mobile         | Tauri 2.0 Android                               |
+| IPC            | Tauri Commands (not REST for desktop)           |
+| Type Safety    | tauri-specta (Rust → TypeScript)                |
+| Embeddings     | Local ONNX (all-MiniLM-L6-v2)                   |
 
 ---
 
@@ -87,14 +87,14 @@ altair/
 
 Use these terms consistently:
 
-| ✅ Use | ❌ Don't Use | Why |
-|--------|-------------|-----|
-| Quest | Task, Todo | Quest has energy cost, adventure framing |
-| Campaign | Project, Epic | Campaign contains quests |
-| Note | Document, Page | Note is the PKM entity |
-| Item | Product, Asset | Item is the inventory entity |
-| Capture | Inbox item, Draft | Capture is pending classification |
-| Archive | Delete | Soft delete, recoverable |
+| ✅ Use   | ❌ Don't Use      | Why                                      |
+| -------- | ----------------- | ---------------------------------------- |
+| Quest    | Task, Todo        | Quest has energy cost, adventure framing |
+| Campaign | Project, Epic     | Campaign contains quests                 |
+| Note     | Document, Page    | Note is the PKM entity                   |
+| Item     | Product, Asset    | Item is the inventory entity             |
+| Capture  | Inbox item, Draft | Capture is pending classification        |
+| Archive  | Delete            | Soft delete, recoverable                 |
 
 See `docs/glossary.md` for full terminology.
 
@@ -250,14 +250,14 @@ cargo run --bin generate-bindings
 
 ## Documentation
 
-| Doc | Location | Purpose |
-|-----|----------|---------|
-| Technical Architecture | `docs/technical-architecture.md` | How the system works |
-| Domain Model | `docs/domain-model.md` | Entities and relationships |
-| User Flows | `docs/user-flows.md` | What users do |
-| Glossary | `docs/glossary.md` | Consistent terminology |
-| Decision Log | `docs/decision-log.md` | Why decisions were made |
-| Spec Backlog | `docs/spec-backlog.md` | What to build next |
+| Doc                    | Location                         | Purpose                    |
+| ---------------------- | -------------------------------- | -------------------------- |
+| Technical Architecture | `docs/technical-architecture.md` | How the system works       |
+| Domain Model           | `docs/domain-model.md`           | Entities and relationships |
+| User Flows             | `docs/user-flows.md`             | What users do              |
+| Glossary               | `docs/glossary.md`               | Consistent terminology     |
+| Decision Log           | `docs/decision-log.md`           | Why decisions were made    |
+| Spec Backlog           | `docs/spec-backlog.md`           | What to build next         |
 
 ---
 
@@ -276,11 +276,11 @@ See `AGENTS.md` for:
 
 ### Ports
 
-| Service | Port |
-|---------|------|
-| Backend API | 3847 |
-| SurrealDB | 8000 |
-| Minio | 9000 |
+| Service       | Port |
+| ------------- | ---- |
+| Backend API   | 3847 |
+| SurrealDB     | 8000 |
+| Minio         | 9000 |
 | Minio Console | 9001 |
 
 ### Environment Variables
@@ -296,11 +296,13 @@ S3_BUCKET=altair-local
 
 ### Key Files
 
-| File | Purpose |
-|------|---------|
-| `backend/src/main.rs` | Backend entry point |
-| `backend/migrations/` | Database schema |
-| `packages/db/src/schema.ts` | TypeScript schema types |
-| `packages/bindings/src/` | Generated Tauri command types |
-| `apps/*/src/routes/` | Svelte routes |
+| File                        | Purpose                       |
+| --------------------------- | ----------------------------- |
+| `backend/src/main.rs`       | Backend entry point           |
+| `backend/migrations/`       | Database schema               |
+| `packages/db/src/schema.ts` | TypeScript schema types       |
+| `packages/bindings/src/`    | Generated Tauri command types |
+| `apps/*/src/routes/`        | Svelte routes                 |
+
 - Always use 'pnpm'. NEVER use 'npm' or 'npx'.
+- Use rust edition 2024

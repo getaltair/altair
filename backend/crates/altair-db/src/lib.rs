@@ -13,7 +13,7 @@
 //! **PLACEHOLDER**: This crate is a placeholder for future SurrealDB integration.
 //! The actual implementation will be added in subsequent specifications.
 
-use altair_core::{Result, Error};
+use altair_core::{Error, Result};
 use async_trait::async_trait;
 
 /// Database client trait for SurrealDB operations
@@ -91,7 +91,9 @@ impl DatabaseClient for PlaceholderClient {
 
     async fn query(&self, sql: &str) -> Result<serde_json::Value> {
         tracing::debug!("Placeholder: Would execute query: {}", sql);
-        Err(Error::database("Placeholder implementation - not yet implemented"))
+        Err(Error::database(
+            "Placeholder implementation - not yet implemented",
+        ))
     }
 
     async fn health_check(&self) -> Result<bool> {

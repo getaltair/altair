@@ -13,7 +13,7 @@
 //! **PLACEHOLDER**: This crate is a placeholder for future sync implementation.
 //! The actual implementation will be added in subsequent specifications.
 
-use altair_core::{Result, Error, Timestamp};
+use altair_core::{Error, Result, Timestamp};
 use async_trait::async_trait;
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
@@ -164,7 +164,9 @@ impl SyncEngine for PlaceholderSyncEngine {
 
     async fn sync_now(&mut self) -> Result<()> {
         tracing::info!("Placeholder: Would trigger manual sync");
-        Err(Error::sync("Placeholder implementation - not yet implemented"))
+        Err(Error::sync(
+            "Placeholder implementation - not yet implemented",
+        ))
     }
 }
 

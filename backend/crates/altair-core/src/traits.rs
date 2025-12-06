@@ -1,7 +1,7 @@
 //! Shared traits for Altair components
 
-use async_trait::async_trait;
 use crate::Result;
+use async_trait::async_trait;
 
 /// Trait for authentication providers (plugin architecture)
 #[async_trait]

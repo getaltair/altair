@@ -4,8 +4,8 @@ members = [
   "crates/altair-core",
   "crates/altair-db",
   "crates/altair-sync",
+  "crates/altair-storage",
   # Uncomment as crates are created:
-  # "crates/altair-storage",
   # "crates/altair-search",
   # "crates/altair-auth",
   # "crates/altair-commands",

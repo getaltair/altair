@@ -44,6 +44,7 @@ repos:
       - id: fmt
         name: Rust fmt
         args: [--manifest-path, backend/Cargo.toml, --all]
+        pass_filenames: false
 
   # Rust linting (clippy)
   - repo: https://github.com/doublify/pre-commit-rust
@@ -52,6 +53,7 @@ repos:
       - id: clippy
         name: Rust clippy
         args: [--manifest-path, backend/Cargo.toml, --all-targets, --, -D, warnings]
+        pass_filenames: false
 
   # General file checks
   - repo: https://github.com/pre-commit/pre-commit-hooks
