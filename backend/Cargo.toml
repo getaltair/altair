@@ -6,8 +6,8 @@ members = [
   "crates/altair-sync",
   "crates/altair-storage",
   "crates/altair-search",
+  "crates/altair-auth",
   # Uncomment as crates are created:
-  # "crates/altair-auth",
   # "crates/altair-commands",
 ]
 

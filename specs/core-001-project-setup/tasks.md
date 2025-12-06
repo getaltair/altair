@@ -93,7 +93,7 @@
   - **Files**: `backend/crates/altair-search/Cargo.toml`, `backend/crates/altair-search/src/lib.rs`
   - **Verification**: `cargo build -p altair-search` succeeds
 
-- [ ] **2.7**: Scaffold altair-auth crate (placeholder)
+- [x] **2.7**: Scaffold altair-auth crate (placeholder)
 
   - **Acceptance**: Lib crate depending on altair-core, placeholder for auth plugins
   - **Files**: `backend/crates/altair-auth/Cargo.toml`, `backend/crates/altair-auth/src/lib.rs`
