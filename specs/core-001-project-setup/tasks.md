@@ -128,7 +128,7 @@
   - **Files**: `packages/db/package.json`, `packages/db/src/index.ts`, `packages/db/tsconfig.json`
   - **Verification**: Package builds successfully
 
-- [ ] **3.4**: Scaffold sync package (sync utilities)
+- [x] **3.4**: Scaffold sync package (sync utilities)
 
   - **Acceptance**: Package with `src/index.ts` exporting placeholder sync helpers
   - **Files**: `packages/sync/package.json`, `packages/sync/src/index.ts`, `packages/sync/tsconfig.json`
