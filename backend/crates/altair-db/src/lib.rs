@@ -1,20 +1,24 @@
 //! Altair Database - SurrealDB integration layer
 //!
 //! This crate provides database access and operations for Altair applications.
-//! It will handle:
+//! It handles:
 //! - SurrealDB connection management (embedded and cloud)
-//! - Schema migrations
-//! - CRUD operations for domain entities
-//! - Change feed integration for sync
-//! - Query builders and helpers
-//!
-//! ## Implementation Status
-//!
-//! **PLACEHOLDER**: This crate is a placeholder for future SurrealDB integration.
-//! The actual implementation will be added in subsequent specifications.
+//! - Database health checks and monitoring
+//! - Schema migrations (coming soon)
+//! - CRUD operations for domain entities (coming soon)
+//! - Change feed integration for sync (coming soon)
+//! - Query builders and helpers (coming soon)
 
 use altair_core::{Error, Result};
 use async_trait::async_trait;
+
+// Module declarations
+pub mod connection;
+pub mod health;
+
+// Re-exports
+pub use connection::SurrealConnection;
+pub use health::{DatabaseHealth, check_database_health};
 
 /// Database client trait for SurrealDB operations
 #[async_trait]
