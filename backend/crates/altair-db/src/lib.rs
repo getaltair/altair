@@ -10,10 +10,14 @@
 
 pub mod client;
 pub mod migration;
+pub mod schema;
 
 // Re-export commonly used types
 pub use client::{DatabaseClient, DatabaseConfig};
 pub use migration::{Migration, MigrationRecord, MigrationRunner};
+
+// Re-export schema types for convenience
+pub use schema::*;
 
 #[cfg(test)]
 mod tests {

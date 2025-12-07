@@ -4,7 +4,7 @@ Tech Stack:
 
 - Desktop: Tauri 2.0 with Svelte 5 (runes) frontend
 - Mobile: Tauri Android (same codebase)
-- Database: SurrealDB 2.x embedded (rocksdb storage engine)
+- Database: SurrealDB 2.x embedded (surrealkv storage engine)
 - Object Storage: S3-compatible (Minio local, Backblaze B2/Cloudflare R2/etc cloud)
 - Backend: Rust with Cargo workspace at repo root
 

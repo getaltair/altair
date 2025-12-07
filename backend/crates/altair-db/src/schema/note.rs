@@ -11,7 +11,7 @@ use super::enums::EntityStatus;
 pub struct Note {
     pub id: Option<Thing>,
     pub title: String,
-    pub content: String, // markdown
+    pub content: String,             // markdown
     pub embedding: Option<Vec<f32>>, // 384-dimensional vector for semantic search
     pub is_daily: bool,
     pub version: i32,

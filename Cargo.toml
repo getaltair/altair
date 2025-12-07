@@ -21,9 +21,6 @@ authors = ["Altair Contributors"]
 license = "AGPL 3.0 or later"
 
 [workspace.dependencies]
-# Error handling
-anyhow = "1.0"
-thiserror = "2.0"
 
 # Serialization
 serde = { version = "1.0", features = ["derive"] }
@@ -42,5 +39,3 @@ tauri-specta = { version = "2.0.0-rc.20", features = ["derive", "typescript"] }
 # Altair crates (for workspace members)
 altair-core = { path = "backend/crates/altair-core" }
 altair-commands = { path = "backend/crates/altair-commands" }
-
-clang-sys = { version = "1.8.1", features = ["clang_18_0"] }

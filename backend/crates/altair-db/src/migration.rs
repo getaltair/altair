@@ -14,11 +14,11 @@
 //!
 //! ```no_run
 //! use altair_db::migration::MigrationRunner;
-//! use surrealdb::Surreal;
-//! use surrealdb::engine::local::Db;
+//! use surrealdb::engine::any;
 //!
 //! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
-//! let db = Surreal::new::<surrealdb::engine::local::Mem>(()).await?;
+//! let db = any::connect("mem://").await?;
+//! db.use_ns("altair").use_db("main").await?;
 //! let mut runner = MigrationRunner::new(db, "../migrations");
 //! runner.run().await?;
 //! # Ok(())

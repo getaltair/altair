@@ -28,7 +28,7 @@ pub struct UserPreferences {
     pub gamification_enabled: bool,
     pub weekly_harvest_day: i32, // 0-6 (Sunday-Saturday)
     pub weekly_harvest_time: NaiveTime,
-    pub focus_session_duration: i32, // minutes
+    pub focus_session_duration: i32,  // minutes
     pub pomodoro_break_duration: i32, // minutes
 }
 
@@ -40,8 +40,8 @@ impl Default for UserPreferences {
             gamification_enabled: true,
             weekly_harvest_day: 0, // Sunday
             weekly_harvest_time: NaiveTime::from_hms_opt(18, 0, 0).unwrap(), // 6 PM
-            focus_session_duration: 25,     // Pomodoro default
-            pomodoro_break_duration: 5,     // Short break
+            focus_session_duration: 25, // Pomodoro default
+            pomodoro_break_duration: 5, // Short break
         }
     }
 }
