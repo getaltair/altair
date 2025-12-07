@@ -41,7 +41,7 @@ Execute implementation for a specific task or next uncompleted task.
    git commit -m "feat({SPEC-ID}): [task description]"
    ```
 
-   ⚠️ **CRITICAL**: The `tasks.md` update MUST be included in the same commit as the implementation. Never commit code changes without also committing the task status update.
+   ⚠ **CRITICAL**: The `tasks.md` update MUST be included in the same commit as the implementation. Never commit code changes without also committing the task status update
 
 ## Commit Message Format
 

@@ -1,216 +1,203 @@
 ---
 description: Create or generate content for a specification
 arguments:
-  - name: spec-id
-    description: Spec ID from backlog (e.g., core-001-project-setup)
-    required: false
   - name: description
-    description: Brief title/description for the spec (if not using backlog)
+    description: Brief title/description for the spec OR spec-id from backlog
     required: false
   - name: component
-    description: Component prefix (CORE, API, UI, etc.) - only needed if not using backlog
+    description: Component prefix (CORE, API, UI, etc.)
     required: false
     flag: -c,--component
 ---
 
 # Specify
 
-Create or generate content for a specification from the spec backlog or custom description.
+Create or generate content for a specification, optionally pulling context from backlog.
 
 ## Usage
 
 ```
-# From backlog (preferred)
-/spectrena.specify core-001-project-setup
-
-# Custom spec (not in backlog)
-/spectrena.specify "Brief description" -c COMPONENT
-
-# Fill existing or interactive
-/spectrena.specify
+/spectrena.specify core-001-project-setup    # From backlog
+/spectrena.specify "Brief description" -c COMPONENT  # Custom spec
+/spectrena.specify                            # Interactive mode
 ```
 
-## Input Expectations
+## Backlog Support
 
-**Backlog specs have full context.** Minimal clarification needed.
+**When backlog is enabled** (check `.spectrena/config.yml`):
 
-**Custom specs may need clarification.** If description lacks detail, ask 2-3 questions:
+1. **Check if argument matches backlog entry** (case-insensitive)
+2. If found in backlog:
+   - Load scope, dependencies, references, covers/does-not-cover
+   - Check dependency status, warn if incomplete
+   - Read reference docs (expand abbreviations via config)
+   - Generate spec from backlog context
+   - Update backlog status ⬜ → 🟨
+3. If NOT in backlog: Fall back to custom mode
 
-| Input                    | Action                                             |
-| ------------------------ | -------------------------------------------------- |
-| `core-001-project-setup` | Parse backlog, generate directly                   |
-| `"User auth"`            | Ask: "OAuth? Username/password? What providers?"   |
-| `"Monorepo setup"`       | Ask: "What tools? Melos? Nx? What's being shared?" |
-| Detailed paragraph       | Generate directly                                  |
+## Modes
 
-**Max 3 clarification rounds.** Then generate with stated assumptions.
+### Mode 1: From Backlog
 
----
+**When:** Argument matches a spec-id in backlog
 
-## Spec Backlog Integration
+**Steps:**
 
-### Locating the Backlog
-
-The spec backlog is at `docs/spec-backlog.md`. It contains pre-defined specs with:
-
-- **Scope** — What the spec covers
-- **Weight** — LIGHTWEIGHT, STANDARD, or FORMAL
-- **Dependencies** — Other specs that must complete first
-- **References** — Which docs to consult
-- **Covers / Does NOT cover** — Explicit boundaries
-
-### Parsing the Backlog
-
-When given a spec ID like `core-001-project-setup`:
-
-1. **Find the spec section** — Search for `### {spec-id}` heading (exact match, case-insensitive)
-2. **Extract the scope line** — Line starting with `**Scope:**` after the heading
-3. **Parse the attribute table** — Extract Weight, Status, Depends On, References from markdown table
-4. **Extract "Covers" list** — Bullet points after `**Covers:**`
-5. **Extract "Does NOT cover" list** — Bullet points after `**Does NOT cover:**` (if present)
-6. **Capture code blocks** — May contain schema hints, file structures, table names
+1. Read `.spectrena/config.yml` to get backlog path
+2. Parse backlog file
+3. Find matching entry (case-insensitive)
+4. **Check dependencies:**
+   - List depends_on specs with their status
+   - Warn if any are not 🟩 (complete)
+   - Ask user to confirm proceeding
+5. **Load reference docs:**
+   - Expand abbreviations (e.g., `REQ` → `docs/requirements.md`)
+   - Support §Section syntax (e.g., `ARCH §Database`)
+   - Read doc content for context
+6. **Git: Ensure clean working tree**
+7. Create directory: `specs/{SPEC-ID}/`
+8. Copy template: `.spectrena.spectrena/templates/spec-template.md`
+9. **Git: Create and checkout branch:**
+   ```bash
+   git checkout -b spec/{SPEC-ID}
+   ```
+10. **Generate spec content** using:
+    - Scope from backlog
+    - Covers / Does NOT cover lists
+    - Reference doc content
+    - Weight (LIGHTWEIGHT/STANDARD/FORMAL)
+11. Write to `specs/{SPEC-ID}/spec.md`
+12. **Update backlog status** ⬜ → 🟨
+13. **Git: Commit:**
+    ```bash
+    git add specs/{SPEC-ID}/ .spectrena/backlog.md
+    git commit -m "spec({SPEC-ID}): Initialize specification from backlog"
+    ```
 
 **Example backlog entry:**
 
 ```markdown
 ### core-001-project-setup
 
-**Scope:** Monorepo structure, build system, tooling
+**Scope:** Project structure, build system, tooling configuration
 
 | Attribute      | Value                   |
 | -------------- | ----------------------- |
 | **Weight**     | STANDARD                |
 | **Status**     | ⬜                      |
+| **Depends On** | (none)                  |
 | **References** | ARCH §Project Structure |
 
 **Covers:**
 
-- pnpm workspace configuration
-- Turborepo build pipeline
-- App scaffolding (guidance, knowledge, tracking, mobile)
+- Repository structure
+- Build tooling setup
 
 **Does NOT cover:**
 
-- Actual app implementation
-- Database schema
+- Application implementation
 ```
 
-### Field Mapping
+**Reference doc expansion:**
 
-| Backlog Field    | Spec Section        | Notes                             |
-| ---------------- | ------------------- | --------------------------------- |
-| Spec ID          | Folder name, branch | `specs/{spec-id}/`                |
-| Scope line       | Title, Description  | Primary description               |
-| Weight           | Metadata            | LIGHTWEIGHT / STANDARD / FORMAL   |
-| Depends On       | Dependencies        | Check their status in backlog     |
-| References       | Docs to load        | Parse abbreviations               |
-| "Covers" bullets | Requirements        | Expand into detailed requirements |
-| "Does NOT cover" | Non-Goals           | Explicit boundaries               |
+- `ARCH §Project Structure` → Read `docs/architecture.md`, extract "Project Structure" section
+- `REQ, DOM` → Read `docs/requirements.md` and `docs/domain-model.md`
 
-### Reference Doc Abbreviations
+### Mode 2: Custom Spec (Fallback)
 
-| Abbrev  | Document               | Path                             |
-| ------- | ---------------------- | -------------------------------- |
-| `REQ`   | Requirements           | `docs/requirements.md`           |
-| `ARCH`  | Technical Architecture | `docs/technical-architecture.md` |
-| `DOM`   | Domain Model           | `docs/domain-model.md`           |
-| `UF`    | User Flows             | `docs/user-flows.md`             |
-| `DS`    | Design System          | `docs/design-system.md`          |
-| `ADR`   | Decision Log           | `docs/decision-log.md`           |
-| `GLOSS` | Glossary               | `docs/glossary.md`               |
+**When:** Backlog disabled OR argument doesn't match backlog entry
 
-If `§Section Name` is specified, focus on that section when loading.
-
----
-
-## Behavior
-
-### Mode 1: From Backlog (Preferred)
-
-```
-/spectrena.specify core-001-project-setup
-```
-
-1. **Parse backlog** — Find and extract spec entry by ID
-2. **Check dependencies** — Warn if "Depends On" specs have status ⬜
-3. **Load reference docs** — Read docs listed in References field
-4. **Git: Ensure clean working tree** (warn if uncommitted changes)
-5. Create directory: `specs/{spec-id}/`
-6. Copy template: `.spectrena/templates/spec-template.md` → `specs/{spec-id}/spec.md`
-7. **Git: Create and checkout branch:**
-   ```bash
-   git checkout -b spec/{spec-id}
-   ```
-8. Generate full spec content using backlog scope + reference docs
-9. Write content to `specs/{spec-id}/spec.md`
-10. **Git: Stage and commit:**
-    ```bash
-    git add specs/{spec-id}/
-    git commit -m "spec({spec-id}): Initialize specification"
-    ```
-11. **Update backlog status:** Change ⬜ to 🟨 in `docs/spec-backlog.md`
-
-### Mode 2: Custom Description (Not in Backlog)
-
-```
-/spectrena.specify "Brief description" -c COMPONENT
-```
+**Steps:**
 
 1. Validate component (prompt if required but missing)
 2. If description brief (< 20 words), ask 2-3 clarifying questions
 3. Read `.spectrena/config.yml` for spec ID template
 4. Find next spec number by scanning `specs/` directory
 5. Generate spec ID: apply template (e.g., `CORE-001-user-auth`)
-6. **Git: Ensure clean working tree** (warn if uncommitted changes)
+6. **Git: Ensure clean working tree**
 7. Create directory: `specs/{SPEC-ID}/`
-8. Copy template: `.spectrena/templates/spec-template.md` → `specs/{SPEC-ID}/spec.md`
+8. Copy template: `.spectrena.spectrena/templates/spec-template.md`
 9. **Git: Create and checkout branch:**
    ```bash
    git checkout -b spec/{SPEC-ID}
    ```
 10. Generate full spec content based on description + clarifications
-11. Write content to `specs/{SPEC-ID}/spec.md`
-12. **Git: Stage and commit:**
+11. Write to `specs/{SPEC-ID}/spec.md`
+12. **Git: Commit:**
     ```bash
     git add specs/{SPEC-ID}/
     git commit -m "spec({SPEC-ID}): Initialize specification"
     ```
 
-### Mode 3: Without Arguments (Fill Existing or Interactive)
+### Mode 3: Interactive (No Arguments)
 
-**If in spec directory or on spec branch:**
+**Steps:**
 
 1. Detect current spec:
-   - Check current git branch for `spec/{SPEC-ID}` pattern
+   - Check git branch for `spec/{SPEC-ID}` pattern
    - Or find spec directory in current path
-2. **Check backlog** — If spec ID exists in backlog, load that context
-3. **Git: Ensure on correct branch:**
-   ```bash
-   git checkout spec/{SPEC-ID}
-   ```
-4. Read existing `spec.md`
-5. If description brief and no backlog context, ask clarifying questions
-6. Generate content for empty sections
-7. Update `spec.md` in place
-8. **Git: Commit changes:**
-   ```bash
-   git add specs/{SPEC-ID}/spec.md
-   git commit -m "spec({SPEC-ID}): Expand specification content"
-   ```
+2. If on spec branch, fill existing spec (Mode 2 flow)
+3. If NOT on spec branch:
+   - If backlog enabled: Show available backlog entries (⬜ status)
+   - Ask user to select OR provide custom description
+4. Proceed with Mode 1 or Mode 2 accordingly
 
-**If NOT in spec directory:**
+## Dependency Status Warnings
 
-1. Ask: "Do you have a spec ID from the backlog (e.g., `core-001-project-setup`), or creating something new?"
-2. If backlog ID provided → Mode 1
-3. If new → ask clarifying questions, then Mode 2
+**When loading from backlog:**
 
----
+| Dependency Status | Action                          |
+| ----------------- | ------------------------------- |
+| All 🟩            | Proceed normally                |
+| Some 🟨           | Warn, ask to confirm            |
+| Some ⬜           | Warn strongly, ask to confirm   |
+| Some 🚫           | Error, suggest unblocking first |
+
+**Example warning:**
+
+```
+⚠️  Dependencies not complete:
+  • core-001-database ⬜ (not started)
+  • core-002-auth 🟨 (in progress)
+
+Proceeding may result in rework. Continue? (y/N)
+```
+
+## Reference Doc Sections
+
+**Format:** `ABBREV §Section`
+
+**Behavior:**
+
+1. Read full doc from path
+2. If `§Section` specified:
+   - Find markdown heading `## Section` or `# Section`
+   - Extract content until next heading at same level
+3. If NOT specified, use full doc
+
+**Example:**
+
+```yaml
+# .spectrena/config.yml
+backlog:
+  reference_docs:
+    ARCH: 'docs/architecture.md'
+```
+
+```markdown
+# In backlog
+
+**References:** ARCH §Database, REQ
+```
+
+**Result:**
+
+- Read `docs/architecture.md`, extract "Database" section
+- Read `docs/requirements.md` (full doc)
 
 ## Spec ID Generation
 
-**For backlog specs:** Use the spec ID as-is (e.g., `core-001-project-setup`)
-
-**For custom specs:** Read from `.spectrena/config.yml`:
+Read from `.spectrena/config.yml`:
 
 ```yaml
 spec_id:
@@ -220,10 +207,6 @@ spec_id:
     - CORE
     - API
     - UI
-    - GUIDANCE
-    - KNOWLEDGE
-    - TRACKING
-    - PLATFORM
 ```
 
 Apply template:
@@ -232,36 +215,18 @@ Apply template:
 - `{NNN}` → next number, zero-padded (e.g., 001)
 - `{slug}` → slugified description (e.g., user-auth)
 
----
-
 ## Content Generation
 
-### From Backlog
+Fill sections based on description or backlog:
 
-| Section             | Source                       |
-| ------------------- | ---------------------------- |
-| **Title**           | Backlog scope line           |
-| **Weight**          | Backlog attribute table      |
-| **Problem**         | Infer from scope             |
-| **Solution**        | Reference docs (ARCH)        |
-| **Requirements**    | Expand "Covers" bullets      |
-| **Non-Goals**       | "Does NOT cover" bullets     |
-| **Dependencies**    | "Depends On" with status     |
-| **Technical Notes** | Reference docs + code blocks |
-| **Open Questions**  | Gaps identified              |
-
-### From Custom Description
-
-| Section                 | Source                                  |
-| ----------------------- | --------------------------------------- |
-| **Title**               | From description                        |
-| **Problem**             | Infer from description + clarifications |
-| **Solution**            | Proposed approach                       |
-| **Scope**               | What's in/out                           |
-| **Dependencies**        | Other specs this depends on             |
-| **Acceptance Criteria** | Testable requirements                   |
-
----
+| Section                 | Source                               |
+| ----------------------- | ------------------------------------ |
+| **Title**               | From description or backlog scope    |
+| **Problem**             | Infer from description/scope         |
+| **Solution**            | Proposed approach                    |
+| **Scope**               | Covers / Does NOT cover from backlog |
+| **Dependencies**        | From backlog depends_on              |
+| **Acceptance Criteria** | Testable requirements                |
 
 ## Examples
 
@@ -270,129 +235,75 @@ Apply template:
 ```
 User: /spectrena.specify core-001-project-setup
 
-Claude: Found core-001-project-setup in backlog:
+Claude: Found core-001-project-setup in backlog.
+✓ No dependencies
+✓ Loading reference: ARCH §Project Structure
 
-  Scope: Monorepo structure, build system, tooling
-  Weight: STANDARD
-  Depends On: (none)
-  References: ARCH §Project Structure
-
-Loading reference docs...
-No dependencies - ready to create.
+Creating CORE-001-project-setup...
 
 $ git checkout -b spec/core-001-project-setup
 Switched to a new branch 'spec/core-001-project-setup'
 
-[creates directory, generates spec from backlog context]
+[creates directory, writes spec.md]
+[updates backlog status ⬜ → 🟨]
 
-$ git add specs/core-001-project-setup/
-$ git commit -m "spec(core-001-project-setup): Initialize specification"
+$ git add specs/core-001-project-setup/ .spectrena/backlog.md
+$ git commit -m "spec(core-001-project-setup): Initialize specification from backlog"
 
-✓ Created specs/core-001-project-setup/spec.md
-✓ On branch spec/core-001-project-setup
-✓ Updated backlog status: ⬜ → 🟨
+Created specs/core-001-project-setup/spec.md
+On branch spec/core-001-project-setup
 ```
 
-### Example 2: From Backlog with Dependency Warning
-
-```
-User: /spectrena.specify guidance-001-quest-crud
-
-Claude: Found guidance-001-quest-crud in backlog:
-
-  Scope: Quest entity operations with QBA board columns
-  Weight: STANDARD
-  Depends On: core-002, core-003
-  References: REQ §1.1, DOM §Quest, UF §G-1 §G-2
-
-Checking dependencies...
-  ⚠️ core-002-schema-migrations: ⬜ Not started
-  ⚠️ core-003-backend-skeleton: ⬜ Not started
-
-Dependencies incomplete. Options:
-1. Proceed anyway (dependency noted in spec)
-2. Start with core-002 first
-
-User: Proceed anyway
-
-Claude: $ git checkout -b spec/guidance-001-quest-crud
-Switched to a new branch 'spec/guidance-001-quest-crud'
-
-[generates spec with dependencies noted]
-
-$ git add specs/guidance-001-quest-crud/
-$ git commit -m "spec(guidance-001-quest-crud): Initialize specification"
-
-✓ Created specs/guidance-001-quest-crud/spec.md
-✓ On branch spec/guidance-001-quest-crud
-✓ Updated backlog status: ⬜ → 🟨
-```
-
-### Example 3: Custom Spec (Not in Backlog)
+### Example 2: Custom Spec
 
 ```
 User: /spectrena.specify "OAuth login" -c CORE
 
-Claude: I don't see "OAuth login" in the backlog. Creating custom spec.
+Claude: Not found in backlog, creating custom spec.
 
-Quick questions:
+I'll create the CORE auth spec. Quick questions:
 1. Which OAuth providers? (Google, GitHub, etc.)
 2. Need refresh tokens?
 3. Any role-based access?
 
 User: Google and GitHub, yes refresh tokens, no roles yet
 
-Claude: Creating CORE-050-oauth-login...
+Claude: Creating CORE-001-oauth-login...
 
-$ git checkout -b spec/CORE-050-oauth-login
-Switched to a new branch 'spec/CORE-050-oauth-login'
+$ git checkout -b spec/CORE-001-oauth-login
+Switched to a new branch 'spec/CORE-001-oauth-login'
 
 [creates directory, writes spec.md]
 
-$ git add specs/CORE-050-oauth-login/
-$ git commit -m "spec(CORE-050-oauth-login): Initialize specification"
+$ git add specs/CORE-001-oauth-login/
+$ git commit -m "spec(CORE-001-oauth-login): Initialize specification"
 
-✓ Created specs/CORE-050-oauth-login/spec.md
-✓ On branch spec/CORE-050-oauth-login
+Created specs/CORE-001-oauth-login/spec.md
+On branch spec/CORE-001-oauth-login
 ```
 
-### Example 4: Fill Existing Spec
+### Example 3: Dependency Warning
 
 ```
-User: /spectrena.specify
+User: /spectrena.specify core-003-authentication
 
-Claude: Detected branch: spec/core-010-auth-local
-Reading specs/core-010-auth-local/spec.md...
+Claude: Found core-003-authentication in backlog.
 
-Found partial spec. Checking backlog for core-010-auth-local...
-✓ Found in backlog with "Covers" list and references.
+⚠️  Dependencies not complete:
+  • core-001-project-setup 🟩 (complete)
+  • core-002-database ⬜ (not started)
 
-Empty sections to fill:
-- Requirements (from backlog "Covers")
-- Technical Notes (from ARCH references)
+Proceeding may result in rework. Continue? (y/N)
 
-Generating content...
+User: n
 
-$ git add specs/core-010-auth-local/spec.md
-$ git commit -m "spec(core-010-auth-local): Expand specification content"
-
-✓ Updated specs/core-010-auth-local/spec.md
+Claude: Cancelled. Consider running /spectrena.specify core-002-database first.
 ```
 
----
+## Notes
 
-## Updating Backlog Status
-
-After creating a spec from backlog:
-
-1. Open `docs/spec-backlog.md`
-2. Find the spec entry's attribute table
-3. Change `| **Status** | ⬜ |` to `| **Status** | 🟨 |`
-4. Stage and commit with the spec changes
-
-Status progression:
-
-- `⬜` Not started
-- `🟨` In progress (spec being written)
-- `🟩` Complete (spec approved)
-- `🚫` Blocked
+- **Max 3 clarification rounds** for custom specs
+- Backlog lookup is case-insensitive
+- Status updates are atomic (file write)
+- Reference docs are optional context, not required
+- Weight field from backlog guides formality level
