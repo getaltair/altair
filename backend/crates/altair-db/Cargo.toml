@@ -8,8 +8,11 @@ rust-version = "1.91.1"
 # Internal dependencies
 altair-core = { path = "../altair-core" }
 
-# Database (placeholder for SurrealDB)
-# surrealdb = { version = "2.2", features = ["kv-mem", "kv-rocksdb"] }
+# Database
+surrealdb = { version = "2.2", features = ["kv-mem", "kv-rocksdb"] }
+
+# Async runtime
+tokio = { version = "1.42", features = ["full"] }
 
 # Async runtime traits
 async-trait = "0.1"
@@ -22,4 +25,3 @@ serde_json = "1.0"
 tracing = "0.1"
 
 [dev-dependencies]
-tokio = { version = "1.42", features = ["full"] }

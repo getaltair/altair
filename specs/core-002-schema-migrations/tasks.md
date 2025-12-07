@@ -6,7 +6,7 @@
 
 **Goal**: Create the migration runner and `_migrations` tracking table.
 
-- [ ] **1.1**: Add surrealdb dependency to altair-db
+- [x] **1.1**: Add surrealdb dependency to altair-db
 
   - **Acceptance**: `backend/crates/altair-db/Cargo.toml` includes `surrealdb = "2.x"`, `tokio = { version = "1", features = ["full"] }`, `tracing = "0.1"`
   - **Files**: `backend/crates/altair-db/Cargo.toml`
