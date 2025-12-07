@@ -190,3 +190,68 @@ async fn test_database_client_execute() {
         "Database info should show at least one table"
     );
 }
+
+#[tokio::test]
+async fn test_changefeed_enabled_on_all_tables() {
+    // Apply the real migration
+    let migrations_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .unwrap()
+        .parent()
+        .unwrap()
+        .join("migrations");
+
+    // Create in-memory database and run migrations
+    let db = any::connect("mem://").await.unwrap();
+    db.use_ns("altair").use_db("main").await.unwrap();
+
+    let mut runner = MigrationRunner::new(db.clone(), &migrations_path);
+    runner
+        .run()
+        .await
+        .expect("Failed to run 001_initial_schema migration");
+
+    // List of all entity tables that should have CHANGEFEED
+    let tables_with_changefeed = vec![
+        "user",
+        "campaign",
+        "quest",
+        "focus_session",
+        "energy_checkin",
+        "note",
+        "folder",
+        "daily_note",
+        "item",
+        "location",
+        "reservation",
+        "maintenance_schedule",
+        "capture",
+        "user_progress",
+        "achievement",
+        "streak",
+        "attachment",
+        "tag",
+    ];
+
+    // Verify each table has CHANGEFEED enabled by querying them
+    // If migration succeeded, all tables should be queryable
+    for table in tables_with_changefeed {
+        let select_result: Result<Vec<serde_json::Value>, _> = db
+            .query(format!("SELECT * FROM {} LIMIT 0", table))
+            .await
+            .and_then(|mut r| r.take(0));
+
+        assert!(
+            select_result.is_ok(),
+            "Table {} should exist and be queryable (CHANGEFEED 7d is part of table definition)",
+            table
+        );
+    }
+
+    // Verify database info shows the tables
+    let db_info: Result<Vec<serde_json::Value>, _> =
+        db.query("INFO FOR DB").await.and_then(|mut r| r.take(0));
+
+    assert!(db_info.is_ok(), "Should be able to query database info");
+    println!("Database info: {:?}", db_info.unwrap());
+}

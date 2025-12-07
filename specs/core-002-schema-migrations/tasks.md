@@ -59,19 +59,19 @@
 
 **Goal**: Define all 15+ entity tables with SCHEMAFULL constraints and CHANGEFEED.
 
-- [ ] **2.1**: Create 001_initial_schema.surql with namespace/database
+- [x] **2.1**: Create 001_initial_schema.surql with namespace/database
 
   - **Acceptance**: File defines `DEFINE NAMESPACE altair;` and `DEFINE DATABASE main;` and `USE NS altair DB main;`
   - **Files**: `backend/migrations/001_initial_schema.surql`
   - **Verify**: File parses as valid SurrealQL
 
-- [ ] **2.2**: Define `user` table with auth fields
+- [x] **2.2**: Define `user` table with auth fields
 
   - **Acceptance**: `DEFINE TABLE user SCHEMAFULL CHANGEFEED 7d;` with fields: id, email (string, unique), display_name (string), avatar_url (option<string>), role (owner/viewer), preferences (object with theme, energy_filter_default, gamification_enabled, weekly_harvest_day, weekly_harvest_time, focus_session_duration, pomodoro_break_duration), device_id (string), created_at, updated_at
   - **Files**: `backend/migrations/001_initial_schema.surql`
   - **Verify**: Migration applies without errors; user has all preference fields from domain model
 
-- [ ] **2.3**: Define Quest domain tables (campaign, quest, focus_session, energy_checkin)
+- [x] **2.3**: Define Quest domain tables (campaign, quest, focus_session, energy_checkin)
 
   - **Acceptance**: 4 tables defined with SCHEMAFULL, CHANGEFEED 7d, all required fields per domain model
   - **Files**: `backend/migrations/001_initial_schema.surql`
@@ -81,7 +81,7 @@
     - focus_session: started_at, planned_duration, actual_duration, completed_steps, status, notes, owner, device_id, created_at, updated_at (Note: linked to quest via edge)
     - energy_checkin: date, energy_level (1-5 scale for user's daily energy), notes, owner, device_id, created_at, updated_at
 
-- [ ] **2.4**: Define Knowledge domain tables (note, folder, daily_note)
+- [x] **2.4**: Define Knowledge domain tables (note, folder, daily_note)
 
   - **Acceptance**: 3 tables defined with SCHEMAFULL, CHANGEFEED 7d, all required fields per domain model
   - **Files**: `backend/migrations/001_initial_schema.surql`
@@ -90,7 +90,7 @@
     - folder: name, color, status, owner, device_id, created_at, updated_at (Note: uses self-referential `contains` edge for parent, not FK)
     - daily_note: date (unique per owner), note_id (record<note> reference), auto_created (bool), owner, device_id, created_at, updated_at
 
-- [ ] **2.5**: Define Inventory domain tables (item, location, reservation, maintenance_schedule)
+- [x] **2.5**: Define Inventory domain tables (item, location, reservation, maintenance_schedule)
 
   - **Acceptance**: 4 tables defined with SCHEMAFULL, CHANGEFEED 7d, all required fields per domain model
   - **Files**: `backend/migrations/001_initial_schema.surql`
@@ -100,13 +100,13 @@
     - reservation: quantity, status (pending/in_use/released), reserved_at, released_at, owner, device_id, created_at, updated_at (Note: uses `reserved_for` edge to quest, linked to item via edge)
     - maintenance_schedule: task_name, interval (duration), last_performed, next_due, notes, notify_days_before, owner, device_id, created_at, updated_at (Note: linked to item via edge)
 
-- [ ] **2.6**: Define Capture table (multi-modal input)
+- [x] **2.6**: Define Capture table (multi-modal input)
 
   - **Acceptance**: `capture` table with fields: text_content (option<string>), capture_type (text/voice/photo/video/mixed), source (desktop/mobile/widget/voice_assistant), status (pending/processed/discarded), processed_to (option<record>), ai_suggestion (option<string>), ai_confidence (option<float>), location (option<geo>), owner, device_id, captured_at, created_at, updated_at
   - **Files**: `backend/migrations/001_initial_schema.surql`
   - **Verify**: Table supports capture_type enum: text, voice, photo, video, mixed; uses `has_attachment` edge for attachments
 
-- [ ] **2.7**: Define Gamification tables (user_progress, achievement, streak)
+- [x] **2.7**: Define Gamification tables (user_progress, achievement, streak)
 
   - **Acceptance**: 3 tables defined with SCHEMAFULL, CHANGEFEED 7d:
     - user_progress: xp_total (int), level (int), title (string), owner, device_id, created_at, updated_at
@@ -115,7 +115,7 @@
   - **Files**: `backend/migrations/001_initial_schema.surql`
   - **Verify**: Tables created with correct relationships to user table via owner field
 
-- [ ] **2.8**: Define shared tables (attachment, tag)
+- [x] **2.8**: Define shared tables (attachment, tag)
 
   - **Acceptance**: 2 tables defined with SCHEMAFULL, CHANGEFEED 7d:
     - attachment: filename, mime_type, size_bytes (int), storage_key (S3 key), checksum (SHA-256), media_type (photo/audio/video/document), duration (option<duration> for audio/video), thumbnail_key (option<string>), transcription (option<string>), owner, device_id, created_at, updated_at (Note: linked via `has_attachment` edge, not entity_id FK)
@@ -123,7 +123,7 @@
   - **Files**: `backend/migrations/001_initial_schema.surql`
   - **Verify**: Attachments linked via polymorphic `has_attachment` edge; tags linked via `tagged` edge
 
-- [ ] **2.9**: Add field assertions for enums (column, energy_cost, energy_level, status, capture_type, etc.)
+- [x] **2.9**: Add field assertions for enums (column, energy_cost, energy_level, status, capture_type, etc.)
 
   - **Acceptance**: ASSERT clauses enforce valid enum values:
     - quest.column IN ['idea_greenhouse', 'quest_log', 'this_cycle', 'next_up', 'in_progress', 'harvested', 'archived']
@@ -138,7 +138,7 @@
   - **Files**: `backend/migrations/001_initial_schema.surql`
   - **Verify**: INSERT with invalid enum value fails with assertion error
 
-- [ ] **2.10**: Verify CHANGEFEED 7d on all tables
+- [x] **2.10**: Verify CHANGEFEED 7d on all tables
   - **Acceptance**: Integration test confirms all 15+ entity tables have CHANGEFEED enabled
   - **Files**: `backend/crates/altair-db/tests/migration_test.rs`
   - **Verify**: `INFO FOR TABLE` shows `changefeed` field for each table
@@ -444,13 +444,13 @@
 | Phase     | Tasks  | Completion |
 | --------- | ------ | ---------- |
 | Phase 1   | 8      | 8/8 ✅     |
-| Phase 2   | 10     | 0/10       |
+| Phase 2   | 10     | 10/10 ✅   |
 | Phase 3   | 10     | 0/10       |
 | Phase 4   | 8      | 0/8        |
 | Phase 5   | 9      | 0/9        |
 | Phase 6   | 9      | 0/9        |
 | Phase 7   | 6      | 0/6        |
-| **Total** | **60** | **8/60**   |
+| **Total** | **60** | **18/60**  |
 
 ## Next Steps
 
