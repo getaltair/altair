@@ -51,7 +51,7 @@ Create or generate content for a specification from the spec backlog or custom d
 
 ### Locating the Backlog
 
-The spec backlog is at `docs/altair-spec-backlog.md`. It contains pre-defined specs with:
+The spec backlog is at `docs/spec-backlog.md`. It contains pre-defined specs with:
 
 - **Scope** — What the spec covers
 - **Weight** — LIGHTWEIGHT, STANDARD, or FORMAL
@@ -109,15 +109,15 @@ When given a spec ID like `core-001-project-setup`:
 
 ### Reference Doc Abbreviations
 
-| Abbrev  | Document               | Path                                    |
-| ------- | ---------------------- | --------------------------------------- |
-| `REQ`   | Requirements           | `docs/altair-requirements-v2.md`        |
-| `ARCH`  | Technical Architecture | `docs/altair-technical-architecture.md` |
-| `DOM`   | Domain Model           | `docs/altair-domain-model.md`           |
-| `UF`    | User Flows             | `docs/altair-user-flows.md`             |
-| `DS`    | Design System          | `docs/altair-design-system.md`          |
-| `ADR`   | Decision Log           | `docs/altair-decision-log.md`           |
-| `GLOSS` | Glossary               | `docs/altair-glossary.md`               |
+| Abbrev  | Document               | Path                             |
+| ------- | ---------------------- | -------------------------------- |
+| `REQ`   | Requirements           | `docs/requirements.md`           |
+| `ARCH`  | Technical Architecture | `docs/technical-architecture.md` |
+| `DOM`   | Domain Model           | `docs/domain-model.md`           |
+| `UF`    | User Flows             | `docs/user-flows.md`             |
+| `DS`    | Design System          | `docs/design-system.md`          |
+| `ADR`   | Decision Log           | `docs/decision-log.md`           |
+| `GLOSS` | Glossary               | `docs/glossary.md`               |
 
 If `§Section Name` is specified, focus on that section when loading.
 
@@ -148,7 +148,7 @@ If `§Section Name` is specified, focus on that section when loading.
     git add specs/{spec-id}/
     git commit -m "spec({spec-id}): Initialize specification"
     ```
-11. **Update backlog status:** Change ⬜ to 🟨 in `docs/altair-spec-backlog.md`
+11. **Update backlog status:** Change ⬜ to 🟨 in `docs/spec-backlog.md`
 
 ### Mode 2: Custom Description (Not in Backlog)
 
@@ -214,7 +214,7 @@ If `§Section Name` is specified, focus on that section when loading.
 
 ```yaml
 spec_id:
-  template: "{component}-{NNN}-{slug}"
+  template: '{component}-{NNN}-{slug}'
   padding: 3
   components:
     - CORE
@@ -385,7 +385,7 @@ $ git commit -m "spec(core-010-auth-local): Expand specification content"
 
 After creating a spec from backlog:
 
-1. Open `docs/altair-spec-backlog.md`
+1. Open `docs/spec-backlog.md`
 2. Find the spec entry's attribute table
 3. Change `| **Status** | ⬜ |` to `| **Status** | 🟨 |`
 4. Stage and commit with the spec changes
