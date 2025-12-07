@@ -1,0 +1,71 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "ui": "tui",
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": [
+        "dist/**",
+        ".svelte-kit/**",
+        "target/**",
+        "gen/**"
+      ],
+      "inputs": [
+        "src/**",
+        "src-tauri/**",
+        "package.json",
+        "tsconfig.json",
+        "vite.config.ts",
+        "svelte.config.js",
+        "Cargo.toml",
+        "Cargo.lock"
+      ]
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "test": {
+      "dependsOn": ["^build"],
+      "outputs": [
+        "coverage/**"
+      ],
+      "inputs": [
+        "src/**",
+        "tests/**",
+        "test/**",
+        "package.json",
+        "tsconfig.json"
+      ]
+    },
+    "lint": {
+      "dependsOn": ["^build"],
+      "outputs": [],
+      "inputs": [
+        "src/**",
+        "*.ts",
+        "*.js",
+        "*.svelte",
+        ".eslintrc.cjs",
+        "eslint.config.js"
+      ]
+    },
+    "typecheck": {
+      "dependsOn": ["^build"],
+      "outputs": [],
+      "inputs": [
+        "src/**",
+        "package.json",
+        "tsconfig.json"
+      ]
+    },
+    "clean": {
+      "cache": false
+    }
+  },
+  "globalDependencies": [
+    "package.json",
+    "pnpm-lock.yaml",
+    "turbo.json"
+  ]
+}

@@ -1,5 +1,7 @@
 # CLAUDE.md
 
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
 > **Project context for Claude Code** — Read this first
 
 ---
@@ -8,11 +10,11 @@
 
 **Altair** is an ADHD-focused productivity ecosystem with three apps:
 
-| App | Purpose | Key Entities |
-|-----|---------|--------------|
-| **Guidance** | Task management (Quest-Based Agile) | Quest, Campaign |
-| **Knowledge** | Personal knowledge management | Note, Folder |
-| **Tracking** | Inventory management | Item, Location |
+| App           | Purpose                             | Key Entities    |
+| ------------- | ----------------------------------- | --------------- |
+| **Guidance**  | Task management (Quest-Based Agile) | Quest, Campaign |
+| **Knowledge** | Personal knowledge management       | Note, Folder    |
+| **Tracking**  | Inventory management                | Item, Location  |
 
 Plus **Quick Capture** for zero-friction input across all apps.
 
@@ -20,16 +22,16 @@ Plus **Quick Capture** for zero-friction input across all apps.
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|------------|
-| Database | SurrealDB 2.x (embedded + cloud) |
+| Layer          | Technology                                      |
+| -------------- | ----------------------------------------------- |
+| Database       | SurrealDB 2.x (embedded + cloud)                |
 | Object Storage | S3-compatible (Minio local, Backblaze B2 cloud) |
-| Desktop | Tauri 2.0 + Svelte |
-| Backend | Rust + Axum (localhost:3847) |
-| Mobile | Tauri 2.0 Android |
-| IPC | Tauri Commands (not REST for desktop) |
-| Type Safety | tauri-specta (Rust → TypeScript) |
-| Embeddings | Local ONNX (all-MiniLM-L6-v2) |
+| Desktop        | Tauri 2.0 + Svelte                              |
+| Backend        | Rust + Axum (localhost:3847)                    |
+| Mobile         | Tauri 2.0 Android                               |
+| IPC            | Tauri Commands (not REST for desktop)           |
+| Type Safety    | tauri-specta (Rust → TypeScript)                |
+| Embeddings     | Local ONNX (all-MiniLM-L6-v2)                   |
 
 ---
 
@@ -67,14 +69,13 @@ altair/
 │   ├── storage/            # S3 client
 │   └── search/             # Embeddings + hybrid search
 ├── backend/
-│   ├── src/
-│   │   ├── commands/       # Tauri IPC handlers
-│   │   ├── api/            # REST handlers (mobile only)
-│   │   ├── auth/           # Auth plugins
-│   │   ├── sync/           # Sync engine
-│   │   ├── embeddings/     # ONNX inference
-│   │   ├── providers/      # AI plugins (optional)
-│   │   └── storage/        # S3 integration
+│   ├── crates/
+│   │   ├── altair-core/    # Shared types, errors, utilities
+│   │   ├── altair-db/      # SurrealDB client + queries
+│   │   ├── altair-sync/    # Change feed sync engine
+│   │   ├── altair-storage/ # S3-compatible storage client
+│   │   ├── altair-search/  # ONNX embeddings + hybrid search
+│   │   └── altair-auth/    # Auth plugins (trait-based)
 │   └── migrations/         # SurrealDB migrations
 ├── specs/                  # Specifications (SDD)
 ├── docs/                   # Architecture, domain model, etc.
@@ -87,14 +88,14 @@ altair/
 
 Use these terms consistently:
 
-| ✅ Use | ❌ Don't Use | Why |
-|--------|-------------|-----|
-| Quest | Task, Todo | Quest has energy cost, adventure framing |
-| Campaign | Project, Epic | Campaign contains quests |
-| Note | Document, Page | Note is the PKM entity |
-| Item | Product, Asset | Item is the inventory entity |
-| Capture | Inbox item, Draft | Capture is pending classification |
-| Archive | Delete | Soft delete, recoverable |
+| ✅ Use   | ❌ Don't Use      | Why                                      |
+| -------- | ----------------- | ---------------------------------------- |
+| Quest    | Task, Todo        | Quest has energy cost, adventure framing |
+| Campaign | Project, Epic     | Campaign contains quests                 |
+| Note     | Document, Page    | Note is the PKM entity                   |
+| Item     | Product, Asset    | Item is the inventory entity             |
+| Capture  | Inbox item, Draft | Capture is pending classification        |
+| Archive  | Delete            | Soft delete, recoverable                 |
 
 See `docs/glossary.md` for full terminology.
 
@@ -194,30 +195,61 @@ Follow spec-driven development:
 
 ## Common Tasks
 
-### Run Development
+### Build & Development
 
 ```bash
-# Start backend + all apps
+# Build all packages and apps
+pnpm build
+
+# Start development (backend + all apps in parallel)
 pnpm dev
 
-# Start specific app
+# Start specific app only
 pnpm --filter guidance dev
 
 # Run backend only
+cd backend && cargo build
 cd backend && cargo run
 ```
 
 ### Run Tests
 
 ```bash
-# All tests
+# All tests via turbo
 pnpm test
 
-# Rust tests
+# Rust tests (all crates)
 cd backend && cargo test
+
+# Single Rust test
+cd backend && cargo test test_name
+cd backend && cargo test -p altair-db test_name
 
 # Specific package
 pnpm --filter @altair/db test
+```
+
+### Code Quality
+
+```bash
+# Format all code
+pnpm format
+
+# Check formatting without writing
+pnpm format:check
+
+# Lint TypeScript/Svelte
+pnpm lint
+
+# Type check
+pnpm typecheck
+
+# Rust formatting and linting (required before commits)
+cd backend && cargo fmt
+cd backend && cargo clippy
+
+# Clean all build artifacts
+pnpm clean
 ```
 
 ### Database Operations
@@ -250,14 +282,14 @@ cargo run --bin generate-bindings
 
 ## Documentation
 
-| Doc | Location | Purpose |
-|-----|----------|---------|
-| Technical Architecture | `docs/technical-architecture.md` | How the system works |
-| Domain Model | `docs/domain-model.md` | Entities and relationships |
-| User Flows | `docs/user-flows.md` | What users do |
-| Glossary | `docs/glossary.md` | Consistent terminology |
-| Decision Log | `docs/decision-log.md` | Why decisions were made |
-| Spec Backlog | `docs/spec-backlog.md` | What to build next |
+| Doc                    | Location                         | Purpose                    |
+| ---------------------- | -------------------------------- | -------------------------- |
+| Technical Architecture | `docs/technical-architecture.md` | How the system works       |
+| Domain Model           | `docs/domain-model.md`           | Entities and relationships |
+| User Flows             | `docs/user-flows.md`             | What users do              |
+| Glossary               | `docs/glossary.md`               | Consistent terminology     |
+| Decision Log           | `docs/decision-log.md`           | Why decisions were made    |
+| Spec Backlog           | `docs/spec-backlog.md`           | What to build next         |
 
 ---
 
@@ -276,11 +308,11 @@ See `AGENTS.md` for:
 
 ### Ports
 
-| Service | Port |
-|---------|------|
-| Backend API | 3847 |
-| SurrealDB | 8000 |
-| Minio | 9000 |
+| Service       | Port |
+| ------------- | ---- |
+| Backend API   | 3847 |
+| SurrealDB     | 8000 |
+| Minio         | 9000 |
 | Minio Console | 9001 |
 
 ### Environment Variables
@@ -296,10 +328,17 @@ S3_BUCKET=altair-local
 
 ### Key Files
 
-| File | Purpose |
-|------|---------|
-| `backend/src/main.rs` | Backend entry point |
-| `backend/migrations/` | Database schema |
-| `packages/db/src/schema.ts` | TypeScript schema types |
-| `packages/bindings/src/` | Generated Tauri command types |
-| `apps/*/src/routes/` | Svelte routes |
+| File                        | Purpose                       |
+| --------------------------- | ----------------------------- |
+| `backend/src/main.rs`       | Backend entry point           |
+| `backend/migrations/`       | Database schema               |
+| `packages/db/src/schema.ts` | TypeScript schema types       |
+| `packages/bindings/src/`    | Generated Tauri command types |
+| `apps/*/src/routes/`        | Svelte routes                 |
+
+### Tool Preferences
+
+- Always use `pnpm` — never `npm` or `npx`
+- Use `rg` over `grep` for content search
+- Use `fd` over `find` for file search
+- Use Rust edition 2024

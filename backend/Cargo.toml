@@ -1,0 +1,4 @@
+# Legacy location - workspace moved to root Cargo.toml
+# This file exists for backward compatibility with tooling that expects
+# a Cargo.toml in the backend directory. All workspace operations should
+# now be performed from the repository root.

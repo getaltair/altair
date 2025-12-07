@@ -1,0 +1,38 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Gradient background -->
+  <defs>
+    <linearGradient id="trackingGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#10b981;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#059669;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background circle -->
+  <circle cx="256" cy="256" r="240" fill="url(#trackingGrad)"/>
+
+  <!-- Box/Package icon (inventory tracking theme) -->
+  <!-- Base of box -->
+  <path d="M 256 140 L 380 200 L 380 340 L 256 400 L 132 340 L 132 200 Z"
+        fill="#ffffff" opacity="0.9"/>
+
+  <!-- Top of box (lid) -->
+  <path d="M 256 140 L 380 200 L 256 260 L 132 200 Z"
+        fill="#ffffff" opacity="1"/>
+
+  <!-- Center line (box fold) -->
+  <line x1="256" y1="260" x2="256" y2="400"
+        stroke="#10b981" stroke-width="4" stroke-linecap="round"/>
+
+  <!-- Left edge -->
+  <line x1="132" y1="200" x2="132" y2="340"
+        stroke="#059669" stroke-width="3" stroke-linecap="round"/>
+
+  <!-- Right edge -->
+  <line x1="380" y1="200" x2="380" y2="340"
+        stroke="#059669" stroke-width="3" stroke-linecap="round"/>
+
+  <!-- Checkmark (tracked status) -->
+  <path d="M 220 300 L 240 320 L 290 270"
+        stroke="#10b981" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"
+        fill="none"/>
+</svg>
