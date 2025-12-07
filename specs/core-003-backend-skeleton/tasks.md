@@ -7,7 +7,7 @@
 
 **Goal**: Establish ApiError and AppConfig types in altair-core
 
-- [ ] **P1.1**: Create ApiError type for IPC error handling
+- [x] **P1.1**: Create ApiError type for IPC error handling
 
   - **Acceptance**: File exists with complete type definition, compiles without errors, includes unit tests
   - **Files**: `backend/crates/altair-core/src/api_error.rs`
@@ -19,7 +19,7 @@
     - Add constructor methods: `new(code, message)`, `with_details(code, message, details)`
     - Write unit tests for serialization and conversion
 
-- [ ] **P1.2**: Create AppConfig type for application configuration
+- [x] **P1.2**: Create AppConfig type for application configuration
 
   - **Acceptance**: File exists with complete type definition, compiles, loads from TOML and defaults
   - **Files**: `backend/crates/altair-core/src/config.rs`
@@ -32,7 +32,7 @@
     - Default log level: "INFO", retention: 7 days
     - Write unit tests for TOML parsing and default values
 
-- [ ] **P1.3**: Update altair-core dependencies
+- [x] **P1.3**: Update altair-core dependencies
 
   - **Acceptance**: Cargo.toml updated, `cargo check -p altair-core` passes
   - **Files**: `backend/crates/altair-core/Cargo.toml`
@@ -42,7 +42,7 @@
     - Ensure `specta` with derive feature is present
     - Add `serde_json` if not already present
 
-- [ ] **P1.4**: Export new types from altair-core
+- [x] **P1.4**: Export new types from altair-core
   - **Acceptance**: Types available via `use altair_core::*`, `cargo test -p altair-core` passes
   - **Files**: `backend/crates/altair-core/src/lib.rs`
   - **Details**:
@@ -352,25 +352,25 @@
 
 ## Task Summary
 
-| Phase                        | Tasks  | Status     |
-| ---------------------------- | ------ | ---------- |
-| Phase 1: Core Types          | 4      | ⏳ Pending |
-| Phase 2: Database Connection | 4      | ⏳ Pending |
-| Phase 3: Logging             | 3      | ⏳ Pending |
-| Phase 4: AppState + Commands | 4      | ⏳ Pending |
-| Phase 5: Replicate to Apps   | 3      | ⏳ Pending |
-| Phase 6: TypeScript Bindings | 4      | ⏳ Pending |
-| Phase 7: Integration Testing | 3      | ⏳ Pending |
-| **Total**                    | **25** |            |
+| Phase                        | Tasks  | Status       |
+| ---------------------------- | ------ | ------------ |
+| Phase 1: Core Types          | 4      | ✅ Completed |
+| Phase 2: Database Connection | 4      | ⏳ Pending   |
+| Phase 3: Logging             | 3      | ⏳ Pending   |
+| Phase 4: AppState + Commands | 4      | ⏳ Pending   |
+| Phase 5: Replicate to Apps   | 3      | ⏳ Pending   |
+| Phase 6: TypeScript Bindings | 4      | ⏳ Pending   |
+| Phase 7: Integration Testing | 3      | ⏳ Pending   |
+| **Total**                    | **25** |              |
 
 ## Progress Tracking
 
 Update this section as you complete tasks:
 
-- **Completed**: 0/25 (0%)
+- **Completed**: 4/25 (16%)
 - **In Progress**: 0/25
 - **Blocked**: 0/25
 
 ## Next Action
 
-Begin with **P1.1**: Create ApiError type for IPC error handling
+Phase 1 complete! Next: Begin Phase 2 with **P2.1**: Enable SurrealDB dependency in altair-db

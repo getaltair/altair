@@ -13,6 +13,13 @@ anyhow = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 
+# Configuration
+toml = "0.8"
+directories = "5.0"
+
+# Type generation for Tauri
+specta = { version = "2.0.0-rc.20", features = ["derive"], optional = true }
+
 # Async runtime traits
 async-trait = "0.1"
 
@@ -24,6 +31,10 @@ uuid = { version = "1.11", features = ["v4", "serde"] }
 
 # Observability
 tracing = "0.1"
+
+[features]
+default = []
+specta = ["dep:specta"]
 
 [dev-dependencies]
 tokio = { version = "1.42", features = ["full"] }
