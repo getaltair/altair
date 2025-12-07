@@ -9,7 +9,7 @@ rust-version = "1.91.1"
 altair-core = { path = "../altair-core" }
 
 # Database
-surrealdb = { version = "2.2", features = ["kv-mem"] }
+surrealdb = { version = "2.2", features = ["kv-mem", "kv-rocksdb"] }
 
 # Async runtime
 tokio = { version = "1.42", features = ["full"] }
