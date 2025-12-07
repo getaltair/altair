@@ -36,6 +36,18 @@ SPEC WEIGHT: [ ] LIGHTWEIGHT  [x] STANDARD  [ ] FORMAL
 
 ---
 
+## Clarifications
+
+### Session 2025-12-06
+
+- Q: What log retention policy should be applied to structured JSON logs? → A: 7-day rotation with automatic cleanup
+- Q: Should AppState hold a single SurrealDB connection or a connection pool? → A: Single connection (sufficient for desktop single-user)
+- Q: What format should ApiError codes use? → A: String codes (e.g., "DB_CONNECTION_FAILED")
+- Q: What should the default log level be? → A: INFO (balanced, logs significant events)
+- Q: Should health_check include app version? → A: Yes, include version from Cargo.toml
+
+---
+
 ## Problem Statement
 
 ### Current State
@@ -150,6 +162,7 @@ Configuration uses TOML files in standard platform locations (`~/.config/altair/
 | NFR-002 | Health check response time < 50ms                    | MEDIUM   |                  |
 | NFR-003 | Generated TypeScript bindings compile without errors | HIGH     |                  |
 | NFR-004 | Logs written in JSON format for machine parsing      | MEDIUM   |                  |
+| NFR-005 | Logs rotated daily with 7-day retention              | MEDIUM   | Auto-cleanup     |
 
 ### User Stories
 
@@ -201,34 +214,36 @@ Independent Test: Add test command, generate bindings, verify TS compiles
 **AppState**
 
 - **Purpose**: Central state container passed to all Tauri commands via State<'\_, AppState>
-- **Key Attributes**: db (SurrealDB connection), config (AppConfig)
+- **Key Attributes**: db (single SurrealDB connection, not pooled), config (AppConfig)
 - **Relationships**: Owned by Tauri app, injected into commands
 - **Lifecycle**: Created at app startup, lives for app lifetime
 - **Business Rules**:
   - Must be initialized before any command can execute
   - Database connection must be healthy for commands to succeed
+  - Single connection sufficient for desktop single-user scenario
 
 **ApiError**
 
 - **Purpose**: Consistent error type returned from all backend operations
-- **Key Attributes**: code (string identifier), message (human-readable), details (optional context)
+- **Key Attributes**: code (SCREAMING_SNAKE_CASE string, e.g., "DB_CONNECTION_FAILED"), message (human-readable), details (optional context)
 - **Relationships**: Returned by all fallible commands
 - **Lifecycle**: Created when error occurs, serialized to frontend
 - **Business Rules**:
   - Must serialize cleanly to JSON for IPC transport
+  - Code strings are self-documenting and stable across versions
   - Must map to appropriate error categories
 
 **HealthStatus**
 
 - **Purpose**: Response from health_check indicating service health
-- **Key Attributes**: overall (healthy/unhealthy), database (status), timestamp
+- **Key Attributes**: overall (healthy/unhealthy), database (status), version (from Cargo.toml), timestamp
 - **Relationships**: Returned by health_check command
 - **Lifecycle**: Created per health check request
 
 **AppConfig**
 
 - **Purpose**: Application configuration loaded from TOML files
-- **Key Attributes**: database_path, log_level, log_dir
+- **Key Attributes**: database_path, log_level (default: INFO), log_dir, log_retention_days (default: 7)
 - **Relationships**: Stored in AppState, used by all services
 - **Lifecycle**: Loaded at startup, read-only during execution
 
