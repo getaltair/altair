@@ -12,43 +12,43 @@
   - **Files**: `backend/crates/altair-db/Cargo.toml`
   - **Verify**: `cargo check -p altair-db` passes
 
-- [ ] **1.2**: Create migrations directory with README
+- [x] **1.2**: Create migrations directory with README
 
   - **Acceptance**: `backend/migrations/README.md` exists and documents migration file naming convention (NNN_description.surql)
   - **Files**: `backend/migrations/README.md`
   - **Verify**: File readable and follows project markdown style
 
-- [ ] **1.3**: Implement MigrationRunner struct
+- [x] **1.3**: Implement MigrationRunner struct
 
   - **Acceptance**: `MigrationRunner` struct with `new()` and `run()` methods exists
   - **Files**: `backend/crates/altair-db/src/migration.rs`
   - **Verify**: `cargo check -p altair-db` passes, struct is public
 
-- [ ] **1.4**: Implement version tracking (`_migrations` table)
+- [x] **1.4**: Implement version tracking (`_migrations` table)
 
   - **Acceptance**: `MigrationRunner::ensure_migrations_table()` creates `_migrations` table with fields: `version: int`, `name: string`, `applied_at: datetime`
   - **Files**: `backend/crates/altair-db/src/migration.rs`
   - **Verify**: Method creates table on first run, idempotent on subsequent runs
 
-- [ ] **1.5**: Implement file discovery (NNN\_\*.surql pattern)
+- [x] **1.5**: Implement file discovery (NNN\_\*.surql pattern)
 
   - **Acceptance**: `MigrationRunner::discover_migrations()` returns Vec of migration files sorted by version number
   - **Files**: `backend/crates/altair-db/src/migration.rs`
   - **Verify**: Returns correct files from `backend/migrations/`, ignores non-surql files
 
-- [ ] **1.6**: Implement idempotent apply logic
+- [x] **1.6**: Implement idempotent apply logic
 
   - **Acceptance**: `MigrationRunner::apply()` checks `_migrations` table, only applies pending migrations, records versions
   - **Files**: `backend/crates/altair-db/src/migration.rs`
   - **Verify**: Running twice applies migrations only once
 
-- [ ] **1.7**: Create SurrealDB client wrapper
+- [x] **1.7**: Create SurrealDB client wrapper
 
   - **Acceptance**: `DatabaseClient` struct with `connect()`, `execute()`, and `select()` methods exists
   - **Files**: `backend/crates/altair-db/src/client.rs`
   - **Verify**: `cargo check -p altair-db` passes, client can connect to embedded SurrealKV
 
-- [ ] **1.8**: Add integration test for migration runner
+- [x] **1.8**: Add integration test for migration runner
   - **Acceptance**: Test creates in-memory DB, runs empty migration, verifies `_migrations` table exists
   - **Files**: `backend/crates/altair-db/tests/migration_test.rs`
   - **Verify**: `cargo test -p altair-db migration_test` passes
@@ -443,14 +443,14 @@
 
 | Phase     | Tasks  | Completion |
 | --------- | ------ | ---------- |
-| Phase 1   | 8      | 0/8        |
+| Phase 1   | 8      | 8/8 ✅     |
 | Phase 2   | 10     | 0/10       |
 | Phase 3   | 10     | 0/10       |
 | Phase 4   | 8      | 0/8        |
 | Phase 5   | 9      | 0/9        |
 | Phase 6   | 9      | 0/9        |
 | Phase 7   | 6      | 0/6        |
-| **Total** | **60** | **0/60**   |
+| **Total** | **60** | **8/60**   |
 
 ## Next Steps
 

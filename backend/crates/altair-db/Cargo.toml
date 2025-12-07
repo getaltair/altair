@@ -9,7 +9,7 @@ rust-version = "1.91.1"
 altair-core = { path = "../altair-core" }
 
 # Database
-surrealdb = { version = "2.2", features = ["kv-mem", "kv-rocksdb"] }
+surrealdb = { version = "2.2", features = ["kv-mem"] }
 
 # Async runtime
 tokio = { version = "1.42", features = ["full"] }
@@ -24,4 +24,8 @@ serde_json = "1.0"
 # Observability
 tracing = "0.1"
 
+# Utilities
+shellexpand = "3.1"
+
 [dev-dependencies]
+tempfile = "3.14"
