@@ -108,7 +108,7 @@
 
 **Goal**: Set up tracing with JSON output and log rotation
 
-- [ ] **P3.1**: Add logging dependencies to workspace
+- [x] **P3.1**: Add logging dependencies to workspace
 
   - **Acceptance**: Dependencies added, workspace compiles
   - **Files**: `Cargo.toml` (workspace root)
@@ -118,7 +118,7 @@
       - `tracing-appender = "0.2"`
     - Run `cargo check` from workspace root
 
-- [ ] **P3.2**: Create logging setup module
+- [x] **P3.2**: Create logging setup module
 
   - **Acceptance**: Logging initializes correctly, writes to file and console, rotates daily
   - **Files**: `backend/crates/altair-core/src/logging.rs`
@@ -132,7 +132,7 @@
     - Return guard to prevent premature shutdown
     - Add documentation about guard lifetime requirements
 
-- [ ] **P3.3**: Export logging setup from altair-core
+- [x] **P3.3**: Export logging setup from altair-core
   - **Acceptance**: Logging module exported, integrated into lib.rs
   - **Files**: `backend/crates/altair-core/src/lib.rs`
   - **Details**:
@@ -356,7 +356,7 @@
 | ---------------------------- | ------ | ------------ |
 | Phase 1: Core Types          | 4      | ✅ Completed |
 | Phase 2: Database Connection | 4      | ✅ Completed |
-| Phase 3: Logging             | 3      | ⏳ Pending   |
+| Phase 3: Logging             | 3      | ✅ Completed |
 | Phase 4: AppState + Commands | 4      | ⏳ Pending   |
 | Phase 5: Replicate to Apps   | 3      | ⏳ Pending   |
 | Phase 6: TypeScript Bindings | 4      | ⏳ Pending   |
@@ -367,10 +367,10 @@
 
 Update this section as you complete tasks:
 
-- **Completed**: 8/25 (32%)
+- **Completed**: 11/25 (44%)
 - **In Progress**: 0/25
 - **Blocked**: 0/25
 
 ## Next Action
 
-Phase 2 complete! Next: Begin Phase 3 with **P3.1**: Add logging dependencies to workspace
+Phase 3 complete! Next: Begin Phase 4 with **P4.1**: Create AppState module for guidance app

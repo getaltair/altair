@@ -9,6 +9,7 @@
 pub mod api_error;
 pub mod config;
 pub mod error;
+pub mod logging;
 pub mod traits;
 pub mod types;
 
@@ -16,4 +17,5 @@ pub mod types;
 pub use api_error::ApiError;
 pub use config::AppConfig;
 pub use error::{Error, Result};
+pub use logging::{LogGuard, init_logging};
 pub use types::{EnergyCost, EntityId, EntityStatus, Timestamp, UserId};
