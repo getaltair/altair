@@ -83,7 +83,7 @@
 | Attribute      | Value                                       |
 | -------------- | ------------------------------------------- |
 | **Weight**     | STANDARD                                    |
-| **Status**     | ⬜                                          |
+| **Status**     | 🟨                                          |
 | **Depends On** | core-001                                    |
 | **References** | DOM (all entities), ARCH §Database, ADR-001 |
 
