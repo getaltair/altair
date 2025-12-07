@@ -273,49 +273,49 @@
 
 **Goal**: Create Rust structs that mirror the SurrealDB schema for type-safe operations.
 
-- [ ] **5.1**: Create schema module structure
+- [x] **5.1**: Create schema module structure
 
   - **Acceptance**: `backend/crates/altair-db/src/schema/mod.rs` exists and re-exports all domain modules
   - **Files**: `backend/crates/altair-db/src/schema/mod.rs`, updated `lib.rs`
   - **Verify**: `cargo check -p altair-db` passes
 
-- [ ] **5.2**: Define Quest domain types (Campaign, Quest, FocusSession, EnergyCheckIn)
+- [x] **5.2**: Define Quest domain types (Campaign, Quest, FocusSession, EnergyCheckIn)
 
   - **Acceptance**: 4 structs with `#[derive(Debug, Clone, Serialize, Deserialize)]` matching SurrealDB fields exactly
   - **Files**: `backend/crates/altair-db/src/schema/quest.rs`
   - **Verify**: Structs compile, serde works for SurrealDB roundtrip
 
-- [ ] **5.3**: Define Knowledge domain types (Note, Folder, DailyNote)
+- [x] **5.3**: Define Knowledge domain types (Note, Folder, DailyNote)
 
   - **Acceptance**: 3 structs with correct field types (String, Option<T>, DateTime, etc.)
   - **Files**: `backend/crates/altair-db/src/schema/note.rs`
   - **Verify**: Structs match SurrealDB schema exactly
 
-- [ ] **5.4**: Define Inventory domain types (Item, Location, Reservation, MaintenanceSchedule)
+- [x] **5.4**: Define Inventory domain types (Item, Location, Reservation, MaintenanceSchedule)
 
   - **Acceptance**: 4 structs with ownership and relationship fields
   - **Files**: `backend/crates/altair-db/src/schema/item.rs`
   - **Verify**: Structs compile and serialize correctly
 
-- [ ] **5.5**: Define Capture type
+- [x] **5.5**: Define Capture type
 
   - **Acceptance**: `Capture` struct with capture_type enum, processed flag
   - **Files**: `backend/crates/altair-db/src/schema/capture.rs`
   - **Verify**: CaptureType enum matches SurrealDB constraint
 
-- [ ] **5.6**: Define Gamification types (UserProgress, Achievement, Streak)
+- [x] **5.6**: Define Gamification types (UserProgress, Achievement, Streak)
 
   - **Acceptance**: 3 structs with XP, level, streak tracking fields
   - **Files**: `backend/crates/altair-db/src/schema/gamification.rs`
   - **Verify**: Types support gamification logic
 
-- [ ] **5.7**: Define shared types (User, Attachment, Tag)
+- [x] **5.7**: Define shared types (User, Attachment, Tag)
 
   - **Acceptance**: 3 structs with auth and metadata fields
   - **Files**: `backend/crates/altair-db/src/schema/shared.rs`
   - **Verify**: User type includes email, display_name, preferences
 
-- [ ] **5.8**: Define enum types (QuestColumn, EnergyCost, EnergyLevel, CaptureType, ItemStatus, etc.)
+- [x] **5.8**: Define enum types (QuestColumn, EnergyCost, EnergyLevel, CaptureType, ItemStatus, etc.)
 
   - **Acceptance**: Enums match SurrealDB ASSERT constraints exactly:
     - QuestColumn: IdeaGreenhouse, QuestLog, ThisCycle, NextUp, InProgress, Harvested, Archived (7 variants, `#[serde(rename_all = "snake_case")]`)
@@ -332,7 +332,7 @@
   - **Files**: `backend/crates/altair-db/src/schema/enums.rs`
   - **Verify**: `#[serde(rename_all = "snake_case")]` matches SurrealDB enum storage; all enums derive Serialize, Deserialize, Debug, Clone, PartialEq
 
-- [ ] **5.9**: Add serde derives for SurrealDB serialization
+- [x] **5.9**: Add serde derives for SurrealDB serialization
   - **Acceptance**: All types have `#[derive(Serialize, Deserialize)]` and appropriate serde attributes
   - **Files**: All schema files
   - **Verify**: Test roundtrip: struct → SurrealDB → struct preserves data
@@ -447,10 +447,10 @@
 | Phase 2   | 10     | 10/10 ✅   |
 | Phase 3   | 10     | 10/10 ✅   |
 | Phase 4   | 8      | 8/8 ✅     |
-| Phase 5   | 9      | 0/9        |
+| Phase 5   | 9      | 9/9 ✅     |
 | Phase 6   | 9      | 0/9        |
 | Phase 7   | 6      | 0/6        |
-| **Total** | **60** | **36/60**  |
+| **Total** | **60** | **45/60**  |
 
 ## Next Steps
 
