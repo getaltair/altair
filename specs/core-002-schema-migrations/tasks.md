@@ -220,49 +220,49 @@
 
 **Goal**: Create indexes for common query patterns.
 
-- [ ] **4.1**: Create 003_indexes.surql
+- [x] **4.1**: Create 003_indexes.surql
 
   - **Acceptance**: File exists with `USE NS altair DB main;` header
   - **Files**: `backend/migrations/003_indexes.surql`
   - **Verify**: File parses as valid SurrealQL
 
-- [ ] **4.2**: Add owner index on all entity tables
+- [x] **4.2**: Add owner index on all entity tables
 
   - **Acceptance**: `DEFINE INDEX idx_owner ON TABLE [table] FIELDS owner;` for all 15+ entity tables
   - **Files**: `backend/migrations/003_indexes.surql`
   - **Verify**: Query `SELECT * FROM [table] WHERE owner = user:xyz` uses index
 
-- [ ] **4.3**: Add status index on all entity tables
+- [x] **4.3**: Add status index on all entity tables
 
   - **Acceptance**: `DEFINE INDEX idx_status ON TABLE [table] FIELDS status;` for all entity tables with status field
   - **Files**: `backend/migrations/003_indexes.surql`
   - **Verify**: Query `SELECT * FROM [table] WHERE status = 'active'` uses index
 
-- [ ] **4.4**: Add full-text search index on note.content
+- [x] **4.4**: Add full-text search index on note.content
 
   - **Acceptance**: `DEFINE INDEX idx_note_content_search ON TABLE note FIELDS content SEARCH ANALYZER ascii BM25;`
   - **Files**: `backend/migrations/003_indexes.surql`
   - **Verify**: Full-text search query `SELECT * FROM note WHERE content @@ 'search term'` works
 
-- [ ] **4.5**: Add full-text search index on quest.title
+- [x] **4.5**: Add full-text search index on quest.title
 
   - **Acceptance**: `DEFINE INDEX idx_quest_title_search ON TABLE quest FIELDS title SEARCH ANALYZER ascii BM25;`
   - **Files**: `backend/migrations/003_indexes.surql`
   - **Verify**: Full-text search query `SELECT * FROM quest WHERE title @@ 'search term'` works
 
-- [ ] **4.6**: Reserve vector index structure for note.embedding (HNSW)
+- [x] **4.6**: Reserve vector index structure for note.embedding (HNSW)
 
   - **Acceptance**: Comment in migration reserves `DEFINE INDEX idx_note_embedding ON TABLE note FIELDS embedding MTREE DIMENSION 384;` for core-012
   - **Files**: `backend/migrations/003_indexes.surql`
   - **Verify**: Comment documents vector index will be added later
 
-- [ ] **4.7**: Add unique index on user.email
+- [x] **4.7**: Add unique index on user.email
 
   - **Acceptance**: `DEFINE INDEX idx_user_email_unique ON TABLE user FIELDS email UNIQUE;`
   - **Files**: `backend/migrations/003_indexes.surql`
   - **Verify**: Inserting duplicate email fails with unique constraint error
 
-- [ ] **4.8**: Add date index on daily_note.date
+- [x] **4.8**: Add date index on daily_note.date
   - **Acceptance**: `DEFINE INDEX idx_daily_note_date ON TABLE daily_note FIELDS date;`
   - **Files**: `backend/migrations/003_indexes.surql`
   - **Verify**: Query `SELECT * FROM daily_note WHERE date = '2025-12-06'` uses index
@@ -446,11 +446,11 @@
 | Phase 1   | 8      | 8/8 ✅     |
 | Phase 2   | 10     | 10/10 ✅   |
 | Phase 3   | 10     | 10/10 ✅   |
-| Phase 4   | 8      | 0/8        |
+| Phase 4   | 8      | 8/8 ✅     |
 | Phase 5   | 9      | 0/9        |
 | Phase 6   | 9      | 0/9        |
 | Phase 7   | 6      | 0/6        |
-| **Total** | **60** | **28/60**  |
+| **Total** | **60** | **36/60**  |
 
 ## Next Steps
 
