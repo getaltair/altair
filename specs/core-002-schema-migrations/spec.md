@@ -67,7 +67,7 @@ Without a schema, developers cannot:
 A complete, well-documented SurrealDB schema that:
 
 - Defines all 15+ entities from the domain model with SCHEMAFULL constraints
-- Establishes 10 graph edge tables for relationships
+- Establishes 13 graph edge tables for relationships
 - Enables 7-day CHANGEFEED on all tables for sync
 - Includes appropriate indexes for common query patterns
 - Provides a migration runner that tracks versions and applies changes idempotently
@@ -137,7 +137,7 @@ The schema follows SurrealDB best practices:
 | ID     | Requirement                                                     | Priority | Notes                          |
 | ------ | --------------------------------------------------------------- | -------- | ------------------------------ |
 | FR-001 | Define all entity tables from domain model with SCHEMAFULL      | CRITICAL | 15+ tables                     |
-| FR-002 | Define all graph edge tables for relationships                  | CRITICAL | 10 edge tables                 |
+| FR-002 | Define all graph edge tables for relationships                  | CRITICAL | 13 edge tables                 |
 | FR-003 | Enable CHANGEFEED 7d on all tables                              | CRITICAL | Required for sync              |
 | FR-004 | Define field types with explicit assertions                     | CRITICAL | Enums, ranges, required fields |
 | FR-005 | Create indexes for owner, status, and common filter patterns    | HIGH     | Performance requirement        |
@@ -221,9 +221,9 @@ Based on the domain model (docs/domain-model.md):
 **Quest Domain (Guidance)**:
 
 - **Campaign**: Container for related quests; has title, status, color
-- **Quest**: Task with energy cost; has title, column (6-column QBA), energy_level, estimated_minutes
+- **Quest**: Task with energy cost; has title, column (7-column QBA), energy_cost (tiny/small/medium/large/huge), estimated_minutes
 - **FocusSession**: Active work session; tracks quest, duration, completed steps
-- **EnergyCheckIn**: Daily energy self-assessment; date, level (1-5), notes
+- **EnergyCheckIn**: Daily energy self-assessment; date, energy_level (1-5 scale for user's daily capacity), notes
 
 **Knowledge Domain**:
 
@@ -256,31 +256,35 @@ Based on the domain model (docs/domain-model.md):
 
 ### Edge Tables
 
-| Edge             | From        | To         | Semantics                     |
-| ---------------- | ----------- | ---------- | ----------------------------- |
-| `contains`       | Campaign    | Quest      | Parent-child grouping         |
-| `contains`       | Folder      | Note       | Hierarchical organization     |
-| `references`     | Quest       | Note       | Quest links to related note   |
-| `requires`       | Quest       | Item       | Quest needs this item         |
-| `links_to`       | Note        | Note       | Wiki-style bidirectional link |
-| `stored_in`      | Item        | Location   | Physical location             |
-| `documents`      | Note        | Item       | Note describes item           |
-| `reserved_for`   | Reservation | Quest      | Allocation                    |
-| `blocks`         | Quest       | Quest      | Dependency graph              |
-| `has_attachment` | Any         | Attachment | Media association             |
-| `tagged`         | Any         | Tag        | Categorization                |
+| Edge              | From        | To                  | Semantics                     |
+| ----------------- | ----------- | ------------------- | ----------------------------- |
+| `contains`        | Campaign    | Quest               | Parent-child grouping         |
+| `contains`        | Folder      | Note/Folder         | Hierarchical organization     |
+| `contains`        | Location    | Location            | Location hierarchy            |
+| `references`      | Quest       | Note                | Quest links to related note   |
+| `requires`        | Quest       | Item                | Quest needs this item         |
+| `links_to`        | Note        | Note                | Wiki-style bidirectional link |
+| `stored_in`       | Item        | Location            | Physical location             |
+| `documents`       | Note        | Item                | Note describes item           |
+| `reserved_for`    | Reservation | Quest               | Allocation to quest           |
+| `reserves`        | Reservation | Item                | Allocation of item            |
+| `blocks`          | Quest       | Quest               | Dependency graph              |
+| `has_attachment`  | Any         | Attachment          | Media association             |
+| `tagged`          | Any         | Tag                 | Categorization                |
+| `has_session`     | Quest       | FocusSession        | Quest's work sessions         |
+| `has_maintenance` | Item        | MaintenanceSchedule | Item's maintenance schedules  |
 
 ### Entity Details
 
 **Quest**
 
 - **Purpose**: Individual task in the QBA system
-- **Key Attributes**: title, description, column, energy_level, estimated_minutes, actual_minutes, xp_value, due_date, completed_at
+- **Key Attributes**: title, description, column, energy_cost (tiny/small/medium/large/huge - effort to complete), estimated_minutes, actual_minutes, xp_value, due_date, completed_at, device_id
 - **Relationships**: belongs to Campaign (via contains edge), references Notes, requires Items
 - **Lifecycle**: Created in idea_greenhouse → moves through columns → archived after harvested
 - **Business Rules**:
   - `column` must be one of: idea_greenhouse, quest_log, this_cycle, next_up, in_progress, harvested, archived
-  - `energy_level` must be one of: tiny, small, medium, large, huge
+  - `energy_cost` must be one of: tiny, small, medium, large, huge (estimates effort required)
   - Only ONE quest can be in `in_progress` at a time (enforced at app level)
   - `this_cycle` max 1, `next_up` max 5 (enforced at app level)
 
@@ -445,7 +449,7 @@ sequenceDiagram
 | ID     | Criterion                                     | Measurement                            |
 | ------ | --------------------------------------------- | -------------------------------------- |
 | SC-001 | All 15+ entity tables created with SCHEMAFULL | `INFO FOR DB` shows all tables         |
-| SC-002 | All 10 edge tables created for relationships  | Edge tables exist and are usable       |
+| SC-002 | All 13 edge tables created for relationships  | Edge tables exist and are usable       |
 | SC-003 | CHANGEFEED enabled on every table             | `INFO FOR TABLE x` shows CHANGEFEED 7d |
 | SC-004 | Field assertions reject invalid data          | INSERT with bad enum fails             |
 | SC-005 | Migration runner applies all files in order   | `_migrations` shows correct order      |

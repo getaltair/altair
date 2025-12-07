@@ -23,15 +23,15 @@ Define the complete SurrealDB schema for all Altair entities (15+ tables, 10 gra
 
 _GATE: Must pass before Phase 0 research. Re-check after Phase 1 design._
 
-| Principle                       | Applies | Status  | Notes                                                                       |
-| ------------------------------- | ------- | ------- | --------------------------------------------------------------------------- |
-| I. Local-First Architecture     | Yes     | ✅ PASS | Uses embedded SurrealDB (SurrealKV), no network required                    |
-| II. ADHD-Friendly Design        | Partial | ✅ PASS | Energy levels (tiny/small/medium/large/huge), WIP=1 constraint at app level |
-| III. Ubiquitous Language        | Yes     | ✅ PASS | Quest, Campaign, Note, Item terminology in schema                           |
-| IV. Soft Delete & Data Recovery | Yes     | ✅ PASS | All entities have `status` field with 'archived' option                     |
-| V. Plugin Architecture          | No      | N/A     | Database layer, not provider integration                                    |
-| VI. Privacy by Default          | Yes     | ✅ PASS | Local embedded DB, no telemetry                                             |
-| VII. Spec-Driven Development    | Yes     | ✅ PASS | Following spectrena workflow                                                |
+| Principle                       | Applies | Status  | Notes                                                                                                             |
+| ------------------------------- | ------- | ------- | ----------------------------------------------------------------------------------------------------------------- |
+| I. Local-First Architecture     | Yes     | ✅ PASS | Uses embedded SurrealDB (SurrealKV), no network required                                                          |
+| II. ADHD-Friendly Design        | Partial | ✅ PASS | Energy cost (tiny/small/medium/large/huge) for quests, energy level (1-5) for daily check-ins, WIP=1 at app level |
+| III. Ubiquitous Language        | Yes     | ✅ PASS | Quest, Campaign, Note, Item terminology in schema                                                                 |
+| IV. Soft Delete & Data Recovery | Yes     | ✅ PASS | All entities have `status` field with 'archived' option                                                           |
+| V. Plugin Architecture          | No      | N/A     | Database layer, not provider integration                                                                          |
+| VI. Privacy by Default          | Yes     | ✅ PASS | Local embedded DB, no telemetry                                                                                   |
+| VII. Spec-Driven Development    | Yes     | ✅ PASS | Following spectrena workflow                                                                                      |
 
 **Development Standards Compliance:**
 
@@ -120,7 +120,7 @@ tests/
 
 ### Phase 3: Graph Edge Tables
 
-**Goal**: Define the 10 relationship edge tables for graph queries.
+**Goal**: Define 13 relationship edge tables for graph queries (includes reserves, has_session, has_maintenance).
 
 | Task | Description                                          | Files Created/Modified                     |
 | ---- | ---------------------------------------------------- | ------------------------------------------ |
@@ -135,7 +135,7 @@ tests/
 | 3.9  | Define `blocks` edge (Quest→Quest)                   | `backend/migrations/002_edge_tables.surql` |
 | 3.10 | Define `has_attachment` and `tagged` edges           | `backend/migrations/002_edge_tables.surql` |
 
-**Exit Criteria**: All edge tables created; graph queries (`->edge->`) work correctly.
+**Exit Criteria**: All 13 edge tables created with CHANGEFEED 7d; graph queries (`->edge->`) work correctly.
 
 ### Phase 4: Indexes and Performance
 

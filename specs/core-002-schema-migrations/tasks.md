@@ -67,51 +67,76 @@
 
 - [ ] **2.2**: Define `user` table with auth fields
 
-  - **Acceptance**: `DEFINE TABLE user SCHEMAFULL CHANGEFEED 7d;` with fields: id, email (string), display_name (string), avatar_url (option<string>), preferences (object), created_at, updated_at
+  - **Acceptance**: `DEFINE TABLE user SCHEMAFULL CHANGEFEED 7d;` with fields: id, email (string, unique), display_name (string), avatar_url (option<string>), role (owner/viewer), preferences (object with theme, energy_filter_default, gamification_enabled, weekly_harvest_day, weekly_harvest_time, focus_session_duration, pomodoro_break_duration), device_id (string), created_at, updated_at
   - **Files**: `backend/migrations/001_initial_schema.surql`
-  - **Verify**: Migration applies without errors
+  - **Verify**: Migration applies without errors; user has all preference fields from domain model
 
 - [ ] **2.3**: Define Quest domain tables (campaign, quest, focus_session, energy_checkin)
 
   - **Acceptance**: 4 tables defined with SCHEMAFULL, CHANGEFEED 7d, all required fields per domain model
   - **Files**: `backend/migrations/001_initial_schema.surql`
-  - **Verify**: Tables created with correct fields (campaign: title, description, status, owner; quest: title, description, column, energy_cost, status, owner, campaign_id; focus_session: quest_id, started_at, ended_at; energy_checkin: level, timestamp, owner)
+  - **Verify**: Tables created with correct fields:
+    - campaign: title, description, status, color, owner, device_id, created_at, updated_at
+    - quest: title, description, column, energy_cost (tiny/small/medium/large/huge), estimated_minutes, actual_minutes, xp_value, due_date, completed_at, status, owner, device_id, created_at, updated_at (Note: uses `contains` edge to campaign, not FK)
+    - focus_session: started_at, planned_duration, actual_duration, completed_steps, status, notes, owner, device_id, created_at, updated_at (Note: linked to quest via edge)
+    - energy_checkin: date, energy_level (1-5 scale for user's daily energy), notes, owner, device_id, created_at, updated_at
 
 - [ ] **2.4**: Define Knowledge domain tables (note, folder, daily_note)
 
   - **Acceptance**: 3 tables defined with SCHEMAFULL, CHANGEFEED 7d, all required fields per domain model
   - **Files**: `backend/migrations/001_initial_schema.surql`
-  - **Verify**: Tables created with correct fields (note: title, content, owner, folder_id; folder: name, owner, parent_id; daily_note: date, content, owner)
+  - **Verify**: Tables created with correct fields:
+    - note: title, content (markdown), embedding (array<float, 384> for semantic search), is_daily (bool), version, status, owner, device_id, created_at, updated_at (Note: uses `contains` edge to folder, not FK)
+    - folder: name, color, status, owner, device_id, created_at, updated_at (Note: uses self-referential `contains` edge for parent, not FK)
+    - daily_note: date (unique per owner), note_id (record<note> reference), auto_created (bool), owner, device_id, created_at, updated_at
 
 - [ ] **2.5**: Define Inventory domain tables (item, location, reservation, maintenance_schedule)
 
   - **Acceptance**: 4 tables defined with SCHEMAFULL, CHANGEFEED 7d, all required fields per domain model
   - **Files**: `backend/migrations/001_initial_schema.surql`
-  - **Verify**: Tables created with correct fields (item: name, description, quantity, owner; location: name, description, owner; reservation: item_id, quest_id, quantity, reserved_at; maintenance_schedule: item_id, next_date, frequency)
+  - **Verify**: Tables created with correct fields:
+    - item: name, description, quantity, status (available/reserved/in_use/depleted/archived), category, custom_fields (object), owner, device_id, created_at, updated_at (Note: uses `stored_in` edge to location)
+    - location: name, description, geo (option<point>), status, owner, device_id, created_at, updated_at (Note: uses self-referential `contains` edge for parent)
+    - reservation: quantity, status (pending/in_use/released), reserved_at, released_at, owner, device_id, created_at, updated_at (Note: uses `reserved_for` edge to quest, linked to item via edge)
+    - maintenance_schedule: task_name, interval (duration), last_performed, next_due, notes, notify_days_before, owner, device_id, created_at, updated_at (Note: linked to item via edge)
 
 - [ ] **2.6**: Define Capture table (multi-modal input)
 
-  - **Acceptance**: `capture` table with fields: id, content, capture_type, source_app, owner, captured_at, processed (bool), processed_entity_id
+  - **Acceptance**: `capture` table with fields: text_content (option<string>), capture_type (text/voice/photo/video/mixed), source (desktop/mobile/widget/voice_assistant), status (pending/processed/discarded), processed_to (option<record>), ai_suggestion (option<string>), ai_confidence (option<float>), location (option<geo>), owner, device_id, captured_at, created_at, updated_at
   - **Files**: `backend/migrations/001_initial_schema.surql`
-  - **Verify**: Table supports capture_type enum: text, voice, image, link
+  - **Verify**: Table supports capture_type enum: text, voice, photo, video, mixed; uses `has_attachment` edge for attachments
 
 - [ ] **2.7**: Define Gamification tables (user_progress, achievement, streak)
 
-  - **Acceptance**: 3 tables defined with SCHEMAFULL, CHANGEFEED 7d (user_progress: owner, xp, level, current_energy; achievement: name, description, icon, unlock_criteria; streak: owner, metric, current_count, longest_count, last_updated)
+  - **Acceptance**: 3 tables defined with SCHEMAFULL, CHANGEFEED 7d:
+    - user_progress: xp_total (int), level (int), title (string), owner, device_id, created_at, updated_at
+    - achievement: name, description, icon, unlocked_at (option<datetime>), owner, device_id, created_at, updated_at
+    - streak: type (daily_checkin/quest_completion/focus_session), current_count (int), longest_count (int), last_activity (datetime), started_at (datetime), owner, device_id, created_at, updated_at
   - **Files**: `backend/migrations/001_initial_schema.surql`
-  - **Verify**: Tables created with correct relationships to user table
+  - **Verify**: Tables created with correct relationships to user table via owner field
 
 - [ ] **2.8**: Define shared tables (attachment, tag)
 
-  - **Acceptance**: 2 tables defined (attachment: entity_id, file_path, content_type, size; tag: name, color, owner)
+  - **Acceptance**: 2 tables defined with SCHEMAFULL, CHANGEFEED 7d:
+    - attachment: filename, mime_type, size_bytes (int), storage_key (S3 key), checksum (SHA-256), media_type (photo/audio/video/document), duration (option<duration> for audio/video), thumbnail_key (option<string>), transcription (option<string>), owner, device_id, created_at, updated_at (Note: linked via `has_attachment` edge, not entity_id FK)
+    - tag: name, namespace (option<string>), color (option<string>), owner, device_id, created_at, updated_at
   - **Files**: `backend/migrations/001_initial_schema.surql`
-  - **Verify**: Tables support attachment of multiple entity types
+  - **Verify**: Attachments linked via polymorphic `has_attachment` edge; tags linked via `tagged` edge
 
-- [ ] **2.9**: Add field assertions for enums (column, energy_level, status)
+- [ ] **2.9**: Add field assertions for enums (column, energy_cost, energy_level, status, capture_type, etc.)
 
-  - **Acceptance**: ASSERT clauses enforce valid enum values (quest.column IN ['backlog', 'wip', 'done'], quest.energy_cost IN ['tiny', 'small', 'medium', 'large', 'huge'], all entities status IN ['active', 'archived'])
+  - **Acceptance**: ASSERT clauses enforce valid enum values:
+    - quest.column IN ['idea_greenhouse', 'quest_log', 'this_cycle', 'next_up', 'in_progress', 'harvested', 'archived']
+    - quest.energy_cost IN ['tiny', 'small', 'medium', 'large', 'huge'] (cost of completing the quest)
+    - energy_checkin.energy_level IN [1, 2, 3, 4, 5] (user's daily energy level assessment)
+    - Entity status fields: campaign/quest/note/folder/item/location IN ['active', 'archived']
+    - item.status IN ['available', 'reserved', 'in_use', 'depleted', 'archived']
+    - reservation.status IN ['pending', 'in_use', 'released']
+    - capture.status IN ['pending', 'processed', 'discarded']
+    - capture.capture_type IN ['text', 'voice', 'photo', 'video', 'mixed']
+    - streak.type IN ['daily_checkin', 'quest_completion', 'focus_session']
   - **Files**: `backend/migrations/001_initial_schema.surql`
-  - **Verify**: INSERT with invalid enum value fails with error
+  - **Verify**: INSERT with invalid enum value fails with assertion error
 
 - [ ] **2.10**: Verify CHANGEFEED 7d on all tables
   - **Acceptance**: Integration test confirms all 15+ entity tables have CHANGEFEED enabled
@@ -122,7 +147,7 @@
 
 ## Phase 3: Graph Edge Tables
 
-**Goal**: Define the 10 relationship edge tables for graph queries.
+**Goal**: Define 13 relationship edge tables for graph queries (contains, references, requires, links_to, stored_in, documents, reserved_for, reserves, blocks, has_attachment, tagged, has_session, has_maintenance).
 
 - [ ] **3.1**: Create 002_edge_tables.surql
 
@@ -130,58 +155,64 @@
   - **Files**: `backend/migrations/002_edge_tables.surql`
   - **Verify**: File parses as valid SurrealQL
 
-- [ ] **3.2**: Define `contains` edge (Campaign→Quest, Folder→Note)
+- [ ] **3.2**: Define `contains` edge (Campaign→Quest, Folder→Note, Folder→Folder, Location→Location)
 
-  - **Acceptance**: `DEFINE TABLE contains SCHEMAFULL;` with fields: in (record), out (record), created_at
+  - **Acceptance**: `DEFINE TABLE contains SCHEMAFULL CHANGEFEED 7d;` with fields: in (record), out (record), created_at
   - **Files**: `backend/migrations/002_edge_tables.surql`
-  - **Verify**: Edge supports both campaign→quest and folder→note relationships
+  - **Verify**: Edge supports campaign→quest, folder→note, folder→folder (nesting), location→location (hierarchy)
 
 - [ ] **3.3**: Define `references` edge (Quest→Note)
 
-  - **Acceptance**: `DEFINE TABLE references SCHEMAFULL;` with fields: in (record<quest>), out (record<note>), created_at
+  - **Acceptance**: `DEFINE TABLE references SCHEMAFULL CHANGEFEED 7d;` with fields: in (record<quest>), out (record<note>), created_at
   - **Files**: `backend/migrations/002_edge_tables.surql`
   - **Verify**: Graph query `SELECT ->references->note FROM quest:xyz` works
 
 - [ ] **3.4**: Define `requires` edge (Quest→Item)
 
-  - **Acceptance**: `DEFINE TABLE requires SCHEMAFULL;` with fields: in (record<quest>), out (record<item>), quantity (int), created_at
+  - **Acceptance**: `DEFINE TABLE requires SCHEMAFULL CHANGEFEED 7d;` with fields: in (record<quest>), out (record<item>), quantity (int), created_at
   - **Files**: `backend/migrations/002_edge_tables.surql`
   - **Verify**: Edge stores quantity of item required for quest
 
 - [ ] **3.5**: Define `links_to` edge (Note→Note, bidirectional)
 
-  - **Acceptance**: `DEFINE TABLE links_to SCHEMAFULL;` with fields: in (record<note>), out (record<note>), created_at
+  - **Acceptance**: `DEFINE TABLE links_to SCHEMAFULL CHANGEFEED 7d;` with fields: in (record<note>), out (record<note>), created_at
   - **Files**: `backend/migrations/002_edge_tables.surql`
   - **Verify**: Bidirectional queries work (both `->links_to->` and `<-links_to<-`)
 
 - [ ] **3.6**: Define `stored_in` edge (Item→Location)
 
-  - **Acceptance**: `DEFINE TABLE stored_in SCHEMAFULL;` with fields: in (record<item>), out (record<location>), created_at
+  - **Acceptance**: `DEFINE TABLE stored_in SCHEMAFULL CHANGEFEED 7d;` with fields: in (record<item>), out (record<location>), created_at
   - **Files**: `backend/migrations/002_edge_tables.surql`
   - **Verify**: Query `SELECT ->stored_in->location FROM item:xyz` returns location
 
 - [ ] **3.7**: Define `documents` edge (Note→Item)
 
-  - **Acceptance**: `DEFINE TABLE documents SCHEMAFULL;` with fields: in (record<note>), out (record<item>), created_at
+  - **Acceptance**: `DEFINE TABLE documents SCHEMAFULL CHANGEFEED 7d;` with fields: in (record<note>), out (record<item>), created_at
   - **Files**: `backend/migrations/002_edge_tables.surql`
   - **Verify**: Notes can document multiple items, items can be documented by multiple notes
 
-- [ ] **3.8**: Define `reserved_for` edge (Reservation→Quest)
+- [ ] **3.8**: Define `reserved_for` edge (Reservation→Quest) and `reserves` edge (Reservation→Item)
 
-  - **Acceptance**: `DEFINE TABLE reserved_for SCHEMAFULL;` with fields: in (record<reservation>), out (record<quest>), created_at
+  - **Acceptance**:
+    - `DEFINE TABLE reserved_for SCHEMAFULL CHANGEFEED 7d;` with fields: in (record<reservation>), out (record<quest>), created_at
+    - `DEFINE TABLE reserves SCHEMAFULL CHANGEFEED 7d;` with fields: in (record<reservation>), out (record<item>), created_at
   - **Files**: `backend/migrations/002_edge_tables.surql`
-  - **Verify**: Query links reservation to quest
+  - **Verify**: Query links reservation to both quest and item
 
 - [ ] **3.9**: Define `blocks` edge (Quest→Quest)
 
-  - **Acceptance**: `DEFINE TABLE blocks SCHEMAFULL;` with fields: in (record<quest>), out (record<quest>), created_at
+  - **Acceptance**: `DEFINE TABLE blocks SCHEMAFULL CHANGEFEED 7d;` with fields: in (record<quest>), out (record<quest>), created_at
   - **Files**: `backend/migrations/002_edge_tables.surql`
   - **Verify**: Quest can block another quest (dependency relationship)
 
-- [ ] **3.10**: Define `has_attachment` and `tagged` edges
-  - **Acceptance**: Both edge tables defined (has_attachment: any entity→attachment; tagged: any entity→tag)
+- [ ] **3.10**: Define `has_attachment`, `tagged`, `has_session`, and `has_maintenance` edges
+  - **Acceptance**: All edge tables defined with CHANGEFEED 7d:
+    - `has_attachment`: any entity→attachment (polymorphic)
+    - `tagged`: any entity→tag (polymorphic)
+    - `has_session`: quest→focus_session (links focus sessions to quests)
+    - `has_maintenance`: item→maintenance_schedule (links maintenance schedules to items)
   - **Files**: `backend/migrations/002_edge_tables.surql`
-  - **Verify**: Edges support polymorphic relationships (multiple entity types)
+  - **Verify**: All edges support their respective relationships; total of 12 edge tables (10 from spec + 2 additional: reserves, has_session, has_maintenance)
 
 ---
 
@@ -284,11 +315,22 @@
   - **Files**: `backend/crates/altair-db/src/schema/shared.rs`
   - **Verify**: User type includes email, display_name, preferences
 
-- [ ] **5.8**: Define enum types (QuestColumn, EnergyLevel, CaptureType, etc.)
+- [ ] **5.8**: Define enum types (QuestColumn, EnergyCost, EnergyLevel, CaptureType, ItemStatus, etc.)
 
-  - **Acceptance**: Enums match SurrealDB ASSERT constraints exactly (QuestColumn: Backlog/Wip/Done, EnergyLevel: Tiny/Small/Medium/Large/Huge, EntityStatus: Active/Archived)
+  - **Acceptance**: Enums match SurrealDB ASSERT constraints exactly:
+    - QuestColumn: IdeaGreenhouse, QuestLog, ThisCycle, NextUp, InProgress, Harvested, Archived (7 variants, `#[serde(rename_all = "snake_case")]`)
+    - EnergyCost: Tiny, Small, Medium, Large, Huge (5 variants - cost of completing a quest)
+    - EnergyLevel: 1-5 (u8 or dedicated enum - user's daily energy self-assessment)
+    - EntityStatus: Active, Archived (2 variants - general soft delete)
+    - ItemStatus: Available, Reserved, InUse, Depleted, Archived (5 variants)
+    - ReservationStatus: Pending, InUse, Released (3 variants)
+    - CaptureStatus: Pending, Processed, Discarded (3 variants)
+    - CaptureType: Text, Voice, Photo, Video, Mixed (5 variants)
+    - StreakType: DailyCheckin, QuestCompletion, FocusSession (3 variants)
+    - MediaType: Photo, Audio, Video, Document (4 variants for attachments)
+    - UserRole: Owner, Viewer (2 variants)
   - **Files**: `backend/crates/altair-db/src/schema/enums.rs`
-  - **Verify**: `#[serde(rename_all = "lowercase")]` matches SurrealDB enum storage
+  - **Verify**: `#[serde(rename_all = "snake_case")]` matches SurrealDB enum storage; all enums derive Serialize, Deserialize, Debug, Clone, PartialEq
 
 - [ ] **5.9**: Add serde derives for SurrealDB serialization
   - **Acceptance**: All types have `#[derive(Serialize, Deserialize)]` and appropriate serde attributes
@@ -327,7 +369,7 @@
 
 - [ ] **6.5**: Test: Fresh migration creates all tables (SC-001, SC-002)
 
-  - **Acceptance**: Integration test runs all migrations on empty DB, counts tables, verifies 15+ entity + 10 edge tables exist
+  - **Acceptance**: Integration test runs all migrations on empty DB, counts tables, verifies 15+ entity + 13 edge tables exist
   - **Files**: `backend/crates/altair-db/tests/migration_test.rs`
   - **Verify**: `cargo test -p altair-db test_fresh_migration` passes
 
@@ -372,9 +414,9 @@
   - **Files**: N/A (verification step)
   - **Verify**: Console or test output shows complete table list
 
-- [ ] **7.3**: Verify all 10 edge tables created
+- [ ] **7.3**: Verify all 13 edge tables created
 
-  - **Acceptance**: `INFO FOR DB` shows all graph edge tables (contains, references, requires, links_to, stored_in, documents, reserved_for, blocks, has_attachment, tagged)
+  - **Acceptance**: `INFO FOR DB` shows all graph edge tables (contains, references, requires, links_to, stored_in, documents, reserved_for, reserves, blocks, has_attachment, tagged, has_session, has_maintenance)
   - **Files**: N/A (verification step)
   - **Verify**: All edges queryable via graph syntax
 
