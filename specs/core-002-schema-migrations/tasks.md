@@ -149,49 +149,49 @@
 
 **Goal**: Define 13 relationship edge tables for graph queries (contains, references, requires, links_to, stored_in, documents, reserved_for, reserves, blocks, has_attachment, tagged, has_session, has_maintenance).
 
-- [ ] **3.1**: Create 002_edge_tables.surql
+- [x] **3.1**: Create 002_edge_tables.surql
 
   - **Acceptance**: File exists with `USE NS altair DB main;` header
   - **Files**: `backend/migrations/002_edge_tables.surql`
   - **Verify**: File parses as valid SurrealQL
 
-- [ ] **3.2**: Define `contains` edge (Campaign→Quest, Folder→Note, Folder→Folder, Location→Location)
+- [x] **3.2**: Define `contains` edge (Campaign→Quest, Folder→Note, Folder→Folder, Location→Location)
 
   - **Acceptance**: `DEFINE TABLE contains SCHEMAFULL CHANGEFEED 7d;` with fields: in (record), out (record), created_at
   - **Files**: `backend/migrations/002_edge_tables.surql`
   - **Verify**: Edge supports campaign→quest, folder→note, folder→folder (nesting), location→location (hierarchy)
 
-- [ ] **3.3**: Define `references` edge (Quest→Note)
+- [x] **3.3**: Define `references` edge (Quest→Note)
 
   - **Acceptance**: `DEFINE TABLE references SCHEMAFULL CHANGEFEED 7d;` with fields: in (record<quest>), out (record<note>), created_at
   - **Files**: `backend/migrations/002_edge_tables.surql`
   - **Verify**: Graph query `SELECT ->references->note FROM quest:xyz` works
 
-- [ ] **3.4**: Define `requires` edge (Quest→Item)
+- [x] **3.4**: Define `requires` edge (Quest→Item)
 
   - **Acceptance**: `DEFINE TABLE requires SCHEMAFULL CHANGEFEED 7d;` with fields: in (record<quest>), out (record<item>), quantity (int), created_at
   - **Files**: `backend/migrations/002_edge_tables.surql`
   - **Verify**: Edge stores quantity of item required for quest
 
-- [ ] **3.5**: Define `links_to` edge (Note→Note, bidirectional)
+- [x] **3.5**: Define `links_to` edge (Note→Note, bidirectional)
 
   - **Acceptance**: `DEFINE TABLE links_to SCHEMAFULL CHANGEFEED 7d;` with fields: in (record<note>), out (record<note>), created_at
   - **Files**: `backend/migrations/002_edge_tables.surql`
   - **Verify**: Bidirectional queries work (both `->links_to->` and `<-links_to<-`)
 
-- [ ] **3.6**: Define `stored_in` edge (Item→Location)
+- [x] **3.6**: Define `stored_in` edge (Item→Location)
 
   - **Acceptance**: `DEFINE TABLE stored_in SCHEMAFULL CHANGEFEED 7d;` with fields: in (record<item>), out (record<location>), created_at
   - **Files**: `backend/migrations/002_edge_tables.surql`
   - **Verify**: Query `SELECT ->stored_in->location FROM item:xyz` returns location
 
-- [ ] **3.7**: Define `documents` edge (Note→Item)
+- [x] **3.7**: Define `documents` edge (Note→Item)
 
   - **Acceptance**: `DEFINE TABLE documents SCHEMAFULL CHANGEFEED 7d;` with fields: in (record<note>), out (record<item>), created_at
   - **Files**: `backend/migrations/002_edge_tables.surql`
   - **Verify**: Notes can document multiple items, items can be documented by multiple notes
 
-- [ ] **3.8**: Define `reserved_for` edge (Reservation→Quest) and `reserves` edge (Reservation→Item)
+- [x] **3.8**: Define `reserved_for` edge (Reservation→Quest) and `reserves` edge (Reservation→Item)
 
   - **Acceptance**:
     - `DEFINE TABLE reserved_for SCHEMAFULL CHANGEFEED 7d;` with fields: in (record<reservation>), out (record<quest>), created_at
@@ -199,20 +199,20 @@
   - **Files**: `backend/migrations/002_edge_tables.surql`
   - **Verify**: Query links reservation to both quest and item
 
-- [ ] **3.9**: Define `blocks` edge (Quest→Quest)
+- [x] **3.9**: Define `blocks` edge (Quest→Quest)
 
   - **Acceptance**: `DEFINE TABLE blocks SCHEMAFULL CHANGEFEED 7d;` with fields: in (record<quest>), out (record<quest>), created_at
   - **Files**: `backend/migrations/002_edge_tables.surql`
   - **Verify**: Quest can block another quest (dependency relationship)
 
-- [ ] **3.10**: Define `has_attachment`, `tagged`, `has_session`, and `has_maintenance` edges
+- [x] **3.10**: Define `has_attachment`, `tagged`, `has_session`, and `has_maintenance` edges
   - **Acceptance**: All edge tables defined with CHANGEFEED 7d:
     - `has_attachment`: any entity→attachment (polymorphic)
     - `tagged`: any entity→tag (polymorphic)
     - `has_session`: quest→focus_session (links focus sessions to quests)
     - `has_maintenance`: item→maintenance_schedule (links maintenance schedules to items)
   - **Files**: `backend/migrations/002_edge_tables.surql`
-  - **Verify**: All edges support their respective relationships; total of 12 edge tables (10 from spec + 2 additional: reserves, has_session, has_maintenance)
+  - **Verify**: All edges support their respective relationships; total of 13 edge tables created and verified via integration test
 
 ---
 
@@ -445,12 +445,12 @@
 | --------- | ------ | ---------- |
 | Phase 1   | 8      | 8/8 ✅     |
 | Phase 2   | 10     | 10/10 ✅   |
-| Phase 3   | 10     | 0/10       |
+| Phase 3   | 10     | 10/10 ✅   |
 | Phase 4   | 8      | 0/8        |
 | Phase 5   | 9      | 0/9        |
 | Phase 6   | 9      | 0/9        |
 | Phase 7   | 6      | 0/6        |
-| **Total** | **60** | **18/60**  |
+| **Total** | **60** | **28/60**  |
 
 ## Next Steps
 

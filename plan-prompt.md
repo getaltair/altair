@@ -20,7 +20,7 @@ Architecture:
 
 Key Libraries:
 
-- UI: shadcn-svelte + Tailwind CSS
+- UI: shadcn-svelte + Tailwind CSS, TipTap v for rich text editing
 - Embeddings: ONNX Runtime with all-MiniLM-L6-v2 (~25MB model)
 - Testing: Vitest + @testing-library/svelte for frontend, cargo test for Rust
 

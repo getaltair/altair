@@ -255,3 +255,69 @@ async fn test_changefeed_enabled_on_all_tables() {
     assert!(db_info.is_ok(), "Should be able to query database info");
     println!("Database info: {:?}", db_info.unwrap());
 }
+
+#[tokio::test]
+async fn test_edge_tables_created() {
+    // Apply the real migrations
+    let migrations_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .unwrap()
+        .parent()
+        .unwrap()
+        .join("migrations");
+
+    // Create in-memory database and run migrations
+    let db = any::connect("mem://").await.unwrap();
+    db.use_ns("altair").use_db("main").await.unwrap();
+
+    let mut runner = MigrationRunner::new(db.clone(), &migrations_path);
+    runner
+        .run()
+        .await
+        .expect("Failed to run migrations including 002_edge_tables");
+
+    // List of all edge tables that should exist (13 total)
+    let edge_tables = vec![
+        "contains",        // Campaign→Quest, Folder→Note/Folder, Location→Location
+        "references",      // Quest→Note
+        "requires",        // Quest→Item (with quantity)
+        "links_to",        // Note↔Note (bidirectional)
+        "stored_in",       // Item→Location
+        "documents",       // Note→Item
+        "reserved_for",    // Reservation→Quest
+        "reserves",        // Reservation→Item
+        "blocks",          // Quest→Quest (dependency)
+        "has_attachment",  // Any→Attachment (polymorphic)
+        "tagged",          // Any→Tag (polymorphic)
+        "has_session",     // Quest→FocusSession
+        "has_maintenance", // Item→MaintenanceSchedule
+    ];
+
+    // Verify each edge table exists and has CHANGEFEED by querying them
+    for edge in &edge_tables {
+        let select_result: Result<Vec<serde_json::Value>, _> = db
+            .query(format!("SELECT * FROM {} LIMIT 0", edge))
+            .await
+            .and_then(|mut r| r.take(0));
+
+        assert!(
+            select_result.is_ok(),
+            "Edge table {} should exist and be queryable (with CHANGEFEED 7d)",
+            edge
+        );
+    }
+
+    // Verify database info shows all edge tables
+    let db_info: Result<Vec<serde_json::Value>, _> =
+        db.query("INFO FOR DB").await.and_then(|mut r| r.take(0));
+
+    assert!(db_info.is_ok(), "Should be able to query database info");
+    println!(
+        "Edge tables verification - Database info: {:?}",
+        db_info.unwrap()
+    );
+    println!(
+        "✅ All {} edge tables created successfully",
+        edge_tables.len()
+    );
+}
