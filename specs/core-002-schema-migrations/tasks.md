@@ -343,55 +343,55 @@
 
 **Goal**: Create optional seed data and comprehensive tests.
 
-- [ ] **6.1**: Create 004_seed_data.surql (optional, for dev)
+- [x] **6.1**: Create 004_seed_data.surql (optional, for dev)
 
   - **Acceptance**: File exists with `USE NS altair DB main;` header, marked as optional in README
   - **Files**: `backend/migrations/004_seed_data.surql`
   - **Verify**: Migration runner can skip this file in production mode
 
-- [ ] **6.2**: Add sample user with preferences
+- [x] **6.2**: Add sample user with preferences
 
   - **Acceptance**: INSERT sample user with realistic data (email, display_name, preferences object)
   - **Files**: `backend/migrations/004_seed_data.surql`
   - **Verify**: User can be queried after migration
 
-- [ ] **6.3**: Add sample campaign with quests
+- [x] **6.3**: Add sample campaign with quests
 
   - **Acceptance**: INSERT 1 campaign and 3 quests with different columns, energy costs, `contains` edges linking them
   - **Files**: `backend/migrations/004_seed_data.surql`
   - **Verify**: Graph query `SELECT ->contains->quest FROM campaign:sample` returns 3 quests
 
-- [ ] **6.4**: Add sample notes with links
+- [x] **6.4**: Add sample notes with links
 
   - **Acceptance**: INSERT 3 notes with wiki-links via `links_to` edges (bidirectional relationships)
   - **Files**: `backend/migrations/004_seed_data.surql`
   - **Verify**: Graph traversal returns linked notes
 
-- [ ] **6.5**: Test: Fresh migration creates all tables (SC-001, SC-002)
+- [x] **6.5**: Test: Fresh migration creates all tables (SC-001, SC-002)
 
   - **Acceptance**: Integration test runs all migrations on empty DB, counts tables, verifies 15+ entity + 13 edge tables exist
   - **Files**: `backend/crates/altair-db/tests/migration_test.rs`
   - **Verify**: `cargo test -p altair-db test_fresh_migration` passes
 
-- [ ] **6.6**: Test: CHANGEFEED enabled on all tables (SC-003)
+- [x] **6.6**: Test: CHANGEFEED enabled on all tables (SC-003)
 
   - **Acceptance**: Test queries `INFO FOR TABLE` for each entity table, asserts changefeed is present
   - **Files**: `backend/crates/altair-db/tests/migration_test.rs`
   - **Verify**: `cargo test -p altair-db test_changefeed` passes
 
-- [ ] **6.7**: Test: Field assertions reject invalid data (SC-004)
+- [x] **6.7**: Test: Field assertions reject invalid data (SC-004)
 
   - **Acceptance**: Test attempts INSERT with invalid enum values (e.g., quest.column = 'invalid'), asserts error returned
   - **Files**: `backend/crates/altair-db/tests/migration_test.rs`
   - **Verify**: `cargo test -p altair-db test_field_assertions` passes
 
-- [ ] **6.8**: Test: Running migrations twice is idempotent (SC-006)
+- [x] **6.8**: Test: Running migrations twice is idempotent (SC-006)
 
   - **Acceptance**: Test runs migrations, then runs again, verifies no errors and `_migrations` table unchanged
   - **Files**: `backend/crates/altair-db/tests/migration_test.rs`
   - **Verify**: `cargo test -p altair-db test_idempotent_migrations` passes
 
-- [ ] **6.9**: Test: CHANGEFEED captures INSERT/UPDATE/DELETE (US-003)
+- [x] **6.9**: Test: CHANGEFEED captures INSERT/UPDATE/DELETE (US-003)
   - **Acceptance**: Test inserts quest, updates it, deletes it, queries changefeed, verifies 3 events captured
   - **Files**: `backend/crates/altair-db/tests/migration_test.rs`
   - **Verify**: `cargo test -p altair-db test_changefeed_events` passes
@@ -448,9 +448,9 @@
 | Phase 3   | 10     | 10/10 ✅   |
 | Phase 4   | 8      | 8/8 ✅     |
 | Phase 5   | 9      | 9/9 ✅     |
-| Phase 6   | 9      | 0/9        |
+| Phase 6   | 9      | 9/9 ✅     |
 | Phase 7   | 6      | 0/6        |
-| **Total** | **60** | **45/60**  |
+| **Total** | **60** | **54/60**  |
 
 ## Next Steps
 

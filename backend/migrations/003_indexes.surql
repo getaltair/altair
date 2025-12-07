@@ -5,6 +5,13 @@
 USE NS altair DB main;
 
 -- ============================================================================
+-- ANALYZER DEFINITIONS (Required before SEARCH indexes)
+-- ============================================================================
+-- Define the ascii analyzer for full-text search
+-- This analyzer tokenizes by class and applies lowercase + ascii (diacritics removal) filters
+DEFINE ANALYZER IF NOT EXISTS ascii TOKENIZERS class FILTERS lowercase, ascii;
+
+-- ============================================================================
 -- OWNER INDEXES (Record-Level Authorization)
 -- ============================================================================
 -- These indexes optimize the primary access pattern: filtering by owner
