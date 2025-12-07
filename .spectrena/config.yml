@@ -1,7 +1,7 @@
 # Spectrena Configuration
 
 spec_id:
-  template: "{component}-{NNN}-{slug}"
+  template: '{component}-{NNN}-{slug}'
   padding: 3
   components:
     - CORE
@@ -9,9 +9,21 @@ spec_id:
     - TRACKING
     - KNOWLEDGE
     - PLATFORM
-  numbering_source: "directory"
+  numbering_source: 'directory'
 
 lineage:
   enabled: true
-  lineage_db: "surrealkv://.spectrena/lineage"
+  lineage_db: 'surrealkv://.spectrena/lineage.db'
   auto_register: true
+
+backlog:
+  enabled: true
+  path: 'docs/spec-backlog.md'
+  reference_docs:
+    REQ: 'docs/requirements.md'
+    ARCH: 'docs/technical-architecture.md'
+    DOMO: 'docs/domain-model.md'
+    UFLOW: 'docs/user-flows.md'
+    DLOG: 'docs/decision-log.md'
+    DSYS: 'docs/design-system.md'
+    GLOSS: 'docs/glossary.md'

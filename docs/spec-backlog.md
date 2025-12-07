@@ -1,8 +1,8 @@
 # Altair Spec Backlog
 
-**Version**: 2.1  
-**Status**: APPROVED  
-**Created**: 2025-11-29  
+**Version**: 2.1
+**Status**: APPROVED
+**Created**: 2025-11-29
 **Author**: Robert Hamilton
 
 > **Ordered specifications with scope and references** — What to spec, what
@@ -56,7 +56,7 @@
 | Attribute      | Value                   |
 | -------------- | ----------------------- |
 | **Weight**     | STANDARD                |
-| **Status**     | 🟨                      |
+| **Status**     | 🟩                      |
 | **References** | ARCH §Project Structure |
 
 **Covers:**
@@ -926,11 +926,11 @@ Edges: contains, references, links_to, requires, stored_in, documents, reserved_
 
 **Scope:** Cloud backend deployment
 
-| Attribute      | Value                        |
-| -------------- | ---------------------------- |
-| **Weight**     | FORMAL                       |
-| **Status**     | ⬜                           |
-| **Depends On** | core-013, core-020           |
+| Attribute      | Value                         |
+| -------------- | ----------------------------- |
+| **Weight**     | FORMAL                        |
+| **Status**     | ⬜                            |
+| **Depends On** | core-013, core-020            |
 | **References** | ARCH §Mobile↔Cloud, REQ §5.5 |
 
 **Covers:**
@@ -1225,8 +1225,10 @@ flowchart TB
 2. **Read reference docs** — All documents listed in References
 3. **Copy spec template** — `specs/template.md`
 4. **Name the spec folder** — `specs/{spec-id}/spec.md`
-5. **Update status** — Change ⬜ to 🟨 in this backlog
-6. **Follow SDD** — Spec → Plan → Tasks → Implement
+5. **Update status**
+6. Change the previous spec from 🟨 to 🟩 in this backlog, if not done already
+7. Change the current spec from ⬜ to 🟨 in this backlog
+8. **Follow SDD** — Spec → Plan → Tasks → Implement
 
 ### Reference Doc Priority
 
