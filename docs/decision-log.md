@@ -1,8 +1,9 @@
 # Altair Decision Log
 
-**Version**: 1.0  
-**Status**: APPROVED  
-**Created**: 2025-11-29  
+**Version**: 1.1
+**Status**: APPROVED
+**Created**: 2025-11-29
+**Updated**: 2025-12-06
 **Author**: Robert Hamilton
 
 > **Architectural Decision Records (ADRs)** — Why we made the choices we made
@@ -13,25 +14,26 @@
 
 | ADR | Decision | Date |
 |-----|----------|------|
-| [ADR-001](#adr-001-surrealdb-over-sqlite) | SurrealDB over SQLite | 2024-11-29 |
-| [ADR-002](#adr-002-tauri-over-electron) | Tauri over Electron | 2024-11-29 |
-| [ADR-003](#adr-003-rust-backend) | Rust for backend | 2024-11-29 |
-| [ADR-004](#adr-004-s3-compatible-storage) | S3-compatible object storage | 2024-11-29 |
-| [ADR-005](#adr-005-local-embeddings) | Local ONNX embeddings as core | 2024-11-29 |
-| [ADR-006](#adr-006-plugin-architecture) | Plugin architecture for Auth and AI | 2024-11-29 |
-| [ADR-007](#adr-007-last-write-wins-sync) | Last-Write-Wins sync strategy | 2024-11-29 |
-| [ADR-008](#adr-008-tauri-ipc-over-rest) | Tauri IPC over REST for desktop | 2024-11-29 |
-| [ADR-009](#adr-009-inbox-pattern-capture) | Inbox pattern for Quick Capture | 2024-11-29 |
-| [ADR-010](#adr-010-soft-delete) | Soft delete with configurable cascade | 2024-11-29 |
-| [ADR-011](#adr-011-shared-location-domain) | Shared location domain across apps | 2024-11-29 |
-| [ADR-012](#adr-012-global-tags) | Global tags with optional namespace | 2024-11-29 |
+| [ADR-001](#adr-001-surrealdb-over-sqlite) | SurrealDB over SQLite | 2025-11-29 |
+| [ADR-002](#adr-002-tauri-over-electron) | Tauri over Electron | 2025-11-29 |
+| [ADR-003](#adr-003-rust-backend) | Rust for backend | 2025-11-29 |
+| [ADR-004](#adr-004-s3-compatible-storage) | S3-compatible object storage | 2025-11-29 |
+| [ADR-005](#adr-005-local-embeddings) | Local ONNX embeddings as core | 2025-11-29 |
+| [ADR-006](#adr-006-plugin-architecture) | Plugin architecture for Auth and AI | 2025-11-29 |
+| [ADR-007](#adr-007-last-write-wins-sync) | Last-Write-Wins sync strategy | 2025-11-29 |
+| [ADR-008](#adr-008-tauri-ipc-over-rest) | Tauri IPC over REST for desktop | 2025-11-29 |
+| [ADR-009](#adr-009-inbox-pattern-capture) | Inbox pattern for Quick Capture | 2025-11-29 |
+| [ADR-010](#adr-010-soft-delete) | Soft delete with configurable cascade | 2025-11-29 |
+| [ADR-011](#adr-011-shared-location-domain) | Shared location domain across apps | 2025-11-29 |
+| [ADR-012](#adr-012-global-tags) | Global tags with optional namespace | 2025-11-29 |
+| [ADR-013](#adr-013-tiptap-editor) | TipTap for Knowledge editor | 2025-12-06 |
 
 ---
 
 ## ADR-001: SurrealDB over SQLite
 
-**Status:** Accepted  
-**Date:** 2024-11-29  
+**Status:** Accepted
+**Date:** 2025-11-29
 **Context:** Need embedded database with sync capability for offline-first apps
 
 ### Decision
@@ -67,8 +69,8 @@ Use SurrealDB 2.x as the primary database.
 
 ## ADR-002: Tauri over Electron
 
-**Status:** Accepted  
-**Date:** 2024-11-29  
+**Status:** Accepted
+**Date:** 2025-11-29
 **Context:** Need cross-platform desktop framework with mobile support
 
 ### Decision
@@ -96,7 +98,7 @@ Use Tauri 2.0 with Svelte for all frontend apps.
 - ✅ Lightweight apps, fast startup
 - ✅ Single codebase for desktop + mobile
 - ✅ Rust backend for type safety
-- ⚠️ Tauri mobile is newer (production since Oct 2024)
+- ⚠️ Tauri mobile is newer (production since Oct 2025)
 - ⚠️ System webview differences across platforms
 - 🔄 Mitigation: Native fallback for critical mobile features if needed
 
@@ -104,8 +106,8 @@ Use Tauri 2.0 with Svelte for all frontend apps.
 
 ## ADR-003: Rust Backend
 
-**Status:** Accepted  
-**Date:** 2024-11-29  
+**Status:** Accepted
+**Date:** 2025-11-29
 **Context:** Need backend language for local service handling DB, sync, embeddings
 
 ### Decision
@@ -140,8 +142,8 @@ Use Rust with Axum for the local backend service.
 
 ## ADR-004: S3-Compatible Storage
 
-**Status:** Accepted  
-**Date:** 2024-11-29  
+**Status:** Accepted
+**Date:** 2025-11-29
 **Context:** Need object storage for photos, audio, video, documents
 
 ### Decision
@@ -175,8 +177,8 @@ Use S3-compatible API with Minio locally, any S3 provider for cloud.
 
 ## ADR-005: Local Embeddings
 
-**Status:** Accepted  
-**Date:** 2024-11-29  
+**Status:** Accepted
+**Date:** 2025-11-29
 **Context:** Need vector embeddings for semantic search
 
 ### Decision
@@ -212,8 +214,8 @@ Local ONNX embeddings (all-MiniLM-L6-v2) as core infrastructure, always enabled.
 
 ## ADR-006: Plugin Architecture
 
-**Status:** Accepted  
-**Date:** 2024-11-29  
+**Status:** Accepted
+**Date:** 2025-11-29
 **Context:** Need extensibility for auth methods and AI providers
 
 ### Decision
@@ -248,8 +250,8 @@ Use trait-based plugin architecture for both Auth and AI providers.
 
 ## ADR-007: Last-Write-Wins Sync
 
-**Status:** Accepted  
-**Date:** 2024-11-29  
+**Status:** Accepted
+**Date:** 2025-11-29
 **Context:** Need sync strategy for multi-device support
 
 ### Decision
@@ -284,8 +286,8 @@ Use Last-Write-Wins (LWW) with SurrealDB change feeds.
 
 ## ADR-008: Tauri IPC over REST
 
-**Status:** Accepted  
-**Date:** 2024-11-29  
+**Status:** Accepted
+**Date:** 2025-11-29
 **Context:** Need communication between desktop UI and local backend
 
 ### Decision
@@ -319,8 +321,8 @@ Use Tauri Commands (IPC) for desktop, REST + WebSocket for mobile/cloud.
 
 ## ADR-009: Inbox Pattern for Quick Capture
 
-**Status:** Accepted  
-**Date:** 2024-11-29  
+**Status:** Accepted
+**Date:** 2025-11-29
 **Context:** Need zero-friction capture without disrupting flow
 
 ### Decision
@@ -355,8 +357,8 @@ Capture to inbox with deferred classification, AI-assisted suggestions.
 
 ## ADR-010: Soft Delete
 
-**Status:** Accepted  
-**Date:** 2024-11-29  
+**Status:** Accepted
+**Date:** 2025-11-29
 **Context:** Need deletion strategy that prevents data loss
 
 ### Decision
@@ -390,8 +392,8 @@ Soft delete everywhere with user-configurable cascade behavior.
 
 ## ADR-011: Shared Location Domain
 
-**Status:** Accepted  
-**Date:** 2024-11-29  
+**Status:** Accepted
+**Date:** 2025-11-29
 **Context:** Locations used by Inventory (required) and potentially Knowledge/Guidance
 
 ### Decision
@@ -424,8 +426,8 @@ Single shared `location` table used across all apps with privacy settings.
 
 ## ADR-012: Global Tags
 
-**Status:** Accepted  
-**Date:** 2024-11-29  
+**Status:** Accepted
+**Date:** 2025-11-29
 **Context:** Need tagging system across all apps
 
 ### Decision
@@ -457,13 +459,96 @@ Global tags with optional namespace prefix.
 
 ---
 
+## ADR-013: TipTap Editor
+
+**Status:** Accepted
+**Date:** 2025-12-06
+**Context:** Need rich text editor for Knowledge app with markdown, WikiLinks, and extensibility
+
+### Decision
+
+Use TipTap with open-source extensions for the Knowledge note editor.
+
+### Options Considered
+
+| Option | WYSIWYG | Markdown | Extensibility | License |
+|--------|---------|----------|---------------|---------|
+| **TipTap** | Yes | Yes (v3.7+) | Excellent | MIT |
+| **CodeMirror 6** | No (preview) | Native | Good | MIT |
+| **ProseMirror** | Yes | Custom | Excellent | MIT |
+| **Lexical** | Yes | Plugin | Good | MIT |
+
+### Rationale
+
+- **WYSIWYG + Markdown** — Native bidirectional markdown support (v3.7.0+)
+- **Extensible** — Clean extension architecture for WikiLinks, math, diagrams
+- **Open source** — MIT licensed with strong community
+- **Proven pattern** — Reference implementations exist for custom extensions
+- **Svelte compatible** — Works well with our frontend stack
+
+### Extension Stack
+
+| Feature | Extension | Source | Status |
+|---------|-----------|--------|--------|
+| **Markdown** | `@tiptap/markdown` | Official | ✅ Ready |
+| **WikiLinks** | Custom extension | Build (ref: aarkue/tiptap-wikilink) | 🔧 ~3 days |
+| **LaTeX Math** | `@aarkue/tiptap-math-extension` | Open source | ✅ Ready |
+| **Code Blocks** | `@tiptap/extension-code-block-lowlight` | Official | ✅ Ready |
+| **Mermaid** | `@syfxlin/tiptap-starter-kit` | Open source | ✅ Ready |
+
+### WikiLinks Implementation
+
+Custom extension required for core differentiator:
+
+- **Parse:** `[[Note Title]]` and `[[note|Display Name]]` syntax
+- **Autocomplete:** ProseMirror Suggestion plugin with `[[` trigger
+- **Render:** `<a>` tags with custom data attributes
+- **Serialize:** Round-trip back to `[[wiki-link]]` markdown
+- **Backlinks:** Detect on save, store in graph edges
+
+### Consequences
+
+- ✅ WYSIWYG editing with markdown export
+- ✅ All required features achievable with open-source
+- ✅ $0 cost (vs ~$300/year for TipTap Pro)
+- ✅ WikiLinks extension enables core PKM functionality
+- ⚠️ WikiLinks requires custom development (~3 days)
+- ⚠️ Must implement markdown serialization for custom extensions
+- 🔄 Mitigation: Reference implementation exists; use Mention extension pattern
+
+### Implementation Phases
+
+**Phase 1 (MVP):** TipTap + Markdown + WikiLinks + CodeBlockLowlight
+**Phase 2:** LaTeX math + Mermaid diagrams + backlinks panel
+**Phase 3:** Split view + plain markdown toggle + keyboard shortcuts
+
+### Dependencies
+
+```json
+{
+  "@tiptap/core": "^3.11.0",
+  "@tiptap/starter-kit": "^3.11.0",
+  "@tiptap/markdown": "^3.11.0",
+  "@tiptap/extension-code-block-lowlight": "^3.11.0",
+  "@aarkue/tiptap-math-extension": "latest",
+  "@syfxlin/tiptap-starter-kit": "latest",
+  "lowlight": "^3.1.0",
+  "katex": "^0.16.0",
+  "mermaid": "^10.0.0"
+}
+```
+
+**Bundle size impact:** ~400-500KB (acceptable for desktop app)
+
+---
+
 ## Template
 
 ```markdown
 ## ADR-XXX: [Title]
 
-**Status:** Proposed | Accepted | Deprecated | Superseded  
-**Date:** YYYY-MM-DD  
+**Status:** Proposed | Accepted | Deprecated | Superseded
+**Date:** YYYY-MM-DD
 **Context:** [Brief description of the problem]
 
 ### Decision

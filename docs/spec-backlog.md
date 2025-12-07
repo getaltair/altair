@@ -1,8 +1,9 @@
 # Altair Spec Backlog
 
-**Version**: 2.1
+**Version**: 2.2
 **Status**: APPROVED
 **Created**: 2025-11-29
+**Updated**: 2025-12-06
 **Author**: Robert Hamilton
 
 > **Ordered specifications with scope and references** — What to spec, what
@@ -64,7 +65,7 @@
 - pnpm workspace configuration
 - Turborepo build pipeline
 - App scaffolding (guidance, knowledge, tracking, mobile)
-- Package scaffolding (ui, bindings, db, sync, storage, search)
+- Package scaffolding (ui, bindings, db, sync, storage, search, editor)
 - Shared TypeScript/ESLint/Prettier config
 - Use `prek` for pre-commit linting, formatting, and type-checking
 
@@ -448,27 +449,64 @@ Edges: contains, references, links_to, requires, stored_in, documents, reserved_
 
 ### knowledge-001-note-crud
 
-**Scope:** Note entity operations with markdown editor
+**Scope:** Note entity operations with TipTap editor
 
-| Attribute      | Value                        |
-| -------------- | ---------------------------- |
-| **Weight**     | STANDARD                     |
-| **Status**     | ⬜                           |
-| **Depends On** | core-002, core-003           |
-| **References** | REQ §2.1, DOM §Note, UF §K-1 |
+| Attribute      | Value                                    |
+| -------------- | ---------------------------------------- |
+| **Weight**     | STANDARD                                 |
+| **Status**     | ⬜                                       |
+| **Depends On** | core-002, core-003                       |
+| **References** | REQ §2.1, DOM §Note, UF §K-1, ADR-013    |
 
 **Covers:**
 
 - Note create/read/update/archive
-- Markdown editor (live preview)
-- Split view (edit/preview)
-- Syntax highlighting
-- Tables, checkboxes, code blocks
-- LaTeX math support
-- Mermaid diagrams
-- Auto-save (debounced)
+- TipTap editor with StarterKit
+- `@tiptap/markdown` bidirectional markdown support
+- `@tiptap/extension-code-block-lowlight` syntax highlighting
+- `@aarkue/tiptap-math-extension` LaTeX math rendering
+- `@syfxlin/tiptap-starter-kit` Mermaid diagram support
+- Auto-save (500ms debounce)
 - Version history
 - Tags
+
+**Editor Package (`packages/editor/`):**
+
+```
+packages/editor/
+├── src/
+│   ├── index.ts               # Editor factory
+│   ├── extensions/
+│   │   ├── WikiLink.ts        # Custom WikiLinks (knowledge-003)
+│   │   └── index.ts
+│   ├── utils/
+│   │   └── markdown.ts
+│   └── types.ts
+├── package.json
+└── tsconfig.json
+```
+
+**Dependencies:**
+
+```json
+{
+  "@tiptap/core": "^3.11.0",
+  "@tiptap/starter-kit": "^3.11.0",
+  "@tiptap/markdown": "^3.11.0",
+  "@tiptap/extension-code-block-lowlight": "^3.11.0",
+  "@aarkue/tiptap-math-extension": "latest",
+  "@syfxlin/tiptap-starter-kit": "latest",
+  "lowlight": "^3.1.0",
+  "katex": "^0.16.0",
+  "mermaid": "^10.0.0"
+}
+```
+
+**Does NOT cover:**
+
+- WikiLinks (knowledge-003)
+- Split view / plain markdown toggle (knowledge-001-enhanced)
+- Daily notes (knowledge-002)
 
 ---
 
@@ -495,25 +533,48 @@ Edges: contains, references, links_to, requires, stored_in, documents, reserved_
 
 ### knowledge-003-wiki-links
 
-**Scope:** Bidirectional wiki-style linking
+**Scope:** Bidirectional wiki-style linking with custom TipTap extension
 
-| Attribute      | Value                            |
-| -------------- | -------------------------------- |
-| **Weight**     | STANDARD                         |
-| **Status**     | ⬜                               |
-| **Depends On** | knowledge-001                    |
-| **References** | REQ §2.3, DOM §links_to, UF §K-2 |
+| Attribute      | Value                                 |
+| -------------- | ------------------------------------- |
+| **Weight**     | STANDARD                              |
+| **Status**     | ⬜                                    |
+| **Depends On** | knowledge-001                         |
+| **References** | REQ §2.3, DOM §links_to, UF §K-2, ADR-013 |
 
 **Covers:**
 
-- `[[Note Title]]` syntax
-- Autocomplete popup
-- Create new note from link
-- Bidirectional edge creation
-- Backlinks panel
+- Custom WikiLink TipTap extension (`packages/editor/src/extensions/WikiLink.ts`)
+- `[[Note Title]]` syntax parsing
+- `[[note|Display Name]]` alias syntax
+- Autocomplete popup via `@tiptap/suggestion` (triggers on `[[`)
+- Create new note from link (if target doesn't exist)
+- Bidirectional edge creation (`links_to` table)
+- Backlinks panel UI
 - Unlinked mentions detection
-- Alias support `[[note|Display Name]]`
 - Link navigation (click, Cmd+click split)
+- Markdown round-trip serialization
+
+**WikiLink Extension Implementation:**
+
+```typescript
+// Extension uses ProseMirror Suggestion plugin
+WikiLink.configure({
+  onWikiLinkClick: (title) => navigateToNote(title),
+  renderSuggestion: (query) => searchNotes(query),
+})
+```
+
+**Backend: Backlinks detection on save:**
+
+```rust
+// Extract wiki-links and create/update links_to edges
+fn extract_wiki_links(markdown: &str) -> Vec<String> {
+    // Regex: \[\[([^\]|]+)(?:\|[^\]]+)?\]\]
+}
+```
+
+**Complexity Estimate:** ~3 days (reference: aarkue/tiptap-wikilink-extension)
 
 ---
 
