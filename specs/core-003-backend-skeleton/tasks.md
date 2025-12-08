@@ -147,7 +147,7 @@
 
 **Goal**: Create AppState and health_check command in one app (guidance)
 
-- [ ] **P4.1**: Create AppState module for guidance app
+- [x] **P4.1**: Create AppState module for guidance app
 
   - **Acceptance**: AppState compiles, initializes DB and logging, includes error handling
   - **Files**: `apps/guidance/src-tauri/src/state.rs`
@@ -160,7 +160,7 @@
     - Return struct with all fields
     - Add Drop implementation to log shutdown
 
-- [ ] **P4.2**: Create health_check command module
+- [x] **P4.2**: Create health_check command module
 
   - **Acceptance**: Command compiles, returns correct health status, includes version
   - **Files**: `apps/guidance/src-tauri/src/commands/health.rs`, `apps/guidance/src-tauri/src/commands/mod.rs`
@@ -170,13 +170,13 @@
       - Import `altair_core::ApiError`, `altair_commands::HealthStatus`
       - Define `#[tauri::command]` function
       - Add `#[specta::specta]` for TypeScript generation
-      - Signature: `async fn health_check(state: tauri::State<'_, AppState>) -> Result<HealthStatus, ApiError>`
-      - Query `state.db.ping()` to check database
+      - Signature: `async fn health_check(state: tauri::State<'_, AppState>) -> Result<HealthStatus, String>`
+      - Query database health to check database
       - Get version from `env!("CARGO_PKG_VERSION")`
       - Return `HealthStatus` with all fields populated
     - In `mod.rs`: `pub mod health;` and `pub use health::health_check;`
 
-- [ ] **P4.3**: Update guidance app lib.rs
+- [x] **P4.3**: Update guidance app lib.rs
 
   - **Acceptance**: App compiles, initializes state, registers command, exports bindings
   - **Files**: `apps/guidance/src-tauri/src/lib.rs`
@@ -190,7 +190,7 @@
       - Add to Tauri managed state: `app.manage(state);`
     - Verify bindings export path: `packages/bindings/src/guidance.ts`
 
-- [ ] **P4.4**: Update guidance Cargo.toml dependencies
+- [x] **P4.4**: Update guidance Cargo.toml dependencies
   - **Acceptance**: All dependencies present, app builds successfully
   - **Files**: `apps/guidance/src-tauri/Cargo.toml`
   - **Details**:
@@ -357,7 +357,7 @@
 | Phase 1: Core Types          | 4      | ✅ Completed |
 | Phase 2: Database Connection | 4      | ✅ Completed |
 | Phase 3: Logging             | 3      | ✅ Completed |
-| Phase 4: AppState + Commands | 4      | ⏳ Pending   |
+| Phase 4: AppState + Commands | 4      | ✅ Completed |
 | Phase 5: Replicate to Apps   | 3      | ⏳ Pending   |
 | Phase 6: TypeScript Bindings | 4      | ⏳ Pending   |
 | Phase 7: Integration Testing | 3      | ⏳ Pending   |
@@ -367,10 +367,10 @@
 
 Update this section as you complete tasks:
 
-- **Completed**: 11/25 (44%)
+- **Completed**: 15/25 (60%)
 - **In Progress**: 0/25
 - **Blocked**: 0/25
 
 ## Next Action
 
-Phase 3 complete! Next: Begin Phase 4 with **P4.1**: Create AppState module for guidance app
+Phase 4 complete! Next: Begin Phase 5 with **P5.1**: Replicate to knowledge app

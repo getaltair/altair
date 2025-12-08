@@ -31,7 +31,21 @@ use tracing_subscriber::{EnvFilter, Layer, fmt, layer::SubscriberExt, util::Subs
 /// You MUST keep this alive for the entire application lifetime.
 #[derive(Debug)]
 pub struct LogGuard {
-    _file_guard: tracing_appender::non_blocking::WorkerGuard,
+    pub(crate) _file_guard: tracing_appender::non_blocking::WorkerGuard,
+}
+
+impl LogGuard {
+    /// Create a dummy LogGuard for testing
+    ///
+    /// This creates a guard that doesn't actually do any logging,
+    /// useful for tests that need AppState but don't need logging.
+    ///
+    /// **Note**: This should only be used in tests!
+    #[doc(hidden)]
+    pub fn dummy() -> Self {
+        let (_, guard) = tracing_appender::non_blocking(std::io::sink());
+        Self { _file_guard: guard }
+    }
 }
 
 /// Initialize the logging subsystem with file and console output.

@@ -3,19 +3,21 @@
 
 use tauri::Manager;
 
-/// Placeholder Tauri command - greet the user
-#[tauri::command]
-#[specta::specta]
-fn greet(name: &str) -> String {
-    format!("Hello, {}! Welcome to Guidance.", name)
-}
+// Module declarations
+mod commands;
+mod state;
+
+// Imports
+use altair_core::AppConfig;
+use commands::health_check;
+use state::AppState;
 
 /// Initialize the Tauri application
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     // Set up tauri-specta bindings generation
-    let builder =
-        tauri_specta::Builder::<tauri::Wry>::new().commands(tauri_specta::collect_commands![greet]);
+    let builder = tauri_specta::Builder::<tauri::Wry>::new()
+        .commands(tauri_specta::collect_commands![health_check]);
 
     #[cfg(debug_assertions)]
     builder
@@ -31,11 +33,25 @@ pub fn run() {
         .setup(move |app| {
             builder.mount_events(app);
 
+            // Initialize application state
+            let config = AppConfig::load_or_default();
+
+            // Create runtime for async state initialization
+            let runtime = tokio::runtime::Runtime::new().expect("Failed to create tokio runtime");
+
+            let state = runtime
+                .block_on(AppState::new(config))
+                .expect("Failed to initialize application state");
+
+            // Add state to Tauri's managed state
+            app.manage(state);
+
             #[cfg(debug_assertions)]
             {
                 let window = app.get_webview_window("main").unwrap();
                 window.open_devtools();
             }
+
             Ok(())
         })
         .run(tauri::generate_context!())
