@@ -119,7 +119,7 @@ Edges: contains, references, links_to, requires, stored_in, documents, reserved_
 | Attribute      | Value                                          |
 | -------------- | ---------------------------------------------- |
 | **Weight**     | STANDARD                                       |
-| **Status**     | 🟨                                             |
+| **Status**     | 🟩                                             |
 | **Depends On** | core-001                                       |
 | **References** | ARCH §Communication Patterns, ADR-003, ADR-008 |
 
@@ -173,7 +173,7 @@ Edges: contains, references, links_to, requires, stored_in, documents, reserved_
 | Attribute      | Value                 |
 | -------------- | --------------------- |
 | **Weight**     | STANDARD              |
-| **Status**     | ⬜                    |
+| **Status**     | 🟨                    |
 | **Depends On** | core-002, core-003    |
 | **References** | ARCH §Auth, DOM §User |
 
