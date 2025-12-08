@@ -1,8 +1,9 @@
 # Altair Glossary
 
-**Version**: 2.0  
-**Status**: APPROVED  
-**Created**: 2025-11-29  
+**Version**: 2.1
+**Status**: APPROVED
+**Created**: 2025-11-29
+**Updated**: 2025-12-06
 **Author**: Robert Hamilton
 
 > **Ubiquitous language** — Consistent terminology across all documentation and code
@@ -121,6 +122,43 @@
 
 ---
 
+## Editor Stack (Knowledge App)
+
+| Term | Definition |
+|------|------------|
+| **TipTap** | ProseMirror-based WYSIWYG editor framework used for note editing |
+| **ProseMirror** | Low-level rich text editing toolkit that TipTap builds upon |
+| **CodeBlockLowlight** | TipTap extension for syntax-highlighted code blocks using lowlight/highlight.js |
+| **KaTeX** | Fast math typesetting library for rendering LaTeX expressions |
+| **Mermaid** | Diagram rendering library for flowcharts, sequence diagrams, etc. |
+| **lowlight** | Syntax highlighting library (highlight.js wrapper) for code blocks |
+
+### Editor Extensions
+
+| Extension | Purpose | Source |
+|-----------|---------|--------|
+| **@tiptap/markdown** | Bidirectional markdown parsing and serialization | Official |
+| **@tiptap/starter-kit** | Base TipTap extensions (bold, italic, lists, etc.) | Official |
+| **WikiLinks extension** | `[[Note Title]]` parsing, autocomplete, navigation | Custom |
+| **@aarkue/tiptap-math-extension** | LaTeX math rendering with `$` delimiters | Open source |
+| **@tiptap/extension-code-block-lowlight** | Syntax-highlighted code blocks | Official |
+| **@syfxlin/tiptap-starter-kit** | Mermaid diagram support | Open source |
+
+### Editor Concepts
+
+| Term | Definition |
+|------|------------|
+| **WYSIWYG** | What You See Is What You Get — visual editing mode |
+| **Split View** | Side-by-side editor and preview panels |
+| **Plain Markdown Mode** | Raw markdown editing without WYSIWYG rendering |
+| **Suggestion Plugin** | ProseMirror plugin for autocomplete triggers (e.g., `[[`) |
+| **Node** | ProseMirror term for block-level content (paragraphs, headings, code blocks) |
+| **Mark** | ProseMirror term for inline formatting (bold, italic, links) |
+| **Schema** | ProseMirror document structure definition |
+| **Markdown Round-trip** | Parse markdown → edit → serialize back to markdown |
+
+---
+
 ## Tracking Features
 
 | Term | Definition |
@@ -188,6 +226,7 @@
 | **Tauri Command** | IPC function exposed by Rust backend, called from frontend |
 | **tauri-specta** | Library generating TypeScript types from Rust command signatures |
 | **IPC** | Inter-Process Communication (how frontend talks to backend in Tauri) |
+| **ONNX** | Open Neural Network Exchange — model format for local embeddings |
 
 ---
 
@@ -235,6 +274,7 @@
 | Rust functions | snake_case | `create_quest()`, `sync_notes()` |
 | TypeScript types | PascalCase | `Quest`, `Campaign` |
 | TypeScript functions | camelCase | `createQuest()`, `syncNotes()` |
+| TipTap extensions | PascalCase | `WikiLink`, `MathBlock` |
 
 ### Files
 
@@ -243,6 +283,7 @@
 | Migrations | `NNN_description.surql` | `001_initial_schema.surql` |
 | Components | PascalCase | `QuestCard.svelte` |
 | Utilities | camelCase | `formatDate.ts` |
+| TipTap extensions | PascalCase | `WikiLink.ts` |
 
 ---
 
@@ -262,3 +303,4 @@
 | Backlog (for quests) | Quest Log or Idea Greenhouse | Columns have specific meanings |
 | Timer | Focus Session | Focus Session includes more context |
 | Points | XP | XP is the gamification currency |
+| Rich text editor | TipTap editor | TipTap is the specific framework |
