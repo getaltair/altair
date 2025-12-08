@@ -54,7 +54,7 @@
 
 ### Task 2.1: Update altair-db Cargo.toml
 
-- [ ] Add specta dependency and feature flag
+- [x] Add specta dependency and feature flag
   - **Acceptance**: `cargo check -p altair-db --features specta` succeeds
   - **Files**: `backend/crates/altair-db/Cargo.toml`
   - **Changes**:
@@ -63,13 +63,13 @@
 
 ### Task 2.2: Enable specta feature in Tauri apps
 
-- [ ] Update workspace Cargo.toml to enable specta feature for altair-db in all apps
+- [x] Update workspace Cargo.toml to enable specta feature for altair-db in all apps
   - **Acceptance**: All Tauri apps build with altair-db specta feature enabled
   - **Files**:
-    - `backend/apps/guidance/src-tauri/Cargo.toml`
-    - `backend/apps/knowledge/src-tauri/Cargo.toml`
-    - `backend/apps/tracking/src-tauri/Cargo.toml`
-    - `backend/apps/mobile/src-tauri/Cargo.toml`
+    - `apps/guidance/src-tauri/Cargo.toml`
+    - `apps/knowledge/src-tauri/Cargo.toml`
+    - `apps/tracking/src-tauri/Cargo.toml`
+    - `apps/mobile/src-tauri/Cargo.toml`
   - **Changes**: Add `features = ["specta"]` to altair-db dependency
 
 ---

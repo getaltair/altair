@@ -10,6 +10,51 @@ use chrono::NaiveTime;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use surrealdb::sql::Thing;
 
+/// Newtype wrapper for Thing to provide specta Type implementation
+///
+/// This wrapper allows us to implement the specta::Type trait for SurrealDB's Thing type,
+/// which is necessary since we can't implement external traits on external types (orphan rules).
+#[cfg(feature = "specta")]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
+#[cfg_attr(feature = "specta", specta(rename = "Thing"))]
+pub struct ThingType {
+    /// Table name
+    pub tb: String,
+    /// Record ID
+    pub id: String,
+}
+
+#[cfg(feature = "specta")]
+impl From<&Thing> for ThingType {
+    fn from(thing: &Thing) -> Self {
+        use surrealdb::sql::Id;
+
+        let id_str = match &thing.id {
+            Id::Number(n) => n.to_string(),
+            Id::String(s) => s.clone(),
+            Id::Uuid(u) => u.to_string(),
+            _ => format!("{:?}", thing.id),
+        };
+
+        Self {
+            tb: thing.tb.clone(),
+            id: id_str,
+        }
+    }
+}
+
+/// Newtype wrapper for NaiveTime to provide specta Type implementation
+///
+/// This wrapper allows us to implement the specta::Type trait for chrono's NaiveTime type.
+/// The TypeScript representation is a string in HH:MM format.
+#[cfg(feature = "specta")]
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
+#[cfg_attr(feature = "specta", specta(rename = "NaiveTime"))]
+#[allow(dead_code)]
+pub struct NaiveTimeType(#[cfg_attr(feature = "specta", specta(type = String))] String);
+
 /// Custom serialization for SurrealDB Thing type
 ///
 /// Converts Thing to a JSON object with `tb` (table) and `id` fields.
@@ -71,49 +116,6 @@ pub mod thing_serde {
     }
 }
 
-/// specta type definition for Thing
-///
-/// Ensures TypeScript sees Thing as `{ tb: string; id: string }`
-#[cfg(feature = "specta")]
-impl specta::Type for Thing {
-    fn inline(_type_map: &mut specta::TypeMap, _generics: specta::Generics) -> specta::DataType {
-        specta::DataType::Object(specta::ObjectType {
-            generics: vec![],
-            fields: specta::ObjectFields::Named(vec![
-                (
-                    "tb".into(),
-                    specta::ObjectField {
-                        optional: false,
-                        flatten: false,
-                        deprecated: None,
-                        docs: "Table name".into(),
-                        ty: Box::new(specta::DataType::Primitive(specta::PrimitiveType::String)),
-                    },
-                ),
-                (
-                    "id".into(),
-                    specta::ObjectField {
-                        optional: false,
-                        flatten: false,
-                        deprecated: None,
-                        docs: "Record ID".into(),
-                        ty: Box::new(specta::DataType::Primitive(specta::PrimitiveType::String)),
-                    },
-                ),
-            ]),
-            tag: None,
-        })
-    }
-
-    fn reference(
-        _type_map: &mut specta::TypeMap,
-        _generics: &[specta::DataType],
-    ) -> specta::reference::Reference {
-        // Use inline representation for Thing
-        specta::reference::Reference::Inline
-    }
-}
-
 /// Custom serialization for chrono NaiveTime type
 ///
 /// Converts NaiveTime to a "HH:MM" string format for TypeScript.
@@ -148,24 +150,6 @@ pub mod naive_time_serde {
     {
         let s = String::deserialize(deserializer)?;
         NaiveTime::parse_from_str(&s, "%H:%M").map_err(serde::de::Error::custom)
-    }
-}
-
-/// specta type definition for NaiveTime
-///
-/// Ensures TypeScript sees NaiveTime as a string with HH:MM format
-#[cfg(feature = "specta")]
-impl specta::Type for NaiveTime {
-    fn inline(_type_map: &mut specta::TypeMap, _generics: specta::Generics) -> specta::DataType {
-        specta::DataType::Primitive(specta::PrimitiveType::String)
-    }
-
-    fn reference(
-        _type_map: &mut specta::TypeMap,
-        _generics: &[specta::DataType],
-    ) -> specta::reference::Reference {
-        // Use inline representation for NaiveTime
-        specta::reference::Reference::Inline
     }
 }
 
