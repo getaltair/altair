@@ -56,10 +56,18 @@ impl AppState {
         );
 
         // Step 2: Connect to database
+        let db_path = config.database_path.display().to_string();
+        let url = if db_path.starts_with("mem://") {
+            db_path // Use mem:// directly for in-memory testing
+        } else {
+            format!("surrealkv://{}", db_path)
+        };
         let db_config = DatabaseConfig {
-            url: format!("surrealkv://{}", config.database_path.display()),
+            url,
             namespace: "altair".to_string(),
             database: "guidance".to_string(),
+            username: None,
+            password: None,
         };
 
         let db = SurrealConnection::new(&db_config)
@@ -92,10 +100,18 @@ impl AppState {
     #[doc(hidden)]
     pub async fn new_for_test(config: AppConfig) -> Result<Self> {
         // Connect to database only (skip logging for tests)
+        let db_path = config.database_path.display().to_string();
+        let url = if db_path.starts_with("mem://") {
+            db_path // Use mem:// directly for in-memory testing
+        } else {
+            format!("surrealkv://{}", db_path)
+        };
         let db_config = DatabaseConfig {
-            url: format!("surrealkv://{}", config.database_path.display()),
+            url,
             namespace: "altair".to_string(),
             database: "guidance-test".to_string(),
+            username: None,
+            password: None,
         };
 
         let db = SurrealConnection::new(&db_config)

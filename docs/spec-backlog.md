@@ -84,7 +84,7 @@
 | Attribute      | Value                                       |
 | -------------- | ------------------------------------------- |
 | **Weight**     | STANDARD                                    |
-| **Status**     | 🟨                                          |
+| **Status**     | 🟩                                          |
 | **Depends On** | core-001                                    |
 | **References** | DOM (all entities), ARCH §Database, ADR-001 |
 
@@ -451,12 +451,12 @@ Edges: contains, references, links_to, requires, stored_in, documents, reserved_
 
 **Scope:** Note entity operations with TipTap editor
 
-| Attribute      | Value                                    |
-| -------------- | ---------------------------------------- |
-| **Weight**     | STANDARD                                 |
-| **Status**     | ⬜                                       |
-| **Depends On** | core-002, core-003                       |
-| **References** | REQ §2.1, DOM §Note, UF §K-1, ADR-013    |
+| Attribute      | Value                                 |
+| -------------- | ------------------------------------- |
+| **Weight**     | STANDARD                              |
+| **Status**     | ⬜                                    |
+| **Depends On** | core-002, core-003                    |
+| **References** | REQ §2.1, DOM §Note, UF §K-1, ADR-013 |
 
 **Covers:**
 
@@ -535,11 +535,11 @@ packages/editor/
 
 **Scope:** Bidirectional wiki-style linking with custom TipTap extension
 
-| Attribute      | Value                                 |
-| -------------- | ------------------------------------- |
-| **Weight**     | STANDARD                              |
-| **Status**     | ⬜                                    |
-| **Depends On** | knowledge-001                         |
+| Attribute      | Value                                     |
+| -------------- | ----------------------------------------- |
+| **Weight**     | STANDARD                                  |
+| **Status**     | ⬜                                        |
+| **Depends On** | knowledge-001                             |
 | **References** | REQ §2.3, DOM §links_to, UF §K-2, ADR-013 |
 
 **Covers:**
@@ -562,7 +562,7 @@ packages/editor/
 WikiLink.configure({
   onWikiLinkClick: (title) => navigateToNote(title),
   renderSuggestion: (query) => searchNotes(query),
-})
+});
 ```
 
 **Backend: Backlinks detection on save:**

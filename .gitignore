@@ -164,6 +164,15 @@ MANIFEST
 # Spectrena - ignore database (local state, not shared)
 .spectrena/lineage/
 
+# Spectrena update tracking (machine-generated)
+.template-hashes.json
+pending-updates.md
+
+# Temporary files
+*.tmp
+*.bak
+*~
+
 # Database
 *.db
 *.sqlite

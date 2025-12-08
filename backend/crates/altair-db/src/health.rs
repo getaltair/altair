@@ -115,6 +115,8 @@ mod tests {
             url: "mem://".to_string(),
             namespace: "test".to_string(),
             database: "main".to_string(),
+            username: None,
+            password: None,
         }
     }
 

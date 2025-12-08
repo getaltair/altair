@@ -3,9 +3,8 @@
 //! This module provides the actual SurrealDB client implementation for embedded database
 //! connections using SurrealKV.
 
-use crate::{DatabaseClient, DatabaseConfig};
+use crate::DatabaseConfig;
 use altair_core::{Error, Result};
-use async_trait::async_trait;
 use surrealdb::{Surreal, engine::local::Db};
 
 /// SurrealDB connection wrapper
@@ -112,23 +111,9 @@ impl SurrealConnection {
     pub fn config(&self) -> &DatabaseConfig {
         &self.config
     }
-}
 
-#[async_trait]
-impl DatabaseClient for SurrealConnection {
-    async fn connect(&self) -> Result<()> {
-        // Connection is already established in new(), so just verify
-        self.ping().await
-    }
-
-    async fn disconnect(&self) -> Result<()> {
-        // SurrealDB client doesn't have an explicit disconnect method
-        // The connection will be closed when the client is dropped
-        tracing::info!("Disconnecting from SurrealDB");
-        Ok(())
-    }
-
-    async fn query(&self, sql: &str) -> Result<serde_json::Value> {
+    /// Execute a SQL query and return the result as JSON
+    pub async fn query(&self, sql: &str) -> Result<serde_json::Value> {
         let mut result = self
             .db
             .query(sql)
@@ -147,7 +132,8 @@ impl DatabaseClient for SurrealConnection {
         Ok(json)
     }
 
-    async fn health_check(&self) -> Result<bool> {
+    /// Health check - returns true if database is accessible
+    pub async fn health_check(&self) -> Result<bool> {
         match self.ping().await {
             Ok(_) => Ok(true),
             Err(_) => Ok(false),
@@ -166,6 +152,8 @@ mod tests {
             url: "mem://".to_string(),
             namespace: "test".to_string(),
             database: "main".to_string(),
+            username: None,
+            password: None,
         }
     }
 
@@ -199,18 +187,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_database_client_connect() {
-        let config = test_config();
-        let conn = SurrealConnection::new(&config)
-            .await
-            .expect("Connection should succeed");
-
-        let result = conn.connect().await;
-        assert!(result.is_ok(), "DatabaseClient::connect should succeed");
-    }
-
-    #[tokio::test]
-    async fn test_database_client_health_check() {
+    async fn test_health_check() {
         let config = test_config();
         let conn = SurrealConnection::new(&config)
             .await
@@ -221,7 +198,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_database_client_query() {
+    async fn test_query() {
         let config = test_config();
         let conn = SurrealConnection::new(&config)
             .await
@@ -234,16 +211,5 @@ mod tests {
             "Query should execute successfully: {:?}",
             result.err()
         );
-    }
-
-    #[tokio::test]
-    async fn test_database_client_disconnect() {
-        let config = test_config();
-        let conn = SurrealConnection::new(&config)
-            .await
-            .expect("Connection should succeed");
-
-        let result = conn.disconnect().await;
-        assert!(result.is_ok(), "Disconnect should succeed");
     }
 }

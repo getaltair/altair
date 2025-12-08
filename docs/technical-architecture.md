@@ -1076,27 +1076,27 @@ flowchart TB
 
 ### Extension Stack
 
-| Feature | Extension | Source | Status |
-|---------|-----------|--------|--------|
-| **Base editing** | `@tiptap/starter-kit` | Official | ✅ Ready |
-| **Markdown** | `@tiptap/markdown` | Official | ✅ Ready |
-| **WikiLinks** | Custom extension | Build (~3 days) | 🔧 Custom |
-| **Code blocks** | `@tiptap/extension-code-block-lowlight` | Official | ✅ Ready |
-| **LaTeX math** | `@aarkue/tiptap-math-extension` | Open source | ✅ Ready |
-| **Mermaid** | `@syfxlin/tiptap-starter-kit` | Open source | ✅ Ready |
+| Feature          | Extension                               | Source          | Status    |
+| ---------------- | --------------------------------------- | --------------- | --------- |
+| **Base editing** | `@tiptap/starter-kit`                   | Official        | ✅ Ready  |
+| **Markdown**     | `@tiptap/markdown`                      | Official        | ✅ Ready  |
+| **WikiLinks**    | Custom extension                        | Build (~3 days) | 🔧 Custom |
+| **Code blocks**  | `@tiptap/extension-code-block-lowlight` | Official        | ✅ Ready  |
+| **LaTeX math**   | `@aarkue/tiptap-math-extension`         | Open source     | ✅ Ready  |
+| **Mermaid**      | `@syfxlin/tiptap-starter-kit`           | Open source     | ✅ Ready  |
 
 ### Extension Configuration
 
 ```typescript
-import { Editor } from '@tiptap/core'
-import StarterKit from '@tiptap/starter-kit'
-import { Markdown } from '@tiptap/markdown'
-import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight'
-import { Mathematics } from '@aarkue/tiptap-math-extension'
-import { lowlight } from 'lowlight'
+import { Editor } from '@tiptap/core';
+import StarterKit from '@tiptap/starter-kit';
+import { Markdown } from '@tiptap/markdown';
+import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
+import { Mathematics } from '@aarkue/tiptap-math-extension';
+import { lowlight } from 'lowlight';
 
 // Custom extension
-import WikiLink from './extensions/WikiLink'
+import WikiLink from './extensions/WikiLink';
 
 const editor = new Editor({
   extensions: [
@@ -1118,7 +1118,7 @@ const editor = new Editor({
   ],
   content: '', // Loaded from note.content
   contentType: 'markdown',
-})
+});
 ```
 
 ### WikiLinks Custom Extension
@@ -1126,6 +1126,7 @@ const editor = new Editor({
 Custom extension implementing core PKM functionality:
 
 **Features:**
+
 - Parse `[[Note Title]]` and `[[note|Display Name]]` syntax
 - Autocomplete while typing (triggered by `[[`)
 - Click to navigate to linked note
@@ -1136,8 +1137,8 @@ Custom extension implementing core PKM functionality:
 
 ```typescript
 // WikiLink.ts (simplified)
-import { Node } from '@tiptap/core'
-import { Suggestion } from '@tiptap/suggestion'
+import { Node } from '@tiptap/core';
+import { Suggestion } from '@tiptap/suggestion';
 
 export const WikiLink = Node.create({
   name: 'wikilink',
@@ -1147,21 +1148,25 @@ export const WikiLink = Node.create({
 
   addAttributes() {
     return {
-      target: { default: null },      // Note title
-      alias: { default: null },       // Display name (optional)
-    }
+      target: { default: null }, // Note title
+      alias: { default: null }, // Display name (optional)
+    };
   },
 
   parseHTML() {
-    return [{ tag: 'a[data-wikilink]' }]
+    return [{ tag: 'a[data-wikilink]' }];
   },
 
   renderHTML({ HTMLAttributes }) {
-    return ['a', {
-      ...HTMLAttributes,
-      'data-wikilink': '',
-      class: 'wikilink'
-    }, 0]
+    return [
+      'a',
+      {
+        ...HTMLAttributes,
+        'data-wikilink': '',
+        class: 'wikilink',
+      },
+      0,
+    ];
   },
 
   addProseMirrorPlugins() {
@@ -1170,10 +1175,10 @@ export const WikiLink = Node.create({
         char: '[[',
         items: async ({ query }) => this.options.renderSuggestion(query),
         // ... render dropdown
-      })
-    ]
-  }
-})
+      }),
+    ];
+  },
+});
 ```
 
 ### Backlinks Detection
@@ -1246,12 +1251,12 @@ fn extract_wiki_links(markdown: &str) -> Vec<String> {
 
 ### Performance Considerations
 
-| Scenario | Handling |
-|----------|----------|
+| Scenario                         | Handling                                     |
+| -------------------------------- | -------------------------------------------- |
 | **Large documents (10k+ lines)** | TipTap handles well; consider lazy rendering |
-| **Syntax highlighting** | Load only needed language packs |
-| **Mermaid diagrams** | Lazy-load mermaid.js (~800KB) |
-| **Autosave** | Debounce 500ms to prevent excessive writes |
+| **Syntax highlighting**          | Load only needed language packs              |
+| **Mermaid diagrams**             | Lazy-load mermaid.js (~800KB)                |
+| **Autosave**                     | Debounce 500ms to prevent excessive writes   |
 
 ---
 
@@ -1404,48 +1409,48 @@ transcription = ["whisper-local", "openai"]
 
 ### Strategy
 
-SurrealDB schema changes via versioned migration files:
+SurrealDB schema changes via versioned migration files in `backend/migrations/`:
 
 ```
-migrations/
-├── 001_initial_schema.surql
-├── 002_add_campaign_table.surql
-├── 003_add_attachment_media_type.surql
-└── ...
+backend/migrations/
+├── README.md                    # Migration conventions and documentation
+├── 001_initial_schema.surql     # Core entity tables (18 tables)
+├── 002_edge_tables.surql        # Graph edge tables (13 edges)
+├── 003_indexes.surql            # Performance indexes + full-text search
+└── 004_seed_data.surql          # Optional development seed data
 ```
+
+### Migration Tables
+
+| Migration              | Tables/Indexes Created                                                                                                                                                                                            |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **001_initial_schema** | 18 entity tables: user, campaign, quest, focus_session, energy_checkin, note, folder, daily_note, item, location, reservation, maintenance_schedule, capture, user_progress, achievement, streak, attachment, tag |
+| **002_edge_tables**    | 13 edge tables: contains, references, requires, links_to, stored_in, documents, reserved_for, reserves, blocks, has_attachment, tagged, has_session, has_maintenance                                              |
+| **003_indexes**        | Owner/status indexes on all tables, full-text search (note.content, quest.title), unique constraints (user.email), date indexes                                                                                   |
+| **004_seed_data**      | Sample user, campaign, quests, notes, tags for development                                                                                                                                                        |
+
+All entity and edge tables include `CHANGEFEED 7d` for sync support.
 
 ### Migration Runner
 
+The `MigrationRunner` in `altair-db` crate handles schema versioning:
+
 ```rust
-struct Migrator {
-    db: Surreal,
-    migrations_dir: PathBuf,
-}
+use altair_db::MigrationRunner;
 
-impl Migrator {
-    async fn run(&self) -> Result<()> {
-        // Get current version
-        let current: i32 = self.db.query(
-            "SELECT version FROM schema_version ORDER BY version DESC LIMIT 1"
-        ).await?.take(0).unwrap_or(0);
+// Create runner with database connection and migrations path
+let mut runner = MigrationRunner::new(db, &migrations_dir);
 
-        // Find pending migrations
-        let mut migrations: Vec<Migration> = self.load_migrations()?;
-        migrations.retain(|m| m.version > current);
-        migrations.sort_by_key(|m| m.version);
-
-        // Apply in order
-        for migration in migrations {
-            self.db.query(&migration.sql).await?;
-            self.db.query(
-                "CREATE schema_version SET version = $v, applied_at = time::now()"
-            ).bind(("v", migration.version)).await?;
-        }
-
-        Ok(())
-    }
-}
+// Run all pending migrations (idempotent)
+runner.run().await?;
 ```
+
+Features:
+
+- **Tracking table**: `_migrations` stores applied versions with timestamps
+- **Idempotent**: Running twice applies each migration only once
+- **Version ordering**: Migrations sorted by numeric prefix (001, 002, etc.)
+- **Performance**: Full suite applies in ~15ms on in-memory database
 
 ### Backward Compatibility
 
@@ -1767,13 +1772,13 @@ volumes:
 
 ## Risks
 
-| Risk                      | Likelihood | Impact | Mitigation                                      |
-| ------------------------- | ---------- | ------ | ----------------------------------------------- |
-| SurrealDB maturity        | Medium     | High   | v2.x is stable; SQLite fallback exists          |
-| Custom sync complexity    | Medium     | Medium | Simple LWW; extensive testing; offline queue    |
-| Tauri mobile maturity     | Low        | Medium | Production apps since Oct 2024; native fallback |
-| Vector index at scale     | Low        | Low    | HNSW handles 100K+; can shard later             |
-| S3 provider lock-in       | Low        | Low    | Standard API; easy provider switching           |
-| Auth plugin security      | Medium     | High   | Security audit; use established OAuth libraries |
-| Change feed gap (>7 days) | Low        | Medium | Full resync fallback documented                 |
+| Risk                      | Likelihood | Impact | Mitigation                                           |
+| ------------------------- | ---------- | ------ | ---------------------------------------------------- |
+| SurrealDB maturity        | Medium     | High   | v2.x is stable; SQLite fallback exists               |
+| Custom sync complexity    | Medium     | Medium | Simple LWW; extensive testing; offline queue         |
+| Tauri mobile maturity     | Low        | Medium | Production apps since Oct 2024; native fallback      |
+| Vector index at scale     | Low        | Low    | HNSW handles 100K+; can shard later                  |
+| S3 provider lock-in       | Low        | Low    | Standard API; easy provider switching                |
+| Auth plugin security      | Medium     | High   | Security audit; use established OAuth libraries      |
+| Change feed gap (>7 days) | Low        | Medium | Full resync fallback documented                      |
 | WikiLinks extension       | Low        | Medium | Reference implementation exists; use Mention pattern |
