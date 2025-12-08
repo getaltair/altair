@@ -143,20 +143,20 @@ The local auth flow:
 
 ### Functional Requirements
 
-| ID     | Requirement                                                                                      | Priority | Notes                        |
-| ------ | ------------------------------------------------------------------------------------------------ | -------- | ---------------------------- |
-| FR-001 | System shall define an `AuthProvider` trait with authenticate, validate, refresh, logout methods | CRITICAL |                              |
-| FR-002 | System shall implement `LocalAuthProvider` as the default auth plugin                            | CRITICAL |                              |
-| FR-003 | System shall create a user account on first launch if none exists                                | CRITICAL | Single-user default          |
-| FR-004 | System shall hash passwords using Argon2id with secure parameters                                | CRITICAL | Cost=3, Memory=64MB          |
-| FR-005 | System shall generate cryptographically secure session tokens                                    | CRITICAL | 256-bit random tokens        |
-| FR-006 | System shall store session tokens in OS-native keychain                                          | HIGH     | Uses `keyring` crate         |
-| FR-007 | System shall validate sessions without requiring password on each request                        | CRITICAL |                              |
-| FR-008 | System shall provide user preferences CRUD through authenticated context                         | HIGH     |                              |
-| FR-009 | System shall expose Tauri commands for login, logout, register, get_current_user                 | CRITICAL |                              |
-| FR-010 | System shall support optional (no password) authentication for local-only use                    | MEDIUM   | Password can be empty/none   |
-| FR-011 | System shall invalidate sessions on explicit logout                                              | HIGH     |                              |
-| FR-012 | System shall refresh session tokens before expiration                                            | MEDIUM   | 7-day default, 1-day refresh |
+| ID     | Requirement                                                                                      | Priority | Notes                                |
+| ------ | ------------------------------------------------------------------------------------------------ | -------- | ------------------------------------ |
+| FR-001 | System shall define an `AuthProvider` trait with authenticate, validate, refresh, logout methods | CRITICAL |                                      |
+| FR-002 | System shall implement `LocalAuthProvider` as the default auth plugin                            | CRITICAL |                                      |
+| FR-003 | System shall create a user account on first launch if none exists                                | CRITICAL | Single-user default                  |
+| FR-004 | System shall hash passwords using Argon2id with secure parameters                                | CRITICAL | Cost=3, Memory=64MB                  |
+| FR-005 | System shall generate cryptographically secure session tokens                                    | CRITICAL | 256-bit random tokens                |
+| FR-006 | System shall store session tokens in OS-native keychain                                          | HIGH     | Uses `keyring` crate                 |
+| FR-007 | System shall validate sessions without requiring password on each request                        | CRITICAL |                                      |
+| FR-008 | System shall provide user preferences CRUD through authenticated context                         | HIGH     |                                      |
+| FR-009 | System shall expose Tauri commands for login, logout, register, get_current_user                 | CRITICAL |                                      |
+| FR-010 | System shall support optional (no password) authentication for local-only use                    | MEDIUM   | Password can be empty/none           |
+| FR-011 | System shall invalidate sessions on explicit logout                                              | HIGH     |                                      |
+| FR-012 | System shall auto-refresh session tokens via background timer when within 1 day of expiration    | MEDIUM   | 7-day default, auto-refresh at day 6 |
 
 ### Non-Functional Requirements
 
@@ -181,8 +181,9 @@ The local auth flow:
 Acceptance:
 
 - [ ] First launch detects no existing user
-- [ ] Setup wizard prompts for display name and optional password
-- [ ] Account is created and session established
+- [ ] Setup wizard prompts for email (required), display name (optional), password (optional)
+- [ ] Account is created with email only if other fields skipped
+- [ ] Session established immediately after account creation
 - [ ] Subsequent launches skip setup
 
 Independent Test: Fresh database → launch app → verify setup flow → verify user exists
@@ -621,26 +622,36 @@ And they see the login screen
 
 ### Risks
 
-| Risk                               | Likelihood | Impact | Mitigation                                             |
-| ---------------------------------- | ---------- | ------ | ------------------------------------------------------ |
-| Keychain unavailable on some Linux | Medium     | Medium | Encrypted file fallback                                |
-| Argon2 too slow on weak hardware   | Low        | Low    | Tunable parameters, document recommendations           |
-| Session token collision            | Very Low   | High   | 256-bit token space, collision astronomically unlikely |
+| Risk                               | Likelihood | Impact | Mitigation                                                    |
+| ---------------------------------- | ---------- | ------ | ------------------------------------------------------------- |
+| Keychain unavailable on some Linux | Medium     | Medium | Prompt user to choose encrypted file fallback or fix keychain |
+| Argon2 too slow on weak hardware   | Low        | Low    | Tunable parameters, document recommendations                  |
+| Session token collision            | Very Low   | High   | 256-bit token space, collision astronomically unlikely        |
 
 ---
 
 ## Open Questions
 
-| #   | Question                                                | Location | Owner | Due         | Status |
-| --- | ------------------------------------------------------- | -------- | ----- | ----------- | ------ |
-| 1   | Should session auto-refresh or require explicit action? | FR-012   | Dev   | During plan | OPEN   |
-| 2   | Keychain fallback behavior if unavailable               | FR-006   | Dev   | During plan | OPEN   |
+| #   | Question                                                | Location | Owner | Due        | Status                                           |
+| --- | ------------------------------------------------------- | -------- | ----- | ---------- | ------------------------------------------------ |
+| 1   | Should session auto-refresh or require explicit action? | FR-012   | Dev   | 2025-12-07 | RESOLVED - Auto-refresh via background timer     |
+| 2   | Keychain fallback behavior if unavailable               | FR-006   | Dev   | 2025-12-07 | RESOLVED - Prompt user to choose fallback or fix |
+
+## Clarifications
+
+### Session 2025-12-07
+
+- Q: Should session auto-refresh or require explicit action? → A: Auto-refresh with background timer when approaching expiration
+- Q: Keychain fallback behavior if unavailable? → A: Prompt user to choose between encrypted file storage or fixing keychain setup
+- Q: What fields required at initial setup? → A: Minimal - only email required; password and display name optional, can be added later
 
 ### Clarifications Log
 
-| Date | Question | Resolution | Decided By |
-| ---- | -------- | ---------- | ---------- |
-|      |          |            |            |
+| Date       | Question                                                | Resolution                                                        | Decided By |
+| ---------- | ------------------------------------------------------- | ----------------------------------------------------------------- | ---------- |
+| 2025-12-07 | Should session auto-refresh or require explicit action? | Auto-refresh with background timer (within 1 day of 7d)           | User       |
+| 2025-12-07 | Keychain fallback behavior if unavailable?              | Prompt user: choose encrypted file fallback or fix keychain setup | User       |
+| 2025-12-07 | What fields required at initial setup?                  | Minimal: email only required; password/display name optional      | User       |
 
 ---
 
