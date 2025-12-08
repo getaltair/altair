@@ -114,11 +114,11 @@ Extend the existing tauri-specta setup to:
 
 ### Key Decisions
 
-| Decision                     | Options Considered                        | Rationale                                                      |
-| ---------------------------- | ----------------------------------------- | -------------------------------------------------------------- |
-| Feature-flag specta derives  | Always derive vs. feature-gated           | Feature-gated avoids compile overhead for non-Tauri builds     |
-| Per-app vs. unified bindings | One file per app vs. single bindings file | Per-app maintains separation; each app only gets types it uses |
-| Build-time vs. check-only    | Regenerate in build vs. check freshness   | Check-only in CI, regenerate in debug to avoid stale types     |
+| Decision                     | Options Considered                        | Rationale                                                           |
+| ---------------------------- | ----------------------------------------- | ------------------------------------------------------------------- |
+| Feature-flag specta derives  | Always derive vs. feature-gated           | Feature-gated avoids compile overhead for non-Tauri builds          |
+| Per-app vs. unified bindings | One file per app vs. single bindings file | Per-app maintains separation; each app only gets types it uses      |
+| Build-time vs. check-only    | Regenerate in build vs. check freshness   | CI regenerates + fails on git diff; debug regenerates automatically |
 
 ---
 
@@ -224,8 +224,9 @@ Then the new type appears in packages/bindings/src/guidance.ts
 
 ### Technical Constraints
 
-- **SurrealDB RecordId**: Must serialize as string for TypeScript compatibility
+- **SurrealDB RecordId (`Thing`)**: Serialize as object `{ tb: string, id: string }` preserving table/id structure
 - **Chrono DateTime**: Serializes as ISO 8601 string via serde
+- **Chrono NaiveTime**: Serializes as `HH:MM` format string (e.g., `"18:00"`)
 - **specta version**: Locked to 2.0.0-rc.20 (workspace dependency)
 
 ### Assumptions
@@ -240,6 +241,16 @@ Then the new type appears in packages/bindings/src/guidance.ts
 | ---------------- | -------- | -------- | ---------------------------- |
 | core-003-backend | Internal | Complete | Blocks: tauri-specta not set |
 | core-002-schema  | Internal | Complete | Blocks: no domain types      |
+
+---
+
+## Clarifications
+
+### Session 2025-12-07
+
+- Q: How should SurrealDB `Thing` (record ID) be represented in TypeScript? → A: Object `{ tb: string, id: string }` - preserve structure as interface
+- Q: How should `chrono::NaiveTime` be represented in TypeScript? → A: String in `HH:MM` format (e.g., `"18:00"`) - omit seconds
+- Q: How should CI detect stale TypeScript bindings? → A: Regenerate bindings in CI, fail if `git diff` shows changes
 
 ---
 
