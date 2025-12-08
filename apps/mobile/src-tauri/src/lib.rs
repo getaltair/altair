@@ -21,7 +21,7 @@ pub fn run() {
     builder
         .export(
             specta_typescript::Typescript::default(),
-            "packages/bindings/src/mobile.ts",
+            "../../../packages/bindings/src/mobile.ts",
         )
         .expect("Failed to export typescript bindings");
 

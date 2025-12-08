@@ -4,7 +4,7 @@
 use tauri::Manager;
 
 // Module declarations
-mod commands;
+pub mod commands;
 mod state;
 
 // Imports
@@ -23,7 +23,7 @@ pub fn run() {
     builder
         .export(
             specta_typescript::Typescript::default(),
-            "packages/bindings/src/guidance.ts",
+            "../../../packages/bindings/src/guidance.ts",
         )
         .expect("Failed to export typescript bindings");
 
