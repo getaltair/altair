@@ -84,12 +84,12 @@ impl Drop for AppState {
     }
 }
 
-#[cfg(test)]
 impl AppState {
     /// Create AppState for testing without logging initialization
     ///
     /// This bypasses logging setup to avoid conflicts when running multiple tests.
-    /// Only use in tests!
+    /// Only use in tests! Available in both unit tests and integration tests.
+    #[doc(hidden)]
     pub async fn new_for_test(config: AppConfig) -> Result<Self> {
         // Connect to database only (skip logging for tests)
         let db_config = DatabaseConfig {

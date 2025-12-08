@@ -5,12 +5,14 @@ use tauri::Manager;
 
 // Module declarations
 pub mod commands;
-mod state;
+pub mod state;
 
 // Imports
 use altair_core::AppConfig;
 use commands::health_check;
-use state::AppState;
+
+// Re-exports for tests and internal use
+pub use state::AppState;
 
 /// Initialize the Tauri application
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
