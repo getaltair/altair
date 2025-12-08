@@ -78,79 +78,79 @@
 
 ### Task 3.1: Add specta derive to QuestColumn enum
 
-- [ ] Add `#[cfg_attr(feature = "specta", derive(specta::Type))]` to `QuestColumn`
+- [x] Add `#[cfg_attr(feature = "specta", derive(specta::Type))]` to `QuestColumn`
   - **Acceptance**: Enum compiles with specta feature enabled
   - **Files**: `backend/crates/altair-db/src/schema/enums.rs:QuestColumn`
 
 ### Task 3.2: Add specta derive to EnergyCost enum
 
-- [ ] Add `#[cfg_attr(feature = "specta", derive(specta::Type))]` to `EnergyCost`
+- [x] Add `#[cfg_attr(feature = "specta", derive(specta::Type))]` to `EnergyCost`
   - **Acceptance**: Enum compiles with specta feature enabled
   - **Files**: `backend/crates/altair-db/src/schema/enums.rs:EnergyCost`
 
 ### Task 3.3: Add specta derive to EnergyLevel newtype
 
-- [ ] Add `#[cfg_attr(feature = "specta", derive(specta::Type))]` to `EnergyLevel`
+- [x] Add `#[cfg_attr(feature = "specta", derive(specta::Type))]` to `EnergyLevel`
   - **Acceptance**: Newtype compiles with specta feature enabled
   - **Files**: `backend/crates/altair-db/src/schema/enums.rs:EnergyLevel`
 
 ### Task 3.4: Add specta derive to EntityStatus enum
 
-- [ ] Add `#[cfg_attr(feature = "specta", derive(specta::Type))]` to `EntityStatus`
+- [x] Add `#[cfg_attr(feature = "specta", derive(specta::Type))]` to `EntityStatus`
   - **Acceptance**: Enum compiles with specta feature enabled
   - **Files**: `backend/crates/altair-db/src/schema/enums.rs:EntityStatus`
 
 ### Task 3.5: Add specta derive to ItemStatus enum
 
-- [ ] Add `#[cfg_attr(feature = "specta", derive(specta::Type))]` to `ItemStatus`
+- [x] Add `#[cfg_attr(feature = "specta", derive(specta::Type))]` to `ItemStatus`
   - **Acceptance**: Enum compiles with specta feature enabled
   - **Files**: `backend/crates/altair-db/src/schema/enums.rs:ItemStatus`
 
 ### Task 3.6: Add specta derive to ReservationStatus enum
 
-- [ ] Add `#[cfg_attr(feature = "specta", derive(specta::Type))]` to `ReservationStatus`
+- [x] Add `#[cfg_attr(feature = "specta", derive(specta::Type))]` to `ReservationStatus`
   - **Acceptance**: Enum compiles with specta feature enabled
   - **Files**: `backend/crates/altair-db/src/schema/enums.rs:ReservationStatus`
 
 ### Task 3.7: Add specta derive to CaptureStatus enum
 
-- [ ] Add `#[cfg_attr(feature = "specta", derive(specta::Type))]` to `CaptureStatus`
+- [x] Add `#[cfg_attr(feature = "specta", derive(specta::Type))]` to `CaptureStatus`
   - **Acceptance**: Enum compiles with specta feature enabled
   - **Files**: `backend/crates/altair-db/src/schema/enums.rs:CaptureStatus`
 
 ### Task 3.8: Add specta derive to CaptureType enum
 
-- [ ] Add `#[cfg_attr(feature = "specta", derive(specta::Type))]` to `CaptureType`
+- [x] Add `#[cfg_attr(feature = "specta", derive(specta::Type))]` to `CaptureType`
   - **Acceptance**: Enum compiles with specta feature enabled
   - **Files**: `backend/crates/altair-db/src/schema/enums.rs:CaptureType`
 
 ### Task 3.9: Add specta derive to CaptureSource enum
 
-- [ ] Add `#[cfg_attr(feature = "specta", derive(specta::Type))]` to `CaptureSource`
+- [x] Add `#[cfg_attr(feature = "specta", derive(specta::Type))]` to `CaptureSource`
   - **Acceptance**: Enum compiles with specta feature enabled
   - **Files**: `backend/crates/altair-db/src/schema/enums.rs:CaptureSource`
 
 ### Task 3.10: Add specta derive to StreakType enum
 
-- [ ] Add `#[cfg_attr(feature = "specta", derive(specta::Type))]` to `StreakType`
+- [x] Add `#[cfg_attr(feature = "specta", derive(specta::Type))]` to `StreakType`
   - **Acceptance**: Enum compiles with specta feature enabled
   - **Files**: `backend/crates/altair-db/src/schema/enums.rs:StreakType`
 
 ### Task 3.11: Add specta derive to MediaType enum
 
-- [ ] Add `#[cfg_attr(feature = "specta", derive(specta::Type))]` to `MediaType`
+- [x] Add `#[cfg_attr(feature = "specta", derive(specta::Type))]` to `MediaType`
   - **Acceptance**: Enum compiles with specta feature enabled
   - **Files**: `backend/crates/altair-db/src/schema/enums.rs:MediaType`
 
 ### Task 3.12: Add specta derive to UserRole enum
 
-- [ ] Add `#[cfg_attr(feature = "specta", derive(specta::Type))]` to `UserRole`
+- [x] Add `#[cfg_attr(feature = "specta", derive(specta::Type))]` to `UserRole`
   - **Acceptance**: Enum compiles with specta feature enabled
   - **Files**: `backend/crates/altair-db/src/schema/enums.rs:UserRole`
 
 ### Task 3.13: Add specta derive to FocusSessionStatus enum
 
-- [ ] Add `#[cfg_attr(feature = "specta", derive(specta::Type))]` to `FocusSessionStatus`
+- [x] Add `#[cfg_attr(feature = "specta", derive(specta::Type))]` to `FocusSessionStatus`
   - **Acceptance**: Enum compiles with specta feature enabled
   - **Files**: `backend/crates/altair-db/src/schema/enums.rs:FocusSessionStatus`
 

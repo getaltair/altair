@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 
 /// Quest board column position
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
 #[serde(rename_all = "snake_case")]
 pub enum QuestColumn {
     IdeaGreenhouse,
@@ -19,6 +20,7 @@ pub enum QuestColumn {
 
 /// Energy cost to complete a quest (user effort estimation)
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
 #[serde(rename_all = "snake_case")]
 pub enum EnergyCost {
     Tiny,
@@ -30,6 +32,7 @@ pub enum EnergyCost {
 
 /// User's daily energy level self-assessment (1-5 scale)
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
 pub struct EnergyLevel(u8);
 
 impl EnergyLevel {
@@ -48,6 +51,7 @@ impl EnergyLevel {
 
 /// General entity status (soft delete pattern)
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
 #[serde(rename_all = "snake_case")]
 pub enum EntityStatus {
     #[default]
@@ -57,6 +61,7 @@ pub enum EntityStatus {
 
 /// Item availability status
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
 #[serde(rename_all = "snake_case")]
 pub enum ItemStatus {
     #[default]
@@ -69,6 +74,7 @@ pub enum ItemStatus {
 
 /// Reservation lifecycle status
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
 #[serde(rename_all = "snake_case")]
 pub enum ReservationStatus {
     #[default]
@@ -79,6 +85,7 @@ pub enum ReservationStatus {
 
 /// Capture processing status
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
 #[serde(rename_all = "snake_case")]
 pub enum CaptureStatus {
     #[default]
@@ -89,6 +96,7 @@ pub enum CaptureStatus {
 
 /// Capture input method
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
 #[serde(rename_all = "snake_case")]
 pub enum CaptureType {
     Text,
@@ -100,6 +108,7 @@ pub enum CaptureType {
 
 /// Source of capture input
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
 #[serde(rename_all = "snake_case")]
 pub enum CaptureSource {
     Desktop,
@@ -110,6 +119,7 @@ pub enum CaptureSource {
 
 /// Streak tracking type
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
 #[serde(rename_all = "snake_case")]
 pub enum StreakType {
     DailyCheckin,
@@ -119,6 +129,7 @@ pub enum StreakType {
 
 /// Attachment media type
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
 #[serde(rename_all = "snake_case")]
 pub enum MediaType {
     Photo,
@@ -129,6 +140,7 @@ pub enum MediaType {
 
 /// User role for authorization
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
 #[serde(rename_all = "snake_case")]
 pub enum UserRole {
     #[default]
@@ -138,6 +150,7 @@ pub enum UserRole {
 
 /// Focus session status
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
 #[serde(rename_all = "snake_case")]
 pub enum FocusSessionStatus {
     #[default]
