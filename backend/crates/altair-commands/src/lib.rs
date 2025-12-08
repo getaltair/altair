@@ -59,6 +59,7 @@ impl<T> From<Result<T>> for CommandResponse<T> {
 
 /// Application health status
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
 pub struct HealthStatus {
     /// Whether the backend is healthy
     pub healthy: bool,

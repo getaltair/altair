@@ -1,0 +1,15 @@
+{
+  ".claude/commands/spectrena.analyze.md": "41ed27e0ca8c",
+  ".claude/commands/spectrena.spec.finish.md": "a6fbd7b0fdfc",
+  ".claude/commands/spectrena.deps.md": "bd75339f0f5c",
+  ".claude/commands/spectrena.constitution.md": "04ff6514e83f",
+  ".claude/commands/spectrena.clarify.md": "0fae7f5da881",
+  ".claude/commands/spectrena.specify.md": "c44beb6e26cf",
+  ".claude/commands/spectrena.implement.md": "4794cc260508",
+  ".claude/commands/spectrena.review-updates.md": "37508032c594",
+  ".claude/commands/spectrena.tasks.md": "e625c9719668",
+  ".claude/commands/spectrena.discover.md": "0f4816799428",
+  ".claude/commands/spectrena.taskstoissues.md": "3f15c2594a54",
+  ".claude/commands/spectrena.checklist.md": "6c043f94874c",
+  ".claude/commands/spectrena.plan.md": "e5fbdafc6062"
+}

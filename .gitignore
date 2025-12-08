@@ -178,6 +178,9 @@ pending-updates.md
 *.sqlite
 *.sqlite3
 
+# SurrealDB test artifacts (created by unit tests)
+surrealkv:/
+
 # Backup files
 *.bak
 *.backup

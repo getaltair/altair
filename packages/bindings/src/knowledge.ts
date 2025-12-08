@@ -3,11 +3,8 @@
 /** user-defined commands **/
 
 export const commands = {
-  /**
-   * Placeholder Tauri command - greet the user
-   */
-  async greet(name: string): Promise<string> {
-    return await TAURI_INVOKE('greet', { name });
+  async healthCheck(): Promise<HealthStatus> {
+    return await TAURI_INVOKE('health_check');
   },
 };
 
@@ -16,6 +13,13 @@ export const commands = {
 /** user-defined constants **/
 
 /** user-defined types **/
+
+export type HealthStatus = {
+  healthy: boolean;
+  version: string;
+  database_connected: boolean;
+  sync_enabled: boolean;
+};
 
 /** tauri-specta globals **/
 

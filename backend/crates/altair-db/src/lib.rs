@@ -3,6 +3,7 @@
 //! This crate provides database access and operations for Altair applications.
 //! It handles:
 //! - SurrealDB connection management (embedded and cloud)
+//! - Database health checks and monitoring
 //! - Schema migrations
 //! - CRUD operations for domain entities
 //! - Change feed integration for sync
@@ -12,7 +13,15 @@ pub mod client;
 pub mod migration;
 pub mod schema;
 
-// Re-export commonly used types
+// Module declarations
+pub mod connection;
+pub mod health;
+
+// Re-exports from this crate
+pub use connection::SurrealConnection;
+pub use health::{DatabaseHealth, check_database_health};
+
+// Re-export commonly used types from client
 pub use client::{DatabaseClient, DatabaseConfig};
 pub use migration::{Migration, MigrationRecord, MigrationRunner};
 

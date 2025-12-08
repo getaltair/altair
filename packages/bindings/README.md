@@ -8,9 +8,27 @@ This package contains TypeScript type definitions for all Tauri commands defined
 
 ## Current Status
 
-**Phase 3 (placeholder)**: This package currently exports placeholder types that mirror the expected domain model. These placeholders allow frontend development to begin before the Tauri apps are scaffolded.
+**Phase 6 (complete)**: TypeScript bindings are now generated for all four apps (guidance, knowledge, tracking, mobile). Each app exports a `health_check` command with the `HealthStatus` type.
 
-**Phase 4 (generated)**: Once the Tauri apps are set up (task 4.5), running the build will generate actual bindings from Rust type definitions into `src/generated.ts`.
+### Available Commands
+
+| App       | Commands        | Types          |
+| --------- | --------------- | -------------- |
+| guidance  | `healthCheck()` | `HealthStatus` |
+| knowledge | `healthCheck()` | `HealthStatus` |
+| tracking  | `healthCheck()` | `HealthStatus` |
+| mobile    | `healthCheck()` | `HealthStatus` |
+
+### HealthStatus Type
+
+```typescript
+export type HealthStatus = {
+  healthy: boolean;
+  version: string;
+  database_connected: boolean;
+  sync_enabled: boolean;
+};
+```
 
 ## How Bindings Are Generated
 
@@ -83,22 +101,38 @@ export const commands = {
 
 ## Usage
 
-### In Frontend Code
+### Health Check Command (Phase 6)
+
+All apps now have a `health_check` command for backend status:
 
 ```typescript
-import { commands, type Quest } from '@altair/bindings';
+import { guidance, type HealthStatus } from '@altair/bindings';
 
-// Type-safe command invocation
-const quest: Quest = await commands.createQuest('Do the thing', 'medium');
+// Check backend health
+const health: HealthStatus = await guidance.commands.healthCheck();
 
-// Type checking catches errors at compile time
-await commands.createQuest(123, 'invalid'); // TS Error!
+console.log(`Backend ${health.version} is ${health.healthy ? 'healthy' : 'unhealthy'}`);
+console.log(`Database: ${health.database_connected ? 'connected' : 'disconnected'}`);
+console.log(`Sync: ${health.sync_enabled ? 'enabled' : 'disabled'}`);
+```
+
+### Type-Safe Command Invocation
+
+```typescript
+import { guidance, knowledge, tracking, mobile } from '@altair/bindings';
+import type { HealthStatus } from '@altair/bindings';
+
+// Each app has its own commands namespace
+const guidanceHealth = await guidance.commands.healthCheck();
+const knowledgeHealth = await knowledge.commands.healthCheck();
+const trackingHealth = await tracking.commands.healthCheck();
+const mobileHealth = await mobile.commands.healthCheck();
 ```
 
 ### Importing Types Only
 
 ```typescript
-import type { Quest, EnergyCost, Note } from '@altair/bindings';
+import type { HealthStatus } from '@altair/bindings';
 ```
 
 ## Development
