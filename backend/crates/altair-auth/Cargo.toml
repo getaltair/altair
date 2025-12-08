@@ -15,12 +15,21 @@ async-trait = "0.1"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 
+# Error handling
+thiserror = "2.0"
+
 # Observability
 tracing = "0.1"
 
-# Auth-related dependencies (placeholders for future use)
-# jsonwebtoken = "9.3"
-# bcrypt = "0.16"
+# Async runtime
+tokio = { version = "1.42", features = ["rt", "sync"] }
+
+# Auth-related dependencies
+argon2 = { version = "0.5", features = ["std"] }
+keyring = "3"
+rand_core = { version = "0.6", features = ["getrandom"] }
+hex = "0.4"
+chrono = "0.4"
 
 [dev-dependencies]
 tokio = { version = "1.42", features = ["full"] }

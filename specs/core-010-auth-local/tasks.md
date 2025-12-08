@@ -11,7 +11,7 @@
 
 ### Task 1.1: Add crate dependencies
 
-- [ ] Add dependencies to `backend/crates/altair-auth/Cargo.toml`
+- [x] Add dependencies to `backend/crates/altair-auth/Cargo.toml`
   - **Acceptance**: Dependencies include `argon2 = "0.6"`, `keyring = "3"`, `getrandom = "0.3"`, `hex = "0.4"`, `chrono = "0.4"`
   - **Files**: `backend/crates/altair-auth/Cargo.toml`
   - **Duration**: 15 minutes
@@ -19,7 +19,7 @@
 
 ### Task 1.2: Implement password hashing module
 
-- [ ] Create `backend/crates/altair-auth/src/local/password.rs`
+- [x] Create `backend/crates/altair-auth/src/local/password.rs`
   - **Acceptance**:
     - `hash_password(password: &str) -> Result<String>` implemented with Argon2id (time=3, memory=65536, parallelism=4, output=32 bytes)
     - `verify_password(password: &str, hash: &str) -> Result<bool>` implemented with constant-time comparison
@@ -31,7 +31,7 @@
 
 ### Task 1.3: Implement session management module
 
-- [ ] Create `backend/crates/altair-auth/src/local/session.rs`
+- [x] Create `backend/crates/altair-auth/src/local/session.rs`
   - **Acceptance**:
     - `Session` struct with fields: token, user_id, expires_at, device_id, created_at
     - `generate_token() -> String` produces 256-bit random hex string
@@ -44,7 +44,7 @@
 
 ### Task 1.4: Implement keychain abstraction module
 
-- [ ] Create `backend/crates/altair-auth/src/local/keychain.rs`
+- [x] Create `backend/crates/altair-auth/src/local/keychain.rs`
   - **Acceptance**:
     - `KeychainStorage` struct with service name `com.altair.auth`
     - `store_token(token: &str) -> Result<()>` saves to OS keychain
@@ -58,7 +58,7 @@
 
 ### Task 1.5: Define auth types
 
-- [ ] Create/update `backend/crates/altair-auth/src/types.rs`
+- [x] Create/update `backend/crates/altair-auth/src/types.rs`
   - **Acceptance**:
     - `UserCredential`: user_id, password_hash, updated_at
     - `AuthResponse`: user, session_token, expires_at
@@ -70,7 +70,7 @@
 
 ### Task 1.6: Enhance AuthProvider trait
 
-- [ ] Update `backend/crates/altair-auth/src/provider.rs`
+- [x] Update `backend/crates/altair-auth/src/lib.rs`
   - **Acceptance**:
     - Add `refresh(&self, token: &str) -> Result<Session>` method
     - Add `register(&self, ...) -> Result<AuthResponse>` method
@@ -82,7 +82,7 @@
 
 ### Task 1.7: Implement LocalAuthProvider
 
-- [ ] Update `backend/crates/altair-auth/src/local/mod.rs`
+- [x] Update `backend/crates/altair-auth/src/lib.rs` (placeholder implementation with new trait methods)
   - **Acceptance**:
     - Full implementation of all `AuthProvider` trait methods
     - Integration with password, session, and keychain modules
