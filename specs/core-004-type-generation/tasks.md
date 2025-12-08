@@ -9,38 +9,38 @@
 
 ### Task 1.1: Create serde helpers module
 
-- [ ] Create `backend/crates/altair-db/src/schema/serde_helpers.rs`
+- [x] Create `backend/crates/altair-db/src/schema/serde_helpers.rs`
   - **Acceptance**: File exists with module declaration in `schema/mod.rs`
   - **Files**: `backend/crates/altair-db/src/schema/serde_helpers.rs`, `backend/crates/altair-db/src/schema/mod.rs`
 
 ### Task 1.2: Implement Thing serialization
 
-- [ ] Add custom serde serializer for `Thing` → `{ tb, id }` object format
+- [x] Add custom serde serializer for `Thing` → `{ tb, id }` object format
   - **Acceptance**: Serializer converts `Thing { tb: "quest", id: String("123") }` to JSON `{"tb":"quest","id":"123"}`
   - **Files**: `backend/crates/altair-db/src/schema/serde_helpers.rs`
   - **Implementation**: Use `#[serde(with = "thing_serde")]` pattern
 
 ### Task 1.3: Implement specta type definition for Thing
 
-- [ ] Create specta type definition for Thing as TypeScript `{ tb: string; id: string }`
+- [x] Create specta type definition for Thing as TypeScript `{ tb: string; id: string }`
   - **Acceptance**: specta outputs TypeScript interface matching `{ tb: string; id: string }`
   - **Files**: `backend/crates/altair-db/src/schema/serde_helpers.rs`
 
 ### Task 1.4: Implement NaiveTime serialization
 
-- [ ] Add custom serde serializer for `NaiveTime` → `"HH:MM"` string format
+- [x] Add custom serde serializer for `NaiveTime` → `"HH:MM"` string format
   - **Acceptance**: Serializer converts `NaiveTime::from_hms(14, 30, 0)` to `"14:30"`
   - **Files**: `backend/crates/altair-db/src/schema/serde_helpers.rs`
 
 ### Task 1.5: Implement specta type definition for NaiveTime
 
-- [ ] Create specta type definition for NaiveTime as TypeScript `string` (HH:MM format)
+- [x] Create specta type definition for NaiveTime as TypeScript `string` (HH:MM format)
   - **Acceptance**: specta outputs TypeScript `string` type with JSDoc comment explaining HH:MM format
   - **Files**: `backend/crates/altair-db/src/schema/serde_helpers.rs`
 
 ### Task 1.6: Add unit tests for serde helpers
 
-- [ ] Write unit tests verifying Thing and NaiveTime serialization
+- [x] Write unit tests verifying Thing and NaiveTime serialization
   - **Acceptance**: Tests pass for serialization and deserialization of both types
   - **Files**: `backend/crates/altair-db/src/schema/serde_helpers.rs` (inline tests)
   - **Test cases**:
