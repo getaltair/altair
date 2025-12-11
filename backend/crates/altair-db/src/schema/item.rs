@@ -6,17 +6,26 @@ use serde_json::Value as JsonValue;
 use surrealdb::sql::Thing;
 
 use super::enums::{EntityStatus, ItemStatus, ReservationStatus};
+#[cfg(feature = "specta")]
+use super::serde_helpers::ThingType;
+use super::serde_helpers::{option_thing_serde, thing_serde};
 
 /// Item - Physical or digital inventory item
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
 pub struct Item {
+    #[serde(with = "option_thing_serde")]
+    #[cfg_attr(feature = "specta", specta(type = Option<ThingType>))]
     pub id: Option<Thing>,
     pub name: String,
     pub description: Option<String>,
     pub quantity: i32,
     pub status: ItemStatus,
     pub category: Option<String>,
+    #[cfg_attr(feature = "specta", specta(skip))]
     pub custom_fields: Option<JsonValue>, // flexible metadata
+    #[serde(with = "thing_serde")]
+    #[cfg_attr(feature = "specta", specta(type = ThingType))]
     pub owner: Thing,
     pub device_id: String,
     pub created_at: DateTime<Utc>,
@@ -37,12 +46,17 @@ impl Item {
 
 /// Location - Physical or logical storage location
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
 pub struct Location {
+    #[serde(with = "option_thing_serde")]
+    #[cfg_attr(feature = "specta", specta(type = Option<ThingType>))]
     pub id: Option<Thing>,
     pub name: String,
     pub description: Option<String>,
     pub geo: Option<GeoPoint>, // optional geographic coordinates
     pub status: EntityStatus,
+    #[serde(with = "thing_serde")]
+    #[cfg_attr(feature = "specta", specta(type = ThingType))]
     pub owner: Thing,
     pub device_id: String,
     pub created_at: DateTime<Utc>,
@@ -51,6 +65,7 @@ pub struct Location {
 
 /// Geographic point (latitude, longitude)
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
 pub struct GeoPoint {
     pub latitude: f64,
     pub longitude: f64,
@@ -58,12 +73,17 @@ pub struct GeoPoint {
 
 /// Reservation - Temporary allocation of items
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
 pub struct Reservation {
+    #[serde(with = "option_thing_serde")]
+    #[cfg_attr(feature = "specta", specta(type = Option<ThingType>))]
     pub id: Option<Thing>,
     pub quantity: i32,
     pub status: ReservationStatus,
     pub reserved_at: DateTime<Utc>,
     pub released_at: Option<DateTime<Utc>>,
+    #[serde(with = "thing_serde")]
+    #[cfg_attr(feature = "specta", specta(type = ThingType))]
     pub owner: Thing,
     pub device_id: String,
     pub created_at: DateTime<Utc>,
@@ -85,7 +105,10 @@ impl Reservation {
 
 /// MaintenanceSchedule - Recurring maintenance tasks for items
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
 pub struct MaintenanceSchedule {
+    #[serde(with = "option_thing_serde")]
+    #[cfg_attr(feature = "specta", specta(type = Option<ThingType>))]
     pub id: Option<Thing>,
     pub task_name: String,
     pub interval: String, // duration string (e.g., "30d", "1w")
@@ -93,6 +116,8 @@ pub struct MaintenanceSchedule {
     pub next_due: DateTime<Utc>,
     pub notes: Option<String>,
     pub notify_days_before: Option<i32>,
+    #[serde(with = "thing_serde")]
+    #[cfg_attr(feature = "specta", specta(type = ThingType))]
     pub owner: Thing,
     pub device_id: String,
     pub created_at: DateTime<Utc>,

@@ -116,6 +116,66 @@ pub mod thing_serde {
     }
 }
 
+/// Custom serialization for Optional Thing type (for nullable Thing fields)
+///
+/// Use this for fields like `id: Option<Thing>` that need custom serialization.
+///
+/// # Example
+///
+/// ```rust
+/// use serde::{Serialize, Deserialize};
+/// use surrealdb::sql::Thing;
+///
+/// #[derive(Serialize, Deserialize)]
+/// struct MyStruct {
+///     #[serde(with = "altair_db::schema::serde_helpers::option_thing_serde")]
+///     record_id: Option<Thing>,
+/// }
+/// ```
+pub mod option_thing_serde {
+    use super::*;
+
+    #[derive(Serialize, Deserialize)]
+    struct ThingHelper {
+        tb: String,
+        id: String,
+    }
+
+    pub fn serialize<S>(thing: &Option<Thing>, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match thing {
+            None => serializer.serialize_none(),
+            Some(thing) => {
+                use surrealdb::sql::Id;
+
+                let id_str = match &thing.id {
+                    Id::Number(n) => n.to_string(),
+                    Id::String(s) => s.clone(),
+                    Id::Uuid(u) => u.to_string(),
+                    _ => format!("{:?}", thing.id),
+                };
+
+                let helper = ThingHelper {
+                    tb: thing.tb.clone(),
+                    id: id_str,
+                };
+                helper.serialize(serializer)
+            }
+        }
+    }
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<Option<Thing>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        Option::<ThingHelper>::deserialize(deserializer)?
+            .map(|helper| Ok(Thing::from((helper.tb, helper.id))))
+            .transpose()
+    }
+}
+
 /// Custom serialization for chrono NaiveTime type
 ///
 /// Converts NaiveTime to a "HH:MM" string format for TypeScript.

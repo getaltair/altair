@@ -5,10 +5,16 @@ use serde::{Deserialize, Serialize};
 use surrealdb::sql::Thing;
 
 use super::enums::EntityStatus;
+#[cfg(feature = "specta")]
+use super::serde_helpers::ThingType;
+use super::serde_helpers::{option_thing_serde, thing_serde};
 
 /// Note - Individual knowledge document with markdown content
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
 pub struct Note {
+    #[serde(with = "option_thing_serde")]
+    #[cfg_attr(feature = "specta", specta(type = Option<ThingType>))]
     pub id: Option<Thing>,
     pub title: String,
     pub content: String,             // markdown
@@ -16,6 +22,8 @@ pub struct Note {
     pub is_daily: bool,
     pub version: i32,
     pub status: EntityStatus,
+    #[serde(with = "thing_serde")]
+    #[cfg_attr(feature = "specta", specta(type = ThingType))]
     pub owner: Thing,
     pub device_id: String,
     pub created_at: DateTime<Utc>,
@@ -36,11 +44,16 @@ impl Note {
 
 /// Folder - Organizational container for notes
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
 pub struct Folder {
+    #[serde(with = "option_thing_serde")]
+    #[cfg_attr(feature = "specta", specta(type = Option<ThingType>))]
     pub id: Option<Thing>,
     pub name: String,
     pub color: Option<String>,
     pub status: EntityStatus,
+    #[serde(with = "thing_serde")]
+    #[cfg_attr(feature = "specta", specta(type = ThingType))]
     pub owner: Thing,
     pub device_id: String,
     pub created_at: DateTime<Utc>,
@@ -49,11 +62,18 @@ pub struct Folder {
 
 /// DailyNote - Special note type for daily journaling
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
 pub struct DailyNote {
+    #[serde(with = "option_thing_serde")]
+    #[cfg_attr(feature = "specta", specta(type = Option<ThingType>))]
     pub id: Option<Thing>,
     pub date: NaiveDate, // unique per owner
-    pub note_id: Thing,  // reference to actual note
+    #[serde(with = "thing_serde")]
+    #[cfg_attr(feature = "specta", specta(type = ThingType))]
+    pub note_id: Thing, // reference to actual note
     pub auto_created: bool,
+    #[serde(with = "thing_serde")]
+    #[cfg_attr(feature = "specta", specta(type = ThingType))]
     pub owner: Thing,
     pub device_id: String,
     pub created_at: DateTime<Utc>,

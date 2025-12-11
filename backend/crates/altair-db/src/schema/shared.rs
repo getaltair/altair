@@ -5,10 +5,16 @@ use serde::{Deserialize, Serialize};
 use surrealdb::sql::Thing;
 
 use super::enums::{MediaType, UserRole};
+#[cfg(feature = "specta")]
+use super::serde_helpers::ThingType;
+use super::serde_helpers::{naive_time_serde, option_thing_serde, thing_serde};
 
 /// User - Account and preferences
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
 pub struct User {
+    #[serde(with = "option_thing_serde")]
+    #[cfg_attr(feature = "specta", specta(type = Option<ThingType>))]
     pub id: Option<Thing>,
     pub email: String, // unique
     pub display_name: String,
@@ -22,11 +28,14 @@ pub struct User {
 
 /// User preferences for customization
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
 pub struct UserPreferences {
     pub theme: String, // "light", "dark", "auto"
     pub energy_filter_default: Option<String>,
     pub gamification_enabled: bool,
     pub weekly_harvest_day: i32, // 0-6 (Sunday-Saturday)
+    #[serde(with = "naive_time_serde")]
+    #[cfg_attr(feature = "specta", specta(type = String))]
     pub weekly_harvest_time: NaiveTime,
     pub focus_session_duration: i32,  // minutes
     pub pomodoro_break_duration: i32, // minutes
@@ -48,7 +57,10 @@ impl Default for UserPreferences {
 
 /// Attachment - File attachments for any entity
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
 pub struct Attachment {
+    #[serde(with = "option_thing_serde")]
+    #[cfg_attr(feature = "specta", specta(type = Option<ThingType>))]
     pub id: Option<Thing>,
     pub filename: String,
     pub mime_type: String,
@@ -59,6 +71,8 @@ pub struct Attachment {
     pub duration: Option<i32>, // seconds, for audio/video
     pub thumbnail_key: Option<String>,
     pub transcription: Option<String>, // for audio/video
+    #[serde(with = "thing_serde")]
+    #[cfg_attr(feature = "specta", specta(type = ThingType))]
     pub owner: Thing,
     pub device_id: String,
     pub created_at: DateTime<Utc>,
@@ -93,11 +107,16 @@ impl Attachment {
 
 /// Tag - Organizational label for entities
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
 pub struct Tag {
+    #[serde(with = "option_thing_serde")]
+    #[cfg_attr(feature = "specta", specta(type = Option<ThingType>))]
     pub id: Option<Thing>,
     pub name: String,
     pub namespace: Option<String>, // for tag categorization
     pub color: Option<String>,
+    #[serde(with = "thing_serde")]
+    #[cfg_attr(feature = "specta", specta(type = ThingType))]
     pub owner: Thing,
     pub device_id: String,
     pub created_at: DateTime<Utc>,

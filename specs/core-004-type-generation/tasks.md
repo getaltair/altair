@@ -160,126 +160,126 @@
 
 ### Task 4.1: quest.rs - Campaign struct
 
-- [ ] Add specta derive to `Campaign` struct with Thing field serde handling
+- [x] Add specta derive to `Campaign` struct with Thing field serde handling
   - **Acceptance**: Struct compiles with specta, `id` and `owner` fields use `thing_serde`
   - **Files**: `backend/crates/altair-db/src/schema/quest.rs:Campaign`
   - **Special handling**: Add `#[serde(with = "thing_serde")]` to `id` and `owner` fields
 
 ### Task 4.2: quest.rs - Quest struct
 
-- [ ] Add specta derive to `Quest` struct with Thing field serde handling
+- [x] Add specta derive to `Quest` struct with Thing field serde handling
   - **Acceptance**: Struct compiles with specta, Thing fields use `thing_serde`
   - **Files**: `backend/crates/altair-db/src/schema/quest.rs:Quest`
   - **Special handling**: Add `#[serde(with = "thing_serde")]` to `id`, `owner`, `campaign_id` fields
 
 ### Task 4.3: quest.rs - FocusSession struct
 
-- [ ] Add specta derive to `FocusSession` struct with Thing field serde handling
+- [x] Add specta derive to `FocusSession` struct with Thing field serde handling
   - **Acceptance**: Struct compiles with specta
   - **Files**: `backend/crates/altair-db/src/schema/quest.rs:FocusSession`
 
 ### Task 4.4: quest.rs - EnergyCheckIn struct
 
-- [ ] Add specta derive to `EnergyCheckIn` struct with NaiveDate handling
+- [x] Add specta derive to `EnergyCheckIn` struct with NaiveDate handling
   - **Acceptance**: Struct compiles with specta, `date` field serializes correctly
   - **Files**: `backend/crates/altair-db/src/schema/quest.rs:EnergyCheckIn`
 
 ### Task 4.5: note.rs - Note struct
 
-- [ ] Add specta derive to `Note` struct with Vec<f32> embedding field
+- [x] Add specta derive to `Note` struct with Vec<f32> embedding field
   - **Acceptance**: Struct compiles with specta, embedding generates as `number[]`
   - **Files**: `backend/crates/altair-db/src/schema/note.rs:Note`
   - **Verification**: Check generated TypeScript has `embedding: number[]`
 
 ### Task 4.6: note.rs - Folder struct
 
-- [ ] Add specta derive to `Folder` struct
+- [x] Add specta derive to `Folder` struct
   - **Acceptance**: Struct compiles with specta
   - **Files**: `backend/crates/altair-db/src/schema/note.rs:Folder`
 
 ### Task 4.7: note.rs - DailyNote struct
 
-- [ ] Add specta derive to `DailyNote` struct with NaiveDate handling
+- [x] Add specta derive to `DailyNote` struct with NaiveDate handling
   - **Acceptance**: Struct compiles with specta, `date` field serializes correctly
   - **Files**: `backend/crates/altair-db/src/schema/note.rs:DailyNote`
 
 ### Task 4.8: item.rs - Item struct
 
-- [ ] Add specta derive to `Item` struct with JsonValue custom_fields
+- [x] Add specta derive to `Item` struct with JsonValue custom_fields
   - **Acceptance**: Struct compiles with specta, `custom_fields` generates as TypeScript `any` or `unknown`
   - **Files**: `backend/crates/altair-db/src/schema/item.rs:Item`
   - **Documentation**: Add JSDoc comment explaining custom_fields is dynamic JSON
 
 ### Task 4.9: item.rs - Location struct
 
-- [ ] Add specta derive to `Location` struct
+- [x] Add specta derive to `Location` struct
   - **Acceptance**: Struct compiles with specta
   - **Files**: `backend/crates/altair-db/src/schema/item.rs:Location`
 
 ### Task 4.10: item.rs - GeoPoint struct
 
-- [ ] Add specta derive to `GeoPoint` struct
+- [x] Add specta derive to `GeoPoint` struct
   - **Acceptance**: Struct compiles with specta, generates as `{ latitude: number; longitude: number }`
   - **Files**: `backend/crates/altair-db/src/schema/item.rs:GeoPoint`
 
 ### Task 4.11: item.rs - Reservation struct
 
-- [ ] Add specta derive to `Reservation` struct
+- [x] Add specta derive to `Reservation` struct
   - **Acceptance**: Struct compiles with specta
   - **Files**: `backend/crates/altair-db/src/schema/item.rs:Reservation`
 
 ### Task 4.12: item.rs - MaintenanceSchedule struct
 
-- [ ] Add specta derive to `MaintenanceSchedule` struct
+- [x] Add specta derive to `MaintenanceSchedule` struct
   - **Acceptance**: Struct compiles with specta
   - **Files**: `backend/crates/altair-db/src/schema/item.rs:MaintenanceSchedule`
 
 ### Task 4.13: capture.rs - Capture struct
 
-- [ ] Add specta derive to `Capture` struct
+- [x] Add specta derive to `Capture` struct
   - **Acceptance**: Struct compiles with specta
   - **Files**: `backend/crates/altair-db/src/schema/capture.rs:Capture`
 
 ### Task 4.14: gamification.rs - UserProgress struct
 
-- [ ] Add specta derive to `UserProgress` struct
+- [x] Add specta derive to `UserProgress` struct
   - **Acceptance**: Struct compiles with specta
   - **Files**: `backend/crates/altair-db/src/schema/gamification.rs:UserProgress`
 
 ### Task 4.15: gamification.rs - Achievement struct
 
-- [ ] Add specta derive to `Achievement` struct
+- [x] Add specta derive to `Achievement` struct
   - **Acceptance**: Struct compiles with specta
   - **Files**: `backend/crates/altair-db/src/schema/gamification.rs:Achievement`
 
 ### Task 4.16: gamification.rs - Streak struct
 
-- [ ] Add specta derive to `Streak` struct
+- [x] Add specta derive to `Streak` struct
   - **Acceptance**: Struct compiles with specta
   - **Files**: `backend/crates/altair-db/src/schema/gamification.rs:Streak`
 
 ### Task 4.17: shared.rs - User struct
 
-- [ ] Add specta derive to `User` struct
+- [x] Add specta derive to `User` struct
   - **Acceptance**: Struct compiles with specta
   - **Files**: `backend/crates/altair-db/src/schema/shared.rs:User`
 
 ### Task 4.18: shared.rs - UserPreferences struct
 
-- [ ] Add specta derive to `UserPreferences` struct with NaiveTime handling
+- [x] Add specta derive to `UserPreferences` struct with NaiveTime handling
   - **Acceptance**: Struct compiles with specta, `weekly_harvest_time` uses custom serializer
   - **Files**: `backend/crates/altair-db/src/schema/shared.rs:UserPreferences`
   - **Special handling**: Add `#[serde(with = "naive_time_serde")]` to `weekly_harvest_time` field
 
 ### Task 4.19: shared.rs - Attachment struct
 
-- [ ] Add specta derive to `Attachment` struct
+- [x] Add specta derive to `Attachment` struct
   - **Acceptance**: Struct compiles with specta
   - **Files**: `backend/crates/altair-db/src/schema/shared.rs:Attachment`
 
 ### Task 4.20: shared.rs - Tag struct
 
-- [ ] Add specta derive to `Tag` struct
+- [x] Add specta derive to `Tag` struct
   - **Acceptance**: Struct compiles with specta
   - **Files**: `backend/crates/altair-db/src/schema/shared.rs:Tag`
 
