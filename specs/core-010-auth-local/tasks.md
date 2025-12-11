@@ -100,7 +100,7 @@
 
 ### Task 2.1: Create migration for auth tables
 
-- [ ] Create `backend/migrations/005_auth_tables.surql`
+- [x] Create `backend/migrations/005_auth_tables.surql`
   - **Acceptance**:
     - `session` table: id, token (unique indexed), user, expires_at, device_id, created_at
     - `user_credential` table: id, user (unique indexed), password_hash, updated_at
@@ -112,7 +112,7 @@
 
 ### Task 2.2: Add Session schema type
 
-- [ ] Create `backend/crates/altair-db/src/schema/session.rs`
+- [x] Create `backend/crates/altair-db/src/schema/session.rs`
   - **Acceptance**:
     - `Session` struct matching DB schema
     - Optional `SessionStatus` enum (Active, Expired, Invalidated) if needed
@@ -123,7 +123,7 @@
 
 ### Task 2.3: Add UserCredential schema type
 
-- [ ] Create `backend/crates/altair-db/src/schema/credential.rs`
+- [x] Create `backend/crates/altair-db/src/schema/credential.rs`
   - **Acceptance**:
     - `UserCredential` struct: id, user (Thing), password_hash, updated_at
     - No Default implementation - always created with explicit values
@@ -133,7 +133,7 @@
 
 ### Task 2.4: Implement user queries
 
-- [ ] Create `backend/crates/altair-db/src/queries/user.rs`
+- [x] Create `backend/crates/altair-db/src/queries/user.rs`
   - **Acceptance**:
     - `create_user(db, user) -> Result<User>` - Insert new user
     - `get_user_by_email(db, email) -> Result<Option<User>>` - Lookup by email
@@ -146,7 +146,7 @@
 
 ### Task 2.5: Implement session queries
 
-- [ ] Create `backend/crates/altair-db/src/queries/session.rs`
+- [x] Create `backend/crates/altair-db/src/queries/session.rs`
   - **Acceptance**:
     - `create_session(db, session) -> Result<Session>` - Insert session
     - `get_session_by_token(db, token) -> Result<Option<Session>>` - Lookup
@@ -159,7 +159,7 @@
 
 ### Task 2.6: Implement credential queries
 
-- [ ] Create `backend/crates/altair-db/src/queries/credential.rs`
+- [x] Create `backend/crates/altair-db/src/queries/credential.rs`
   - **Acceptance**:
     - `create_credential(db, user_id, hash) -> Result<UserCredential>` - Store hash
     - `get_credential_by_user(db, user_id) -> Result<Option<UserCredential>>` - Lookup
@@ -170,7 +170,7 @@
 
 ### Task 2.7: Update module exports
 
-- [ ] Update `backend/crates/altair-db/src/lib.rs`
+- [x] Update `backend/crates/altair-db/src/lib.rs`
   - **Acceptance**:
     - Export new schema types (Session, UserCredential)
     - Export new query modules (user, session, credential)

@@ -11,6 +11,7 @@
 
 pub mod client;
 pub mod migration;
+pub mod queries;
 pub mod schema;
 
 // Module declarations
@@ -27,6 +28,17 @@ pub use migration::{Migration, MigrationRecord, MigrationRunner};
 
 // Re-export schema types for convenience
 pub use schema::*;
+
+// Re-export query functions for convenience (using pub mod to avoid ambiguity)
+pub mod user_queries {
+    pub use crate::queries::user::*;
+}
+pub mod session_queries {
+    pub use crate::queries::session::*;
+}
+pub mod credential_queries {
+    pub use crate::queries::credential::*;
+}
 
 #[cfg(test)]
 mod tests {
