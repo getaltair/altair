@@ -1,0 +1,594 @@
+# Tasks: CORE-011-STORAGE-SERVICE
+
+**Spec**: [spec.md](./spec.md) | **Plan**: [plan.md](./plan.md)
+**Branch**: `spec/core-011-storage-service`
+**Status**: Ready for implementation
+
+---
+
+## Phase 0: Research & Dependencies
+
+### 0.1 aws-sdk-s3 Integration Research
+
+- [ ] **Validate presigned PUT URL generation**
+
+  - Acceptance: Create test demonstrating PUT presigned URL with content-type and content-length restrictions working with Minio
+  - Files: `backend/tests/storage/aws_sdk_research.rs`
+  - Notes: Must support 15-minute expiration, custom headers
+
+- [ ] **Validate presigned GET URL generation**
+
+  - Acceptance: Create test demonstrating GET presigned URL with configurable expiration working with Minio
+  - Files: `backend/tests/storage/aws_sdk_research.rs`
+  - Notes: Must support 1-hour expiration
+
+- [ ] **Validate HEAD object operation**
+
+  - Acceptance: Demonstrate head_object() returns correct metadata (size, content-type) for existing objects
+  - Files: `backend/tests/storage/aws_sdk_research.rs`
+
+- [ ] **Validate GET object with streaming**
+
+  - Acceptance: Download 50MB file using streaming body, prove memory usage stays bounded
+  - Files: `backend/tests/storage/aws_sdk_research.rs`
+  - Notes: Required for checksum calculation on large files
+
+- [ ] **Validate custom endpoint configuration for Minio**
+  - Acceptance: aws-sdk-s3 client connects to localhost:9000 and performs basic operations
+  - Files: `backend/tests/storage/aws_sdk_research.rs`
+
+### 0.2 Minio Embedding Strategy Research
+
+- [ ] **Determine platform-specific binary paths**
+
+  - Acceptance: Document binary locations for macOS arm64/x64, Windows x64, Linux x64
+  - Files: `docs/minio-embedding.md`
+  - Notes: Consider using `platform-dirs` crate for app data directory
+
+- [ ] **Design process lifecycle management**
+
+  - Acceptance: Document start/stop strategy using Tauri process API or tokio::process
+  - Files: `docs/minio-embedding.md`
+  - Notes: Must handle app crash, user force-quit, graceful shutdown
+
+- [ ] **Choose data directory location**
+
+  - Acceptance: Document data directory strategy (platform-specific app data dir)
+  - Files: `docs/minio-embedding.md`
+  - Notes: Should persist between app restarts
+
+- [ ] **Define fallback behavior**
+  - Acceptance: Document external Minio endpoint configuration for when embedded binary fails
+  - Files: `docs/minio-embedding.md`
+
+### 0.3 OS Keychain Integration Research
+
+- [ ] **Validate store/retrieve S3 credentials**
+
+  - Acceptance: Test `keyring` crate storing and retrieving access_key and secret_key on current platform
+  - Files: `backend/tests/storage/keychain_research.rs`
+
+- [ ] **Validate platform support**
+
+  - Acceptance: Document tested platforms (macOS Keychain, Windows Credential Manager, Linux Secret Service)
+  - Files: `docs/keychain-support.md`
+
+- [ ] **Design error handling for unavailable keychain**
+
+  - Acceptance: Define fallback behavior (environment variables, config file warning)
+  - Files: `docs/keychain-support.md`
+
+- [ ] **Design first-run credential setup flow**
+  - Acceptance: Document UX for users setting up storage credentials for first time
+  - Files: `docs/keychain-support.md`
+
+### 0.4 Image Processing Research
+
+- [ ] **Validate supported formats**
+
+  - Acceptance: Test `image` crate decoding JPEG, PNG, GIF, WebP
+  - Files: `backend/tests/storage/image_research.rs`
+
+- [ ] **Validate resize to max dimension**
+
+  - Acceptance: Resize 3000×2000 image to 256×171 (aspect ratio preserved)
+  - Files: `backend/tests/storage/image_research.rs`
+
+- [ ] **Validate JPEG encoding quality**
+
+  - Acceptance: Encode thumbnail at 80% quality, verify file size reasonable (~10-20KB for typical photo)
+  - Files: `backend/tests/storage/image_research.rs`
+
+- [ ] **Validate memory efficiency**
+  - Acceptance: Process 10MB image, prove memory usage stays under 100MB
+  - Files: `backend/tests/storage/image_research.rs`
+
+---
+
+## Phase 1: Core Infrastructure
+
+### 1.1 Storage Configuration
+
+- [ ] **Define StorageConfig struct**
+
+  - Acceptance: Struct with endpoint, region, bucket, access_key_id, secret_access_key fields
+  - Files: `backend/crates/altair-storage/src/config.rs`
+  - Notes: Use `url::Url` for endpoint validation
+
+- [ ] **Implement StorageConfig::from_keychain()**
+
+  - Acceptance: Load credentials from keyring crate, construct config
+  - Files: `backend/crates/altair-storage/src/config.rs`
+  - Notes: Handle missing credentials with StorageError::CredentialsNotFound
+
+- [ ] **Define StorageError enum**
+
+  - Acceptance: Variants for CredentialsNotFound, S3Error, InvalidMimeType, QuotaExceeded, etc.
+  - Files: `backend/crates/altair-storage/src/error.rs`
+  - Notes: Implement Display, Error, From<aws_sdk_s3::Error>
+
+- [ ] **Add config validation**
+  - Acceptance: Validate endpoint format (http/https), bucket name (DNS-compliant)
+  - Files: `backend/crates/altair-storage/src/config.rs`
+  - Notes: Use regex for bucket name validation
+
+### 1.2 S3 Client Wrapper
+
+- [ ] **Initialize aws-sdk-s3 client from StorageConfig**
+
+  - Acceptance: Create S3Client struct with aws_sdk_s3::Client field, initialize from config
+  - Files: `backend/crates/altair-storage/src/client.rs`
+  - Notes: Use aws_config::BehaviorVersion::latest()
+
+- [ ] **Implement head_object()**
+
+  - Acceptance: Return Result<ObjectMetadata, StorageError> with size, content_type
+  - Files: `backend/crates/altair-storage/src/client.rs`
+
+- [ ] **Implement get_object() with streaming body**
+
+  - Acceptance: Return Result<ByteStream, StorageError> for object data
+  - Files: `backend/crates/altair-storage/src/client.rs`
+  - Notes: Use aws_sdk_s3::primitives::ByteStream
+
+- [ ] **Implement delete_object()**
+
+  - Acceptance: Delete object from S3, return Result<(), StorageError>
+  - Files: `backend/crates/altair-storage/src/client.rs`
+
+- [ ] **Add connection health check method**
+  - Acceptance: list_buckets() or HEAD bucket to verify connectivity
+  - Files: `backend/crates/altair-storage/src/client.rs`
+
+### 1.3 Presigned URL Generation
+
+- [ ] **Implement generate_upload_url() with PUT presigning**
+
+  - Acceptance: Return PresignedUpload with url, key, expiration (15 min)
+  - Files: `backend/crates/altair-storage/src/presigned.rs`
+  - Notes: Use aws_sdk_s3::presigning::PresigningConfig
+
+- [ ] **Implement generate_download_url() with GET presigning**
+
+  - Acceptance: Return presigned GET URL with 1-hour expiration
+  - Files: `backend/crates/altair-storage/src/presigned.rs`
+
+- [ ] **Add content-type and content-length restrictions to upload URLs**
+
+  - Acceptance: Upload URL enforces provided content-type and max content-length
+  - Files: `backend/crates/altair-storage/src/presigned.rs`
+  - Notes: Use PutObjectRequest::content_type() and content_length()
+
+- [ ] **Configure expiration times**
+
+  - Acceptance: Upload URLs expire in 15 minutes, download URLs in 1 hour
+  - Files: `backend/crates/altair-storage/src/presigned.rs`
+  - Notes: Use Duration::from_secs()
+
+- [ ] **Generate UUID-prefixed object keys**
+  - Acceptance: Object keys formatted as `{user_id}/{uuid}-{filename}`
+  - Files: `backend/crates/altair-storage/src/presigned.rs`
+  - Notes: Use uuid::Uuid::new_v4()
+
+---
+
+## Phase 2: Upload Flow
+
+### 2.1 MIME Type Validation
+
+- [ ] **Define allowed MIME types constant**
+
+  - Acceptance: Static array of allowed MIME types per spec (images, documents, audio)
+  - Files: `backend/crates/altair-storage/src/mime.rs`
+  - Notes: Reference spec.md FR-002 for complete list
+
+- [ ] **Implement validate_mime_type()**
+
+  - Acceptance: Return Result<(), StorageError::InvalidMimeType>
+  - Files: `backend/crates/altair-storage/src/mime.rs`
+
+- [ ] **Implement classify_media_type()**
+
+  - Acceptance: Return MediaType enum (Photo, Audio, Video, Document) from MIME type
+  - Files: `backend/crates/altair-storage/src/mime.rs`
+
+- [ ] **Add file extension to MIME type mapping**
+  - Acceptance: Validate .jpg → image/jpeg, .pdf → application/pdf, etc.
+  - Files: `backend/crates/altair-storage/src/mime.rs`
+  - Notes: Use lazy_static for mapping
+
+### 2.2 Checksum Calculation
+
+- [ ] **Implement in-memory SHA-256 for files ≤10MB**
+
+  - Acceptance: Calculate correct SHA-256 for byte buffer, return hex string
+  - Files: `backend/crates/altair-storage/src/checksum.rs`
+  - Notes: Use sha2::Sha256 and hex crate
+
+- [ ] **Implement streaming SHA-256 for files >10MB**
+
+  - Acceptance: Calculate SHA-256 while streaming from S3, no full file in memory
+  - Files: `backend/crates/altair-storage/src/checksum.rs`
+  - Notes: Update hash incrementally on ByteStream chunks
+
+- [ ] **Add async streaming from S3 GET response**
+
+  - Acceptance: Integrate with get_object() ByteStream
+  - Files: `backend/crates/altair-storage/src/checksum.rs`
+
+- [ ] **Return hex-encoded checksum string**
+  - Acceptance: Checksum format matches test vectors (SHA-256 of "hello" = 2cf24dba...)
+  - Files: `backend/crates/altair-storage/src/checksum.rs`
+
+### 2.3 Upload Confirmation
+
+- [ ] **Implement request_upload() → PresignedUpload**
+
+  - Acceptance: Validate MIME type, check quota, generate presigned URL
+  - Files: `backend/crates/altair-storage/src/lib.rs`
+  - Notes: StorageService::request_upload() orchestrates mime.rs, quota.rs, presigned.rs
+
+- [ ] **Implement confirm_upload() → Attachment**
+
+  - Acceptance: HEAD check object exists, calculate checksum, create attachment record
+  - Files: `backend/crates/altair-storage/src/lib.rs`
+  - Notes: Uses altair-db to create attachment record
+
+- [ ] **Add HEAD check for object existence**
+
+  - Acceptance: Return StorageError::ObjectNotFound if user claims upload but object missing
+  - Files: `backend/crates/altair-storage/src/lib.rs`
+
+- [ ] **Calculate checksum and create attachment record**
+
+  - Acceptance: Attachment record has storage_key, checksum, size_bytes, mime_type, media_type
+  - Files: `backend/crates/altair-storage/src/lib.rs`
+
+- [ ] **Update user quota**
+  - Acceptance: storage_quota.bytes_used increases by file size
+  - Files: `backend/crates/altair-storage/src/lib.rs`
+
+---
+
+## Phase 3: Thumbnail Generation
+
+### 3.1 Image Processing
+
+- [ ] **Implement generate_thumbnail() for supported formats**
+
+  - Acceptance: Process JPEG, PNG, GIF, WebP inputs
+  - Files: `backend/crates/altair-storage/src/thumbnail.rs`
+  - Notes: Use image::open() from bytes
+
+- [ ] **Resize to 256×256 max dimension preserving aspect ratio**
+
+  - Acceptance: 3000×2000 image → 256×171, 1000×1000 → 256×256
+  - Files: `backend/crates/altair-storage/src/thumbnail.rs`
+  - Notes: Use image::imageops::resize with Lanczos3 filter
+
+- [ ] **Encode as JPEG at 80% quality**
+
+  - Acceptance: Output always JPEG regardless of input format
+  - Files: `backend/crates/altair-storage/src/thumbnail.rs`
+  - Notes: Use image::ImageOutputFormat::Jpeg(80)
+
+- [ ] **Upload thumbnail to S3 with `_thumb` suffix key**
+  - Acceptance: Original key `user/uuid-photo.jpg` → thumbnail key `user/uuid-photo_thumb.jpg`
+  - Files: `backend/crates/altair-storage/src/thumbnail.rs`
+
+### 3.2 Background Processing
+
+- [ ] **Queue thumbnail generation after upload confirmation**
+
+  - Acceptance: confirm_upload() spawns background task for thumbnail generation
+  - Files: `backend/crates/altair-storage/src/lib.rs`
+  - Notes: Only for MediaType::Photo
+
+- [ ] **Use tokio::spawn for background processing**
+
+  - Acceptance: Background task doesn't block confirm_upload() return
+  - Files: `backend/crates/altair-storage/src/lib.rs`
+
+- [ ] **Update attachment record with thumbnail_key when complete**
+
+  - Acceptance: attachment.thumbnail_key populated after thumbnail upload
+  - Files: `backend/crates/altair-storage/src/lib.rs`
+  - Notes: Use altair-db update query
+
+- [ ] **Handle failures gracefully**
+  - Acceptance: Failed thumbnail generation logs error, attachment still usable
+  - Files: `backend/crates/altair-storage/src/lib.rs`
+  - Notes: Use tracing::error! for logging
+
+---
+
+## Phase 4: Quota Management
+
+### 4.1 Database Schema
+
+- [ ] **Define storage_quota table**
+
+  - Acceptance: Table with id, owner (user ref), bytes_used, bytes_limit, created_at, updated_at
+  - Files: `backend/migrations/004_storage_quota.surql`
+  - Notes: Follow altair-db table patterns
+
+- [ ] **Add CHANGEFEED 7d**
+
+  - Acceptance: CHANGEFEED 7d on storage_quota table
+  - Files: `backend/migrations/004_storage_quota.surql`
+
+- [ ] **Add index on owner field**
+
+  - Acceptance: INDEX idx_owner ON storage_quota FIELDS owner
+  - Files: `backend/migrations/004_storage_quota.surql`
+
+- [ ] **Create default quota on user creation**
+  - Acceptance: First storage access creates quota record with 5GB limit
+  - Files: `backend/crates/altair-storage/src/quota.rs`
+  - Notes: Default limit from spec.md NFR-005
+
+### 4.2 Quota Tracking
+
+- [ ] **Implement get_quota() returning usage and limit**
+
+  - Acceptance: Return QuotaInfo { bytes_used, bytes_limit, bytes_available }
+  - Files: `backend/crates/altair-storage/src/quota.rs`
+
+- [ ] **Implement check_quota() for pre-upload validation**
+
+  - Acceptance: Return StorageError::QuotaExceeded if bytes_used + file_size > bytes_limit
+  - Files: `backend/crates/altair-storage/src/quota.rs`
+
+- [ ] **Implement update_quota() for post-upload/delete updates**
+
+  - Acceptance: Increment bytes_used on upload, decrement on delete
+  - Files: `backend/crates/altair-storage/src/quota.rs`
+  - Notes: Use SurrealDB atomic update
+
+- [ ] **Add reconciliation method to sync with actual S3 usage**
+  - Acceptance: List all user's objects in S3, sum sizes, compare with bytes_used, update if drift >1%
+  - Files: `backend/crates/altair-storage/src/quota.rs`
+  - Notes: Use aws_sdk_s3::Client::list_objects_v2()
+
+---
+
+## Phase 5: Tauri Commands
+
+### 5.1 Command Implementation
+
+- [ ] **Implement storage_request_upload command**
+
+  - Acceptance: Tauri command validating inputs, calling StorageService::request_upload()
+  - Files: `backend/crates/altair-commands/src/storage.rs`
+  - Notes: #[tauri::command] with State<'\_, AppState>
+
+- [ ] **Implement storage_confirm_upload command**
+
+  - Acceptance: Tauri command with storage_key, calling StorageService::confirm_upload()
+  - Files: `backend/crates/altair-commands/src/storage.rs`
+
+- [ ] **Implement storage_get_url command**
+
+  - Acceptance: Tauri command returning presigned download URL for attachment
+  - Files: `backend/crates/altair-commands/src/storage.rs`
+
+- [ ] **Implement storage_delete command**
+
+  - Acceptance: Tauri command archiving attachment, deleting S3 object, updating quota
+  - Files: `backend/crates/altair-commands/src/storage.rs`
+
+- [ ] **Implement storage_get_quota command**
+  - Acceptance: Tauri command returning QuotaInfo for current user
+  - Files: `backend/crates/altair-commands/src/storage.rs`
+
+### 5.2 Integration with AppState
+
+- [ ] **Initialize StorageService in AppState**
+
+  - Acceptance: AppState.storage field populated with StorageService instance
+  - Files: `backend/src/main.rs` (or app entry points)
+  - Notes: Load config from keychain during app init
+
+- [ ] **Start Minio process on app init**
+
+  - Acceptance: Embedded Minio starts before AppState creation (if embedded mode)
+  - Files: `backend/src/main.rs`
+  - Notes: Use MinioManager from Phase 6
+
+- [ ] **Stop Minio process on app exit**
+
+  - Acceptance: Graceful Minio shutdown in Tauri app cleanup
+  - Files: `backend/src/main.rs`
+  - Notes: Implement Drop or explicit shutdown
+
+- [ ] **Register storage commands with Tauri**
+  - Acceptance: All 5 storage commands in invoke_handler![]
+  - Files: `backend/src/main.rs`
+
+---
+
+## Phase 6: Minio Process Management
+
+### 6.1 Embedded Binary
+
+- [ ] **Locate Minio binary in app resources**
+
+  - Acceptance: MinioManager finds platform-specific binary (minio-darwin-arm64, minio-windows.exe, etc.)
+  - Files: `backend/crates/altair-storage/src/minio.rs`
+  - Notes: Use tauri::api::path::resource_dir()
+
+- [ ] **Determine data directory**
+
+  - Acceptance: Data directory at platform-specific app data dir (e.g., ~/.local/share/altair/minio)
+  - Files: `backend/crates/altair-storage/src/minio.rs`
+  - Notes: Use directories crate for platform paths
+
+- [ ] **Start Minio process with correct arguments**
+
+  - Acceptance: Spawn Minio server with --address localhost:9000, --console-address localhost:9001
+  - Files: `backend/crates/altair-storage/src/minio.rs`
+  - Notes: Use tokio::process::Command
+
+- [ ] **Health check loop until ready**
+
+  - Acceptance: Poll localhost:9000/minio/health/live until 200 OK
+  - Files: `backend/crates/altair-storage/src/minio.rs`
+  - Notes: Timeout after 10 seconds
+
+- [ ] **Graceful shutdown on app exit**
+  - Acceptance: Send SIGTERM to Minio process, wait for clean exit
+  - Files: `backend/crates/altair-storage/src/minio.rs`
+  - Notes: Implement Drop trait for MinioManager
+
+### 6.2 Fallback Configuration
+
+- [ ] **Check for external Minio endpoint in config**
+
+  - Acceptance: If STORAGE_ENDPOINT env var set, use external endpoint instead of embedded
+  - Files: `backend/crates/altair-storage/src/config.rs`, `backend/crates/altair-storage/src/minio.rs`
+
+- [ ] **Skip embedded binary if external configured**
+
+  - Acceptance: MinioManager::new() returns Ok(None) if external endpoint configured
+  - Files: `backend/crates/altair-storage/src/minio.rs`
+
+- [ ] **Provide clear error if embedded fails and no fallback**
+
+  - Acceptance: StorageError::MinioStartupFailed with instructions to set STORAGE_ENDPOINT
+  - Files: `backend/crates/altair-storage/src/minio.rs`
+
+- [ ] **Document fallback setup for development**
+  - Acceptance: README section on running external Minio via Docker
+  - Files: `backend/crates/altair-storage/README.md`
+
+---
+
+## Phase 7: Testing
+
+### 7.1 Unit Tests
+
+- [ ] **Config validation tests**
+
+  - Acceptance: Test StorageConfig::validate() rejects invalid endpoints/buckets
+  - Files: `backend/crates/altair-storage/src/config.rs`
+
+- [ ] **Keychain mocking tests**
+
+  - Acceptance: Test StorageConfig::from_keychain() with mock keyring (testable without actual keychain)
+  - Files: `backend/crates/altair-storage/src/config.rs`
+
+- [ ] **MIME validation tests**
+
+  - Acceptance: Test allowed/disallowed MIME types
+  - Files: `backend/crates/altair-storage/src/mime.rs`
+
+- [ ] **Media classification tests**
+
+  - Acceptance: Test classify_media_type() for all MediaType variants
+  - Files: `backend/crates/altair-storage/src/mime.rs`
+
+- [ ] **Checksum correctness tests**
+
+  - Acceptance: Test SHA-256 against known test vectors
+  - Files: `backend/crates/altair-storage/src/checksum.rs`
+
+- [ ] **Quota calculation logic tests**
+  - Acceptance: Test quota overflow prevention, negative bytes_available handling
+  - Files: `backend/crates/altair-storage/src/quota.rs`
+
+### 7.2 Integration Tests
+
+- [ ] **TS-001: Upload small image (<1MB)**
+
+  - Acceptance: End-to-end upload flow creates attachment record with correct metadata
+  - Files: `backend/tests/storage/upload_flow_test.rs`
+  - Notes: Use testcontainers for Minio
+
+- [ ] **TS-002: Upload large file (50MB)**
+
+  - Acceptance: Streaming checksum works, memory usage bounded
+  - Files: `backend/tests/storage/upload_flow_test.rs`
+
+- [ ] **TS-003: Upload with invalid MIME type**
+
+  - Acceptance: request_upload() returns StorageError::InvalidMimeType
+  - Files: `backend/tests/storage/upload_flow_test.rs`
+
+- [ ] **TS-004: Upload exceeding quota**
+
+  - Acceptance: request_upload() returns StorageError::QuotaExceeded
+  - Files: `backend/tests/storage/quota_test.rs`
+
+- [ ] **TS-005: Confirm upload for non-existent object**
+
+  - Acceptance: confirm_upload() returns StorageError::ObjectNotFound
+  - Files: `backend/tests/storage/upload_flow_test.rs`
+
+- [ ] **TS-006: Download with expired URL**
+
+  - Acceptance: Presigned GET URL returns 403 after expiration
+  - Files: `backend/tests/storage/upload_flow_test.rs`
+  - Notes: Mock time or use short expiration for testing
+
+- [ ] **TS-008: Delete attachment cleanup**
+
+  - Acceptance: delete() archives attachment, deletes S3 object, decrements quota
+  - Files: `backend/tests/storage/upload_flow_test.rs`
+
+- [ ] **TS-009: Thumbnail generation for various formats**
+  - Acceptance: Thumbnails created for JPEG, PNG, GIF, WebP inputs
+  - Files: `backend/tests/storage/thumbnail_test.rs`
+
+### 7.3 Performance Tests
+
+- [ ] **Presigned URL generation latency**
+
+  - Acceptance: Average of 100 iterations <50ms
+  - Files: `backend/benches/storage_bench.rs`
+  - Notes: Use criterion crate
+
+- [ ] **Confirm upload latency (1MB file)**
+
+  - Acceptance: Average <500ms including checksum calculation
+  - Files: `backend/benches/storage_bench.rs`
+
+- [ ] **Thumbnail generation latency (10MB image)**
+  - Acceptance: Average <2s
+  - Files: `backend/benches/storage_bench.rs`
+
+---
+
+## Ready to Start
+
+✅ **Constitution check passed** (all 7 principles aligned)
+✅ **Dependencies validated** (all internal dependencies complete)
+✅ **Risks identified and mitigated**
+
+**Next Steps**:
+
+1. Begin Phase 0 research tasks to validate external dependencies
+2. Proceed to Phase 1 infrastructure once research complete
+3. Implement phases sequentially with testing at each stage
+4. Mark tasks complete in this file as you progress
+
+**Estimated Effort**: ~5-7 days for experienced Rust developer (varies by Minio embedding complexity)
