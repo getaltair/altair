@@ -28,6 +28,18 @@ Weight Guidelines:
 
 ---
 
+## Clarifications
+
+### Session 2025-12-12
+
+- Q: What logging/metrics approach for operational observability? → A: `tracing` spans with Prometheus-compatible metrics
+- Q: What thumbnail dimensions and quality? → A: 256×256px max dimension, 80% JPEG quality
+- Q: What MIME types are allowed for upload? → A: Images (jpeg, png, gif, webp), Documents (pdf, text/plain, text/markdown), Audio (mpeg, wav, ogg, webm)
+- Q: How is Minio deployed for local development? → A: Embedded binary compiled into Tauri app, starts/stops with app
+- Q: When to stream vs in-memory for checksum calculation? → A: Stream for files > 10MB, in-memory for smaller files
+
+---
+
 ## Quick Reference
 
 > S3-compatible object storage service providing unified file management for photos, audio, video, and documents across all Altair apps with presigned URL upload flow, thumbnail generation, and storage quota tracking.
@@ -101,7 +113,7 @@ The service integrates with the existing Tauri command pattern, exposing command
 
 **In Scope**:
 
-- Minio Docker setup for local development
+- Embedded Minio binary for local storage (bundled with Tauri app)
 - aws-sdk-s3 Rust client wrapper with presigned URL support
 - Upload flow: request URL → direct upload → confirmation → metadata storage
 - Download flow: presigned URL generation for private files
@@ -141,28 +153,37 @@ The service integrates with the existing Tauri command pattern, exposing command
 
 ### Functional Requirements
 
-| ID     | Requirement                                                                                       | Priority | Notes                                  |
-| ------ | ------------------------------------------------------------------------------------------------- | -------- | -------------------------------------- |
-| FR-001 | The system shall generate presigned upload URLs with configurable expiration (default 15 minutes) | CRITICAL | Core upload flow                       |
-| FR-002 | The system shall validate file size and MIME type before generating upload URLs                   | CRITICAL | Prevents quota abuse and invalid files |
-| FR-003 | The system shall verify uploaded file exists and calculate SHA-256 checksum on confirmation       | CRITICAL | Data integrity                         |
-| FR-004 | The system shall create attachment records in SurrealDB on successful upload confirmation         | CRITICAL | Links to has_attachment edge           |
-| FR-005 | The system shall generate presigned download URLs for private files                               | HIGH     | Secure access                          |
-| FR-006 | The system shall generate thumbnails for image files (JPEG, PNG, GIF, WebP)                       | HIGH     | Preview support                        |
-| FR-007 | The system shall track storage usage per user and enforce configurable quotas                     | HIGH     | Resource management                    |
-| FR-008 | The system shall delete objects from S3 when attachment records are deleted                       | MEDIUM   | Cleanup                                |
-| FR-009 | The system shall support multiple buckets: attachments, captures, exports                         | MEDIUM   | Separation of concerns                 |
-| FR-010 | The system shall load S3 credentials from OS keychain                                             | HIGH     | Security                               |
+| ID     | Requirement                                                                                                             | Priority | Notes                                  |
+| ------ | ----------------------------------------------------------------------------------------------------------------------- | -------- | -------------------------------------- |
+| FR-001 | The system shall generate presigned upload URLs with configurable expiration (default 15 minutes)                       | CRITICAL | Core upload flow                       |
+| FR-002 | The system shall validate file size and MIME type before generating upload URLs (see Allowed MIME Types below)          | CRITICAL | Prevents quota abuse and invalid files |
+| FR-003 | The system shall verify uploaded file exists and calculate SHA-256 checksum on confirmation                             | CRITICAL | Data integrity                         |
+| FR-004 | The system shall create attachment records in SurrealDB on successful upload confirmation                               | CRITICAL | Links to has_attachment edge           |
+| FR-005 | The system shall generate presigned download URLs for private files                                                     | HIGH     | Secure access                          |
+| FR-006 | The system shall generate thumbnails (256×256px max dimension, 80% JPEG quality) for image files (JPEG, PNG, GIF, WebP) | HIGH     | Preview support                        |
+| FR-007 | The system shall track storage usage per user and enforce configurable quotas                                           | HIGH     | Resource management                    |
+| FR-008 | The system shall delete objects from S3 when attachment records are deleted                                             | MEDIUM   | Cleanup                                |
+| FR-009 | The system shall support multiple buckets: attachments, captures, exports                                               | MEDIUM   | Separation of concerns                 |
+| FR-010 | The system shall load S3 credentials from OS keychain                                                                   | HIGH     | Security                               |
+
+**Allowed MIME Types**:
+
+| Category  | MIME Types                                           |
+| --------- | ---------------------------------------------------- |
+| Images    | `image/jpeg`, `image/png`, `image/gif`, `image/webp` |
+| Documents | `application/pdf`, `text/plain`, `text/markdown`     |
+| Audio     | `audio/mpeg`, `audio/wav`, `audio/ogg`, `audio/webm` |
 
 ### Non-Functional Requirements
 
-| ID      | Requirement                                                                    | Priority | Notes              |
-| ------- | ------------------------------------------------------------------------------ | -------- | ------------------ |
-| NFR-001 | Presigned URL generation shall complete in < 50ms                              | HIGH     | UX responsiveness  |
-| NFR-002 | Thumbnail generation shall complete in < 2 seconds for images up to 10MB       | MEDIUM   | Background task    |
-| NFR-003 | The system shall handle uploads up to 100MB per file                           | MEDIUM   | Configurable limit |
-| NFR-004 | The system shall work offline when Minio is unavailable (graceful degradation) | MEDIUM   | Error handling     |
-| NFR-005 | Storage operations shall be idempotent (safe to retry)                         | HIGH     | Reliability        |
+| ID      | Requirement                                                                                                                                     | Priority | Notes              |
+| ------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ------------------ |
+| NFR-001 | Presigned URL generation shall complete in < 50ms                                                                                               | HIGH     | UX responsiveness  |
+| NFR-002 | Thumbnail generation shall complete in < 2 seconds for images up to 10MB                                                                        | MEDIUM   | Background task    |
+| NFR-003 | The system shall handle uploads up to 100MB per file                                                                                            | MEDIUM   | Configurable limit |
+| NFR-004 | The system shall work offline when Minio is unavailable (graceful degradation)                                                                  | MEDIUM   | Error handling     |
+| NFR-005 | Storage operations shall be idempotent (safe to retry)                                                                                          | HIGH     | Reliability        |
+| NFR-006 | All storage operations shall emit `tracing` spans with Prometheus-compatible metrics for latency, success/failure counts, and bytes transferred | MEDIUM   | Observability      |
 
 ### User Stories
 
@@ -561,7 +582,7 @@ And the user's quota decreases by the file size
 - **aws-sdk-s3 crate**: Uses async Rust with Tokio, must integrate with existing Tauri async runtime
 - **Minio compatibility**: Must work with Minio's S3 API (v2 signatures may differ from AWS)
 - **File size limits**: Presigned URLs limited by S3 single PUT (5GB), but we limit to 100MB for practicality
-- **Checksum calculation**: Requires reading full file into memory; consider streaming for large files
+- **Checksum calculation**: Files ≤ 10MB calculated in-memory; files > 10MB use streaming SHA-256 to avoid memory pressure
 
 ### Business Constraints
 
@@ -571,8 +592,8 @@ And the user's quota decreases by the file size
 
 ### Assumptions
 
-- Minio runs alongside the desktop app (started on app launch or via Docker)
-- Users have sufficient disk space for Minio storage
+- Minio is embedded as a binary within the Tauri app, starting automatically on app launch and stopping on app exit
+- Users have sufficient disk space for Minio storage (data stored in app data directory)
 - Images are the most common attachment type (prioritize image thumbnail generation)
 
 ### Dependencies
@@ -586,12 +607,12 @@ And the user's quota decreases by the file size
 
 ### Risks
 
-| Risk                     | Likelihood | Impact | Mitigation                                      |
-| ------------------------ | ---------- | ------ | ----------------------------------------------- |
-| Minio startup complexity | Medium     | Medium | Provide Docker Compose, document setup          |
-| Large file memory usage  | Medium     | Medium | Stream checksums for files > 50MB               |
-| Presigned URL security   | Low        | High   | Short expiration, validate user on confirm      |
-| S3 API differences       | Low        | Medium | Test with Minio and at least one cloud provider |
+| Risk                    | Likelihood | Impact | Mitigation                                                         |
+| ----------------------- | ---------- | ------ | ------------------------------------------------------------------ |
+| Minio binary bundling   | Medium     | Medium | Test across platforms, provide fallback to external Minio endpoint |
+| Large file memory usage | Low        | Medium | Stream checksums for files > 10MB                                  |
+| Presigned URL security  | Low        | High   | Short expiration, validate user on confirm                         |
+| S3 API differences      | Low        | Medium | Test with Minio and at least one cloud provider                    |
 
 ---
 
