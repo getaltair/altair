@@ -33,3 +33,10 @@ chrono = "0.4"
 
 [dev-dependencies]
 tokio = { version = "1.42", features = ["full"] }
+criterion = { version = "0.5", features = ["async_tokio"] }
+tracing-subscriber = "0.3"
+tracing-appender = "0.2"
+
+[[bench]]
+name = "auth_bench"
+harness = false

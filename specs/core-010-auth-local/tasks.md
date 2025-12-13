@@ -304,7 +304,7 @@
 
 ### Task 4.1: Integration test - First-time setup flow
 
-- [ ] Create `backend/crates/altair-db/tests/auth_integration.rs`
+- [x] Create `backend/crates/altair-db/tests/auth_integration.rs`
   - **Acceptance**:
     - Test: Fresh DB → check_setup returns false → register → check_setup returns true
     - Verify user created, session active, token in keychain
@@ -314,7 +314,7 @@
 
 ### Task 4.2: Integration test - Login/logout cycle
 
-- [ ] Add to `backend/crates/altair-db/tests/auth_integration.rs`
+- [x] Add to `backend/crates/altair-db/tests/auth_integration.rs`
   - **Acceptance**:
     - Test: Register → logout → validate fails → login → validate succeeds
     - Verify keychain token lifecycle
@@ -324,7 +324,7 @@
 
 ### Task 4.3: Integration test - Password verification
 
-- [ ] Add to `backend/crates/altair-db/tests/auth_integration.rs`
+- [x] Add to `backend/crates/altair-db/tests/auth_integration.rs`
   - **Acceptance**:
     - Test: Register with password → logout → login with correct password succeeds
     - Test: Login with wrong password fails with generic error (no user enumeration)
@@ -334,7 +334,7 @@
 
 ### Task 4.4: Integration test - Passwordless auth
 
-- [ ] Add to `backend/crates/altair-db/tests/auth_integration.rs`
+- [x] Add to `backend/crates/altair-db/tests/auth_integration.rs`
   - **Acceptance**:
     - Test: Register without password → logout → login without password succeeds
     - Verify no credential record created
@@ -344,7 +344,7 @@
 
 ### Task 4.5: Integration test - Session expiry
 
-- [ ] Add to `backend/crates/altair-db/tests/auth_integration.rs`
+- [x] Add to `backend/crates/altair-db/tests/auth_integration.rs`
   - **Acceptance**:
     - Test: Create session with past expiry → validate returns expired error
     - Test: Refresh extends expiry correctly
@@ -354,7 +354,7 @@
 
 ### Task 4.6: Integration test - Preferences CRUD
 
-- [ ] Add to `backend/crates/altair-db/tests/auth_integration.rs`
+- [x] Add to `backend/crates/altair-db/tests/auth_integration.rs`
   - **Acceptance**:
     - Test: Register → update_prefs → get_user → verify preferences merged
   - **Files**: `backend/crates/altair-db/tests/auth_integration.rs`
@@ -363,7 +363,7 @@
 
 ### Task 4.7: Performance benchmarks
 
-- [ ] Create `backend/crates/altair-auth/benches/auth_bench.rs`
+- [x] Create `backend/crates/altair-auth/benches/auth_bench.rs`
   - **Acceptance**:
     - Password hashing: < 500ms (Argon2id parameters)
     - Session validation: < 5ms overhead
@@ -374,7 +374,7 @@
 
 ### Task 4.8: Security tests
 
-- [ ] Create `backend/crates/altair-auth/tests/security.rs`
+- [x] Create `backend/crates/altair-auth/tests/security.rs`
   - **Acceptance**:
     - Timing attack resistance: verify_password takes same time for valid/invalid
     - Error messages don't reveal which field was wrong
@@ -385,7 +385,7 @@
 
 ### Task 4.9: Keychain fallback test
 
-- [ ] Add to `backend/crates/altair-auth/tests/security.rs`
+- [x] Add to `backend/crates/altair-auth/tests/security.rs`
   - **Acceptance**:
     - Simulate keychain unavailable
     - Verify specific `KeychainUnavailable` error returned for UI handling
