@@ -499,4 +499,90 @@ mod tests {
         .unwrap();
         assert!(!remote_config.is_localhost());
     }
+
+    // Note: Environment variable tests (from_env) are not included here because
+    // std::env::set_var is unsafe in Rust 2024 edition and environment variables
+    // are shared across threads, making these tests unreliable in parallel test
+    // execution. The from_env functionality is tested via integration tests where
+    // environment variables can be properly controlled.
+
+    #[test]
+    fn test_config_empty_region_rejected() {
+        let config = StorageConfig::new(
+            "http://localhost:9000",
+            "", // empty region
+            "altair",
+            "access-key",
+            "secret-key",
+        );
+
+        assert!(config.is_err());
+        let err = config.unwrap_err();
+        assert!(matches!(err, StorageError::InvalidConfig { field, .. } if field == "region"));
+    }
+
+    #[test]
+    fn test_config_empty_secret_key_rejected() {
+        let config = StorageConfig::new(
+            "http://localhost:9000",
+            "us-east-1",
+            "altair",
+            "access-key",
+            "", // empty secret key
+        );
+
+        assert!(config.is_err());
+        let err = config.unwrap_err();
+        assert!(
+            matches!(err, StorageError::InvalidConfig { field, .. } if field == "secret_access_key")
+        );
+    }
+
+    #[test]
+    fn test_config_invalid_endpoint_url() {
+        let config = StorageConfig::new(
+            "not-a-valid-url",
+            "us-east-1",
+            "altair",
+            "access-key",
+            "secret-key",
+        );
+
+        assert!(config.is_err());
+        let err = config.unwrap_err();
+        assert!(matches!(err, StorageError::InvalidConfig { field, .. } if field == "endpoint"));
+    }
+
+    #[test]
+    fn test_config_https_endpoint() {
+        let config = StorageConfig::new(
+            "https://s3.us-west-2.amazonaws.com",
+            "us-west-2",
+            "my-bucket",
+            "AKIA1234567890EXAMPLE",
+            "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+        );
+
+        assert!(config.is_ok());
+        let config = config.unwrap();
+        assert!(!config.is_localhost());
+        assert_eq!(config.endpoint_str(), "https://s3.us-west-2.amazonaws.com/");
+    }
+
+    #[test]
+    fn test_bucket_name_edge_cases() {
+        // Minimum valid length (3 chars)
+        assert!(is_valid_bucket_name("abc"));
+
+        // Maximum valid length (63 chars)
+        assert!(is_valid_bucket_name(
+            "a12345678901234567890123456789012345678901234567890123456789012"
+        ));
+
+        // Contains periods (valid)
+        assert!(is_valid_bucket_name("my.test.bucket"));
+
+        // Starts with number (valid)
+        assert!(is_valid_bucket_name("123bucket"));
+    }
 }

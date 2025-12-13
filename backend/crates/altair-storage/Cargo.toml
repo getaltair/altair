@@ -67,3 +67,12 @@ reqwest = "0.12"
 sha2 = "0.10"
 hex = "0.4"
 futures-util = "0.3"
+criterion = "0.5"
+tempfile = "3.14"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+uuid = { version = "1.16", features = ["v4"] }
+image = { version = "0.25", features = ["jpeg", "png"] }
+
+[[bench]]
+name = "storage_bench"
+harness = false
