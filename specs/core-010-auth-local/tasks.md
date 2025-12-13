@@ -187,7 +187,7 @@
 
 ### Task 3.1: Create auth command module
 
-- [ ] Create `backend/crates/altair-commands/src/auth.rs`
+- [x] Create `backend/crates/altair-commands/src/auth.rs`
   - **Acceptance**:
     - Define input structs: `RegisterInput`, `LoginInput`, `UpdatePrefsInput`
     - Define or re-export response types from altair-auth
