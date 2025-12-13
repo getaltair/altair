@@ -3,8 +3,34 @@
 /** user-defined commands **/
 
 export const commands = {
-  async healthCheck(): Promise<HealthStatus> {
-    return await TAURI_INVOKE('health_check');
+  /**
+   * Check application health status
+   *
+   * This command is used by the frontend to verify the backend is running
+   * and all critical systems are operational. It checks:
+   * - Database connectivity
+   * - Response time
+   * - Application version
+   *
+   * # Returns
+   *
+   * Always returns `Ok(HealthStatus)` with:
+   * - `healthy`: Overall health indicator (true if all checks pass)
+   * - `version`: Application version from Cargo.toml
+   * - `database_connected`: Whether database is accessible
+   * - `sync_enabled`: Whether sync engine is active (always false in this phase)
+   *
+   * This command never fails - if health checks fail, it returns a status
+   * indicating the failure rather than returning an error. The Result is
+   * required by Tauri for async commands with state.
+   */
+  async healthCheck(): Promise<Result<HealthStatus, string>> {
+    try {
+      return { status: 'ok', data: await TAURI_INVOKE('health_check') };
+    } catch (e) {
+      if (e instanceof Error) throw e;
+      else return { status: 'error', error: e as any };
+    }
   },
 };
 
@@ -14,16 +40,280 @@ export const commands = {
 
 /** user-defined types **/
 
+/**
+ * Achievement - Unlockable milestone
+ */
+export type Achievement = {
+  id: Thing | null;
+  name: string;
+  description: string;
+  icon: string;
+  unlocked_at: string | null;
+  owner: Thing;
+  device_id: string;
+  created_at: string;
+  updated_at: string;
+};
+/**
+ * Attachment - File attachments for any entity
+ */
+export type Attachment = {
+  id: Thing | null;
+  filename: string;
+  mime_type: string;
+  size_bytes: number;
+  storage_key: string;
+  checksum: string;
+  media_type: MediaType;
+  duration: number | null;
+  thumbnail_key: string | null;
+  transcription: string | null;
+  owner: Thing;
+  device_id: string;
+  created_at: string;
+  updated_at: string;
+};
+/**
+ * Campaign - Container for related quests
+ */
+export type Campaign = {
+  id: Thing | null;
+  title: string;
+  description: string | null;
+  status: EntityStatus;
+  color: string | null;
+  owner: Thing;
+  device_id: string;
+  created_at: string;
+  updated_at: string;
+};
+/**
+ * Capture - Temporary storage for unprocessed input
+ */
+export type Capture = {
+  id: Thing | null;
+  text_content: string | null;
+  capture_type: CaptureType;
+  source: CaptureSource;
+  status: CaptureStatus;
+  processed_to: Thing | null;
+  ai_suggestion: string | null;
+  ai_confidence: number | null;
+  location: GeoPoint | null;
+  owner: Thing;
+  device_id: string;
+  captured_at: string;
+  created_at: string;
+  updated_at: string;
+};
+/**
+ * Source of capture input
+ */
+export type CaptureSource = 'desktop' | 'mobile' | 'widget' | 'voice_assistant';
+/**
+ * Capture processing status
+ */
+export type CaptureStatus = 'pending' | 'processed' | 'discarded';
+/**
+ * Capture input method
+ */
+export type CaptureType = 'text' | 'voice' | 'photo' | 'video' | 'mixed';
+/**
+ * EnergyCheckIn - Daily energy level self-assessment
+ */
+export type EnergyCheckIn = {
+  id: Thing | null;
+  date: string;
+  energy_level: number;
+  notes: string | null;
+  owner: Thing;
+  device_id: string;
+  created_at: string;
+  updated_at: string;
+};
+/**
+ * Energy cost to complete a quest (user effort estimation)
+ */
+export type EnergyCost = 'tiny' | 'small' | 'medium' | 'large' | 'huge';
+/**
+ * General entity status (soft delete pattern)
+ */
+export type EntityStatus = 'active' | 'archived';
+/**
+ * FocusSession - Timed work session on a quest
+ */
+export type FocusSession = {
+  id: Thing | null;
+  started_at: string;
+  planned_duration: number;
+  actual_duration: number | null;
+  completed_steps: string | null;
+  status: FocusSessionStatus;
+  notes: string | null;
+  owner: Thing;
+  device_id: string;
+  created_at: string;
+  updated_at: string;
+};
+/**
+ * Focus session status
+ */
+export type FocusSessionStatus = 'active' | 'completed' | 'abandoned';
+/**
+ * Geographic point (latitude, longitude)
+ */
+export type GeoPoint = { latitude: number; longitude: number };
+/**
+ * Application health status
+ */
 export type HealthStatus = {
+  /**
+   * Whether the backend is healthy
+   */
   healthy: boolean;
+  /**
+   * Backend version
+   */
   version: string;
+  /**
+   * Database connection status
+   */
   database_connected: boolean;
+  /**
+   * Sync engine status
+   */
   sync_enabled: boolean;
 };
+/**
+ * Attachment media type
+ */
+export type MediaType = 'photo' | 'audio' | 'video' | 'document';
+/**
+ * Quest - Individual task with energy cost
+ */
+export type Quest = {
+  id: Thing | null;
+  title: string;
+  description: string | null;
+  column: QuestColumn;
+  energy_cost: EnergyCost;
+  estimated_minutes: number | null;
+  actual_minutes: number | null;
+  xp_value: number;
+  due_date: string | null;
+  completed_at: string | null;
+  status: EntityStatus;
+  owner: Thing;
+  device_id: string;
+  created_at: string;
+  updated_at: string;
+};
+/**
+ * Quest board column position
+ */
+export type QuestColumn =
+  | 'idea_greenhouse'
+  | 'quest_log'
+  | 'this_cycle'
+  | 'next_up'
+  | 'in_progress'
+  | 'harvested'
+  | 'archived';
+/**
+ * Streak - Consecutive activity tracking
+ */
+export type Streak = {
+  id: Thing | null;
+  streak_type: StreakType;
+  current_count: number;
+  longest_count: number;
+  last_activity: string;
+  started_at: string;
+  owner: Thing;
+  device_id: string;
+  created_at: string;
+  updated_at: string;
+};
+/**
+ * Streak tracking type
+ */
+export type StreakType = 'daily_checkin' | 'quest_completion' | 'focus_session';
+/**
+ * Tag - Organizational label for entities
+ */
+export type Tag = {
+  id: Thing | null;
+  name: string;
+  namespace: string | null;
+  color: string | null;
+  owner: Thing;
+  device_id: string;
+  created_at: string;
+  updated_at: string;
+};
+/**
+ * Newtype wrapper for Thing to provide specta Type implementation
+ *
+ * This wrapper allows us to implement the specta::Type trait for SurrealDB's Thing type,
+ * which is necessary since we can't implement external traits on external types (orphan rules).
+ */
+export type Thing = {
+  /**
+   * Table name
+   */
+  tb: string;
+  /**
+   * Record ID
+   */
+  id: string;
+};
+/**
+ * User - Account and preferences
+ */
+export type User = {
+  id: Thing | null;
+  email: string;
+  display_name: string;
+  avatar_url: string | null;
+  role: UserRole;
+  preferences: UserPreferences;
+  device_id: string;
+  created_at: string;
+  updated_at: string;
+};
+/**
+ * User preferences for customization
+ */
+export type UserPreferences = {
+  theme: string;
+  energy_filter_default: string | null;
+  gamification_enabled: boolean;
+  weekly_harvest_day: number;
+  weekly_harvest_time: string;
+  focus_session_duration: number;
+  pomodoro_break_duration: number;
+};
+/**
+ * UserProgress - Player progression tracking
+ */
+export type UserProgress = {
+  id: Thing | null;
+  xp_total: number;
+  level: number;
+  title: string;
+  owner: Thing;
+  device_id: string;
+  created_at: string;
+  updated_at: string;
+};
+/**
+ * User role for authorization
+ */
+export type UserRole = 'owner' | 'viewer';
 
 /** tauri-specta globals **/
 
-import { invoke as TAURI_INVOKE } from '@tauri-apps/api/core';
+import { invoke as TAURI_INVOKE, Channel as _TAURI_CHANNEL } from '@tauri-apps/api/core';
 import * as TAURI_API_EVENT from '@tauri-apps/api/event';
 import { type WebviewWindow as __WebviewWindow__ } from '@tauri-apps/api/webviewWindow';
 
@@ -37,7 +327,7 @@ type __EventObj__<T> = {
 
 export type Result<T, E> = { status: 'ok'; data: T } | { status: 'error'; error: E };
 
-function _unused__makeEvents__<T extends Record<string, any>>(mappings: Record<keyof T, string>) {
+function __makeEvents__<T extends Record<string, any>>(mappings: Record<keyof T, string>) {
   return new Proxy(
     {} as unknown as {
       [K in keyof T]: __EventObj__<T[K]> & {

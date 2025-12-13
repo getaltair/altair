@@ -64,9 +64,9 @@ pub struct Attachment {
     pub id: Option<Thing>,
     pub filename: String,
     pub mime_type: String,
-    pub size_bytes: i64,
+    pub size_bytes: i32, // Changed from i64 for TypeScript compatibility (max ~2GB)
     pub storage_key: String, // S3 key
-    pub checksum: String,    // SHA-256
+    pub checksum: String, // SHA-256
     pub media_type: MediaType,
     pub duration: Option<i32>, // seconds, for audio/video
     pub thumbnail_key: Option<String>,

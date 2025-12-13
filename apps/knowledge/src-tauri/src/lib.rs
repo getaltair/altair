@@ -39,7 +39,7 @@ pub fn run() {
     builder
         .export(
             specta_typescript::Typescript::default(),
-            "../../../packages/bindings/src/knowledge.ts",
+            "packages/bindings/src/knowledge.ts",
         )
         .expect("Failed to export typescript bindings");
 

@@ -44,7 +44,7 @@ pub fn run() {
     builder
         .export(
             specta_typescript::Typescript::default(),
-            "../../../packages/bindings/src/tracking.ts",
+            "packages/bindings/src/tracking.ts",
         )
         .expect("Failed to export typescript bindings");
 
