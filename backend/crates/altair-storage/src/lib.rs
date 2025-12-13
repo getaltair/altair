@@ -40,6 +40,7 @@
 //! - [`service`]: High-level storage service orchestrating uploads/downloads
 //! - [`thumbnail`]: Thumbnail generation for images (JPEG, PNG, GIF, WebP)
 //! - [`quota`]: Per-user storage quota tracking and enforcement
+//! - [`minio`]: Embedded Minio process management for local S3-compatible storage
 
 pub mod background;
 pub mod checksum;
@@ -47,6 +48,7 @@ pub mod client;
 pub mod config;
 pub mod error;
 pub mod mime;
+pub mod minio;
 pub mod presigned;
 pub mod quota;
 pub mod service;
@@ -64,6 +66,11 @@ pub use error::{StorageError, StorageResult};
 pub use mime::{
     ALLOWED_MIME_TYPES, MediaType, classify_media_type, is_mime_type_allowed,
     mime_type_for_extension, validate_mime_type,
+};
+pub use minio::{
+    DEFAULT_MINIO_ADDRESS, DEFAULT_MINIO_CONSOLE_ADDRESS, MinioConfig, MinioManager,
+    get_minio_data_dir, get_platform_binary_name, init_storage as init_storage_with_minio,
+    is_external_endpoint_configured, locate_minio_binary,
 };
 pub use presigned::{
     DOWNLOAD_URL_EXPIRATION_SECS, PresignedDownload, PresignedUpload, PresignedUrlService,

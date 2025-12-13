@@ -410,17 +410,17 @@
   - Files: `apps/guidance/src-tauri/src/state.rs`
   - Notes: Load config from env or keychain during app init; graceful degradation if not configured
 
-- [ ] **Start Minio process on app init**
+- [x] **Start Minio process on app init**
 
   - Acceptance: Embedded Minio starts before AppState creation (if embedded mode)
-  - Files: `backend/src/main.rs`
-  - Notes: Deferred to Phase 6 (Minio Process Management)
+  - Files: `backend/crates/altair-storage/src/minio.rs`
+  - Notes: Implemented via `MinioManager::start()` which can be called during app init; returns manager for lifecycle control
 
-- [ ] **Stop Minio process on app exit**
+- [x] **Stop Minio process on app exit**
 
   - Acceptance: Graceful Minio shutdown in Tauri app cleanup
-  - Files: `backend/src/main.rs`
-  - Notes: Deferred to Phase 6 (Minio Process Management)
+  - Files: `backend/crates/altair-storage/src/minio.rs`
+  - Notes: Implemented via Drop trait on MinioManager; automatically stops when manager is dropped
 
 - [x] **Register storage commands with Tauri**
   - Acceptance: All 6 storage commands registered (5 + storage_is_available)
@@ -433,55 +433,59 @@
 
 ### 6.1 Embedded Binary
 
-- [ ] **Locate Minio binary in app resources**
+- [x] **Locate Minio binary in app resources**
 
   - Acceptance: MinioManager finds platform-specific binary (minio-darwin-arm64, minio-windows.exe, etc.)
   - Files: `backend/crates/altair-storage/src/minio.rs`
-  - Notes: Use tauri::api::path::resource_dir()
+  - Notes: Uses `locate_minio_binary()` with platform detection via compile-time cfg, checks Tauri resources, MINIO_BINARY_PATH env var, and CWD
 
-- [ ] **Determine data directory**
+- [x] **Determine data directory**
 
   - Acceptance: Data directory at platform-specific app data dir (e.g., ~/.local/share/altair/minio)
   - Files: `backend/crates/altair-storage/src/minio.rs`
-  - Notes: Use directories crate for platform paths
+  - Notes: Uses `directories` crate with `get_minio_data_dir()` function
 
-- [ ] **Start Minio process with correct arguments**
+- [x] **Start Minio process with correct arguments**
 
   - Acceptance: Spawn Minio server with --address localhost:9000, --console-address localhost:9001
   - Files: `backend/crates/altair-storage/src/minio.rs`
-  - Notes: Use tokio::process::Command
+  - Notes: Uses tokio::process::Command with MINIO_ROOT_USER and MINIO_ROOT_PASSWORD env vars
 
-- [ ] **Health check loop until ready**
+- [x] **Health check loop until ready**
 
   - Acceptance: Poll localhost:9000/minio/health/live until 200 OK
   - Files: `backend/crates/altair-storage/src/minio.rs`
-  - Notes: Timeout after 10 seconds
+  - Notes: `wait_for_ready()` polls health endpoint with 100ms interval, 10s timeout
 
-- [ ] **Graceful shutdown on app exit**
+- [x] **Graceful shutdown on app exit**
   - Acceptance: Send SIGTERM to Minio process, wait for clean exit
   - Files: `backend/crates/altair-storage/src/minio.rs`
-  - Notes: Implement Drop trait for MinioManager
+  - Notes: Implemented Drop trait with SIGTERM (Unix) / kill (Windows), 5s timeout before SIGKILL
 
 ### 6.2 Fallback Configuration
 
-- [ ] **Check for external Minio endpoint in config**
+- [x] **Check for external Minio endpoint in config**
 
   - Acceptance: If STORAGE_ENDPOINT env var set, use external endpoint instead of embedded
-  - Files: `backend/crates/altair-storage/src/config.rs`, `backend/crates/altair-storage/src/minio.rs`
-
-- [ ] **Skip embedded binary if external configured**
-
-  - Acceptance: MinioManager::new() returns Ok(None) if external endpoint configured
   - Files: `backend/crates/altair-storage/src/minio.rs`
+  - Notes: `is_external_endpoint_configured()` function checks env var
 
-- [ ] **Provide clear error if embedded fails and no fallback**
+- [x] **Skip embedded binary if external configured**
+
+  - Acceptance: MinioManager::start() returns early error if external endpoint configured
+  - Files: `backend/crates/altair-storage/src/minio.rs`
+  - Notes: `init_storage_with_minio()` returns `(StorageConfig, None)` tuple for external endpoint
+
+- [x] **Provide clear error if embedded fails and no fallback**
 
   - Acceptance: StorageError::MinioStartupFailed with instructions to set STORAGE_ENDPOINT
   - Files: `backend/crates/altair-storage/src/minio.rs`
+  - Notes: Error messages include clear guidance on using STORAGE_ENDPOINT
 
-- [ ] **Document fallback setup for development**
+- [x] **Document fallback setup for development**
   - Acceptance: README section on running external Minio via Docker
   - Files: `backend/crates/altair-storage/README.md`
+  - Notes: Comprehensive README with Docker setup, env vars, troubleshooting
 
 ---
 

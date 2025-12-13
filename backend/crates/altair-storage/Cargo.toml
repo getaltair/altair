@@ -49,11 +49,17 @@ once_cell = "1.19"
 
 # Async stream utilities
 futures-util = "0.3"
-tokio = { version = "1.42", features = ["io-util"] }
+tokio = { version = "1.42", features = ["io-util", "process", "time", "sync"] }
 
 # Database (for quota management)
 surrealdb = { version = "2.2", features = ["kv-mem"] }
 chrono = { version = "0.4", features = ["serde"] }
+
+# Platform directories for Minio data
+directories = "5.0"
+
+# HTTP client for Minio health checks
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"] }
 
 [dev-dependencies]
 tokio = { version = "1.42", features = ["full", "test-util"] }
