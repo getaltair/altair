@@ -378,7 +378,7 @@
 
 ### Task 8.1: Create GitHub Actions workflow for binding validation
 
-- [ ] Add binding freshness check to `.github/workflows/ci.yml`
+- [x] Add binding freshness check to `.github/workflows/ci.yml`
   - **Acceptance**: CI fails when bindings are stale (uncommitted changes detected)
   - **Files**: `.github/workflows/ci.yml`
   - **Steps**:
@@ -388,19 +388,22 @@
     4. Run `pnpm build` (triggers bindings generation)
     5. Run `git diff --exit-code packages/bindings/`
     6. Fail if exit code != 0
+  - **Implementation**: Created comprehensive CI workflow with 4 jobs: lint-and-typecheck, test, rust-test, and bindings-freshness. The bindings-freshness job regenerates bindings and fails if git detects uncommitted changes.
 
 ### Task 8.2: Add Rust compilation caching
 
-- [ ] Configure Rust cache in CI workflow to reduce build time
+- [x] Configure Rust cache in CI workflow to reduce build time
   - **Acceptance**: Second CI run completes faster due to caching
   - **Files**: `.github/workflows/ci.yml`
   - **Use**: `Swatinem/rust-cache@v2` action
+  - **Implementation**: Added Swatinem/rust-cache@v2 to both rust-test and bindings-freshness jobs with workspace-aware caching. Also added pnpm caching for faster Node.js dependency installation.
 
 ### Task 8.3: Test CI workflow with intentional stale bindings
 
 - [ ] Verify CI correctly detects stale bindings
   - **Acceptance**: Push commit with modified Rust type but stale TypeScript, CI fails
   - **Files**: N/A (validation test)
+  - **Note**: This task will be validated after the workflow is merged to the main branch and tested in a real CI environment. Manual testing can be done by modifying a Rust type without regenerating bindings.
 
 ---
 
