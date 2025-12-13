@@ -377,54 +377,55 @@
 
 ### 5.1 Command Implementation
 
-- [ ] **Implement storage_request_upload command**
+- [x] **Implement storage_request_upload command**
 
   - Acceptance: Tauri command validating inputs, calling StorageService::request_upload()
   - Files: `backend/crates/altair-commands/src/storage.rs`
   - Notes: #[tauri::command] with State<'\_, AppState>
 
-- [ ] **Implement storage_confirm_upload command**
+- [x] **Implement storage_confirm_upload command**
 
   - Acceptance: Tauri command with storage_key, calling StorageService::confirm_upload()
   - Files: `backend/crates/altair-commands/src/storage.rs`
 
-- [ ] **Implement storage_get_url command**
+- [x] **Implement storage_get_url command**
 
   - Acceptance: Tauri command returning presigned download URL for attachment
   - Files: `backend/crates/altair-commands/src/storage.rs`
 
-- [ ] **Implement storage_delete command**
+- [x] **Implement storage_delete command**
 
   - Acceptance: Tauri command archiving attachment, deleting S3 object, updating quota
   - Files: `backend/crates/altair-commands/src/storage.rs`
 
-- [ ] **Implement storage_get_quota command**
+- [x] **Implement storage_get_quota command**
   - Acceptance: Tauri command returning QuotaInfo for current user
   - Files: `backend/crates/altair-commands/src/storage.rs`
 
 ### 5.2 Integration with AppState
 
-- [ ] **Initialize StorageService in AppState**
+- [x] **Initialize StorageService in AppState**
 
   - Acceptance: AppState.storage field populated with StorageService instance
-  - Files: `backend/src/main.rs` (or app entry points)
-  - Notes: Load config from keychain during app init
+  - Files: `apps/guidance/src-tauri/src/state.rs`
+  - Notes: Load config from env or keychain during app init; graceful degradation if not configured
 
 - [ ] **Start Minio process on app init**
 
   - Acceptance: Embedded Minio starts before AppState creation (if embedded mode)
   - Files: `backend/src/main.rs`
-  - Notes: Use MinioManager from Phase 6
+  - Notes: Deferred to Phase 6 (Minio Process Management)
 
 - [ ] **Stop Minio process on app exit**
 
   - Acceptance: Graceful Minio shutdown in Tauri app cleanup
   - Files: `backend/src/main.rs`
-  - Notes: Implement Drop or explicit shutdown
+  - Notes: Deferred to Phase 6 (Minio Process Management)
 
-- [ ] **Register storage commands with Tauri**
-  - Acceptance: All 5 storage commands in invoke_handler![]
-  - Files: `backend/src/main.rs`
+- [x] **Register storage commands with Tauri**
+  - Acceptance: All 6 storage commands registered (5 + storage_is_available)
+  - Files: `apps/guidance/src-tauri/src/lib.rs`, `apps/guidance/src-tauri/src/commands/storage.rs`
+  - Notes: Uses tauri-specta for type-safe TypeScript bindings
 
 ---
 

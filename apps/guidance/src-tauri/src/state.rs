@@ -6,11 +6,13 @@
 
 use altair_core::{AppConfig, Error, LogGuard, Result, init_logging};
 use altair_db::{DatabaseConfig, SurrealConnection};
+use altair_storage::{StorageConfig, StorageService};
 
 /// Application state shared across all Tauri commands
 ///
 /// This struct holds all shared resources needed by the application:
 /// - Database connection for data persistence
+/// - Storage service for S3-compatible file storage
 /// - Application configuration
 /// - Log guard to keep logging active
 ///
@@ -21,6 +23,12 @@ use altair_db::{DatabaseConfig, SurrealConnection};
 pub struct AppState {
     /// Database connection (SurrealDB embedded)
     pub db: SurrealConnection,
+
+    /// Storage service for S3-compatible object storage (optional until configured)
+    ///
+    /// This is `None` if storage credentials haven't been configured yet.
+    /// Users can configure storage via settings or environment variables.
+    pub storage: Option<StorageService>,
 
     /// Application configuration (will be used in future phases)
     #[allow(dead_code)]
@@ -37,7 +45,8 @@ impl AppState {
     /// This method performs startup in the correct order:
     /// 1. Initialize logging (must be first for tracing to work)
     /// 2. Connect to database
-    /// 3. Log successful initialization
+    /// 3. Initialize storage service (if credentials available)
+    /// 4. Log successful initialization
     ///
     /// # Errors
     ///
@@ -76,12 +85,63 @@ impl AppState {
 
         tracing::info!("Database connection established successfully");
 
-        // Step 3: Return initialized state
+        // Step 3: Initialize storage service (optional - graceful degradation if not configured)
+        let storage = Self::init_storage().await;
+        if storage.is_some() {
+            tracing::info!("Storage service initialized successfully");
+        } else {
+            tracing::info!(
+                "Storage service not configured - attachments disabled until configured"
+            );
+        }
+
+        // Step 4: Return initialized state
         Ok(Self {
             db,
+            storage,
             config,
             _log_guard: log_guard,
         })
+    }
+
+    /// Initialize storage service from environment or keychain
+    ///
+    /// Attempts to load storage configuration from:
+    /// 1. Environment variables (STORAGE_ENDPOINT, STORAGE_BUCKET, etc.)
+    /// 2. OS keychain (for credentials)
+    ///
+    /// Returns `None` if storage is not configured, allowing the app to run
+    /// without attachment support.
+    async fn init_storage() -> Option<StorageService> {
+        // Try environment variables first (for development/CI)
+        let storage_config = match StorageConfig::from_env() {
+            Ok(config) => {
+                tracing::debug!("Loaded storage config from environment");
+                config
+            }
+            Err(_) => {
+                // Fall back to keychain
+                match StorageConfig::from_keychain() {
+                    Ok(config) => {
+                        tracing::debug!("Loaded storage config from keychain");
+                        config
+                    }
+                    Err(e) => {
+                        tracing::debug!("No storage credentials found: {}", e);
+                        return None;
+                    }
+                }
+            }
+        };
+
+        // Create storage service
+        match StorageService::new(&storage_config).await {
+            Ok(service) => Some(service),
+            Err(e) => {
+                tracing::warn!("Failed to initialize storage service: {}", e);
+                None
+            }
+        }
     }
 }
 
@@ -121,8 +181,10 @@ impl AppState {
         // Create a dummy log guard (tests don't need actual logging)
         let log_guard = LogGuard::dummy();
 
+        // Storage is None for tests (no S3 in test environment)
         Ok(Self {
             db,
+            storage: None,
             config,
             _log_guard: log_guard,
         })

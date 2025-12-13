@@ -9,7 +9,10 @@ pub mod state;
 
 // Imports
 use altair_core::AppConfig;
-use commands::health_check;
+use commands::{
+    health_check, storage_confirm_upload, storage_delete, storage_get_quota, storage_get_url,
+    storage_is_available, storage_request_upload,
+};
 
 // Re-exports for tests and internal use
 pub use state::AppState;
@@ -18,8 +21,16 @@ pub use state::AppState;
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     // Set up tauri-specta bindings generation
-    let builder = tauri_specta::Builder::<tauri::Wry>::new()
-        .commands(tauri_specta::collect_commands![health_check]);
+    let builder =
+        tauri_specta::Builder::<tauri::Wry>::new().commands(tauri_specta::collect_commands![
+            health_check,
+            storage_request_upload,
+            storage_confirm_upload,
+            storage_get_url,
+            storage_delete,
+            storage_get_quota,
+            storage_is_available
+        ]);
 
     #[cfg(debug_assertions)]
     builder

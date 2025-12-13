@@ -23,6 +23,7 @@ tracing-appender = { workspace = true }
 altair-core = { workspace = true }
 altair-commands = { workspace = true, features = ["specta"] }
 altair-db = { workspace = true }
+altair-storage = { workspace = true }
 
 [build-dependencies]
 tauri-build = { workspace = true }
