@@ -439,16 +439,16 @@
 
 After completing all tasks, verify:
 
-- [ ] All 14 enums appear in generated TypeScript files
-- [ ] All 15+ domain structs appear in generated TypeScript files
-- [ ] `Thing` fields serialize as `{ tb: string, id: string }` in TypeScript
-- [ ] `NaiveTime` fields serialize as `string` (HH:MM format) in TypeScript
-- [ ] Run `pnpm build` completes without errors
-- [ ] Run `pnpm typecheck` passes in all apps
+- [x] All 14 enums appear in generated TypeScript files
+- [x] All 15+ domain structs appear in generated TypeScript files
+- [x] `Thing` fields serialize as `{ tb: string, id: string }` in TypeScript
+- [x] `NaiveTime` fields serialize as `string` (HH:MM format) in TypeScript
+- [x] Run `pnpm build` completes without errors
+- [x] Run `pnpm typecheck` passes in all apps
 - [ ] CI workflow correctly fails when bindings are stale
-- [ ] Run `pnpm build` twice produces identical output (determinism test)
-- [ ] Import patterns work: `import { guidance } from '@altair/bindings'`
-- [ ] Import patterns work: `import { EntityStatus } from '@altair/bindings'`
+- [x] Run `pnpm build` twice produces identical output (determinism test)
+- [x] Import patterns work: `import { guidance } from '@altair/bindings'`
+- [x] Import patterns work: `import { EntityStatus } from '@altair/bindings'`
 
 ---
 
