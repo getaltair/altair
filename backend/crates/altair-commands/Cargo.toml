@@ -10,9 +10,15 @@ specta = ["dep:specta"]
 [dependencies]
 # Internal dependencies
 altair-core = { path = "../altair-core" }
+altair-auth = { path = "../altair-auth" }
+altair-db = { path = "../altair-db" }
 
 # Async runtime
 tokio = { version = "1.42", features = ["sync"] }
+
+# Database
+surrealdb = "2.2"
+chrono = "0.4"
 
 # Serialization
 serde = { version = "1.0", features = ["derive"] }

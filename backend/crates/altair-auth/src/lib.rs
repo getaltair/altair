@@ -10,6 +10,9 @@
 //! This is a placeholder crate for the monorepo setup phase. Full auth
 //! functionality will be implemented in later specs.
 
+pub mod local;
+pub mod types;
+
 use altair_core::Result;
 use async_trait::async_trait;
 
@@ -71,6 +74,28 @@ pub trait AuthProvider: Send + Sync {
 
     /// Revoke a token (logout)
     async fn revoke_token(&self, token: &str) -> Result<()>;
+
+    /// Refresh a session by extending its expiration
+    ///
+    /// Takes an existing valid token and extends its lifetime.
+    /// Returns updated session information.
+    async fn refresh(&self, token: &str) -> Result<local::Session>;
+
+    /// Register a new user
+    ///
+    /// Creates a new user account with optional password.
+    /// Returns auth response with session token.
+    async fn register(
+        &self,
+        email: String,
+        display_name: Option<String>,
+        password: Option<String>,
+    ) -> Result<types::AuthResponse>;
+
+    /// Get current user by session token
+    ///
+    /// Returns the full user profile for the given session token.
+    async fn get_current_user(&self, token: &str) -> Result<User>;
 }
 
 /// Placeholder local authentication provider
@@ -131,6 +156,41 @@ impl AuthProvider for LocalAuthProvider {
     async fn revoke_token(&self, token: &str) -> Result<()> {
         tracing::info!("Placeholder: revoking token: {}", token);
         Ok(())
+    }
+
+    async fn refresh(&self, token: &str) -> Result<local::Session> {
+        tracing::info!("Placeholder: refreshing token: {}", token);
+        // Return a dummy session
+        Ok(local::Session::new("placeholder-user-id".to_string(), None))
+    }
+
+    async fn register(
+        &self,
+        email: String,
+        _display_name: Option<String>,
+        _password: Option<String>,
+    ) -> Result<types::AuthResponse> {
+        tracing::info!("Placeholder: registering user with email: {}", email);
+        let user = User {
+            id: "placeholder-user-id".to_string(),
+            email: email.clone(),
+            name: Some("Placeholder User".to_string()),
+        };
+        let session = local::Session::new(user.id.clone(), None);
+        Ok(types::AuthResponse::new(
+            user,
+            session.token,
+            session.expires_at,
+        ))
+    }
+
+    async fn get_current_user(&self, token: &str) -> Result<User> {
+        tracing::info!("Placeholder: getting current user for token: {}", token);
+        Ok(User {
+            id: "placeholder-user-id".to_string(),
+            email: "placeholder@example.com".to_string(),
+            name: Some("Placeholder User".to_string()),
+        })
     }
 }
 
