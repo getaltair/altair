@@ -197,7 +197,7 @@
 
 ### Task 3.2: Implement auth_check_setup command
 
-- [ ] Add `auth_check_setup` to `backend/crates/altair-commands/src/auth.rs`
+- [x] Add `auth_check_setup` to `backend/crates/altair-commands/src/auth.rs`
   - **Acceptance**:
     - Returns `bool`: true if user exists, false for first-launch
     - Uses `user_exists` query from altair-db
@@ -208,7 +208,7 @@
 
 ### Task 3.3: Implement auth_register command
 
-- [ ] Add `auth_register` to `backend/crates/altair-commands/src/auth.rs`
+- [x] Add `auth_register` to `backend/crates/altair-commands/src/auth.rs`
   - **Acceptance**:
     - Input: email (required), display_name (optional), password (optional)
     - Creates user, optional credential, initial session
@@ -220,7 +220,7 @@
 
 ### Task 3.4: Implement auth_login command
 
-- [ ] Add `auth_login` to `backend/crates/altair-commands/src/auth.rs`
+- [x] Add `auth_login` to `backend/crates/altair-commands/src/auth.rs`
   - **Acceptance**:
     - Input: email, password (optional for passwordless)
     - Validates credentials (if password set)
@@ -232,7 +232,7 @@
 
 ### Task 3.5: Implement auth_logout command
 
-- [ ] Add `auth_logout` to `backend/crates/altair-commands/src/auth.rs`
+- [x] Add `auth_logout` to `backend/crates/altair-commands/src/auth.rs`
   - **Acceptance**:
     - Input: none (uses stored token from keychain)
     - Deletes session from DB
@@ -244,7 +244,7 @@
 
 ### Task 3.6: Implement auth_validate command
 
-- [ ] Add `auth_validate` to `backend/crates/altair-commands/src/auth.rs`
+- [x] Add `auth_validate` to `backend/crates/altair-commands/src/auth.rs`
   - **Acceptance**:
     - Input: none (retrieves token from keychain)
     - Validates session, returns `User` if valid
@@ -255,7 +255,7 @@
 
 ### Task 3.7: Implement auth_refresh command
 
-- [ ] Add `auth_refresh` to `backend/crates/altair-commands/src/auth.rs`
+- [x] Add `auth_refresh` to `backend/crates/altair-commands/src/auth.rs`
   - **Acceptance**:
     - Input: none (uses stored token from keychain)
     - Extends session expiry by 7 days
@@ -266,7 +266,7 @@
 
 ### Task 3.8: Implement auth_get_user command
 
-- [ ] Add `auth_get_user` to `backend/crates/altair-commands/src/auth.rs`
+- [x] Add `auth_get_user` to `backend/crates/altair-commands/src/auth.rs`
   - **Acceptance**:
     - Input: none (uses stored token from keychain)
     - Returns current `User` with preferences
@@ -276,7 +276,7 @@
 
 ### Task 3.9: Implement auth_update_prefs command
 
-- [ ] Add `auth_update_prefs` to `backend/crates/altair-commands/src/auth.rs`
+- [x] Add `auth_update_prefs` to `backend/crates/altair-commands/src/auth.rs`
   - **Acceptance**:
     - Input: partial `UserPreferences` object
     - Merges with existing preferences
@@ -287,7 +287,7 @@
 
 ### Task 3.10: Register commands in lib.rs
 
-- [ ] Update `backend/crates/altair-commands/src/lib.rs`
+- [x] Update `backend/crates/altair-commands/src/lib.rs`
   - **Acceptance**:
     - Add `pub mod auth;` to module declarations
     - Export all 8 auth command functions

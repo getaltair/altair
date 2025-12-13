@@ -101,7 +101,9 @@ pub fn get_version() -> String {
     env!("CARGO_PKG_VERSION").to_string()
 }
 
-// Command handler modules (will be populated in later specs)
+// Command handler modules
+pub mod auth;
+
 pub mod guidance {
     //! Quest and Campaign command handlers (Guidance app)
 
