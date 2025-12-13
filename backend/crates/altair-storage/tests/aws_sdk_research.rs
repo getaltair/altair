@@ -67,7 +67,8 @@ async fn test_custom_endpoint_configuration() {
         "Should successfully connect to Minio at custom endpoint"
     );
 
-    let buckets = list_result.unwrap().buckets();
+    let result = list_result.unwrap();
+    let buckets = result.buckets();
     assert!(
         buckets.iter().any(|b| b.name() == Some(TEST_BUCKET)),
         "Should find test bucket in list"

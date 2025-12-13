@@ -109,83 +109,83 @@
 
 ### 1.1 Storage Configuration
 
-- [ ] **Define StorageConfig struct**
+- [x] **Define StorageConfig struct**
 
   - Acceptance: Struct with endpoint, region, bucket, access_key_id, secret_access_key fields
   - Files: `backend/crates/altair-storage/src/config.rs`
   - Notes: Use `url::Url` for endpoint validation
 
-- [ ] **Implement StorageConfig::from_keychain()**
+- [x] **Implement StorageConfig::from_keychain()**
 
   - Acceptance: Load credentials from keyring crate, construct config
   - Files: `backend/crates/altair-storage/src/config.rs`
   - Notes: Handle missing credentials with StorageError::CredentialsNotFound
 
-- [ ] **Define StorageError enum**
+- [x] **Define StorageError enum**
 
   - Acceptance: Variants for CredentialsNotFound, S3Error, InvalidMimeType, QuotaExceeded, etc.
   - Files: `backend/crates/altair-storage/src/error.rs`
   - Notes: Implement Display, Error, From<aws_sdk_s3::Error>
 
-- [ ] **Add config validation**
+- [x] **Add config validation**
   - Acceptance: Validate endpoint format (http/https), bucket name (DNS-compliant)
   - Files: `backend/crates/altair-storage/src/config.rs`
   - Notes: Use regex for bucket name validation
 
 ### 1.2 S3 Client Wrapper
 
-- [ ] **Initialize aws-sdk-s3 client from StorageConfig**
+- [x] **Initialize aws-sdk-s3 client from StorageConfig**
 
   - Acceptance: Create S3Client struct with aws_sdk_s3::Client field, initialize from config
   - Files: `backend/crates/altair-storage/src/client.rs`
   - Notes: Use aws_config::BehaviorVersion::latest()
 
-- [ ] **Implement head_object()**
+- [x] **Implement head_object()**
 
   - Acceptance: Return Result<ObjectMetadata, StorageError> with size, content_type
   - Files: `backend/crates/altair-storage/src/client.rs`
 
-- [ ] **Implement get_object() with streaming body**
+- [x] **Implement get_object() with streaming body**
 
   - Acceptance: Return Result<ByteStream, StorageError> for object data
   - Files: `backend/crates/altair-storage/src/client.rs`
   - Notes: Use aws_sdk_s3::primitives::ByteStream
 
-- [ ] **Implement delete_object()**
+- [x] **Implement delete_object()**
 
   - Acceptance: Delete object from S3, return Result<(), StorageError>
   - Files: `backend/crates/altair-storage/src/client.rs`
 
-- [ ] **Add connection health check method**
+- [x] **Add connection health check method**
   - Acceptance: list_buckets() or HEAD bucket to verify connectivity
   - Files: `backend/crates/altair-storage/src/client.rs`
 
 ### 1.3 Presigned URL Generation
 
-- [ ] **Implement generate_upload_url() with PUT presigning**
+- [x] **Implement generate_upload_url() with PUT presigning**
 
   - Acceptance: Return PresignedUpload with url, key, expiration (15 min)
   - Files: `backend/crates/altair-storage/src/presigned.rs`
   - Notes: Use aws_sdk_s3::presigning::PresigningConfig
 
-- [ ] **Implement generate_download_url() with GET presigning**
+- [x] **Implement generate_download_url() with GET presigning**
 
   - Acceptance: Return presigned GET URL with 1-hour expiration
   - Files: `backend/crates/altair-storage/src/presigned.rs`
 
-- [ ] **Add content-type and content-length restrictions to upload URLs**
+- [x] **Add content-type and content-length restrictions to upload URLs**
 
   - Acceptance: Upload URL enforces provided content-type and max content-length
   - Files: `backend/crates/altair-storage/src/presigned.rs`
   - Notes: Use PutObjectRequest::content_type() and content_length()
 
-- [ ] **Configure expiration times**
+- [x] **Configure expiration times**
 
   - Acceptance: Upload URLs expire in 15 minutes, download URLs in 1 hour
   - Files: `backend/crates/altair-storage/src/presigned.rs`
   - Notes: Use Duration::from_secs()
 
-- [ ] **Generate UUID-prefixed object keys**
+- [x] **Generate UUID-prefixed object keys**
   - Acceptance: Object keys formatted as `{user_id}/{uuid}-{filename}`
   - Files: `backend/crates/altair-storage/src/presigned.rs`
   - Notes: Use uuid::Uuid::new_v4()

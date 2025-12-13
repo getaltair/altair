@@ -53,9 +53,7 @@ fn test_format_detection_from_bytes() {
     // Test: Validate format detection from byte stream
 
     let jpeg_data = include_bytes!("../../../test-data/test-image.jpg");
-    let mut reader = ImageReader::new(Cursor::new(jpeg_data));
-
-    reader
+    let reader = ImageReader::new(Cursor::new(jpeg_data))
         .with_guessed_format()
         .expect("Failed to guess format from JPEG bytes");
 
