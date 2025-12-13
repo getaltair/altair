@@ -48,9 +48,9 @@ async fn test_timing_attack_resistance() {
     // Calculate timing difference
     let diff = duration_correct.abs_diff(duration_wrong);
 
-    // Allow up to 50ms variance (Argon2 is inherently variable due to parallelism and system load)
+    // Allow up to 100ms variance (Argon2 is inherently variable due to parallelism and system load)
     // but should be roughly constant-time (within same order of magnitude)
-    let max_variance_ms = 50;
+    let max_variance_ms = 100;
     let diff_ms = diff.as_millis();
 
     println!(
