@@ -289,14 +289,14 @@
 
 ### Task 5.1: Investigate type duplication
 
-- [ ] Document duplicate types between altair-core and altair-db
+- [x] Document duplicate types between altair-core and altair-db
   - **Acceptance**: Create issue or document decision on which types to keep
   - **Files**: Create `specs/core-004-type-generation/type-duplication.md`
   - **Types to investigate**: `EnergyCost`, `EntityStatus`
 
 ### Task 5.2: Add specta derives to altair-core types
 
-- [ ] Add `#[cfg_attr(feature = "specta", derive(specta::Type))]` to UserId, EntityId
+- [x] Add `#[cfg_attr(feature = "specta", derive(specta::Type))]` to UserId, EntityId
   - **Acceptance**: Types compile with specta feature enabled
   - **Files**: `backend/crates/altair-core/src/types.rs`
   - **Note**: May deprecate duplicate EnergyCost/EntityStatus if Phase 5.1 decides to consolidate
