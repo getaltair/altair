@@ -1,5 +1,3 @@
-/spectrena.plan
-
 Tech Stack:
 
 - Desktop: Tauri 2.0 with Svelte 5 (runes) frontend

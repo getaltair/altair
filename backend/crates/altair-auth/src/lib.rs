@@ -15,6 +15,7 @@ pub mod types;
 
 use altair_core::Result;
 use async_trait::async_trait;
+use chrono::Utc;
 
 /// Configuration for authentication providers
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -176,11 +177,12 @@ impl AuthProvider for LocalAuthProvider {
             email: email.clone(),
             name: Some("Placeholder User".to_string()),
         };
-        let session = local::Session::new(user.id.clone(), None);
+        let token = "placeholder-token".to_string();
+        let session = local::Session::new(user.id.clone(), Some(token.clone()));
         Ok(types::AuthResponse::new(
             user,
-            session.token,
-            session.expires_at,
+            token,
+            session.expires_at.unwrap_or_else(Utc::now),
         ))
     }
 

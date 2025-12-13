@@ -10,98 +10,98 @@
 
 ### 0.1 aws-sdk-s3 Integration Research
 
-- [ ] **Validate presigned PUT URL generation**
+- [x] **Validate presigned PUT URL generation**
 
   - Acceptance: Create test demonstrating PUT presigned URL with content-type and content-length restrictions working with Minio
-  - Files: `backend/tests/storage/aws_sdk_research.rs`
+  - Files: `backend/crates/altair-storage/tests/aws_sdk_research.rs`
   - Notes: Must support 15-minute expiration, custom headers
 
-- [ ] **Validate presigned GET URL generation**
+- [x] **Validate presigned GET URL generation**
 
   - Acceptance: Create test demonstrating GET presigned URL with configurable expiration working with Minio
-  - Files: `backend/tests/storage/aws_sdk_research.rs`
+  - Files: `backend/crates/altair-storage/tests/aws_sdk_research.rs`
   - Notes: Must support 1-hour expiration
 
-- [ ] **Validate HEAD object operation**
+- [x] **Validate HEAD object operation**
 
   - Acceptance: Demonstrate head_object() returns correct metadata (size, content-type) for existing objects
-  - Files: `backend/tests/storage/aws_sdk_research.rs`
+  - Files: `backend/crates/altair-storage/tests/aws_sdk_research.rs`
 
-- [ ] **Validate GET object with streaming**
+- [x] **Validate GET object with streaming**
 
   - Acceptance: Download 50MB file using streaming body, prove memory usage stays bounded
-  - Files: `backend/tests/storage/aws_sdk_research.rs`
+  - Files: `backend/crates/altair-storage/tests/aws_sdk_research.rs`
   - Notes: Required for checksum calculation on large files
 
-- [ ] **Validate custom endpoint configuration for Minio**
+- [x] **Validate custom endpoint configuration for Minio**
   - Acceptance: aws-sdk-s3 client connects to localhost:9000 and performs basic operations
-  - Files: `backend/tests/storage/aws_sdk_research.rs`
+  - Files: `backend/crates/altair-storage/tests/aws_sdk_research.rs`
 
 ### 0.2 Minio Embedding Strategy Research
 
-- [ ] **Determine platform-specific binary paths**
+- [x] **Determine platform-specific binary paths**
 
   - Acceptance: Document binary locations for macOS arm64/x64, Windows x64, Linux x64
   - Files: `docs/minio-embedding.md`
   - Notes: Consider using `platform-dirs` crate for app data directory
 
-- [ ] **Design process lifecycle management**
+- [x] **Design process lifecycle management**
 
   - Acceptance: Document start/stop strategy using Tauri process API or tokio::process
   - Files: `docs/minio-embedding.md`
   - Notes: Must handle app crash, user force-quit, graceful shutdown
 
-- [ ] **Choose data directory location**
+- [x] **Choose data directory location**
 
   - Acceptance: Document data directory strategy (platform-specific app data dir)
   - Files: `docs/minio-embedding.md`
   - Notes: Should persist between app restarts
 
-- [ ] **Define fallback behavior**
+- [x] **Define fallback behavior**
   - Acceptance: Document external Minio endpoint configuration for when embedded binary fails
   - Files: `docs/minio-embedding.md`
 
 ### 0.3 OS Keychain Integration Research
 
-- [ ] **Validate store/retrieve S3 credentials**
+- [x] **Validate store/retrieve S3 credentials**
 
   - Acceptance: Test `keyring` crate storing and retrieving access_key and secret_key on current platform
-  - Files: `backend/tests/storage/keychain_research.rs`
+  - Files: `backend/crates/altair-storage/tests/keychain_research.rs`
 
-- [ ] **Validate platform support**
+- [x] **Validate platform support**
 
   - Acceptance: Document tested platforms (macOS Keychain, Windows Credential Manager, Linux Secret Service)
   - Files: `docs/keychain-support.md`
 
-- [ ] **Design error handling for unavailable keychain**
+- [x] **Design error handling for unavailable keychain**
 
   - Acceptance: Define fallback behavior (environment variables, config file warning)
   - Files: `docs/keychain-support.md`
 
-- [ ] **Design first-run credential setup flow**
+- [x] **Design first-run credential setup flow**
   - Acceptance: Document UX for users setting up storage credentials for first time
   - Files: `docs/keychain-support.md`
 
 ### 0.4 Image Processing Research
 
-- [ ] **Validate supported formats**
+- [x] **Validate supported formats**
 
   - Acceptance: Test `image` crate decoding JPEG, PNG, GIF, WebP
-  - Files: `backend/tests/storage/image_research.rs`
+  - Files: `backend/crates/altair-storage/tests/image_research.rs`
 
-- [ ] **Validate resize to max dimension**
+- [x] **Validate resize to max dimension**
 
   - Acceptance: Resize 3000×2000 image to 256×171 (aspect ratio preserved)
-  - Files: `backend/tests/storage/image_research.rs`
+  - Files: `backend/crates/altair-storage/tests/image_research.rs`
 
-- [ ] **Validate JPEG encoding quality**
+- [x] **Validate JPEG encoding quality**
 
   - Acceptance: Encode thumbnail at 80% quality, verify file size reasonable (~10-20KB for typical photo)
-  - Files: `backend/tests/storage/image_research.rs`
+  - Files: `backend/crates/altair-storage/tests/image_research.rs`
 
-- [ ] **Validate memory efficiency**
+- [x] **Validate memory efficiency**
   - Acceptance: Process 10MB image, prove memory usage stays under 100MB
-  - Files: `backend/tests/storage/image_research.rs`
+  - Files: `backend/crates/altair-storage/tests/image_research.rs`
 
 ---
 
