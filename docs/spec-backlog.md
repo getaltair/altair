@@ -148,7 +148,7 @@ Edges: contains, references, links_to, requires, stored_in, documents, reserved_
 | Attribute      | Value             |
 | -------------- | ----------------- |
 | **Weight**     | LIGHTWEIGHT       |
-| **Status**     | ⬜                |
+| **Status**     | 🟨                |
 | **Depends On** | core-003          |
 | **References** | ARCH §Type Safety |
 
@@ -173,7 +173,7 @@ Edges: contains, references, links_to, requires, stored_in, documents, reserved_
 | Attribute      | Value                 |
 | -------------- | --------------------- |
 | **Weight**     | STANDARD              |
-| **Status**     | 🟨                    |
+| **Status**     | 🟩                    |
 | **Depends On** | core-002, core-003    |
 | **References** | ARCH §Auth, DOM §User |
 
