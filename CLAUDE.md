@@ -156,6 +156,108 @@ TypeScript types auto-generate via tauri-specta.
 3. Add indexes for common queries
 4. Update `packages/db/` with query functions
 
+### Adding a New Rust Type to TypeScript Bindings
+
+When you add a new Rust type that needs to be accessible in TypeScript:
+
+1. **Add specta derive** to your Rust type:
+
+   ```rust
+   use serde::{Deserialize, Serialize};
+
+   #[derive(Debug, Clone, Serialize, Deserialize)]
+   #[cfg_attr(feature = "specta", derive(specta::Type))]
+   pub struct MyNewType {
+       pub id: Thing,  // SurrealDB record ID
+       pub name: String,
+       pub created_at: DateTime<Utc>,
+   }
+   ```
+
+2. **Handle special types** with custom serde serializers:
+
+   ```rust
+   use crate::schema::serde_helpers::thing_serde;
+
+   #[derive(Debug, Clone, Serialize, Deserialize)]
+   #[cfg_attr(feature = "specta", derive(specta::Type))]
+   pub struct MyNewType {
+       #[serde(with = "thing_serde")]  // For SurrealDB Thing
+       pub id: Thing,
+
+       #[serde(with = "naive_time_serde")]  // For chrono::NaiveTime
+       pub time: NaiveTime,
+
+       pub name: String,
+   }
+   ```
+
+3. **Export the type** in the appropriate Tauri app's `lib.rs`:
+
+   ```rust
+   // apps/guidance/src-tauri/src/lib.rs
+   use altair_db::schema::MyNewType;
+
+   tauri_specta::ts::export_collection_with_cfg(
+       specta::collect_types![
+           // ... other types
+           MyNewType,
+       ],
+       "../../../packages/bindings/src/guidance.ts",
+       &Config::default(),
+   )?;
+   ```
+
+4. **Regenerate bindings** by rebuilding the Tauri app:
+
+   ```bash
+   pnpm build  # Rebuilds all apps and regenerates bindings
+   ```
+
+5. **Import and use** in TypeScript:
+
+   ```typescript
+   import { MyNewType } from '@altair/bindings/guidance';
+
+   const item: MyNewType = {
+     id: { tb: 'my_table', id: '123' },
+     name: 'Example',
+     created_at: '2025-01-15T10:30:00Z',
+   };
+   ```
+
+#### Custom Serde Helpers
+
+**When to use `thing_serde`**:
+
+- Apply to any field of type `surrealdb::sql::Thing`
+- Serializes as `{ tb: string, id: string }` in TypeScript
+- Required for SurrealDB record IDs
+
+**When to use `naive_time_serde`**:
+
+- Apply to any field of type `chrono::NaiveTime`
+- Serializes as `string` in `HH:MM` format (e.g., `"14:30"`)
+- Used for time-of-day values without dates
+
+**Example combining both**:
+
+```rust
+use crate::schema::serde_helpers::{thing_serde, naive_time_serde};
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
+pub struct DailyTask {
+    #[serde(with = "thing_serde")]
+    pub id: Thing,
+
+    #[serde(with = "naive_time_serde")]
+    pub scheduled_time: NaiveTime,
+
+    pub title: String,
+}
+```
+
 ### Adding a New Feature
 
 Follow spec-driven development:
@@ -273,10 +375,43 @@ rm -rf ~/.local/share/altair/db && cargo run --bin migrate
 
 ```bash
 # Regenerate TypeScript bindings
-cargo run --bin generate-bindings
+pnpm build
 
-# Types output to packages/bindings/
+# Types output to packages/bindings/src/
+# - guidance.ts (Guidance app types)
+# - knowledge.ts (Knowledge app types)
+# - tracking.ts (Tracking app types)
+# - mobile.ts (Mobile app types)
 ```
+
+### Troubleshooting
+
+#### CI Failure: "Bindings are stale"
+
+**Error message**:
+
+```
+Error: Generated TypeScript bindings are out of sync with Rust types.
+Please regenerate bindings by running 'pnpm build' and commit the changes.
+```
+
+**Cause**: You modified Rust types but didn't regenerate the TypeScript bindings.
+
+**Fix**:
+
+```bash
+# 1. Regenerate bindings locally
+pnpm build
+
+# 2. Verify changes look correct
+git diff packages/bindings/
+
+# 3. Stage and commit the updated bindings
+git add packages/bindings/
+git commit -m "chore: regenerate TypeScript bindings"
+```
+
+**Prevention**: Always run `pnpm build` after modifying Rust types that have `#[cfg_attr(feature = "specta", derive(specta::Type))]`.
 
 ---
 

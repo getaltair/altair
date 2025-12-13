@@ -411,24 +411,27 @@
 
 ### Task 9.1: Document type generation pattern in CLAUDE.md
 
-- [ ] Add "Adding a New Rust Type to TypeScript Bindings" section to CLAUDE.md
+- [x] Add "Adding a New Rust Type to TypeScript Bindings" section to CLAUDE.md
   - **Acceptance**: Documentation clearly explains the 5-step process
   - **Files**: `CLAUDE.md`
   - **Location**: Under "Development Patterns" section
+  - **Implementation**: Added comprehensive 5-step guide with code examples for adding specta derives, handling special types with custom serde serializers, exporting types in Tauri apps, regenerating bindings, and importing in TypeScript.
 
 ### Task 9.2: Document CI binding check failure resolution
 
-- [ ] Add troubleshooting section for binding CI failures
+- [x] Add troubleshooting section for binding CI failures
   - **Acceptance**: Developers know to run `pnpm build` and commit bindings
   - **Files**: `CLAUDE.md`
   - **Content**: Explain how to fix "Bindings are stale" CI error
+  - **Implementation**: Added "Troubleshooting" section with detailed explanation of CI binding freshness errors, including error message, cause, fix steps, and prevention guidance.
 
 ### Task 9.3: Document Thing and NaiveTime serialization
 
-- [ ] Add documentation for custom serde helpers usage
+- [x] Add documentation for custom serde helpers usage
   - **Acceptance**: Developers know when and how to use `thing_serde` and `naive_time_serde`
   - **Files**: `CLAUDE.md`
   - **Content**: Explain the `#[serde(with = "...")]` pattern for SurrealDB and chrono types
+  - **Implementation**: Added "Custom Serde Helpers" subsection explaining when to use `thing_serde` (SurrealDB Thing → `{ tb: string, id: string }`), when to use `naive_time_serde` (chrono::NaiveTime → `"HH:MM"` string), with complete code examples.
 
 ---
 
