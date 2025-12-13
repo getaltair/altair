@@ -6,14 +6,24 @@ use surrealdb::sql::Thing;
 
 use super::enums::{EnergyCost, EntityStatus, FocusSessionStatus, QuestColumn};
 
+#[cfg(feature = "specta")]
+use super::serde_helpers::ThingType;
+
+use super::serde_helpers::{option_thing_serde, thing_serde};
+
 /// Campaign - Container for related quests
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
 pub struct Campaign {
+    #[serde(with = "option_thing_serde")]
+    #[cfg_attr(feature = "specta", specta(type = Option<ThingType>))]
     pub id: Option<Thing>,
     pub title: String,
     pub description: Option<String>,
     pub status: EntityStatus,
     pub color: Option<String>,
+    #[serde(with = "thing_serde")]
+    #[cfg_attr(feature = "specta", specta(type = ThingType))]
     pub owner: Thing,
     pub device_id: String,
     pub created_at: DateTime<Utc>,
@@ -22,7 +32,10 @@ pub struct Campaign {
 
 /// Quest - Individual task with energy cost
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
 pub struct Quest {
+    #[serde(with = "option_thing_serde")]
+    #[cfg_attr(feature = "specta", specta(type = Option<ThingType>))]
     pub id: Option<Thing>,
     pub title: String,
     pub description: Option<String>,
@@ -34,6 +47,8 @@ pub struct Quest {
     pub due_date: Option<DateTime<Utc>>,
     pub completed_at: Option<DateTime<Utc>>,
     pub status: EntityStatus,
+    #[serde(with = "thing_serde")]
+    #[cfg_attr(feature = "specta", specta(type = ThingType))]
     pub owner: Thing,
     pub device_id: String,
     pub created_at: DateTime<Utc>,
@@ -55,7 +70,10 @@ impl Quest {
 
 /// FocusSession - Timed work session on a quest
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
 pub struct FocusSession {
+    #[serde(with = "option_thing_serde")]
+    #[cfg_attr(feature = "specta", specta(type = Option<ThingType>))]
     pub id: Option<Thing>,
     pub started_at: DateTime<Utc>,
     pub planned_duration: i32, // minutes
@@ -63,6 +81,8 @@ pub struct FocusSession {
     pub completed_steps: Option<String>,
     pub status: FocusSessionStatus,
     pub notes: Option<String>,
+    #[serde(with = "thing_serde")]
+    #[cfg_attr(feature = "specta", specta(type = ThingType))]
     pub owner: Thing,
     pub device_id: String,
     pub created_at: DateTime<Utc>,
@@ -71,11 +91,16 @@ pub struct FocusSession {
 
 /// EnergyCheckIn - Daily energy level self-assessment
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
 pub struct EnergyCheckIn {
+    #[serde(with = "option_thing_serde")]
+    #[cfg_attr(feature = "specta", specta(type = Option<ThingType>))]
     pub id: Option<Thing>,
     pub date: chrono::NaiveDate,
     pub energy_level: i32, // 1-5 scale
     pub notes: Option<String>,
+    #[serde(with = "thing_serde")]
+    #[cfg_attr(feature = "specta", specta(type = ThingType))]
     pub owner: Thing,
     pub device_id: String,
     pub created_at: DateTime<Utc>,

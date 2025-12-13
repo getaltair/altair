@@ -12,18 +12,34 @@ use altair_core::AppConfig;
 use commands::health_check;
 use state::AppState;
 
+// Domain type imports for bindings generation
+#[allow(unused_imports)]
+use altair_db::schema::{
+    capture::Capture,
+    note::{DailyNote, Folder, Note},
+    shared::{Attachment, Tag, User, UserPreferences},
+};
+
 /// Initialize the Tauri application
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     // Set up tauri-specta bindings generation
     let builder = tauri_specta::Builder::<tauri::Wry>::new()
-        .commands(tauri_specta::collect_commands![health_check]);
+        .commands(tauri_specta::collect_commands![health_check])
+        .typ::<Note>()
+        .typ::<Folder>()
+        .typ::<DailyNote>()
+        .typ::<User>()
+        .typ::<UserPreferences>()
+        .typ::<Attachment>()
+        .typ::<Tag>()
+        .typ::<Capture>();
 
     #[cfg(debug_assertions)]
     builder
         .export(
             specta_typescript::Typescript::default(),
-            "../../../packages/bindings/src/knowledge.ts",
+            "packages/bindings/src/knowledge.ts",
         )
         .expect("Failed to export typescript bindings");
 

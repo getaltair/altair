@@ -1,4 +1,8 @@
 //! Common types used across Altair
+//!
+//! NOTE: Some types in this module are duplicated in altair-db/src/schema/enums.rs
+//! See specs/core-004-type-generation/type-duplication.md for consolidation plan.
+//! TODO: Remove EnergyCost and EntityStatus after CORE-005 type consolidation spec.
 
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
@@ -6,6 +10,7 @@ use uuid::Uuid;
 
 /// User identifier (SurrealDB record ID)
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
 pub struct UserId(pub String);
 
 impl UserId {
@@ -34,6 +39,7 @@ impl From<&str> for UserId {
 
 /// Generic entity identifier
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
 pub struct EntityId(pub String);
 
 impl EntityId {
@@ -69,7 +75,12 @@ impl From<&str> for EntityId {
 pub type Timestamp = DateTime<Utc>;
 
 /// Energy cost for quests (ADHD-focused task management)
+///
+/// WARNING: This type is duplicated in altair-db/src/schema/enums.rs with DIFFERENT variants.
+/// See specs/core-004-type-generation/type-duplication.md for details.
+/// TODO(CORE-005): Remove this type and use altair-db version (5 variants: Tiny/Small/Medium/Large/Huge)
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
 #[serde(rename_all = "lowercase")]
 pub enum EnergyCost {
     /// Low energy task (quick, easy)
@@ -82,7 +93,12 @@ pub enum EnergyCost {
 }
 
 /// Generic entity status (for soft deletes)
+///
+/// NOTE: This type is duplicated in altair-db/src/schema/enums.rs with IDENTICAL definition.
+/// See specs/core-004-type-generation/type-duplication.md for consolidation plan.
+/// TODO(CORE-005): Remove this type and use altair-db version for consistency.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
 #[serde(rename_all = "lowercase")]
 pub enum EntityStatus {
     /// Active entity

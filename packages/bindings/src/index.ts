@@ -2,30 +2,32 @@
 // This file re-exports all app-specific bindings and shared types
 
 /**
- * Common types shared across all apps
- */
-export type { HealthStatus } from './guidance';
-
-/**
  * Guidance app bindings
- * Quest-based task management
+ * Quest-based task management with gamification
  */
 export * as guidance from './guidance';
 
 /**
  * Knowledge app bindings
- * Personal knowledge management
+ * Personal knowledge management (PKM)
  */
 export * as knowledge from './knowledge';
 
 /**
  * Tracking app bindings
- * Inventory management
+ * Inventory and item management
  */
 export * as tracking from './tracking';
 
 /**
  * Mobile app bindings
- * Unified mobile experience
+ * Unified mobile experience with all domain types
  */
 export * as mobile from './mobile';
+
+/**
+ * Shared types
+ * Common types used across multiple apps
+ * Import these directly for convenience: import { User, EntityStatus } from '@altair/bindings'
+ */
+export * from './shared-types';

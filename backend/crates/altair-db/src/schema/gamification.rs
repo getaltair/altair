@@ -5,14 +5,22 @@ use serde::{Deserialize, Serialize};
 use surrealdb::sql::Thing;
 
 use super::enums::StreakType;
+#[cfg(feature = "specta")]
+use super::serde_helpers::ThingType;
+use super::serde_helpers::{option_thing_serde, thing_serde};
 
 /// UserProgress - Player progression tracking
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
 pub struct UserProgress {
+    #[serde(with = "option_thing_serde")]
+    #[cfg_attr(feature = "specta", specta(type = Option<ThingType>))]
     pub id: Option<Thing>,
     pub xp_total: i32,
     pub level: i32,
     pub title: String,
+    #[serde(with = "thing_serde")]
+    #[cfg_attr(feature = "specta", specta(type = ThingType))]
     pub owner: Thing,
     pub device_id: String,
     pub created_at: DateTime<Utc>,
@@ -50,12 +58,17 @@ impl UserProgress {
 
 /// Achievement - Unlockable milestone
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
 pub struct Achievement {
+    #[serde(with = "option_thing_serde")]
+    #[cfg_attr(feature = "specta", specta(type = Option<ThingType>))]
     pub id: Option<Thing>,
     pub name: String,
     pub description: String,
     pub icon: String,
     pub unlocked_at: Option<DateTime<Utc>>,
+    #[serde(with = "thing_serde")]
+    #[cfg_attr(feature = "specta", specta(type = ThingType))]
     pub owner: Thing,
     pub device_id: String,
     pub created_at: DateTime<Utc>,
@@ -79,13 +92,18 @@ impl Achievement {
 
 /// Streak - Consecutive activity tracking
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
 pub struct Streak {
+    #[serde(with = "option_thing_serde")]
+    #[cfg_attr(feature = "specta", specta(type = Option<ThingType>))]
     pub id: Option<Thing>,
     pub streak_type: StreakType,
     pub current_count: i32,
     pub longest_count: i32,
     pub last_activity: DateTime<Utc>,
     pub started_at: DateTime<Utc>,
+    #[serde(with = "thing_serde")]
+    #[cfg_attr(feature = "specta", specta(type = ThingType))]
     pub owner: Thing,
     pub device_id: String,
     pub created_at: DateTime<Utc>,
