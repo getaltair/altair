@@ -307,35 +307,35 @@
 
 ### Task 6.1: Update Guidance app bindings
 
-- [ ] Modify `apps/guidance/src-tauri/src/lib.rs` to export domain types
+- [x] Modify `apps/guidance/src-tauri/src/lib.rs` to export domain types
   - **Acceptance**: Build generates `packages/bindings/src/guidance.ts` with all Guidance types
-  - **Files**: `backend/apps/guidance/src-tauri/src/lib.rs`
+  - **Files**: `apps/guidance/src-tauri/src/lib.rs`
   - **Types to export**: Quest, Campaign, FocusSession, EnergyCheckIn, UserProgress, Achievement, Streak, QuestColumn, EnergyCost, FocusSessionStatus
 
 ### Task 6.2: Update Knowledge app bindings
 
-- [ ] Modify `apps/knowledge/src-tauri/src/lib.rs` to export domain types
+- [x] Modify `apps/knowledge/src-tauri/src/lib.rs` to export domain types
   - **Acceptance**: Build generates `packages/bindings/src/knowledge.ts` with all Knowledge types
-  - **Files**: `backend/apps/knowledge/src-tauri/src/lib.rs`
+  - **Files**: `apps/knowledge/src-tauri/src/lib.rs`
   - **Types to export**: Note, Folder, DailyNote
 
 ### Task 6.3: Update Tracking app bindings
 
-- [ ] Modify `apps/tracking/src-tauri/src/lib.rs` to export domain types
+- [x] Modify `apps/tracking/src-tauri/src/lib.rs` to export domain types
   - **Acceptance**: Build generates `packages/bindings/src/tracking.ts` with all Tracking types
-  - **Files**: `backend/apps/tracking/src-tauri/src/lib.rs`
+  - **Files**: `apps/tracking/src-tauri/src/lib.rs`
   - **Types to export**: Item, Location, GeoPoint, Reservation, MaintenanceSchedule, ItemStatus, ReservationStatus
 
 ### Task 6.4: Update Mobile app bindings
 
-- [ ] Modify `apps/mobile/src-tauri/src/lib.rs` to export all domain types
+- [x] Modify `apps/mobile/src-tauri/src/lib.rs` to export all domain types
   - **Acceptance**: Build generates `packages/bindings/src/mobile.ts` with complete type set
-  - **Files**: `backend/apps/mobile/src-tauri/src/lib.rs`
+  - **Files**: `apps/mobile/src-tauri/src/lib.rs`
   - **Types to export**: All domain types from all apps (unified mobile experience)
 
 ### Task 6.5: Export shared types in all apps
 
-- [ ] Ensure all apps export shared types (User, Capture, Attachment, Tag, etc.)
+- [x] Ensure all apps export shared types (User, Capture, Attachment, Tag, etc.)
   - **Acceptance**: All app binding files include shared types
   - **Files**: All `src-tauri/src/lib.rs` files
   - **Shared types**: EntityStatus, UserRole, User, UserPreferences, Attachment, Tag, Capture, CaptureStatus, CaptureType, CaptureSource

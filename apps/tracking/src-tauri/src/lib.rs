@@ -12,12 +12,33 @@ use altair_core::AppConfig;
 use commands::health_check;
 use state::AppState;
 
+// Domain type imports for bindings generation
+#[allow(unused_imports)]
+use altair_db::schema::{
+    capture::Capture,
+    enums::{ItemStatus, ReservationStatus},
+    item::{GeoPoint, Item, Location, MaintenanceSchedule, Reservation},
+    shared::{Attachment, Tag, User, UserPreferences},
+};
+
 /// Initialize the Tauri application
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     // Set up tauri-specta bindings generation
     let builder = tauri_specta::Builder::<tauri::Wry>::new()
-        .commands(tauri_specta::collect_commands![health_check]);
+        .commands(tauri_specta::collect_commands![health_check])
+        .typ::<Item>()
+        .typ::<Location>()
+        .typ::<GeoPoint>()
+        .typ::<Reservation>()
+        .typ::<MaintenanceSchedule>()
+        .typ::<ItemStatus>()
+        .typ::<ReservationStatus>()
+        .typ::<User>()
+        .typ::<UserPreferences>()
+        .typ::<Attachment>()
+        .typ::<Tag>()
+        .typ::<Capture>();
 
     #[cfg(debug_assertions)]
     builder
