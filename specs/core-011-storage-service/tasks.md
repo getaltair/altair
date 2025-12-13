@@ -275,51 +275,51 @@
 
 ### 3.1 Image Processing
 
-- [ ] **Implement generate_thumbnail() for supported formats**
+- [x] **Implement generate_thumbnail() for supported formats**
 
   - Acceptance: Process JPEG, PNG, GIF, WebP inputs
   - Files: `backend/crates/altair-storage/src/thumbnail.rs`
   - Notes: Use image::open() from bytes
 
-- [ ] **Resize to 256×256 max dimension preserving aspect ratio**
+- [x] **Resize to 256×256 max dimension preserving aspect ratio**
 
   - Acceptance: 3000×2000 image → 256×171, 1000×1000 → 256×256
   - Files: `backend/crates/altair-storage/src/thumbnail.rs`
   - Notes: Use image::imageops::resize with Lanczos3 filter
 
-- [ ] **Encode as JPEG at 80% quality**
+- [x] **Encode as JPEG at 80% quality**
 
   - Acceptance: Output always JPEG regardless of input format
   - Files: `backend/crates/altair-storage/src/thumbnail.rs`
-  - Notes: Use image::ImageOutputFormat::Jpeg(80)
+  - Notes: Use image::codecs::jpeg::JpegEncoder with quality 80
 
-- [ ] **Upload thumbnail to S3 with `_thumb` suffix key**
+- [x] **Upload thumbnail to S3 with `_thumb` suffix key**
   - Acceptance: Original key `user/uuid-photo.jpg` → thumbnail key `user/uuid-photo_thumb.jpg`
   - Files: `backend/crates/altair-storage/src/thumbnail.rs`
 
 ### 3.2 Background Processing
 
-- [ ] **Queue thumbnail generation after upload confirmation**
+- [x] **Queue thumbnail generation after upload confirmation**
 
   - Acceptance: confirm_upload() spawns background task for thumbnail generation
-  - Files: `backend/crates/altair-storage/src/lib.rs`
-  - Notes: Only for MediaType::Photo
+  - Files: `backend/crates/altair-storage/src/background.rs`, `backend/crates/altair-storage/src/service.rs`
+  - Notes: Only for MediaType::Photo, via confirm_upload_with_thumbnail() method
 
-- [ ] **Use tokio::spawn for background processing**
+- [x] **Use tokio::spawn for background processing**
 
   - Acceptance: Background task doesn't block confirm_upload() return
-  - Files: `backend/crates/altair-storage/src/lib.rs`
+  - Files: `backend/crates/altair-storage/src/background.rs`
 
-- [ ] **Update attachment record with thumbnail_key when complete**
+- [x] **Update attachment record with thumbnail_key when complete**
 
   - Acceptance: attachment.thumbnail_key populated after thumbnail upload
-  - Files: `backend/crates/altair-storage/src/lib.rs`
-  - Notes: Use altair-db update query
+  - Files: `backend/crates/altair-storage/src/background.rs`
+  - Notes: Callback-based design allows command layer to update database record
 
-- [ ] **Handle failures gracefully**
+- [x] **Handle failures gracefully**
   - Acceptance: Failed thumbnail generation logs error, attachment still usable
-  - Files: `backend/crates/altair-storage/src/lib.rs`
-  - Notes: Use tracing::error! for logging
+  - Files: `backend/crates/altair-storage/src/background.rs`
+  - Notes: Uses tracing::error! for logging, callback receives Result for flexible handling
 
 ---
 

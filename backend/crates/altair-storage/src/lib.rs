@@ -30,6 +30,7 @@
 //!
 //! ## Modules
 //!
+//! - [`background`]: Background task spawning for thumbnail generation
 //! - [`config`]: Configuration management and keychain integration
 //! - [`error`]: Error types for storage operations
 //! - [`client`]: S3 client wrapper with common operations
@@ -37,7 +38,9 @@
 //! - [`mime`]: MIME type validation and media classification
 //! - [`checksum`]: SHA-256 checksum calculation (in-memory and streaming)
 //! - [`service`]: High-level storage service orchestrating uploads/downloads
+//! - [`thumbnail`]: Thumbnail generation for images (JPEG, PNG, GIF, WebP)
 
+pub mod background;
 pub mod checksum;
 pub mod client;
 pub mod config;
@@ -45,8 +48,13 @@ pub mod error;
 pub mod mime;
 pub mod presigned;
 pub mod service;
+pub mod thumbnail;
 
 // Re-export commonly used types
+pub use background::{
+    ThumbnailCallback, ThumbnailTaskOptions, generate_thumbnail_for_object, spawn_thumbnail_task,
+    spawn_thumbnail_task_simple,
+};
 pub use checksum::{calculate_checksum, calculate_checksum_streaming};
 pub use client::{ObjectMetadata, S3Client};
 pub use config::StorageConfig;
@@ -61,6 +69,10 @@ pub use presigned::{
 };
 pub use service::{
     DEFAULT_QUOTA_BYTES, MAX_FILE_SIZE_BYTES, StorageService, UploadConfirmation, UploadRequest,
+};
+pub use thumbnail::{
+    THUMBNAIL_JPEG_QUALITY, THUMBNAIL_MAX_DIMENSION, ThumbnailResult,
+    generate_and_upload_thumbnail, generate_thumbnail_bytes, supports_thumbnail,
 };
 
 #[cfg(test)]

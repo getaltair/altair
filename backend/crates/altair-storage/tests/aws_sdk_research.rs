@@ -55,6 +55,7 @@ async fn ensure_bucket_exists(client: &Client) {
 }
 
 #[tokio::test]
+#[ignore = "requires running Minio at localhost:9000"]
 async fn test_custom_endpoint_configuration() {
     // Test: Validate custom endpoint configuration for Minio
     // Acceptance: aws-sdk-s3 client connects to localhost:9000 and performs basic operations
@@ -78,6 +79,7 @@ async fn test_custom_endpoint_configuration() {
 }
 
 #[tokio::test]
+#[ignore = "requires running Minio at localhost:9000"]
 async fn test_presigned_put_url_generation() {
     // Test: Validate presigned PUT URL generation
     // Acceptance: Create test demonstrating PUT presigned URL with content-type
@@ -147,6 +149,7 @@ async fn test_presigned_put_url_generation() {
 }
 
 #[tokio::test]
+#[ignore = "requires running Minio at localhost:9000"]
 async fn test_presigned_get_url_generation() {
     // Test: Validate presigned GET URL generation
     // Acceptance: Create test demonstrating GET presigned URL with configurable expiration
@@ -201,6 +204,7 @@ async fn test_presigned_get_url_generation() {
 }
 
 #[tokio::test]
+#[ignore = "requires running Minio at localhost:9000"]
 async fn test_head_object_operation() {
     // Test: Validate HEAD object operation
     // Acceptance: Demonstrate head_object() returns correct metadata (size, content-type)
@@ -247,6 +251,7 @@ async fn test_head_object_operation() {
 }
 
 #[tokio::test]
+#[ignore = "requires running Minio at localhost:9000"]
 async fn test_streaming_get_for_large_files() {
     // Test: Validate GET object with streaming
     // Acceptance: Download 50MB file using streaming body, prove memory usage stays bounded
@@ -312,6 +317,7 @@ async fn test_streaming_get_for_large_files() {
 }
 
 #[tokio::test]
+#[ignore = "requires running Minio at localhost:9000"]
 async fn test_streaming_checksum_calculation() {
     // Test: Demonstrate SHA-256 checksum calculation while streaming
     // This validates the pattern needed for Phase 2.2

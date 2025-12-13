@@ -333,6 +333,105 @@ impl StorageService {
     pub async fn health_check(&self) -> StorageResult<()> {
         self.client.health_check().await
     }
+
+    /// Spawn a background task to generate a thumbnail
+    ///
+    /// This method spawns an asynchronous task that:
+    /// 1. Downloads the original image
+    /// 2. Generates a thumbnail (256×256 max, JPEG 80% quality)
+    /// 3. Uploads the thumbnail to S3
+    /// 4. Calls the provided callback with the result
+    ///
+    /// The task runs independently and doesn't block the caller.
+    ///
+    /// # Arguments
+    /// * `storage_key` - The S3 key of the original image
+    /// * `on_complete` - Optional callback invoked when thumbnail is ready
+    ///
+    /// # Example
+    /// ```ignore
+    /// // Simple spawn without callback
+    /// service.spawn_thumbnail_generation("user123/photo.jpg", None);
+    ///
+    /// // With callback for database update
+    /// service.spawn_thumbnail_generation(
+    ///     "user123/photo.jpg",
+    ///     Some(Arc::new(|key, result| Box::pin(async move {
+    ///         if let Ok(thumb) = result {
+    ///             // Update attachment record with thumb.thumbnail_key
+    ///         }
+    ///     }))),
+    /// );
+    /// ```
+    #[instrument(skip(self, on_complete), fields(bucket = %self.bucket))]
+    pub fn spawn_thumbnail_generation(
+        &self,
+        storage_key: &str,
+        on_complete: Option<crate::background::ThumbnailCallback>,
+    ) {
+        crate::background::spawn_thumbnail_task(crate::background::ThumbnailTaskOptions {
+            client: self.client.clone(),
+            storage_key: storage_key.to_string(),
+            on_complete,
+        });
+    }
+
+    /// Generate a thumbnail synchronously (blocking)
+    ///
+    /// Unlike `spawn_thumbnail_generation`, this method waits for the thumbnail
+    /// to be generated and uploaded before returning.
+    ///
+    /// # Arguments
+    /// * `storage_key` - The S3 key of the original image
+    ///
+    /// # Returns
+    /// `ThumbnailResult` with the thumbnail key and metadata
+    #[instrument(skip(self), fields(bucket = %self.bucket))]
+    pub async fn generate_thumbnail(
+        &self,
+        storage_key: &str,
+    ) -> StorageResult<crate::thumbnail::ThumbnailResult> {
+        crate::background::generate_thumbnail_for_object(&self.client, storage_key).await
+    }
+
+    /// Confirm upload and optionally spawn thumbnail generation
+    ///
+    /// This is a convenience method that combines `confirm_upload` with
+    /// automatic thumbnail spawning for supported media types.
+    ///
+    /// # Arguments
+    /// * `storage_key` - The S3 object key
+    /// * `original_filename` - The original filename
+    /// * `claimed_mime_type` - The MIME type claimed during request
+    /// * `on_thumbnail_complete` - Optional callback for thumbnail completion
+    ///
+    /// # Returns
+    /// `UploadConfirmation` with metadata; thumbnail generation runs in background
+    #[instrument(skip(self, on_thumbnail_complete), fields(bucket = %self.bucket))]
+    pub async fn confirm_upload_with_thumbnail(
+        &self,
+        storage_key: &str,
+        original_filename: &str,
+        claimed_mime_type: &str,
+        on_thumbnail_complete: Option<crate::background::ThumbnailCallback>,
+    ) -> StorageResult<UploadConfirmation> {
+        // First, confirm the upload
+        let confirmation = self
+            .confirm_upload(storage_key, original_filename, claimed_mime_type)
+            .await?;
+
+        // Spawn thumbnail generation if applicable
+        if confirmation.should_generate_thumbnail {
+            tracing::info!(
+                storage_key = storage_key,
+                media_type = %confirmation.media_type,
+                "Spawning background thumbnail generation"
+            );
+            self.spawn_thumbnail_generation(storage_key, on_thumbnail_complete);
+        }
+
+        Ok(confirmation)
+    }
 }
 
 impl std::fmt::Debug for StorageService {
