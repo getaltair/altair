@@ -264,10 +264,10 @@
   - Acceptance: UploadConfirmation has storage_key, checksum, size_bytes, mime_type, media_type
   - Files: `backend/crates/altair-storage/src/service.rs`
 
-- [ ] **Update user quota**
+- [x] **Update user quota**
   - Acceptance: storage_quota.bytes_used increases by file size
-  - Files: `backend/crates/altair-storage/src/service.rs`
-  - Notes: Deferred to Phase 4 (Quota Management) - requires database integration
+  - Files: `backend/crates/altair-storage/src/quota.rs`
+  - Notes: Implemented as increment_quota() in Phase 4; integration into service layer via command layer in Phase 5
 
 ---
 
@@ -327,49 +327,49 @@
 
 ### 4.1 Database Schema
 
-- [ ] **Define storage_quota table**
+- [x] **Define storage_quota table**
 
   - Acceptance: Table with id, owner (user ref), bytes_used, bytes_limit, created_at, updated_at
-  - Files: `backend/migrations/004_storage_quota.surql`
+  - Files: `backend/migrations/006_storage_quota.surql`
   - Notes: Follow altair-db table patterns
 
-- [ ] **Add CHANGEFEED 7d**
+- [x] **Add CHANGEFEED 7d**
 
   - Acceptance: CHANGEFEED 7d on storage_quota table
-  - Files: `backend/migrations/004_storage_quota.surql`
+  - Files: `backend/migrations/006_storage_quota.surql`
 
-- [ ] **Add index on owner field**
+- [x] **Add index on owner field**
 
-  - Acceptance: INDEX idx_owner ON storage_quota FIELDS owner
-  - Files: `backend/migrations/004_storage_quota.surql`
+  - Acceptance: INDEX idx_storage_quota_owner ON storage_quota COLUMNS owner UNIQUE
+  - Files: `backend/migrations/006_storage_quota.surql`
 
-- [ ] **Create default quota on user creation**
+- [x] **Create default quota on user creation**
   - Acceptance: First storage access creates quota record with 5GB limit
   - Files: `backend/crates/altair-storage/src/quota.rs`
-  - Notes: Default limit from spec.md NFR-005
+  - Notes: Implemented via get_quota() which auto-creates on first access
 
 ### 4.2 Quota Tracking
 
-- [ ] **Implement get_quota() returning usage and limit**
+- [x] **Implement get_quota() returning usage and limit**
 
   - Acceptance: Return QuotaInfo { bytes_used, bytes_limit, bytes_available }
   - Files: `backend/crates/altair-storage/src/quota.rs`
 
-- [ ] **Implement check_quota() for pre-upload validation**
+- [x] **Implement check_quota() for pre-upload validation**
 
   - Acceptance: Return StorageError::QuotaExceeded if bytes_used + file_size > bytes_limit
   - Files: `backend/crates/altair-storage/src/quota.rs`
 
-- [ ] **Implement update_quota() for post-upload/delete updates**
+- [x] **Implement update_quota() for post-upload/delete updates**
 
   - Acceptance: Increment bytes_used on upload, decrement on delete
   - Files: `backend/crates/altair-storage/src/quota.rs`
-  - Notes: Use SurrealDB atomic update
+  - Notes: Implemented as increment_quota() and decrement_quota() with SurrealDB atomic updates
 
-- [ ] **Add reconciliation method to sync with actual S3 usage**
+- [x] **Add reconciliation method to sync with actual S3 usage**
   - Acceptance: List all user's objects in S3, sum sizes, compare with bytes_used, update if drift >1%
   - Files: `backend/crates/altair-storage/src/quota.rs`
-  - Notes: Use aws_sdk_s3::Client::list_objects_v2()
+  - Notes: Uses aws_sdk_s3::Client::list_objects_v2() with pagination
 
 ---
 

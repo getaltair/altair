@@ -39,6 +39,7 @@
 //! - [`checksum`]: SHA-256 checksum calculation (in-memory and streaming)
 //! - [`service`]: High-level storage service orchestrating uploads/downloads
 //! - [`thumbnail`]: Thumbnail generation for images (JPEG, PNG, GIF, WebP)
+//! - [`quota`]: Per-user storage quota tracking and enforcement
 
 pub mod background;
 pub mod checksum;
@@ -47,6 +48,7 @@ pub mod config;
 pub mod error;
 pub mod mime;
 pub mod presigned;
+pub mod quota;
 pub mod service;
 pub mod thumbnail;
 
@@ -66,6 +68,10 @@ pub use mime::{
 pub use presigned::{
     DOWNLOAD_URL_EXPIRATION_SECS, PresignedDownload, PresignedUpload, PresignedUrlService,
     UPLOAD_URL_EXPIRATION_SECS, generate_object_key, generate_thumbnail_key,
+};
+pub use quota::{
+    DEFAULT_BYTES_LIMIT, QuotaInfo, RECONCILIATION_DRIFT_THRESHOLD, StorageQuota, check_quota,
+    decrement_quota, get_quota, increment_quota, reconcile_quota, set_quota_bytes_used,
 };
 pub use service::{
     DEFAULT_QUOTA_BYTES, MAX_FILE_SIZE_BYTES, StorageService, UploadConfirmation, UploadRequest,
