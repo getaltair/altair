@@ -116,19 +116,22 @@ pub async fn auth_register<C: surrealdb::Connection>(
     let session =
         altair_auth::local::Session::new(user_id_thing.to_string(), Some(device_id.clone()));
 
+    // Extract token and expiration (guaranteed to exist when device_id is provided)
+    let token = session
+        .token
+        .clone()
+        .ok_or_else(|| altair_core::Error::Auth("Session token not generated".to_string()))?;
+    let expires_at = session
+        .expires_at
+        .ok_or_else(|| altair_core::Error::Auth("Session expiration not set".to_string()))?;
+
     // Store session in database
-    altair_db::queries::create_session(
-        db,
-        session.token.clone(),
-        user_id_thing,
-        session.expires_at,
-        device_id,
-    )
-    .await?;
+    altair_db::queries::create_session(db, token.clone(), user_id_thing, expires_at, device_id)
+        .await?;
 
     // Store token in keychain
     let keychain = altair_auth::local::keychain::KeychainStorage::new();
-    keychain.store_token(&session.token).await?;
+    keychain.store_token(&token).await?;
 
     // Convert DB user to auth User
     let auth_user = User {
@@ -137,11 +140,7 @@ pub async fn auth_register<C: surrealdb::Connection>(
         name: Some(user.display_name),
     };
 
-    Ok(AuthResponse::new(
-        auth_user,
-        session.token,
-        session.expires_at,
-    ))
+    Ok(AuthResponse::new(auth_user, token, expires_at))
 }
 
 /// Authenticate an existing user
@@ -184,19 +183,22 @@ pub async fn auth_login<C: surrealdb::Connection>(
     let user_id_str = user_id.to_string();
     let session = altair_auth::local::Session::new(user_id_str, Some(device_id.clone()));
 
+    // Extract token and expiration (guaranteed to exist when device_id is provided)
+    let token = session
+        .token
+        .clone()
+        .ok_or_else(|| altair_core::Error::Auth("Session token not generated".to_string()))?;
+    let expires_at = session
+        .expires_at
+        .ok_or_else(|| altair_core::Error::Auth("Session expiration not set".to_string()))?;
+
     // Store session in database
-    altair_db::queries::create_session(
-        db,
-        session.token.clone(),
-        user_id.clone(),
-        session.expires_at,
-        device_id,
-    )
-    .await?;
+    altair_db::queries::create_session(db, token.clone(), user_id.clone(), expires_at, device_id)
+        .await?;
 
     // Store token in keychain
     let keychain = altair_auth::local::keychain::KeychainStorage::new();
-    keychain.store_token(&session.token).await?;
+    keychain.store_token(&token).await?;
 
     // Convert DB user to auth User
     let auth_user = User {
@@ -205,11 +207,7 @@ pub async fn auth_login<C: surrealdb::Connection>(
         name: Some(user.display_name),
     };
 
-    Ok(AuthResponse::new(
-        auth_user,
-        session.token,
-        session.expires_at,
-    ))
+    Ok(AuthResponse::new(auth_user, token, expires_at))
 }
 
 /// Logout the current user

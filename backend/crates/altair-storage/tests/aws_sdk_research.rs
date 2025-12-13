@@ -7,14 +7,16 @@
 //! Run: docker run -p 9000:9000 -p 9001:9001 minio/minio server /data --console-address ":9001"
 
 use aws_config::BehaviorVersion;
-use aws_config::meta::region::RegionProviderChain;
 use aws_sdk_s3::Client;
 use aws_sdk_s3::config::{Credentials, Region};
 use aws_sdk_s3::operation::head_object::HeadObjectOutput;
 use aws_sdk_s3::presigning::PresigningConfig;
 use aws_sdk_s3::primitives::ByteStream;
-use futures_util::TryStreamExt;
 use std::time::Duration;
+
+// TryStreamExt provides try_next() for streaming operations
+#[allow(unused_imports)]
+use futures_util::TryStreamExt;
 
 const TEST_BUCKET: &str = "test-bucket";
 const TEST_REGION: &str = "us-east-1";
@@ -256,8 +258,8 @@ async fn test_streaming_get_for_large_files() {
 
     // Create a 50MB file (we'll use chunks to avoid allocating 50MB in test)
     let chunk_size = 1024 * 1024; // 1MB chunks
-    let num_chunks = 50; // 50MB total
-    let chunk_data = vec![0u8; chunk_size];
+    let _num_chunks = 50; // 50MB total
+    let _chunk_data = vec![0u8; chunk_size];
 
     // Upload using multipart or simple put (for simplicity, we'll use put with generated data)
     // Note: For a real 50MB file test, we'd use multipart upload

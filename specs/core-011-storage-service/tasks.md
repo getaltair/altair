@@ -196,77 +196,78 @@
 
 ### 2.1 MIME Type Validation
 
-- [ ] **Define allowed MIME types constant**
+- [x] **Define allowed MIME types constant**
 
   - Acceptance: Static array of allowed MIME types per spec (images, documents, audio)
   - Files: `backend/crates/altair-storage/src/mime.rs`
   - Notes: Reference spec.md FR-002 for complete list
 
-- [ ] **Implement validate_mime_type()**
+- [x] **Implement validate_mime_type()**
 
   - Acceptance: Return Result<(), StorageError::InvalidMimeType>
   - Files: `backend/crates/altair-storage/src/mime.rs`
 
-- [ ] **Implement classify_media_type()**
+- [x] **Implement classify_media_type()**
 
   - Acceptance: Return MediaType enum (Photo, Audio, Video, Document) from MIME type
   - Files: `backend/crates/altair-storage/src/mime.rs`
 
-- [ ] **Add file extension to MIME type mapping**
+- [x] **Add file extension to MIME type mapping**
   - Acceptance: Validate .jpg → image/jpeg, .pdf → application/pdf, etc.
   - Files: `backend/crates/altair-storage/src/mime.rs`
-  - Notes: Use lazy_static for mapping
+  - Notes: Uses once_cell::sync::Lazy for mapping
 
 ### 2.2 Checksum Calculation
 
-- [ ] **Implement in-memory SHA-256 for files ≤10MB**
+- [x] **Implement in-memory SHA-256 for files ≤10MB**
 
   - Acceptance: Calculate correct SHA-256 for byte buffer, return hex string
   - Files: `backend/crates/altair-storage/src/checksum.rs`
-  - Notes: Use sha2::Sha256 and hex crate
+  - Notes: Uses sha2::Sha256 and hex crate
 
-- [ ] **Implement streaming SHA-256 for files >10MB**
+- [x] **Implement streaming SHA-256 for files >10MB**
 
   - Acceptance: Calculate SHA-256 while streaming from S3, no full file in memory
   - Files: `backend/crates/altair-storage/src/checksum.rs`
-  - Notes: Update hash incrementally on ByteStream chunks
+  - Notes: Updates hash incrementally using ByteStream chunks
 
-- [ ] **Add async streaming from S3 GET response**
+- [x] **Add async streaming from S3 GET response**
 
   - Acceptance: Integrate with get_object() ByteStream
   - Files: `backend/crates/altair-storage/src/checksum.rs`
 
-- [ ] **Return hex-encoded checksum string**
+- [x] **Return hex-encoded checksum string**
   - Acceptance: Checksum format matches test vectors (SHA-256 of "hello" = 2cf24dba...)
   - Files: `backend/crates/altair-storage/src/checksum.rs`
 
 ### 2.3 Upload Confirmation
 
-- [ ] **Implement request_upload() → PresignedUpload**
+- [x] **Implement request_upload() → PresignedUpload**
 
   - Acceptance: Validate MIME type, check quota, generate presigned URL
-  - Files: `backend/crates/altair-storage/src/lib.rs`
-  - Notes: StorageService::request_upload() orchestrates mime.rs, quota.rs, presigned.rs
+  - Files: `backend/crates/altair-storage/src/service.rs`
+  - Notes: StorageService::request_upload() orchestrates mime.rs, presigned.rs (quota deferred to Phase 4)
 
-- [ ] **Implement confirm_upload() → Attachment**
+- [x] **Implement confirm_upload() → UploadConfirmation**
 
-  - Acceptance: HEAD check object exists, calculate checksum, create attachment record
-  - Files: `backend/crates/altair-storage/src/lib.rs`
-  - Notes: Uses altair-db to create attachment record
+  - Acceptance: HEAD check object exists, calculate checksum, return confirmation data
+  - Files: `backend/crates/altair-storage/src/service.rs`
+  - Notes: Returns UploadConfirmation struct; attachment record creation deferred to command layer
 
-- [ ] **Add HEAD check for object existence**
+- [x] **Add HEAD check for object existence**
 
   - Acceptance: Return StorageError::ObjectNotFound if user claims upload but object missing
-  - Files: `backend/crates/altair-storage/src/lib.rs`
+  - Files: `backend/crates/altair-storage/src/service.rs`
 
-- [ ] **Calculate checksum and create attachment record**
+- [x] **Calculate checksum and return attachment metadata**
 
-  - Acceptance: Attachment record has storage_key, checksum, size_bytes, mime_type, media_type
-  - Files: `backend/crates/altair-storage/src/lib.rs`
+  - Acceptance: UploadConfirmation has storage_key, checksum, size_bytes, mime_type, media_type
+  - Files: `backend/crates/altair-storage/src/service.rs`
 
 - [ ] **Update user quota**
   - Acceptance: storage_quota.bytes_used increases by file size
-  - Files: `backend/crates/altair-storage/src/lib.rs`
+  - Files: `backend/crates/altair-storage/src/service.rs`
+  - Notes: Deferred to Phase 4 (Quota Management) - requires database integration
 
 ---
 

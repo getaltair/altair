@@ -34,19 +34,33 @@
 //! - [`error`]: Error types for storage operations
 //! - [`client`]: S3 client wrapper with common operations
 //! - [`presigned`]: Presigned URL generation for uploads and downloads
+//! - [`mime`]: MIME type validation and media classification
+//! - [`checksum`]: SHA-256 checksum calculation (in-memory and streaming)
+//! - [`service`]: High-level storage service orchestrating uploads/downloads
 
+pub mod checksum;
 pub mod client;
 pub mod config;
 pub mod error;
+pub mod mime;
 pub mod presigned;
+pub mod service;
 
 // Re-export commonly used types
+pub use checksum::{calculate_checksum, calculate_checksum_streaming};
 pub use client::{ObjectMetadata, S3Client};
 pub use config::StorageConfig;
 pub use error::{StorageError, StorageResult};
+pub use mime::{
+    ALLOWED_MIME_TYPES, MediaType, classify_media_type, is_mime_type_allowed,
+    mime_type_for_extension, validate_mime_type,
+};
 pub use presigned::{
     DOWNLOAD_URL_EXPIRATION_SECS, PresignedDownload, PresignedUpload, PresignedUrlService,
     UPLOAD_URL_EXPIRATION_SECS, generate_object_key, generate_thumbnail_key,
+};
+pub use service::{
+    DEFAULT_QUOTA_BYTES, MAX_FILE_SIZE_BYTES, StorageService, UploadConfirmation, UploadRequest,
 };
 
 #[cfg(test)]

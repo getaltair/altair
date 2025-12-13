@@ -3,7 +3,7 @@
 //! This module validates that the `image` crate supports all operations required
 //! for thumbnail generation in the storage service (CORE-011).
 
-use image::{DynamicImage, GenericImageView, ImageFormat, ImageReader};
+use image::{DynamicImage, ImageFormat, ImageReader};
 use std::io::Cursor;
 
 /// Helper to create a test image with specific dimensions
