@@ -9,6 +9,31 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "default": "./dist/index.js"
+    },
+    "./guidance": {
+      "types": "./dist/guidance.d.ts",
+      "import": "./dist/guidance.js",
+      "default": "./dist/guidance.js"
+    },
+    "./knowledge": {
+      "types": "./dist/knowledge.d.ts",
+      "import": "./dist/knowledge.js",
+      "default": "./dist/knowledge.js"
+    },
+    "./tracking": {
+      "types": "./dist/tracking.d.ts",
+      "import": "./dist/tracking.js",
+      "default": "./dist/tracking.js"
+    },
+    "./mobile": {
+      "types": "./dist/mobile.d.ts",
+      "import": "./dist/mobile.js",
+      "default": "./dist/mobile.js"
+    },
+    "./shared-types": {
+      "types": "./dist/shared-types.d.ts",
+      "import": "./dist/shared-types.js",
+      "default": "./dist/shared-types.js"
     }
   },
   "files": [
