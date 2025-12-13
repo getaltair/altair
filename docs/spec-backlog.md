@@ -199,7 +199,7 @@ Edges: contains, references, links_to, requires, stored_in, documents, reserved_
 | Attribute      | Value                         |
 | -------------- | ----------------------------- |
 | **Weight**     | STANDARD                      |
-| **Status**     | 🟨                            |
+| **Status**     | 🟩                            |
 | **Depends On** | core-003                      |
 | **References** | ARCH §Object Storage, ADR-004 |
 
