@@ -17,12 +17,22 @@ use commands::{
 // Re-exports for tests and internal use
 pub use state::AppState;
 
+// Domain type imports for bindings generation
+#[allow(unused_imports)]
+use altair_db::schema::{
+    capture::Capture,
+    enums::{EnergyCost, FocusSessionStatus, QuestColumn},
+    gamification::{Achievement, Streak, UserProgress},
+    quest::{Campaign, EnergyCheckIn, FocusSession, Quest},
+    shared::{Attachment, Tag, User, UserPreferences},
+};
+
 /// Initialize the Tauri application
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     // Set up tauri-specta bindings generation
-    let builder =
-        tauri_specta::Builder::<tauri::Wry>::new().commands(tauri_specta::collect_commands![
+    let builder = tauri_specta::Builder::<tauri::Wry>::new()
+        .commands(tauri_specta::collect_commands![
             health_check,
             storage_request_upload,
             storage_confirm_upload,
@@ -30,13 +40,28 @@ pub fn run() {
             storage_delete,
             storage_get_quota,
             storage_is_available
-        ]);
+        ])
+        .typ::<Quest>()
+        .typ::<Campaign>()
+        .typ::<FocusSession>()
+        .typ::<EnergyCheckIn>()
+        .typ::<UserProgress>()
+        .typ::<Achievement>()
+        .typ::<Streak>()
+        .typ::<QuestColumn>()
+        .typ::<EnergyCost>()
+        .typ::<FocusSessionStatus>()
+        .typ::<User>()
+        .typ::<UserPreferences>()
+        .typ::<Attachment>()
+        .typ::<Tag>()
+        .typ::<Capture>();
 
     #[cfg(debug_assertions)]
     builder
         .export(
             specta_typescript::Typescript::default(),
-            "../../../packages/bindings/src/guidance.ts",
+            "packages/bindings/src/guidance.ts",
         )
         .expect("Failed to export typescript bindings");
 

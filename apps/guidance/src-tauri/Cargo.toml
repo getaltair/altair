@@ -22,7 +22,7 @@ tracing-appender = { workspace = true }
 # Altair backend crates
 altair-core = { workspace = true }
 altair-commands = { workspace = true, features = ["specta"] }
-altair-db = { workspace = true }
+altair-db = { workspace = true, features = ["specta"] }
 altair-storage = { workspace = true }
 
 [build-dependencies]

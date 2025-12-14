@@ -6,19 +6,28 @@ use surrealdb::sql::Thing;
 
 use super::enums::{CaptureSource, CaptureStatus, CaptureType};
 use super::item::GeoPoint;
+#[cfg(feature = "specta")]
+use super::serde_helpers::ThingType;
+use super::serde_helpers::{option_thing_serde, thing_serde};
 
 /// Capture - Temporary storage for unprocessed input
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
 pub struct Capture {
+    #[serde(with = "option_thing_serde")]
+    #[cfg_attr(feature = "specta", specta(type = Option<ThingType>))]
     pub id: Option<Thing>,
     pub text_content: Option<String>,
     pub capture_type: CaptureType,
     pub source: CaptureSource,
     pub status: CaptureStatus,
+    #[cfg_attr(feature = "specta", specta(type = Option<ThingType>))]
     pub processed_to: Option<Thing>, // reference to processed entity
     pub ai_suggestion: Option<String>,
     pub ai_confidence: Option<f32>,
     pub location: Option<GeoPoint>,
+    #[serde(with = "thing_serde")]
+    #[cfg_attr(feature = "specta", specta(type = ThingType))]
     pub owner: Thing,
     pub device_id: String,
     pub captured_at: DateTime<Utc>,

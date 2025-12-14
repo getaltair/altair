@@ -11,6 +11,7 @@ pub mod gamification;
 pub mod item;
 pub mod note;
 pub mod quest;
+pub mod serde_helpers;
 pub mod session;
 pub mod shared;
 

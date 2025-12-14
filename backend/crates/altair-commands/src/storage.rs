@@ -254,7 +254,7 @@ pub async fn storage_confirm_upload<C: surrealdb::Connection>(
         db,
         confirmation.filename.clone(),
         confirmation.mime_type.clone(),
-        confirmation.size_bytes as i64,
+        confirmation.size_bytes as i32,
         confirmation.storage_key.clone(),
         confirmation.checksum.clone(),
         db_media_type,

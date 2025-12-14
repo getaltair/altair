@@ -13,7 +13,7 @@ pub async fn create_attachment<C: surrealdb::Connection>(
     db: &Surreal<C>,
     filename: String,
     mime_type: String,
-    size_bytes: i64,
+    size_bytes: i32,
     storage_key: String,
     checksum: String,
     media_type: MediaType,
