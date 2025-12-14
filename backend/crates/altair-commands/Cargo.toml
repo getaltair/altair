@@ -12,6 +12,7 @@ specta = ["dep:specta"]
 altair-core = { path = "../altair-core" }
 altair-auth = { path = "../altair-auth" }
 altair-db = { path = "../altair-db" }
+altair-storage = { path = "../altair-storage" }
 
 # Async runtime
 tokio = { version = "1.42", features = ["sync"] }

@@ -103,6 +103,7 @@ pub fn get_version() -> String {
 
 // Command handler modules
 pub mod auth;
+pub mod storage;
 
 pub mod guidance {
     //! Quest and Campaign command handlers (Guidance app)

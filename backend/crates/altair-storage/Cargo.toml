@@ -8,8 +8,9 @@ rust-version = "1.91.1"
 # Internal dependencies
 altair-core = { path = "../altair-core" }
 
-# S3 client (placeholder for aws-sdk-s3 or similar)
-# aws-sdk-s3 = "1.0"
+# S3 client
+aws-sdk-s3 = "1.90"
+aws-config = "1.6"
 
 # Async runtime traits
 async-trait = "0.1"
@@ -18,8 +19,60 @@ async-trait = "0.1"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 
+# Credential storage
+keyring = "3.6"
+
+# Random for password generation
+rand = "0.8"
+
+# Image processing
+image = { version = "0.25", features = ["jpeg", "png", "gif", "webp"] }
+
 # Observability
 tracing = "0.1"
 
+# URL parsing and validation
+url = "2.5"
+
+# UUID generation
+uuid = { version = "1.16", features = ["v4"] }
+
+# Error handling
+thiserror = "2.0"
+
+# Checksum calculation
+sha2 = "0.10"
+hex = "0.4"
+
+# Lazy initialization for static maps
+once_cell = "1.19"
+
+# Async stream utilities
+futures-util = "0.3"
+tokio = { version = "1.42", features = ["io-util", "process", "time", "sync"] }
+
+# Database (for quota management)
+surrealdb = { version = "2.2", features = ["kv-mem"] }
+chrono = { version = "0.4", features = ["serde"] }
+
+# Platform directories for Minio data
+directories = "5.0"
+
+# HTTP client for Minio health checks
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"] }
+
 [dev-dependencies]
-tokio = { version = "1.42", features = ["full"] }
+tokio = { version = "1.42", features = ["full", "test-util"] }
+reqwest = "0.12"
+sha2 = "0.10"
+hex = "0.4"
+futures-util = "0.3"
+criterion = "0.5"
+tempfile = "3.14"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+uuid = { version = "1.16", features = ["v4"] }
+image = { version = "0.25", features = ["jpeg", "png"] }
+
+[[bench]]
+name = "storage_bench"
+harness = false

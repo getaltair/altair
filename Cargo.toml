@@ -48,3 +48,4 @@ tracing-appender = "0.2"
 altair-core = { path = "backend/crates/altair-core" }
 altair-commands = { path = "backend/crates/altair-commands" }
 altair-db = { path = "backend/crates/altair-db" }
+altair-storage = { path = "backend/crates/altair-storage" }
