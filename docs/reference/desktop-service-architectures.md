@@ -2,7 +2,7 @@
 
 **Research conducted: January 2026**
 
-> Analysis of how popular desktop applications implement background services, local-first sync, and inter-process communication.
+> Analysis of how popular desktop applications implement background services, offline sync, and inter-process communication.
 
 ---
 
@@ -160,10 +160,13 @@ VS Code uses the most complex multi-process architecture with separate extension
 
 Based on this research:
 
-1. **Single Tauri app is the right choice** — Obsidian, Notion, and Linear prove this pattern works for local-first productivity apps
-2. **Avoid traditional daemons** — The industry trend is toward in-process or child-process architectures
-3. **If separate processes needed later** — Use JSON-RPC over Unix sockets (Linux) / named pipes (Windows)
-4. **For cloud sync** — WebSocket is the dominant choice (Obsidian, Linear, Notion all use it)
+1. **Kotlin Multiplatform with embedded database** — Similar to Obsidian's pattern: self-contained app with local data
+2. **Self-hosted server for sync** — Cleaner than peer-to-peer; WebSocket/gRPC for real-time updates
+3. **Offline-capable desktop** — SurrealDB embedded enables full functionality without server
+4. **Server-dependent mobile** — Quick capture scope means simpler architecture is acceptable
+
+> **Note**: This research predates the pivot from Tauri to Kotlin Multiplatform. The core insights about
+> avoiding traditional daemons and using in-process architectures still apply.
 
 ---
 

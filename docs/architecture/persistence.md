@@ -2,16 +2,28 @@
 
 ## Purpose
 
-This document describes how Altair stores and manages data using SurrealDB, including schema design patterns, query
-strategies, sync considerations, and migration approach.
+This document describes how Altair stores and manages data, including the hybrid database strategy, schema design
+patterns, query strategies, and sync considerations.
 
 ---
 
 ## Database Architecture
 
-### Embedded Mode
+### Hybrid Strategy
 
-SurrealDB runs in-process using the SurrealKV storage engine. No separate database server to install or manage.
+Altair uses different databases optimized for each platform:
+
+| Platform | Database          | Rationale                                            |
+| -------- | ----------------- | ---------------------------------------------------- |
+| Desktop  | SurrealDB embedded | Graph queries, vector search, full-text search       |
+| Mobile   | SQLite (SQLDelight) | Proven reliability, minimal footprint, quick capture |
+| Server   | SurrealDB          | Primary store, sync hub, conflict resolution         |
+
+See [ADR-002](../adr/002-surrealdb-embedded.md) for the full decision rationale.
+
+### Desktop: SurrealDB Embedded
+
+SurrealDB runs in-process using the SurrealKV storage engine via surrealdb.java JNI bindings.
 
 | Aspect         | Configuration                   |
 | -------------- | ------------------------------- |
@@ -19,8 +31,9 @@ SurrealDB runs in-process using the SurrealKV storage engine. No separate databa
 | Storage Engine | SurrealKV                       |
 | Location       | `$APP_DATA/altair/db/`          |
 | Concurrency    | Single writer, multiple readers |
+| Access         | surrealdb.java (Kotlin)         |
 
-### Why SurrealDB
+**Why SurrealDB for Desktop:**
 
 | Need                | SurrealDB Capability                              |
 | ------------------- | ------------------------------------------------- |
@@ -29,15 +42,44 @@ SurrealDB runs in-process using the SurrealKV storage engine. No separate databa
 | Vector similarity   | Native vector type and KNN search                 |
 | Embedded operation  | No external process required                      |
 | Flexible schema     | Schemaless with optional schema enforcement       |
-| Rust-native         | First-class Rust SDK                              |
 
-See [ADR-002](../adr/002-surrealdb-embedded.md) for the full decision rationale.
+### Mobile: SQLite (SQLDelight)
+
+SQLite runs embedded via SQLDelight for type-safe Kotlin queries.
+
+| Aspect         | Configuration                          |
+| -------------- | -------------------------------------- |
+| Mode           | Embedded                               |
+| Location       | Platform-standard app data directory   |
+| Access         | SQLDelight generated Kotlin code       |
+| Query Safety   | Compile-time verified SQL              |
+
+**Why SQLite for Mobile:**
+
+| Need                | SQLite Capability                          |
+| ------------------- | ------------------------------------------ |
+| Quick capture       | Fast writes, minimal overhead              |
+| Reliability         | 15+ years of mobile production use         |
+| Battery efficiency  | No background processes                    |
+| Minimal footprint   | ~500KB library size                        |
+| Basic search        | FTS5 for text search                       |
+
+### Server: SurrealDB
+
+Server runs SurrealDB as a container alongside the Ktor application.
+
+| Aspect         | Configuration                          |
+| -------------- | -------------------------------------- |
+| Mode           | Server (networked)                     |
+| Storage        | File-backed (`/data/altair.db`)        |
+| Access         | surrealdb.java (Kotlin)                |
+| Volume         | Docker volume for persistence          |
 
 ---
 
 ## Schema Design
 
-### Namespace Structure
+### Namespace Structure (SurrealDB)
 
 ```text
 namespace: altair
@@ -45,18 +87,54 @@ namespace: altair
 │   ├── tables: epic, quest, checkpoint, energy_budget
 │   ├── tables: note, note_link, folder, tag, attachment
 │   └── tables: item, custom_field, location, container, template, field_def
+└── database: sync
+    └── tables: sync_state, conflict_log
+```
+
+### SQLite Schema (Mobile)
+
+```sql
+-- Mirrors SurrealDB tables with foreign keys instead of graph relations
+CREATE TABLE quest (
+    id TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    description TEXT,
+    status TEXT NOT NULL DEFAULT 'backlog',
+    energy_cost INTEGER NOT NULL DEFAULT 1,
+    epic_id TEXT REFERENCES epic(id),
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    deleted_at TEXT,
+    sync_version INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE note (
+    id TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    content TEXT,
+    folder_id TEXT REFERENCES folder(id),
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    deleted_at TEXT,
+    sync_version INTEGER NOT NULL DEFAULT 0
+);
+
+-- ... similar patterns for other entities
 ```
 
 ### Table Conventions
 
+Both databases follow consistent conventions:
+
 - Table names are `snake_case` singular (e.g., `quest`, `note`, `item`)
-- Record IDs use ULID strings: `quest:01HXK3...`
+- Record IDs use ULID strings: `01HXK3...`
 - Timestamps stored as ISO 8601 strings
 - Soft-deleted records have `deleted_at` field set
+- All entities include `sync_version` for sync tracking
 
 ### Indexes
 
-Each table has indexes based on common query patterns:
+**SurrealDB (Desktop/Server):**
 
 | Table | Index         | Fields           | Purpose                  |
 | ----- | ------------- | ---------------- | ------------------------ |
@@ -68,276 +146,205 @@ Each table has indexes based on common query patterns:
 | note  | embedding_idx | embedding        | Vector similarity (HNSW) |
 | item  | location_idx  | location_id      | Items at a Location      |
 | item  | container_idx | container_id     | Items in a Container     |
-| item  | template_idx  | template_id      | Items by type            |
+
+**SQLite (Mobile):**
+
+| Table | Index             | Columns          | Purpose                 |
+| ----- | ----------------- | ---------------- | ----------------------- |
+| quest | quest_status_idx  | status           | Filter by status        |
+| quest | quest_epic_idx    | epic_id          | Quests in an Epic       |
+| note  | note_folder_idx   | folder_id        | Notes in a Folder       |
+| note  | note_title_idx    | folder_id, title | Unique title per folder |
+| item  | item_location_idx | location_id      | Items at a Location     |
 
 ### Relations
 
-SurrealDB supports two relation patterns:
+**SurrealDB (Desktop/Server):**
 
-**Record Links** (simple references):
+Uses two relation patterns:
 
-```text
-quest:abc.epic_id = epic:xyz
+- **Record Links** for hierarchical relationships: `quest.epic_id = epic:xyz`
+- **Graph Edges** for cross-module relationships: `note:abc ->links-> note:xyz`
+
+**SQLite (Mobile):**
+
+Uses foreign keys for all relationships:
+
+```sql
+epic_id TEXT REFERENCES epic(id)
+folder_id TEXT REFERENCES folder(id)
 ```
 
-**Graph Edges** (rich relationships):
+Cross-module links stored in junction tables:
 
-```text
-note:abc ->links-> note:xyz
-quest:abc ->references-> note:xyz
+```sql
+CREATE TABLE quest_note (
+    quest_id TEXT REFERENCES quest(id),
+    note_id TEXT REFERENCES note(id),
+    PRIMARY KEY (quest_id, note_id)
+);
 ```
-
-Altair uses:
-
-- Record links for hierarchical relationships (Quest→Epic, Note→Folder, Item→Location)
-- Graph edges for cross-module relationships (Quest↔Note, Note↔Item)
 
 ---
 
 ## Query Patterns
 
-### Basic CRUD
+### Desktop (SurrealDB)
 
-Queries go through a typed repository layer, not raw SurrealQL in business logic.
+```kotlin
+// Basic CRUD
+suspend fun getQuest(id: String): Quest? =
+    db.query("SELECT * FROM quest WHERE id = \$id", mapOf("id" to id))
+        .firstOrNull()
 
-**Create**: Insert with generated ULID
-**Read**: Select by ID or query with filters
-**Update**: Merge to preserve unspecified fields
-**Delete**: Set `deleted_at` for soft delete
+// Graph traversal
+suspend fun getQuestNotes(questId: String): List<Note> =
+    db.query("SELECT ->references->note.* FROM quest WHERE id = \$id", mapOf("id" to questId))
+        .flatten()
 
-### Filtering Deleted Records
-
-All queries exclude soft-deleted records by default:
-
-```sql
-WHERE deleted_at IS NONE
+// Vector similarity
+suspend fun findSimilarNotes(embedding: FloatArray, limit: Int = 5): List<Note> =
+    db.query("""
+        SELECT *, vector::similarity::cosine(embedding, \$vec) AS score
+        FROM note
+        WHERE embedding IS NOT NULL
+        ORDER BY score DESC
+        LIMIT \$limit
+    """, mapOf("vec" to embedding, "limit" to limit))
 ```
 
-The "Trash" view explicitly includes them:
+### Mobile (SQLDelight)
 
-```sql
-WHERE deleted_at IS NOT NONE
-  AND deleted_at > time::now() - 30d
+```kotlin
+// Generated from .sq file
+val getQuest: Quest? = questQueries.getById(id).executeAsOneOrNull()
+
+// Junction table for cross-module
+val questNotes: List<Note> = questNoteQueries.getNotesForQuest(questId).executeAsList()
+
+// Full-text search
+val searchResults: List<Note> = noteQueries.search(query).executeAsList()
 ```
-
-### Graph Traversal
-
-Finding all Notes linked from a Note (outgoing):
-
-```sql
-SELECT ->links->note FROM note:abc
-```
-
-Finding all Notes that link to a Note (incoming):
-
-```sql
-SELECT <-links<-note FROM note:abc
-```
-
-Two-hop traversal (notes linked from notes linked from this note):
-
-```sql
-SELECT ->links->note->links->note FROM note:abc
-```
-
-### Full-Text Search
-
-Notes use a search index on content:
-
-```sql
-SELECT * FROM note
-WHERE content @@ 'search terms'
-ORDER BY search::score(content) DESC
-```
-
-### Vector Similarity
-
-Semantic search uses embeddings:
-
-```sql
-SELECT * FROM note
-WHERE embedding <|10,COSINE|> $query_vector
-```
-
-Returns 10 nearest neighbors by cosine similarity.
 
 ---
 
-## Transactions
+## Sync Protocol
 
-### ACID Guarantees
+### Version Tracking
 
-SurrealDB provides ACID transactions. Operations that modify multiple records use explicit transactions:
+All entities include `sync_version`:
 
-- Creating a Quest with Checkpoints
-- Moving an Item (update Item, log history)
-- Deleting a Folder (reassign Notes)
+- Monotonically increasing counter per entity
+- Server maintains authoritative version sequence
+- Clients track last known version per entity type
 
-### Optimistic Concurrency
+### Pull Flow
 
-For conflict detection on concurrent edits:
+```
+Client                          Server
+   │                               │
+   │─── Pull(since: 1000) ────────>│
+   │                               │
+   │<── Changes(v1001..v1050) ─────│
+   │                               │
+   │    Apply changes locally      │
+   │    Update last_sync = 1050    │
+```
 
-1. Read record with `updated_at` timestamp
-2. User makes changes
-3. Update with condition: `WHERE updated_at = $original_timestamp`
-4. If no rows affected, another edit occurred—prompt user to resolve
+### Push Flow
 
----
+```
+Client                          Server
+   │                               │
+   │─── Push(changes, base: 1050)─>│
+   │                               │
+   │    Validate base version      │
+   │    Apply changes              │
+   │    Resolve conflicts          │
+   │                               │
+   │<── Result(v1051, conflicts)───│
+   │                               │
+   │    Apply server decisions     │
+```
 
-## Data Lifecycle
+### Conflict Resolution
 
-### Creation
+Server-side resolution with last-write-wins for simple fields:
 
-1. Generate ULID for new record
-2. Set `created_at` to current timestamp
-3. Set `updated_at` equal to `created_at`
-4. Insert record
-
-### Modification
-
-1. Update relevant fields
-2. Set `updated_at` to current timestamp
-3. (For audited entities) Append to change history
-
-### Soft Delete
-
-1. Set `deleted_at` to current timestamp
-2. Record remains in database but hidden from queries
-3. After retention period (30 days), eligible for hard delete
-
-### Hard Delete
-
-1. Purge job runs periodically (daily)
-2. Delete records where `deleted_at < now() - 30d`
-3. Cascade delete orphaned relations
-4. Vacuum storage to reclaim space
+| Scenario              | Resolution                                |
+| --------------------- | ----------------------------------------- |
+| Same field changed    | Latest `updated_at` wins                  |
+| Different fields      | Merge both changes                        |
+| Entity deleted        | Delete wins (soft delete propagates)      |
+| Complex structures    | Custom merge logic (e.g., note content)   |
 
 ---
 
 ## Migrations
 
-### Strategy
+### SurrealDB Migrations
 
-Schema changes are handled through versioned migrations:
+```kotlin
+data class Migration(
+    val version: Int,
+    val name: String,
+    val up: String  // SurrealQL
+)
 
-1. Each migration has an ID (incrementing integer) and timestamp
-2. `_migration` table tracks applied migrations
-3. On startup, apply any pending migrations in order
-4. Migrations are forward-only (no automatic rollback)
+val migrations = listOf(
+    Migration(1, "create_quest_table", """
+        DEFINE TABLE quest SCHEMAFULL;
+        DEFINE FIELD title ON quest TYPE string;
+        DEFINE FIELD status ON quest TYPE string DEFAULT 'backlog';
+        -- ...
+    """),
+    Migration(2, "add_sync_version", """
+        DEFINE FIELD sync_version ON quest TYPE int DEFAULT 0;
+        -- ...
+    """)
+)
+```
 
-### Migration Structure
+### SQLDelight Migrations
 
-Each migration defines:
+Stored in `.sqm` files with version numbers:
 
-- **ID**: Unique sequential number
-- **Name**: Descriptive slug (e.g., `add_note_embedding_index`)
-- **Up**: SurrealQL statements to apply the change
-
-### Common Migration Types
-
-| Type          | Example                                       |
-| ------------- | --------------------------------------------- |
-| Add table     | `DEFINE TABLE new_table SCHEMAFULL`           |
-| Add field     | `DEFINE FIELD new_field ON table TYPE string` |
-| Add index     | `DEFINE INDEX idx ON table FIELDS field`      |
-| Backfill data | `UPDATE table SET new_field = computed_value` |
-| Rename field  | Add new, copy data, remove old                |
-
-### Breaking Changes
-
-For changes that can't be done in-place:
-
-1. Add new structure alongside old
-2. Migrate data in batches
-3. Update application to use new structure
-4. Remove old structure in future migration
-
----
-
-## Sync Strategy (Future)
-
-Altair is local-first, but future sync is designed for:
-
-### Conflict Resolution
-
-- Last-write-wins for simple fields
-- CRDT-based merge for text content (if needed)
-- User prompt for structural conflicts (moved to different folder by two devices)
-
-### Sync Metadata
-
-Records include sync fields (inactive until sync implemented):
-
-- `_sync_id`: Globally unique identifier
-- `_sync_version`: Logical clock / vector clock
-- `_sync_modified`: Timestamp of last local change
-
-### Sync-Aware Deletion
-
-Soft delete is essential for sync:
-
-- Deleted records sync as tombstones
-- Tombstones retained until all devices acknowledge
-- Hard delete only after sync confirmation
+```
+src/commonMain/sqldelight/
+├── com/getaltair/altair/
+│   ├── Quest.sq
+│   ├── Note.sq
+│   └── migrations/
+│       ├── 1.sqm
+│       └── 2.sqm
+```
 
 ---
 
 ## Backup and Recovery
 
-### Automatic Backups
+### Desktop
 
-- Daily backup of database directory
-- Retained for 7 days locally
-- User can configure backup location (e.g., cloud folder)
+- Export: Dump all tables to JSON via SurrealQL `SELECT * FROM ...`
+- Import: Transaction-wrapped inserts
+- Location: User-selected file
 
-### Manual Export
+### Server
 
-Users can export all data as:
+- Volume backup: `docker compose exec surrealdb surreal export`
+- Scheduled: Configurable cron job
+- Retention: User-configured
 
-- JSON (structured, for migration)
-- Markdown (Notes only, for portability)
+### Mobile
 
-### Recovery
-
-If database corrupts:
-
-1. Attempt SurrealDB repair
-2. Restore from most recent backup
-3. Re-import from export if backup unavailable
-
----
-
-## Performance Considerations
-
-### Index Strategy
-
-- Index fields used in WHERE clauses
-- Compound indexes for multi-field filters
-- Vector index (HNSW) for embedding search
-- Full-text index for content search
-
-### Query Optimization
-
-- Fetch only needed fields (avoid `SELECT *` in production)
-- Paginate large result sets
-- Use graph queries instead of multiple round trips
-- Cache frequently-accessed records in memory
-
-### Storage Growth
-
-| Entity     | Estimated Size | Notes                    |
-| ---------- | -------------- | ------------------------ |
-| Note       | 5-50 KB        | Content + embedding      |
-| Item       | 1-5 KB         | Metadata + custom fields |
-| Quest      | 0.5-2 KB       | Small records            |
-| Attachment | Reference only | Files stored separately  |
-
-Embedding vectors (384 dimensions × 4 bytes = 1.5 KB per Note) are the largest per-record cost.
+- Sync to server is the primary backup mechanism
+- SQLite database included in platform backup (iCloud, Google backup)
 
 ---
 
 ## References
 
-- [ADR-002: SurrealDB for Persistence](../adr/002-surrealdb-embedded.md)
-- [Domain Model](./domain-model.md) — Entity definitions
 - [SurrealDB Documentation](https://surrealdb.com/docs)
+- [SQLDelight Documentation](https://cashapp.github.io/sqldelight/)
+- [ADR-002: Hybrid Database Strategy](../adr/002-surrealdb-embedded.md)
+- [ADR-005: kotlinx-rpc Communication](../adr/005-kotlinx-rpc-communication.md)

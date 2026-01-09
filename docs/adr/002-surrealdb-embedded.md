@@ -1,113 +1,120 @@
-# ADR-002: SurrealDB for Persistence
+# ADR-002: Hybrid Database Strategy
 
-| Field        | Value           |
-| ------------ | --------------- |
-| **Status**   | Accepted        |
-| **Date**     | 2026-01-08      |
-| **Deciders** | Robert Hamilton |
+| Field             | Value                                       |
+| ----------------- | ------------------------------------------- |
+| **Status**        | Accepted                                    |
+| **Date**          | 2026-01-09                                  |
+| **Deciders**      | Robert Hamilton                             |
+| **Supersedes**    | ADR-002 (SurrealDB Embedded only, original) |
 
 ## Context
 
-Altair requires a database that supports:
+Altair requires a database strategy that supports:
 
-1. **Local-first operation**: Full functionality offline with optional cloud sync
-2. **Graph relationships**: Notes link to quests link to items; bidirectional traversal required
-3. **Embedded deployment**: No separate database server process
-4. **Full-text search**: Search across notes, quests, and items
-5. **Vector search**: Semantic similarity for auto-discovery features
-6. **Rust integration**: Native client library for Tauri backend
+1. **Desktop**: Full-featured offline-capable operation with graph relationships, full-text search, vector search
+2. **Mobile**: Quick capture and basic viewing—not full feature parity
+3. **Server**: Primary data store for sync, shared across all user devices
+4. **Cross-device sync**: User-operated server synchronizes data between desktop and mobile clients
+
+The mobile "quick capture" use case doesn't require graph traversal or complex queries—just fast text entry and basic
+reads. Desktop does the heavy lifting with full search and relationship features.
 
 ## Decision
 
-Use **SurrealDB 2.0+** in embedded mode as the primary datastore, with optional SurrealDB Cloud for cross-device sync.
+Use a **hybrid database architecture**:
 
-SurrealDB runs as a library within the Tauri Rust backend—no separate process. Data stored in local files with SurrealKV storage engine.
+| Platform | Database          | Purpose                                        |
+| -------- | ----------------- | ---------------------------------------------- |
+| Desktop  | SurrealDB embedded | Full graph queries, vector search, FTS, events |
+| Mobile   | SQLite embedded    | Quick capture, basic CRUD, proven reliability  |
+| Server   | SurrealDB          | Primary store, sync hub, conflict resolution   |
+
+A **custom sync bridge** handles bidirectional synchronization between SurrealDB (desktop/server) and SQLite (mobile).
+Conflict resolution happens server-side with last-write-wins semantics for simple fields and custom merge logic for
+complex structures.
 
 ## Consequences
 
 ### Positive
 
-- **Native graph queries**: `RELATE` and graph traversal built into query language; no ORM gymnastics for note↔quest↔item relationships
-- **Embedded mode**: Single process, no database server to manage
-- **Full-text search**: Built-in `@@` operator with analyzers; no separate search index
-- **Vector search**: Native vector fields and KNN queries for semantic similarity (FR-K-125, FR-T-038)
-- **Optional cloud sync**: SurrealDB Cloud provides managed sync without changing query code
-- **Rust-native**: `surrealdb` crate with async support; natural fit for Tauri backend
-- **Schemaless flexibility**: Can evolve data model without rigid migrations during early development
-- **Multi-model**: Document, graph, and relational patterns in one database
+- **Mobile simplicity**: SQLite is battle-tested on mobile (15+ years), tiny footprint, zero configuration
+- **Desktop power**: SurrealDB graph traversal for note↔quest↔item relationships, native vector search
+- **Appropriate complexity**: Mobile doesn't pay for features it doesn't use
+- **Sync flexibility**: Server controls conflict resolution; clients are thin
+- **Offline-first**: Both desktop and mobile work fully offline; sync when connected
 
 ### Negative
 
-- **Less mature**: Smaller community than SQLite/PostgreSQL; fewer Stack Overflow answers
-- **Migration tooling**: Schema migration tools less developed than established databases
-- **Sync complexity**: Cloud sync is newer feature; conflict resolution semantics still evolving
-- **Learning curve**: SurrealQL is powerful but unfamiliar to most developers
-- **Binary size**: Adds to application size (though acceptable for desktop app)
+- **Sync bridge complexity**: Must maintain schema mapping between SurrealDB and SQLite
+- **Feature asymmetry**: Mobile can't do semantic search or complex graph queries locally
+- **Two database libraries**: Kotlin codebases need both SurrealDB and SQLite dependencies
+- **Testing overhead**: Must test sync behavior between different database engines
 
 ### Neutral
 
-- Performance characteristics still being benchmarked for Altair's specific workloads
-- May need to implement custom conflict resolution for complex sync scenarios
+- Mobile-created data syncs to server immediately when online; desktop sees it on next sync
+- Desktop-only features (semantic search, graph traversal) are clearly documented as such
+
+## Database Details
+
+### SurrealDB (Desktop/Server)
+
+- **Version**: 2.0+ with SurrealKV storage engine
+- **Access**: surrealdb.java with JNI bindings to native Rust (Android support included)
+- **Schema**: Singular snake_case tables, ULID IDs, soft delete with `deleted_at`
+- **Features used**: RELATE for graph edges, vector fields for embeddings, FTS for search
+
+### SQLite (Mobile)
+
+- **Library**: SQLDelight for Kotlin Multiplatform (type-safe generated queries)
+- **Schema**: Mirrors SurrealDB tables with foreign keys instead of graph relations
+- **Features used**: Basic CRUD, simple indexes, FTS5 for basic text search
+
+### Sync Protocol
+
+- Clients track `sync_version` per entity
+- Server maintains authoritative `sync_version` sequence
+- Pull: Client requests changes since last known version
+- Push: Client sends local changes with base version for conflict detection
+- Conflicts: Server resolves and returns merged result
 
 ## Alternatives Considered
 
-### Alternative 1: SQLite + Extensions
+### Alternative 1: SurrealDB Only (All Platforms)
 
-SQLite with FTS5 for full-text search and sqlite-vec for vector search.
+Use SurrealDB embedded on mobile via surrealdb.java JNI bindings.
 
-**Pros:**
+**Rejected because:**
 
-- Battle-tested, massive community
-- Excellent Rust support (rusqlite)
-- Tiny binary footprint
+- SurrealDB's built-in sync is not yet implemented (GitHub discussions show founder exploring CRDTs, nothing shipped)
+- JNI adds complexity and potential crash vectors on mobile
+- Mobile "quick capture" doesn't need graph features—overkill
+
+### Alternative 2: SQLite Only (All Platforms)
+
+Use SQLite everywhere with cr-sqlite or ElectricSQL for sync.
 
 **Rejected because:**
 
 - Graph relationships require complex JOIN chains or recursive CTEs
-- Vector search via extension adds deployment complexity
-- No built-in cloud sync; would need separate sync layer (e.g., cr-sqlite, ElectricSQL)
-- Relational model fights against document-like note/quest structures
+- Vector search via sqlite-vec extension adds deployment complexity
+- Would lose SurrealDB's elegant graph query syntax on desktop
 
-### Alternative 2: SQLite + libSQL (Turso)
+### Alternative 3: CouchDB/PouchDB
 
-libSQL fork with vector search and Turso cloud sync.
-
-**Pros:**
-
-- SQLite compatibility with modern features
-- Turso provides managed sync
+Document database with built-in sync protocol.
 
 **Rejected because:**
 
-- Still fundamentally relational; graph queries remain awkward
-- Turso sync model less flexible than SurrealDB for complex conflict resolution
-- Smaller ecosystem than either SQLite or SurrealDB
-
-### Alternative 3: PouchDB/CouchDB
-
-JavaScript document database with built-in sync.
-
-**Rejected because:**
-
-- JavaScript-based; poor fit for Rust backend
+- JavaScript-based (PouchDB); poor fit for Kotlin backend
 - No native graph relationships
 - Limited vector search support
-- Would require Node.js sidecar or WebAssembly shim
-
-### Alternative 4: Datomic-style (Local)
-
-Immutable, append-only database with time-travel queries.
-
-**Rejected because:**
-
-- No production-ready embedded Rust implementation
-- Overkill for single-user desktop application
-- Storage growth concerns for append-only model
+- Would require Node.js sidecar or complex bridging
 
 ## References
 
-- [SurrealDB Documentation](https://surrealdb.com/docs)
-- [SurrealDB Rust SDK](https://github.com/surrealdb/surrealdb/tree/main/lib)
+- [SurrealDB Java SDK](https://github.com/surrealdb/surrealdb.java) — Android support via JNI
+- [SQLDelight](https://cashapp.github.io/sqldelight/) — Kotlin Multiplatform SQL
+- [ADR-001: Kotlin Multiplatform Architecture](./001-single-tauri-application.md)
+- [ADR-005: kotlinx-rpc Communication](./005-kotlinx-rpc-communication.md)
 - PRD Core, Section 8: Cross-Application Integration
-- FR-K-111 through FR-K-124: Search requirements
-- FR-K-125 through FR-K-130: Auto-discovery requirements

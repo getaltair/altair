@@ -30,26 +30,45 @@ See [ADR-003](../adr/003-event-bus-for-modules.md) for the full decision rationa
 | Ordering    | FIFO within a single publisher      |
 | Blocking    | Non-blocking publish                |
 | Subscribers | Multiple subscribers per event type |
-| Scope       | In-process only (no network)        |
+| Scope       | In-process only (desktop)           |
 
-Events are fire-and-forget. If a subscriber is slow or fails, it doesn't block the publisher. Events are not persisted,
+Events are fire-and-forget. If a subscriber is slow or fails, it doesn't block the publisher. Events are not persisted;
 if the app crashes, in-flight events are lost.
 
-### Channel Structure
+### Implementation
 
-```text
-Event Bus
-├── guidance:* — Quest, Epic, Checkpoint, Energy events
-├── knowledge:* — Note, Folder, Tag, Link events
-├── tracking:* — Item, Location, Container events
-└── system:* — App lifecycle, settings, sync events
+Desktop uses Kotlin coroutines `SharedFlow` for the event bus:
+
+```kotlin
+class EventBus {
+    private val _events = MutableSharedFlow<AppEvent>(
+        replay = 0,
+        extraBufferCapacity = 100,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    )
+    val events: SharedFlow<AppEvent> = _events.asSharedFlow()
+
+    suspend fun publish(event: AppEvent) {
+        _events.emit(event)
+    }
+
+    fun <T : AppEvent> subscribe(
+        eventClass: KClass<T>,
+        scope: CoroutineScope,
+        handler: suspend (T) -> Unit
+    ): Job = scope.launch {
+        events
+            .filterIsInstance(eventClass)
+            .collect { handler(it) }
+    }
+}
 ```
 
-Subscribers can listen to:
+### Mobile Considerations
 
-- All events (`*`)
-- A category (`guidance:*`)
-- A specific event (`guidance:quest_completed`)
+Mobile clients have a simplified architecture focused on quick capture. The event bus is primarily a desktop feature
+where modules interact in real-time. Mobile syncs to server; cross-module reactions happen server-side or when data
+syncs to desktop.
 
 ---
 
@@ -57,210 +76,208 @@ Subscribers can listen to:
 
 ### Guidance Events
 
-| Event                            | Payload                      | Trigger                 |
-| -------------------------------- | ---------------------------- | ----------------------- |
-| `guidance:quest_created`         | quest_id, title, energy_cost | New Quest created       |
-| `guidance:quest_started`         | quest_id                     | Quest moved to active   |
-| `guidance:quest_completed`       | quest_id, energy_spent       | Quest marked complete   |
-| `guidance:quest_abandoned`       | quest_id                     | Quest abandoned         |
-| `guidance:checkpoint_completed`  | quest_id, checkpoint_id      | Checkpoint checked off  |
-| `guidance:epic_created`          | epic_id, title               | New Epic created        |
-| `guidance:epic_completed`        | epic_id                      | All Quests in Epic done |
-| `guidance:energy_budget_changed` | date, new_budget             | Daily budget adjusted   |
-| `guidance:energy_depleted`       | date, budget, spent          | Spent exceeds budget    |
+```kotlin
+sealed class GuidanceEvent : AppEvent() {
+    data class QuestCreated(val quest: Quest) : GuidanceEvent()
+    data class QuestStarted(val quest: Quest) : GuidanceEvent()
+    data class QuestCompleted(val quest: Quest) : GuidanceEvent()
+    data class QuestAbandoned(val quest: Quest) : GuidanceEvent()
+    data class CheckpointCompleted(val quest: Quest, val checkpoint: Checkpoint) : GuidanceEvent()
+    data class EpicCompleted(val epic: Epic) : GuidanceEvent()
+    data class EnergyBudgetExceeded(val budget: Int, val spent: Int) : GuidanceEvent()
+}
+```
 
 ### Knowledge Events
 
-| Event                         | Payload                    | Trigger                          |
-| ----------------------------- | -------------------------- | -------------------------------- |
-| `knowledge:note_created`      | note_id, title, folder_id  | New Note created                 |
-| `knowledge:note_updated`      | note_id, changed_fields    | Note content or metadata changed |
-| `knowledge:note_deleted`      | note_id                    | Note soft-deleted                |
-| `knowledge:note_restored`     | note_id                    | Note restored from trash         |
-| `knowledge:link_created`      | source_id, target_id       | New link between Notes           |
-| `knowledge:link_broken`       | source_id, target_title    | Link target deleted              |
-| `knowledge:folder_created`    | folder_id, name, parent_id | New Folder created               |
-| `knowledge:folder_deleted`    | folder_id                  | Folder deleted                   |
-| `knowledge:tag_applied`       | note_id, tag_id            | Tag added to Note                |
-| `knowledge:tag_removed`       | note_id, tag_id            | Tag removed from Note            |
-| `knowledge:embedding_updated` | note_id                    | Note embedding regenerated       |
+```kotlin
+sealed class KnowledgeEvent : AppEvent() {
+    data class NoteCreated(val note: Note) : KnowledgeEvent()
+    data class NoteUpdated(val note: Note, val oldContent: String) : KnowledgeEvent()
+    data class NoteDeleted(val note: Note) : KnowledgeEvent()
+    data class LinkCreated(val source: Note, val target: Note) : KnowledgeEvent()
+    data class TagAdded(val note: Note, val tag: Tag) : KnowledgeEvent()
+    data class FolderCreated(val folder: Folder) : KnowledgeEvent()
+    data class ItemMentioned(val note: Note, val itemName: String) : KnowledgeEvent()
+}
+```
 
 ### Tracking Events
 
-| Event                        | Payload                    | Trigger               |
-| ---------------------------- | -------------------------- | --------------------- |
-| `tracking:item_created`      | item_id, name, template_id | New Item created      |
-| `tracking:item_updated`      | item_id, changed_fields    | Item metadata changed |
-| `tracking:item_deleted`      | item_id                    | Item soft-deleted     |
-| `tracking:item_moved`        | item_id, from, to          | Item location changed |
-| `tracking:quantity_changed`  | item_id, old_qty, new_qty  | Quantity updated      |
-| `tracking:quantity_zero`     | item_id, name              | Quantity reached zero |
-| `tracking:location_created`  | location_id, name          | New Location created  |
-| `tracking:container_created` | container_id, name         | New Container created |
-| `tracking:container_moved`   | container_id, from, to     | Container relocated   |
+```kotlin
+sealed class TrackingEvent : AppEvent() {
+    data class ItemCreated(val item: Item) : TrackingEvent()
+    data class ItemUpdated(val item: Item) : TrackingEvent()
+    data class ItemMoved(val item: Item, val from: String?, val to: String?) : TrackingEvent()
+    data class QuantityChanged(val item: Item, val oldQty: Int, val newQty: Int) : TrackingEvent()
+    data class QuantityZero(val item: Item) : TrackingEvent()
+    data class LocationCreated(val location: Location) : TrackingEvent()
+    data class ContainerCreated(val container: Container) : TrackingEvent()
+}
+```
 
 ### System Events
 
-| Event                        | Payload                        | Trigger                   |
-| ---------------------------- | ------------------------------ | ------------------------- |
-| `system:app_started`         | version                        | Application launched      |
-| `system:app_closing`         | —                              | Application shutting down |
-| `system:settings_changed`    | changed_keys                   | User settings modified    |
-| `system:sync_started`        | —                              | Sync process beginning    |
-| `system:sync_completed`      | changes_pulled, changes_pushed | Sync finished             |
-| `system:sync_conflict`       | entity_type, entity_id         | Conflict detected         |
-| `system:backup_completed`    | backup_path                    | Backup finished           |
-| `system:ai_provider_changed` | capability, provider           | AI config changed         |
+```kotlin
+sealed class SystemEvent : AppEvent() {
+    data object AppStarted : SystemEvent()
+    data object AppBackgrounded : SystemEvent()
+    data object AppForegrounded : SystemEvent()
+    data class SettingsChanged(val key: String, val value: Any?) : SystemEvent()
+    data class SyncStarted(val direction: SyncDirection) : SystemEvent()
+    data class SyncCompleted(val direction: SyncDirection, val changes: Int) : SystemEvent()
+    data class SyncFailed(val direction: SyncDirection, val error: Throwable) : SystemEvent()
+}
+```
 
 ---
 
 ## Event Flow
 
-### Publishing
+### Publishing Events
 
-Modules publish events after completing their primary action:
+Modules publish events after successful database operations:
 
-```text
-1. Module receives command (e.g., complete_quest)
-2. Module executes business logic
-3. Module persists changes to database
-4. Module publishes event (quest_completed)
-5. Module returns result to caller
+```kotlin
+class QuestRepository(
+    private val db: Database,
+    private val eventBus: EventBus
+) {
+    suspend fun completeQuest(questId: String): Quest {
+        val quest = db.updateQuestStatus(questId, QuestStatus.COMPLETED)
+        eventBus.publish(GuidanceEvent.QuestCompleted(quest))
+        return quest
+    }
+}
 ```
 
-Events are published after persistence succeeds. If the database write fails, no event is published.
+### Subscribing to Events
 
-### Subscribing
+Modules subscribe to events they care about:
 
-Modules subscribe to events they care about at startup:
+```kotlin
+class ReflectionPromptService(
+    private val eventBus: EventBus,
+    private val scope: CoroutineScope
+) {
+    init {
+        eventBus.subscribe(GuidanceEvent.QuestCompleted::class, scope) { event ->
+            showReflectionPrompt(event.quest)
+        }
+    }
 
-```text
-1. App initializes Event Bus
-2. Each module registers its subscriptions
-3. Event Bus delivers matching events to subscribers
-4. Subscribers handle events asynchronously
+    private suspend fun showReflectionPrompt(quest: Quest) {
+        // Show UI prompt to create reflection note
+    }
+}
 ```
-
-Subscribers should handle events quickly. Long-running reactions should spawn background tasks.
-
-### Handling
-
-Event handlers must be:
-
-- **Idempotent**: Safe to receive the same event twice
-- **Failure-tolerant**: Log errors, don't crash
-- **Non-blocking**: Don't hold up other handlers
 
 ---
 
 ## Cross-Module Patterns
 
-### Discovery Pattern
+### Pattern: Suggestion Cards
 
-One module detects something relevant to another module.
+When one module detects something relevant to another, it publishes an event. A suggestion service listens and shows
+dismissible cards in the relevant module.
 
-**Example**: Knowledge detects an Item mention in a Note.
+```kotlin
+// Knowledge detects item mention in note content
+class NoteMentionScanner(
+    private val eventBus: EventBus
+) {
+    suspend fun scanNote(note: Note) {
+        val mentions = extractItemMentions(note.content)
+        mentions.forEach { itemName ->
+            eventBus.publish(KnowledgeEvent.ItemMentioned(note, itemName))
+        }
+    }
+}
 
-```text
-1. User edits Note content
-2. Knowledge parses content for `[[Item:...]]` patterns
-3. Knowledge publishes `knowledge:note_updated` with mention info
-4. Tracking receives event
-5. Tracking checks if mentioned Item exists
-6. If new mention, Tracking prompts user to link or create Item
+// Tracking listens and shows suggestion
+class TrackingSuggestionService(
+    private val eventBus: EventBus,
+    private val suggestionStore: SuggestionStore
+) {
+    init {
+        eventBus.subscribe(KnowledgeEvent.ItemMentioned::class, scope) { event ->
+            val existingItem = findItemByName(event.itemName)
+            if (existingItem != null) {
+                suggestionStore.add(Suggestion(
+                    type = SuggestionType.LINK_NOTE_TO_ITEM,
+                    data = mapOf("note" to event.note, "item" to existingItem)
+                ))
+            }
+        }
+    }
+}
 ```
 
-### Suggestion Pattern
+### Pattern: Auto-Discovery
 
-One module suggests an action in another module.
+Semantic similarity triggers suggestions across modules:
 
-**Example**: Tracking suggests a Quest when Item quantity is low.
+```kotlin
+class AutoDiscoveryService(
+    private val eventBus: EventBus,
+    private val aiService: AiService
+) {
+    init {
+        eventBus.subscribe(KnowledgeEvent.NoteUpdated::class, scope) { event ->
+            // Debounced, background embedding update
+            updateEmbeddingAndFindRelated(event.note)
+        }
+    }
 
-```text
-1. User decrements Item quantity
-2. Tracking publishes `tracking:quantity_changed`
-3. Tracking also publishes `tracking:quantity_zero` if applicable
-4. Guidance receives quantity_zero event
-5. Guidance creates a suggested Quest: "Restock {item_name}"
-6. User sees suggestion in Guidance inbox
+    private suspend fun updateEmbeddingAndFindRelated(note: Note) {
+        val embedding = aiService.embed(listOf(note.content)).first()
+        // Store embedding, find similar notes, quests, items
+        // Publish discovery events for high-similarity matches
+    }
+}
 ```
 
-### Reflection Pattern
+### Pattern: Cascade Reactions
 
-One module prompts documentation in another module.
+One event triggers another:
 
-**Example**: Guidance prompts for a reflection Note after Quest completion.
+```kotlin
+// Quest completion triggers reflection prompt
+eventBus.subscribe(GuidanceEvent.QuestCompleted::class, scope) { event ->
+    showReflectionPrompt(event.quest)
+}
 
-```text
-1. User completes Quest
-2. Guidance publishes `guidance:quest_completed`
-3. Knowledge receives event
-4. Knowledge prompts: "Add notes about completing {quest_title}?"
-5. If accepted, Knowledge creates Note linked to Quest
+// Reflection note creation triggers link suggestion
+eventBus.subscribe(KnowledgeEvent.NoteCreated::class, scope) { event ->
+    if (event.note.title.startsWith("Reflection:")) {
+        suggestLinkToCompletedQuest(event.note)
+    }
+}
 ```
-
----
-
-## Frontend Integration
-
-### Event Forwarding
-
-Backend events can be forwarded to the frontend for reactive UI updates:
-
-```text
-Backend Event Bus → Tauri Event Emitter → Frontend Event Listener
-```
-
-Not all events are forwarded—only those needed for UI reactivity.
-
-### Forwarded Events
-
-| Backend Event              | Frontend Use                          |
-| -------------------------- | ------------------------------------- |
-| `guidance:quest_completed` | Update energy meter, show celebration |
-| `guidance:energy_depleted` | Show warning indicator                |
-| `knowledge:note_updated`   | Refresh note list if visible          |
-| `tracking:quantity_zero`   | Show low-stock badge                  |
-| `system:sync_completed`    | Clear sync indicator                  |
-
-### Frontend-Only Events
-
-Some UI events don't involve the backend:
-
-| Event              | Purpose                |
-| ------------------ | ---------------------- |
-| `ui:modal_opened`  | Track modal state      |
-| `ui:navigation`    | Page change            |
-| `ui:theme_changed` | Dark/light mode toggle |
 
 ---
 
 ## Error Handling
 
-### Publisher Errors
+### Subscriber Failures
 
-If publishing fails (channel full, bus unavailable):
+Subscribers should handle their own errors. Failures don't propagate to publishers:
 
-1. Log warning with event details
-2. Continue execution (don't fail the primary action)
-3. Event is lost (at-most-once delivery)
+```kotlin
+eventBus.subscribe(SomeEvent::class, scope) { event ->
+    try {
+        processEvent(event)
+    } catch (e: Exception) {
+        logger.error("Failed to process event", e)
+        // Optionally: publish error event, show user notification
+    }
+}
+```
 
-### Subscriber Errors
+### Buffer Overflow
 
-If a handler throws an error:
-
-1. Log error with event and handler details
-2. Continue delivering to other subscribers
-3. Don't retry (handler should be idempotent anyway)
-
-### Circuit Breaker
-
-If a subscriber fails repeatedly:
-
-1. After N consecutive failures, mark subscriber as unhealthy
-2. Stop delivering events to unhealthy subscriber
-3. Periodically probe with single event to check recovery
-4. Restore delivery when probe succeeds
+If events are published faster than consumed, oldest events are dropped (configured via `BufferOverflow.DROP_OLDEST`).
+This prevents memory growth but means some events may be lost under extreme load.
 
 ---
 
@@ -268,59 +285,46 @@ If a subscriber fails repeatedly:
 
 ### Event Logging
 
-In development mode, all events are logged:
+In debug builds, all events are logged:
 
-```text
-[EVENT] guidance:quest_completed { quest_id: "01HXK3...", energy_spent: 3 }
+```kotlin
+class EventLogger(
+    private val eventBus: EventBus,
+    private val scope: CoroutineScope
+) {
+    init {
+        eventBus.subscribe(AppEvent::class, scope) { event ->
+            logger.debug("Event: ${event::class.simpleName} - $event")
+        }
+    }
+}
 ```
 
-### Event History
+### Event History (Debug Only)
 
-Recent events are kept in a ring buffer for debugging:
+Debug builds maintain a bounded history of recent events:
 
-- Last 1000 events retained in memory
-- Accessible via debug command or dev tools
-- Cleared on app restart
+```kotlin
+class EventHistory(
+    private val eventBus: EventBus,
+    private val maxSize: Int = 1000
+) {
+    private val history = ArrayDeque<Pair<Instant, AppEvent>>()
 
-### Tracing
+    fun getRecent(count: Int): List<Pair<Instant, AppEvent>> =
+        history.takeLast(count)
 
-Events can be correlated with request traces:
-
-- Each event includes optional `trace_id`
-- Trace spans the original user action through all resulting events
-- Enables "what happened when I clicked X?" debugging
-
----
-
-## Performance Considerations
-
-### Channel Capacity
-
-The broadcast channel has bounded capacity:
-
-- Default: 256 events
-- If full, oldest events dropped (with warning)
-- Slow subscribers should process asynchronously
-
-### Subscription Filtering
-
-Subscribers filter at subscription time, not delivery time:
-
-- `subscribe("guidance:*")` only receives Guidance events
-- Reduces unnecessary deserialization and dispatch
-
-### Batch Events
-
-For bulk operations, consider batch events:
-
-- `knowledge:notes_imported { count: 50, folder_id }` vs 50 individual events
-- Reduces event bus load
-- Subscribers can handle bulk updates efficiently
+    fun getByType(type: KClass<out AppEvent>): List<Pair<Instant, AppEvent>> =
+        history.filter { type.isInstance(it.second) }
+}
+```
 
 ---
 
 ## References
 
-- [ADR-003: Event Bus for Inter-Module Communication](../adr/003-event-bus-for-modules.md)
-- [System Architecture](./system-architecture.md) — Component relationships
-- [Domain Model](./domain-model.md) — Entity definitions
+- [ADR-003: Event Bus for Modules](../adr/003-event-bus-for-modules.md)
+- [Kotlin SharedFlow Documentation](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-shared-flow/)
+- FR-G-031: Cross-app drag-drop
+- FR-K-130: Cross-app discovery
+- FR-T-038: Real-time text analysis

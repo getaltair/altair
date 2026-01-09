@@ -8,29 +8,32 @@ It serves as the entry point for understanding system design and navigating to d
 ## System Synopsis
 
 Altair is an ADHD-focused productivity ecosystem consisting of three interconnected modules—Guidance (task management),
-Knowledge (PKM), and Tracking (inventory)—built as a single Tauri 2 desktop application with a Svelte 5 frontend and
-Rust backend. The system emphasizes local-first architecture, externalized executive function, and seamless cross-module
-integration.
+Knowledge (PKM), and Tracking (inventory)—built with Kotlin Multiplatform and Compose Multiplatform for desktop and
+mobile. The system emphasizes privacy-focused self-hosted architecture, externalized executive function, and seamless
+cross-module integration.
 
 ### Technology Stack
 
-| Layer              | Technology         | Version              | Purpose                                     |
-| ------------------ | ------------------ | -------------------- | ------------------------------------------- |
-| Desktop Runtime    | Tauri              | 2.0+                 | Native desktop app with web frontend        |
-| Frontend Framework | Svelte             | 5.0+                 | Reactive UI components                      |
-| UI Components      | shadcn-svelte      | latest               | Accessible, themeable component library     |
-| Backend Language   | Rust               | 1.83+ (2024 edition) | Core logic, performance-critical operations |
-| Database           | SurrealDB          | 2.0+                 | Embedded database with optional cloud sync  |
-| AI Inference       | ort (ONNX Runtime) | latest               | Local model inference                       |
-| AI Providers       | Adapter pattern    | —                    | Ollama, Anthropic, OpenAI, OpenRouter       |
+| Layer            | Technology              | Version | Purpose                                    |
+| ---------------- | ----------------------- | ------- | ------------------------------------------ |
+| UI Framework     | Compose Multiplatform   | 1.8+    | Cross-platform UI (desktop, Android, iOS)  |
+| UI Components    | Compose Unstyled        | 1.49+   | Headless primitives with Altair theme      |
+| Shared Logic     | Kotlin Multiplatform    | 2.2+    | Domain models, validation, repositories    |
+| Desktop Database | SurrealDB               | 2.0+    | Embedded graph database with vector search |
+| Mobile Database  | SQLite (SQLDelight)     | 2.0+    | Lightweight embedded database              |
+| Server Framework | Ktor                    | 3.1+    | Self-hosted backend with kotlinx-rpc       |
+| Server Database  | SurrealDB               | 2.0+    | Primary data store and sync hub            |
+| AI Services      | ort + whisper.cpp       | latest  | Server-side embeddings and transcription   |
+| Deployment       | Docker Compose          | 3.8+    | Self-hosted server stack                   |
 
 ### Core Design Principles
 
-1. **Local-first**: All features work offline; cloud sync is optional
-2. **Single application**: One Tauri binary containing all three modules
-3. **Shared data layer**: Unified SurrealDB instance accessed by all modules
-4. **Event-driven integration**: Loose coupling via internal event bus
-5. **ADHD-optimized**: UI enforces constraints that externalize executive function
+1. **Privacy-focused**: Self-hosted server keeps all data on your infrastructure
+2. **Offline-capable**: Desktop works fully offline; mobile requires server for AI
+3. **Single codebase**: Kotlin Multiplatform shares 90%+ code across platforms
+4. **Shared data layer**: Hybrid database strategy (SurrealDB desktop/server, SQLite mobile)
+5. **Event-driven integration**: Loose coupling via internal event bus (desktop)
+6. **ADHD-optimized**: UI enforces constraints that externalize executive function
 
 ---
 
@@ -38,121 +41,91 @@ integration.
 
 ### Core Documents
 
-| Document                                           | Purpose                     | Key Contents                                             |
-| -------------------------------------------------- | --------------------------- | -------------------------------------------------------- |
-| [system-architecture.md](./system-architecture.md) | Technical infrastructure    | Tauri/Svelte/Rust stack, build system, project structure |
-| [domain-model.md](./domain-model.md)               | Business logic and entities | Quest, Note, Item models; cross-module relationships     |
-| [persistence.md](./persistence.md)                 | Data storage                | SurrealDB schema, sync strategy, migrations              |
-| [event-bus.md](./event-bus.md)                     | Inter-module communication  | Event types, pub/sub patterns, contracts                 |
-
-### Development Documents
-
-Located in `docs/development/`:
-
-| Document                                                          | Purpose                              |
-| ----------------------------------------------------------------- | ------------------------------------ |
-| [getting-started.md](../development/getting-started.md)           | Dev environment setup                |
-| [development-workflow.md](../development/development-workflow.md) | Git flow, commits, versioning, CI/CD |
-| [testing-strategy.md](../development/testing-strategy.md)         | Unit, integration, E2E testing       |
-
-### Reference Documents
-
-Located in `docs/reference/`:
-
-| Document                                | Purpose                 |
-| --------------------------------------- | ----------------------- |
-| [glossary.md](../reference/glossary.md) | Terminology definitions |
+| Document                                           | Purpose                     | Key Contents                                         |
+| -------------------------------------------------- | --------------------------- | ---------------------------------------------------- |
+| [system-architecture.md](./system-architecture.md) | Technical infrastructure    | KMP/Compose stack, platform targets, layer boundaries |
+| [domain-model.md](./domain-model.md)               | Business logic and entities | Quest, Note, Item models; cross-module relationships |
+| [persistence.md](./persistence.md)                 | Data storage                | Hybrid database schema, sync protocol, migrations    |
+| [event-bus.md](./event-bus.md)                     | Inter-module communication  | Event types, pub/sub patterns, contracts             |
 
 ### Architecture Decision Records
 
-Located in `docs/adr/`:
-
-| ADR                                               | Decision                                 | Status   |
-| ------------------------------------------------- | ---------------------------------------- | -------- |
-| [ADR-001](../adr/001-single-tauri-application.md) | Single Tauri application                 | Accepted |
-| [ADR-002](../adr/002-surrealdb-embedded.md)       | SurrealDB for persistence                | Accepted |
-| [ADR-003](../adr/003-event-bus-for-modules.md)    | Event bus for inter-module communication | Accepted |
-| [ADR-004](../adr/004-ai-provider-adapters.md)     | AI provider adapter pattern              | Accepted |
+| ADR | Decision | Status |
+|-----|----------|--------|
+| [ADR-001](../adr/001-single-tauri-application.md) | Kotlin Multiplatform + Compose Multiplatform | Accepted |
+| [ADR-002](../adr/002-surrealdb-embedded.md) | Hybrid Database (SurrealDB + SQLite) | Accepted |
+| [ADR-003](../adr/003-event-bus-for-modules.md) | Event Bus for Modules | Accepted |
+| [ADR-005](../adr/005-kotlinx-rpc-communication.md) | kotlinx-rpc for Client-Server Communication | Accepted |
+| [ADR-006](../adr/006-server-centralized-ai.md) | Server-Centralized AI Services | Accepted |
+| [ADR-007](../adr/007-docker-compose-deployment.md) | Docker Compose Deployment | Accepted |
+| [ADR-008](../adr/008-compose-unstyled-altair-theme.md) | Compose Unstyled + Custom Altair Theme | Accepted |
 
 ---
 
-## Document Relationships
+## Module Overview
 
-```mermaid
-flowchart TD
-    overview["overview.md<br/><i>(you are here)</i>"]
-    
-    overview --> system["system-architecture.md<br/>• Tech stack<br/>• Project layout<br/>• Build system"]
-    overview --> domain["domain-model.md<br/>• Entities<br/>• Relationships<br/>• Business rules"]
-    overview --> dev["development/<br/>• getting-started<br/>• workflow<br/>• testing"]
-    
-    system --> persistence["persistence.md<br/>• SurrealDB schema<br/>• Sync strategy<br/>• Migrations"]
-    domain --> eventbus["event-bus.md<br/>• Event types<br/>• Pub/sub<br/>• Contracts"]
-    
-    eventbus --> persistence
+### Guidance (Task Management)
+
+Quest-Based Agile methodology with energy-based planning:
+
+- **Epics**: Long-term goals containing multiple Quests
+- **Quests**: Focused tasks with energy cost (1-5) and WIP=1 enforcement
+- **Checkpoints**: Optional sub-steps within a Quest
+- **Energy Budget**: Daily capacity tracking with soft limits
+
+### Knowledge (PKM)
+
+Personal knowledge management with bidirectional linking:
+
+- **Notes**: Markdown content with wiki-link syntax `[[Title]]`
+- **Folders**: Hierarchical organization
+- **Tags**: Cross-cutting categorization
+- **Semantic Search**: Vector similarity for discovering related notes (desktop)
+
+### Tracking (Inventory)
+
+Physical item management with location awareness:
+
+- **Items**: Named objects with quantity and optional photo
+- **Locations**: Hierarchical places (Room → Shelf)
+- **Containers**: Movable storage (Box, Toolbox)
+- **Custom Fields**: Template-based additional attributes
+
+---
+
+## Cross-Module Integration
+
+Modules communicate via events and share linked data:
+
+```
+Quest ←→ Note      (Quest references notes for context)
+Quest ←→ Item      (Quest links to required tools/materials)
+Note  ←→ Item      (Notes mention items via [[Item:Name]])
 ```
 
----
-
-## Application Modules
-
-The three logical modules share infrastructure within a single Tauri application:
-
-| Module        | PRD Reference                                                      | Responsibility                       |
-| ------------- | ------------------------------------------------------------------ | ------------------------------------ |
-| **Guidance**  | [altair-prd-guidance.md](../requirements/altair-prd-guidance.md)   | Quest-Based Agile task management    |
-| **Knowledge** | [altair-prd-knowledge.md](../requirements/altair-prd-knowledge.md) | Personal knowledge management        |
-| **Tracking**  | [altair-prd-tracking.md](../requirements/altair-prd-tracking.md)   | Inventory and asset management       |
-| **Core**      | [altair-prd-core.md](../requirements/altair-prd-core.md)           | Shared infrastructure, design system |
-
-### Inter-Module Communication
-
-Modules communicate through two mechanisms:
-
-1. **Shared Database (SurrealDB)**
-   - Direct queries for cross-module data (e.g., "get all notes linked to this quest")
-   - Graph relationships between entities
-   - Source of truth for all persistent state
-
-2. **Event Bus (Internal Pub/Sub)**
-   - Real-time reactive updates between modules
-   - Loose coupling—modules don't call each other directly
-   - Enables features like auto-discovery popups
-
-See [event-bus.md](./event-bus.md) for the complete event contract.
+The event bus enables reactive features:
+- Quest completion prompts reflection Note creation
+- Item quantity zero suggests restock Quest
+- Note content changes trigger re-embedding for similarity search
 
 ---
 
-## Quick Reference
+## Platform Targets
 
-### Finding Information
-
-| I want to understand...       | Go to...                                                          |
-| ----------------------------- | ----------------------------------------------------------------- |
-| What Altair does              | This document                                                     |
-| Project structure and tooling | [system-architecture.md](./system-architecture.md)                |
-| Data models and relationships | [domain-model.md](./domain-model.md)                              |
-| Database schema and queries   | [persistence.md](./persistence.md)                                |
-| How modules communicate       | [event-bus.md](./event-bus.md)                                    |
-| Testing approach              | [testing-strategy.md](../development/testing-strategy.md)         |
-| Git workflow and CI/CD        | [development-workflow.md](../development/development-workflow.md) |
-| Functional requirements       | PRD documents in `docs/requirements/`                             |
-| Why we made a decision        | ADR documents in `docs/adr/`                                      |
-
-### Requirement Traceability
-
-Architecture decisions and implementations link to PRD requirements using the format `FR-X-NNN`:
-
-| Prefix   | Source                 |
-| -------- | ---------------------- |
-| `FR-G-*` | Guidance requirements  |
-| `FR-K-*` | Knowledge requirements |
-| `FR-T-*` | Tracking requirements  |
+| Platform | Scope | Database | AI Services |
+|----------|-------|----------|-------------|
+| Desktop (Win/Linux/macOS) | Full features | SurrealDB embedded | Server + local fallback |
+| Mobile (Android/iOS) | Quick capture + view | SQLite embedded | Server required |
+| Server (Docker) | Sync + AI hub | SurrealDB | Local inference |
 
 ---
 
-## Version History
+## References
 
-| Version | Date       | Changes                       |
-| ------- | ---------- | ----------------------------- |
-| 0.1.0   | 2026-01-08 | Initial architecture overview |
+- [Implementation Plan](../implementation-plan.md) — Feature specs in development order
+- [Requirements](../requirements/) — PRDs with functional requirements
+- [AGENTS.md](../../AGENTS.md) — AI assistant coding conventions
+
+---
+
+*Last updated: January 9, 2026*

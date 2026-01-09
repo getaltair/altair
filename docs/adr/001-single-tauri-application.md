@@ -1,101 +1,121 @@
-# ADR-001: Single Tauri Application
+# ADR-001: Kotlin Multiplatform Application Architecture
 
-| Field        | Value           |
-| ------------ | --------------- |
-| **Status**   | Accepted        |
-| **Date**     | 2026-01-08      |
-| **Deciders** | Robert Hamilton |
+| Field             | Value                                        |
+| ----------------- | -------------------------------------------- |
+| **Status**        | Accepted                                     |
+| **Date**          | 2026-01-09                                   |
+| **Deciders**      | Robert Hamilton                              |
+| **Supersedes**    | ADR-001 (Single Tauri Application, original) |
 
 ## Context
 
-Altair consists of three logical applications—Guidance (task management), Knowledge (PKM),
-and Tracking (inventory)—that share data and need to communicate in real-time. We needed to decide whether to build:
+Altair consists of three logical applications—Guidance (task management), Knowledge (PKM), and Tracking (inventory)—that
+share data and need to communicate in real-time. The system must support:
 
-1. **Three separate applications** with a shared background service/daemon
-2. **A single application** containing all three modules
+1. **Desktop platforms**: Windows, Linux (hard requirements), macOS (nice to have)
+2. **Mobile platforms**: Android (hard requirement), iOS (nice to have)
+3. **Self-hosted cloud sync**: User-operated server for multi-device synchronization
+4. **Absolutely no Electron**: Performance and resource usage are critical for ADHD users
 
-The decision impacts development complexity, user experience, deployment, and the feasibility of cross-module features
-like auto-discovery and linked data.
+Mobile scope is intentionally limited to "quick capture + view"—not full feature parity with desktop.
 
 ## Decision
 
-Build Altair as a **single Tauri application** containing all three modules within one binary. Modules communicate via
-in-process event bus and share a single embedded SurrealDB instance.
+Build Altair using **Kotlin Multiplatform (KMP)** with **Compose Multiplatform** for the UI layer:
 
-Users experience the modules as tabs, separate windows, or navigation sections within one application—not as
-independently installable programs.
+- **Desktop**: Full-featured Compose Multiplatform application with SurrealDB embedded
+- **Mobile**: Lightweight Compose Multiplatform application with SQLite embedded (quick capture focus)
+- **Server**: Ktor-based server with kotlinx-rpc endpoints, SurrealDB, and AI services
+
+All three targets share a common Kotlin codebase for domain models, validation logic, and UI components. Communication
+between clients and server uses kotlinx-rpc (gRPC-compatible protocol).
 
 ## Consequences
 
 ### Positive
 
-- **Simplified data sharing**: All modules access the same SurrealDB instance directly; no IPC serialization overhead
-- **Trivial cross-module features**: Event bus is in-process; auto-discovery, linking, and reservations are simple
-  function calls
-- **Single release cycle**: One binary to build, test, sign, and distribute
-- **No lifecycle complexity**: No daemon startup/shutdown, reference counting, or crash recovery between processes
-- **Consistent UX**: Shared design system, navigation, and settings across all modules
-- **Lower development cost**: Estimated 2-3 months saved vs. multi-process architecture
+- **90-96% code sharing**: Domain models, validation, and most UI shared across all platforms
+- **Native performance**: Compose Multiplatform renders natively (Skia on desktop, native on Android, Metal on iOS)
+- **Single language**: Kotlin across frontend, backend, and shared logic—no context switching
+- **Production-proven**: McDonald's, Google Docs, Cash App, Forbes, Netflix use KMP in production
+- **Mobile-ready**: Compose Multiplatform iOS stable since May 2025 (v1.8.0)
+- **Type-safe IPC**: kotlinx-rpc provides compile-time checked client-server communication
+- **JetBrains backing**: Active development with Google collaboration on build tooling
 
 ### Negative
 
-- **Larger binary size**: Users who only want one module still download the full application
-- **Coupled releases**: Bug in one module blocks release of all modules
-- **Memory footprint**: All module code loaded even if user only uses one
-- **No independent scaling**: Cannot run Tracking on a different machine than Guidance
+- **Gradle complexity**: Build times 2-10 minutes vs 10-30s for pure Android projects
+- **Learning curve**: 2-4 weeks for Kotlin, 1-2 weeks for KMP-specific patterns
+- **Binary size**: iOS ~9MB overhead, Android 8-12% larger than pure native
+- **Desktop distribution**: Requires bundling JVM runtime (~40-50MB for packaged app)
+- **Smaller ecosystem**: Fewer KMP libraries than pure Android or web ecosystems
 
 ### Neutral
 
-- Users can still have multiple windows (one per module) if desired
-- Future extraction to separate apps remains possible if demand emerges
+- Desktop apps use JVM; could explore GraalVM native-image later for smaller binaries
+- iOS requires macOS + Xcode for building (standard for any iOS development)
 
 ## Alternatives Considered
 
-### Alternative 1: Separate Apps with Shared Daemon
+### Alternative 1: Tauri 2 (Rust + Web)
 
-Three independent Tauri applications communicating with a headless background service via Unix sockets (Linux) / named
-pipes (Windows).
+Desktop-first framework using Rust backend and web frontend.
 
-**Architecture:**
+**Pros:**
 
-```mermaid
-flowchart TD
-    subgraph apps["UI Applications"]
-        guidance["Guidance"]
-        knowledge["Knowledge"]
-        tracking["Tracking"]
-    end
-    
-    guidance --> ipc["IPC (socket/pipe)"]
-    knowledge --> ipc
-    tracking --> ipc
-    
-    ipc --> service["Altair Service<br/>(SurrealDB, AI)"]
-```
+- Excellent desktop support, small binaries (~5MB)
+- Rust backend performance and safety
+- Strong web ecosystem (Svelte, React, etc.)
 
 **Rejected because:**
 
-1. **Lifecycle complexity**: Reference counting for service startup/shutdown; crash recovery; platform-specific IPC implementations
-2. **Industry trend against daemons**: Research showed Obsidian, Notion, Linear, and Raycast all avoid traditional
-   daemons in favor of in-process or child-process architectures
-3. **Development overhead**: Estimated 2-3 additional months for IPC layer, lifecycle management, and cross-platform testing
-4. **Unclear user demand**: No evidence users specifically need separately installable modules
+- Mobile support is "production-capable" but not "first-class citizen"
+- Android requires SDK, NDK, 4 Rust target toolchains
+- No shared logic between web frontend and Rust backend
+- Real production mobile apps with Tauri are scarce
 
-### Alternative 2: Microservices with Local HTTP
+### Alternative 2: Flutter
 
-Each module as a separate process, communicating via localhost HTTP/REST APIs.
+Google's cross-platform UI framework with Dart.
+
+**Pros:**
+
+- Mature cross-platform (desktop stable since May 2022)
+- Large ecosystem (55,000+ packages)
+- Impeller rendering engine improvements
 
 **Rejected because:**
 
-1. HTTP overhead for high-frequency events (auto-discovery needs sub-100ms response)
-2. Same lifecycle complexity as Alternative 1
-3. Overkill for single-user desktop application
+- Active Linux rendering issues (backdrop filters #169508, shader failures #179185, crashes #172000)
+- May 2024 layoffs affected Flutter team; mixed signals on commitment
+- Dart is a single-purpose language with limited ecosystem outside Flutter
+- Desktop performance lags behind mobile (Linux especially)
+
+### Alternative 3: Qt/QML
+
+Cross-platform C++ framework with QML declarative UI.
+
+**Rejected because:**
+
+- Complex licensing (€1M revenue threshold, LGPL v3 dynamic linking, iOS requires commercial)
+- Steep learning curve (C++, QML, Qt concepts)
+- APK sizes 18-55MB
+- Dated developer experience compared to modern frameworks
+
+### Alternative 4: Electron
+
+Web technologies wrapped in Chromium.
+
+**Rejected because:**
+
+- Explicitly excluded by requirements ("Absolutely no Electron")
+- Resource usage problematic for ADHD users who need responsive tools
+- 150-200MB base memory footprint
 
 ## References
 
-- [Desktop Application Background Service Architectures Research](../reference/desktop-service-architectures.md) —
-  Analysis of Obsidian, 1Password, Notion, Raycast, Linear, Figma, Docker Desktop, VS Code
+- [Compose Multiplatform Production Apps](https://www.jetbrains.com/lp/compose-multiplatform/) — McDonald's, Google Docs, Cash App examples
+- [Compose Multiplatform 1.8.0 Release](https://blog.jetbrains.com/kotlin/2025/05/compose-multiplatform-1-8-0/) — iOS production stability
+- [ADR-002: Hybrid Database Strategy](./002-surrealdb-embedded.md)
+- [ADR-005: kotlinx-rpc Communication](./005-kotlinx-rpc-communication.md)
 - PRD Core, Section 5: System Architecture
-- FR-G-031: Cross-app drag-drop
-- FR-K-130: Cross-app discovery
-- FR-T-038: Real-time text analysis for item detection

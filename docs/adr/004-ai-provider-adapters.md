@@ -1,10 +1,16 @@
 # ADR-004: AI Provider Adapter Pattern
 
-| Field        | Value           |
-| ------------ | --------------- |
-| **Status**   | Accepted        |
-| **Date**     | 2026-01-08      |
-| **Deciders** | Robert Hamilton |
+| Field             | Value                                                      |
+| ----------------- | ---------------------------------------------------------- |
+| **Status**        | Superseded                                                 |
+| **Date**          | 2026-01-08                                                 |
+| **Deciders**      | Robert Hamilton                                            |
+| **Superseded by** | [ADR-006](./006-server-centralized-ai.md) (Jan 9, 2026)    |
+
+> **Note**: This ADR described local-first AI with desktop-bundled models. With the shift to Kotlin
+> Multiplatform and mobile support (ADR-001), AI services have been centralized on the self-hosted
+> server. See ADR-006 for the current architecture. The adapter pattern concept remains relevant
+> but is now implemented server-side.
 
 ## Context
 

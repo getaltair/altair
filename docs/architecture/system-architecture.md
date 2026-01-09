@@ -9,213 +9,215 @@ key patterns used throughout the system.
 
 ## Technology Stack
 
-| Layer           | Technology           | Rationale                                                         |
-| --------------- | -------------------- | ----------------------------------------------------------------- |
-| Desktop Runtime | Tauri 2              | Native performance, small bundle, Rust backend                    |
-| Frontend        | Svelte 5 + SvelteKit | Runes reactivity, file-based routing, good DX                     |
-| UI Components   | shadcn-svelte        | Accessible primitives, Tailwind styling, unstyled flexibility     |
-| Backend         | Rust 2024 edition    | Memory safety, async performance, ONNX/Whisper bindings           |
-| Database        | SurrealDB embedded   | Graph queries, full-text search, vector search, single dependency |
-| Local AI        | ort + whisper-rs     | Privacy-first embeddings and transcription                        |
+| Layer            | Technology                   | Rationale                                                |
+| ---------------- | ---------------------------- | -------------------------------------------------------- |
+| UI Framework     | Compose Multiplatform        | Single codebase for desktop, Android, iOS                |
+| UI Components    | Compose Unstyled + Altair    | Headless primitives with custom Linear-inspired theme    |
+| Shared Logic     | Kotlin Multiplatform         | Domain models, validation shared across all targets      |
+| Desktop Database | SurrealDB embedded           | Graph queries, vector search, full-text search           |
+| Mobile Database  | SQLite (SQLDelight)          | Quick capture, proven mobile reliability                 |
+| Server Framework | Ktor                         | Kotlin-native, lightweight, kotlinx-rpc integration      |
+| Server Database  | SurrealDB                    | Primary store, sync hub                                  |
+| Client-Server    | kotlinx-rpc (gRPC)           | Type-safe, streaming, compile-time checked               |
+| Server AI        | ort + whisper.cpp            | Local embeddings and transcription                       |
+| Deployment       | Docker Compose               | Single-command self-hosted deployment                    |
 
 ---
 
 ## Component Architecture
 
-```mermaid
-flowchart TB
-    subgraph frontend["Frontend Layer"]
-        routes["Routes<br/>(pages)"]
-        stores["Stores<br/>(state)"]
-        components["Components<br/>(UI)"]
-    end
-
-    subgraph bridge["IPC Bridge"]
-        ipc["Tauri Commands"]
-    end
-
-    subgraph backend["Backend Layer"]
-        guidance["Guidance Module"]
-        knowledge["Knowledge Module"]
-        tracking["Tracking Module"]
-        eventbus["Event Bus"]
-        ai["AI Service"]
-    end
-
-    subgraph data["Data Layer"]
-        db["SurrealDB"]
-        models["Local Models"]
-    end
-
-    routes --> stores
-    stores --> ipc
-    components --> stores
-
-    ipc --> guidance
-    ipc --> knowledge
-    ipc --> tracking
-
-    guidance <--> eventbus
-    knowledge <--> eventbus
-    tracking <--> eventbus
-
-    guidance --> db
-    knowledge --> db
-    tracking --> db
-
-    guidance --> ai
-    knowledge --> ai
-    ai --> models
 ```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                     Docker Compose (self-hosted server)                     │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │                        altair-server (Ktor)                           │  │
+│  │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────────┐   │  │
+│  │  │  kotlinx-rpc    │  │   AI Service    │  │    Sync Engine      │   │  │
+│  │  │   endpoints     │  │ embed/transcribe│  │  conflict resolve   │   │  │
+│  │  └─────────────────┘  └─────────────────┘  └─────────────────────┘   │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+│  ┌───────────────────────┐  ┌─────────────────────────────────────────┐    │
+│  │      SurrealDB        │  │        Ollama (optional)                │    │
+│  │      container        │  │        local completion                 │    │
+│  └───────────────────────┘  └─────────────────────────────────────────┘    │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                      ▲
+                                      │ kotlinx-rpc (gRPC-compatible)
+                      ┌───────────────┴───────────────┐
+                      │                               │
+           ┌──────────┴──────────┐        ┌───────────┴───────────┐
+           │       Desktop       │        │        Mobile         │
+           │  Compose Multiplatf │        │   Compose Multiplatf  │
+           │  SurrealDB embedded │        │   SQLite embedded     │
+           │  Full features      │        │   Quick capture       │
+           └─────────────────────┘        └───────────────────────┘
+```
+
+---
+
+## Platform Targets
+
+### Desktop (Windows, Linux, macOS)
+
+Full-featured application with:
+
+- All three modules: Guidance, Knowledge, Tracking
+- SurrealDB embedded for offline operation
+- Graph queries, vector search, semantic similarity
+- Offline-capable with sync when server available
+- Focus mode, keyboard shortcuts, multi-window
+
+### Mobile (Android, iOS)
+
+Lightweight quick-capture application with:
+
+- Basic CRUD for Quests, Notes, Items
+- SQLite embedded for simplicity and reliability
+- Server-dependent for AI features
+- Sync-first architecture (requires server for full functionality)
+- Voice capture, camera for item photos
+
+### Server (Self-Hosted)
+
+Docker Compose stack providing:
+
+- Sync hub for all client devices
+- AI services (embeddings, transcription, completion proxy)
+- User authentication and data isolation
+- SurrealDB as primary data store
 
 ---
 
 ## Layer Responsibilities
 
-### Frontend Layer
+### UI Layer (Compose Multiplatform)
 
-Handles user interaction and presentation. No business logic lives here.
+Handles user interaction and presentation using the Altair design system.
 
-- **Routes**: Page-level components, URL-driven navigation
-- **Stores**: Reactive state containers, cache Tauri command results
-- **Components**: Reusable UI elements, stateless where possible
+- **Screens**: Route-level composables, navigation hosts
+- **Components**: Reusable UI elements built on Compose Unstyled
+- **ViewModels**: State holders using Kotlin Multiplatform ViewModel
+- **Theme**: Altair design tokens (colors, typography, spacing)
 
-The frontend communicates with the backend exclusively through Tauri commands. It never accesses the database or file
-system directly.
+The UI layer communicates with repositories; it never accesses databases directly.
 
-### IPC Bridge
+### Domain Layer (Shared Kotlin)
 
-Tauri commands are the contract between frontend and backend. They define a typed API surface.
+Contains business logic shared across all platforms:
 
-- Commands are async and return `Result<T, Error>`
-- Serialization is automatic (serde JSON)
-- Commands should be thin wrappers that delegate to module services
+- **Entities**: Quest, Epic, Note, Item, etc. (data classes)
+- **Repositories**: Interfaces defining data operations
+- **Use Cases**: Business logic operations (optional, for complex flows)
+- **Validation**: Input validation rules
 
-### Backend Layer
+### Data Layer (Platform-Specific)
 
-Contains all business logic, organized by domain module.
+Implements repository interfaces with platform-specific storage:
 
-**Modules** (Guidance, Knowledge, Tracking):
+**Desktop:**
+- SurrealDB via surrealdb.java JNI bindings
+- Full query capabilities (graph traversal, vector search)
 
-- Own their domain logic and validation rules
-- Communicate with each other via the Event Bus, not direct calls
-- Access the database through a shared abstraction
+**Mobile:**
+- SQLite via SQLDelight
+- Type-safe generated queries
+- Simpler schema without graph relations
 
-**Event Bus**:
+**Server:**
+- SurrealDB primary store
+- Sync version tracking
+- Conflict resolution logic
 
-- Enables loose coupling between modules
-- Publish/subscribe pattern using `tokio::sync::broadcast`
-- Events are typed and versioned
+### Network Layer
 
-**AI Service**:
+Client-server communication via kotlinx-rpc:
 
-- Abstracts over local and cloud providers
-- Exposes capabilities (completion, embedding, transcription)
-- See [ADR-004](../adr/004-ai-provider-adapters.md) for provider details
-
-### Data Layer
-
-Persistence and local AI models.
-
-**SurrealDB**:
-
-- Runs embedded (in-process), no separate server
-- Uses SurrealKV storage engine
-- Stores all entities, relationships, and vector embeddings
-
-**Local Models**:
-
-- ONNX embedding model for semantic search
-- Whisper model for transcription
-- Loaded lazily on first use
+- **SyncService**: Pull/push changes, stream real-time updates
+- **AiService**: Embeddings, transcription, completion
+- **AuthService**: Login, token refresh, logout
 
 ---
 
 ## Key Boundaries
 
-### Frontend ↔ Backend
+### Client ↔ Server
 
-The Tauri IPC layer is a hard boundary. The frontend:
+The kotlinx-rpc layer is a hard boundary. Clients:
 
-- Cannot import Rust code
-- Cannot access the database directly
-- Cannot read arbitrary files
+- Cannot access server database directly
+- Send typed RPC requests for all server operations
+- Handle offline scenarios gracefully (desktop more capable than mobile)
 
-This ensures the backend can enforce all business rules.
+### UI ↔ Domain
 
-### Module ↔ Module
+ViewModels expose state; UI observes and renders. UI:
 
-Modules communicate through events, not direct function calls. This:
+- Cannot import repository implementations
+- Cannot execute database queries
+- Dispatches intents to ViewModels
 
-- Prevents circular dependencies
-- Allows modules to evolve independently
-- Makes cross-module features explicit
+### Desktop ↔ Mobile
 
-Example: When Knowledge detects an item mention in a note, it publishes `ItemMentioned`. Tracking subscribes and can
-prompt the user to link or create an item.
+While sharing UI components and domain logic:
 
-### Application ↔ External Services
-
-Cloud AI providers are accessed through the adapter pattern. The application never directly calls provider APIs from
-business logic—it goes through `AiService`, which handles:
-
-- Provider selection based on user config
-- Fallback logic
-- Rate limiting and error handling
+- Desktop has SurrealDB-specific repository implementations
+- Mobile has SQLite-specific repository implementations
+- Some features are desktop-only (semantic search, graph traversal)
 
 ---
 
 ## Data Flow Patterns
 
-### Command Flow (User Action → Database)
+### Local Operation (Desktop)
 
-1. User interacts with UI component
-2. Component calls store method
-3. Store invokes Tauri command
-4. Command handler validates input
-5. Module service executes business logic
-6. Database transaction commits
-7. Result flows back up the chain
+1. User interacts with UI
+2. ViewModel receives intent
+3. Repository executes SurrealDB query
+4. Result flows back through ViewModel
+5. UI re-renders
 
-### Event Flow (Cross-Module Reaction)
+### Sync Flow
 
-1. Module A performs an action
-2. Module A publishes event to Event Bus
-3. Event Bus delivers to all subscribers
-4. Module B receives event
-5. Module B performs its reaction
-6. (Optionally) Module B publishes its own event
+1. Client pulls changes from server (delta since last sync)
+2. Server returns changed entities with versions
+3. Client merges into local database
+4. Client pushes local changes
+5. Server resolves conflicts, returns authoritative versions
+6. Client applies server decisions
 
-### Query Flow (Database → UI)
+### AI Request Flow
 
-1. Store requests data via Tauri command
-2. Command executes SurrealQL query
-3. Results deserialize to Rust structs
-4. Structs serialize to JSON for IPC
-5. Store updates reactive state
-6. UI re-renders affected components
+1. Client sends text/audio to server via AiService RPC
+2. Server processes with local models (embeddings/transcription)
+3. For completion, server proxies to configured provider
+4. Result streams back to client (token-by-token for completion)
 
 ---
 
 ## Security Model
 
-### Process Isolation
+### Authentication
 
-The Tauri WebView runs in a separate process from the Rust backend. The WebView:
+- JWT tokens issued by server AuthService
+- Tokens stored in platform-secure storage (Keychain, Keystore, etc.)
+- Refresh tokens for long-lived sessions
 
-- Has a restrictive Content Security Policy
-- Cannot execute arbitrary system commands
-- Cannot access the network except through defined APIs
+### Data Isolation
 
-### Capability-Based Permissions
+- Server enforces per-user data access
+- SurrealDB row-level permissions by user namespace
+- Clients cannot access other users' data
 
-Tauri 2 uses explicit capability grants. File system access, shell commands, and other sensitive operations require
-declared permissions that the user can audit.
+### Transport Security
+
+- All client-server communication over TLS
+- Users configure HTTPS via reverse proxy (Traefik, Nginx)
+- gRPC uses HTTP/2 with TLS
 
 ### Secret Storage
 
-API keys for cloud providers are stored in the system keychain (macOS Keychain, Windows Credential Manager, Linux Secret
-Service), not in config files.
+- API keys for completion providers stored server-side
+- No sensitive credentials on client devices
 
 ---
 
@@ -225,28 +227,37 @@ Service), not in config files.
 
 Target: < 2 seconds to interactive UI
 
-- AI models load lazily (first use, not startup)
-- Database connection pooled
-- Frontend bundle code-split by route
+- Database connections pooled and reused
+- AI models loaded lazily on first use (server-side)
+- UI renders immediately; data loads asynchronously
 
 ### Bundle Size
 
-The base application (without AI models) targets ~20 MB. AI models add ~200 MB but can be downloaded on first use rather
-than bundled.
+- Desktop: ~50-80MB (JVM runtime bundled)
+- Android: ~15-25MB APK
+- iOS: ~30-40MB IPA
 
 ### Database
 
-SurrealDB queries should:
+Desktop SurrealDB queries should:
 
 - Use indexes for frequently-filtered fields
+- Leverage graph traversal instead of JOINs
+- Batch embedding updates in background
+
+Mobile SQLite queries should:
+
+- Use prepared statements via SQLDelight
 - Limit result sets for list views
-- Leverage graph traversal for relationship queries
+- Sync incrementally (not full table scans)
 
 ---
 
 ## References
 
-- [ADR-001: Single Tauri Application](../adr/001-single-tauri-application.md)
-- [ADR-002: SurrealDB for Persistence](../adr/002-surrealdb-embedded.md)
-- [ADR-003: Event Bus for Modules](../adr/003-event-bus-for-modules.md)
-- [ADR-004: AI Provider Adapters](../adr/004-ai-provider-adapters.md)
+- [ADR-001: Kotlin Multiplatform Architecture](../adr/001-single-tauri-application.md)
+- [ADR-002: Hybrid Database Strategy](../adr/002-surrealdb-embedded.md)
+- [ADR-005: kotlinx-rpc Communication](../adr/005-kotlinx-rpc-communication.md)
+- [ADR-006: Server-Centralized AI](../adr/006-server-centralized-ai.md)
+- [ADR-007: Docker Compose Deployment](../adr/007-docker-compose-deployment.md)
+- [ADR-008: Compose Unstyled + Altair Theme](../adr/008-compose-unstyled-altair-theme.md)

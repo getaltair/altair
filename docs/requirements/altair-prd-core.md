@@ -29,7 +29,7 @@ Existing productivity tools fail individuals with ADHD in predictable ways:
 - **Fragmented ecosystems**: Knowledge, tasks, and inventory live in separate apps with no meaningful integration, increasing cognitive load.
 - **Cloud-dependent**: Many tools require constant connectivity and store sensitive data on third-party servers, creating privacy concerns and offline failures.
 
-Altair addresses these problems through externalized executive function, enforced constraints (like WIP=1), variable capacity support, and a local-first architecture that respects user privacy.
+Altair addresses these problems through externalized executive function, enforced constraints (like WIP=1), variable capacity support, and a privacy-focused self-hosted architecture that keeps your data on your own infrastructure.
 
 ---
 
@@ -64,7 +64,7 @@ Altair addresses these problems through externalized executive function, enforce
 2. **Unify productivity domains** — Tasks, knowledge, and inventory share data and surface relevant connections automatically.
 3. **Respect variable capacity** — Daily energy fluctuates; the system adapts rather than demanding consistency.
 4. **Eliminate shame** — No failure states. Incomplete work is pausable, archivable, and recoverable without judgment.
-5. **Prioritize privacy** — Local-first architecture with optional, user-controlled cloud backup.
+5. **Prioritize privacy** — Self-hosted architecture with data stored on your own infrastructure.
 6. **Enable portability** — Open-source (AGPL v3+) with standard data formats and no vendor lock-in.
 
 ### Non-Goals (v1)
@@ -91,16 +91,17 @@ Altair addresses these problems through externalized executive function, enforce
 
 ### Architectural Principles
 
-- **Local-first**: All data stored locally; full functionality without internet
-- **Desktop-primary**: Linux and Windows are primary platforms; mobile provides near-feature-parity
-- **Shared data layer**: Single local database accessed by all applications
+- **Privacy-focused**: Self-hosted server keeps all data on user's infrastructure
+- **Offline-capable**: Desktop works fully offline; mobile requires server for AI features
+- **Desktop-primary**: Windows and Linux are primary platforms; macOS nice-to-have
+- **Shared data layer**: Hybrid database (SurrealDB desktop/server, SQLite mobile)
 - **Plugin-extensible**: Core functionality augmented by sandboxed plugins
-- **Cross-platform sync**: Optional real-time sync between user's own devices
+- **Cross-platform sync**: Real-time sync via self-hosted server
 
 ### Technology Constraints
 
-- Desktop: Flutter framework (Linux, Windows)
-- Mobile: Flutter (Android primary; iOS if community-contributed)
+- Desktop/Mobile: Kotlin Multiplatform with Compose Multiplatform
+- Server: Ktor with kotlinx-rpc, Docker Compose deployment
 - Backend: FastAPI + PostgreSQL (local)
 - AI: Local models (desktop) with cloud fallback (mobile)
 
@@ -251,7 +252,7 @@ The system surfaces relevant information without being asked:
 
 - Extend functionality without modifying core
 - User controls all permissions
-- Plugins cannot compromise local-first principles
+- Plugins cannot compromise privacy principles
 - Sandboxed execution prevents data leaks
 
 ### 9.2 Plugin Types
@@ -427,9 +428,9 @@ Application-specific mobile features are documented in each app's PRD. This sect
 
 ### 13.1 Technical Constraints
 
-- Desktop-first development (Linux, Windows)
-- Mobile near-feature-parity (Android primary)
-- Local-first architecture (full offline functionality)
+- Desktop-first development (Windows, Linux required; macOS nice-to-have)
+- Mobile quick capture focus (Android required; iOS nice-to-have)
+- Privacy-focused self-hosted architecture
 - Single-user focus (no real-time collaboration in v1)
 - Open-source license: AGPL v3 or later
 
@@ -445,13 +446,12 @@ Application-specific mobile features are documented in each app's PRD. This sect
 
 | Item | Rationale |
 |------|-----------|
-| Apple platforms | Resource constraints; welcome community contribution |
-| Web application | Local-first focus; future consideration |
+| Web application | Desktop/mobile focus; future consideration |
 | Real-time collaboration | Single-user v1; adds significant complexity |
-| Cloud-only features | Violates local-first principle |
+| Third-party cloud storage | Data stays on user's server |
 | Enterprise/team features | Out of scope for v1 |
 | Plugin marketplace | Architecture ready; marketplace deferred |
-| Advanced mobile AI | Use cloud AI; local models infeasible on mobile |
+| Advanced mobile AI | Use server AI; local models infeasible on mobile |
 | All cloud providers | Core providers only; rest via plugins |
 | Health data collection | HIPAA concerns; integrate via plugins |
 
@@ -461,10 +461,10 @@ Application-specific mobile features are documented in each app's PRD. This sect
 
 ### Critical (Must Have)
 
-1. Local-first data architecture
+1. Privacy-focused self-hosted architecture
 2. Cross-app data integration
 3. Auto-relationship discovery
-4. Offline mode with sync
+4. Offline mode with sync (desktop)
 5. Push notifications (mobile)
 
 ### High Priority
@@ -514,5 +514,5 @@ Application-specific mobile features are documented in each app's PRD. This sect
 | **WIP** | Work In Progress; default limit is 1 active Quest |
 | **Energy** | Subjective daily capacity rating (1-5 scale) |
 | **BoM** | Bill of Materials; list of required items for a project |
-| **Local-first** | Architecture where all data/features work without internet |
+| **Self-hosted** | Architecture where data stays on user-controlled infrastructure |
 | **Phoenix Rising** | Recovery process for abandoned/overwhelming boards |

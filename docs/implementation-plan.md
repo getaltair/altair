@@ -11,301 +11,330 @@ Reference the `docs/` folder for detailed requirements, domain model, and archit
 
 ## Phase 1: Project Foundation
 
-### 1.1 Tauri + Svelte Project Scaffold
+### 1.1 Kotlin Multiplatform Project Scaffold
 
-Create a new Tauri 2 application with a Svelte 5 frontend using SvelteKit. Configure pnpm as the package manager and set
-up Tailwind CSS 4 with the shadcn-svelte component library. The Rust backend should use the 2024 edition with a basic
-"hello world" Tauri command that the frontend can invoke. Verify by running `pnpm tauri dev` and confirming the window
-opens with a working IPC round-trip.
+Create a new Kotlin Multiplatform project with Compose Multiplatform using the JetBrains wizard. Configure targets for
+desktop (JVM), Android, and iOS. Set up Gradle with version catalogs for dependency management. Create a basic "hello
+world" screen that renders on all three platforms. Verify by running `./gradlew :composeApp:run` (desktop),
+`./gradlew :composeApp:installDebug` (Android), and building via Xcode (iOS).
 
-### 1.2 SurrealDB Embedded Integration
+### 1.2 Altair Design System Foundation
 
-Add SurrealDB as an embedded database using the SurrealKV storage engine. Initialize the database on app startup in the
-Tauri setup hook, storing data in the platform-appropriate app data directory. Create a simple Tauri command that writes
-and reads a test record to verify the connection works. The database namespace should be "altair" and the database
-name "main".
+Create the Altair design system module with design tokens: colors (dark-first palette), typography (Inter font family),
+spacing scale, and border radii. Implement `AltairTheme` composable that provides tokens via CompositionLocal. Add
+Compose Unstyled dependency and create initial styled components: `AltairButton`, `AltairTextField`, `AltairCard`.
+Verify by rendering components in a preview screen showing all variants.
 
-### 1.3 Application Shell and Navigation
+### 1.3 Desktop SurrealDB Integration
 
-Create the main application layout with a sidebar navigation showing three modules: Guidance, Knowledge, and Tracking.
-Each module should have its own SvelteKit route group. Include a top bar with the app title and a placeholder settings
-button. Use shadcn-svelte components for the navigation and layout structure. Verify by clicking each nav item and
-confirming the URL and content area update.
+Add surrealdb.java dependency for desktop target. Initialize SurrealDB embedded on app startup using SurrealKV storage
+engine, storing data in the platform-appropriate app data directory. Create a simple repository that writes and reads a
+test record to verify the connection works. The database namespace should be "altair" and the database name "main".
+Verify by creating an entity and confirming it persists across app restart.
+
+### 1.4 Mobile SQLite Integration
+
+Add SQLDelight dependency for mobile targets. Define initial schema matching desktop entities (quest, note, item tables
+with basic fields). Generate type-safe query classes. Create a simple repository that writes and reads a test record.
+Verify by running on Android emulator and iOS simulator, confirming data persistence.
+
+### 1.5 Application Shell and Navigation
+
+Create the main application layout with bottom navigation (mobile) and sidebar navigation (desktop) showing three
+modules: Guidance, Knowledge, and Tracking. Use Compose Navigation for routing. Each module should have its own nav
+graph. Include a top app bar with settings access. Verify by clicking each nav item and confirming the content area
+updates appropriately per platform.
 
 ---
 
-## Phase 2: Core Infrastructure
+## Phase 2: Server Foundation
 
-### 2.1 Database Schema and Migrations
+### 2.1 Ktor Server Scaffold
+
+Create a Ktor server module with basic HTTP endpoints and kotlinx-rpc configuration. Set up Docker build for the server
+image. Configure SurrealDB client connection for server-side database access. Create a health check endpoint at
+`/health`. Verify by running `docker compose up` and hitting the health endpoint.
+
+### 2.2 kotlinx-rpc Service Definitions
+
+Define RPC service interfaces in a shared module: `SyncService`, `AiService`, `AuthService`. Implement stub
+implementations on the server. Configure RPC client in the client app module. Verify by making a test RPC call from
+desktop app to local server and receiving a response.
+
+### 2.3 Authentication Service
+
+Implement `AuthService` with login, token refresh, and logout operations. Use JWT tokens with configurable expiration.
+Store user credentials hashed with Argon2 in SurrealDB. Create client-side token storage using platform-secure storage
+(Keychain/Keystore). Verify by logging in, making authenticated requests, and logging out.
+
+### 2.4 Database Schema and Migrations
 
 Implement a migration system that tracks applied migrations in a `_migration` table and runs pending migrations on
-startup. Create initial migrations for the core tables: `epic`, `quest`, `checkpoint`, `energy_budget`, `note`,
-`note_link`, `folder`, `tag`, `item`, `custom_field`, `location`, `container`, `item_template`, `field_definition`.
-All entities use ULID string IDs and include `created_at`, `updated_at`, and optional `deleted_at` fields.
-Verify by checking the database has all tables after fresh startup.
+startup. Create initial migrations for core tables: `epic`, `quest`, `checkpoint`, `energy_budget`, `note`,
+`note_link`, `folder`, `tag`, `item`, `custom_field`, `location`, `container`. All entities use ULID string IDs and
+include `created_at`, `updated_at`, and optional `deleted_at` fields. Run migrations on both desktop SurrealDB and
+server SurrealDB.
 
-### 2.2 Event Bus Implementation
+### 2.5 Sync Engine Foundation
 
-Create an in-process event bus using `tokio::sync::broadcast` that modules can publish to and subscribe from. Define
-event types for each module category: `guidance:*`, `knowledge:*`, `tracking:*`, and `system:*`. Subscribers should
-be able to filter by event prefix. Include a ring buffer that retains the last 1000 events for debugging. Verify by
-publishing a test event and confirming a subscriber receives it.
-
-### 2.3 Error Handling Framework
-
-Define a unified error type (`AltairError`) using `thiserror` that covers database errors, validation errors, AI
-provider errors, and not-found errors. Implement `Into<tauri::InvokeError>` so errors serialize properly to the
-frontend. Create a frontend error handling utility that displays user-friendly toast messages for common error types.
-Verify by triggering a not-found error and confirming the toast appears.
-
-### 2.4 AI Service with Local Embedding
-
-Implement the AI service with the `AiProvider` trait supporting `embed()`, `complete()`, and `transcribe()` methods. Add
-the default local embedding provider using `ort` with a bundled `all-MiniLM-L6-v2` ONNX model that loads
-lazily on first use. Create a Tauri command that accepts text and returns its embedding vector. Verify by embedding
-a test string and confirming a 384-dimension vector is returned.
-
-### 2.5 AI Service with Local Transcription
-
-Add local transcription to the AI service using `whisper-rs` with a bundled `whisper-small` model that loads lazily on
-first use. Create a Tauri command that accepts an audio file path and returns transcribed text. Handle common audio
-formats (WAV, MP3, M4A). Verify by transcribing a short audio clip and confirming accurate text output.
+Implement basic sync protocol: pull (client requests changes since version N), push (client sends local changes).
+Track `sync_version` per entity. Implement optimistic locking with version conflicts. Create `SyncService` RPC
+implementation. Verify by creating an entity on desktop, syncing to server, and seeing it appear after pull on mobile.
 
 ---
 
-## Phase 3: Guidance Module
+## Phase 3: Core Infrastructure
 
-### 3.1 Quest CRUD Operations
+### 3.1 Event Bus Implementation (Desktop)
 
-Implement Tauri commands for creating, reading, updating, and deleting Quests. Quests have title (required, max 200
-chars), description (optional), energy_cost (1-5), and status (backlog, active, completed, abandoned). Enforce the
-WIP=1 rule: reject starting a Quest if another is already active. Create a Svelte store that caches Quest data and
-exposes reactive state. Verify by creating a Quest via the UI and confirming it persists across app restart.
+Create an in-process event bus using Kotlin coroutines `SharedFlow` that modules can publish to and subscribe from.
+Define event types for each module category: `GuidanceEvent`, `KnowledgeEvent`, `TrackingEvent`, `SystemEvent`.
+Subscribers filter by event type. Include bounded buffer for backpressure. Verify by publishing a test event and
+confirming a subscriber receives it.
 
-### 3.2 Quest List and Detail Views
+### 3.2 Error Handling Framework
 
-Create the Quest list page showing backlog and completed Quests grouped by status. Each Quest card should display title,
-energy cost (as dots or icons), and Epic name if linked. Clicking a Quest opens a detail view with full description and
-edit capability. Include a floating action button to create new Quests. Verify by creating multiple Quests with different
-statuses and confirming proper grouping.
+Define a unified error type (`AltairError`) using sealed classes covering database errors, validation errors, network
+errors, and not-found errors. Create error mapping for RPC calls. Implement UI error handling with snackbar/toast
+display for common error types. Verify by triggering various errors and confirming appropriate UI feedback.
 
-### 3.3 Active Quest and Focus Mode
+### 3.3 Server AI Service: Embeddings
+
+Implement embedding generation on server using ort (Kotlin ONNX Runtime) with bundled all-MiniLM-L6-v2 model. Create
+`AiService.embed()` RPC endpoint accepting text list and returning vectors. Load model lazily on first request. Verify
+by embedding test strings and confirming 384-dimension vectors returned.
+
+### 3.4 Server AI Service: Transcription
+
+Add transcription to server AI service using whisper.cpp bindings with bundled whisper-small model. Create
+`AiService.transcribe()` RPC endpoint accepting audio bytes and format. Handle common audio formats (WAV, MP3, M4A).
+Verify by transcribing a short audio clip and confirming accurate text output.
+
+### 3.5 Server AI Service: Completion Proxy
+
+Implement completion routing to user-configured providers: Ollama (local), Anthropic, OpenAI, OpenRouter. Create
+`AiService.complete()` RPC endpoint returning `Flow<String>` for token streaming. Store provider configuration in
+server settings. Verify by configuring Ollama and making a completion request.
+
+---
+
+## Phase 4: Guidance Module
+
+### 4.1 Quest CRUD Operations
+
+Implement repository methods for creating, reading, updating, and deleting Quests. Quests have title (required, max 200
+chars), description (optional), energy_cost (1-5), and status (backlog, active, completed, abandoned). Enforce WIP=1
+rule: reject starting a Quest if another is already active. Create ViewModel exposing quest state. Verify by creating
+a Quest via the UI and confirming it persists across app restart.
+
+### 4.2 Quest List and Detail Views
+
+Create the Quest list screen showing backlog and completed Quests grouped by status. Each Quest card displays title,
+energy cost (as dots/icons), and Epic name if linked. Clicking a Quest navigates to detail screen with full description
+and edit capability. Include FAB to create new Quests. Verify by creating multiple Quests with different statuses and
+confirming proper grouping.
+
+### 4.3 Active Quest and Focus Mode
 
 Show the active Quest prominently at the top of the Guidance view with a "Complete" button and energy cost indicator.
-Implement Focus Mode triggered by a button that hides the sidebar and shows only the active Quest with its Checkpoints.
-Include a visible timer showing elapsed time on the Quest. Verify by starting a Quest, entering Focus Mode, and
-confirming distractions are hidden.
+Implement Focus Mode triggered by a button that hides navigation and shows only the active Quest with its Checkpoints.
+Include a visible timer showing elapsed time. Verify by starting a Quest, entering Focus Mode, and confirming
+distraction-free experience.
 
-### 3.4 Checkpoints
+### 4.4 Checkpoints
 
-Add Checkpoint support to Quests—a list of sub-steps with title and completed status. Checkpoints can be added,
-reordered (drag-and-drop), and checked off from the Quest detail view. Display Checkpoint progress as a fraction
-(e.g., "3/5") on Quest cards. Completing all Checkpoints should NOT auto-complete the Quest. Verify by adding Checkpoints,
-reordering them, and checking them off.
+Add Checkpoint support to Quests—ordered sub-steps with title and completed status. Checkpoints can be added, reordered
+(drag-and-drop), and checked off from Quest detail. Display Checkpoint progress as fraction (e.g., "3/5") on Quest
+cards. Completing all Checkpoints does NOT auto-complete the Quest. Verify by adding Checkpoints, reordering, and
+checking them off.
 
-### 3.5 Energy Budget System
+### 4.5 Energy Budget System
 
-Create the `energy_budget` table storing daily budget and spent values keyed by date. Display an energy meter in the
-Guidance header showing remaining energy for today. Completing a Quest deducts its energy_cost from the daily budget.
-Show a warning (not a block) if completing a Quest would exceed the budget. Verify by completing Quests and watching
-the energy meter decrease.
+Create `energy_budget` table storing daily budget and spent values keyed by date. Display energy meter in Guidance
+header showing remaining energy for today. Completing a Quest deducts its energy_cost from daily budget. Show warning
+(not block) if completing Quest would exceed budget. Verify by completing Quests and watching energy meter decrease.
 
-### 3.6 Epic Management
+### 4.6 Epic Management
 
 Implement Epic CRUD with title, description, and status (active, completed, archived). Quests can optionally link to an
-Epic via `epic_id`. Show Epics in a collapsible list with their child Quests nested underneath. An Epic's status becomes
-"completed" when all its Quests are completed. Verify by creating an Epic, adding Quests to it, and completing them to
-see the Epic complete.
+Epic via `epic_id`. Show Epics in collapsible list with child Quests nested. Epic status becomes "completed" when all
+its Quests complete. Verify by creating Epic, adding Quests, completing them to see Epic complete.
 
 ---
 
-## Phase 4: Knowledge Module
+## Phase 5: Knowledge Module
 
-### 4.1 Note CRUD Operations
+### 5.1 Note CRUD Operations
 
-Implement Tauri commands for creating, reading, updating, and deleting Notes. Notes have title (required, max 200 chars,
-unique within folder), content (Markdown), and optional folder_id. Deleting a Note is a soft delete (sets `deleted_at`).
-Create a Svelte store that caches Note data with reactive state. Verify by creating a Note and confirming it persists
-across app restart.
+Implement repository methods for creating, reading, updating, and deleting Notes. Notes have title (required, max 200
+chars, unique within folder), content (Markdown), and optional folder_id. Deleting is soft delete (sets `deleted_at`).
+Create ViewModel exposing note state. Verify by creating a Note and confirming persistence across app restart.
 
-### 4.2 Note Editor
+### 5.2 Note Editor
 
-Create a Markdown editor for Note content using a suitable Svelte Markdown editor component. Support basic formatting
-(headings, bold, italic, lists, code blocks) with keyboard shortcuts. Auto-save content after a debounced delay (500ms)
-when the user stops typing. Show a "saved" indicator when content is persisted. Verify by editing a Note, waiting for
-auto-save, and refreshing to confirm content persisted.
+Create Markdown editor for Note content using a Compose-compatible Markdown editor library. Support basic formatting
+(headings, bold, italic, lists, code blocks) with keyboard shortcuts. Auto-save content after debounced delay (500ms).
+Show "saved" indicator when persisted. Verify by editing, waiting for auto-save, and refreshing to confirm persistence.
 
-### 4.3 Folder Hierarchy
+### 5.3 Folder Hierarchy
 
-Implement Folder CRUD with name, parent_id (for nesting), and order fields. Display folders in a tree structure in the
-Knowledge sidebar with expand/collapse. Notes appear under their parent folder; root-level notes appear at the top.
-Support drag-and-drop to move Notes between Folders. Verify by creating nested folders, adding Notes, and reorganizing
-via drag-and-drop.
+Implement Folder CRUD with name, parent_id (for nesting), and order fields. Display folders in tree structure in
+Knowledge sidebar with expand/collapse. Notes appear under parent folder; root-level notes at top. Support drag-and-drop
+to move Notes between Folders. Verify by creating nested folders, adding Notes, reorganizing via drag-and-drop.
 
-### 4.4 Wiki-Links and Backlinks
+### 5.4 Wiki-Links and Backlinks
 
-Parse Note content for wiki-link syntax `[[Note Title]]` on save and create `note_link` records. Display clickable links
-in the rendered Markdown that navigate to the linked Note. Show a "Backlinks" section in the Note detail listing all
-Notes that link to this one. If a link target doesn't exist, show it as a broken link that can create the Note on click.
-Verify by creating links between Notes and confirming bidirectional navigation.
+Parse Note content for wiki-link syntax `[[Note Title]]` on save and create `note_link` records. Display clickable
+links in rendered Markdown navigating to linked Note. Show "Backlinks" section in Note detail listing all Notes that
+link to this one. Broken links can create Note on click. Verify by creating links between Notes and confirming
+bidirectional navigation.
 
-### 4.5 Tags
+### 5.5 Tags
 
-Implement Tag CRUD with name (lowercase, unique) and optional color. Add a tag input to the Note editor that supports
-typeahead for existing tags and creates new tags inline. Display tags as colored pills on Note cards in the list view.
-Create a tag filter in the sidebar to show Notes with a specific tag. Verify by tagging Notes and filtering by tag.
+Implement Tag CRUD with name (lowercase, unique) and optional color. Add tag input to Note editor with typeahead for
+existing tags and inline creation. Display tags as colored pills on Note cards in list view. Create tag filter in
+sidebar to show Notes with specific tag. Verify by tagging Notes and filtering by tag.
 
-### 4.6 Note Search (Full-Text)
+### 5.6 Note Search (Full-Text)
 
-Add a full-text search index on Note content using SurrealDB's search capabilities. Create a search bar in the Knowledge
-header that filters Notes by content match. Display search results with highlighted matching text snippets. Search should
-be fast (<100ms) for up to 10,000 Notes. Verify by creating Notes with distinct content and confirming search finds the
-correct ones.
+Add full-text search index on Note content using SurrealDB search (desktop) or SQLite FTS5 (mobile). Create search bar
+in Knowledge header filtering Notes by content match. Display results with highlighted snippets. Target <100ms for up
+to 10,000 Notes. Verify by creating Notes with distinct content and confirming search finds correct ones.
 
-### 4.7 Note Search (Semantic)
+### 5.7 Note Search (Semantic) — Desktop Only
 
-Generate embeddings for Note content using the local AI embedding provider, storing vectors in the `embedding` field.
-Regenerate embeddings on content change (debounced, background task). Add a "Find similar" button on Notes that queries
-for nearest neighbors by vector similarity. Display results ranked by similarity score. Verify by finding similar Notes
-to one about a specific topic.
+Request embeddings from server for Note content, storing vectors locally. Regenerate on content change (background).
+Add "Find similar" button on Notes querying nearest neighbors by vector similarity. Display results ranked by score.
+Verify by finding similar Notes to one about specific topic.
 
-### 4.8 Attachments
+### 5.8 Attachments
 
-Support attaching files to Notes by drag-and-drop or file picker. Store files in the app data directory with content-hash
-filenames for deduplication. Display attached images inline in the Note; other files as download links. Limit file size
-to 100MB. Verify by attaching an image and a PDF, then confirming they display/download correctly.
+Support attaching files to Notes by drag-and-drop or file picker. Store files in app data directory with content-hash
+filenames for deduplication. Display images inline; other files as download links. Limit to 100MB. Verify by attaching
+image and PDF, confirming display/download.
 
 ---
 
-## Phase 5: Tracking Module
+## Phase 6: Tracking Module
 
-### 5.1 Item CRUD Operations
+### 6.1 Item CRUD Operations
 
-Implement Tauri commands for creating, reading, updating, and deleting Items. Items have name (required, max 200
-chars), description, quantity (default 1), and optional location_id or container_id. An Item can have a location OR
-be in a container, not both. Create a Svelte store for Items with reactive state. Verify by creating an Item and
-confirming it persists across app restart.
+Implement repository methods for creating, reading, updating, and deleting Items. Items have name (required, max 200
+chars), description, quantity (default 1), and optional location_id OR container_id (exclusive). Create ViewModel
+exposing item state. Verify by creating Item and confirming persistence across app restart.
 
-### 5.2 Item List and Detail Views
+### 6.2 Item List and Detail Views
 
-Create the Item list page with a grid or list view toggle. Each Item card shows name, quantity, location/container,
-and primary image if set. Clicking an Item opens a detail view with full information and edit capability. Include a
-floating action button to create new Items. Verify by creating multiple Items and switching between view modes.
+Create Item list screen with grid/list view toggle. Each Item card shows name, quantity, location/container, and
+primary image if set. Clicking opens detail view with full information and edit capability. Include FAB to create new
+Items. Verify by creating multiple Items and switching view modes.
 
-### 5.3 Location Hierarchy
+### 6.3 Location Hierarchy
 
-Implement Location CRUD with name, description, and parent_id for nesting. Display Locations in a tree structure in
-the Tracking sidebar. Items at a Location appear in that Location's detail view. Support drag-and-drop to move Items
-between Locations. Verify by creating nested Locations and moving Items between them.
+Implement Location CRUD with name, description, parent_id for nesting. Display Locations in tree structure in Tracking
+sidebar. Items at Location appear in Location detail view. Support drag-and-drop to move Items between Locations.
+Verify by creating nested Locations and moving Items.
 
-### 5.4 Containers
+### 6.4 Containers
 
-Implement Container CRUD with name, description, location_id, and parent_id (containers can nest). Containers appear
-as a special item type that can hold other Items. Moving a Container moves all Items inside it. Display Container
-contents in a collapsible list. Verify by creating nested Containers with Items and moving the parent Container.
+Implement Container CRUD with name, description, location_id, parent_id (containers can nest). Containers appear as
+special item type holding other Items. Moving Container moves all Items inside. Display contents in collapsible list.
+Verify by creating nested Containers with Items and moving parent.
 
-### 5.5 Item Templates and Custom Fields
+### 6.5 Item Templates and Custom Fields
 
-Implement ItemTemplate with name, description, and icon, plus FieldDefinition for the template's fields. When
-creating an Item with a template, pre-populate CustomField entries from the template. CustomFields support types:
-text, number, date, boolean, url, enum. Display custom fields in the Item detail view with appropriate input widgets.
-Verify by creating a template, making an Item from it, and editing the custom fields.
+Implement ItemTemplate with name, description, icon, plus FieldDefinition for template fields. Creating Item with
+template pre-populates CustomField entries. CustomFields support types: text, number, date, boolean, url, enum. Display
+custom fields in Item detail with appropriate widgets. Verify by creating template, making Item from it, editing fields.
 
-### 5.6 Item Photo Capture
+### 6.6 Item Photo Capture
 
-Add a primary image field to Items with support for file upload and clipboard paste. Display the image prominently
-in the Item detail and as a thumbnail in list views. Resize images to a reasonable max dimension (1920px) on import
-to save space. Support common formats (JPEG, PNG, WebP). Verify by adding an image to an Item via drag-and-drop and
-clipboard paste.
+Add primary image field to Items with file upload and clipboard paste support. Display image prominently in detail and
+as thumbnail in lists. Resize to max 1920px on import. Support JPEG, PNG, WebP. Verify by adding image via drag-and-drop
+and clipboard paste.
 
-### 5.7 Low Stock Alerts
+### 6.7 Low Stock Alerts
 
-Publish a `tracking:quantity_zero` event when an Item's quantity reaches zero. Display a badge or indicator on Items
-with zero quantity in the list view. Create an optional "Low Stock" view that filters to Items with quantity below a
-threshold. Verify by decrementing an Item to zero and confirming the visual indicator appears.
+Publish `TrackingEvent.QuantityZero` when Item quantity reaches zero. Display badge on zero-quantity Items in list.
+Create "Low Stock" view filtering Items below threshold. Verify by decrementing Item to zero and confirming indicator.
 
 ---
 
-## Phase 6: Cross-Module Integration
+## Phase 7: Cross-Module Integration
 
-### 6.1 Quest-Note References
+### 7.1 Quest-Note References
 
-Add a relation table `quest_note` linking Quests to Notes. In the Quest detail view, show linked Notes and provide a
-picker to add more. In the Note detail view, show linked Quests. Clicking a linked item navigates to its detail view.
-Verify by linking a Note to a Quest and navigating between them.
+Add `quest_note` relation linking Quests to Notes. In Quest detail, show linked Notes with picker to add more. In Note
+detail, show linked Quests. Clicking navigates to detail view. Verify by linking Note to Quest and navigating between.
 
-### 6.2 Quest-Item References
+### 7.2 Quest-Item References
 
-Add a relation table `quest_item` linking Quests to Items. In the Quest detail view, show linked Items (e.g., tools
-needed) and provide a picker to add more. In the Item detail view, show linked Quests. Verify by linking an Item to a
-Quest and navigating between them.
+Add `quest_item` relation linking Quests to Items. In Quest detail, show linked Items (tools needed) with picker. In
+Item detail, show linked Quests. Verify by linking Item to Quest and navigating between.
 
-### 6.3 Note-Item Mentions
+### 7.3 Note-Item Mentions
 
-Parse Note content for Item mentions using `[[Item:Name]]` syntax. Create links from Notes to Items similar to
-wiki-links. Display mentioned Items in the Note detail view. Show "Mentioned in" Notes in the Item detail view.
-Verify by mentioning an Item in a Note and confirming bidirectional links.
+Parse Note content for Item mentions using `[[Item:Name]]` syntax. Create links from Notes to Items. Display mentioned
+Items in Note detail. Show "Mentioned in" Notes in Item detail. Verify by mentioning Item in Note and confirming
+bidirectional links.
 
-### 6.4 Cross-Module Event Reactions
+### 7.4 Cross-Module Event Reactions
 
-Subscribe to events across modules to trigger suggestions. When a Quest is completed, prompt to create a reflection
-Note. When an Item's quantity hits zero, suggest creating a restock Quest. Display suggestions as dismissible cards
-in the relevant module. Verify by completing a Quest and seeing the reflection Note prompt.
+Subscribe to events across modules for suggestions. Quest completion prompts reflection Note. Item quantity zero
+suggests restock Quest. Display suggestions as dismissible cards. Verify by completing Quest and seeing reflection
+prompt.
 
 ---
 
-## Phase 7: Settings and Polish
+## Phase 8: Settings and Polish
 
-### 7.1 Settings Panel
+### 8.1 Settings Panel
 
-Create a Settings page accessible from the top bar with sections for General, AI, and Data. General: theme
-(light/dark/system), default energy budget. AI: provider selection per capability, API key entry (stored in system
-keychain). Data: export, import, clear data options. Verify by changing settings and confirming they persist.
+Create Settings screen accessible from top bar with sections: General, AI, Data, Account. General: theme
+(light/dark/system), default energy budget. AI: completion provider selection. Data: export, import, clear. Account:
+server URL, logout. Verify by changing settings and confirming persistence.
 
-### 7.2 AI Provider Configuration
+### 8.2 Server AI Provider Configuration
 
-Extend the AI service to support Ollama, Anthropic, OpenAI, and OpenRouter providers with user-configurable API
-keys. Allow users to select which provider to use for completion, embedding, and transcription independently.
-Validate API keys on save by making a test request. Show clear error messages if a provider is unavailable. Verify
-by configuring an Anthropic API key and using it for completion.
+Server settings page for AI provider configuration. Allow selection of Ollama, Anthropic, OpenAI, OpenRouter for
+completion. Validate API keys on save. Show clear errors if provider unavailable. Verify by configuring provider and
+using for completion.
 
-### 7.3 Data Export
+### 8.3 Data Export
 
-Implement export of all user data as a JSON file containing all entities and their relationships. Include an option
-to export Notes as individual Markdown files in a ZIP. Show progress during export for large datasets. Verify by
-exporting data, deleting the database, and confirming the JSON contains all records.
+Implement export of all user data as JSON file containing all entities and relationships. Option to export Notes as
+individual Markdown files in ZIP. Show progress for large datasets. Verify by exporting, deleting database, confirming
+JSON contains all records.
 
-### 7.4 Data Import
+### 8.4 Data Import
 
-Implement import from the JSON export format, merging or replacing existing data based on user choice. Validate the
-import file structure before applying changes. Show a preview of what will be imported (counts by entity type).
-Verify by importing a previously exported JSON and confirming data is restored.
+Implement import from JSON export format, merging or replacing based on user choice. Validate structure before applying.
+Show preview of import counts by entity type. Verify by importing previously exported JSON and confirming data restored.
 
-### 7.5 Onboarding Flow
+### 8.5 Onboarding Flow
 
-Create a first-launch onboarding flow that introduces the three modules and core concepts. Include a step to set the
-daily energy budget default. Optionally create sample data (one Epic, a few Quests, sample Notes) to demonstrate
-features. Mark onboarding complete in settings so it doesn't repeat. Verify by clearing app data and confirming
-onboarding appears on next launch.
+Create first-launch onboarding introducing three modules and core concepts. Step to set daily energy budget default.
+Optionally create sample data to demonstrate features. Mark complete in settings so it doesn't repeat. Verify by
+clearing app data and confirming onboarding appears.
 
-### 7.6 Keyboard Shortcuts
+### 8.6 Keyboard Shortcuts (Desktop)
 
-Implement global keyboard shortcuts: Cmd/Ctrl+N for new (Quest/Note/Item depending on context), Cmd/Ctrl+K for quick
-search, Cmd/Ctrl+1/2/3 to switch modules. Show a keyboard shortcut reference accessible via Cmd/Ctrl+?. Use Tauri's
-global shortcut API for app-wide shortcuts. Verify by using shortcuts to navigate and create entities.
+Implement global keyboard shortcuts: Cmd/Ctrl+N for new, Cmd/Ctrl+K for quick search, Cmd/Ctrl+1/2/3 to switch modules.
+Show shortcut reference via Cmd/Ctrl+?. Verify by using shortcuts to navigate and create entities.
 
-### 7.7 Trash and Recovery
+### 8.7 Trash and Recovery
 
-Create a Trash view showing soft-deleted entities from all modules. Allow restoring items from Trash or permanently
-deleting them. Automatically purge items older than 30 days. Show empty trash confirmation before permanent deletion.
-Verify by deleting an item, finding it in Trash, and restoring it.
+Create Trash view showing soft-deleted entities from all modules. Allow restore or permanent delete. Auto-purge items
+older than 30 days. Confirm before permanent deletion. Verify by deleting, finding in Trash, restoring.
 
 ---
 
 ## Implementation Notes
 
-- Each feature should be implemented as a separate Droid session
+- Each feature should be implemented as a focused development session
 - Reference `docs/architecture/` for technical patterns
 - Reference `docs/requirements/` for detailed acceptance criteria
-- Run the existing test suite after each feature to catch regressions
+- Run tests after each feature to catch regressions
 - Commit after each successful feature implementation
+- Desktop features may be implemented before mobile equivalents
+- Server features required before sync-dependent client features
