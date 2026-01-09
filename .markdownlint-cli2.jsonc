@@ -1,0 +1,15 @@
+{
+	// markdownlint-cli2 configuration
+	// https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md
+	"config": {
+		// MD013: Line length
+		"line-length": {
+			"line_length": 120,
+			"code_blocks": false,
+			"tables": false
+		},
+
+		// MD036: Emphasis used instead of a heading - disabled
+		"no-emphasis-as-heading": false
+	}
+}
