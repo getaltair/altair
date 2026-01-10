@@ -1,0 +1,57 @@
+-- Quest table for tracking quests/tasks in the application
+-- Follows ADR-002 entity conventions with ULID identifiers and soft delete
+
+CREATE TABLE Quest (
+    id TEXT NOT NULL PRIMARY KEY,
+    title TEXT NOT NULL,
+    description TEXT,
+    status TEXT NOT NULL DEFAULT 'pending',
+    epic_id TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    deleted_at TEXT,
+    sync_version INTEGER NOT NULL DEFAULT 0
+);
+
+-- Index for filtering by status (common query pattern)
+CREATE INDEX quest_status_idx ON Quest(status);
+
+-- Index for filtering by epic (parent relationship)
+CREATE INDEX quest_epic_id_idx ON Quest(epic_id);
+
+-- Select all active quests (not soft-deleted)
+selectAll:
+SELECT *
+FROM Quest
+WHERE deleted_at IS NULL
+ORDER BY created_at DESC;
+
+-- Select a quest by ID (includes soft-deleted)
+selectById:
+SELECT *
+FROM Quest
+WHERE id = ?;
+
+-- Insert a new quest
+insert:
+INSERT INTO Quest(id, title, description, status, epic_id, created_at, updated_at, deleted_at, sync_version)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+-- Update a quest by ID
+updateById:
+UPDATE Quest
+SET title = ?,
+    description = ?,
+    status = ?,
+    epic_id = ?,
+    updated_at = ?,
+    sync_version = sync_version + 1
+WHERE id = ?;
+
+-- Soft delete a quest by ID
+softDeleteById:
+UPDATE Quest
+SET deleted_at = ?,
+    updated_at = ?,
+    sync_version = sync_version + 1
+WHERE id = ?;

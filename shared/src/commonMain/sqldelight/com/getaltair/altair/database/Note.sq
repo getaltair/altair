@@ -1,0 +1,59 @@
+-- Note table for storing user notes
+-- Follows ADR-002 entity conventions with ULID identifiers and soft delete
+
+CREATE TABLE Note (
+    id TEXT NOT NULL PRIMARY KEY,
+    title TEXT NOT NULL,
+    content TEXT,
+    folder_id TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    deleted_at TEXT,
+    sync_version INTEGER NOT NULL DEFAULT 0
+);
+
+-- Index for filtering by folder (parent relationship)
+CREATE INDEX note_folder_id_idx ON Note(folder_id);
+
+-- Select all active notes (not soft-deleted)
+selectAll:
+SELECT *
+FROM Note
+WHERE deleted_at IS NULL
+ORDER BY created_at DESC;
+
+-- Select a note by ID (includes soft-deleted)
+selectById:
+SELECT *
+FROM Note
+WHERE id = ?;
+
+-- Select notes by folder ID (only active notes)
+selectByFolderId:
+SELECT *
+FROM Note
+WHERE folder_id = ? AND deleted_at IS NULL
+ORDER BY created_at DESC;
+
+-- Insert a new note
+insert:
+INSERT INTO Note(id, title, content, folder_id, created_at, updated_at, deleted_at, sync_version)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+
+-- Update a note by ID
+updateById:
+UPDATE Note
+SET title = ?,
+    content = ?,
+    folder_id = ?,
+    updated_at = ?,
+    sync_version = sync_version + 1
+WHERE id = ?;
+
+-- Soft delete a note by ID
+softDeleteById:
+UPDATE Note
+SET deleted_at = ?,
+    updated_at = ?,
+    sync_version = sync_version + 1
+WHERE id = ?;
