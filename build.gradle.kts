@@ -51,8 +51,8 @@ spotless {
             .editorConfigOverride(
                 mapOf(
                     "ktlint_code_style" to "intellij_idea",
-                    "max_line_length" to "120"
-                )
+                    "max_line_length" to "120",
+                ),
             )
     }
 
@@ -67,15 +67,15 @@ spotless {
         targetExclude(
             ".claude/**",
             ".moai/**",
-            "**/build/**"
+            "**/build/**",
         )
         prettier()
             .config(
                 mapOf(
                     "printWidth" to 100,
                     "proseWrap" to "always",
-                    "tabWidth" to 2
-                )
+                    "tabWidth" to 2,
+                ),
             )
     }
 }
