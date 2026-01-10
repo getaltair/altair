@@ -48,10 +48,22 @@ spotless {
         target("**/*.kt")
         targetExclude("**/build/**")
         ktlint(libs.versions.ktlint.get())
-            .editorConfigOverride(
+            .customRuleSets(
+                listOf(
+                    "io.nlopez.compose.rules:ktlint:0.4.28",
+                ),
+            ).editorConfigOverride(
                 mapOf(
                     "ktlint_code_style" to "intellij_idea",
                     "max_line_length" to "120",
+                    // Allow PascalCase for @Composable functions
+                    "ktlint_function_naming_ignore_when_annotated_with" to "Composable",
+                    // Compose rules configuration
+                    "compose_allowed_composition_locals" to
+                        "LocalAltairColors,LocalAltairTypography,LocalAltairSpacing,LocalAltairShapes",
+                    // Enforce preview naming convention (suffix pattern like "FooPreview")
+                    "compose_preview_naming_enabled" to "true",
+                    "compose_preview_naming_strategy" to "suffix",
                 ),
             )
     }

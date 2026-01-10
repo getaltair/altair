@@ -26,10 +26,7 @@ import com.getaltair.altair.ui.theme.AltairTheme
  * @param content Content to display inside the card
  */
 @Composable
-fun AltairCard(
-    modifier: Modifier = Modifier,
-    content: @Composable BoxScope.() -> Unit
-) {
+fun AltairCard(modifier: Modifier = Modifier, content: @Composable BoxScope.() -> Unit) {
     val colors = AltairTheme.colors
     val shapes = AltairTheme.shapes
     val spacing = AltairTheme.spacing
@@ -46,6 +43,6 @@ fun AltairCard(
             .background(backgroundColor, shapes.md)
             .border(1.dp, colors.border, shapes.md)
             .padding(spacing.md),
-        content = content
+        content = content,
     )
 }

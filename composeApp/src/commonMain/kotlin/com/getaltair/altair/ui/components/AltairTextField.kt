@@ -40,7 +40,7 @@ fun AltairTextField(
     placeholder: @Composable (() -> Unit)? = null,
     singleLine: Boolean = true,
     enabled: Boolean = true,
-    textStyle: TextStyle = AltairTheme.typography.bodyMedium
+    textStyle: TextStyle = AltairTheme.typography.bodyMedium,
 ) {
     val colors = AltairTheme.colors
     val shapes = AltairTheme.shapes
@@ -71,6 +71,6 @@ fun AltairTextField(
                 }
                 innerTextField()
             }
-        }
+        },
     )
 }

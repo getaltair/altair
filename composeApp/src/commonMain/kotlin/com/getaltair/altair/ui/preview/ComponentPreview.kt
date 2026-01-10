@@ -36,7 +36,7 @@ import com.getaltair.altair.ui.theme.AltairTheme
  * for development verification purposes.
  */
 @Composable
-fun ComponentPreview() {
+internal fun ComponentPreview() {
     val colors = AltairTheme.colors
     val typography = AltairTheme.typography
     val spacing = AltairTheme.spacing
@@ -47,19 +47,19 @@ fun ComponentPreview() {
             .background(colors.background)
             .verticalScroll(rememberScrollState())
             .padding(spacing.lg),
-        verticalArrangement = Arrangement.spacedBy(spacing.lg)
+        verticalArrangement = Arrangement.spacedBy(spacing.lg),
     ) {
         // Header
         Text(
             text = "Altair Design System",
             style = typography.displayLarge,
-            color = colors.textPrimary
+            color = colors.textPrimary,
         )
 
         Text(
             text = "Component Preview",
             style = typography.headlineMedium,
-            color = colors.textSecondary
+            color = colors.textSecondary,
         )
 
         Spacer(modifier = Modifier.height(spacing.md))
@@ -69,38 +69,38 @@ fun ComponentPreview() {
 
         Row(
             horizontalArrangement = Arrangement.spacedBy(spacing.md),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             AltairButton(
                 onClick = {},
-                variant = ButtonVariant.Primary
+                variant = ButtonVariant.Primary,
             ) {
                 Text(
                     text = "Primary",
                     style = typography.bodyMedium,
-                    color = colors.textPrimary
+                    color = colors.textPrimary,
                 )
             }
 
             AltairButton(
                 onClick = {},
-                variant = ButtonVariant.Secondary
+                variant = ButtonVariant.Secondary,
             ) {
                 Text(
                     text = "Secondary",
                     style = typography.bodyMedium,
-                    color = colors.textPrimary
+                    color = colors.textPrimary,
                 )
             }
 
             AltairButton(
                 onClick = {},
-                variant = ButtonVariant.Ghost
+                variant = ButtonVariant.Ghost,
             ) {
                 Text(
                     text = "Ghost",
                     style = typography.bodyMedium,
-                    color = colors.textSecondary
+                    color = colors.textSecondary,
                 )
             }
         }
@@ -108,17 +108,17 @@ fun ComponentPreview() {
         // Disabled Button
         Row(
             horizontalArrangement = Arrangement.spacedBy(spacing.md),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             AltairButton(
                 onClick = {},
                 variant = ButtonVariant.Primary,
-                enabled = false
+                enabled = false,
             ) {
                 Text(
                     text = "Disabled",
                     style = typography.bodyMedium,
-                    color = colors.textPrimary
+                    color = colors.textPrimary,
                 )
             }
         }
@@ -138,9 +138,9 @@ fun ComponentPreview() {
                 Text(
                     text = "Enter text here...",
                     style = typography.bodyMedium,
-                    color = colors.textTertiary
+                    color = colors.textTertiary,
                 )
-            }
+            },
         )
 
         var filledValue by remember { mutableStateOf("Sample input text") }
@@ -148,7 +148,7 @@ fun ComponentPreview() {
         AltairTextField(
             value = filledValue,
             onValueChange = { filledValue = it },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
         )
 
         Spacer(modifier = Modifier.height(spacing.md))
@@ -157,20 +157,21 @@ fun ComponentPreview() {
         SectionHeader("Card")
 
         AltairCard(
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
         ) {
             Column(
-                verticalArrangement = Arrangement.spacedBy(spacing.sm)
+                verticalArrangement = Arrangement.spacedBy(spacing.sm),
             ) {
                 Text(
                     text = "Card Title",
                     style = typography.headlineMedium,
-                    color = colors.textPrimary
+                    color = colors.textPrimary,
                 )
                 Text(
-                    text = "This is a card component with elevated surface background. Hover to see the hover state effect on desktop.",
+                    text = "This is a card component with elevated surface background. " +
+                        "Hover to see the hover state effect on desktop.",
                     style = typography.bodyMedium,
-                    color = colors.textSecondary
+                    color = colors.textSecondary,
                 )
             }
         }
@@ -204,7 +205,7 @@ private fun SectionHeader(title: String) {
     Text(
         text = title,
         style = typography.headlineMedium,
-        color = colors.textPrimary
+        color = colors.textPrimary,
     )
 }
 
@@ -215,7 +216,7 @@ private fun ColorTokenGallery() {
     val spacing = AltairTheme.spacing
 
     Column(
-        verticalArrangement = Arrangement.spacedBy(spacing.sm)
+        verticalArrangement = Arrangement.spacedBy(spacing.sm),
     ) {
         ColorSwatch("background", colors.background)
         ColorSwatch("surface", colors.surface)
@@ -243,17 +244,17 @@ private fun ColorSwatch(name: String, color: androidx.compose.ui.graphics.Color)
 
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(spacing.sm)
+        horizontalArrangement = Arrangement.spacedBy(spacing.sm),
     ) {
         Box(
             modifier = Modifier
                 .size(32.dp)
-                .background(color, shapes.sm)
+                .background(color, shapes.sm),
         )
         Text(
             text = name,
             style = typography.bodyMedium,
-            color = colors.textSecondary
+            color = colors.textSecondary,
         )
     }
 }
@@ -265,32 +266,32 @@ private fun TypographyGallery() {
     val spacing = AltairTheme.spacing
 
     Column(
-        verticalArrangement = Arrangement.spacedBy(spacing.sm)
+        verticalArrangement = Arrangement.spacedBy(spacing.sm),
     ) {
         Text(
             text = "displayLarge (32sp, SemiBold)",
             style = typography.displayLarge,
-            color = colors.textPrimary
+            color = colors.textPrimary,
         )
         Text(
             text = "headlineMedium (20sp, Medium)",
             style = typography.headlineMedium,
-            color = colors.textPrimary
+            color = colors.textPrimary,
         )
         Text(
             text = "bodyLarge (16sp, Normal)",
             style = typography.bodyLarge,
-            color = colors.textPrimary
+            color = colors.textPrimary,
         )
         Text(
             text = "bodyMedium (14sp, Normal)",
             style = typography.bodyMedium,
-            color = colors.textPrimary
+            color = colors.textPrimary,
         )
         Text(
             text = "labelSmall (12sp, Medium)",
             style = typography.labelSmall,
-            color = colors.textPrimary
+            color = colors.textPrimary,
         )
     }
 }
@@ -303,7 +304,7 @@ private fun SpacingGallery() {
     val shapes = AltairTheme.shapes
 
     Column(
-        verticalArrangement = Arrangement.spacedBy(spacing.sm)
+        verticalArrangement = Arrangement.spacedBy(spacing.sm),
     ) {
         SpacingRow("xs (4dp)", spacing.xs)
         SpacingRow("sm (8dp)", spacing.sm)
@@ -322,18 +323,18 @@ private fun SpacingRow(label: String, width: androidx.compose.ui.unit.Dp) {
 
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(spacing.sm)
+        horizontalArrangement = Arrangement.spacedBy(spacing.sm),
     ) {
         Box(
             modifier = Modifier
                 .width(width)
                 .height(16.dp)
-                .background(colors.accent, shapes.sm)
+                .background(colors.accent, shapes.sm),
         )
         Text(
             text = label,
             style = typography.bodyMedium,
-            color = colors.textSecondary
+            color = colors.textSecondary,
         )
     }
 }

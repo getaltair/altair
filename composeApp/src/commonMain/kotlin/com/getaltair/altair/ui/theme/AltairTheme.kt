@@ -51,14 +51,14 @@ fun AltairTheme(
     typography: AltairTypography = AltairTypography(),
     spacing: AltairSpacing = AltairSpacing(),
     shapes: AltairShapes = AltairShapes(),
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
     CompositionLocalProvider(
         LocalAltairColors provides colors,
         LocalAltairTypography provides typography,
         LocalAltairSpacing provides spacing,
         LocalAltairShapes provides shapes,
-        content = content
+        content = content,
     )
 }
 
