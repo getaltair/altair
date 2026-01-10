@@ -50,7 +50,8 @@ altair/
     │   ├── 005-*.md       # kotlinx-rpc Communication
     │   ├── 006-*.md       # Server-Centralized AI
     │   ├── 007-*.md       # Docker Compose Deployment
-    │   └── 008-*.md       # Compose Unstyled + Altair Theme
+    │   ├── 008-*.md       # Compose Unstyled + Altair Theme
+    │   └── 009-*.md       # Core Library Stack (Koin, Decompose, Arrow, Mokkery)
     └── reference/
         ├── glossary.md
         └── desktop-service-architectures.md
@@ -106,6 +107,7 @@ altair/
 | [ADR-006](./adr/006-server-centralized-ai.md) | Server-Centralized AI Services | Accepted |
 | [ADR-007](./adr/007-docker-compose-deployment.md) | Docker Compose Deployment | Accepted |
 | [ADR-008](./adr/008-compose-unstyled-altair-theme.md) | Compose Unstyled + Custom Altair Theme | Accepted |
+| [ADR-009](./adr/009-core-library-stack.md) | Core Library Stack (Koin, Decompose, Arrow, Mokkery) | Accepted |
 
 ---
 
@@ -137,12 +139,16 @@ altair/
 | ---------------- | ---------------------------- |
 | UI Framework     | Compose Multiplatform        |
 | UI Components    | Compose Unstyled + Altair    |
+| Navigation       | Decompose                    |
 | Shared Logic     | Kotlin Multiplatform         |
+| Dependency Injection | Koin                     |
+| Error Handling   | Arrow (core + optics)        |
 | Desktop Database | SurrealDB embedded           |
 | Mobile Database  | SQLite (SQLDelight)          |
 | Server Framework | Ktor + kotlinx-rpc           |
 | Server Database  | SurrealDB                    |
 | Server AI        | ort (embeddings), whisper.cpp (transcription) |
+| Testing          | Mokkery + Turbine            |
 | Deployment       | Docker Compose               |
 
 ---

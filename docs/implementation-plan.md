@@ -14,9 +14,10 @@ Reference the `docs/` folder for detailed requirements, domain model, and archit
 ### 1.1 Kotlin Multiplatform Project Scaffold
 
 Create a new Kotlin Multiplatform project with Compose Multiplatform using the JetBrains wizard. Configure targets for
-desktop (JVM), Android, and iOS. Set up Gradle with version catalogs for dependency management. Create a basic "hello
-world" screen that renders on all three platforms. Verify by running `./gradlew :composeApp:run` (desktop),
-`./gradlew :composeApp:installDebug` (Android), and building via Xcode (iOS).
+desktop (JVM), Android, and iOS. Set up Gradle with version catalogs for dependency management. Add core dependencies:
+Koin 4.x (DI), Decompose 3.x (navigation), Arrow 2.x (error handling), kotlinx-serialization, kotlinx-datetime.
+Create a basic "hello world" screen that renders on all three platforms. Verify by running `./gradlew :composeApp:run`
+(desktop), `./gradlew :composeApp:installDebug` (Android), and building via Xcode (iOS).
 
 ### 1.2 Altair Design System Foundation
 
@@ -40,10 +41,11 @@ Verify by running on Android emulator and iOS simulator, confirming data persist
 
 ### 1.5 Application Shell and Navigation
 
-Create the main application layout with bottom navigation (mobile) and sidebar navigation (desktop) showing three
-modules: Guidance, Knowledge, and Tracking. Use Compose Navigation for routing. Each module should have its own nav
-graph. Include a top app bar with settings access. Verify by clicking each nav item and confirming the content area
-updates appropriately per platform.
+Create the root Decompose component (`RootComponent`) with `StackNavigation` for main navigation. Implement child
+components for each module: `GuidanceComponent`, `KnowledgeComponent`, `TrackingComponent`. Create the main application
+layout with bottom navigation (mobile) and sidebar navigation (desktop) showing three modules. Set up Koin modules for
+DI and inject dependencies into components. Verify by clicking each nav item and confirming the content area updates
+appropriately per platform, with proper back handling on all platforms.
 
 ---
 
@@ -94,9 +96,11 @@ confirming a subscriber receives it.
 
 ### 3.2 Error Handling Framework
 
-Define a unified error type (`AltairError`) using sealed classes covering database errors, validation errors, network
-errors, and not-found errors. Create error mapping for RPC calls. Implement UI error handling with snackbar/toast
-display for common error types. Verify by triggering various errors and confirming appropriate UI feedback.
+Define domain error types using sealed interfaces per module: `QuestError`, `NoteError`, `ItemError`, `SyncError`.
+Use Arrow's `Either<Error, T>` for all repository and use case methods. Implement `Raise` DSL for composing operations.
+Add Arrow Optics with `@optics` annotation for nested state updates in ViewModels. Create UI error mapping to convert
+domain errors to user-friendly messages. Verify by triggering validation errors and confirming appropriate snackbar/toast
+display with actionable messages.
 
 ### 3.3 Server AI Service: Embeddings
 
@@ -116,6 +120,13 @@ Implement completion routing to user-configured providers: Ollama (local), Anthr
 `AiService.complete()` RPC endpoint returning `Flow<String>` for token streaming. Store provider configuration in
 server settings. Verify by configuring Ollama and making a completion request.
 
+### 3.6 Testing Infrastructure
+
+Set up commonTest with Mokkery 3.x for multiplatform mocking and Turbine for Flow testing. Create fake implementations
+for core repositories (`FakeQuestRepository`, `FakeNoteRepository`, `FakeItemRepository`) as the primary testing pattern.
+Add kotlinx-coroutines-test for coroutine testing. Configure Koin test modules for dependency injection in tests.
+Verify by writing a sample use case test that uses fakes and confirming tests pass on all platforms.
+
 ---
 
 ## Phase 4: Guidance Module
@@ -123,16 +134,17 @@ server settings. Verify by configuring Ollama and making a completion request.
 ### 4.1 Quest CRUD Operations
 
 Implement repository methods for creating, reading, updating, and deleting Quests. Quests have title (required, max 200
-chars), description (optional), energy_cost (1-5), and status (backlog, active, completed, abandoned). Enforce WIP=1
-rule: reject starting a Quest if another is already active. Create ViewModel exposing quest state. Verify by creating
-a Quest via the UI and confirming it persists across app restart.
+chars), description (optional), energy_cost (1-5), and status (backlog, active, completed, abandoned). All repository
+methods return `Either<QuestError, T>` for typed error handling. Enforce WIP=1 rule: return `WipLimitExceeded` error
+when starting a Quest if another is already active. Create `QuestListComponent` (Decompose) exposing quest state via
+`StateFlow`. Verify by creating a Quest via the UI and confirming it persists across app restart.
 
 ### 4.2 Quest List and Detail Views
 
-Create the Quest list screen showing backlog and completed Quests grouped by status. Each Quest card displays title,
-energy cost (as dots/icons), and Epic name if linked. Clicking a Quest navigates to detail screen with full description
-and edit capability. Include FAB to create new Quests. Verify by creating multiple Quests with different statuses and
-confirming proper grouping.
+Create `QuestListContent` composable showing backlog and completed Quests grouped by status. Each Quest card displays
+title, energy cost (as dots/icons), and Epic name if linked. Create `QuestDetailComponent` with child navigation from
+list. Clicking a Quest navigates to detail screen with full description and edit capability. Include FAB to create new
+Quests. Verify by creating multiple Quests with different statuses and confirming proper grouping and navigation.
 
 ### 4.3 Active Quest and Focus Mode
 

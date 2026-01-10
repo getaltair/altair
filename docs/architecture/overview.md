@@ -18,12 +18,16 @@ cross-module integration.
 | ---------------- | ----------------------- | ------- | ------------------------------------------ |
 | UI Framework     | Compose Multiplatform   | 1.8+    | Cross-platform UI (desktop, Android, iOS)  |
 | UI Components    | Compose Unstyled        | 1.49+   | Headless primitives with Altair theme      |
+| Navigation       | Decompose               | 3.x     | UI-agnostic navigation with back handling  |
 | Shared Logic     | Kotlin Multiplatform    | 2.2+    | Domain models, validation, repositories    |
+| Dependency Injection | Koin                | 4.x     | Runtime DI with Compose integration        |
+| Error Handling   | Arrow                   | 2.x     | Typed errors, validation, optics           |
 | Desktop Database | SurrealDB               | 2.0+    | Embedded graph database with vector search |
 | Mobile Database  | SQLite (SQLDelight)     | 2.0+    | Lightweight embedded database              |
 | Server Framework | Ktor                    | 3.1+    | Self-hosted backend with kotlinx-rpc       |
 | Server Database  | SurrealDB               | 2.0+    | Primary data store and sync hub            |
 | AI Services      | ort + whisper.cpp       | latest  | Server-side embeddings and transcription   |
+| Testing          | Mokkery + Turbine       | 3.x/1.x | Multiplatform mocking and Flow testing     |
 | Deployment       | Docker Compose          | 3.8+    | Self-hosted server stack                   |
 
 ### Core Design Principles

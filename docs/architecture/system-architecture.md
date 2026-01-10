@@ -13,7 +13,10 @@ key patterns used throughout the system.
 | ---------------- | ---------------------------- | -------------------------------------------------------- |
 | UI Framework     | Compose Multiplatform        | Single codebase for desktop, Android, iOS                |
 | UI Components    | Compose Unstyled + Altair    | Headless primitives with custom Linear-inspired theme    |
+| Navigation       | Decompose 3.x                | UI-agnostic, exceptional maintenance, back gesture support |
 | Shared Logic     | Kotlin Multiplatform         | Domain models, validation shared across all targets      |
+| Dependency Injection | Koin 4.x                 | Fast builds, Compose integration, 14M monthly downloads  |
+| Error Handling   | Arrow 2.x (core + optics)    | Typed errors, validation accumulation, nested state      |
 | Desktop Database | SurrealDB embedded           | Graph queries, vector search, full-text search           |
 | Mobile Database  | SQLite (SQLDelight)          | Quick capture, proven mobile reliability                 |
 | Server Framework | Ktor                         | Kotlin-native, lightweight, kotlinx-rpc integration      |
@@ -21,6 +24,7 @@ key patterns used throughout the system.
 | Client-Server    | kotlinx-rpc (gRPC)           | Type-safe, streaming, compile-time checked               |
 | Server AI        | ort + whisper.cpp            | Local embeddings and transcription                       |
 | Deployment       | Docker Compose               | Single-command self-hosted deployment                    |
+| Testing          | Mokkery + Turbine            | Multiplatform mocking, Flow testing                      |
 
 ---
 
