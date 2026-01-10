@@ -81,10 +81,7 @@ typealias DomainResult<E, T> = Either<E, T>
 /**
  * Extension to convert exceptions to domain errors within Raise context.
  */
-inline fun <E : DomainError, T> Raise<E>.catching(
-    onError: (Throwable) -> E,
-    block: () -> T
-): T = try {
+inline fun <E : DomainError, T> Raise<E>.catching(onError: (Throwable) -> E, block: () -> T): T = try {
     block()
 } catch (e: Throwable) {
     raise(onError(e))
@@ -93,6 +90,4 @@ inline fun <E : DomainError, T> Raise<E>.catching(
 /**
  * Execute a block in Either context for domain operations.
  */
-inline fun <E : DomainError, T> domainEither(
-    block: Raise<E>.() -> T
-): Either<E, T> = either(block)
+inline fun <E : DomainError, T> domainEither(block: Raise<E>.() -> T): Either<E, T> = either(block)

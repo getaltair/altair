@@ -35,9 +35,9 @@ interface RootComponent {
 /**
  * Default implementation of RootComponent using Decompose's StackNavigation.
  */
-class DefaultRootComponent(
-    componentContext: ComponentContext,
-) : RootComponent, ComponentContext by componentContext {
+class DefaultRootComponent(componentContext: ComponentContext) :
+    RootComponent,
+    ComponentContext by componentContext {
 
     private val navigation = StackNavigation<Config>()
 
@@ -50,18 +50,19 @@ class DefaultRootComponent(
             childFactory = ::createChild,
         )
 
-    private fun createChild(config: Config, componentContext: ComponentContext): RootComponent.Child =
-        when (config) {
-            Config.Guidance -> RootComponent.Child.Guidance(
-                DefaultGuidanceComponent(componentContext)
-            )
-            Config.Knowledge -> RootComponent.Child.Knowledge(
-                DefaultKnowledgeComponent(componentContext)
-            )
-            Config.Tracking -> RootComponent.Child.Tracking(
-                DefaultTrackingComponent(componentContext)
-            )
-        }
+    private fun createChild(config: Config, componentContext: ComponentContext): RootComponent.Child = when (config) {
+        Config.Guidance -> RootComponent.Child.Guidance(
+            DefaultGuidanceComponent(componentContext),
+        )
+
+        Config.Knowledge -> RootComponent.Child.Knowledge(
+            DefaultKnowledgeComponent(componentContext),
+        )
+
+        Config.Tracking -> RootComponent.Child.Tracking(
+            DefaultTrackingComponent(componentContext),
+        )
+    }
 
     override fun onGuidanceClicked() {
         navigation.pushNew(Config.Guidance)

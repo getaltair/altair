@@ -2,9 +2,11 @@
 
 ## 🔍 VERIFICATION-FIRST DEVELOPMENT
 
-This project enforces **"truth is enforced, not assumed"** with mandatory verification for all operations.
+This project enforces **"truth is enforced, not assumed"** with mandatory verification for all
+operations.
 
 ### 🎯 Truth Verification System Active
+
 - **Threshold**: 0.95 (95% accuracy required)
 - **Mode**: Strict verification with auto-rollback
 - **Pair Programming**: Real-time collaborative development
@@ -13,6 +15,7 @@ This project enforces **"truth is enforced, not assumed"** with mandatory verifi
 ## 🚨 CRITICAL: VERIFICATION COMMANDS
 
 ### Initialize Verification System
+
 ```bash
 # Set verification mode (strict/moderate/development)
 ./claude-flow verify init strict     # 95% threshold, auto-rollback
@@ -21,6 +24,7 @@ This project enforces **"truth is enforced, not assumed"** with mandatory verifi
 ```
 
 ### Run Verification
+
 ```bash
 # Verify specific tasks
 ./claude-flow verify verify task-123 --agent coder
@@ -33,6 +37,7 @@ This project enforces **"truth is enforced, not assumed"** with mandatory verifi
 ```
 
 ### Pair Programming Mode
+
 ```bash
 # Start pair programming with real-time verification
 ./claude-flow pair --start           # Begin collaborative session
@@ -46,22 +51,26 @@ This project enforces **"truth is enforced, not assumed"** with mandatory verifi
 ## 📊 VERIFICATION REQUIREMENTS BY AGENT TYPE
 
 ### Coder Agents
+
 - **Compile**: Code must compile without errors (35% weight)
 - **Test**: All tests must pass (25% weight)
 - **Lint**: Code quality checks (20% weight)
 - **Typecheck**: Type safety verification (20% weight)
 
 ### Reviewer Agents
+
 - **Code Analysis**: Static code analysis
 - **Security Scan**: Vulnerability detection
 - **Performance Check**: Regression testing
 
 ### Tester Agents
+
 - **Unit Tests**: Component-level testing
 - **Integration Tests**: System-wide validation
 - **Coverage Check**: Minimum coverage thresholds
 
 ### Planner Agents
+
 - **Task Decomposition**: Valid task breakdown
 - **Dependency Check**: Dependency validation
 - **Feasibility**: Resource analysis
@@ -69,6 +78,7 @@ This project enforces **"truth is enforced, not assumed"** with mandatory verifi
 ## 🔄 BACKGROUND TASK MANAGEMENT
 
 ### Running Verification in Background
+
 ```javascript
 // Use run_in_background parameter for continuous monitoring
 {
@@ -79,6 +89,7 @@ This project enforces **"truth is enforced, not assumed"** with mandatory verifi
 ```
 
 ### Managing Background Tasks
+
 ```bash
 # Interactive management
 /bashes                      # View all background tasks
@@ -98,21 +109,23 @@ This project enforces **"truth is enforced, not assumed"** with mandatory verifi
 **MANDATORY**: All verification operations MUST be concurrent:
 
 ### ✅ CORRECT - Parallel Verification
+
 ```javascript
 [Single Message]:
   // Initialize verification for multiple tasks
   - Bash("./claude-flow verify verify task-1 --agent coder")
   - Bash("./claude-flow verify verify task-2 --agent reviewer")
   - Bash("./claude-flow verify verify task-3 --agent tester")
-  
+
   // Check all truth scores
   - Bash("./claude-flow truth --json")
-  
+
   // Start monitoring in background
   - Bash("./claude-flow pair --start --monitor", run_in_background: true)
 ```
 
 ### ❌ WRONG - Sequential Verification
+
 ```javascript
 Message 1: Verify task-1
 Message 2: Verify task-2
@@ -123,27 +136,31 @@ Message 3: Check truth score
 ## 📈 VERIFICATION METRICS & THRESHOLDS
 
 ### Target Metrics
+
 - **Truth Accuracy Rate**: >95%
 - **Integration Success Rate**: >90%
 - **Automated Rollback Frequency**: <5%
 - **Human Intervention Rate**: <10%
 
 ### Verification Modes
-| Mode | Threshold | Auto-Rollback | Use Case |
-|------|-----------|---------------|----------|
-| **Strict** | 0.95 | ✅ Enabled | Production |
-| **Moderate** | 0.85 | ❌ Disabled | Development |
-| **Development** | 0.75 | ❌ Disabled | Prototyping |
+
+| Mode            | Threshold | Auto-Rollback | Use Case    |
+| --------------- | --------- | ------------- | ----------- |
+| **Strict**      | 0.95      | ✅ Enabled    | Production  |
+| **Moderate**    | 0.85      | ❌ Disabled   | Development |
+| **Development** | 0.75      | ❌ Disabled   | Prototyping |
 
 ## 🤝 PAIR PROGRAMMING WORKFLOW
 
 ### 1. Start Session
+
 ```bash
 # Initialize pair programming with verification
 ./claude-flow pair --start --mode strict
 ```
 
 ### 2. Real-time Verification Cycle
+
 ```
 Developer writes code
     ↓
@@ -162,6 +179,7 @@ Fail (<0.95) → Suggest fixes or rollback
 ```
 
 ### 3. Continuous Monitoring
+
 ```bash
 # Monitor in background
 ./claude-flow pair --start --monitor &
@@ -174,16 +192,19 @@ Fail (<0.95) → Suggest fixes or rollback
 ## 🔒 SECURITY & AUDIT FEATURES
 
 ### Cryptographic Verification
+
 - All verification results are cryptographically signed
 - SHA256 checksums for integrity
 - Immutable audit trail
 
 ### Byzantine Fault Tolerance
+
 - Protection against incorrect agents
 - Consensus requirements (2/3+ majority)
 - Automatic agent quarantine
 
 ### Audit Trail
+
 ```bash
 # View verification history
 cat .swarm/verification-memory.json | jq .history
@@ -195,6 +216,7 @@ cat .swarm/verification-memory.json | jq .history
 ## 🚀 QUICK START VERIFICATION WORKFLOW
 
 ### Step 1: Initialize Project with Verification
+
 ```bash
 # Initialize with verification-first approach
 npx claude-flow@alpha init --verify --pair
@@ -204,6 +226,7 @@ npx claude-flow@alpha init --verify --pair
 ```
 
 ### Step 2: Start Development with Pair Programming
+
 ```bash
 # Start pair programming session
 ./claude-flow pair --start --mode strict --monitor &
@@ -213,6 +236,7 @@ npx claude-flow@alpha init --verify --pair
 ```
 
 ### Step 3: Develop with Continuous Verification
+
 ```bash
 # All changes are automatically verified
 # Truth scores maintained above 0.95
@@ -220,6 +244,7 @@ npx claude-flow@alpha init --verify --pair
 ```
 
 ### Step 4: Check Truth Metrics
+
 ```bash
 # View current truth scores
 ./claude-flow truth
@@ -231,6 +256,7 @@ npx claude-flow@alpha init --verify --pair
 ## 📋 VERIFICATION CHECKLIST
 
 Before ANY operation:
+
 - ✅ Is verification system initialized?
 - ✅ Is pair programming mode active?
 - ✅ Are background monitors running?
@@ -240,12 +266,14 @@ Before ANY operation:
 ## 🛠️ BUILD COMMANDS WITH VERIFICATION
 
 ### Standard Commands (with verification)
+
 - `npm run build`: Build with verification checks
 - `npm run test`: Test with truth scoring
 - `npm run lint`: Lint with verification tracking
 - `npm run typecheck`: Type check with validation
 
 ### Verification Commands
+
 - `./claude-flow verify status`: Check system status
 - `./claude-flow verify verify <task>`: Run verification
 - `./claude-flow truth`: View truth scores
@@ -254,6 +282,7 @@ Before ANY operation:
 ## 💾 PERSISTENT VERIFICATION MEMORY
 
 Verification data stored in:
+
 - `.swarm/verification-memory.json`: Verification history
 - `.swarm/memory.db`: Persistent swarm memory
 - `.claude/verification-config.json`: Custom configuration
@@ -261,33 +290,37 @@ Verification data stored in:
 ## 🎯 AGENT VERIFICATION PATTERNS
 
 ### Full-Stack Development with Verification
+
 ```javascript
 // Deploy agents with verification requirements
-Task("System architecture", "Design with verification", "system-architect")
-Task("Backend APIs", "Implement with 95% accuracy", "backend-dev")
-Task("Frontend", "Build with validation", "mobile-dev")
-Task("Testing", "Comprehensive verification", "tester")
-Task("Review", "Verify all changes", "reviewer")
+Task("System architecture", "Design with verification", "system-architect");
+Task("Backend APIs", "Implement with 95% accuracy", "backend-dev");
+Task("Frontend", "Build with validation", "mobile-dev");
+Task("Testing", "Comprehensive verification", "tester");
+Task("Review", "Verify all changes", "reviewer");
 ```
 
 ### Verification-First TDD
+
 ```javascript
 // TDD with mandatory verification
-Task("Write failing tests", "Verify test quality", "tester")
-Task("Implement code", "Verify implementation", "coder")
-Task("Refactor", "Verify improvements", "reviewer")
-Task("Validate", "Final verification", "production-validator")
+Task("Write failing tests", "Verify test quality", "tester");
+Task("Implement code", "Verify implementation", "coder");
+Task("Refactor", "Verify improvements", "reviewer");
+Task("Validate", "Final verification", "production-validator");
 ```
 
 ## ⚡ PERFORMANCE WITH VERIFICATION
 
 ### Optimized Verification
+
 - **Parallel Checks**: Run all verifications concurrently
 - **Cached Results**: Skip unchanged file verification
 - **Smart Batching**: Group related verifications
 - **Background Execution**: Non-blocking verification
 
 ### Expected Performance
+
 - Verification overhead: <10% for most operations
 - Truth score calculation: <500ms
 - Rollback execution: <2 seconds
@@ -296,6 +329,7 @@ Task("Validate", "Final verification", "production-validator")
 ## 🔄 AUTOMATED WORKFLOWS
 
 ### CI/CD Integration
+
 ```yaml
 # .github/workflows/verification.yml
 - name: Run Verification
@@ -306,6 +340,7 @@ Task("Validate", "Final verification", "production-validator")
 ```
 
 ### Pre-commit Hooks
+
 ```bash
 # .git/hooks/pre-commit
 #!/bin/bash

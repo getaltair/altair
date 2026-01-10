@@ -12,6 +12,6 @@ interface TrackingComponent {
 /**
  * Default implementation of TrackingComponent.
  */
-class DefaultTrackingComponent(
-    componentContext: ComponentContext,
-) : TrackingComponent, ComponentContext by componentContext
+class DefaultTrackingComponent(componentContext: ComponentContext) :
+    TrackingComponent,
+    ComponentContext by componentContext

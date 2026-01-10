@@ -12,6 +12,6 @@ interface KnowledgeComponent {
 /**
  * Default implementation of KnowledgeComponent.
  */
-class DefaultKnowledgeComponent(
-    componentContext: ComponentContext,
-) : KnowledgeComponent, ComponentContext by componentContext
+class DefaultKnowledgeComponent(componentContext: ComponentContext) :
+    KnowledgeComponent,
+    ComponentContext by componentContext

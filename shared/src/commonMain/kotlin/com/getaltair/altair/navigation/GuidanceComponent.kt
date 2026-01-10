@@ -12,6 +12,6 @@ interface GuidanceComponent {
 /**
  * Default implementation of GuidanceComponent.
  */
-class DefaultGuidanceComponent(
-    componentContext: ComponentContext,
-) : GuidanceComponent, ComponentContext by componentContext
+class DefaultGuidanceComponent(componentContext: ComponentContext) :
+    GuidanceComponent,
+    ComponentContext by componentContext
