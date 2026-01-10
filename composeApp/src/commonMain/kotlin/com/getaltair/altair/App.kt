@@ -13,10 +13,16 @@ import org.jetbrains.compose.ui.tooling.preview.Preview
  * for design system verification.
  */
 @Composable
-@Preview
 @Suppress("ktlint:standard:function-naming")
-private fun AppPreview() {
+fun App() {
     AltairTheme {
         ComponentPreview()
     }
+}
+
+@Composable
+@Preview
+@Suppress("ktlint:standard:function-naming")
+private fun AppPreview() {
+    App()
 }
