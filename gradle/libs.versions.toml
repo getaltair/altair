@@ -24,6 +24,11 @@ sqldelight = "2.0.2"
 logback = "1.5.22"
 surrealdb = "1.0.0-beta.1"
 ulid-creator = "5.2.3"
+arrow = "2.1.0"
+decompose = "3.3.0"
+essenty = "2.5.0"
+koin = "4.1.0"
+kotlinx-serialization = "1.8.0"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -53,6 +58,30 @@ compose-unstyled = { module = "com.composables:composeunstyled", version.ref = "
 surrealdb = { module = "com.surrealdb:surrealdb", version.ref = "surrealdb" }
 ulid-creator = { module = "com.github.f4b6a3:ulid-creator", version.ref = "ulid-creator" }
 
+# Arrow functional error handling
+arrow-bom = { module = "io.arrow-kt:arrow-stack", version.ref = "arrow" }
+arrow-core = { module = "io.arrow-kt:arrow-core", version.ref = "arrow" }
+arrow-fx-coroutines = { module = "io.arrow-kt:arrow-fx-coroutines", version.ref = "arrow" }
+arrow-optics = { module = "io.arrow-kt:arrow-optics", version.ref = "arrow" }
+
+# Decompose Navigation
+decompose = { module = "com.arkivanov.decompose:decompose", version.ref = "decompose" }
+decompose-compose = { module = "com.arkivanov.decompose:extensions-compose", version.ref = "decompose" }
+essenty-lifecycle = { module = "com.arkivanov.essenty:lifecycle", version.ref = "essenty" }
+essenty-lifecycle-coroutines = { module = "com.arkivanov.essenty:lifecycle-coroutines", version.ref = "essenty" }
+essenty-statekeeper = { module = "com.arkivanov.essenty:state-keeper", version.ref = "essenty" }
+essenty-instancekeeper = { module = "com.arkivanov.essenty:instance-keeper", version.ref = "essenty" }
+essenty-backhandler = { module = "com.arkivanov.essenty:back-handler", version.ref = "essenty" }
+
+# Koin DI
+koin-bom = { module = "io.insert-koin:koin-bom", version.ref = "koin" }
+koin-core = { module = "io.insert-koin:koin-core", version.ref = "koin" }
+koin-compose = { module = "io.insert-koin:koin-compose", version.ref = "koin" }
+koin-compose-viewmodel = { module = "io.insert-koin:koin-compose-viewmodel", version.ref = "koin" }
+
+# kotlinx-serialization
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
+
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }
 androidLibrary = { id = "com.android.library", version.ref = "agp" }
@@ -67,3 +96,4 @@ kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref =
 sqldelight = { id = "app.cash.sqldelight", version.ref = "sqldelight" }
 detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
 spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
+kotlinxSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }

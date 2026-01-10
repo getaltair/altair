@@ -78,7 +78,6 @@ spotless {
         target("**/*.md")
         targetExclude(
             ".claude/**",
-            ".moai/**",
             "**/build/**",
         )
         prettier()

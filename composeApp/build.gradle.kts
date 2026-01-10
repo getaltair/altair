@@ -33,6 +33,9 @@ kotlin {
         iosTarget.binaries.framework {
             baseName = "ComposeApp"
             isStatic = true
+            // Export Decompose for iOS
+            export(libs.decompose)
+            export(libs.decompose.compose)
         }
     }
 
@@ -46,6 +49,7 @@ kotlin {
             implementation(compose.runtime)
             implementation(compose.foundation)
             implementation(compose.material3)
+            implementation(compose.materialIconsExtended)
             implementation(compose.ui)
             implementation(compose.components.resources)
             implementation(compose.components.uiToolingPreview)
@@ -53,9 +57,20 @@ kotlin {
             implementation(libs.androidx.lifecycle.runtimeCompose)
             implementation(libs.compose.unstyled)
             implementation(projects.shared)
+
+            // Koin Compose integration
+            implementation(libs.koin.compose)
+            implementation(libs.koin.compose.viewmodel)
+
+            // Decompose Compose extensions
+            implementation(libs.decompose.compose)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
+        }
+        iosMain.dependencies {
+            api(libs.decompose)
+            api(libs.decompose.compose)
         }
         jvmMain.dependencies {
             implementation(compose.desktop.currentOs)
