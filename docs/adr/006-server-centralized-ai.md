@@ -1,11 +1,11 @@
 # ADR-006: Server-Centralized AI Services
 
-| Field             | Value                                         |
-| ----------------- | --------------------------------------------- |
-| **Status**        | Accepted                                      |
-| **Date**          | 2026-01-09                                    |
-| **Deciders**      | Robert Hamilton                               |
-| **Supersedes**    | ADR-004 (AI Provider Adapters, local-default) |
+| Field          | Value                                         |
+| -------------- | --------------------------------------------- |
+| **Status**     | Accepted                                      |
+| **Date**       | 2026-01-09                                    |
+| **Deciders**   | Robert Hamilton                               |
+| **Supersedes** | ADR-004 (AI Provider Adapters, local-default) |
 
 ## Context
 
@@ -15,25 +15,27 @@ Altair uses AI for three capabilities:
 2. **Transcription**: Voice note capture, audio-to-text
 3. **Completion**: AI-assisted writing, summarization, query answering
 
-Originally, ADR-004 specified desktop-bundled AI (ONNX embeddings, Whisper transcription bundled with the desktop app). With
-the shift to mobile support and a self-hosted server architecture (ADR-001), we need to reconsider where AI processing
-happens.
+Originally, ADR-004 specified desktop-bundled AI (ONNX embeddings, Whisper transcription bundled
+with the desktop app). With the shift to mobile support and a self-hosted server architecture
+(ADR-001), we need to reconsider where AI processing happens.
 
 ## Decision
 
 **Centralize AI services on the self-hosted server**:
 
-| Capability    | Location | Implementation                                      |
-| ------------- | -------- | --------------------------------------------------- |
-| Embeddings    | Server   | all-MiniLM-L6-v2 via ort (Kotlin ONNX Runtime)      |
-| Transcription | Server   | whisper-small via whisper.cpp bindings              |
+| Capability    | Location | Implementation                                           |
+| ------------- | -------- | -------------------------------------------------------- |
+| Embeddings    | Server   | all-MiniLM-L6-v2 via ort (Kotlin ONNX Runtime)           |
+| Transcription | Server   | whisper-small via whisper.cpp bindings                   |
 | Completion    | Server   | Proxy to user-configured provider (Ollama, OpenAI, etc.) |
 
-Clients (desktop and mobile) send requests to the server's AI service endpoints. The server performs inference locally
-for embeddings/transcription and proxies completion requests to the configured provider.
+Clients (desktop and mobile) send requests to the server's AI service endpoints. The server performs
+inference locally for embeddings/transcription and proxies completion requests to the configured
+provider.
 
-**Desktop offline fallback**: When the server is unreachable, desktop clients can optionally run local embedding and
-transcription models. Mobile clients require server connectivity for AI features.
+**Desktop offline fallback**: When the server is unreachable, desktop clients can optionally run
+local embedding and transcription models. Mobile clients require server connectivity for AI
+features.
 
 ## Consequences
 
@@ -48,7 +50,8 @@ transcription models. Mobile clients require server connectivity for AI features
 
 ### Negative
 
-- **Server required for AI**: Mobile AI features need connectivity (acceptable for "quick capture" scope)
+- **Server required for AI**: Mobile AI features need connectivity (acceptable for "quick capture"
+  scope)
 - **Latency**: Network round-trip for each AI request (mitigated by batching embeddings)
 - **Server resources**: Self-hosted server needs sufficient RAM/CPU for inference
 - **Complexity**: Server must handle concurrent AI requests; may need queuing
@@ -84,12 +87,12 @@ transcription models. Mobile clients require server connectivity for AI features
 
 Users configure their preferred completion provider in server settings:
 
-| Provider    | Use Case                              | Configuration           |
-| ----------- | ------------------------------------- | ----------------------- |
-| Ollama      | Local GPU inference, privacy-focused  | `http://localhost:11434` |
-| Anthropic   | Claude models (Opus, Sonnet, Haiku)   | API key                 |
-| OpenAI      | GPT models                            | API key                 |
-| OpenRouter  | Multi-provider access                 | API key                 |
+| Provider   | Use Case                             | Configuration            |
+| ---------- | ------------------------------------ | ------------------------ |
+| Ollama     | Local GPU inference, privacy-focused | `http://localhost:11434` |
+| Anthropic  | Claude models (Opus, Sonnet, Haiku)  | API key                  |
+| OpenAI     | GPT models                           | API key                  |
+| OpenRouter | Multi-provider access                | API key                  |
 
 ### Request Flow
 

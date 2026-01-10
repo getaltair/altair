@@ -15,8 +15,8 @@ Altair's self-hosted server architecture (ADR-001) requires a deployment strateg
 3. Runs on typical VPS or home server hardware
 4. Supports easy updates and backup
 
-The target users are technically capable enough to run `docker compose up -d` but shouldn't need to configure Kubernetes
-or manage multiple separate services manually.
+The target users are technically capable enough to run `docker compose up -d` but shouldn't need to
+configure Kubernetes or manage multiple separate services manually.
 
 ## Decision
 
@@ -28,10 +28,10 @@ services:
   altair-server:
     image: ghcr.io/getaltair/altair-server:latest
     ports:
-      - "8080:8080"      # HTTP/gRPC
+      - "8080:8080" # HTTP/gRPC
     environment:
       - DATABASE_URL=surrealdb://surrealdb:8000
-      - OLLAMA_URL=http://ollama:11434  # Optional
+      - OLLAMA_URL=http://ollama:11434 # Optional
     depends_on:
       - surrealdb
 
@@ -41,12 +41,12 @@ services:
     volumes:
       - surrealdb_data:/data
 
-  ollama:  # Optional, for local completion
+  ollama: # Optional, for local completion
     image: ollama/ollama:latest
     volumes:
       - ollama_models:/root/.ollama
     profiles:
-      - with-ollama  # Only starts with --profile with-ollama
+      - with-ollama # Only starts with --profile with-ollama
 
 volumes:
   surrealdb_data:
@@ -111,12 +111,13 @@ Built as a single JAR with embedded JVM runtime using jlink.
 
 ### surrealdb
 
-Official SurrealDB image running in file-backed mode. Stores all user data, sync state, and vector embeddings.
+Official SurrealDB image running in file-backed mode. Stores all user data, sync state, and vector
+embeddings.
 
 ### ollama (optional)
 
-Official Ollama image for local LLM inference. Users can pull models like `llama3.1:8b` or `mistral:7b` for completion
-tasks without cloud API dependency.
+Official Ollama image for local LLM inference. Users can pull models like `llama3.1:8b` or
+`mistral:7b` for completion tasks without cloud API dependency.
 
 ## Alternatives Considered
 
