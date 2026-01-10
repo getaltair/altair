@@ -1,0 +1,71 @@
+-- Item table for storing inventory items
+-- Follows ADR-002 entity conventions with ULID identifiers and soft delete
+
+CREATE TABLE Item (
+    id TEXT NOT NULL PRIMARY KEY,
+    name TEXT NOT NULL,
+    description TEXT,
+    location_id TEXT,
+    container_id TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    deleted_at TEXT,
+    sync_version INTEGER NOT NULL DEFAULT 0
+);
+
+-- Index for filtering by location
+CREATE INDEX item_location_id_idx ON Item(location_id);
+
+-- Index for filtering by container
+CREATE INDEX item_container_id_idx ON Item(container_id);
+
+-- Select all active items (not soft-deleted)
+selectAll:
+SELECT *
+FROM Item
+WHERE deleted_at IS NULL
+ORDER BY created_at DESC;
+
+-- Select an item by ID (includes soft-deleted)
+selectById:
+SELECT *
+FROM Item
+WHERE id = ?;
+
+-- Select items by location ID (only active items)
+selectByLocationId:
+SELECT *
+FROM Item
+WHERE location_id = ? AND deleted_at IS NULL
+ORDER BY created_at DESC;
+
+-- Select items by container ID (only active items)
+selectByContainerId:
+SELECT *
+FROM Item
+WHERE container_id = ? AND deleted_at IS NULL
+ORDER BY created_at DESC;
+
+-- Insert a new item
+insert:
+INSERT INTO Item(id, name, description, location_id, container_id, created_at, updated_at, deleted_at, sync_version)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+-- Update an item by ID
+updateById:
+UPDATE Item
+SET name = ?,
+    description = ?,
+    location_id = ?,
+    container_id = ?,
+    updated_at = ?,
+    sync_version = sync_version + 1
+WHERE id = ?;
+
+-- Soft delete an item by ID
+softDeleteById:
+UPDATE Item
+SET deleted_at = ?,
+    updated_at = ?,
+    sync_version = sync_version + 1
+WHERE id = ?;
