@@ -8,7 +8,7 @@
 | **Title**        | Desktop SurrealDB Integration |
 | **GitHub Issue** | #43                           |
 | **Priority**     | High                          |
-| **Status**       | Planned                       |
+| **Status**       | Completed                     |
 | **Created**      | 2026-01-09                    |
 | **Labels**       | enhancement, database         |
 
