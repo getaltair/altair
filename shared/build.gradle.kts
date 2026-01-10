@@ -34,5 +34,15 @@ kotlin {
         commonTest.dependencies {
             implementation(libs.kotlin.test)
         }
+        jvmMain.dependencies {
+            implementation(libs.surrealdb)
+            implementation(libs.ulid.creator)
+            implementation(libs.kotlinx.coroutinesCore)
+        }
+        jvmTest.dependencies {
+            implementation(libs.kotlin.test)
+            implementation(libs.kotlin.testJunit)
+            implementation(libs.kotlinx.coroutinesTest)
+        }
     }
 }

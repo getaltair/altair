@@ -1,7 +1,7 @@
 {
-  "last_updated": "2026-01-09T23:06:49.378856",
-  "current_branch": "refactor/android-kmm-plugin",
-  "uncommitted_changes": null,
-  "uncommitted_files": 0,
+  "last_updated": "2026-01-10T12:54:34.491483",
+  "current_branch": "feature/SPEC-DB-001-surrealdb-integration",
+  "uncommitted_changes": "⚠️  1 uncommitted files detected - Consider committing or stashing changes",
+  "uncommitted_files": 1,
   "specs_in_progress": []
 }
