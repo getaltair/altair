@@ -1,16 +1,16 @@
 # ADR-004: AI Provider Adapter Pattern
 
-| Field             | Value                                                      |
-| ----------------- | ---------------------------------------------------------- |
-| **Status**        | Superseded                                                 |
-| **Date**          | 2026-01-08                                                 |
-| **Deciders**      | Robert Hamilton                                            |
-| **Superseded by** | [ADR-006](./006-server-centralized-ai.md) (Jan 9, 2026)    |
+| Field             | Value                                                   |
+| ----------------- | ------------------------------------------------------- |
+| **Status**        | Superseded                                              |
+| **Date**          | 2026-01-08                                              |
+| **Deciders**      | Robert Hamilton                                         |
+| **Superseded by** | [ADR-006](./006-server-centralized-ai.md) (Jan 9, 2026) |
 
 > **Note**: This ADR described local-first AI with desktop-bundled models. With the shift to Kotlin
 > Multiplatform and mobile support (ADR-001), AI services have been centralized on the self-hosted
-> server. See ADR-006 for the current architecture. The adapter pattern concept remains relevant
-> but is now implemented server-side.
+> server. See ADR-006 for the current architecture. The adapter pattern concept remains relevant but
+> is now implemented server-side.
 
 ## Context
 
@@ -28,12 +28,13 @@ Users have different preferences and constraints:
 - Some prefer **cloud providers** (better quality, no GPU required)
 - Corporate users may have **approved vendor lists**
 
-We needed an architecture that supports multiple AI providers without coupling features to specific implementations.
+We needed an architecture that supports multiple AI providers without coupling features to specific
+implementations.
 
 ## Decision
 
-Implement an **adapter pattern** with a common trait interface for AI capabilities. At runtime, users select their
-preferred provider(s) from officially supported options:
+Implement an **adapter pattern** with a common trait interface for AI capabilities. At runtime,
+users select their preferred provider(s) from officially supported options:
 
 | Provider               | Type  | Use Cases                                                 |
 | ---------------------- | ----- | --------------------------------------------------------- |
@@ -44,18 +45,20 @@ preferred provider(s) from officially supported options:
 | **OpenAI**             | Cloud | GPT models, embeddings, transcription                     |
 | **OpenRouter**         | Cloud | Access to many providers via single API                   |
 
-The adapter interface abstracts capabilities (completion, embedding, transcription), not specific models.
+The adapter interface abstracts capabilities (completion, embedding, transcription), not specific
+models.
 
 ### Default Configuration
 
-**Embeddings are local by default** using `ort` with bundled ONNX models (e.g., `all-MiniLM-L6-v2` or `nomic-embed-text`).
-This ensures:
+**Embeddings are local by default** using `ort` with bundled ONNX models (e.g., `all-MiniLM-L6-v2`
+or `nomic-embed-text`). This ensures:
 
 - Privacy: User data never leaves their machine for semantic search
 - Offline: Auto-discovery and semantic search work without internet
 - Cost: No per-token API charges for high-frequency embedding operations
 
-**Transcription is local by default** using `whisper.cpp` (Rust bindings via `whisper-rs`). This ensures:
+**Transcription is local by default** using `whisper.cpp` (Rust bindings via `whisper-rs`). This
+ensures:
 
 - Privacy: Voice notes and audio never leave the user's machine
 - Offline: Transcription works without internet
@@ -186,17 +189,18 @@ impl AiService {
 - **Completion**: Not supported
 - **Transcription**: Not supported
 
-**Pros**: Privacy, no API costs, works offline, fast inference
-**Cons**: Lower quality than cloud embeddings; adds to binary size
+**Pros**: Privacy, no API costs, works offline, fast inference **Cons**: Lower quality than cloud
+embeddings; adds to binary size
 
 ### Whisper.cpp (Local) — Default for Transcription
 
 - **Embedding**: Not supported
 - **Completion**: Not supported
-- **Transcription**: Bundled `whisper-small` or user-provided models (tiny, base, small, medium, large)
+- **Transcription**: Bundled `whisper-small` or user-provided models (tiny, base, small, medium,
+  large)
 
-**Pros**: Privacy, no API costs, works offline, good accuracy with small model
-**Cons**: Adds to binary size (~150MB for small model); slower than cloud on CPU-only machines
+**Pros**: Privacy, no API costs, works offline, good accuracy with small model **Cons**: Adds to
+binary size (~150MB for small model); slower than cloud on CPU-only machines
 
 ### Ollama (Local)
 
@@ -204,8 +208,8 @@ impl AiService {
 - **Embedding**: nomic-embed-text, all-minilm, mxbai-embed-large, etc.
 - **Transcription**: Not supported (use Whisper.cpp)
 
-**Pros**: Privacy, no API costs, works offline, wide model selection
-**Cons**: Requires installation; benefits from GPU; user manages models
+**Pros**: Privacy, no API costs, works offline, wide model selection **Cons**: Requires
+installation; benefits from GPU; user manages models
 
 ### Anthropic (Cloud)
 
@@ -213,8 +217,8 @@ impl AiService {
 - **Embedding**: Not offered (use local or OpenAI)
 - **Transcription**: Not offered
 
-**Pros**: Highest quality reasoning; excellent instruction following
-**Cons**: API costs; no embeddings or transcription
+**Pros**: Highest quality reasoning; excellent instruction following **Cons**: API costs; no
+embeddings or transcription
 
 ### OpenAI (Cloud)
 
@@ -222,8 +226,8 @@ impl AiService {
 - **Embedding**: text-embedding-3-small (1536 dim), text-embedding-3-large (3072 dim)
 - **Transcription**: gpt-4o-transcribe, gpt-4o-mini-transcribe
 
-**Pros**: Full-featured; high-quality embeddings; good transcription
-**Cons**: API costs; privacy concerns for some users
+**Pros**: Full-featured; high-quality embeddings; good transcription **Cons**: API costs; privacy
+concerns for some users
 
 ### OpenRouter (Cloud)
 
@@ -231,8 +235,8 @@ impl AiService {
 - **Embedding**: Via supported models
 - **Transcription**: Limited
 
-**Pros**: Single API for many providers; can switch models easily; unified billing
-**Cons**: Additional abstraction layer; varying quality by model
+**Pros**: Single API for many providers; can switch models easily; unified billing **Cons**:
+Additional abstraction layer; varying quality by model
 
 ## Alternatives Considered
 
@@ -282,7 +286,8 @@ Let third parties implement provider plugins.
 - [ort crate](https://github.com/pykeio/ort) — ONNX Runtime for Rust
 - [whisper-rs](https://github.com/tazz4843/whisper-rs) — Rust bindings for whisper.cpp
 - [Ollama](https://ollama.ai/) — Local model runner
-- [Anthropic Models](https://docs.anthropic.com/en/docs/about-claude/models) — Claude model documentation
+- [Anthropic Models](https://docs.anthropic.com/en/docs/about-claude/models) — Claude model
+  documentation
 - [OpenAI Models](https://platform.openai.com/docs/models) — GPT and embedding models
 - FR-G-101 through FR-G-105: Guidance AI requirements
 - FR-K-131 through FR-K-137: Knowledge AI requirements

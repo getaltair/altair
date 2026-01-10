@@ -2,12 +2,12 @@ package com.getaltair.altair.ui
 
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.text.font.FontWeight
-import com.getaltair.altair.ui.theme.AltairTypography
-import com.getaltair.altair.ui.theme.AltairSpacing
 import com.getaltair.altair.ui.theme.AltairShapes
+import com.getaltair.altair.ui.theme.AltairSpacing
+import com.getaltair.altair.ui.theme.AltairTypography
 import com.getaltair.altair.ui.theme.darkColors
 import kotlin.test.Test
 import kotlin.test.assertEquals

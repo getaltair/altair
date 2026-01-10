@@ -6,9 +6,12 @@
 
 ## Context
 
-Altair requires foundational libraries for dependency injection, navigation, error handling, and testing that work reliably across all Kotlin Multiplatform targets (Android, iOS, Desktop). The KMP ecosystem has matured significantly, with clear winners emerging in each category.
+Altair requires foundational libraries for dependency injection, navigation, error handling, and
+testing that work reliably across all Kotlin Multiplatform targets (Android, iOS, Desktop). The KMP
+ecosystem has matured significantly, with clear winners emerging in each category.
 
 Key requirements:
+
 - Full multiplatform support (Android, iOS, Desktop)
 - Production-proven stability
 - Active maintenance
@@ -21,14 +24,15 @@ Key requirements:
 
 **Choice**: Koin over kotlin-inject, Kodein, or manual DI
 
-| Factor | Koin | kotlin-inject | Kodein |
-|--------|------|---------------|--------|
-| Stars | 9.8k | ~1.5k | 3.3k |
-| Build impact | Fast (no codegen) | Slower (KSP) | Fast |
-| Error detection | Runtime | Compile-time | Runtime |
-| Compose support | Excellent | Good | Good |
+| Factor          | Koin              | kotlin-inject | Kodein  |
+| --------------- | ----------------- | ------------- | ------- |
+| Stars           | 9.8k              | ~1.5k         | 3.3k    |
+| Build impact    | Fast (no codegen) | Slower (KSP)  | Fast    |
+| Error detection | Runtime           | Compile-time  | Runtime |
+| Compose support | Excellent         | Good          | Good    |
 
 Rationale:
+
 - **14 million monthly downloads** - battle-tested at scale
 - Google recommended Koin when migrating Jetcaster sample to KMP
 - Zero code generation overhead keeps builds fast
@@ -48,14 +52,15 @@ val appModule = module {
 
 **Choice**: Decompose over Voyager, JetBrains Navigation, or Appyx
 
-| Factor | Decompose | Voyager | JetBrains Nav |
-|--------|-----------|---------|---------------|
-| Open issues | 0 | 186 | N/A |
-| Desktop support | Excellent | Good | Good |
-| Back handling | Best-in-class | Good | Android-focused |
-| UI coupling | None | Compose | Compose |
+| Factor          | Decompose     | Voyager | JetBrains Nav   |
+| --------------- | ------------- | ------- | --------------- |
+| Open issues     | 0             | 186     | N/A             |
+| Desktop support | Excellent     | Good    | Good            |
+| Back handling   | Best-in-class | Good    | Android-focused |
+| UI coupling     | None          | Compose | Compose         |
 
 Rationale:
+
 - **0 open issues** against 271 closed - exceptional maintenance
 - UI-agnostic architecture allows platform-specific adaptations
 - Native back gesture handling on all platforms (predictive back Android, iOS sliding, ESC desktop)
@@ -66,7 +71,7 @@ Rationale:
 class RootComponent(componentContext: ComponentContext) : ComponentContext by componentContext {
     private val navigation = StackNavigation<Config>()
     val stack = childStack(source = navigation, initialConfiguration = Config.Home)
-    
+
     fun navigateToDetails(id: String) = navigation.push(Config.Details(id))
 }
 ```
@@ -75,14 +80,15 @@ class RootComponent(componentContext: ComponentContext) : ComponentContext by co
 
 **Choice**: Arrow arrow-core + arrow-optics over plain Result/exceptions
 
-| Factor | Arrow Either | Kotlin Result | Exceptions |
-|--------|--------------|---------------|------------|
-| Typed errors | Yes | No (Throwable only) | No |
-| Error accumulation | Yes | No | No |
-| CancellationException safe | Yes | No | N/A |
-| Nested state updates | arrow-optics | Manual copy() | Manual |
+| Factor                     | Arrow Either | Kotlin Result       | Exceptions |
+| -------------------------- | ------------ | ------------------- | ---------- |
+| Typed errors               | Yes          | No (Throwable only) | No         |
+| Error accumulation         | Yes          | No                  | No         |
+| CancellationException safe | Yes          | No                  | N/A        |
+| Nested state updates       | arrow-optics | Manual copy()       | Manual     |
 
 Rationale:
+
 - **ThoughtWorks Technology Radar "Adopt"** status (Dec 2024)
 - Arrow 2.x removed complexity (no HKTs, typeclasses, or Arrow IO)
 - `Either<DomainError, T>` explicitly models failure in types
@@ -114,16 +120,18 @@ AppState.guidance.activeQuest.modify(state) { it?.copy(status = Status.Completed
 
 **Choice**: Mokkery over MockK or Mockative
 
-**Critical**: MockK cannot and will never support iOS/Native targets due to JVM reflection requirements.
+**Critical**: MockK cannot and will never support iOS/Native targets due to JVM reflection
+requirements.
 
-| Factor | Mokkery | MockK | Mockative |
-|--------|---------|-------|-----------|
-| iOS support | ✅ | ❌ Never | ✅ |
-| Implementation | Compiler plugin | JVM reflection | KSP |
-| Open issues | 5 | N/A | 29 |
-| API familiarity | MockK-inspired | N/A | Different |
+| Factor          | Mokkery         | MockK          | Mockative |
+| --------------- | --------------- | -------------- | --------- |
+| iOS support     | ✅              | ❌ Never       | ✅        |
+| Implementation  | Compiler plugin | JVM reflection | KSP       |
+| Open issues     | 5               | N/A            | 29        |
+| API familiarity | MockK-inspired  | N/A            | Different |
 
 Rationale:
+
 - Compiler plugin approach works on all Kotlin targets
 - MockK-inspired API eases migration from Android-only projects
 - 5 open issues indicates solid maintenance
@@ -144,14 +152,14 @@ val repository = mock<QuestRepository> {
 
 ### Additional Libraries
 
-| Category | Library | Version | Purpose |
-|----------|---------|---------|---------|
-| Async | kotlinx-coroutines | 1.9+ | Coroutines and Flow |
-| Serialization | kotlinx-serialization | 1.7+ | JSON/CBOR encoding |
-| DateTime | kotlinx-datetime | 0.6+ | Multiplatform dates |
-| HTTP Client | Ktor Client | 3.1+ | API calls (if needed) |
-| Flow Testing | Turbine | 1.2+ | Flow assertions |
-| Resilience | arrow-fx-coroutines | 2.1+ | Retry, timeout, resource |
+| Category      | Library               | Version | Purpose                  |
+| ------------- | --------------------- | ------- | ------------------------ |
+| Async         | kotlinx-coroutines    | 1.9+    | Coroutines and Flow      |
+| Serialization | kotlinx-serialization | 1.7+    | JSON/CBOR encoding       |
+| DateTime      | kotlinx-datetime      | 0.6+    | Multiplatform dates      |
+| HTTP Client   | Ktor Client           | 3.1+    | API calls (if needed)    |
+| Flow Testing  | Turbine               | 1.2+    | Flow assertions          |
+| Resilience    | arrow-fx-coroutines   | 2.1+    | Retry, timeout, resource |
 
 ## Consequences
 

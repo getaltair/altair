@@ -1,44 +1,48 @@
 # ADR-002: Hybrid Database Strategy
 
-| Field             | Value                                       |
-| ----------------- | ------------------------------------------- |
-| **Status**        | Accepted                                    |
-| **Date**          | 2026-01-09                                  |
-| **Deciders**      | Robert Hamilton                             |
-| **Supersedes**    | ADR-002 (SurrealDB Embedded only, original) |
+| Field          | Value                                       |
+| -------------- | ------------------------------------------- |
+| **Status**     | Accepted                                    |
+| **Date**       | 2026-01-09                                  |
+| **Deciders**   | Robert Hamilton                             |
+| **Supersedes** | ADR-002 (SurrealDB Embedded only, original) |
 
 ## Context
 
 Altair requires a database strategy that supports:
 
-1. **Desktop**: Full-featured offline-capable operation with graph relationships, full-text search, vector search
+1. **Desktop**: Full-featured offline-capable operation with graph relationships, full-text search,
+   vector search
 2. **Mobile**: Quick capture and basic viewing—not full feature parity
 3. **Server**: Primary data store for sync, shared across all user devices
 4. **Cross-device sync**: User-operated server synchronizes data between desktop and mobile clients
 
-The mobile "quick capture" use case doesn't require graph traversal or complex queries—just fast text entry and basic
-reads. Desktop does the heavy lifting with full search and relationship features.
+The mobile "quick capture" use case doesn't require graph traversal or complex queries—just fast
+text entry and basic reads. Desktop does the heavy lifting with full search and relationship
+features.
 
 ## Decision
 
 Use a **hybrid database architecture**:
 
-| Platform | Database          | Purpose                                        |
-| -------- | ----------------- | ---------------------------------------------- |
+| Platform | Database           | Purpose                                        |
+| -------- | ------------------ | ---------------------------------------------- |
 | Desktop  | SurrealDB embedded | Full graph queries, vector search, FTS, events |
 | Mobile   | SQLite embedded    | Quick capture, basic CRUD, proven reliability  |
 | Server   | SurrealDB          | Primary store, sync hub, conflict resolution   |
 
-A **custom sync bridge** handles bidirectional synchronization between SurrealDB (desktop/server) and SQLite (mobile).
-Conflict resolution happens server-side with last-write-wins semantics for simple fields and custom merge logic for
-complex structures.
+A **custom sync bridge** handles bidirectional synchronization between SurrealDB (desktop/server)
+and SQLite (mobile). Conflict resolution happens server-side with last-write-wins semantics for
+simple fields and custom merge logic for complex structures.
 
 ## Consequences
 
 ### Positive
 
-- **Mobile simplicity**: SQLite is battle-tested on mobile (15+ years), tiny footprint, zero configuration
-- **Desktop power**: SurrealDB graph traversal for note↔quest↔item relationships, native vector search
+- **Mobile simplicity**: SQLite is battle-tested on mobile (15+ years), tiny footprint, zero
+  configuration
+- **Desktop power**: SurrealDB graph traversal for note↔quest↔item relationships, native vector
+  search
 - **Appropriate complexity**: Mobile doesn't pay for features it doesn't use
 - **Sync flexibility**: Server controls conflict resolution; clients are thin
 - **Offline-first**: Both desktop and mobile work fully offline; sync when connected
@@ -86,7 +90,8 @@ Use SurrealDB embedded on mobile via surrealdb.java JNI bindings.
 
 **Rejected because:**
 
-- SurrealDB's built-in sync is not yet implemented (GitHub discussions show founder exploring CRDTs, nothing shipped)
+- SurrealDB's built-in sync is not yet implemented (GitHub discussions show founder exploring CRDTs,
+  nothing shipped)
 - JNI adds complexity and potential crash vectors on mobile
 - Mobile "quick capture" doesn't need graph features—overkill
 

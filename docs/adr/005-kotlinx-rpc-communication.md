@@ -25,8 +25,9 @@ We need a communication protocol that:
 
 Use **kotlinx-rpc** with gRPC transport for all client-server communication.
 
-kotlinx-rpc is JetBrains' official RPC framework for Kotlin, shipping with Ktor 3.1.0 (Feb 2025). For Kotlin-to-Kotlin
-communication, it provides type-safe service definitions without requiring Protocol Buffer schemas.
+kotlinx-rpc is JetBrains' official RPC framework for Kotlin, shipping with Ktor 3.1.0 (Feb 2025).
+For Kotlin-to-Kotlin communication, it provides type-safe service definitions without requiring
+Protocol Buffer schemas.
 
 ```kotlin
 // Shared module (commonMain)
@@ -50,7 +51,8 @@ val changes = syncService.pull(lastSyncVersion)
 ### Positive
 
 - **Type safety**: Service interfaces shared between client and server; compiler catches mismatches
-- **Streaming support**: `Flow<T>` return types for server-sent events (sync deltas, AI token streaming)
+- **Streaming support**: `Flow<T>` return types for server-sent events (sync deltas, AI token
+  streaming)
 - **No protobuf**: Pure Kotlin definitions for Kotlin-to-Kotlin communication
 - **Ktor integration**: First-class support in Ktor 3.1+; natural fit for server
 - **gRPC interop**: Can expose gRPC protocol if non-Kotlin clients ever needed

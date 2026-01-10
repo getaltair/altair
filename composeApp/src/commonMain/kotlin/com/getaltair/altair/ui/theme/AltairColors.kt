@@ -54,7 +54,7 @@ data class AltairColors(
 
     // Energy level colors (Guidance Module)
     val energy1: Color,
-    val energy5: Color
+    val energy5: Color,
 )
 
 /**
@@ -92,5 +92,5 @@ fun darkColors(): AltairColors = AltairColors(
 
     // Energy level colors
     energy1 = Color(0xFF22C55E),
-    energy5 = Color(0xFFEF4444)
+    energy5 = Color(0xFFEF4444),
 )

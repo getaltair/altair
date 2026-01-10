@@ -18,10 +18,12 @@ We needed to decide how modules communicate within the single Tauri application.
 
 ## Decision
 
-Implement an **internal event bus** using Rust channels (`tokio::sync::broadcast` or similar) for module-to-module
-communication. Modules publish events to named topics; other modules subscribe to topics they care about.
+Implement an **internal event bus** using Rust channels (`tokio::sync::broadcast` or similar) for
+module-to-module communication. Modules publish events to named topics; other modules subscribe to
+topics they care about.
 
-Events are fire-and-forget notifications. For request-response patterns, modules query the shared database directly.
+Events are fire-and-forget notifications. For request-response patterns, modules query the shared
+database directly.
 
 ## Consequences
 
@@ -59,11 +61,11 @@ sequenceDiagram
     Note over K,T: User types in note
     K->>EB: publish("note:content_changed")
     EB->>T: deliver event
-    
+
     Note over T: Detects inventory items in text
     T->>EB: publish("tracking:items_detected")
     EB->>K: deliver event
-    
+
     Note over K: Shows popup with detected items
 ```
 

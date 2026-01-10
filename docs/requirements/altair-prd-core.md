@@ -1,18 +1,22 @@
 # Altair Product Requirements Document
+
 ## Core PRD: System Overview & Shared Infrastructure
 
-| Field | Value |
-|-------|-------|
-| **Version** | 1.0 |
-| **Status** | Draft |
-| **Last Updated** | 2026-01-08 |
+| Field                 | Value                                                                                                    |
+| --------------------- | -------------------------------------------------------------------------------------------------------- |
+| **Version**           | 1.0                                                                                                      |
+| **Status**            | Draft                                                                                                    |
+| **Last Updated**      | 2026-01-08                                                                                               |
 | **Related Documents** | `altair-prd-guidance.md`, `altair-prd-knowledge.md`, `altair-prd-tracking.md`, `altair-design-system.md` |
 
 ---
 
 ## 1. Purpose
 
-This document defines the product requirements for Altair, an open-source productivity ecosystem designed specifically for individuals with ADHD. It serves as the authoritative reference for system-level architecture, shared infrastructure, design principles, and cross-application integration.
+This document defines the product requirements for Altair, an open-source productivity ecosystem
+designed specifically for individuals with ADHD. It serves as the authoritative reference for
+system-level architecture, shared infrastructure, design principles, and cross-application
+integration.
 
 For application-specific requirements, see the companion PRDs for Guidance, Knowledge, and Tracking.
 
@@ -22,14 +26,22 @@ For application-specific requirements, see the companion PRDs for Guidance, Know
 
 Existing productivity tools fail individuals with ADHD in predictable ways:
 
-- **Overwhelm by design**: Most task managers encourage capturing everything, creating backlogs that trigger anxiety and avoidance.
-- **Willpower-dependent**: Systems assume users can self-regulate task switching, prioritization, and focus—exactly the executive functions ADHD impairs.
-- **Shame-inducing**: Incomplete tasks accumulate visibly, reinforcing negative self-perception. "Streaks" punish bad days rather than celebrating good ones.
-- **Time-blind**: Few tools address the ADHD experience of time—difficulty estimating duration, losing track of time, or hyperfocusing past deadlines.
-- **Fragmented ecosystems**: Knowledge, tasks, and inventory live in separate apps with no meaningful integration, increasing cognitive load.
-- **Cloud-dependent**: Many tools require constant connectivity and store sensitive data on third-party servers, creating privacy concerns and offline failures.
+- **Overwhelm by design**: Most task managers encourage capturing everything, creating backlogs that
+  trigger anxiety and avoidance.
+- **Willpower-dependent**: Systems assume users can self-regulate task switching, prioritization,
+  and focus—exactly the executive functions ADHD impairs.
+- **Shame-inducing**: Incomplete tasks accumulate visibly, reinforcing negative self-perception.
+  "Streaks" punish bad days rather than celebrating good ones.
+- **Time-blind**: Few tools address the ADHD experience of time—difficulty estimating duration,
+  losing track of time, or hyperfocusing past deadlines.
+- **Fragmented ecosystems**: Knowledge, tasks, and inventory live in separate apps with no
+  meaningful integration, increasing cognitive load.
+- **Cloud-dependent**: Many tools require constant connectivity and store sensitive data on
+  third-party servers, creating privacy concerns and offline failures.
 
-Altair addresses these problems through externalized executive function, enforced constraints (like WIP=1), variable capacity support, and a privacy-focused self-hosted architecture that keeps your data on your own infrastructure.
+Altair addresses these problems through externalized executive function, enforced constraints (like
+WIP=1), variable capacity support, and a privacy-focused self-hosted architecture that keeps your
+data on your own infrastructure.
 
 ---
 
@@ -37,14 +49,16 @@ Altair addresses these problems through externalized executive function, enforce
 
 ### Primary Audience
 
-- **Individuals with ADHD** seeking productivity tools that work *with* their neurology rather than against it
+- **Individuals with ADHD** seeking productivity tools that work _with_ their neurology rather than
+  against it
 - **Makers and DIY enthusiasts** managing projects, parts inventory, and documentation
 - **Researchers and knowledge workers** building personal knowledge bases with interconnected notes
 
 ### Secondary Audience
 
 - **Households** coordinating shared projects and inventory
-- **Anyone** who has struggled with traditional productivity systems and wants a gentler, more flexible approach
+- **Anyone** who has struggled with traditional productivity systems and wants a gentler, more
+  flexible approach
 
 ### User Assumptions
 
@@ -60,10 +74,14 @@ Altair addresses these problems through externalized executive function, enforce
 
 ### System Goals
 
-1. **Externalize executive function** — The system enforces constraints (WIP limits, energy filtering, progressive disclosure) so users don't rely on willpower.
-2. **Unify productivity domains** — Tasks, knowledge, and inventory share data and surface relevant connections automatically.
-3. **Respect variable capacity** — Daily energy fluctuates; the system adapts rather than demanding consistency.
-4. **Eliminate shame** — No failure states. Incomplete work is pausable, archivable, and recoverable without judgment.
+1. **Externalize executive function** — The system enforces constraints (WIP limits, energy
+   filtering, progressive disclosure) so users don't rely on willpower.
+2. **Unify productivity domains** — Tasks, knowledge, and inventory share data and surface relevant
+   connections automatically.
+3. **Respect variable capacity** — Daily energy fluctuates; the system adapts rather than demanding
+   consistency.
+4. **Eliminate shame** — No failure states. Incomplete work is pausable, archivable, and recoverable
+   without judgment.
 5. **Prioritize privacy** — Self-hosted architecture with data stored on your own infrastructure.
 6. **Enable portability** — Open-source (AGPL v3+) with standard data formats and no vendor lock-in.
 
@@ -83,11 +101,11 @@ Altair addresses these problems through externalized executive function, enforce
 
 ### Core Applications
 
-| Application | Purpose | Key Differentiator |
-|-------------|---------|-------------------|
-| **Guidance** | Quest-Based Agile task management | WIP=1 enforcement, energy-based filtering |
-| **Knowledge** | Personal knowledge management | Bidirectional linking, auto-relationship discovery |
-| **Tracking** | Inventory and asset management | Photo-first capture, BoM intelligence |
+| Application   | Purpose                           | Key Differentiator                                 |
+| ------------- | --------------------------------- | -------------------------------------------------- |
+| **Guidance**  | Quest-Based Agile task management | WIP=1 enforcement, energy-based filtering          |
+| **Knowledge** | Personal knowledge management     | Bidirectional linking, auto-relationship discovery |
+| **Tracking**  | Inventory and asset management    | Photo-first capture, BoM intelligence              |
 
 ### Architectural Principles
 
@@ -172,13 +190,13 @@ Full specifications in `altair-design-system.md`. Summary of core elements:
 
 ### Visual Language
 
-| Element | Specification |
-|---------|---------------|
-| **Palette** | Low-contrast backgrounds, readable text, accent colors for actions |
-| **Typography** | Large, accessible sizes; open letterforms; generous line height |
-| **Corners** | Consistent soft rounding (no sharp edges) |
-| **Depth** | Subtle shadows; no harsh borders |
-| **Focus indicators** | Clear highlighting for active elements |
+| Element              | Specification                                                      |
+| -------------------- | ------------------------------------------------------------------ |
+| **Palette**          | Low-contrast backgrounds, readable text, accent colors for actions |
+| **Typography**       | Large, accessible sizes; open letterforms; generous line height    |
+| **Corners**          | Consistent soft rounding (no sharp edges)                          |
+| **Depth**            | Subtle shadows; no harsh borders                                   |
+| **Focus indicators** | Clear highlighting for active elements                             |
 
 ### Component Patterns
 
@@ -208,23 +226,23 @@ All entities ←→ Tags (shared taxonomy)
 
 The system automatically surfaces connections between entities:
 
-| Mechanism | Description |
-|-----------|-------------|
-| **Semantic similarity** | Cosine similarity > 0.7 suggests relationship |
-| **Fuzzy title matching** | "web dev" ≈ "web development" |
-| **Smart aliasing** | "RPi" ≈ "Raspberry Pi", "JS" ≈ "JavaScript" |
-| **Entity recognition** | Extract people, places, technologies from text |
-| **Shared keywords** | Common terms suggest relationship |
+| Mechanism                | Description                                    |
+| ------------------------ | ---------------------------------------------- |
+| **Semantic similarity**  | Cosine similarity > 0.7 suggests relationship  |
+| **Fuzzy title matching** | "web dev" ≈ "web development"                  |
+| **Smart aliasing**       | "RPi" ≈ "Raspberry Pi", "JS" ≈ "JavaScript"    |
+| **Entity recognition**   | Extract people, places, technologies from text |
+| **Shared keywords**      | Common terms suggest relationship              |
 
 ### 8.3 Integration Points
 
-| From | To | Integration |
-|------|-----|-------------|
-| Knowledge note | Guidance quest | Extract actionable items as quests |
-| Guidance quest | Knowledge note | Link research/documentation to tasks |
-| Knowledge note | Tracking item | Detect mentioned components/materials |
-| Tracking item | Guidance quest | Reserve items for quest requirements |
-| Tracking BoM | Guidance quest | Generate shopping list quests |
+| From           | To             | Integration                           |
+| -------------- | -------------- | ------------------------------------- |
+| Knowledge note | Guidance quest | Extract actionable items as quests    |
+| Guidance quest | Knowledge note | Link research/documentation to tasks  |
+| Knowledge note | Tracking item  | Detect mentioned components/materials |
+| Tracking item  | Guidance quest | Reserve items for quest requirements  |
+| Tracking BoM   | Guidance quest | Generate shopping list quests         |
 
 ### 8.4 Universal Search
 
@@ -257,13 +275,13 @@ The system surfaces relevant information without being asked:
 
 ### 9.2 Plugin Types
 
-| Category | Examples |
-|----------|----------|
-| **Cloud sync** | Google Drive, Dropbox, Nextcloud, WebDAV |
-| **AI services** | OpenAI, Claude, local model alternatives |
-| **Import sources** | Notion, Obsidian, Todoist, Trello |
-| **Export formats** | PDF, Word, specialized formats |
-| **Automation** | IFTTT, Zapier, n8n, custom scripts |
+| Category               | Examples                                         |
+| ---------------------- | ------------------------------------------------ |
+| **Cloud sync**         | Google Drive, Dropbox, Nextcloud, WebDAV         |
+| **AI services**        | OpenAI, Claude, local model alternatives         |
+| **Import sources**     | Notion, Obsidian, Todoist, Trello                |
+| **Export formats**     | PDF, Word, specialized formats                   |
+| **Automation**         | IFTTT, Zapier, n8n, custom scripts               |
 | **Health integration** | Google Fit, Fitbit (read-only, correlation only) |
 
 ### 9.3 Permission Model
@@ -279,7 +297,8 @@ Health data requires special handling:
 
 - **No built-in health tracking** — Avoids HIPAA/privacy concerns
 - **Read-only integration** — Pull data from dedicated health apps
-- **Correlation, not diagnosis** — Data used only for pattern recognition (e.g., sleep quality → energy levels)
+- **Correlation, not diagnosis** — Data used only for pattern recognition (e.g., sleep quality →
+  energy levels)
 - **User controls data flow** — Explicit opt-in for each data type
 
 ---
@@ -288,26 +307,26 @@ Health data requires special handling:
 
 ### 10.1 Sync Strategy
 
-| Aspect | Approach |
-|--------|----------|
-| **Trigger** | Real-time when online, queued when offline |
-| **Scope** | Between user's own devices only |
-| **Conflict resolution** | Three-way merge with manual conflict UI |
-| **Selective sync** | User-defined rules per data type |
-| **Binary handling** | Efficient delta sync for images/video |
+| Aspect                  | Approach                                   |
+| ----------------------- | ------------------------------------------ |
+| **Trigger**             | Real-time when online, queued when offline |
+| **Scope**               | Between user's own devices only            |
+| **Conflict resolution** | Three-way merge with manual conflict UI    |
+| **Selective sync**      | User-defined rules per data type           |
+| **Binary handling**     | Efficient delta sync for images/video      |
 
 ### 10.2 Cloud Backup Options
 
 Backup is optional and user-controlled:
 
-| Provider | Platform |
-|----------|----------|
-| iCloud | iOS/macOS |
-| Google Drive | All platforms |
-| Dropbox | All platforms |
-| OneDrive | All platforms |
-| Nextcloud | Self-hosted option |
-| WebDAV | Generic protocol |
+| Provider     | Platform           |
+| ------------ | ------------------ |
+| iCloud       | iOS/macOS          |
+| Google Drive | All platforms      |
+| Dropbox      | All platforms      |
+| OneDrive     | All platforms      |
+| Nextcloud    | Self-hosted option |
+| WebDAV       | Generic protocol   |
 
 ### 10.3 Backup Features
 
@@ -327,16 +346,17 @@ Backup is optional and user-controlled:
 
 ## 11. Mobile Platform Features
 
-Application-specific mobile features are documented in each app's PRD. This section covers shared mobile infrastructure.
+Application-specific mobile features are documented in each app's PRD. This section covers shared
+mobile infrastructure.
 
 ### 11.1 System Integration
 
-| Feature | Capability |
-|---------|------------|
+| Feature                | Capability                                                                                                       |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------- |
 | **Push notifications** | Quest reminders, timer completions, energy check-ins, harvest reminders, low-stock alerts, maintenance due dates |
-| **Widgets** | Active quest, quick capture, energy status, daily stats, next up preview |
-| **Shortcuts/Intents** | Voice commands, automation triggers, quick actions |
-| **Biometric security** | Face ID, Touch ID, fingerprint, app lock |
+| **Widgets**            | Active quest, quick capture, energy status, daily stats, next up preview                                         |
+| **Shortcuts/Intents**  | Voice commands, automation triggers, quick actions                                                               |
+| **Biometric security** | Face ID, Touch ID, fingerprint, app lock                                                                         |
 
 ### 11.2 Accessibility
 
@@ -349,6 +369,7 @@ Application-specific mobile features are documented in each app's PRD. This sect
 ### 11.3 Platform-Specific Implementations
 
 **Android:**
+
 - Wear OS companion app
 - Google Assistant integration
 - Material You theming
@@ -356,6 +377,7 @@ Application-specific mobile features are documented in each app's PRD. This sect
 - Tablet optimization
 
 **iOS (if community-contributed):**
+
 - Apple Watch companion app
 - Siri Shortcuts integration
 - Handoff to Mac desktop
@@ -371,6 +393,7 @@ Application-specific mobile features are documented in each app's PRD. This sect
 ### 11.5 Mobile Limitations
 
 **Technical constraints:**
+
 - Local AI models unavailable (use cloud alternatives)
 - Sandboxed file system access
 - Platform restrictions on background processing
@@ -378,6 +401,7 @@ Application-specific mobile features are documented in each app's PRD. This sect
 - Plugin system limited or unavailable
 
 **Intentional simplifications:**
+
 - Bulk operations simplified for touch
 - Subset of advanced settings
 - Common export formats only
@@ -389,38 +413,38 @@ Application-specific mobile features are documented in each app's PRD. This sect
 
 ### 12.1 Desktop Targets
 
-| Metric | Target |
-|--------|--------|
-| App launch | < 2 seconds |
-| Quest creation | < 500ms |
-| Semantic search | < 1 second |
-| Mind map node render | < 100ms |
+| Metric                 | Target         |
+| ---------------------- | -------------- |
+| App launch             | < 2 seconds    |
+| Quest creation         | < 500ms        |
+| Semantic search        | < 1 second     |
+| Mind map node render   | < 100ms        |
 | Relationship discovery | > 90% accuracy |
-| Inventory detection | < 500ms |
+| Inventory detection    | < 500ms        |
 
 ### 12.2 Mobile Targets
 
-| Metric | Target |
-|--------|--------|
-| App launch (cold) | < 3 seconds |
-| App launch (warm) | < 1 second |
-| Camera capture ready | < 2 seconds |
-| Sync latency (online) | < 5 seconds |
-| Search (10k items) | < 2 seconds |
-| Graph render (100 nodes) | < 1 second |
-| Battery impact (typical use) | < 5% daily |
-| Base app size | < 100 MB |
-| Offline cache | Configurable 100 MB – 2 GB |
+| Metric                       | Target                     |
+| ---------------------------- | -------------------------- |
+| App launch (cold)            | < 3 seconds                |
+| App launch (warm)            | < 1 second                 |
+| Camera capture ready         | < 2 seconds                |
+| Sync latency (online)        | < 5 seconds                |
+| Search (10k items)           | < 2 seconds                |
+| Graph render (100 nodes)     | < 1 second                 |
+| Battery impact (typical use) | < 5% daily                 |
+| Base app size                | < 100 MB                   |
+| Offline cache                | Configurable 100 MB – 2 GB |
 
 ### 12.3 UX Targets
 
-| Metric | Target |
-|--------|--------|
-| Quest completion time | -30% with focus mode |
-| Auto-discovered relationships | 5+ links per note |
-| Graph navigation | < 2 clicks to any node |
-| Capture speed | < 3 seconds to start |
-| Focus mode task completion | > 80% |
+| Metric                        | Target                 |
+| ----------------------------- | ---------------------- |
+| Quest completion time         | -30% with focus mode   |
+| Auto-discovered relationships | 5+ links per note      |
+| Graph navigation              | < 2 clicks to any node |
+| Capture speed                 | < 3 seconds to start   |
+| Focus mode task completion    | > 80%                  |
 
 ---
 
@@ -444,16 +468,16 @@ Application-specific mobile features are documented in each app's PRD. This sect
 
 ### 13.3 Explicit Non-Scope (v1)
 
-| Item | Rationale |
-|------|-----------|
-| Web application | Desktop/mobile focus; future consideration |
-| Real-time collaboration | Single-user v1; adds significant complexity |
-| Third-party cloud storage | Data stays on user's server |
-| Enterprise/team features | Out of scope for v1 |
-| Plugin marketplace | Architecture ready; marketplace deferred |
-| Advanced mobile AI | Use server AI; local models infeasible on mobile |
-| All cloud providers | Core providers only; rest via plugins |
-| Health data collection | HIPAA concerns; integrate via plugins |
+| Item                      | Rationale                                        |
+| ------------------------- | ------------------------------------------------ |
+| Web application           | Desktop/mobile focus; future consideration       |
+| Real-time collaboration   | Single-user v1; adds significant complexity      |
+| Third-party cloud storage | Data stays on user's server                      |
+| Enterprise/team features  | Out of scope for v1                              |
+| Plugin marketplace        | Architecture ready; marketplace deferred         |
+| Advanced mobile AI        | Use server AI; local models infeasible on mobile |
+| All cloud providers       | Core providers only; rest via plugins            |
+| Health data collection    | HIPAA concerns; integrate via plugins            |
 
 ---
 
@@ -486,7 +510,8 @@ Application-specific mobile features are documented in each app's PRD. This sect
 
 ## 15. Open Questions
 
-1. **Sync conflict UI**: What's the optimal UX for presenting merge conflicts to non-technical users?
+1. **Sync conflict UI**: What's the optimal UX for presenting merge conflicts to non-technical
+   users?
 2. **Plugin sandboxing**: What's the right balance between plugin capability and security isolation?
 3. **AI model selection**: Which local models provide acceptable quality on modest hardware?
 4. **iOS contribution model**: How do we structure the project to enable community iOS contribution?
@@ -495,24 +520,24 @@ Application-specific mobile features are documented in each app's PRD. This sect
 
 ## Appendix A: Document Cross-References
 
-| Document | Scope |
-|----------|-------|
-| `altair-prd-guidance.md` | Guidance application requirements |
+| Document                  | Scope                              |
+| ------------------------- | ---------------------------------- |
+| `altair-prd-guidance.md`  | Guidance application requirements  |
 | `altair-prd-knowledge.md` | Knowledge application requirements |
-| `altair-prd-tracking.md` | Tracking application requirements |
-| `altair-design-system.md` | Calm Focus visual design system |
+| `altair-prd-tracking.md`  | Tracking application requirements  |
+| `altair-design-system.md` | Calm Focus visual design system    |
 
 ---
 
 ## Appendix B: Glossary
 
-| Term | Definition |
-|------|------------|
-| **Quest** | A discrete, completable task in Guidance |
-| **Epic** | A large initiative containing multiple Quests |
-| **Harvest** | Weekly reflection and planning ritual |
-| **WIP** | Work In Progress; default limit is 1 active Quest |
-| **Energy** | Subjective daily capacity rating (1-5 scale) |
-| **BoM** | Bill of Materials; list of required items for a project |
-| **Self-hosted** | Architecture where data stays on user-controlled infrastructure |
-| **Phoenix Rising** | Recovery process for abandoned/overwhelming boards |
+| Term               | Definition                                                      |
+| ------------------ | --------------------------------------------------------------- |
+| **Quest**          | A discrete, completable task in Guidance                        |
+| **Epic**           | A large initiative containing multiple Quests                   |
+| **Harvest**        | Weekly reflection and planning ritual                           |
+| **WIP**            | Work In Progress; default limit is 1 active Quest               |
+| **Energy**         | Subjective daily capacity rating (1-5 scale)                    |
+| **BoM**            | Bill of Materials; list of required items for a project         |
+| **Self-hosted**    | Architecture where data stays on user-controlled infrastructure |
+| **Phoenix Rising** | Recovery process for abandoned/overwhelming boards              |

@@ -8,8 +8,8 @@
 
 ## Context
 
-Altair uses Compose Multiplatform for UI across desktop, Android, and iOS (ADR-001). We need a UI component foundation
-that:
+Altair uses Compose Multiplatform for UI across desktop, Android, and iOS (ADR-001). We need a UI
+component foundation that:
 
 1. Works consistently across all platforms without looking "Android-native"
 2. Supports a custom aesthetic inspired by Linear's professional, productivity-focused design
@@ -19,8 +19,8 @@ that:
 
 ## Decision
 
-Use **Compose Unstyled** (composables.com) as the headless component foundation, with a custom **Altair design system**
-built on top, inspired by Linear's aesthetic.
+Use **Compose Unstyled** (composables.com) as the headless component foundation, with a custom
+**Altair design system** built on top, inspired by Linear's aesthetic.
 
 **Compose Unstyled** provides:
 
@@ -40,15 +40,19 @@ built on top, inspired by Linear's aesthetic.
 ### Positive
 
 - **Full aesthetic control**: Every visual detail is customizable; no Material baggage
-- **Platform consistency**: Same look across desktop, Android, iOS—not "Android app on other platforms"
-- **Linear-inspired**: Professional, productivity-focused aesthetic (dark mode, neutral palette, clean typography)
+- **Platform consistency**: Same look across desktop, Android, iOS—not "Android app on other
+  platforms"
+- **Linear-inspired**: Professional, productivity-focused aesthetic (dark mode, neutral palette,
+  clean typography)
 - **Stable foundation**: Compose Unstyled v1.49+ is production-stable
-- **Accessibility included**: Focus rings, keyboard navigation, screen reader support handled by primitives
+- **Accessibility included**: Focus rings, keyboard navigation, screen reader support handled by
+  primitives
 - **No lock-in**: Components are single Kotlin files; can copy and modify if needed
 
 ### Negative
 
-- **Design effort required**: Must create entire visual system (colors, typography, component styles)
+- **Design effort required**: Must create entire visual system (colors, typography, component
+  styles)
 - **More upfront work**: 2-3 days to build basic component library vs. using pre-styled system
 - **No community themes**: Unlike Material, no ecosystem of pre-built themes to start from
 - **Documentation**: Must document our own design system for consistency
@@ -70,33 +74,33 @@ object AltairTheme {
         val surface = Color(0xFF141415)              // Slightly lighter
         val surfaceElevated = Color(0xFF1C1C1E)      // Cards, dialogs
         val surfaceHover = Color(0xFF232326)         // Hover states
-        
+
         // Borders
         val border = Color(0xFF2E2E32)               // Subtle borders
         val borderFocused = Color(0xFF6366F1)        // Focus rings
-        
+
         // Text
         val textPrimary = Color(0xFFEEEEEF)          // High contrast
         val textSecondary = Color(0xFF8E8E93)        // Muted
         val textTertiary = Color(0xFF636366)         // Disabled/hints
-        
+
         // Accent (indigo, can be customized)
         val accent = Color(0xFF6366F1)
         val accentHover = Color(0xFF818CF8)
-        
+
         // Status
         val success = Color(0xFF22C55E)
         val warning = Color(0xFFF59E0B)
         val error = Color(0xFFEF4444)
-        
+
         // Energy levels (Guidance module)
         val energy1 = Color(0xFF22C55E)              // Low effort
         val energy5 = Color(0xFFEF4444)              // High effort
     }
-    
+
     object Typography {
         val fontFamily = FontFamily(/* Inter or similar */)
-        
+
         // Type scale
         val displayLarge = TextStyle(fontSize = 32.sp, fontWeight = FontWeight.SemiBold)
         val headlineMedium = TextStyle(fontSize = 20.sp, fontWeight = FontWeight.Medium)
@@ -104,7 +108,7 @@ object AltairTheme {
         val bodyMedium = TextStyle(fontSize = 14.sp, fontWeight = FontWeight.Normal)
         val labelSmall = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.Medium)
     }
-    
+
     object Spacing {
         val xs = 4.dp
         val sm = 8.dp
@@ -112,7 +116,7 @@ object AltairTheme {
         val lg = 24.dp
         val xl = 32.dp
     }
-    
+
     object Radii {
         val sm = 4.dp
         val md = 6.dp
@@ -164,22 +168,22 @@ fun AltairButton(
 
 ### Compose Unstyled Components Used
 
-| Component        | Altair Usage                                |
-| ---------------- | ------------------------------------------- |
-| Button           | All buttons, icon buttons                   |
-| TextField        | Quest titles, note content, search          |
-| Checkbox         | Checkpoint completion, settings toggles     |
-| Toggle Switch    | Settings, feature toggles                   |
-| Dialog           | Confirmations, quest creation, settings     |
-| Modal            | Full-screen overlays, focus mode            |
-| Bottom Sheet     | Mobile quick actions, filters               |
-| Dropdown Menu    | Context menus, Epic selection               |
-| Tab Group        | Module navigation, view switching           |
-| Slider           | Energy budget, numeric inputs               |
-| Scroll Area      | Lists, note content                         |
-| Tooltip          | Help text, shortcuts hints                  |
-| Progress         | Sync status, AI processing                  |
-| Radio Group      | Single-select options                       |
+| Component     | Altair Usage                            |
+| ------------- | --------------------------------------- |
+| Button        | All buttons, icon buttons               |
+| TextField     | Quest titles, note content, search      |
+| Checkbox      | Checkpoint completion, settings toggles |
+| Toggle Switch | Settings, feature toggles               |
+| Dialog        | Confirmations, quest creation, settings |
+| Modal         | Full-screen overlays, focus mode        |
+| Bottom Sheet  | Mobile quick actions, filters           |
+| Dropdown Menu | Context menus, Epic selection           |
+| Tab Group     | Module navigation, view switching       |
+| Slider        | Energy budget, numeric inputs           |
+| Scroll Area   | Lists, note content                     |
+| Tooltip       | Help text, shortcuts hints              |
+| Progress      | Sync status, AI processing              |
+| Radio Group   | Single-select options                   |
 
 ## Alternatives Considered
 

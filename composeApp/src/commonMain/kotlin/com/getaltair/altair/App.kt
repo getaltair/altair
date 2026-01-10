@@ -14,7 +14,8 @@ import org.jetbrains.compose.ui.tooling.preview.Preview
  */
 @Composable
 @Preview
-fun App() {
+@Suppress("ktlint:standard:function-naming")
+private fun AppPreview() {
     AltairTheme {
         ComponentPreview()
     }

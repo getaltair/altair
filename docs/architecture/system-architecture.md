@@ -2,29 +2,29 @@
 
 ## Purpose
 
-This document describes Altair's high-level technical architecture: how components relate, where boundaries exist, and
-key patterns used throughout the system.
+This document describes Altair's high-level technical architecture: how components relate, where
+boundaries exist, and key patterns used throughout the system.
 
 ---
 
 ## Technology Stack
 
-| Layer            | Technology                   | Rationale                                                |
-| ---------------- | ---------------------------- | -------------------------------------------------------- |
-| UI Framework     | Compose Multiplatform        | Single codebase for desktop, Android, iOS                |
-| UI Components    | Compose Unstyled + Altair    | Headless primitives with custom Linear-inspired theme    |
-| Navigation       | Decompose 3.x                | UI-agnostic, exceptional maintenance, back gesture support |
-| Shared Logic     | Kotlin Multiplatform         | Domain models, validation shared across all targets      |
-| Dependency Injection | Koin 4.x                 | Fast builds, Compose integration, 14M monthly downloads  |
-| Error Handling   | Arrow 2.x (core + optics)    | Typed errors, validation accumulation, nested state      |
-| Desktop Database | SurrealDB embedded           | Graph queries, vector search, full-text search           |
-| Mobile Database  | SQLite (SQLDelight)          | Quick capture, proven mobile reliability                 |
-| Server Framework | Ktor                         | Kotlin-native, lightweight, kotlinx-rpc integration      |
-| Server Database  | SurrealDB                    | Primary store, sync hub                                  |
-| Client-Server    | kotlinx-rpc (gRPC)           | Type-safe, streaming, compile-time checked               |
-| Server AI        | ort + whisper.cpp            | Local embeddings and transcription                       |
-| Deployment       | Docker Compose               | Single-command self-hosted deployment                    |
-| Testing          | Mokkery + Turbine            | Multiplatform mocking, Flow testing                      |
+| Layer                | Technology                | Rationale                                                  |
+| -------------------- | ------------------------- | ---------------------------------------------------------- |
+| UI Framework         | Compose Multiplatform     | Single codebase for desktop, Android, iOS                  |
+| UI Components        | Compose Unstyled + Altair | Headless primitives with custom Linear-inspired theme      |
+| Navigation           | Decompose 3.x             | UI-agnostic, exceptional maintenance, back gesture support |
+| Shared Logic         | Kotlin Multiplatform      | Domain models, validation shared across all targets        |
+| Dependency Injection | Koin 4.x                  | Fast builds, Compose integration, 14M monthly downloads    |
+| Error Handling       | Arrow 2.x (core + optics) | Typed errors, validation accumulation, nested state        |
+| Desktop Database     | SurrealDB embedded        | Graph queries, vector search, full-text search             |
+| Mobile Database      | SQLite (SQLDelight)       | Quick capture, proven mobile reliability                   |
+| Server Framework     | Ktor                      | Kotlin-native, lightweight, kotlinx-rpc integration        |
+| Server Database      | SurrealDB                 | Primary store, sync hub                                    |
+| Client-Server        | kotlinx-rpc (gRPC)        | Type-safe, streaming, compile-time checked                 |
+| Server AI            | ort + whisper.cpp         | Local embeddings and transcription                         |
+| Deployment           | Docker Compose            | Single-command self-hosted deployment                      |
+| Testing              | Mokkery + Turbine         | Multiplatform mocking, Flow testing                        |
 
 ---
 
@@ -119,15 +119,18 @@ Contains business logic shared across all platforms:
 Implements repository interfaces with platform-specific storage:
 
 **Desktop:**
+
 - SurrealDB via surrealdb.java JNI bindings
 - Full query capabilities (graph traversal, vector search)
 
 **Mobile:**
+
 - SQLite via SQLDelight
 - Type-safe generated queries
 - Simpler schema without graph relations
 
 **Server:**
+
 - SurrealDB primary store
 - Sync version tracking
 - Conflict resolution logic

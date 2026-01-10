@@ -2,8 +2,9 @@
 
 ## Purpose
 
-This document describes Altair's internal event bus—the mechanism by which modules communicate without direct
-dependencies. It covers event categories, delivery semantics, and patterns for cross-module features.
+This document describes Altair's internal event bus—the mechanism by which modules communicate
+without direct dependencies. It covers event categories, delivery semantics, and patterns for
+cross-module features.
 
 ---
 
@@ -17,8 +18,8 @@ Modules (Guidance, Knowledge, Tracking) need to react to each other's actions:
 - When a Quest is completed, Knowledge might prompt for a reflection note
 - When an Item's quantity hits zero, Guidance might suggest a restock Quest
 
-Direct function calls between modules create circular dependencies and tight coupling. The event bus enables loose
-coupling through publish/subscribe.
+Direct function calls between modules create circular dependencies and tight coupling. The event bus
+enables loose coupling through publish/subscribe.
 
 See [ADR-003](../adr/003-event-bus-for-modules.md) for the full decision rationale.
 
@@ -32,8 +33,8 @@ See [ADR-003](../adr/003-event-bus-for-modules.md) for the full decision rationa
 | Subscribers | Multiple subscribers per event type |
 | Scope       | In-process only (desktop)           |
 
-Events are fire-and-forget. If a subscriber is slow or fails, it doesn't block the publisher. Events are not persisted;
-if the app crashes, in-flight events are lost.
+Events are fire-and-forget. If a subscriber is slow or fails, it doesn't block the publisher. Events
+are not persisted; if the app crashes, in-flight events are lost.
 
 ### Implementation
 
@@ -66,9 +67,9 @@ class EventBus {
 
 ### Mobile Considerations
 
-Mobile clients have a simplified architecture focused on quick capture. The event bus is primarily a desktop feature
-where modules interact in real-time. Mobile syncs to server; cross-module reactions happen server-side or when data
-syncs to desktop.
+Mobile clients have a simplified architecture focused on quick capture. The event bus is primarily a
+desktop feature where modules interact in real-time. Mobile syncs to server; cross-module reactions
+happen server-side or when data syncs to desktop.
 
 ---
 
@@ -178,8 +179,8 @@ class ReflectionPromptService(
 
 ### Pattern: Suggestion Cards
 
-When one module detects something relevant to another, it publishes an event. A suggestion service listens and shows
-dismissible cards in the relevant module.
+When one module detects something relevant to another, it publishes an event. A suggestion service
+listens and shows dismissible cards in the relevant module.
 
 ```kotlin
 // Knowledge detects item mention in note content
@@ -276,8 +277,9 @@ eventBus.subscribe(SomeEvent::class, scope) { event ->
 
 ### Buffer Overflow
 
-If events are published faster than consumed, oldest events are dropped (configured via `BufferOverflow.DROP_OLDEST`).
-This prevents memory growth but means some events may be lost under extreme load.
+If events are published faster than consumed, oldest events are dropped (configured via
+`BufferOverflow.DROP_OLDEST`). This prevents memory growth but means some events may be lost under
+extreme load.
 
 ---
 

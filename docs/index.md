@@ -2,21 +2,23 @@
 
 **ADHD-Focused Productivity Ecosystem**
 
-> Privacy-focused productivity suite consisting of Guidance (task management), Knowledge (PKM), and Tracking (inventory), designed to externalize executive function for individuals with ADHD. Self-hosted architecture keeps your data on your own infrastructure.
+> Privacy-focused productivity suite consisting of Guidance (task management), Knowledge (PKM), and
+> Tracking (inventory), designed to externalize executive function for individuals with ADHD.
+> Self-hosted architecture keeps your data on your own infrastructure.
 
 ---
 
 ## Quick Links
 
-| I want to...                | Go to...                                       |
-| --------------------------- | ---------------------------------------------- |
+| I want to...                | Go to...                                            |
+| --------------------------- | --------------------------------------------------- |
 | Understand what Altair does | [Architecture Overview](./architecture/overview.md) |
-| See all requirements        | [Requirements Index](./requirements/)          |
-| Understand the data model   | [Domain Model](./architecture/domain-model.md) |
-| Set up my dev environment   | [README.md](../README.md)                      |
-| Contribute to Altair        | [CONTRIBUTING.md](../CONTRIBUTING.md)          |
-| Know why we chose X         | [Architecture Decisions](./adr/)               |
-| Look up a term              | [Glossary](./reference/glossary.md)            |
+| See all requirements        | [Requirements Index](./requirements/)               |
+| Understand the data model   | [Domain Model](./architecture/domain-model.md)      |
+| Set up my dev environment   | [README.md](../README.md)                           |
+| Contribute to Altair        | [CONTRIBUTING.md](../CONTRIBUTING.md)               |
+| Know why we chose X         | [Architecture Decisions](./adr/)                    |
+| Look up a term              | [Glossary](./reference/glossary.md)                 |
 
 ---
 
@@ -64,12 +66,14 @@ altair/
 ### New to Altair?
 
 1. **[Architecture Overview](./architecture/overview.md)** — What Altair is and how it's organized
-2. **[PRD Core](./requirements/altair-prd-core.md)** — System-level requirements and ADHD design principles
+2. **[PRD Core](./requirements/altair-prd-core.md)** — System-level requirements and ADHD design
+   principles
 3. **[Glossary](./reference/glossary.md)** — Terminology reference
 
 ### Understanding the Design?
 
-1. **[System Architecture](./architecture/system-architecture.md)** — Tech stack and component relationships
+1. **[System Architecture](./architecture/system-architecture.md)** — Tech stack and component
+   relationships
 2. **[Domain Model](./architecture/domain-model.md)** — Entities, relationships, and business rules
 3. **[Persistence](./architecture/persistence.md)** — Database schema and data lifecycle
 4. **[Event Bus](./architecture/event-bus.md)** — Inter-module communication
@@ -86,28 +90,28 @@ altair/
 
 ## Requirements Documents
 
-| Document | Scope |
-|----------|-------|
-| [altair-prd-core.md](./requirements/altair-prd-core.md) | System overview, ADHD principles, cross-module integration |
-| [altair-prd-guidance.md](./requirements/altair-prd-guidance.md) | Quest-Based Agile task management (FR-G-*) |
-| [altair-prd-knowledge.md](./requirements/altair-prd-knowledge.md) | Personal knowledge management (FR-K-*) |
-| [altair-prd-tracking.md](./requirements/altair-prd-tracking.md) | Inventory and asset management (FR-T-*) |
+| Document                                                          | Scope                                                      |
+| ----------------------------------------------------------------- | ---------------------------------------------------------- |
+| [altair-prd-core.md](./requirements/altair-prd-core.md)           | System overview, ADHD principles, cross-module integration |
+| [altair-prd-guidance.md](./requirements/altair-prd-guidance.md)   | Quest-Based Agile task management (FR-G-\*)                |
+| [altair-prd-knowledge.md](./requirements/altair-prd-knowledge.md) | Personal knowledge management (FR-K-\*)                    |
+| [altair-prd-tracking.md](./requirements/altair-prd-tracking.md)   | Inventory and asset management (FR-T-\*)                   |
 
 ---
 
 ## Architecture Decisions
 
-| ADR | Decision | Status |
-|-----|----------|--------|
-| [ADR-001](./adr/001-single-tauri-application.md) | Kotlin Multiplatform + Compose Multiplatform | Accepted |
-| [ADR-002](./adr/002-surrealdb-embedded.md) | Hybrid Database (SurrealDB + SQLite) | Accepted |
-| [ADR-003](./adr/003-event-bus-for-modules.md) | Event Bus for Modules | Accepted |
-| [ADR-004](./adr/004-ai-provider-adapters.md) | AI Provider Adapters | Superseded by ADR-006 |
-| [ADR-005](./adr/005-kotlinx-rpc-communication.md) | kotlinx-rpc for Client-Server Communication | Accepted |
-| [ADR-006](./adr/006-server-centralized-ai.md) | Server-Centralized AI Services | Accepted |
-| [ADR-007](./adr/007-docker-compose-deployment.md) | Docker Compose Deployment | Accepted |
-| [ADR-008](./adr/008-compose-unstyled-altair-theme.md) | Compose Unstyled + Custom Altair Theme | Accepted |
-| [ADR-009](./adr/009-core-library-stack.md) | Core Library Stack (Koin, Decompose, Arrow, Mokkery) | Accepted |
+| ADR                                                   | Decision                                             | Status                |
+| ----------------------------------------------------- | ---------------------------------------------------- | --------------------- |
+| [ADR-001](./adr/001-single-tauri-application.md)      | Kotlin Multiplatform + Compose Multiplatform         | Accepted              |
+| [ADR-002](./adr/002-surrealdb-embedded.md)            | Hybrid Database (SurrealDB + SQLite)                 | Accepted              |
+| [ADR-003](./adr/003-event-bus-for-modules.md)         | Event Bus for Modules                                | Accepted              |
+| [ADR-004](./adr/004-ai-provider-adapters.md)          | AI Provider Adapters                                 | Superseded by ADR-006 |
+| [ADR-005](./adr/005-kotlinx-rpc-communication.md)     | kotlinx-rpc for Client-Server Communication          | Accepted              |
+| [ADR-006](./adr/006-server-centralized-ai.md)         | Server-Centralized AI Services                       | Accepted              |
+| [ADR-007](./adr/007-docker-compose-deployment.md)     | Docker Compose Deployment                            | Accepted              |
+| [ADR-008](./adr/008-compose-unstyled-altair-theme.md) | Compose Unstyled + Custom Altair Theme               | Accepted              |
+| [ADR-009](./adr/009-core-library-stack.md)            | Core Library Stack (Koin, Decompose, Arrow, Mokkery) | Accepted              |
 
 ---
 
@@ -135,22 +139,22 @@ altair/
 
 ### Technology Stack
 
-| Layer            | Technology                   |
-| ---------------- | ---------------------------- |
-| UI Framework     | Compose Multiplatform        |
-| UI Components    | Compose Unstyled + Altair    |
-| Navigation       | Decompose                    |
-| Shared Logic     | Kotlin Multiplatform         |
-| Dependency Injection | Koin                     |
-| Error Handling   | Arrow (core + optics)        |
-| Desktop Database | SurrealDB embedded           |
-| Mobile Database  | SQLite (SQLDelight)          |
-| Server Framework | Ktor + kotlinx-rpc           |
-| Server Database  | SurrealDB                    |
-| Server AI        | ort (embeddings), whisper.cpp (transcription) |
-| Testing          | Mokkery + Turbine            |
-| Deployment       | Docker Compose               |
+| Layer                | Technology                                    |
+| -------------------- | --------------------------------------------- |
+| UI Framework         | Compose Multiplatform                         |
+| UI Components        | Compose Unstyled + Altair                     |
+| Navigation           | Decompose                                     |
+| Shared Logic         | Kotlin Multiplatform                          |
+| Dependency Injection | Koin                                          |
+| Error Handling       | Arrow (core + optics)                         |
+| Desktop Database     | SurrealDB embedded                            |
+| Mobile Database      | SQLite (SQLDelight)                           |
+| Server Framework     | Ktor + kotlinx-rpc                            |
+| Server Database      | SurrealDB                                     |
+| Server AI            | ort (embeddings), whisper.cpp (transcription) |
+| Testing              | Mokkery + Turbine                             |
+| Deployment           | Docker Compose                                |
 
 ---
 
-*Last updated: January 9, 2026*
+_Last updated: January 9, 2026_

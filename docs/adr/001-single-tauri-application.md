@@ -1,41 +1,44 @@
 # ADR-001: Kotlin Multiplatform Application Architecture
 
-| Field             | Value                                        |
-| ----------------- | -------------------------------------------- |
-| **Status**        | Accepted                                     |
-| **Date**          | 2026-01-09                                   |
-| **Deciders**      | Robert Hamilton                              |
-| **Supersedes**    | ADR-001 (Single Tauri Application, original) |
+| Field          | Value                                        |
+| -------------- | -------------------------------------------- |
+| **Status**     | Accepted                                     |
+| **Date**       | 2026-01-09                                   |
+| **Deciders**   | Robert Hamilton                              |
+| **Supersedes** | ADR-001 (Single Tauri Application, original) |
 
 ## Context
 
-Altair consists of three logical applications—Guidance (task management), Knowledge (PKM), and Tracking (inventory)—that
-share data and need to communicate in real-time. The system must support:
+Altair consists of three logical applications—Guidance (task management), Knowledge (PKM), and
+Tracking (inventory)—that share data and need to communicate in real-time. The system must support:
 
 1. **Desktop platforms**: Windows, Linux (hard requirements), macOS (nice to have)
 2. **Mobile platforms**: Android (hard requirement), iOS (nice to have)
 3. **Self-hosted cloud sync**: User-operated server for multi-device synchronization
 4. **Absolutely no Electron**: Performance and resource usage are critical for ADHD users
 
-Mobile scope is intentionally limited to "quick capture + view"—not full feature parity with desktop.
+Mobile scope is intentionally limited to "quick capture + view"—not full feature parity with
+desktop.
 
 ## Decision
 
 Build Altair using **Kotlin Multiplatform (KMP)** with **Compose Multiplatform** for the UI layer:
 
 - **Desktop**: Full-featured Compose Multiplatform application with SurrealDB embedded
-- **Mobile**: Lightweight Compose Multiplatform application with SQLite embedded (quick capture focus)
+- **Mobile**: Lightweight Compose Multiplatform application with SQLite embedded (quick capture
+  focus)
 - **Server**: Ktor-based server with kotlinx-rpc endpoints, SurrealDB, and AI services
 
-All three targets share a common Kotlin codebase for domain models, validation logic, and UI components. Communication
-between clients and server uses kotlinx-rpc (gRPC-compatible protocol).
+All three targets share a common Kotlin codebase for domain models, validation logic, and UI
+components. Communication between clients and server uses kotlinx-rpc (gRPC-compatible protocol).
 
 ## Consequences
 
 ### Positive
 
 - **90-96% code sharing**: Domain models, validation, and most UI shared across all platforms
-- **Native performance**: Compose Multiplatform renders natively (Skia on desktop, native on Android, Metal on iOS)
+- **Native performance**: Compose Multiplatform renders natively (Skia on desktop, native on
+  Android, Metal on iOS)
 - **Single language**: Kotlin across frontend, backend, and shared logic—no context switching
 - **Production-proven**: McDonald's, Google Docs, Cash App, Forbes, Netflix use KMP in production
 - **Mobile-ready**: Compose Multiplatform iOS stable since May 2025 (v1.8.0)
@@ -114,8 +117,10 @@ Web technologies wrapped in Chromium.
 
 ## References
 
-- [Compose Multiplatform Production Apps](https://www.jetbrains.com/lp/compose-multiplatform/) — McDonald's, Google Docs, Cash App examples
-- [Compose Multiplatform 1.8.0 Release](https://blog.jetbrains.com/kotlin/2025/05/compose-multiplatform-1-8-0/) — iOS production stability
+- [Compose Multiplatform Production Apps](https://www.jetbrains.com/lp/compose-multiplatform/) —
+  McDonald's, Google Docs, Cash App examples
+- [Compose Multiplatform 1.8.0 Release](https://blog.jetbrains.com/kotlin/2025/05/compose-multiplatform-1-8-0/)
+  — iOS production stability
 - [ADR-002: Hybrid Database Strategy](./002-surrealdb-embedded.md)
 - [ADR-005: kotlinx-rpc Communication](./005-kotlinx-rpc-communication.md)
 - PRD Core, Section 5: System Architecture

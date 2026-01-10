@@ -20,5 +20,5 @@ data class AltairShapes(
     val sm: RoundedCornerShape = RoundedCornerShape(4.dp),
     val md: RoundedCornerShape = RoundedCornerShape(6.dp),
     val lg: RoundedCornerShape = RoundedCornerShape(8.dp),
-    val full: RoundedCornerShape = RoundedCornerShape(9999.dp)
+    val full: RoundedCornerShape = RoundedCornerShape(9999.dp),
 )

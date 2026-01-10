@@ -32,10 +32,12 @@ import com.getaltair.altair.ui.theme.AltairTheme
 enum class ButtonVariant {
     /** Primary action button with accent background */
     Primary,
+
     /** Secondary button with surface background and border */
     Secondary,
+
     /** Ghost button with transparent background */
-    Ghost
+    Ghost,
 }
 
 /**
@@ -56,7 +58,7 @@ fun AltairButton(
     modifier: Modifier = Modifier,
     variant: ButtonVariant = ButtonVariant.Primary,
     enabled: Boolean = true,
-    content: @Composable RowScope.() -> Unit
+    content: @Composable RowScope.() -> Unit,
 ) {
     val colors = AltairTheme.colors
     val shapes = AltairTheme.shapes
@@ -90,7 +92,7 @@ fun AltairButton(
                 interactionSource = interactionSource,
                 indication = null,
                 enabled = enabled,
-                onClick = onClick
+                onClick = onClick,
             )
             .focusable(interactionSource = interactionSource)
             .hoverable(interactionSource = interactionSource)
@@ -98,6 +100,6 @@ fun AltairButton(
             .alpha(if (enabled) 1f else 0.5f),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
-        content = content
+        content = content,
     )
 }

@@ -2,33 +2,33 @@
 
 ## Purpose
 
-This document provides a high-level map of Altair's architecture documentation.
-It serves as the entry point for understanding system design and navigating to detailed specifications.
+This document provides a high-level map of Altair's architecture documentation. It serves as the
+entry point for understanding system design and navigating to detailed specifications.
 
 ## System Synopsis
 
-Altair is an ADHD-focused productivity ecosystem consisting of three interconnected modules—Guidance (task management),
-Knowledge (PKM), and Tracking (inventory)—built with Kotlin Multiplatform and Compose Multiplatform for desktop and
-mobile. The system emphasizes privacy-focused self-hosted architecture, externalized executive function, and seamless
-cross-module integration.
+Altair is an ADHD-focused productivity ecosystem consisting of three interconnected modules—Guidance
+(task management), Knowledge (PKM), and Tracking (inventory)—built with Kotlin Multiplatform and
+Compose Multiplatform for desktop and mobile. The system emphasizes privacy-focused self-hosted
+architecture, externalized executive function, and seamless cross-module integration.
 
 ### Technology Stack
 
-| Layer            | Technology              | Version | Purpose                                    |
-| ---------------- | ----------------------- | ------- | ------------------------------------------ |
-| UI Framework     | Compose Multiplatform   | 1.8+    | Cross-platform UI (desktop, Android, iOS)  |
-| UI Components    | Compose Unstyled        | 1.49+   | Headless primitives with Altair theme      |
-| Navigation       | Decompose               | 3.x     | UI-agnostic navigation with back handling  |
-| Shared Logic     | Kotlin Multiplatform    | 2.2+    | Domain models, validation, repositories    |
-| Dependency Injection | Koin                | 4.x     | Runtime DI with Compose integration        |
-| Error Handling   | Arrow                   | 2.x     | Typed errors, validation, optics           |
-| Desktop Database | SurrealDB               | 2.0+    | Embedded graph database with vector search |
-| Mobile Database  | SQLite (SQLDelight)     | 2.0+    | Lightweight embedded database              |
-| Server Framework | Ktor                    | 3.1+    | Self-hosted backend with kotlinx-rpc       |
-| Server Database  | SurrealDB               | 2.0+    | Primary data store and sync hub            |
-| AI Services      | ort + whisper.cpp       | latest  | Server-side embeddings and transcription   |
-| Testing          | Mokkery + Turbine       | 3.x/1.x | Multiplatform mocking and Flow testing     |
-| Deployment       | Docker Compose          | 3.8+    | Self-hosted server stack                   |
+| Layer                | Technology            | Version | Purpose                                    |
+| -------------------- | --------------------- | ------- | ------------------------------------------ |
+| UI Framework         | Compose Multiplatform | 1.8+    | Cross-platform UI (desktop, Android, iOS)  |
+| UI Components        | Compose Unstyled      | 1.49+   | Headless primitives with Altair theme      |
+| Navigation           | Decompose             | 3.x     | UI-agnostic navigation with back handling  |
+| Shared Logic         | Kotlin Multiplatform  | 2.2+    | Domain models, validation, repositories    |
+| Dependency Injection | Koin                  | 4.x     | Runtime DI with Compose integration        |
+| Error Handling       | Arrow                 | 2.x     | Typed errors, validation, optics           |
+| Desktop Database     | SurrealDB             | 2.0+    | Embedded graph database with vector search |
+| Mobile Database      | SQLite (SQLDelight)   | 2.0+    | Lightweight embedded database              |
+| Server Framework     | Ktor                  | 3.1+    | Self-hosted backend with kotlinx-rpc       |
+| Server Database      | SurrealDB             | 2.0+    | Primary data store and sync hub            |
+| AI Services          | ort + whisper.cpp     | latest  | Server-side embeddings and transcription   |
+| Testing              | Mokkery + Turbine     | 3.x/1.x | Multiplatform mocking and Flow testing     |
+| Deployment           | Docker Compose        | 3.8+    | Self-hosted server stack                   |
 
 ### Core Design Principles
 
@@ -45,24 +45,24 @@ cross-module integration.
 
 ### Core Documents
 
-| Document                                           | Purpose                     | Key Contents                                         |
-| -------------------------------------------------- | --------------------------- | ---------------------------------------------------- |
+| Document                                           | Purpose                     | Key Contents                                          |
+| -------------------------------------------------- | --------------------------- | ----------------------------------------------------- |
 | [system-architecture.md](./system-architecture.md) | Technical infrastructure    | KMP/Compose stack, platform targets, layer boundaries |
-| [domain-model.md](./domain-model.md)               | Business logic and entities | Quest, Note, Item models; cross-module relationships |
-| [persistence.md](./persistence.md)                 | Data storage                | Hybrid database schema, sync protocol, migrations    |
-| [event-bus.md](./event-bus.md)                     | Inter-module communication  | Event types, pub/sub patterns, contracts             |
+| [domain-model.md](./domain-model.md)               | Business logic and entities | Quest, Note, Item models; cross-module relationships  |
+| [persistence.md](./persistence.md)                 | Data storage                | Hybrid database schema, sync protocol, migrations     |
+| [event-bus.md](./event-bus.md)                     | Inter-module communication  | Event types, pub/sub patterns, contracts              |
 
 ### Architecture Decision Records
 
-| ADR | Decision | Status |
-|-----|----------|--------|
-| [ADR-001](../adr/001-single-tauri-application.md) | Kotlin Multiplatform + Compose Multiplatform | Accepted |
-| [ADR-002](../adr/002-surrealdb-embedded.md) | Hybrid Database (SurrealDB + SQLite) | Accepted |
-| [ADR-003](../adr/003-event-bus-for-modules.md) | Event Bus for Modules | Accepted |
-| [ADR-005](../adr/005-kotlinx-rpc-communication.md) | kotlinx-rpc for Client-Server Communication | Accepted |
-| [ADR-006](../adr/006-server-centralized-ai.md) | Server-Centralized AI Services | Accepted |
-| [ADR-007](../adr/007-docker-compose-deployment.md) | Docker Compose Deployment | Accepted |
-| [ADR-008](../adr/008-compose-unstyled-altair-theme.md) | Compose Unstyled + Custom Altair Theme | Accepted |
+| ADR                                                    | Decision                                     | Status   |
+| ------------------------------------------------------ | -------------------------------------------- | -------- |
+| [ADR-001](../adr/001-single-tauri-application.md)      | Kotlin Multiplatform + Compose Multiplatform | Accepted |
+| [ADR-002](../adr/002-surrealdb-embedded.md)            | Hybrid Database (SurrealDB + SQLite)         | Accepted |
+| [ADR-003](../adr/003-event-bus-for-modules.md)         | Event Bus for Modules                        | Accepted |
+| [ADR-005](../adr/005-kotlinx-rpc-communication.md)     | kotlinx-rpc for Client-Server Communication  | Accepted |
+| [ADR-006](../adr/006-server-centralized-ai.md)         | Server-Centralized AI Services               | Accepted |
+| [ADR-007](../adr/007-docker-compose-deployment.md)     | Docker Compose Deployment                    | Accepted |
+| [ADR-008](../adr/008-compose-unstyled-altair-theme.md) | Compose Unstyled + Custom Altair Theme       | Accepted |
 
 ---
 
@@ -108,6 +108,7 @@ Note  ←→ Item      (Notes mention items via [[Item:Name]])
 ```
 
 The event bus enables reactive features:
+
 - Quest completion prompts reflection Note creation
 - Item quantity zero suggests restock Quest
 - Note content changes trigger re-embedding for similarity search
@@ -116,11 +117,11 @@ The event bus enables reactive features:
 
 ## Platform Targets
 
-| Platform | Scope | Database | AI Services |
-|----------|-------|----------|-------------|
-| Desktop (Win/Linux/macOS) | Full features | SurrealDB embedded | Server + local fallback |
-| Mobile (Android/iOS) | Quick capture + view | SQLite embedded | Server required |
-| Server (Docker) | Sync + AI hub | SurrealDB | Local inference |
+| Platform                  | Scope                | Database           | AI Services             |
+| ------------------------- | -------------------- | ------------------ | ----------------------- |
+| Desktop (Win/Linux/macOS) | Full features        | SurrealDB embedded | Server + local fallback |
+| Mobile (Android/iOS)      | Quick capture + view | SQLite embedded    | Server required         |
+| Server (Docker)           | Sync + AI hub        | SurrealDB          | Local inference         |
 
 ---
 
@@ -132,4 +133,4 @@ The event bus enables reactive features:
 
 ---
 
-*Last updated: January 9, 2026*
+_Last updated: January 9, 2026_
