@@ -74,7 +74,7 @@ class SurrealDbConfigTest {
         val config = SurrealDbConfig(
             namespace = "custom_ns",
             database = "custom_db",
-            dataPath = "/tmp/custom"
+            dataPath = "/tmp/custom",
         )
 
         assertEquals("custom_ns", config.namespace)

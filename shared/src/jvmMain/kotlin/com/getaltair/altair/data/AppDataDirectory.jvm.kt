@@ -20,12 +20,15 @@ actual fun getAppDataDirectory(): String {
         osName.contains("linux") -> {
             "$userHome/.local/share"
         }
+
         osName.contains("mac") || osName.contains("darwin") -> {
             "$userHome/Library/Application Support"
         }
+
         osName.contains("windows") -> {
             System.getenv("APPDATA") ?: "$userHome${File.separator}AppData${File.separator}Roaming"
         }
+
         else -> {
             // Fallback to XDG Base Directory Specification
             System.getenv("XDG_DATA_HOME") ?: "$userHome/.local/share"

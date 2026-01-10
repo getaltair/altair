@@ -108,7 +108,7 @@ class SurrealDbConnectionTest {
         val config2 = SurrealDbConfig(
             namespace = "test",
             database = "test",
-            dataPath = null
+            dataPath = null,
         )
 
         SurrealDbConnection.connect(config1)

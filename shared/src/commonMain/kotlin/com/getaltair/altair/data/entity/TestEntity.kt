@@ -24,7 +24,7 @@ data class TestEntity(
     val createdAt: String,
     val updatedAt: String,
     val deletedAt: String? = null,
-    val syncVersion: Int = 0
+    val syncVersion: Int = 0,
 ) {
     /**
      * Returns true if this entity has been soft-deleted.

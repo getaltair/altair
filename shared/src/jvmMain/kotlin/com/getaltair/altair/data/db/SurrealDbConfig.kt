@@ -10,7 +10,7 @@ package com.getaltair.altair.data.db
 data class SurrealDbConfig(
     val namespace: String = DEFAULT_NAMESPACE,
     val database: String = DEFAULT_DATABASE,
-    val dataPath: String? = null
+    val dataPath: String? = null,
 ) {
     companion object {
         const val DEFAULT_NAMESPACE = "altair"
@@ -22,9 +22,7 @@ data class SurrealDbConfig(
          * @param dataPath The directory path for SurrealKV storage
          * @return SurrealDbConfig configured for file-based storage
          */
-        fun embedded(dataPath: String): SurrealDbConfig {
-            return SurrealDbConfig(dataPath = dataPath)
-        }
+        fun embedded(dataPath: String): SurrealDbConfig = SurrealDbConfig(dataPath = dataPath)
 
         /**
          * Creates a configuration for in-memory storage.
@@ -32,9 +30,7 @@ data class SurrealDbConfig(
          *
          * @return SurrealDbConfig configured for in-memory storage
          */
-        fun memory(): SurrealDbConfig {
-            return SurrealDbConfig(dataPath = null)
-        }
+        fun memory(): SurrealDbConfig = SurrealDbConfig(dataPath = null)
     }
 
     /**
@@ -42,12 +38,10 @@ data class SurrealDbConfig(
      * - For file-based storage: "surrealkv://<dataPath>"
      * - For in-memory storage: "memory"
      */
-    fun connectionString(): String {
-        return if (dataPath != null) {
-            "surrealkv://$dataPath"
-        } else {
-            "memory"
-        }
+    fun connectionString(): String = if (dataPath != null) {
+        "surrealkv://$dataPath"
+    } else {
+        "memory"
     }
 
     /**

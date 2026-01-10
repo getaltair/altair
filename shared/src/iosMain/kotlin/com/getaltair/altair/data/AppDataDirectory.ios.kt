@@ -14,9 +14,7 @@ package com.getaltair.altair.data
  * @throws UnsupportedOperationException always, as iOS is not supported in SPEC-DB-001
  * @return Nothing - always throws
  */
-actual fun getAppDataDirectory(): String {
-    throw UnsupportedOperationException(
-        "iOS SurrealDB not implemented - see SPEC-DB-001. " +
-            "This SPEC covers Desktop (JVM) only."
-    )
-}
+actual fun getAppDataDirectory(): String = throw UnsupportedOperationException(
+    "iOS SurrealDB not implemented - see SPEC-DB-001. " +
+        "This SPEC covers Desktop (JVM) only.",
+)

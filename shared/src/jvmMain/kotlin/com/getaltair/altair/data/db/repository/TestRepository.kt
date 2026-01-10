@@ -32,7 +32,7 @@ class TestRepository : Repository<TestEntity, String> {
             id = id,
             createdAt = now,
             updatedAt = now,
-            syncVersion = 0
+            syncVersion = 0,
         )
 
         // Use raw query for reliable cross-version compatibility
@@ -69,7 +69,7 @@ class TestRepository : Repository<TestEntity, String> {
 
         val updatedEntity = entity.copy(
             updatedAt = now,
-            syncVersion = entity.syncVersion + 1
+            syncVersion = entity.syncVersion + 1,
         )
 
         val query = buildString {
@@ -185,8 +185,7 @@ class TestRepository : Repository<TestEntity, String> {
 
     private fun generateUlid(): String = UlidCreator.getUlid().toString()
 
-    private fun currentTimestamp(): String =
-        DateTimeFormatter.ISO_INSTANT.format(Instant.now())
+    private fun currentTimestamp(): String = DateTimeFormatter.ISO_INSTANT.format(Instant.now())
 
     /**
      * Escapes a string for safe inclusion in SurrealQL queries.
@@ -223,6 +222,7 @@ class TestRepository : Repository<TestEntity, String> {
                         }
                     }
                 }
+
                 is Iterator<*> -> {
                     while (result.hasNext()) {
                         val entity = convertToEntity(result.next())
@@ -231,6 +231,7 @@ class TestRepository : Repository<TestEntity, String> {
                         }
                     }
                 }
+
                 is Array<*> -> {
                     for (item in result) {
                         val entity = convertToEntity(item)
@@ -239,6 +240,7 @@ class TestRepository : Repository<TestEntity, String> {
                         }
                     }
                 }
+
                 else -> {
                     // SurrealDB Value type - check toString representation
                     val str = result.toString().trim()
@@ -283,6 +285,7 @@ class TestRepository : Repository<TestEntity, String> {
                     val map = item as Map<String, Any?>
                     mapToEntity(map)
                 }
+
                 else -> {
                     // Try to access it as a Value object via reflection or toString parsing
                     val str = item.toString()
@@ -291,11 +294,13 @@ class TestRepository : Repository<TestEntity, String> {
                     when {
                         trimmed.startsWith("[") && trimmed.endsWith("]") -> {
                             // It's an array - parse items
-                            null  // This will be handled at the parseResponseToEntities level
+                            null // This will be handled at the parseResponseToEntities level
                         }
+
                         trimmed.startsWith("{") && trimmed.endsWith("}") -> {
                             parseJsonLikeString(trimmed)
                         }
+
                         else -> null
                     }
                 }
@@ -325,7 +330,8 @@ class TestRepository : Repository<TestEntity, String> {
             createdAt = map["created_at"]?.toString() ?: "",
             updatedAt = map["updated_at"]?.toString() ?: "",
             deletedAt = map["deleted_at"]?.toString()?.takeIf { it != "null" && it != "NONE" },
-            syncVersion = (map["sync_version"] as? Number)?.toInt() ?: map["sync_version"]?.toString()?.toIntOrNull() ?: 0
+            syncVersion =
+            (map["sync_version"] as? Number)?.toInt() ?: map["sync_version"]?.toString()?.toIntOrNull() ?: 0,
         )
     }
 
@@ -333,63 +339,69 @@ class TestRepository : Repository<TestEntity, String> {
      * Parses a JSON-like string to TestEntity.
      * This is a fallback for when the SDK returns string representation.
      */
-    private fun parseJsonLikeString(str: String): TestEntity? {
-        return try {
-            // Simple parsing for JSON-like format
-            val content = str.trim('{', '}', ' ')
-            val pairs = mutableMapOf<String, String>()
+    private fun parseJsonLikeString(str: String): TestEntity? = try {
+        // Simple parsing for JSON-like format
+        val content = str.trim('{', '}', ' ')
+        val pairs = mutableMapOf<String, String>()
 
-            // Split by comma, but be careful of nested structures and quoted strings
-            var current = StringBuilder()
-            var depth = 0
-            var inQuote = false
-            var quoteChar = ' '
+        // Split by comma, but be careful of nested structures and quoted strings
+        var current = StringBuilder()
+        var depth = 0
+        var inQuote = false
+        var quoteChar = ' '
 
-            for (char in content) {
-                when {
-                    !inQuote && (char == '\'' || char == '"') -> {
-                        inQuote = true
-                        quoteChar = char
-                        current.append(char)
-                    }
-                    inQuote && char == quoteChar -> {
-                        inQuote = false
-                        current.append(char)
-                    }
-                    !inQuote && (char == '{' || char == '[') -> {
-                        depth++
-                        current.append(char)
-                    }
-                    !inQuote && (char == '}' || char == ']') -> {
-                        depth--
-                        current.append(char)
-                    }
-                    !inQuote && char == ',' && depth == 0 -> {
-                        parseKeyValue(current.toString())?.let { (k, v) -> pairs[k] = v }
-                        current = StringBuilder()
-                    }
-                    else -> current.append(char)
+        for (char in content) {
+            when {
+                !inQuote && (char == '\'' || char == '"') -> {
+                    inQuote = true
+                    quoteChar = char
+                    current.append(char)
                 }
+
+                inQuote && char == quoteChar -> {
+                    inQuote = false
+                    current.append(char)
+                }
+
+                !inQuote && (char == '{' || char == '[') -> {
+                    depth++
+                    current.append(char)
+                }
+
+                !inQuote && (char == '}' || char == ']') -> {
+                    depth--
+                    current.append(char)
+                }
+
+                !inQuote && char == ',' && depth == 0 -> {
+                    parseKeyValue(current.toString())?.let { (k, v) -> pairs[k] = v }
+                    current = StringBuilder()
+                }
+
+                else -> current.append(char)
             }
-            // Don't forget the last pair
-            parseKeyValue(current.toString())?.let { (k, v) -> pairs[k] = v }
-
-            val rawId = pairs["id"] ?: ""
-            val id = if (rawId.contains(":")) rawId.substringAfter(":") else rawId
-
-            TestEntity(
-                id = trimQuotes(id),
-                name = trimQuotes(pairs["name"] ?: ""),
-                value = trimQuotes(pairs["value"] ?: "0").toIntOrNull() ?: 0,
-                createdAt = trimQuotes(pairs["created_at"] ?: ""),
-                updatedAt = trimQuotes(pairs["updated_at"] ?: ""),
-                deletedAt = trimQuotes(pairs["deleted_at"] ?: "").takeIf { it.isNotEmpty() && it != "null" && it != "NONE" },
-                syncVersion = trimQuotes(pairs["sync_version"] ?: "0").toIntOrNull() ?: 0
-            )
-        } catch (e: Exception) {
-            println("[TestRepository] Error parsing JSON-like string: ${e.message}")
-            null
         }
+        // Don't forget the last pair
+        parseKeyValue(current.toString())?.let { (k, v) -> pairs[k] = v }
+
+        val rawId = pairs["id"] ?: ""
+        val id = if (rawId.contains(":")) rawId.substringAfter(":") else rawId
+
+        TestEntity(
+            id = trimQuotes(id),
+            name = trimQuotes(pairs["name"] ?: ""),
+            value = trimQuotes(pairs["value"] ?: "0").toIntOrNull() ?: 0,
+            createdAt = trimQuotes(pairs["created_at"] ?: ""),
+            updatedAt = trimQuotes(pairs["updated_at"] ?: ""),
+            deletedAt = trimQuotes(pairs["deleted_at"] ?: "").takeIf {
+                it.isNotEmpty() && it != "null" &&
+                    it != "NONE"
+            },
+            syncVersion = trimQuotes(pairs["sync_version"] ?: "0").toIntOrNull() ?: 0,
+        )
+    } catch (e: Exception) {
+        println("[TestRepository] Error parsing JSON-like string: ${e.message}")
+        null
     }
 
     /**
@@ -444,6 +456,7 @@ class TestRepository : Repository<TestEntity, String> {
                         depth++
                         current.append(char)
                     }
+
                     char == '}' -> {
                         depth--
                         current.append(char)
@@ -451,6 +464,7 @@ class TestRepository : Repository<TestEntity, String> {
                             objects.add(current.toString())
                         }
                     }
+
                     depth > 0 -> {
                         current.append(char)
                     }

@@ -46,7 +46,7 @@ class TestRepositoryTest {
             name = "Test Entity",
             value = 42,
             createdAt = "",
-            updatedAt = ""
+            updatedAt = "",
         )
 
         val created = repository.create(entity)
@@ -64,7 +64,7 @@ class TestRepositoryTest {
             name = "Custom ID Entity",
             value = 100,
             createdAt = "",
-            updatedAt = ""
+            updatedAt = "",
         )
 
         val created = repository.create(entity)
@@ -80,7 +80,7 @@ class TestRepositoryTest {
             name = "Timestamp Test",
             value = 1,
             createdAt = "",
-            updatedAt = ""
+            updatedAt = "",
         )
 
         val created = repository.create(entity)
@@ -98,7 +98,7 @@ class TestRepositoryTest {
             value = 1,
             createdAt = "",
             updatedAt = "",
-            syncVersion = 99  // Should be reset to 0
+            syncVersion = 99, // Should be reset to 0
         )
 
         val created = repository.create(entity)
@@ -113,7 +113,7 @@ class TestRepositoryTest {
             name = "Deleted At Test",
             value = 1,
             createdAt = "",
-            updatedAt = ""
+            updatedAt = "",
         )
 
         val created = repository.create(entity)
@@ -131,7 +131,7 @@ class TestRepositoryTest {
             name = "Find By ID Test",
             value = 123,
             createdAt = "",
-            updatedAt = ""
+            updatedAt = "",
         )
         val created = repository.create(entity)
 
@@ -157,7 +157,7 @@ class TestRepositoryTest {
             name = "Soft Delete Test",
             value = 1,
             createdAt = "",
-            updatedAt = ""
+            updatedAt = "",
         )
         val created = repository.create(entity)
         repository.delete(created.id)
@@ -174,7 +174,7 @@ class TestRepositoryTest {
             name = "Include Deleted Test",
             value = 1,
             createdAt = "",
-            updatedAt = ""
+            updatedAt = "",
         )
         val created = repository.create(entity)
         repository.delete(created.id)
@@ -311,7 +311,7 @@ class TestRepositoryTest {
             name = "Test with 'quotes' and \"double quotes\"",
             value = 1,
             createdAt = "",
-            updatedAt = ""
+            updatedAt = "",
         )
 
         val created = repository.create(entity)
@@ -328,7 +328,7 @@ class TestRepositoryTest {
             name = "Unicode: cafe, naive, 42",
             value = 1,
             createdAt = "",
-            updatedAt = ""
+            updatedAt = "",
         )
 
         val created = repository.create(entity)
@@ -345,7 +345,7 @@ class TestRepositoryTest {
             name = "",
             value = 0,
             createdAt = "",
-            updatedAt = ""
+            updatedAt = "",
         )
 
         val created = repository.create(entity)
@@ -362,7 +362,7 @@ class TestRepositoryTest {
             name = "Negative Value",
             value = -999,
             createdAt = "",
-            updatedAt = ""
+            updatedAt = "",
         )
 
         val created = repository.create(entity)
@@ -379,7 +379,7 @@ class TestRepositoryTest {
             name = "Large Value",
             value = Int.MAX_VALUE,
             createdAt = "",
-            updatedAt = ""
+            updatedAt = "",
         )
 
         val created = repository.create(entity)

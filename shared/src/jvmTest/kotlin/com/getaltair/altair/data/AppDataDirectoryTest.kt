@@ -23,7 +23,7 @@ class AppDataDirectoryTest {
         val path = getAppDataDirectory()
         assertTrue(
             path.endsWith("altair${File.separator}db") || path.endsWith("altair/db"),
-            "Path should end with 'altair/db' or 'altair${File.separator}db', got: $path"
+            "Path should end with 'altair/db' or 'altair${File.separator}db', got: $path",
         )
     }
 
@@ -44,20 +44,23 @@ class AppDataDirectoryTest {
                 val expectedPath = "${System.getProperty("user.home")}/.local/share/altair/db"
                 assertEquals(expectedPath, path, "Linux path should be ~/.local/share/altair/db")
             }
+
             osName.contains("mac") || osName.contains("darwin") -> {
                 val expectedPath = "${System.getProperty("user.home")}/Library/Application Support/altair/db"
                 assertEquals(expectedPath, path, "macOS path should be ~/Library/Application Support/altair/db")
             }
+
             osName.contains("windows") -> {
                 val appData = System.getenv("APPDATA")
                 val expectedPath = "$appData${File.separator}altair${File.separator}db"
                 assertEquals(expectedPath, path, "Windows path should be %APPDATA%/altair/db")
             }
+
             else -> {
                 // For unknown OS, just verify the path structure
                 assertTrue(
                     path.contains("altair") && path.contains("db"),
-                    "Path should contain 'altair' and 'db'"
+                    "Path should contain 'altair' and 'db'",
                 )
             }
         }

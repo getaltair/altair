@@ -2,10 +2,10 @@ package com.getaltair.altair
 
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
-import com.getaltair.altair.data.getAppDataDirectory
 import com.getaltair.altair.data.db.DatabaseVerification
 import com.getaltair.altair.data.db.SurrealDbConfig
 import com.getaltair.altair.data.db.SurrealDbConnection
+import com.getaltair.altair.data.getAppDataDirectory
 import kotlinx.coroutines.runBlocking
 
 fun main() {
@@ -38,28 +38,26 @@ fun main() {
  *
  * @return true if initialization succeeded, false otherwise
  */
-private fun initializeDatabase(): Boolean {
-    return try {
-        runBlocking {
-            // Get platform-specific data directory
-            val dataPath = getAppDataDirectory()
-            println("[Altair] Data directory: $dataPath")
+private fun initializeDatabase(): Boolean = try {
+    runBlocking {
+        // Get platform-specific data directory
+        val dataPath = getAppDataDirectory()
+        println("[Altair] Data directory: $dataPath")
 
-            // Create database configuration for embedded storage
-            val config = SurrealDbConfig.embedded(dataPath)
+        // Create database configuration for embedded storage
+        val config = SurrealDbConfig.embedded(dataPath)
 
-            // Connect to database
-            SurrealDbConnection.connect(config)
+        // Connect to database
+        SurrealDbConnection.connect(config)
 
-            // Perform startup verification
-            val verificationResult = DatabaseVerification.performStartupVerification()
-            println("[Altair] $verificationResult")
+        // Perform startup verification
+        val verificationResult = DatabaseVerification.performStartupVerification()
+        println("[Altair] $verificationResult")
 
-            verificationResult.isSuccess
-        }
-    } catch (e: Exception) {
-        System.err.println("[Altair] Database initialization failed: ${e.message}")
-        e.printStackTrace()
-        false
+        verificationResult.isSuccess
     }
+} catch (e: Exception) {
+    System.err.println("[Altair] Database initialization failed: ${e.message}")
+    e.printStackTrace()
+    false
 }

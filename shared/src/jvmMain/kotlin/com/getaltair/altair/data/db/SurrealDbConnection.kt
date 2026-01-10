@@ -68,11 +68,13 @@ object SurrealDbConnection {
                     currentConfig = config
                     isConnected.set(true)
 
-                    println("[SurrealDB] Connected to ${config.connectionString()} (ns=${config.namespace}, db=${config.database})")
+                    println(
+                        "[SurrealDB] Connected to ${config.connectionString()} (ns=${config.namespace}, db=${config.database})",
+                    )
                 } catch (e: Exception) {
                     throw SurrealDbConnectionException(
                         "Failed to connect to SurrealDB: ${e.message}",
-                        e
+                        e,
                     )
                 }
             }
@@ -148,7 +150,4 @@ object SurrealDbConnection {
 /**
  * Exception thrown when SurrealDB connection operations fail.
  */
-class SurrealDbConnectionException(
-    message: String,
-    cause: Throwable? = null
-) : RuntimeException(message, cause)
+class SurrealDbConnectionException(message: String, cause: Throwable? = null) : RuntimeException(message, cause)

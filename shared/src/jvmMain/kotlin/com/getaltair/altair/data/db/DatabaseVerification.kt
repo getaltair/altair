@@ -31,7 +31,7 @@ object DatabaseVerification {
                 name = "connectivity_test_${System.currentTimeMillis()}",
                 value = 999,
                 createdAt = "",
-                updatedAt = ""
+                updatedAt = "",
             )
 
             val created = repository.create(testEntity)
@@ -41,7 +41,7 @@ object DatabaseVerification {
             val found = repository.findById(created.id)
             if (found == null) {
                 return@withContext VerificationResult.Failure(
-                    "Failed to read back created entity"
+                    "Failed to read back created entity",
                 )
             }
 
@@ -49,7 +49,7 @@ object DatabaseVerification {
             if (found.name != created.name || found.value != created.value) {
                 return@withContext VerificationResult.Failure(
                     "Data mismatch: expected name='${created.name}', value=${created.value}, " +
-                    "got name='${found.name}', value=${found.value}"
+                        "got name='${found.name}', value=${found.value}",
                 )
             }
 
@@ -101,20 +101,24 @@ object DatabaseVerification {
 
             if (existing != null) {
                 // Update existing marker
-                repository.update(existing.copy(
-                    value = PERSISTENCE_MARKER_VALUE,
-                    deletedAt = null  // Ensure it's not soft-deleted
-                ))
+                repository.update(
+                    existing.copy(
+                        value = PERSISTENCE_MARKER_VALUE,
+                        deletedAt = null, // Ensure it's not soft-deleted
+                    ),
+                )
                 println("[DatabaseVerification] Persistence marker updated")
             } else {
                 // Create new marker
-                repository.create(TestEntity(
-                    id = PERSISTENCE_MARKER_NAME,
-                    name = "Altair Persistence Marker",
-                    value = PERSISTENCE_MARKER_VALUE,
-                    createdAt = "",
-                    updatedAt = ""
-                ))
+                repository.create(
+                    TestEntity(
+                        id = PERSISTENCE_MARKER_NAME,
+                        name = "Altair Persistence Marker",
+                        value = PERSISTENCE_MARKER_VALUE,
+                        createdAt = "",
+                        updatedAt = "",
+                    ),
+                )
                 println("[DatabaseVerification] Persistence marker created")
             }
 
@@ -140,7 +144,7 @@ object DatabaseVerification {
                 connectivityVerified = false,
                 persistenceVerified = false,
                 isFirstLaunch = true,
-                errorMessage = connectivityResult.message
+                errorMessage = connectivityResult.message,
             )
         }
 
@@ -156,7 +160,7 @@ object DatabaseVerification {
             connectivityVerified = true,
             persistenceVerified = markerExists,
             isFirstLaunch = !markerExists,
-            errorMessage = null
+            errorMessage = null,
         )
     }
 }
@@ -166,10 +170,7 @@ object DatabaseVerification {
  */
 sealed class VerificationResult {
     object Success : VerificationResult()
-    data class Failure(
-        val message: String,
-        val cause: Throwable? = null
-    ) : VerificationResult()
+    data class Failure(val message: String, val cause: Throwable? = null) : VerificationResult()
 }
 
 /**
@@ -179,7 +180,7 @@ data class StartupVerificationResult(
     val connectivityVerified: Boolean,
     val persistenceVerified: Boolean,
     val isFirstLaunch: Boolean,
-    val errorMessage: String?
+    val errorMessage: String?,
 ) {
     val isSuccess: Boolean
         get() = connectivityVerified
