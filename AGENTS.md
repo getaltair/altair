@@ -1,6 +1,7 @@
 # AGENTS.md
 
-Altair is an ADHD-focused productivity app built with Kotlin Multiplatform + Compose Multiplatform + SurrealDB/SQLite.
+Altair is an ADHD-focused productivity app built with Kotlin Multiplatform + Compose Multiplatform +
+SurrealDB/SQLite.
 
 ## Commands
 
@@ -55,16 +56,16 @@ altair/
 
 ## Core Libraries
 
-| Library | Version | Purpose |
-|---------|---------|---------|
-| Koin | 4.x | Dependency injection |
-| Decompose | 3.x | Navigation (UI-agnostic) |
-| Arrow | 2.x | Typed errors, validation, optics |
-| Mokkery | 3.x | Multiplatform mocking |
-| Turbine | 1.x | Flow testing |
-| SQLDelight | 2.x | Type-safe SQLite (mobile) |
-| kotlinx-serialization | 1.7+ | JSON/CBOR encoding |
-| kotlinx-datetime | 0.6+ | Multiplatform dates |
+| Library               | Version | Purpose                          |
+| --------------------- | ------- | -------------------------------- |
+| Koin                  | 4.x     | Dependency injection             |
+| Decompose             | 3.x     | Navigation (UI-agnostic)         |
+| Arrow                 | 2.x     | Typed errors, validation, optics |
+| Mokkery               | 3.x     | Multiplatform mocking            |
+| Turbine               | 1.x     | Flow testing                     |
+| SQLDelight            | 2.x     | Type-safe SQLite (mobile)        |
+| kotlinx-serialization | 1.7+    | JSON/CBOR encoding               |
+| kotlinx-datetime      | 0.6+    | Multiplatform dates              |
 
 ## Conventions
 
@@ -107,16 +108,16 @@ sealed interface RootConfig {
 class RootComponent(
     componentContext: ComponentContext
 ) : ComponentContext by componentContext {
-    
+
     private val navigation = StackNavigation<RootConfig>()
-    
+
     val stack = childStack(
         source = navigation,
         serializer = RootConfig.serializer(),
         initialConfiguration = RootConfig.Guidance,
         childFactory = ::createChild
     )
-    
+
     fun navigateTo(config: RootConfig) = navigation.push(config)
     fun goBack() = navigation.pop()
 }
@@ -149,9 +150,9 @@ suspend fun startQuest(id: String): Either<QuestError, Quest> = either {
     val quest = repository.findById(id)
         .toEither { QuestError.NotFound(id) }
         .bind()
-    
+
     ensure(activeQuestCount() < 1) { QuestError.WipLimitExceeded }
-    
+
     repository.update(quest.copy(status = Status.Active)).bind()
 }
 
@@ -200,12 +201,12 @@ AppState.guidance.activeQuest.status.modify(state) { Status.Done }
 class FakeQuestRepository : QuestRepository {
     private val quests = mutableMapOf<String, Quest>()
     var findByIdCalled = 0
-    
+
     override suspend fun findById(id: String): Quest? {
         findByIdCalled++
         return quests[id]
     }
-    
+
     fun givenQuest(quest: Quest) { quests[quest.id] = quest }
 }
 
@@ -216,9 +217,9 @@ fun `startQuest fails when wip limit exceeded`() = runTest {
         everySuspend { findById("123") } returns someQuest
         everySuspend { countActive() } returns 1  // Already at limit
     }
-    
+
     val result = StartQuestUseCase(repository).invoke("123")
-    
+
     result shouldBeLeft QuestError.WipLimitExceeded
 }
 
@@ -227,9 +228,9 @@ fun `startQuest fails when wip limit exceeded`() = runTest {
 fun `state updates on quest completion`() = runTest {
     viewModel.state.test {
         awaitItem() shouldBe initialState
-        
+
         viewModel.completeQuest("123")
-        
+
         awaitItem().activeQuest shouldBe null
     }
 }
@@ -307,9 +308,8 @@ Before completing any task:
 - Read `docs/adr/` for decision rationale (especially ADR-009 for library patterns)
 - Ask a clarifying question rather than guessing
 
-**NEVER** commit code that fails verification checks.
-**NEVER** use cloud AI APIs as defaults—server uses local models by default.
-**NEVER** hard delete records—use soft delete with `deleted_at`.
-**NEVER** access database directly from UI layer—go through repositories.
-**NEVER** use MockK in commonTest—it doesn't support iOS/Native.
-**NEVER** throw exceptions for expected failures—use `Either<Error, T>`.
+**NEVER** commit code that fails verification checks. **NEVER** use cloud AI APIs as defaults—server
+uses local models by default. **NEVER** hard delete records—use soft delete with `deleted_at`.
+**NEVER** access database directly from UI layer—go through repositories. **NEVER** use MockK in
+commonTest—it doesn't support iOS/Native. **NEVER** throw exceptions for expected failures—use
+`Either<Error, T>`.

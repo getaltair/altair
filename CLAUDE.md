@@ -2,7 +2,8 @@
 
 ## Build Environment Requirements
 
-JDK Version: JDK 21 is required for Gradle builds. Set JAVA_HOME to JDK 21 before running Gradle commands.
+JDK Version: JDK 21 is required for Gradle builds. Set JAVA_HOME to JDK 21 before running Gradle
+commands.
 
 Command Pattern: export JAVA_HOME=/usr/lib/jvm/java-21-openjdk && ./gradlew [task]
 
@@ -16,16 +17,17 @@ Core Principle: Alfred delegates all tasks to specialized agents and coordinates
 
 ### Mandatory Requirements
 
-- [HARD] Full Delegation: All tasks must be delegated to appropriate specialized agents
-  WHY: Specialized agents have domain-specific knowledge and optimized tool access
+- [HARD] Full Delegation: All tasks must be delegated to appropriate specialized agents WHY:
+  Specialized agents have domain-specific knowledge and optimized tool access
 
-- [HARD] Complexity Analysis: Analyze task complexity and requirements to select appropriate approach
-  WHY: Matching task complexity to agent capability ensures optimal outcomes
+- [HARD] Complexity Analysis: Analyze task complexity and requirements to select appropriate
+  approach WHY: Matching task complexity to agent capability ensures optimal outcomes
 
 - [SOFT] Result Integration: Consolidate agent execution results and report to user
 
-- [HARD] Language-Aware Responses: Always respond in user's selected language (internal agent instructions remain in English)
-  WHY: User comprehension is paramount; English internals ensure consistency
+- [HARD] Language-Aware Responses: Always respond in user's selected language (internal agent
+  instructions remain in English) WHY: User comprehension is paramount; English internals ensure
+  consistency
 
 ---
 
@@ -54,11 +56,13 @@ Restricted Content:
 - Emoji characters in instructions
 - Time estimates or duration predictions
 
-WHY: Code examples can be misinterpreted as executable commands. Flow control must use narrative text format.
+WHY: Code examples can be misinterpreted as executable commands. Flow control must use narrative
+text format.
 
 ### Scope of Application
 
-These standards apply to: CLAUDE.md, agent definitions, slash commands, skill definitions, hook definitions, and configuration files.
+These standards apply to: CLAUDE.md, agent definitions, slash commands, skill definitions, hook
+definitions, and configuration files.
 
 ---
 
@@ -84,15 +88,16 @@ The /agents command provides an interactive interface to:
 - Manage tool permissions for each agent
 - Delete custom sub-agents
 
-To create a new agent: Type /agents, select "Create New Agent", define purpose, select tools, and edit the system prompt.
+To create a new agent: Type /agents, select "Create New Agent", define purpose, select tools, and
+edit the system prompt.
 
 ### Agent Chaining Patterns
 
-Sequential Chaining:
-First use the code-analyzer subagent to identify issues, then use the optimizer subagent to implement fixes, finally use the tester subagent to validate the solution
+Sequential Chaining: First use the code-analyzer subagent to identify issues, then use the optimizer
+subagent to implement fixes, finally use the tester subagent to validate the solution
 
-Parallel Execution:
-Use the expert-backend subagent to develop the API, simultaneously use the expert-frontend subagent to create the UI
+Parallel Execution: Use the expert-backend subagent to develop the API, simultaneously use the
+expert-frontend subagent to create the UI
 
 ### Resumable Agents
 
@@ -101,11 +106,13 @@ Resume interrupted agent work using agentId:
 - Resume agent abc123 and continue the security analysis
 - Continue with the frontend development using the existing context
 
-Each sub-agent execution gets a unique agentId stored in agent-{agentId}.jsonl format. Full context is preserved for resumption.
+Each sub-agent execution gets a unique agentId stored in agent-{agentId}.jsonl format. Full context
+is preserved for resumption.
 
 ### Multilingual Agent Routing
 
-Alfred automatically routes user requests to specialized agents based on keyword matching in any supported language.
+Alfred automatically routes user requests to specialized agents based on keyword matching in any
+supported language.
 
 #### Supported Languages
 
@@ -116,7 +123,8 @@ Alfred automatically routes user requests to specialized agents based on keyword
 
 #### Intent-to-Agent Mapping
 
-[HARD] When user request contains these keywords (in ANY language), Alfred MUST automatically invoke the corresponding agent:
+[HARD] When user request contains these keywords (in ANY language), Alfred MUST automatically invoke
+the corresponding agent:
 
 Backend Domain (expert-backend):
 
@@ -171,8 +179,8 @@ Documentation (manager-docs):
 
 - EN: documentation, README, API docs, technical writing
 - KO: 문서, README, API문서, 기술문서
-- JA: ドキュメント, README, APIドキュメント
-- ZH: 文档, README, API文档, 技术写作
+- JA: ドキュメント, README, API ドキュメント
+- ZH: 文档, README, API 文档, 技术写作
 
 Performance (expert-performance):
 
@@ -192,19 +200,21 @@ Refactoring (expert-refactoring):
 
 - EN: refactor, restructure, codemod, transform, migrate API, bulk rename, AST search
 - KO: 리팩토링, 재구조화, 코드모드, 변환, API 마이그레이션, 일괄 변경, AST검색
-- JA: リファクタリング, 再構造化, コードモード, 変換, API移行, 一括変更, AST検索
-- ZH: 重构, 重组, 代码模式, 转换, API迁移, 批量重命名, AST搜索
+- JA: リファクタリング, 再構造化, コードモード, 変換, API 移行, 一括変更, AST 検索
+- ZH: 重构, 重组, 代码模式, 转换, API 迁移, 批量重命名, AST 搜索
 
 Git Operations (manager-git):
 
-- EN: git, commit, push, pull, branch, PR, pull request, merge, release, version control, checkout, rebase, stash
+- EN: git, commit, push, pull, branch, PR, pull request, merge, release, version control, checkout,
+  rebase, stash
 - KO: git, 커밋, 푸시, 풀, 브랜치, PR, 풀리퀘스트, 머지, 릴리즈, 버전관리, 체크아웃, 리베이스
 - JA: git, コミット, プッシュ, プル, ブランチ, PR, プルリクエスト, マージ, リリース
 - ZH: git, 提交, 推送, 拉取, 分支, PR, 拉取请求, 合并, 发布
 
 UI/UX Design (expert-uiux):
 
-- EN: UI/UX, design, accessibility, WCAG, user experience, design system, wireframe, persona, user journey
+- EN: UI/UX, design, accessibility, WCAG, user experience, design system, wireframe, persona, user
+  journey
 - KO: UI/UX, 디자인, 접근성, WCAG, 사용자경험, 디자인시스템, 와이어프레임, 페르소나
 - JA: UI/UX, デザイン, アクセシビリティ, WCAG, ユーザー体験, デザインシステム
 - ZH: UI/UX, 设计, 可访问性, WCAG, 用户体验, 设计系统
@@ -262,8 +272,8 @@ Skill Creation (builder-skill):
 
 - EN: create skill, new skill, skill optimization, knowledge domain, YAML frontmatter
 - KO: 스킬생성, 새스킬, 스킬최적화, 지식도메인, YAML프론트매터
-- JA: スキル作成, 新スキル, スキル最適化, 知識ドメイン, YAMLフロントマター
-- ZH: 创建技能, 新技能, 技能优化, 知识领域, YAML前置信息
+- JA: スキル作成, 新スキル, スキル最適化, 知識ドメイン, YAML フロントマター
+- ZH: 创建技能, 新技能, 技能优化, 知识领域, YAML 前置信息
 
 Plugin Creation (builder-plugin):
 
@@ -276,8 +286,8 @@ Image Generation (ai-nano-banana):
 
 - EN: image generation, visual content, prompt optimization, Gemini, AI image, image edit
 - KO: 이미지생성, 시각적콘텐츠, 프롬프트최적화, 제미나이, AI이미지, 이미지편집
-- JA: 画像生成, ビジュアルコンテンツ, プロンプト最適化, Gemini, AI画像
-- ZH: 图像生成, 视觉内容, 提示词优化, Gemini, AI图像
+- JA: 画像生成, ビジュアルコンテンツ, プロンプト最適化, Gemini, AI 画像
+- ZH: 图像生成, 视觉内容, 提示词优化, Gemini, AI 图像
 
 WHY: Keyword-based routing ensures consistent agent selection regardless of request language.
 
@@ -300,7 +310,8 @@ Step 3 - Delegation:
 - Invoke selected agent with original user request (preserving user's language)
 - Agent responds in user's conversation_language
 
-WHY: XLT processing bridges the semantic gap between user's language and English-based agent descriptions.
+WHY: XLT processing bridges the semantic gap between user's language and English-based agent
+descriptions.
 
 #### Mandatory Delegation Enforcement
 
@@ -386,11 +397,12 @@ AST-Grep Technologies:
 
 - Keywords: ast-grep, sg, structural search, codemod, refactor pattern, AST search
 - Korean: AST검색, 구조적검색, 코드모드, 리팩토링패턴, AST그렙
-- Japanese: AST検索, 構造検索, コードモード, リファクタリングパターン
-- Chinese: AST搜索, 结构搜索, 代码模式, 重构模式
+- Japanese: AST 検索, 構造検索, コードモード, リファクタリングパターン
+- Chinese: AST 搜索, 结构搜索, 代码模式, 重构模式
 - Skill: moai-tool-ast-grep
 
-WHY: Automatic skill loading ensures relevant framework knowledge is available without manual invocation.
+WHY: Automatic skill loading ensures relevant framework knowledge is available without manual
+invocation.
 
 ---
 
@@ -478,7 +490,8 @@ Scaling Rules:
 
 ### Context Engineering
 
-Core Principle: Find the smallest possible set of high-signal tokens that maximize likelihood of desired outcome.
+Core Principle: Find the smallest possible set of high-signal tokens that maximize likelihood of
+desired outcome.
 
 Information Prioritization:
 
@@ -502,7 +515,9 @@ For detailed patterns, refer to Skill("moai-foundation-claude") reference docume
 
 ### What are Plugins
 
-Plugins are reusable extensions that bundle Claude Code configurations for distribution across projects. Unlike standalone configurations in .claude/ directories, plugins can be installed via marketplaces and version-controlled independently.
+Plugins are reusable extensions that bundle Claude Code configurations for distribution across
+projects. Unlike standalone configurations in .claude/ directories, plugins can be installed via
+marketplaces and version-controlled independently.
 
 ### Plugin vs Standalone Configuration
 
@@ -538,10 +553,11 @@ For detailed plugin development, refer to Skill("moai-foundation-claude") refere
 
 ### OS-Level Security Isolation
 
-Claude Code provides OS-level sandboxing to restrict file system and network access during code execution.
+Claude Code provides OS-level sandboxing to restrict file system and network access during code
+execution.
 
-Linux: Uses bubblewrap (bwrap) for namespace-based isolation
-macOS: Uses Seatbelt (sandbox-exec) for profile-based restrictions
+Linux: Uses bubblewrap (bwrap) for namespace-based isolation macOS: Uses Seatbelt (sandbox-exec) for
+profile-based restrictions
 
 ### Default Sandbox Behavior
 
@@ -553,13 +569,16 @@ When sandboxing is enabled:
 
 ### Auto-Allow Mode
 
-If a command only reads from allowed paths, writes to allowed paths, and accesses allowed network domains, it executes automatically without user confirmation.
+If a command only reads from allowed paths, writes to allowed paths, and accesses allowed network
+domains, it executes automatically without user confirmation.
 
 ### Security Best Practices
 
-Start Restrictive: Begin with minimal permissions, monitor for violations, add specific allowances as needed.
+Start Restrictive: Begin with minimal permissions, monitor for violations, add specific allowances
+as needed.
 
-Combine with IAM: Sandbox provides OS-level isolation, IAM provides Claude-level permissions. Together they create defense-in-depth.
+Combine with IAM: Sandbox provides OS-level isolation, IAM provides Claude-level permissions.
+Together they create defense-in-depth.
 
 For detailed configuration, refer to Skill("moai-foundation-claude") reference documentation.
 
@@ -684,7 +703,8 @@ WHY: Least-privilege access prevents accidental modifications and enforces role 
 
 ### User Interaction Architecture
 
-Critical Constraint: Subagents invoked via Task() operate in isolated, stateless contexts and cannot interact with users directly.
+Critical Constraint: Subagents invoked via Task() operate in isolated, stateless contexts and cannot
+interact with users directly.
 
 Correct Workflow Pattern:
 
@@ -771,8 +791,7 @@ Each agent invocation creates an independent 200K token session:
 
 User and language configuration is automatically loaded from section files below.
 
-@.moai/config/sections/user.yaml
-@.moai/config/sections/language.yaml
+@.moai/config/sections/user.yaml @.moai/config/sections/language.yaml
 
 ### Configuration Structure
 
@@ -796,8 +815,8 @@ Configuration is split into modular section files for token efficiency:
 
 ### Single Source of Truth
 
-[HARD] pyproject.toml is the ONLY authoritative source for MoAI-ADK version.
-WHY: Prevents version inconsistencies across multiple files.
+[HARD] pyproject.toml is the ONLY authoritative source for MoAI-ADK version. WHY: Prevents version
+inconsistencies across multiple files.
 
 Version Reference:
 
@@ -869,8 +888,8 @@ Error Handling Process:
 
 ### Anti-Hallucination Policy
 
-[HARD] URL Verification Mandate: All URLs must be verified before inclusion in responses
-WHY: Prevents dissemination of non-existent or incorrect information
+[HARD] URL Verification Mandate: All URLs must be verified before inclusion in responses WHY:
+Prevents dissemination of non-existent or incorrect information
 
 [HARD] Uncertainty Disclosure: Unverified information must be clearly marked as uncertain
 
@@ -898,13 +917,13 @@ Mandatory Verification Steps:
 
 ### Alfred Success Metrics
 
-- [HARD] 100% Task Delegation Rate: Alfred performs no direct implementation
-  WHY: Direct implementation bypasses the agent ecosystem
+- [HARD] 100% Task Delegation Rate: Alfred performs no direct implementation WHY: Direct
+  implementation bypasses the agent ecosystem
 
 - [SOFT] Appropriate Agent Selection: Accuracy in selecting optimal agent for task
 
-- [HARD] 0 Direct Tool Usage: Alfred's direct tool usage rate is always zero
-  WHY: Tool usage belongs to specialized agents
+- [HARD] 0 Direct Tool Usage: Alfred's direct tool usage rate is always zero WHY: Tool usage belongs
+  to specialized agents
 
 ---
 
@@ -972,13 +991,12 @@ XML tags are reserved for internal agent-to-agent data transfer only:
 
 ---
 
-Version: 9.0.0 (Advanced Agent Patterns Integration)
-Last Updated: 2026-01-06
-Core Rule: Alfred is an orchestrator; direct implementation is prohibited
-Language: Dynamic setting (language.conversation_language)
+Version: 9.0.0 (Advanced Agent Patterns Integration) Last Updated: 2026-01-06 Core Rule: Alfred is
+an orchestrator; direct implementation is prohibited Language: Dynamic setting
+(language.conversation_language)
 
-Critical: Alfred must delegate all tasks to specialized agents
-Required: All tasks use "Use the [subagent] subagent to..." format for specialized agent delegation
+Critical: Alfred must delegate all tasks to specialized agents Required: All tasks use "Use the
+[subagent] subagent to..." format for specialized agent delegation
 
 Changes from 8.5.0:
 
