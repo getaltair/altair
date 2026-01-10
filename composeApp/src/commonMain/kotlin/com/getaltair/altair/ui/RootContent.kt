@@ -37,15 +37,11 @@ import com.getaltair.altair.ui.theme.AltairTheme
  * Uses bottom navigation on mobile and sidebar navigation on desktop.
  *
  * @param component The RootComponent managing navigation state
- * @param useRail Whether to use NavigationRail (desktop) or NavigationBar (mobile)
  * @param modifier Modifier to be applied to the root layout
+ * @param useRail Whether to use NavigationRail (desktop) or NavigationBar (mobile)
  */
 @Composable
-fun RootContent(
-    component: RootComponent,
-    useRail: Boolean = false,
-    modifier: Modifier = Modifier,
-) {
+fun RootContent(component: RootComponent, modifier: Modifier = Modifier, useRail: Boolean = false) {
     val childStack by component.childStack.subscribeAsState()
     val activeChild = childStack.active.instance
 
@@ -226,10 +222,7 @@ fun RootContent(
 }
 
 @Composable
-private fun ChildContent(
-    component: RootComponent,
-    modifier: Modifier = Modifier,
-) {
+private fun ChildContent(component: RootComponent, modifier: Modifier = Modifier) {
     Children(
         stack = component.childStack,
         modifier = modifier.fillMaxSize(),
@@ -244,10 +237,7 @@ private fun ChildContent(
 }
 
 @Composable
-private fun GuidanceContent(
-    component: GuidanceComponent,
-    modifier: Modifier = Modifier,
-) {
+private fun GuidanceContent(component: GuidanceComponent, modifier: Modifier = Modifier) {
     val colors = AltairTheme.colors
     val typography = AltairTheme.typography
     val spacing = AltairTheme.spacing
@@ -267,10 +257,7 @@ private fun GuidanceContent(
 }
 
 @Composable
-private fun KnowledgeContent(
-    component: KnowledgeComponent,
-    modifier: Modifier = Modifier,
-) {
+private fun KnowledgeContent(component: KnowledgeComponent, modifier: Modifier = Modifier) {
     val colors = AltairTheme.colors
     val typography = AltairTheme.typography
     val spacing = AltairTheme.spacing
@@ -290,10 +277,7 @@ private fun KnowledgeContent(
 }
 
 @Composable
-private fun TrackingContent(
-    component: TrackingComponent,
-    modifier: Modifier = Modifier,
-) {
+private fun TrackingContent(component: TrackingComponent, modifier: Modifier = Modifier) {
     val colors = AltairTheme.colors
     val typography = AltairTheme.typography
     val spacing = AltairTheme.spacing
