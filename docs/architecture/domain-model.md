@@ -2,8 +2,9 @@
 
 ## Purpose
 
-This document defines Altair's core entities, their relationships, and the business rules that govern them.
-It serves as the canonical reference for what data exists and how it behaves across all three modules.
+This document defines Altair's core entities, their relationships, and the business rules that
+govern them. It serves as the canonical reference for what data exists and how it behaves across all
+three modules.
 
 ---
 

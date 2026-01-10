@@ -2,7 +2,8 @@
 
 ## Purpose
 
-Canonical definitions for terms used throughout Altair documentation and codebase. When in doubt about what something means, check here.
+Canonical definitions for terms used throughout Altair documentation and codebase. When in doubt
+about what something means, check here.
 
 ---
 
@@ -10,27 +11,35 @@ Canonical definitions for terms used throughout Altair documentation and codebas
 
 ### Quest
 
-A focused unit of work designed to be completed in a single session. The core building block of the Guidance module. Quests have an energy cost (1-5) and enforce a WIP limit of one active Quest at a time.
+A focused unit of work designed to be completed in a single session. The core building block of the
+Guidance module. Quests have an energy cost (1-5) and enforce a WIP limit of one active Quest at a
+time.
 
 ### Epic
 
-A large goal composed of multiple Quests. Epics provide context and motivation but are not directly worked on. An Epic is complete when all its Quests are complete.
+A large goal composed of multiple Quests. Epics provide context and motivation but are not directly
+worked on. An Epic is complete when all its Quests are complete.
 
 ### Checkpoint
 
-An optional sub-step within a Quest. Used to break down complex Quests into trackable pieces. Completing all Checkpoints does not auto-complete the Quest.
+An optional sub-step within a Quest. Used to break down complex Quests into trackable pieces.
+Completing all Checkpoints does not auto-complete the Quest.
 
 ### Energy Budget
 
-A daily allocation of "energy points" representing cognitive capacity. Default is 5 points per day. Completing a Quest deducts its energy cost from the budget. Energy is a soft limit—you can exceed it with a warning.
+A daily allocation of "energy points" representing cognitive capacity. Default is 5 points per day.
+Completing a Quest deducts its energy cost from the budget. Energy is a soft limit—you can exceed it
+with a warning.
 
 ### Energy Cost
 
-A 1-5 rating of how much cognitive effort a Quest requires. 1 = trivial task, 5 = deeply demanding work. Used for daily planning and avoiding overcommitment.
+A 1-5 rating of how much cognitive effort a Quest requires. 1 = trivial task, 5 = deeply demanding
+work. Used for daily planning and avoiding overcommitment.
 
 ### WIP Limit
 
-Work-in-progress limit. Altair enforces WIP=1 for Quests, meaning only one Quest can be active at a time. This is a core ADHD-friendly constraint to prevent context switching.
+Work-in-progress limit. Altair enforces WIP=1 for Quests, meaning only one Quest can be active at a
+time. This is a core ADHD-friendly constraint to prevent context switching.
 
 ### Backlog
 
@@ -38,7 +47,8 @@ The pool of Quests not yet started. Quests begin in backlog status and move to a
 
 ### Focus Mode
 
-A distraction-reduced view showing only the active Quest and its Checkpoints. Hides navigation and other modules to minimize cognitive load.
+A distraction-reduced view showing only the active Quest and its Checkpoints. Hides navigation and
+other modules to minimize cognitive load.
 
 ---
 
@@ -46,39 +56,48 @@ A distraction-reduced view showing only the active Quest and its Checkpoints. Hi
 
 ### Note
 
-A unit of knowledge stored as Markdown text. Notes can link to other Notes, have tags, and include attachments. The atomic unit of the Knowledge module.
+A unit of knowledge stored as Markdown text. Notes can link to other Notes, have tags, and include
+attachments. The atomic unit of the Knowledge module.
 
 ### Wiki-Link
 
-A link between Notes using double-bracket syntax: `[[Note Title]]`. Parsed from Note content to build the knowledge graph.
+A link between Notes using double-bracket syntax: `[[Note Title]]`. Parsed from Note content to
+build the knowledge graph.
 
 ### Backlink
 
-An incoming link—a Note that links to the current Note. Displayed in the Note detail view to show "what references this?"
+An incoming link—a Note that links to the current Note. Displayed in the Note detail view to show
+"what references this?"
 
 ### Knowledge Graph
 
-The network of Notes and their links. Visualized as nodes (Notes) and edges (links). Enables discovery of related concepts.
+The network of Notes and their links. Visualized as nodes (Notes) and edges (links). Enables
+discovery of related concepts.
 
 ### Folder
 
-A hierarchical container for organizing Notes. Folders can be nested. Note titles must be unique within a folder.
+A hierarchical container for organizing Notes. Folders can be nested. Note titles must be unique
+within a folder.
 
 ### Tag
 
-A flat label applied to Notes for categorization. Tags have no hierarchy. A Note can have multiple tags.
+A flat label applied to Notes for categorization. Tags have no hierarchy. A Note can have multiple
+tags.
 
 ### Attachment
 
-A file associated with a Note. Stored in the app data directory and referenced by the Note. Supports images, PDFs, and other file types.
+A file associated with a Note. Stored in the app data directory and referenced by the Note. Supports
+images, PDFs, and other file types.
 
 ### Embedding
 
-A vector representation of a Note's content, generated by an AI model. Used for semantic search—finding Notes by meaning rather than keywords.
+A vector representation of a Note's content, generated by an AI model. Used for semantic
+search—finding Notes by meaning rather than keywords.
 
 ### Semantic Search
 
-Finding Notes based on meaning similarity rather than exact text match. Uses embeddings and vector similarity (cosine distance).
+Finding Notes based on meaning similarity rather than exact text match. Uses embeddings and vector
+similarity (cosine distance).
 
 ---
 
@@ -86,27 +105,33 @@ Finding Notes based on meaning similarity rather than exact text match. Uses emb
 
 ### Item
 
-A physical object being tracked in inventory. Items have a name, quantity, optional location, and custom fields. The core entity of the Tracking module.
+A physical object being tracked in inventory. Items have a name, quantity, optional location, and
+custom fields. The core entity of the Tracking module.
 
 ### Location
 
-A fixed physical place where Items are stored (e.g., "Garage", "Kitchen Drawer"). Locations can be hierarchical.
+A fixed physical place where Items are stored (e.g., "Garage", "Kitchen Drawer"). Locations can be
+hierarchical.
 
 ### Container
 
-A movable storage unit that holds Items (e.g., "Toolbox", "Moving Box"). Containers have their own Location and can be nested.
+A movable storage unit that holds Items (e.g., "Toolbox", "Moving Box"). Containers have their own
+Location and can be nested.
 
 ### Custom Field
 
-A user-defined attribute on an Item. Supports multiple types: text, number, date, boolean, URL, enum. Defined per-Item or via Templates.
+A user-defined attribute on an Item. Supports multiple types: text, number, date, boolean, URL,
+enum. Defined per-Item or via Templates.
 
 ### Item Template
 
-A predefined schema for a category of Items (e.g., "Book", "Medication"). Templates define which Custom Fields are available and their types.
+A predefined schema for a category of Items (e.g., "Book", "Medication"). Templates define which
+Custom Fields are available and their types.
 
 ### Quantity
 
-The count of an Item in inventory. Zero quantity means "out of stock" not deleted. Quantity changes can trigger events (e.g., low-stock warnings).
+The count of an Item in inventory. Zero quantity means "out of stock" not deleted. Quantity changes
+can trigger events (e.g., low-stock warnings).
 
 ---
 
@@ -114,19 +139,23 @@ The count of an Item in inventory. Zero quantity means "out of stock" not delete
 
 ### Module
 
-One of the three main functional areas: Guidance (task management), Knowledge (notes/PKM), Tracking (inventory). Modules are loosely coupled via the Event Bus.
+One of the three main functional areas: Guidance (task management), Knowledge (notes/PKM), Tracking
+(inventory). Modules are loosely coupled via the Event Bus.
 
 ### Cross-Reference
 
-A link between entities in different modules. Examples: Quest references a Note, Note mentions an Item. Enables integrated workflows.
+A link between entities in different modules. Examples: Quest references a Note, Note mentions an
+Item. Enables integrated workflows.
 
 ### Event Bus
 
-The internal publish/subscribe system for inter-module communication. Modules publish events after actions; other modules subscribe and react.
+The internal publish/subscribe system for inter-module communication. Modules publish events after
+actions; other modules subscribe and react.
 
 ### Event
 
-A notification that something happened (e.g., `quest_completed`, `note_updated`). Events have a type and payload. Used for loose coupling between modules.
+A notification that something happened (e.g., `quest_completed`, `note_updated`). Events have a type
+and payload. Used for loose coupling between modules.
 
 ---
 
@@ -134,11 +163,13 @@ A notification that something happened (e.g., `quest_completed`, `note_updated`)
 
 ### ULID
 
-Universally Unique Lexicographically Sortable Identifier. The ID format used for all entities. 26 characters, sortable by creation time, locally generated.
+Universally Unique Lexicographically Sortable Identifier. The ID format used for all entities. 26
+characters, sortable by creation time, locally generated.
 
 ### SurrealDB
 
-The embedded database used for persistence. Supports documents, graphs, full-text search, and vector search in a single system.
+The embedded database used for persistence. Supports documents, graphs, full-text search, and vector
+search in a single system.
 
 ### SurrealKV
 
@@ -146,19 +177,23 @@ The storage engine used by SurrealDB in Altair. A key-value store optimized for 
 
 ### Tauri
 
-The desktop application framework. Provides a Rust backend with a WebView frontend, enabling native performance with web technologies.
+The desktop application framework. Provides a Rust backend with a WebView frontend, enabling native
+performance with web technologies.
 
 ### IPC
 
-Inter-Process Communication. The bridge between the Svelte frontend and Rust backend in Tauri. Commands are invoked from frontend and executed in backend.
+Inter-Process Communication. The bridge between the Svelte frontend and Rust backend in Tauri.
+Commands are invoked from frontend and executed in backend.
 
 ### Soft Delete
 
-Marking a record as deleted without removing it from the database. Soft-deleted records are hidden from normal views but can be restored. Hard delete occurs after a retention period.
+Marking a record as deleted without removing it from the database. Soft-deleted records are hidden
+from normal views but can be restored. Hard delete occurs after a retention period.
 
 ### Migration
 
-A versioned change to the database schema. Migrations run on app startup to evolve the data structure as Altair develops.
+A versioned change to the database schema. Migrations run on app startup to evolve the data
+structure as Altair develops.
 
 ---
 
@@ -166,52 +201,59 @@ A versioned change to the database schema. Migrations run on app startup to evol
 
 ### Decision Fatigue
 
-Mental exhaustion from making too many choices. Altair mitigates this with sensible defaults, WIP limits, and progressive disclosure.
+Mental exhaustion from making too many choices. Altair mitigates this with sensible defaults, WIP
+limits, and progressive disclosure.
 
 ### Context Switching
 
-The cognitive cost of shifting attention between tasks. Altair's WIP=1 limit prevents having multiple active Quests to switch between.
+The cognitive cost of shifting attention between tasks. Altair's WIP=1 limit prevents having
+multiple active Quests to switch between.
 
 ### Hyperfocus
 
-A state of intense concentration on a single task. Focus Mode supports hyperfocus by removing distractions from the interface.
+A state of intense concentration on a single task. Focus Mode supports hyperfocus by removing
+distractions from the interface.
 
 ### Working Memory
 
-Short-term memory used for active tasks. Limited capacity (often cited as 4±1 items). Altair's Checkpoint feature offloads working memory to the system.
+Short-term memory used for active tasks. Limited capacity (often cited as 4±1 items). Altair's
+Checkpoint feature offloads working memory to the system.
 
 ### Time Blindness
 
-Difficulty perceiving the passage of time. Energy budgets help by framing capacity in terms of effort units rather than hours.
+Difficulty perceiving the passage of time. Energy budgets help by framing capacity in terms of
+effort units rather than hours.
 
 ### Analysis Paralysis
 
-Inability to act due to overthinking options. Altair's constraints (WIP=1, energy budget) reduce options and make action easier.
+Inability to act due to overthinking options. Altair's constraints (WIP=1, energy budget) reduce
+options and make action easier.
 
 ### Externalization
 
-Moving information from your head to an external system. Core principle of Altair—capture everything in Quests, Notes, and Items so your brain doesn't have to hold it.
+Moving information from your head to an external system. Core principle of Altair—capture everything
+in Quests, Notes, and Items so your brain doesn't have to hold it.
 
 ---
 
 ## Abbreviations
 
-| Abbrev | Meaning |
-|--------|---------|
-| ADR | Architecture Decision Record |
-| ADHD | Attention Deficit Hyperactivity Disorder |
-| API | Application Programming Interface |
-| CRUD | Create, Read, Update, Delete |
-| FR | Functional Requirement |
-| IPC | Inter-Process Communication |
-| NFR | Non-Functional Requirement |
-| ONNX | Open Neural Network Exchange |
-| PKM | Personal Knowledge Management |
-| PRD | Product Requirements Document |
-| UI | User Interface |
-| UX | User Experience |
-| ULID | Universally Unique Lexicographically Sortable Identifier |
-| WIP | Work in Progress |
+| Abbrev | Meaning                                                  |
+| ------ | -------------------------------------------------------- |
+| ADR    | Architecture Decision Record                             |
+| ADHD   | Attention Deficit Hyperactivity Disorder                 |
+| API    | Application Programming Interface                        |
+| CRUD   | Create, Read, Update, Delete                             |
+| FR     | Functional Requirement                                   |
+| IPC    | Inter-Process Communication                              |
+| NFR    | Non-Functional Requirement                               |
+| ONNX   | Open Neural Network Exchange                             |
+| PKM    | Personal Knowledge Management                            |
+| PRD    | Product Requirements Document                            |
+| UI     | User Interface                                           |
+| UX     | User Experience                                          |
+| ULID   | Universally Unique Lexicographically Sortable Identifier |
+| WIP    | Work in Progress                                         |
 
 ---
 

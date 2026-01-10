@@ -1,21 +1,25 @@
 # Altair Product Requirements Document
+
 ## Tracking: Inventory & Asset Management
 
-| Field | Value |
-|-------|-------|
-| **Version** | 1.0 |
-| **Status** | Draft |
-| **Last Updated** | 2026-01-08 |
-| **Parent Document** | `altair-prd-core.md` |
-| **Dependencies** | Guidance (quest linking), Knowledge (note references) |
+| Field               | Value                                                 |
+| ------------------- | ----------------------------------------------------- |
+| **Version**         | 1.0                                                   |
+| **Status**          | Draft                                                 |
+| **Last Updated**    | 2026-01-08                                            |
+| **Parent Document** | `altair-prd-core.md`                                  |
+| **Dependencies**    | Guidance (quest linking), Knowledge (note references) |
 
 ---
 
 ## 1. Purpose
 
-This document defines the product requirements for Tracking, the inventory and asset management application in the Altair ecosystem. Tracking is designed for makers, DIY enthusiasts, and households who need to manage parts, tools, and project materials with minimal friction.
+This document defines the product requirements for Tracking, the inventory and asset management
+application in the Altair ecosystem. Tracking is designed for makers, DIY enthusiasts, and
+households who need to manage parts, tools, and project materials with minimal friction.
 
-For system-level architecture, design principles, and cross-app integration, see `altair-prd-core.md`.
+For system-level architecture, design principles, and cross-app integration, see
+`altair-prd-core.md`.
 
 ---
 
@@ -23,14 +27,17 @@ For system-level architecture, design principles, and cross-app integration, see
 
 Makers and DIY enthusiasts face specific inventory challenges:
 
-- **Forgotten inventory**: Components purchased months ago are forgotten, leading to duplicate purchases or abandoned projects.
+- **Forgotten inventory**: Components purchased months ago are forgotten, leading to duplicate
+  purchases or abandoned projects.
 - **Location blindness**: Parts are stored "somewhere" but finding them requires physical search.
-- **Project-component disconnect**: Notes about projects don't link to required materials; shopping lists are manual.
+- **Project-component disconnect**: Notes about projects don't link to required materials; shopping
+  lists are manual.
 - **Capture friction**: Logging new items requires too many fields; items go untracked.
 - **No material awareness**: Writing about a project doesn't surface relevant inventory.
 - **Maintenance gaps**: Warranty expirations and maintenance schedules slip through the cracks.
 
-Tracking addresses these through photo-first capture, automatic item detection in notes, Bill of Materials intelligence, and location-aware inventory management.
+Tracking addresses these through photo-first capture, automatic item detection in notes, Bill of
+Materials intelligence, and location-aware inventory management.
 
 ---
 
@@ -38,7 +45,8 @@ Tracking addresses these through photo-first capture, automatic item detection i
 
 ### 3.1 Capture & Organization
 
-> **As a maker**, I want to photograph components as I receive them so that I can log inventory without typing part numbers.
+> **As a maker**, I want to photograph components as I receive them so that I can log inventory
+> without typing part numbers.
 
 > **As a maker**, I want to scan barcodes and QR codes so that item details populate automatically.
 
@@ -46,23 +54,29 @@ Tracking addresses these through photo-first capture, automatic item detection i
 
 ### 3.2 Project Integration
 
-> **As a maker**, I want the system to detect when my notes mention inventory items so that project documentation links to materials.
+> **As a maker**, I want the system to detect when my notes mention inventory items so that project
+> documentation links to materials.
 
-> **As a maker**, I want to reserve items for specific quests so that I don't accidentally use components allocated to a project.
+> **As a maker**, I want to reserve items for specific quests so that I don't accidentally use
+> components allocated to a project.
 
-> **As a maker**, I want to generate shopping lists from Bills of Materials so that I know what I need to buy.
+> **As a maker**, I want to generate shopping lists from Bills of Materials so that I know what I
+> need to buy.
 
 ### 3.3 Maintenance & Lifecycle
 
-> **As a homeowner**, I want to track warranty expiration dates so that I can make claims before they expire.
+> **As a homeowner**, I want to track warranty expiration dates so that I can make claims before
+> they expire.
 
-> **As a homeowner**, I want maintenance schedule reminders so that I don't forget regular upkeep tasks.
+> **As a homeowner**, I want maintenance schedule reminders so that I don't forget regular upkeep
+> tasks.
 
 > **As a maker**, I want to track tool calibration dates so that my measurements stay accurate.
 
 ### 3.4 Shopping & Procurement
 
-> **As a maker**, I want to see which items are low in stock so that I can reorder before running out.
+> **As a maker**, I want to see which items are low in stock so that I can reorder before running
+> out.
 
 > **As a maker**, I want to track suppliers and prices so that I can reorder efficiently.
 
@@ -74,17 +88,17 @@ Tracking addresses these through photo-first capture, automatic item detection i
 
 Items are the atomic unit of Tracking:
 
-| Property | Description |
-|----------|-------------|
-| **Name** | Item name/description |
-| **Quantity** | Current count (with unit) |
-| **Location** | Where stored (hierarchical) |
-| **Category** | Item category (hierarchical) |
-| **Tags** | Flexible tagging |
-| **Photos** | One or more images |
-| **Barcode/QR** | Scanned or generated codes |
-| **Status** | Available, Reserved, In-use, Depleted |
-| **Custom fields** | User-defined properties |
+| Property          | Description                           |
+| ----------------- | ------------------------------------- |
+| **Name**          | Item name/description                 |
+| **Quantity**      | Current count (with unit)             |
+| **Location**      | Where stored (hierarchical)           |
+| **Category**      | Item category (hierarchical)          |
+| **Tags**          | Flexible tagging                      |
+| **Photos**        | One or more images                    |
+| **Barcode/QR**    | Scanned or generated codes            |
+| **Status**        | Available, Reserved, In-use, Depleted |
+| **Custom fields** | User-defined properties               |
 
 ### 4.2 Location Model
 
@@ -106,12 +120,12 @@ Home
 
 Items can be reserved for specific Quests:
 
-| Status | Meaning |
-|--------|---------|
-| **Available** | Can be used or reserved |
-| **Reserved** | Allocated to a Quest (quantity locked) |
-| **In-use** | Actively being used in Quest |
-| **Depleted** | Quantity reached zero |
+| Status        | Meaning                                |
+| ------------- | -------------------------------------- |
+| **Available** | Can be used or reserved                |
+| **Reserved**  | Allocated to a Quest (quantity locked) |
+| **In-use**    | Actively being used in Quest           |
+| **Depleted**  | Quantity reached zero                  |
 
 ### 4.4 Bill of Materials (BoM)
 
@@ -119,6 +133,7 @@ Structured list of required items for a project:
 
 ```markdown
 ## Required Materials
+
 - 2x Raspberry Pi 4
 - 1x 32GB SD Card
 - 4x M3 screws
@@ -136,6 +151,7 @@ Tracking can parse BoMs from Knowledge notes and match against inventory.
 #### Core CRUD
 
 **Requirements:**
+
 - FR-T-001: Create item with photo-first interface
 - FR-T-002: Edit item properties
 - FR-T-003: Delete item (soft delete, recoverable 30+ days)
@@ -145,6 +161,7 @@ Tracking can parse BoMs from Knowledge notes and match against inventory.
 #### Photo Capture
 
 **Requirements:**
+
 - FR-T-006: Primary photo required (or explicit skip)
 - FR-T-007: Multiple photos per item
 - FR-T-008: Camera capture or gallery import
@@ -155,6 +172,7 @@ Tracking can parse BoMs from Knowledge notes and match against inventory.
 #### Barcode/QR Support
 
 **Requirements:**
+
 - FR-T-012: Scan barcode to populate item details (if in database)
 - FR-T-013: Scan QR code for custom item lookup
 - FR-T-014: Generate QR code for any item
@@ -164,6 +182,7 @@ Tracking can parse BoMs from Knowledge notes and match against inventory.
 #### Quantity Management
 
 **Requirements:**
+
 - FR-T-017: Track quantity with unit (e.g., "50 pcs", "2.5 m")
 - FR-T-018: Increment/decrement quantity with single tap
 - FR-T-019: Set minimum stock threshold
@@ -174,6 +193,7 @@ Tracking can parse BoMs from Knowledge notes and match against inventory.
 #### Location Tracking
 
 **Requirements:**
+
 - FR-T-023: Assign item to location (hierarchical)
 - FR-T-024: Create/edit location hierarchy
 - FR-T-025: Move item between locations
@@ -184,6 +204,7 @@ Tracking can parse BoMs from Knowledge notes and match against inventory.
 #### Categories & Tags
 
 **Requirements:**
+
 - FR-T-029: Assign item to category (hierarchical)
 - FR-T-030: Multiple tags per item
 - FR-T-031: Shared tag taxonomy with Knowledge/Guidance
@@ -193,6 +214,7 @@ Tracking can parse BoMs from Knowledge notes and match against inventory.
 #### Custom Fields
 
 **Requirements:**
+
 - FR-T-034: Define custom fields per category
 - FR-T-035: Field types: text, number, date, URL, dropdown
 - FR-T-036: Custom fields appear in item detail view
@@ -207,6 +229,7 @@ Tracking can parse BoMs from Knowledge notes and match against inventory.
 When writing in Knowledge, Tracking detects mentioned items:
 
 **Requirements:**
+
 - FR-T-038: Real-time text analysis for item mentions
 - FR-T-039: Pattern matching against inventory names and aliases
 - FR-T-040: Non-intrusive popup showing detected items
@@ -217,6 +240,7 @@ When writing in Knowledge, Tracking detects mentioned items:
 #### Smart Suggestions
 
 **Requirements:**
+
 - FR-T-044: Suggest related items based on project context
 - FR-T-045: "Frequently used together" recommendations
 - FR-T-046: Missing component alerts (BoM vs. inventory)
@@ -229,6 +253,7 @@ When writing in Knowledge, Tracking detects mentioned items:
 #### Reserving Items
 
 **Requirements:**
+
 - FR-T-048: Reserve item quantity for specific Quest
 - FR-T-049: Reserved quantity deducted from available
 - FR-T-050: Visual indicator of reserved items
@@ -238,6 +263,7 @@ When writing in Knowledge, Tracking detects mentioned items:
 #### Lifecycle
 
 **Requirements:**
+
 - FR-T-053: Mark reserved items as "in-use" when Quest starts
 - FR-T-054: Auto-release reservation on Quest completion
 - FR-T-055: Manual release of reservation
@@ -250,6 +276,7 @@ When writing in Knowledge, Tracking detects mentioned items:
 #### Parsing
 
 **Requirements:**
+
 - FR-T-057: Detect structured BoM in Knowledge notes
 - FR-T-058: Parse quantity and item name
 - FR-T-059: Handle common formats (lists, tables)
@@ -259,6 +286,7 @@ When writing in Knowledge, Tracking detects mentioned items:
 #### Features
 
 **Requirements:**
+
 - FR-T-062: View BoM → Inventory match status
 - FR-T-063: Generate shopping list from unmatched/insufficient items
 - FR-T-064: Link BoM to Quest (reserve materials)
@@ -269,6 +297,7 @@ When writing in Knowledge, Tracking detects mentioned items:
 #### Shopping Lists
 
 **Requirements:**
+
 - FR-T-068: Interactive shopping list (check off as purchased)
 - FR-T-069: Aggregate lists across multiple BoMs
 - FR-T-070: Group by supplier or store
@@ -283,6 +312,7 @@ When writing in Knowledge, Tracking detects mentioned items:
 #### Warranty Management
 
 **Requirements:**
+
 - FR-T-074: Track purchase date and warranty period
 - FR-T-075: Calculate warranty expiration date
 - FR-T-076: Warranty expiration alerts (configurable lead time)
@@ -292,6 +322,7 @@ When writing in Knowledge, Tracking detects mentioned items:
 #### Maintenance Schedules
 
 **Requirements:**
+
 - FR-T-079: Define recurring maintenance tasks per item
 - FR-T-080: Frequency options: days, weeks, months, usage-based
 - FR-T-081: Maintenance due reminders (push notifications)
@@ -302,6 +333,7 @@ When writing in Knowledge, Tracking detects mentioned items:
 #### Service History
 
 **Requirements:**
+
 - FR-T-085: Log repairs and service events
 - FR-T-086: Track service provider and cost
 - FR-T-087: Attach service documentation
@@ -312,6 +344,7 @@ When writing in Knowledge, Tracking detects mentioned items:
 ### 5.6 Search & Filtering
 
 **Requirements:**
+
 - FR-T-089: Full-text search across all item properties
 - FR-T-090: Filter by category, tag, location
 - FR-T-091: Filter by status (available, reserved, low stock)
@@ -327,6 +360,7 @@ When writing in Knowledge, Tracking detects mentioned items:
 #### List View
 
 **Requirements:**
+
 - FR-T-096: Thumbnail, name, quantity, location in list
 - FR-T-097: Quick actions (increment, decrement, reserve)
 - FR-T-098: Swipe actions for common operations (mobile)
@@ -335,6 +369,7 @@ When writing in Knowledge, Tracking detects mentioned items:
 #### Grid View
 
 **Requirements:**
+
 - FR-T-100: Photo-centric grid layout
 - FR-T-101: Configurable grid density
 - FR-T-102: Quick access to item details
@@ -342,6 +377,7 @@ When writing in Knowledge, Tracking detects mentioned items:
 #### Location View
 
 **Requirements:**
+
 - FR-T-103: Hierarchical location tree
 - FR-T-104: Expand location to see contained items
 - FR-T-105: Drag items between locations
@@ -349,6 +385,7 @@ When writing in Knowledge, Tracking detects mentioned items:
 #### Category View
 
 **Requirements:**
+
 - FR-T-106: Hierarchical category tree
 - FR-T-107: Expand category to see items
 - FR-T-108: Category item counts
@@ -371,9 +408,10 @@ All desktop features available on mobile with touch optimization:
 
 ### 6.2 Mobile Capture Advantages
 
-Mobile is the *preferred* platform for Tracking capture:
+Mobile is the _preferred_ platform for Tracking capture:
 
 **Requirements:**
+
 - FR-T-109: Native camera integration (no switching apps)
 - FR-T-110: Barcode scanning via camera
 - FR-T-111: Batch photo mode for rapid capture
@@ -383,6 +421,7 @@ Mobile is the *preferred* platform for Tracking capture:
 ### 6.3 Touch Optimizations
 
 **Requirements:**
+
 - FR-T-114: Swipe to change quantity (+/-)
 - FR-T-115: Swipe to mark as reserved/available
 - FR-T-116: Long-press for context menu
@@ -392,6 +431,7 @@ Mobile is the *preferred* platform for Tracking capture:
 ### 6.4 Notifications
 
 **Requirements:**
+
 - FR-T-119: Low stock alerts
 - FR-T-120: Warranty expiration reminders
 - FR-T-121: Maintenance due notifications
@@ -401,6 +441,7 @@ Mobile is the *preferred* platform for Tracking capture:
 ### 6.5 Widgets
 
 **Requirements:**
+
 - FR-T-124: Quick capture widget (camera to inventory)
 - FR-T-125: Low stock summary widget
 - FR-T-126: Recent items widget
@@ -409,6 +450,7 @@ Mobile is the *preferred* platform for Tracking capture:
 ### 6.6 Advanced Mobile Features
 
 **Requirements:**
+
 - FR-T-128: NFC tag reading/writing for item identification
 - FR-T-129: Bluetooth connection to smart labels (future)
 - FR-T-130: Location-based reminders ("When I get home, check stock of X")
@@ -420,14 +462,14 @@ Mobile is the *preferred* platform for Tracking capture:
 
 ### 7.1 Performance
 
-| Metric | Target |
-|--------|--------|
-| Item creation | < 500ms |
-| Photo capture to saved | < 2 seconds |
-| Barcode scan to lookup | < 1 second |
-| Search (10k items) | < 1 second |
-| List render (100 items) | < 500ms |
-| Inventory detection in text | < 500ms |
+| Metric                      | Target      |
+| --------------------------- | ----------- |
+| Item creation               | < 500ms     |
+| Photo capture to saved      | < 2 seconds |
+| Barcode scan to lookup      | < 1 second  |
+| Search (10k items)          | < 1 second  |
+| List render (100 items)     | < 500ms     |
+| Inventory detection in text | < 500ms     |
 
 ### 7.2 Data Integrity
 
@@ -459,29 +501,29 @@ Mobile is the *preferred* platform for Tracking capture:
 
 ### 8.1 Guidance Integration
 
-| From Tracking | To Guidance |
-|---------------|-------------|
-| Low stock alert | Generate restock Quest |
+| From Tracking   | To Guidance                |
+| --------------- | -------------------------- |
+| Low stock alert | Generate restock Quest     |
 | Maintenance due | Generate maintenance Quest |
-| Reserved items | Link to Quest requirements |
+| Reserved items  | Link to Quest requirements |
 
-| From Guidance | To Tracking |
-|---------------|-------------|
-| Quest requiring materials | Reserve items |
-| Quest complete | Release reserved items |
-| Shopping Quest complete | Add items to inventory |
+| From Guidance             | To Tracking            |
+| ------------------------- | ---------------------- |
+| Quest requiring materials | Reserve items          |
+| Quest complete            | Release reserved items |
+| Shopping Quest complete   | Add items to inventory |
 
 ### 8.2 Knowledge Integration
 
-| From Tracking | To Knowledge |
-|---------------|--------------|
-| Item | Link to documentation/notes |
-| Item with manual | Manual as attached note |
+| From Tracking    | To Knowledge                |
+| ---------------- | --------------------------- |
+| Item             | Link to documentation/notes |
+| Item with manual | Manual as attached note     |
 
-| From Knowledge | To Tracking |
-|----------------|-------------|
-| Note mentioning items | Auto-detect and link |
-| BoM in note | Parse and match inventory |
+| From Knowledge        | To Tracking               |
+| --------------------- | ------------------------- |
+| Note mentioning items | Auto-detect and link      |
+| BoM in note           | Parse and match inventory |
 
 ### 8.3 Universal Features
 
@@ -540,6 +582,7 @@ Mobile is the *preferred* platform for Tracking capture:
 The parser should handle these common formats:
 
 **Markdown List:**
+
 ```markdown
 - 2x Raspberry Pi 4
 - 1x 32GB SD Card
@@ -547,15 +590,17 @@ The parser should handle these common formats:
 ```
 
 **Markdown Table:**
+
 ```markdown
-| Qty | Item | Notes |
-|-----|------|-------|
-| 2 | Raspberry Pi 4 | Model B |
-| 1 | SD Card | 32GB minimum |
-| 4 | M3 screws | 10mm length |
+| Qty | Item           | Notes        |
+| --- | -------------- | ------------ |
+| 2   | Raspberry Pi 4 | Model B      |
+| 1   | SD Card        | 32GB minimum |
+| 4   | M3 screws      | 10mm length  |
 ```
 
 **Plain Text:**
+
 ```
 2 × Raspberry Pi 4
 1 × 32GB SD Card
@@ -563,6 +608,7 @@ The parser should handle these common formats:
 ```
 
 **Parenthetical:**
+
 ```
 Raspberry Pi 4 (x2)
 SD Card (1)
@@ -573,14 +619,14 @@ M3 screws (4 pcs)
 
 ## Appendix B: Keyboard Shortcuts (Desktop)
 
-| Action | Shortcut |
-|--------|----------|
-| New item | Cmd/Ctrl + N |
-| Search | Cmd/Ctrl + / |
-| Filter panel | Cmd/Ctrl + F |
+| Action                  | Shortcut     |
+| ----------------------- | ------------ |
+| New item                | Cmd/Ctrl + N |
+| Search                  | Cmd/Ctrl + / |
+| Filter panel            | Cmd/Ctrl + F |
 | Toggle view (list/grid) | Cmd/Ctrl + L |
-| Scan barcode | Cmd/Ctrl + B |
-| Generate QR | Cmd/Ctrl + Q |
-| Increment quantity | + or = |
-| Decrement quantity | - |
-| Reserve item | Cmd/Ctrl + R |
+| Scan barcode            | Cmd/Ctrl + B |
+| Generate QR             | Cmd/Ctrl + Q |
+| Increment quantity      | + or =       |
+| Decrement quantity      | -            |
+| Reserve item            | Cmd/Ctrl + R |

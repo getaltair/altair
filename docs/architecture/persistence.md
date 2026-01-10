@@ -2,8 +2,8 @@
 
 ## Purpose
 
-This document describes how Altair stores and manages data, including the hybrid database strategy, schema design
-patterns, query strategies, and sync considerations.
+This document describes how Altair stores and manages data, including the hybrid database strategy,
+schema design patterns, query strategies, and sync considerations.
 
 ---
 
@@ -13,11 +13,11 @@ patterns, query strategies, and sync considerations.
 
 Altair uses different databases optimized for each platform:
 
-| Platform | Database          | Rationale                                            |
-| -------- | ----------------- | ---------------------------------------------------- |
-| Desktop  | SurrealDB embedded | Graph queries, vector search, full-text search       |
+| Platform | Database            | Rationale                                            |
+| -------- | ------------------- | ---------------------------------------------------- |
+| Desktop  | SurrealDB embedded  | Graph queries, vector search, full-text search       |
 | Mobile   | SQLite (SQLDelight) | Proven reliability, minimal footprint, quick capture |
-| Server   | SurrealDB          | Primary store, sync hub, conflict resolution         |
+| Server   | SurrealDB           | Primary store, sync hub, conflict resolution         |
 
 See [ADR-002](../adr/002-surrealdb-embedded.md) for the full decision rationale.
 
@@ -47,33 +47,33 @@ SurrealDB runs in-process using the SurrealKV storage engine via surrealdb.java 
 
 SQLite runs embedded via SQLDelight for type-safe Kotlin queries.
 
-| Aspect         | Configuration                          |
-| -------------- | -------------------------------------- |
-| Mode           | Embedded                               |
-| Location       | Platform-standard app data directory   |
-| Access         | SQLDelight generated Kotlin code       |
-| Query Safety   | Compile-time verified SQL              |
+| Aspect       | Configuration                        |
+| ------------ | ------------------------------------ |
+| Mode         | Embedded                             |
+| Location     | Platform-standard app data directory |
+| Access       | SQLDelight generated Kotlin code     |
+| Query Safety | Compile-time verified SQL            |
 
 **Why SQLite for Mobile:**
 
-| Need                | SQLite Capability                          |
-| ------------------- | ------------------------------------------ |
-| Quick capture       | Fast writes, minimal overhead              |
-| Reliability         | 15+ years of mobile production use         |
-| Battery efficiency  | No background processes                    |
-| Minimal footprint   | ~500KB library size                        |
-| Basic search        | FTS5 for text search                       |
+| Need               | SQLite Capability                  |
+| ------------------ | ---------------------------------- |
+| Quick capture      | Fast writes, minimal overhead      |
+| Reliability        | 15+ years of mobile production use |
+| Battery efficiency | No background processes            |
+| Minimal footprint  | ~500KB library size                |
+| Basic search       | FTS5 for text search               |
 
 ### Server: SurrealDB
 
 Server runs SurrealDB as a container alongside the Ktor application.
 
-| Aspect         | Configuration                          |
-| -------------- | -------------------------------------- |
-| Mode           | Server (networked)                     |
-| Storage        | File-backed (`/data/altair.db`)        |
-| Access         | surrealdb.java (Kotlin)                |
-| Volume         | Docker volume for persistence          |
+| Aspect  | Configuration                   |
+| ------- | ------------------------------- |
+| Mode    | Server (networked)              |
+| Storage | File-backed (`/data/altair.db`) |
+| Access  | surrealdb.java (Kotlin)         |
+| Volume  | Docker volume for persistence   |
 
 ---
 
@@ -271,12 +271,12 @@ Client                          Server
 
 Server-side resolution with last-write-wins for simple fields:
 
-| Scenario              | Resolution                                |
-| --------------------- | ----------------------------------------- |
-| Same field changed    | Latest `updated_at` wins                  |
-| Different fields      | Merge both changes                        |
-| Entity deleted        | Delete wins (soft delete propagates)      |
-| Complex structures    | Custom merge logic (e.g., note content)   |
+| Scenario           | Resolution                              |
+| ------------------ | --------------------------------------- |
+| Same field changed | Latest `updated_at` wins                |
+| Different fields   | Merge both changes                      |
+| Entity deleted     | Delete wins (soft delete propagates)    |
+| Complex structures | Custom merge logic (e.g., note content) |
 
 ---
 

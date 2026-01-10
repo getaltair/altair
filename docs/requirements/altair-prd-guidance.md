@@ -1,21 +1,25 @@
 # Altair Product Requirements Document
+
 ## Guidance: Quest-Based Agile Task Management
 
-| Field | Value |
-|-------|-------|
-| **Version** | 1.0 |
-| **Status** | Draft |
-| **Last Updated** | 2026-01-08 |
-| **Parent Document** | `altair-prd-core.md` |
-| **Dependencies** | Knowledge (note linking), Tracking (item requirements) |
+| Field               | Value                                                  |
+| ------------------- | ------------------------------------------------------ |
+| **Version**         | 1.0                                                    |
+| **Status**          | Draft                                                  |
+| **Last Updated**    | 2026-01-08                                             |
+| **Parent Document** | `altair-prd-core.md`                                   |
+| **Dependencies**    | Knowledge (note linking), Tracking (item requirements) |
 
 ---
 
 ## 1. Purpose
 
-This document defines the product requirements for Guidance, the task management application in the Altair ecosystem. Guidance implements Quest-Based Agile (QBA), a methodology designed specifically for ADHD productivity patterns.
+This document defines the product requirements for Guidance, the task management application in the
+Altair ecosystem. Guidance implements Quest-Based Agile (QBA), a methodology designed specifically
+for ADHD productivity patterns.
 
-For system-level architecture, design principles, and cross-app integration, see `altair-prd-core.md`.
+For system-level architecture, design principles, and cross-app integration, see
+`altair-prd-core.md`.
 
 ---
 
@@ -23,14 +27,19 @@ For system-level architecture, design principles, and cross-app integration, see
 
 Traditional task management fails ADHD users in specific ways:
 
-- **Infinite backlogs**: Tools encourage capturing everything, creating overwhelming lists that trigger avoidance.
-- **Context switching**: No enforcement of single-tasking; users can start infinite parallel work streams.
-- **Willpower-dependent prioritization**: Users must constantly decide "what's next" when executive function is already impaired.
+- **Infinite backlogs**: Tools encourage capturing everything, creating overwhelming lists that
+  trigger avoidance.
+- **Context switching**: No enforcement of single-tasking; users can start infinite parallel work
+  streams.
+- **Willpower-dependent prioritization**: Users must constantly decide "what's next" when executive
+  function is already impaired.
 - **Shame accumulation**: Incomplete tasks remain visible, reinforcing negative self-perception.
 - **Time blindness**: No support for estimating, tracking, or visualizing time spent on tasks.
-- **Binary outcomes**: Tasks are either done or not-done; no support for pausing, pivoting, or recovering from abandonment.
+- **Binary outcomes**: Tasks are either done or not-done; no support for pausing, pivoting, or
+  recovering from abandonment.
 
-Guidance addresses these through enforced WIP limits, energy-based filtering, swap-first behavior, and shame-free recovery mechanisms.
+Guidance addresses these through enforced WIP limits, energy-based filtering, swap-first behavior,
+and shame-free recovery mechanisms.
 
 ---
 
@@ -38,33 +47,44 @@ Guidance addresses these through enforced WIP limits, energy-based filtering, sw
 
 ### 3.1 Daily Workflow
 
-> **As an ADHD user**, I want to start my day with a simple check-in so that I can match my work to my current capacity without decision fatigue.
+> **As an ADHD user**, I want to start my day with a simple check-in so that I can match my work to
+> my current capacity without decision fatigue.
 
-> **As an ADHD user**, I want the system to enforce a single active task so that I cannot scatter my attention across multiple incomplete items.
+> **As an ADHD user**, I want the system to enforce a single active task so that I cannot scatter my
+> attention across multiple incomplete items.
 
-> **As an ADHD user**, I want to swap tasks without guilt so that changing focus doesn't feel like failure.
+> **As an ADHD user**, I want to swap tasks without guilt so that changing focus doesn't feel like
+> failure.
 
 ### 3.2 Focus & Flow
 
-> **As an ADHD user**, I want a distraction-free focus mode so that I can enter and maintain flow state on my current task.
+> **As an ADHD user**, I want a distraction-free focus mode so that I can enter and maintain flow
+> state on my current task.
 
-> **As an ADHD user**, I want visible timers and progress so that I can combat time blindness and see how long I've been working.
+> **As an ADHD user**, I want visible timers and progress so that I can combat time blindness and
+> see how long I've been working.
 
-> **As an ADHD user**, I want to extend focus sessions when I'm in the zone so that artificial time boxes don't break my flow.
+> **As an ADHD user**, I want to extend focus sessions when I'm in the zone so that artificial time
+> boxes don't break my flow.
 
 ### 3.3 Planning & Recovery
 
-> **As an ADHD user**, I want a weekly ritual that celebrates wins first so that I build positive associations with review and planning.
+> **As an ADHD user**, I want a weekly ritual that celebrates wins first so that I build positive
+> associations with review and planning.
 
-> **As an ADHD user**, I want to recover from an abandoned board without shame so that I can restart fresh when I've been away too long.
+> **As an ADHD user**, I want to recover from an abandoned board without shame so that I can restart
+> fresh when I've been away too long.
 
-> **As an ADHD user**, I want emergency mode when I'm overwhelmed so that I can simplify my view to just a few essential tasks.
+> **As an ADHD user**, I want emergency mode when I'm overwhelmed so that I can simplify my view to
+> just a few essential tasks.
 
 ### 3.4 Motivation
 
-> **As an ADHD user**, I want optional gamification so that I can get dopamine hits from progress without being forced into point optimization.
+> **As an ADHD user**, I want optional gamification so that I can get dopamine hits from progress
+> without being forced into point optimization.
 
-> **As an ADHD user**, I want to see my completed work as a trophy room so that I have evidence of progress on hard days.
+> **As an ADHD user**, I want to see my completed work as a trophy room so that I have evidence of
+> progress on hard days.
 
 ---
 
@@ -74,37 +94,37 @@ Guidance addresses these through enforced WIP limits, energy-based filtering, sw
 
 QBA adapts agile methodology for individual ADHD users:
 
-| Agile Concept | QBA Adaptation |
-|---------------|----------------|
-| Sprint | **Cycle** — Weekly timeboxed period |
-| Epic | **Epic** — Large initiative with multiple Quests |
-| Story | **Quest** — Discrete, completable task |
-| Sprint backlog | **Next Up** — Limited queue of ready Quests |
-| WIP limits | **WIP=1** — One Quest in progress at a time |
-| Retrospective | **Harvest** — Weekly celebration and planning |
+| Agile Concept  | QBA Adaptation                                   |
+| -------------- | ------------------------------------------------ |
+| Sprint         | **Cycle** — Weekly timeboxed period              |
+| Epic           | **Epic** — Large initiative with multiple Quests |
+| Story          | **Quest** — Discrete, completable task           |
+| Sprint backlog | **Next Up** — Limited queue of ready Quests      |
+| WIP limits     | **WIP=1** — One Quest in progress at a time      |
+| Retrospective  | **Harvest** — Weekly celebration and planning    |
 
 ### 4.2 Energy System
 
 Daily subjective capacity rating (not medical/health tracking):
 
-| Level | Symbol | Meaning |
-|-------|--------|---------|
-| 1 - Tiny | ⚡ | Minimal tasks only |
-| 2 - Small | ⚡⚡ | Light work |
-| 3 - Medium | ⚡⚡⚡ | Standard tasks |
-| 4 - Large | ⚡⚡⚡⚡ | Complex work |
-| 5 - Huge | ⚡⚡⚡⚡⚡ | Major projects |
+| Level      | Symbol     | Meaning            |
+| ---------- | ---------- | ------------------ |
+| 1 - Tiny   | ⚡         | Minimal tasks only |
+| 2 - Small  | ⚡⚡       | Light work         |
+| 3 - Medium | ⚡⚡⚡     | Standard tasks     |
+| 4 - Large  | ⚡⚡⚡⚡   | Complex work       |
+| 5 - Huge   | ⚡⚡⚡⚡⚡ | Major projects     |
 
 Zero-energy days are explicitly supported. Rest is valid; there are no failure states.
 
 ### 4.3 Key Behaviors
 
-| Behavior | Description |
-|----------|-------------|
-| **Swap-first** | Starting a new Quest automatically returns the current Quest to Next Up (pinned at top) |
-| **Emergency override** | WIP limit can be exceeded with explicit friction and reminder of why WIP=1 exists |
-| **Neutral language** | No shame terminology; incomplete = paused, not failed |
-| **Reversible actions** | Archive/delete always undoable |
+| Behavior               | Description                                                                             |
+| ---------------------- | --------------------------------------------------------------------------------------- |
+| **Swap-first**         | Starting a new Quest automatically returns the current Quest to Next Up (pinned at top) |
+| **Emergency override** | WIP limit can be exceeded with explicit friction and reminder of why WIP=1 exists       |
+| **Neutral language**   | No shame terminology; incomplete = paused, not failed                                   |
+| **Reversible actions** | Archive/delete always undoable                                                          |
 
 ---
 
@@ -122,6 +142,7 @@ The board consists of six columns with specific semantics:
 - Items may be archived or deleted (reversible)
 
 **Requirements:**
+
 - FR-G-001: Quick capture input always accessible
 - FR-G-002: Global keyboard shortcut for capture
 - FR-G-003: Items sortable by creation date
@@ -135,6 +156,7 @@ The board consists of six columns with specific semantics:
 - Epics owned by Guidance but may reference Knowledge notes and Tracking items
 
 **Requirements:**
+
 - FR-G-006: Create Epic with title only (description optional)
 - FR-G-007: Link Epic to Knowledge notes
 - FR-G-008: Link Epic to Tracking items (required materials)
@@ -148,6 +170,7 @@ The board consists of six columns with specific semantics:
 - Provides direction without rigid commitment
 
 **Requirements:**
+
 - FR-G-011: Maximum one Epic in this column (enforced)
 - FR-G-012: Moving new Epic here automatically returns previous Epic to backlog
 - FR-G-013: Visual prominence for active Epic
@@ -160,6 +183,7 @@ The board consists of six columns with specific semantics:
 - Priority queue for upcoming work
 
 **Requirements:**
+
 - FR-G-015: Soft limit of 5 Quests (warning, not hard block)
 - FR-G-016: Pinned Quest indicator (top of queue)
 - FR-G-017: Drag-and-drop reordering
@@ -173,6 +197,7 @@ The board consists of six columns with specific semantics:
 - Emergency override available with friction
 
 **Requirements:**
+
 - FR-G-020: Maximum one Quest enforced by default
 - FR-G-021: Swap-first: selecting new Quest moves current to Next Up (pinned)
 - FR-G-022: Emergency override with confirmation dialog explaining WIP=1 rationale
@@ -186,6 +211,7 @@ The board consists of six columns with specific semantics:
 - Supports volume-based grouping into Seasons (collapsible)
 
 **Requirements:**
+
 - FR-G-025: Completed Quests visible by default
 - FR-G-026: Auto-group into Seasons when count exceeds threshold (configurable)
 - FR-G-027: Seasons collapsible to manage visual overwhelm
@@ -196,6 +222,7 @@ The board consists of six columns with specific semantics:
 #### Board-Level Features
 
 **Requirements:**
+
 - FR-G-031: Drag-and-drop between all columns
 - FR-G-032: Energy-based filtering (show only Quests matching current energy)
 - FR-G-033: Tag filtering
@@ -211,19 +238,20 @@ Full-screen distraction-free interface for the active Quest.
 
 #### UI Components
 
-| Component | Location | Description |
-|-----------|----------|-------------|
-| Quest title | Center, prominent | Current Quest name |
-| Timer | Center | Visual timer with time remaining |
-| Progress bar | Below timer | Elapsed time visualization |
-| Complete button | Bottom center | Large "MARK COMPLETE" action |
-| On Deck preview | Bottom | Shows Next Up queue |
-| Energy indicator | Top right | Current energy status |
-| Level indicator | Top left | Current XP level (if gamification enabled) |
+| Component        | Location          | Description                                |
+| ---------------- | ----------------- | ------------------------------------------ |
+| Quest title      | Center, prominent | Current Quest name                         |
+| Timer            | Center            | Visual timer with time remaining           |
+| Progress bar     | Below timer       | Elapsed time visualization                 |
+| Complete button  | Bottom center     | Large "MARK COMPLETE" action               |
+| On Deck preview  | Bottom            | Shows Next Up queue                        |
+| Energy indicator | Top right         | Current energy status                      |
+| Level indicator  | Top left          | Current XP level (if gamification enabled) |
 
 #### Functionality
 
 **Requirements:**
+
 - FR-G-037: Timer starts only when user explicitly starts Focus Mode
 - FR-G-038: Pomodoro timer with configurable cycle length
 - FR-G-039: Flow override: extend session without penalty
@@ -242,6 +270,7 @@ Full-screen distraction-free interface for the active Quest.
 #### Daily Check-In
 
 **Requirements:**
+
 - FR-G-047: Morning energy assessment prompt (time configurable)
 - FR-G-048: 1-5 scale with visual representation
 - FR-G-049: Optional notes field ("how are you feeling?")
@@ -252,6 +281,7 @@ Full-screen distraction-free interface for the active Quest.
 #### Energy-Based Filtering
 
 **Requirements:**
+
 - FR-G-053: Each Quest has energy requirement (1-5)
 - FR-G-054: Filter board to show only Quests ≤ current energy
 - FR-G-055: Visual indicator when Quests are filtered out
@@ -264,6 +294,7 @@ Full-screen distraction-free interface for the active Quest.
 Structured workflow for starting the day.
 
 **Flow:**
+
 1. Optional energy check-in
 2. Review Next Up queue
 3. Select one Quest for today
@@ -271,6 +302,7 @@ Structured workflow for starting the day.
 5. Prompt: "Start Focus Mode?" (explicit choice, not automatic)
 
 **Requirements:**
+
 - FR-G-057: Daily check-in accessible from home screen
 - FR-G-058: Energy check-in integrated (optional)
 - FR-G-059: Next Up queue visible for selection
@@ -285,6 +317,7 @@ Structured workflow for starting the day.
 Structured weekly reflection and planning wizard.
 
 **Flow:**
+
 1. **Reminder**: Sunday evening notification (time configurable)
 2. **Celebrate**: Review completed Quests first (wins before work)
 3. **Reflect**: What was easy/fun? What was hard/stuck? Any new ideas?
@@ -293,6 +326,7 @@ Structured weekly reflection and planning wizard.
 6. **Commit**: Explicit "Start Next Cycle" action
 
 **Requirements:**
+
 - FR-G-063: Configurable reminder (day, time)
 - FR-G-064: Step-by-step wizard UI
 - FR-G-065: Celebrate step shows Harvested Quests from past week
@@ -311,6 +345,7 @@ Structured weekly reflection and planning wizard.
 Temporary simplified view for overwhelm.
 
 **Requirements:**
+
 - FR-G-071: One-click activation from settings or board
 - FR-G-072: Reduced to 3 columns: Inbox, Focus (max 3), Done
 - FR-G-073: All other Quests hidden (not deleted)
@@ -322,12 +357,14 @@ Temporary simplified view for overwhelm.
 For returning after extended absence or board abandonment.
 
 **Options:**
+
 1. Archive current board (reversible)
 2. Move everything to Inbox (reversible)
 3. Start completely fresh (reversible)
 4. "Phoenix Rising" acknowledgment
 
 **Requirements:**
+
 - FR-G-076: Triggered by extended inactivity (configurable threshold)
 - FR-G-077: Manual trigger always available
 - FR-G-078: Clear explanation of each option
@@ -343,14 +380,14 @@ Optional motivation layer.
 
 #### Elements
 
-| Element | Description |
-|---------|-------------|
-| **XP** | Points earned for Quest completion |
-| **Levels** | Progression tiers with unlockable perks |
-| **Badges** | Achievement recognition |
-| **Streaks** | Consecutive days with completed Quests |
-| **Challenges** | Optional weekly/monthly goals |
-| **Dashboard** | Personal progress visualization |
+| Element        | Description                             |
+| -------------- | --------------------------------------- |
+| **XP**         | Points earned for Quest completion      |
+| **Levels**     | Progression tiers with unlockable perks |
+| **Badges**     | Achievement recognition                 |
+| **Streaks**    | Consecutive days with completed Quests  |
+| **Challenges** | Optional weekly/monthly goals           |
+| **Dashboard**  | Personal progress visualization         |
 
 #### Philosophy
 
@@ -361,6 +398,7 @@ Optional motivation layer.
 - Streaks reward progress but don't shame gaps
 
 **Requirements:**
+
 - FR-G-082: Gamification opt-in at setup
 - FR-G-083: XP calculation configurable (effort-based or flat)
 - FR-G-084: Level progression with meaningful perks (themes, sounds, etc.)
@@ -379,16 +417,17 @@ Visual representation of Quest relationships.
 
 #### Relationship Types
 
-| Type | Meaning |
-|------|---------|
+| Type                  | Meaning                                        |
+| --------------------- | ---------------------------------------------- |
 | **Blocks/Blocked by** | Quest A must complete before Quest B can start |
-| **Related to** | Quests share context but no dependency |
-| **Parent/Child** | Quest contains sub-Quests |
-| **Follows/Precedes** | Soft ordering suggestion |
+| **Related to**        | Quests share context but no dependency         |
+| **Parent/Child**      | Quest contains sub-Quests                      |
+| **Follows/Precedes**  | Soft ordering suggestion                       |
 
 #### Visualization
 
 **Requirements:**
+
 - FR-G-091: DAG (Directed Acyclic Graph) visualization
 - FR-G-092: Critical path highlighting
 - FR-G-093: Progress visualization (completed/in-progress/blocked)
@@ -410,19 +449,21 @@ Visual representation of Quest relationships.
 AI features for planning support (v1 scope).
 
 **Design principles:**
+
 - Explicit invocation only (no background automation)
 - User always in control
 - Suggestions, not decisions
 
 **Integration points:**
 
-| Context | AI Action |
-|---------|-----------|
-| Epic creation | "Help me break this into Quests" |
+| Context        | AI Action                             |
+| -------------- | ------------------------------------- |
+| Epic creation  | "Help me break this into Quests"      |
 | Quest creation | "Suggest smaller Quests / sub-quests" |
-| Weekly Harvest | "Help me plan next cycle" |
+| Weekly Harvest | "Help me plan next cycle"             |
 
 **Requirements:**
+
 - FR-G-101: AI button visible at relevant creation points
 - FR-G-102: Generated suggestions are proposals (user accepts/rejects each)
 - FR-G-103: AI respects energy levels in suggestions
@@ -448,6 +489,7 @@ All desktop features available on mobile with touch optimization:
 ### 6.2 Touch Optimizations
 
 **Requirements:**
+
 - FR-G-106: Touch-optimized drag-and-drop between columns
 - FR-G-107: Swipe gestures for common actions (complete, move, archive)
 - FR-G-108: Haptic feedback on Quest/step completion
@@ -457,6 +499,7 @@ All desktop features available on mobile with touch optimization:
 ### 6.3 Notifications
 
 **Requirements:**
+
 - FR-G-111: Push notifications for timer completion
 - FR-G-112: Daily energy check-in reminder
 - FR-G-113: Weekly Harvest reminder
@@ -467,6 +510,7 @@ All desktop features available on mobile with touch optimization:
 ### 6.4 Widgets
 
 **Requirements:**
+
 - FR-G-117: Active Quest widget (shows current In Progress)
 - FR-G-118: Quick capture widget (one-tap to add)
 - FR-G-119: Energy status widget
@@ -476,6 +520,7 @@ All desktop features available on mobile with touch optimization:
 ### 6.5 Background Operation
 
 **Requirements:**
+
 - FR-G-122: Pomodoro timer continues in background
 - FR-G-123: Sync continues in background
 - FR-G-124: Notification sounds respect device settings
@@ -486,13 +531,13 @@ All desktop features available on mobile with touch optimization:
 
 ### 7.1 Performance
 
-| Metric | Target |
-|--------|--------|
-| Quest creation | < 500ms |
-| Board render (100 Quests) | < 1 second |
-| Focus Mode launch | < 500ms |
+| Metric                      | Target     |
+| --------------------------- | ---------- |
+| Quest creation              | < 500ms    |
+| Board render (100 Quests)   | < 1 second |
+| Focus Mode launch           | < 500ms    |
 | Dependency graph (50 nodes) | < 1 second |
-| Search results | < 500ms |
+| Search results              | < 500ms    |
 
 ### 7.2 Data Integrity
 
@@ -516,28 +561,28 @@ All desktop features available on mobile with touch optimization:
 
 ### 8.1 Knowledge Integration
 
-| From Guidance | To Knowledge |
-|---------------|--------------|
-| Quest | Link to research notes |
-| Epic | Link to project documentation |
+| From Guidance    | To Knowledge                     |
+| ---------------- | -------------------------------- |
+| Quest            | Link to research notes           |
+| Epic             | Link to project documentation    |
 | Quest completion | Option to create reflection note |
 
-| From Knowledge | To Guidance |
-|----------------|-------------|
-| Note | Extract actionable items as Quests |
-| BoM in note | Generate shopping Quests |
+| From Knowledge | To Guidance                        |
+| -------------- | ---------------------------------- |
+| Note           | Extract actionable items as Quests |
+| BoM in note    | Generate shopping Quests           |
 
 ### 8.2 Tracking Integration
 
-| From Guidance | To Tracking |
-|---------------|-------------|
-| Quest | Link required materials/items |
-| Quest start | Check item availability |
-| Quest complete | Release reserved items |
+| From Guidance  | To Tracking                   |
+| -------------- | ----------------------------- |
+| Quest          | Link required materials/items |
+| Quest start    | Check item availability       |
+| Quest complete | Release reserved items        |
 
-| From Tracking | To Guidance |
-|---------------|-------------|
-| Low stock alert | Generate restock Quest |
+| From Tracking   | To Guidance                |
+| --------------- | -------------------------- |
+| Low stock alert | Generate restock Quest     |
 | Maintenance due | Generate maintenance Quest |
 
 ---
@@ -578,23 +623,25 @@ All desktop features available on mobile with touch optimization:
 
 ## 10. Open Questions
 
-1. **WIP limit flexibility**: Should users be able to configure WIP > 1 as a preference, or only via emergency override?
+1. **WIP limit flexibility**: Should users be able to configure WIP > 1 as a preference, or only via
+   emergency override?
 2. **Streak grace period**: Is 1 day the right grace period, or should it be configurable?
 3. **AI model for planning**: Which local model provides acceptable Quest breakdown quality?
-4. **Harvest skip behavior**: If a user skips Harvest for multiple weeks, should recovery wizard trigger?
+4. **Harvest skip behavior**: If a user skips Harvest for multiple weeks, should recovery wizard
+   trigger?
 
 ---
 
 ## Appendix: Keyboard Shortcuts (Desktop)
 
-| Action | Shortcut |
-|--------|----------|
-| Quick capture | Cmd/Ctrl + N |
+| Action                 | Shortcut         |
+| ---------------------- | ---------------- |
+| Quick capture          | Cmd/Ctrl + N     |
 | Complete current Quest | Cmd/Ctrl + Enter |
-| Start Focus Mode | Cmd/Ctrl + F |
-| Exit Focus Mode | Escape |
-| Next Quest step | Cmd/Ctrl + ↓ |
-| Previous Quest step | Cmd/Ctrl + ↑ |
-| Toggle energy filter | Cmd/Ctrl + E |
-| Open dependency graph | Cmd/Ctrl + G |
-| Search board | Cmd/Ctrl + / |
+| Start Focus Mode       | Cmd/Ctrl + F     |
+| Exit Focus Mode        | Escape           |
+| Next Quest step        | Cmd/Ctrl + ↓     |
+| Previous Quest step    | Cmd/Ctrl + ↑     |
+| Toggle energy filter   | Cmd/Ctrl + E     |
+| Open dependency graph  | Cmd/Ctrl + G     |
+| Search board           | Cmd/Ctrl + /     |
