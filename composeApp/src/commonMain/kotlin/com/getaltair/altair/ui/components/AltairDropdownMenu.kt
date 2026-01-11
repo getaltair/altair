@@ -111,7 +111,7 @@ fun AltairDropdownMenuItem(
  *
  * @param selectedOption The currently selected option
  * @param options List of available options
- * @param onOptionSelected Callback when an option is selected
+ * @param onSelectOption Callback when an option is selected
  * @param modifier Modifier to be applied to the dropdown
  * @param placeholder Placeholder text when no option is selected
  * @param optionLabel Function to get the display label for an option
@@ -120,7 +120,7 @@ fun AltairDropdownMenuItem(
 fun <T> AltairSelect(
     selectedOption: T?,
     options: List<T>,
-    onOptionSelected: (T) -> Unit,
+    onSelectOption: (T) -> Unit,
     modifier: Modifier = Modifier,
     placeholder: String = "Select...",
     optionLabel: (T) -> String = { it.toString() },
@@ -151,7 +151,7 @@ fun <T> AltairSelect(
             options.forEach { option ->
                 AltairDropdownMenuItem(
                     onClick = {
-                        onOptionSelected(option)
+                        onSelectOption(option)
                         expanded = false
                     },
                 ) {
