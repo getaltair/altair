@@ -5,11 +5,15 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
@@ -31,6 +35,8 @@ import com.getaltair.altair.ui.theme.AltairTheme
  * @param singleLine Whether the text field should be single line
  * @param enabled Whether the text field is enabled for input
  * @param textStyle Text style to apply to input text
+ * @param leading Optional leading content (e.g., icon)
+ * @param trailing Optional trailing content (e.g., clear button)
  */
 @Composable
 fun AltairTextField(
@@ -41,6 +47,8 @@ fun AltairTextField(
     singleLine: Boolean = true,
     enabled: Boolean = true,
     textStyle: TextStyle = AltairTheme.typography.bodyMedium,
+    leading: @Composable (() -> Unit)? = null,
+    trailing: @Composable (() -> Unit)? = null,
 ) {
     val colors = AltairTheme.colors
     val shapes = AltairTheme.shapes
@@ -65,11 +73,23 @@ fun AltairTextField(
         cursorBrush = SolidColor(colors.accent),
         interactionSource = interactionSource,
         decorationBox = { innerTextField ->
-            Box {
-                if (value.isEmpty() && placeholder != null) {
-                    placeholder()
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                if (leading != null) {
+                    leading()
+                    Spacer(modifier = Modifier.width(spacing.sm))
                 }
-                innerTextField()
+                Box(modifier = Modifier.weight(1f)) {
+                    if (value.isEmpty() && placeholder != null) {
+                        placeholder()
+                    }
+                    innerTextField()
+                }
+                if (trailing != null) {
+                    Spacer(modifier = Modifier.width(spacing.sm))
+                    trailing()
+                }
             }
         },
     )

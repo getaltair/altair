@@ -103,3 +103,66 @@ fun AltairButton(
         content = content,
     )
 }
+
+/**
+ * Primary action button with accent background.
+ *
+ * Convenience wrapper for [AltairButton] with Primary variant.
+ */
+@Composable
+fun AltairPrimaryButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    content: @Composable RowScope.() -> Unit,
+) {
+    AltairButton(
+        onClick = onClick,
+        modifier = modifier,
+        variant = ButtonVariant.Primary,
+        enabled = enabled,
+        content = content,
+    )
+}
+
+/**
+ * Secondary button with surface background and border.
+ *
+ * Convenience wrapper for [AltairButton] with Secondary variant.
+ */
+@Composable
+fun AltairSecondaryButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    content: @Composable RowScope.() -> Unit,
+) {
+    AltairButton(
+        onClick = onClick,
+        modifier = modifier,
+        variant = ButtonVariant.Secondary,
+        enabled = enabled,
+        content = content,
+    )
+}
+
+/**
+ * Ghost button with transparent background.
+ *
+ * Convenience wrapper for [AltairButton] with Ghost variant.
+ */
+@Composable
+fun AltairGhostButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    content: @Composable RowScope.() -> Unit,
+) {
+    AltairButton(
+        onClick = onClick,
+        modifier = modifier,
+        variant = ButtonVariant.Ghost,
+        enabled = enabled,
+        content = content,
+    )
+}
