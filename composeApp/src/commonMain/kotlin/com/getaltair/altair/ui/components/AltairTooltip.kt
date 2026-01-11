@@ -66,16 +66,16 @@ fun AltairTooltip(
  *
  * A tooltip that can display any composable content.
  *
+ * @param tooltipContent Custom tooltip content
  * @param modifier Modifier to be applied to the tooltip container
  * @param enabled Whether the tooltip is enabled
- * @param tooltipContent Custom tooltip content
  * @param content Anchor content that triggers the tooltip
  */
 @Composable
 fun AltairTooltip(
+    tooltipContent: @Composable () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    tooltipContent: @Composable () -> Unit,
     content: @Composable () -> Unit,
 ) {
     val colors = AltairTheme.colors

@@ -120,11 +120,7 @@ fun AltairSlider(
  * @param modifier Modifier to be applied to the slider
  */
 @Composable
-fun AltairEnergySlider(
-    energyLevel: Int,
-    onEnergyLevelChange: (Int) -> Unit,
-    modifier: Modifier = Modifier,
-) {
+fun AltairEnergySlider(energyLevel: Int, onEnergyLevelChange: (Int) -> Unit, modifier: Modifier = Modifier) {
     val colors = AltairTheme.colors
     val shapes = AltairTheme.shapes
 

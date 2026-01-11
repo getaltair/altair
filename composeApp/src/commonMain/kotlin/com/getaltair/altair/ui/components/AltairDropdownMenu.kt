@@ -29,16 +29,16 @@ import com.getaltair.altair.ui.theme.AltairTheme
  *
  * @param expanded Whether the menu is expanded
  * @param onDismissRequest Callback when the menu is dismissed
- * @param modifier Modifier to be applied to the dropdown
  * @param trigger Content for the menu trigger
+ * @param modifier Modifier to be applied to the dropdown
  * @param content Content to display inside the menu panel
  */
 @Composable
 fun AltairDropdownMenu(
     expanded: Boolean,
     onDismissRequest: () -> Unit,
-    modifier: Modifier = Modifier,
     trigger: @Composable () -> Unit,
+    modifier: Modifier = Modifier,
     content: @Composable () -> Unit,
 ) {
     val colors = AltairTheme.colors

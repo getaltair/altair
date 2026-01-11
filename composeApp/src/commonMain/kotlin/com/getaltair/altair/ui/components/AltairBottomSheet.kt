@@ -62,7 +62,7 @@ fun AltairBottomSheet(
         ),
     ) {
         Box(
-            modifier = Modifier
+            modifier = modifier
                 .fillMaxSize()
                 .background(Color.Black.copy(alpha = 0.5f))
                 .clickable(
@@ -73,7 +73,7 @@ fun AltairBottomSheet(
             contentAlignment = Alignment.BottomCenter,
         ) {
             Column(
-                modifier = modifier
+                modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(min = 200.dp)
                     .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))

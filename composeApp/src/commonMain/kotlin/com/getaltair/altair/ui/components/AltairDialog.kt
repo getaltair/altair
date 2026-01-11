@@ -91,22 +91,22 @@ fun AltairDialog(
  * @param visible Whether the dialog is visible
  * @param title Dialog title
  * @param message Dialog message
- * @param confirmText Text for the confirm button
- * @param cancelText Text for the cancel button
  * @param onConfirm Callback when confirm is clicked
  * @param onDismiss Callback when dialog is dismissed or cancel is clicked
  * @param modifier Modifier to be applied to the dialog panel
+ * @param confirmText Text for the confirm button
+ * @param cancelText Text for the cancel button
  */
 @Composable
 fun AltairConfirmDialog(
     visible: Boolean,
     title: String,
     message: String,
-    confirmText: String = "Confirm",
-    cancelText: String = "Cancel",
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
+    confirmText: String = "Confirm",
+    cancelText: String = "Cancel",
 ) {
     val colors = AltairTheme.colors
     val spacing = AltairTheme.spacing
