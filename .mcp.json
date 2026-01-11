@@ -1,13 +1,17 @@
 {
-  "mcpServers": {
-    "context7": {
-      "command": "npx",
-      "args": ["-y", "@upstash/context7-mcp@latest"]
-    }
-  },
-  "staggeredStartup": {
-    "enabled": true,
-    "delayMs": 500,
-    "connectionTimeout": 15000
-  }
+	"mcpServers": {
+		"context7": {
+			"command": "npx",
+			"args": ["-y", "@upstash/context7-mcp@latest"]
+		},
+		"claude-flow": {
+			"command": "npx",
+			"args": ["claude-flow@alpha", "mcp", "start"]
+		}
+	},
+	"staggeredStartup": {
+		"enabled": true,
+		"delayMs": 500,
+		"connectionTimeout": 15000
+	}
 }

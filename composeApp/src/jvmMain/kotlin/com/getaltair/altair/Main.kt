@@ -2,33 +2,57 @@ package com.getaltair.altair
 
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
+import com.arkivanov.decompose.DefaultComponentContext
+import com.arkivanov.essenty.lifecycle.LifecycleRegistry
 import com.getaltair.altair.data.db.DatabaseVerification
 import com.getaltair.altair.data.db.SurrealDbConfig
 import com.getaltair.altair.data.db.SurrealDbConnection
 import com.getaltair.altair.data.getAppDataDirectory
+import com.getaltair.altair.di.sharedKoinModules
+import com.getaltair.altair.navigation.DefaultRootComponent
+import com.getaltair.altair.ui.RootContent
 import kotlinx.coroutines.runBlocking
+import org.koin.core.context.startKoin
+import org.koin.core.context.stopKoin
 
 fun main() {
+    // Initialize Koin DI
+    startKoin {
+        modules(sharedKoinModules())
+    }
+
     // Initialize database before starting the application
     val dbInitialized = initializeDatabase()
 
     if (!dbInitialized) {
         System.err.println("[Altair] Failed to initialize database. Exiting.")
+        stopKoin()
         return
     }
+
+    // Create Decompose lifecycle and root component
+    val lifecycle = LifecycleRegistry()
+    val rootComponent = DefaultRootComponent(
+        componentContext = DefaultComponentContext(lifecycle = lifecycle),
+    )
 
     application {
         Window(
             onCloseRequest = {
-                // Gracefully close database connection on exit
+                // Gracefully close database connection and stop Koin on exit
                 runBlocking {
                     SurrealDbConnection.disconnect()
                 }
+                stopKoin()
                 exitApplication()
             },
             title = "Altair",
         ) {
-            App()
+            // Use RootContent with NavigationRail for desktop
+            RootContent(
+                component = rootComponent,
+                useRail = true,
+            )
         }
     }
 }
