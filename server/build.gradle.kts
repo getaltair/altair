@@ -3,8 +3,8 @@ val logback_version: String by project
 
 plugins {
     kotlin("jvm")
-    id("io.ktor.plugin") version "3.3.2"
-    id("org.jetbrains.kotlin.plugin.serialization") version "2.2.21"
+    id("io.ktor.plugin") version "3.3.3"
+    id("org.jetbrains.kotlin.plugin.serialization") version "2.3.0"
 }
 
 group = "com.getaltair"
@@ -15,17 +15,19 @@ application {
 }
 
 dependencies {
-    implementation("io.ktor:ktor-server-core")
-    implementation("io.ktor:ktor-server-content-negotiation")
-    implementation("io.ktor:ktor-serialization-kotlinx-json")
-    implementation("io.ktor:ktor-server-auth")
-    implementation("io.ktor:ktor-server-auth-jwt")
-    implementation("io.ktor:ktor-server-call-logging")
-    implementation("io.ktor:ktor-server-cors")
-    implementation("io.ktor:ktor-server-host-common")
-    implementation("io.ktor:ktor-server-status-pages")
-    implementation("io.ktor:ktor-server-netty")
+    implementation(libs.ktor.server.core)
+    implementation(libs.ktor.server.content.negotiation)
+    implementation(libs.ktor.serialization.kotlinx.json)
+    implementation(libs.ktor.server.auth)
+    implementation(libs.ktor.server.auth.jwt)
+    implementation(libs.ktor.server.call.logging)
+    implementation(libs.ktor.server.cors)
+    implementation(libs.ktor.server.host.common)
+    implementation(libs.ktor.server.status.pages)
+    implementation(libs.ktor.server.netty)
     implementation("ch.qos.logback:logback-classic:$logback_version")
-    testImplementation("io.ktor:ktor-server-test-host")
+    implementation(projects.shared)
+
+    testImplementation(libs.ktor.server.test.host)
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version")
 }
