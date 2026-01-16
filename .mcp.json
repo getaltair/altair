@@ -1,0 +1,29 @@
+{
+	"mcpServers": {
+		"gradle": {
+			"command": "java",
+			"args": [
+				"-jar",
+				"/home/rghamilton3/mcp-servers/gradle-mcp-server/gradle-mcp-server-all.jar"
+			]
+		},
+		"SurrealDB": {
+			"command": "docker",
+			"args": ["run", "--rm", "-i", "surrealdb/surrealmcp:latest", "start"],
+			"env": {
+				"SURREALDB_URL": "ws://localhost:8000/rpc",
+				"SURREALDB_NS": "myapp",
+				"SURREALDB_DB": "dev"
+			}
+		},
+		"github": {
+			"type": "http",
+			"url": "https://api.githubcopilot.com/mcp/"
+		},
+		"git": {
+			"type": "stdio",
+			"command": "uvx",
+			"args": ["mcp-server-git", "--repository", "."]
+		}
+	}
+}
