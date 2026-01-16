@@ -179,7 +179,7 @@ altair/
 | Server Framework     | Ktor + kotlinx-rpc                            |
 | Server Database      | SurrealDB                                     |
 | Storage Backend      | S3-compatible (local, MinIO, S3, Backblaze)   |
-| Server AI            | ort (embeddings), whisper.cpp (transcription) |
+| Server AI            | ONNX Runtime (embeddings), whisper.cpp (transcription) |
 | Authentication       | JWT + Argon2                                  |
 | Testing              | Mokkery + Turbine                             |
 | Deployment           | Docker Compose                                |
