@@ -14,6 +14,7 @@
 | I want to...                | Go to...                                            |
 | --------------------------- | --------------------------------------------------- |
 | Understand what Altair does | [Architecture Overview](./architecture/overview.md) |
+| Start building features     | [Implementation Plan](./implementation-plan.md)     |
 | See all requirements        | [Requirements Index](./requirements/)               |
 | Understand the data model   | [Domain Model](./architecture/domain-model.md)      |
 | Set up my dev environment   | [README.md](../README.md)                           |
@@ -32,7 +33,7 @@ altair/
 ├── AGENTS.md              # AI coding assistant instructions
 └── docs/
     ├── index.md           # This file
-    ├── implementation-plan.md  # Feature specs for development
+    ├── implementation-plan.md  # 12-phase development roadmap
     ├── requirements/      # What the system must do (PRDs)
     │   ├── altair-prd-core.md
     │   ├── altair-prd-guidance.md
@@ -59,7 +60,8 @@ altair/
     │   ├── 011-*.md       # Initiative System Design
     │   ├── 012-*.md       # Multi-User Data Isolation
     │   ├── 013-*.md       # Routine Scheduling Strategy
-    │   └── 014-*.md       # Source Document Architecture
+    │   ├── 014-*.md       # Source Document Architecture
+    │   └── 015-*.md       # Rich Text Editing Library
     └── reference/
         ├── glossary.md
         └── desktop-service-architectures.md
@@ -89,7 +91,7 @@ altair/
 
 1. **[README.md](../README.md)** — Prerequisites and setup
 2. **[AGENTS.md](../AGENTS.md)** — AI assistant instructions and conventions
-3. **[Implementation Plan](./implementation-plan.md)** — Feature specs in development order
+3. **[Implementation Plan](./implementation-plan.md)** — 12-phase development roadmap
 4. **[System Architecture](./architecture/system-architecture.md)** — Technical overview
 
 ---
@@ -123,6 +125,7 @@ altair/
 | [ADR-012](./adr/012-multi-user-data-isolation.md)     | Multi-User Data Isolation                            | Accepted              |
 | [ADR-013](./adr/013-routine-scheduling-strategy.md)   | Routine Scheduling Strategy                          | Accepted              |
 | [ADR-014](./adr/014-source-document-architecture.md)  | Source Document Architecture                         | Accepted              |
+| [ADR-015](./adr/ADR-015-rich-text-editing-library.md) | Rich Text Editing Library (compose-rich-editor)      | Proposed              |
 
 ---
 
@@ -183,4 +186,4 @@ altair/
 
 ---
 
-_Last updated: January 14, 2026_
+_Last updated: January 16, 2026_
