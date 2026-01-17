@@ -192,6 +192,42 @@ All network calls in `shared/src/commonMain/kotlin/api/` must:
 
 See `.claude/rules/api-rules.md` for details.
 
+### RPC Services (kotlinx-rpc)
+
+Client-server communication uses **kotlinx-rpc** with WebSocket transport (kRPC protocol).
+
+**Service interfaces** are defined in `shared/src/commonMain/kotlin/.../rpc/`:
+```kotlin
+@Rpc
+interface AuthService {
+    suspend fun login(request: AuthRequest): AuthResponse
+    suspend fun refresh(refreshToken: String): TokenRefreshResponse
+    suspend fun logout()
+    suspend fun register(request: RegisterRequest): AuthResponse
+}
+```
+
+**Server implementations** are in `server/src/main/kotlin/.../rpc/`:
+```kotlin
+class AuthServiceImpl : AuthService {
+    override suspend fun login(request: AuthRequest): AuthResponse {
+        // Implementation
+    }
+}
+```
+
+**Key patterns:**
+- Use `@Rpc` annotation on service interfaces (no `RemoteService` base interface)
+- Streaming uses `Flow<T>` return types (e.g., `AiService.complete()`)
+- Server uses `Krpc` Ktor plugin with `rpc("/rpc")` routing
+- Client uses `installKrpc()` on HttpClient with WebSocket support
+- RPC services are registered via Koin in `composeApp/.../rpc/RpcModule.kt`
+
+**Available services:**
+- `SyncService` - Pull/push sync with optional streaming
+- `AuthService` - Login, register, token refresh, logout
+- `AiService` - Embeddings, transcription, streaming completions
+
 ## Code Organization Principles
 
 1. **Platform-specific code only where necessary**: Maximize `commonMain`, minimize platform-specific implementations

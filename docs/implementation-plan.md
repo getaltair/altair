@@ -105,7 +105,7 @@ Create `@Serializable` data classes for:
 
 ---
 
-## Phase 3: Repository Interfaces & Error Types -- In Progress
+## Phase 3: Repository Interfaces & Error Types -- Completed
 
 ### 3.1 Define Domain Errors with Arrow
 
@@ -148,7 +148,7 @@ Create request/response DTOs:
 
 ---
 
-## Phase 4: kotlinx-rpc Service Layer
+## Phase 4: kotlinx-rpc Service Layer -- In Progress
 
 ### 4.1 Add kotlinx-rpc Dependencies
 

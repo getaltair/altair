@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.kotlinxSerialization)
     alias(libs.plugins.ksp)
     alias(libs.plugins.mokkery)
+    alias(libs.plugins.kotlinx.rpc)
 }
 
 kotlin {
@@ -30,6 +31,9 @@ kotlin {
             // Arrow - Functional Error Handling
             implementation(libs.arrow.core)
             implementation(libs.arrow.optics)
+            // kotlinx-rpc - Type-safe RPC interfaces
+            implementation(libs.kotlinx.rpc.core)
+            implementation(libs.kotlinx.rpc.krpc.serialization.json)
         }
 
         commonTest.dependencies {
