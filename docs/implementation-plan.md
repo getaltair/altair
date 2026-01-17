@@ -148,7 +148,7 @@ Create request/response DTOs:
 
 ---
 
-## Phase 4: kotlinx-rpc Service Layer -- In Progress
+## Phase 4: kotlinx-rpc Service Layer -- Completed
 
 ### 4.1 Add kotlinx-rpc Dependencies
 
@@ -197,7 +197,7 @@ Create client that connects to server RPC endpoints.
 
 ---
 
-## Phase 5: Database Layer
+## Phase 5: Database Layer -- In Progress
 
 ### 5.1 Add SurrealDB to Server
 
