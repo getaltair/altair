@@ -1,8 +1,10 @@
 package com.getaltair.altair.domain.model
 
 import com.getaltair.altair.domain.model.guidance.Checkpoint
+import com.getaltair.altair.domain.model.guidance.EnergyBudget
 import com.getaltair.altair.domain.model.guidance.Epic
 import com.getaltair.altair.domain.model.guidance.Quest
+import com.getaltair.altair.domain.model.knowledge.Attachment
 import com.getaltair.altair.domain.model.knowledge.Folder
 import com.getaltair.altair.domain.model.knowledge.Note
 import com.getaltair.altair.domain.model.knowledge.NoteLink
@@ -440,5 +442,40 @@ class EntitySerializationTest {
         val serialized = json.encodeToString(job)
         val deserialized = json.decodeFromString<ExtractionJob>(serialized)
         assertEquals(job, deserialized)
+    }
+
+    @Test
+    fun `Attachment round-trips through JSON`() {
+        val attachment = Attachment(
+            id = Ulid.generate(),
+            userId = userId,
+            noteId = Ulid.generate(),
+            inboxItemId = null,
+            filename = "document.pdf",
+            mimeType = "application/pdf",
+            sizeBytes = 1_024_000,
+            storagePath = "/attachments/abc123.pdf",
+            createdAt = now,
+            updatedAt = now,
+        )
+        val serialized = json.encodeToString(attachment)
+        val deserialized = json.decodeFromString<Attachment>(serialized)
+        assertEquals(attachment, deserialized)
+    }
+
+    @Test
+    fun `EnergyBudget round-trips through JSON`() {
+        val budget = EnergyBudget(
+            id = Ulid.generate(),
+            userId = userId,
+            date = LocalDate(2024, 6, 15),
+            totalBudget = 10,
+            spentEnergy = 4,
+            createdAt = now,
+            updatedAt = now,
+        )
+        val serialized = json.encodeToString(budget)
+        val deserialized = json.decodeFromString<EnergyBudget>(serialized)
+        assertEquals(budget, deserialized)
     }
 }
