@@ -38,5 +38,20 @@ data class Quest(
         require(title.isNotBlank()) { "Quest title must not be blank" }
         require(title.length <= 200) { "Quest title must be at most 200 characters" }
         require(energyCost in 1..5) { "Energy cost must be between 1 and 5" }
+
+        // State consistency: startedAt required for active quests
+        if (status == QuestStatus.ACTIVE) {
+            require(startedAt != null) { "Active quests must have startedAt" }
+        }
+
+        // State consistency: completedAt required for terminal states
+        if (status == QuestStatus.COMPLETED || status == QuestStatus.ABANDONED) {
+            require(completedAt != null) { "Completed or abandoned quests must have completedAt" }
+        }
+
+        // State consistency: startedAt must be before completedAt
+        if (startedAt != null && completedAt != null) {
+            require(startedAt <= completedAt) { "startedAt must be before or equal to completedAt" }
+        }
     }
 }

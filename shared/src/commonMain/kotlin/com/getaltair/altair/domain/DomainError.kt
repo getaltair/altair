@@ -127,10 +127,28 @@ sealed interface DomainError {
      */
     @Serializable
     @SerialName("unauthorized")
-    data class UnauthorizedError(
-        val message: String = "Unauthorized access",
+    data class UnauthorizedError private constructor(
+        val message: String,
     ) : DomainError {
         override fun toUserMessage(): String = "You don't have permission to access this. Please sign in and try again."
+
+        companion object {
+            private const val DEFAULT_MESSAGE = "Unauthorized access"
+
+            /**
+             * Creates an UnauthorizedError with the default message.
+             */
+            operator fun invoke(): UnauthorizedError = UnauthorizedError(DEFAULT_MESSAGE)
+
+            /**
+             * Creates an UnauthorizedError with a custom message.
+             * @throws IllegalArgumentException if message is blank
+             */
+            operator fun invoke(message: String): UnauthorizedError {
+                require(message.isNotBlank()) { "UnauthorizedError message must not be blank" }
+                return UnauthorizedError(message)
+            }
+        }
     }
 
     /**

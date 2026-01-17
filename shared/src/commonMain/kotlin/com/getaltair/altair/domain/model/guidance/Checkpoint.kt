@@ -28,5 +28,12 @@ data class Checkpoint(
         require(title.isNotBlank()) { "Checkpoint title must not be blank" }
         require(title.length <= 200) { "Checkpoint title must be at most 200 characters" }
         require(sortOrder >= 0) { "Sort order must be non-negative" }
+
+        // State consistency: completedAt must align with isCompleted
+        if (isCompleted) {
+            require(completedAt != null) { "Completed checkpoints must have completedAt" }
+        } else {
+            require(completedAt == null) { "Incomplete checkpoints must not have completedAt" }
+        }
     }
 }

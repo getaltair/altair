@@ -32,5 +32,10 @@ data class Epic(
     init {
         require(title.isNotBlank()) { "Epic title must not be blank" }
         require(title.length <= 200) { "Epic title must be at most 200 characters" }
+
+        // State consistency: completedAt required when status is COMPLETED
+        if (status == EpicStatus.COMPLETED) {
+            require(completedAt != null) { "Completed epics must have completedAt" }
+        }
     }
 }

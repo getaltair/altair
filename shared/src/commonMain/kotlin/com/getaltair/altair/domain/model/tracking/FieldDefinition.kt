@@ -37,6 +37,10 @@ data class FieldDefinition(
             require(!enumOptions.isNullOrEmpty()) {
                 "Enum field must have at least one option"
             }
+        } else {
+            require(enumOptions.isNullOrEmpty()) {
+                "enumOptions should only be provided for ENUM fields"
+            }
         }
     }
 }

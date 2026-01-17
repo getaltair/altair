@@ -134,6 +134,16 @@ class DomainErrorTest {
     }
 
     @Test
+    fun `UnauthorizedError rejects blank message`() {
+        assertFailsWith<IllegalArgumentException> {
+            DomainError.UnauthorizedError(message = "")
+        }
+        assertFailsWith<IllegalArgumentException> {
+            DomainError.UnauthorizedError(message = "   ")
+        }
+    }
+
+    @Test
     fun `UnauthorizedError toUserMessage returns user-friendly text`() {
         val error = DomainError.UnauthorizedError()
         assertEquals(

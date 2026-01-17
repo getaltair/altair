@@ -8,23 +8,23 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 enum class WeekOfMonth {
-    /** First week (days 1-7) */
+    /** First occurrence of a day in the month (e.g., first Tuesday) */
     @SerialName("first")
     FIRST,
 
-    /** Second week (days 8-14) */
+    /** Second occurrence of a day in the month (e.g., second Tuesday) */
     @SerialName("second")
     SECOND,
 
-    /** Third week (days 15-21) */
+    /** Third occurrence of a day in the month (e.g., third Tuesday) */
     @SerialName("third")
     THIRD,
 
-    /** Fourth week (days 22-28) */
+    /** Fourth occurrence of a day in the month (e.g., fourth Tuesday) */
     @SerialName("fourth")
     FOURTH,
 
-    /** Last occurrence in the month */
+    /** Last occurrence of a day in the month (e.g., last Tuesday) */
     @SerialName("last")
     LAST,
 }

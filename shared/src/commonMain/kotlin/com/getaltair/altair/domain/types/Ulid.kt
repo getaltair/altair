@@ -18,7 +18,7 @@ private val ulidEncoding = "0123456789ABCDEFGHJKMNPQRSTVWXYZ".toCharArray()
  * - Case-insensitive (normalized to uppercase on construction)
  * - 26 characters long
  *
- * Format: TTTTTTTTTTRRRRRRRRRRRRRRRRR
+ * Format: TTTTTTTTTTRRRRRRRRRRRRRRRR
  * - 10 characters for timestamp (48 bits, millisecond precision)
  * - 16 characters for randomness (80 bits)
  */

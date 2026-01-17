@@ -1,17 +1,26 @@
 package com.getaltair.altair.domain.model
 
+import com.getaltair.altair.domain.model.guidance.Checkpoint
 import com.getaltair.altair.domain.model.guidance.Epic
 import com.getaltair.altair.domain.model.guidance.Quest
+import com.getaltair.altair.domain.model.knowledge.Folder
 import com.getaltair.altair.domain.model.knowledge.Note
+import com.getaltair.altair.domain.model.knowledge.NoteLink
 import com.getaltair.altair.domain.model.knowledge.Tag
+import com.getaltair.altair.domain.model.system.ExtractionJob
 import com.getaltair.altair.domain.model.system.InboxItem
 import com.getaltair.altair.domain.model.system.Initiative
 import com.getaltair.altair.domain.model.system.Routine
 import com.getaltair.altair.domain.model.system.SourceAnnotation
 import com.getaltair.altair.domain.model.system.SourceDocument
 import com.getaltair.altair.domain.model.system.User
+import com.getaltair.altair.domain.model.system.WatchedFolder
+import com.getaltair.altair.domain.model.tracking.Container
+import com.getaltair.altair.domain.model.tracking.CustomField
 import com.getaltair.altair.domain.model.tracking.FieldDefinition
 import com.getaltair.altair.domain.model.tracking.Item
+import com.getaltair.altair.domain.model.tracking.ItemTemplate
+import com.getaltair.altair.domain.model.tracking.Location
 import com.getaltair.altair.domain.types.Schedule
 import com.getaltair.altair.domain.types.Ulid
 import com.getaltair.altair.domain.types.enums.AnchorType
@@ -20,6 +29,7 @@ import com.getaltair.altair.domain.types.enums.EpicStatus
 import com.getaltair.altair.domain.types.enums.ExtractionStatus
 import com.getaltair.altair.domain.types.enums.FieldType
 import com.getaltair.altair.domain.types.enums.InitiativeStatus
+import com.getaltair.altair.domain.types.enums.JobStatus
 import com.getaltair.altair.domain.types.enums.QuestStatus
 import com.getaltair.altair.domain.types.enums.SourceType
 import com.getaltair.altair.domain.types.enums.UserRole
@@ -275,5 +285,160 @@ class EntitySerializationTest {
         assertEquals(""""active"""", json.encodeToString(UserStatus.ACTIVE))
         assertEquals(""""backlog"""", json.encodeToString(QuestStatus.BACKLOG))
         assertEquals(""""keyboard"""", json.encodeToString(CaptureSource.KEYBOARD))
+    }
+
+    @Test
+    fun `Checkpoint round-trips through JSON`() {
+        val checkpoint = Checkpoint(
+            id = Ulid.generate(),
+            userId = userId,
+            questId = Ulid.generate(),
+            title = "Step 1",
+            sortOrder = 0,
+            isCompleted = true,
+            completedAt = now,
+            createdAt = now,
+            updatedAt = now,
+        )
+        val serialized = json.encodeToString(checkpoint)
+        val deserialized = json.decodeFromString<Checkpoint>(serialized)
+        assertEquals(checkpoint, deserialized)
+    }
+
+    @Test
+    fun `Folder round-trips through JSON`() {
+        val folder = Folder(
+            id = Ulid.generate(),
+            userId = userId,
+            name = "My Notes",
+            parentId = null,
+            sortOrder = 0,
+            createdAt = now,
+            updatedAt = now,
+        )
+        val serialized = json.encodeToString(folder)
+        val deserialized = json.decodeFromString<Folder>(serialized)
+        assertEquals(folder, deserialized)
+    }
+
+    @Test
+    fun `NoteLink round-trips through JSON`() {
+        val noteLink = NoteLink(
+            id = Ulid.generate(),
+            userId = userId,
+            sourceNoteId = Ulid.generate(),
+            targetNoteId = Ulid.generate(),
+            context = "Related concept",
+            createdAt = now,
+            updatedAt = now,
+        )
+        val serialized = json.encodeToString(noteLink)
+        val deserialized = json.decodeFromString<NoteLink>(serialized)
+        assertEquals(noteLink, deserialized)
+    }
+
+    @Test
+    fun `Container round-trips through JSON`() {
+        val container = Container(
+            id = Ulid.generate(),
+            userId = userId,
+            name = "Storage Box",
+            description = "A large cardboard box",
+            locationId = Ulid.generate(),
+            parentContainerId = null,
+            label = "Box-001",
+            createdAt = now,
+            updatedAt = now,
+        )
+        val serialized = json.encodeToString(container)
+        val deserialized = json.decodeFromString<Container>(serialized)
+        assertEquals(container, deserialized)
+    }
+
+    @Test
+    fun `Location round-trips through JSON`() {
+        val location = Location(
+            id = Ulid.generate(),
+            userId = userId,
+            name = "Home Office",
+            description = "Work from home space",
+            parentId = null,
+            address = "123 Main St",
+            createdAt = now,
+            updatedAt = now,
+        )
+        val serialized = json.encodeToString(location)
+        val deserialized = json.decodeFromString<Location>(serialized)
+        assertEquals(location, deserialized)
+    }
+
+    @Test
+    fun `ItemTemplate round-trips through JSON`() {
+        val template = ItemTemplate(
+            id = Ulid.generate(),
+            userId = userId,
+            name = "Book",
+            description = "Template for tracking books",
+            icon = "book",
+            createdAt = now,
+            updatedAt = now,
+        )
+        val serialized = json.encodeToString(template)
+        val deserialized = json.decodeFromString<ItemTemplate>(serialized)
+        assertEquals(template, deserialized)
+    }
+
+    @Test
+    fun `CustomField round-trips through JSON`() {
+        val customField = CustomField(
+            id = Ulid.generate(),
+            userId = userId,
+            itemId = Ulid.generate(),
+            fieldDefinitionId = Ulid.generate(),
+            value = "Some value",
+            createdAt = now,
+            updatedAt = now,
+        )
+        val serialized = json.encodeToString(customField)
+        val deserialized = json.decodeFromString<CustomField>(serialized)
+        assertEquals(customField, deserialized)
+    }
+
+    @Test
+    fun `WatchedFolder round-trips through JSON`() {
+        val watchedFolder = WatchedFolder(
+            id = Ulid.generate(),
+            userId = userId,
+            path = "/home/user/documents",
+            name = "Documents",
+            isActive = true,
+            includeSubfolders = true,
+            filePatterns = listOf("*.pdf", "*.epub"),
+            lastScannedAt = now,
+            createdAt = now,
+            updatedAt = now,
+        )
+        val serialized = json.encodeToString(watchedFolder)
+        val deserialized = json.decodeFromString<WatchedFolder>(serialized)
+        assertEquals(watchedFolder, deserialized)
+    }
+
+    @Test
+    fun `ExtractionJob round-trips through JSON`() {
+        val job = ExtractionJob(
+            id = Ulid.generate(),
+            userId = userId,
+            sourceDocumentId = Ulid.generate(),
+            status = JobStatus.COMPLETED,
+            progress = 100,
+            errorMessage = null,
+            startedAt = now,
+            completedAt = now,
+            createdAt = now,
+            updatedAt = now,
+        )
+        val serialized = json.encodeToString(job)
+        val deserialized = json.decodeFromString<ExtractionJob>(serialized)
+        assertEquals(job, deserialized)
     }
 }

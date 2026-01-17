@@ -28,5 +28,33 @@ data class ExtractionJob(
 ) : Timestamped {
     init {
         require(progress in 0..100) { "Progress must be between 0 and 100" }
+
+        // State consistency based on JobStatus
+        when (status) {
+            JobStatus.QUEUED -> {
+                require(startedAt == null) { "Queued jobs must not have startedAt" }
+                require(completedAt == null) { "Queued jobs must not have completedAt" }
+            }
+            JobStatus.PROCESSING -> {
+                require(startedAt != null) { "Processing jobs must have startedAt" }
+                require(completedAt == null) { "Processing jobs must not have completedAt" }
+            }
+            JobStatus.COMPLETED -> {
+                require(startedAt != null) { "Completed jobs must have startedAt" }
+                require(completedAt != null) { "Completed jobs must have completedAt" }
+                require(progress == 100) { "Completed jobs must have progress of 100" }
+                require(errorMessage == null) { "Completed jobs must not have errorMessage" }
+            }
+            JobStatus.FAILED -> {
+                require(startedAt != null) { "Failed jobs must have startedAt" }
+                require(completedAt != null) { "Failed jobs must have completedAt" }
+                require(errorMessage != null) { "Failed jobs must have errorMessage" }
+            }
+        }
+
+        // Timestamp ordering
+        if (startedAt != null && completedAt != null) {
+            require(startedAt <= completedAt) { "startedAt must be before or equal to completedAt" }
+        }
     }
 }
