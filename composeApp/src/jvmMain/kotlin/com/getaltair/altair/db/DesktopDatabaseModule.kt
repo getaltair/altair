@@ -32,4 +32,3 @@ val desktopDatabaseModule =
         // For now, the application will start but data operations won't work until
         // repository implementations are added.
     }
-
