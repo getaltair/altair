@@ -59,7 +59,7 @@ Add versions and libraries for:
 
 ---
 
-## Phase 2: Domain Models in Shared -- In Progress
+## Phase 2: Domain Models in Shared -- Completed
 
 ### 2.1 System-Level Entities
 
@@ -105,7 +105,7 @@ Create `@Serializable` data classes for:
 
 ---
 
-## Phase 3: Repository Interfaces & Error Types
+## Phase 3: Repository Interfaces & Error Types -- In Progress
 
 ### 3.1 Define Domain Errors with Arrow
 
