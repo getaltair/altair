@@ -36,6 +36,7 @@ import com.getaltair.altair.repository.RoutineRepository
 import com.getaltair.altair.repository.SourceDocumentRepository
 import com.getaltair.altair.repository.TagRepository
 import com.getaltair.altair.repository.UserRepository
+import com.getaltair.altair.domain.types.Ulid
 import org.koin.dsl.module
 
 /**
@@ -68,9 +69,9 @@ val databaseModule =
  * This should be called per-request to inject the authenticated user's ID
  * into all repository implementations.
  *
- * @param userId The authenticated user's ULID string
+ * @param userId The authenticated user's ULID
  */
-fun userScopedRepositoryModule(userId: String) =
+fun userScopedRepositoryModule(userId: Ulid) =
     module {
         factory<InitiativeRepository> { SurrealInitiativeRepository(get(), userId) }
         factory<InboxRepository> { SurrealInboxRepository(get(), userId) }

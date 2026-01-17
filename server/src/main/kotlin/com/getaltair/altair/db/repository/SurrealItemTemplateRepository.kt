@@ -21,7 +21,7 @@ import kotlinx.serialization.json.jsonPrimitive
 
 class SurrealItemTemplateRepository(
     private val db: SurrealDbClient,
-    private val userId: String,
+    private val userId: Ulid,
 ) : ItemTemplateRepository {
     private val json =
         Json {
@@ -34,7 +34,7 @@ class SurrealItemTemplateRepository(
             val result =
                 db
                     .query<Any>(
-                        "SELECT * FROM item_template:${id.value} WHERE user_id = user:$userId AND deleted_at IS NONE",
+                        "SELECT * FROM item_template:${id.value} WHERE user_id = user:${userId.value} AND deleted_at IS NONE",
                     ).bind()
             parseTemplate(result) ?: raise(DomainError.NotFoundError("ItemTemplate", id.value))
         }
@@ -51,7 +51,7 @@ class SurrealItemTemplateRepository(
                             description = ${entity.description?.let { "'${it.replace("'", "''")}'" } ?: "NONE"},
                             icon = ${entity.icon?.let { "'${it.replace("'", "''")}'" } ?: "NONE"},
                             updated_at = time::now()
-                        WHERE user_id = user:$userId;
+                        WHERE user_id = user:${userId.value};
                         """.trimIndent(),
                     ).bind()
             } else {
@@ -59,7 +59,7 @@ class SurrealItemTemplateRepository(
                     .execute(
                         """
                         CREATE item_template:${entity.id.value} CONTENT {
-                            user_id: user:$userId,
+                            user_id: user:${userId.value},
                             name: '${entity.name.replace("'", "''")}',
                             description: ${entity.description?.let { "'${it.replace("'", "''")}'" } ?: "NONE"},
                             icon: ${entity.icon?.let { "'${it.replace("'", "''")}'" } ?: "NONE"}
@@ -75,12 +75,12 @@ class SurrealItemTemplateRepository(
             findById(id).bind()
             db
                 .execute(
-                    "UPDATE item_template:${id.value} SET deleted_at = time::now(), updated_at = time::now() WHERE user_id = user:$userId;",
+                    "UPDATE item_template:${id.value} SET deleted_at = time::now(), updated_at = time::now() WHERE user_id = user:${userId.value};",
                 ).bind()
             // Also soft-delete associated field definitions
             db
                 .execute(
-                    "UPDATE field_definition SET deleted_at = time::now(), updated_at = time::now() WHERE user_id = user:$userId AND template_id = item_template:${id.value};",
+                    "UPDATE field_definition SET deleted_at = time::now(), updated_at = time::now() WHERE user_id = user:${userId.value} AND template_id = item_template:${id.value};",
                 ).bind()
         }
 
@@ -88,7 +88,7 @@ class SurrealItemTemplateRepository(
         flow {
             val result =
                 db.query<Any>(
-                    "SELECT * FROM item_template WHERE user_id = user:$userId AND deleted_at IS NONE ORDER BY name",
+                    "SELECT * FROM item_template WHERE user_id = user:${userId.value} AND deleted_at IS NONE ORDER BY name",
                 )
             emit(result.fold({ emptyList() }, { parseTemplates(it) }))
         }
@@ -98,7 +98,7 @@ class SurrealItemTemplateRepository(
             val result =
                 db
                     .query<Any>(
-                        "SELECT * FROM item_template WHERE user_id = user:$userId AND string::lowercase(name) CONTAINS string::lowercase('${query.replace("'", "''")}') AND deleted_at IS NONE",
+                        "SELECT * FROM item_template WHERE user_id = user:${userId.value} AND string::lowercase(name) CONTAINS string::lowercase('${query.replace("'", "''")}') AND deleted_at IS NONE",
                     ).bind()
             parseTemplates(result)
         }
@@ -110,7 +110,7 @@ class SurrealItemTemplateRepository(
             val fieldsResult =
                 db
                     .query<Any>(
-                        "SELECT * FROM field_definition WHERE user_id = user:$userId " +
+                        "SELECT * FROM field_definition WHERE user_id = user:${userId.value} " +
                             "AND template_id = item_template:$templateId AND deleted_at IS NONE ORDER BY sort_order",
                     ).bind()
             val fields = parseFieldDefinitions(fieldsResult)
@@ -121,7 +121,7 @@ class SurrealItemTemplateRepository(
         flow {
             val templatesResult =
                 db.query<Any>(
-                    "SELECT * FROM item_template WHERE user_id = user:$userId AND deleted_at IS NONE ORDER BY name",
+                    "SELECT * FROM item_template WHERE user_id = user:${userId.value} AND deleted_at IS NONE ORDER BY name",
                 )
             val templates = templatesResult.fold({ emptyList() }, { parseTemplates(it) })
 
@@ -129,7 +129,7 @@ class SurrealItemTemplateRepository(
                 templates.map { template ->
                     val fieldsResult =
                         db.query<Any>(
-                            "SELECT * FROM field_definition WHERE user_id = user:$userId AND template_id = item_template:${template.id.value} AND deleted_at IS NONE ORDER BY sort_order",
+                            "SELECT * FROM field_definition WHERE user_id = user:${userId.value} AND template_id = item_template:${template.id.value} AND deleted_at IS NONE ORDER BY sort_order",
                         )
                     val fields = fieldsResult.fold({ emptyList() }, { parseFieldDefinitions(it) })
                     TemplateWithFields(template, fields)
@@ -151,7 +151,7 @@ class SurrealItemTemplateRepository(
                 .execute(
                     """
                     CREATE field_definition:${field.id.value} CONTENT {
-                        user_id: user:$userId,
+                        user_id: user:${userId.value},
                         template_id: item_template:${templateId.value},
                         name: '${field.name.replace("'", "''")}',
                         field_type: '${field.fieldType.name.lowercase()}',
@@ -183,7 +183,7 @@ class SurrealItemTemplateRepository(
                         enum_options = $enumOptionsValue,
                         sort_order = ${field.sortOrder},
                         updated_at = time::now()
-                    WHERE user_id = user:$userId;
+                    WHERE user_id = user:${userId.value};
                     """.trimIndent(),
                 ).bind()
             findFieldById(field.id).bind()
@@ -194,12 +194,12 @@ class SurrealItemTemplateRepository(
             findFieldById(fieldId).bind()
             db
                 .execute(
-                    "UPDATE field_definition:${fieldId.value} SET deleted_at = time::now(), updated_at = time::now() WHERE user_id = user:$userId;",
+                    "UPDATE field_definition:${fieldId.value} SET deleted_at = time::now(), updated_at = time::now() WHERE user_id = user:${userId.value};",
                 ).bind()
             // Also remove associated custom field values
             db
                 .execute(
-                    "UPDATE custom_field SET deleted_at = time::now(), updated_at = time::now() WHERE user_id = user:$userId AND field_definition_id = field_definition:${fieldId.value};",
+                    "UPDATE custom_field SET deleted_at = time::now(), updated_at = time::now() WHERE user_id = user:${userId.value} AND field_definition_id = field_definition:${fieldId.value};",
                 ).bind()
         }
 
@@ -212,7 +212,7 @@ class SurrealItemTemplateRepository(
             orderedFieldIds.forEachIndexed { index, fieldId ->
                 db
                     .execute(
-                        "UPDATE field_definition:${fieldId.value} SET sort_order = $index, updated_at = time::now() WHERE user_id = user:$userId AND template_id = item_template:${templateId.value};",
+                        "UPDATE field_definition:${fieldId.value} SET sort_order = $index, updated_at = time::now() WHERE user_id = user:${userId.value} AND template_id = item_template:${templateId.value};",
                     ).bind()
             }
         }
@@ -223,7 +223,7 @@ class SurrealItemTemplateRepository(
             val result =
                 db
                     .query<Any>(
-                        "SELECT count() FROM item WHERE user_id = user:$userId AND template_id = item_template:${id.value} AND deleted_at IS NONE GROUP ALL",
+                        "SELECT count() FROM item WHERE user_id = user:${userId.value} AND template_id = item_template:${id.value} AND deleted_at IS NONE GROUP ALL",
                     ).bind()
             parseCount(result)
         }
@@ -233,7 +233,7 @@ class SurrealItemTemplateRepository(
             val result =
                 db
                     .query<Any>(
-                        "SELECT * FROM field_definition:${id.value} WHERE user_id = user:$userId AND deleted_at IS NONE",
+                        "SELECT * FROM field_definition:${id.value} WHERE user_id = user:${userId.value} AND deleted_at IS NONE",
                     ).bind()
             parseFieldDefinition(result) ?: raise(DomainError.NotFoundError("FieldDefinition", id.value))
         }

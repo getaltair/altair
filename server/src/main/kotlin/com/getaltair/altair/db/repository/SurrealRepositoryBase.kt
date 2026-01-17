@@ -4,6 +4,7 @@ import arrow.core.Either
 import arrow.core.raise.either
 import com.getaltair.altair.db.SurrealDbClient
 import com.getaltair.altair.domain.DomainError
+import com.getaltair.altair.domain.types.Ulid
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.json.Json
@@ -20,7 +21,7 @@ import org.slf4j.LoggerFactory
  */
 abstract class SurrealRepositoryBase(
     protected val db: SurrealDbClient,
-    protected val userId: String,
+    protected val userId: Ulid,
 ) {
     protected val logger = LoggerFactory.getLogger(this::class.java)
     protected val json =
@@ -147,7 +148,7 @@ abstract class SurrealRepositoryBase(
                     UPDATE $table:$id SET
                         deleted_at = time::now(),
                         updated_at = time::now()
-                    WHERE user_id = user:$userId;
+                    WHERE user_id = user:${userId.value};
                     """.trimIndent(),
                 ).bind()
         }
@@ -163,7 +164,7 @@ abstract class SurrealRepositoryBase(
             db
                 .execute(
                     """
-                    DELETE $table:$id WHERE user_id = user:$userId;
+                    DELETE $table:$id WHERE user_id = user:${userId.value};
                     """.trimIndent(),
                 ).bind()
         }

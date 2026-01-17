@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS routine (
     time_of_day TEXT,
     duration_minutes INTEGER,
     initiative_id TEXT,
-    energy_level TEXT NOT NULL DEFAULT 'medium',
+    energy_cost TEXT NOT NULL DEFAULT 'medium',
     is_active INTEGER NOT NULL DEFAULT 1,
     last_completed_at TEXT,
     created_at TEXT NOT NULL,
@@ -43,11 +43,11 @@ SELECT * FROM routine WHERE user_id = ? AND initiative_id = ? AND deleted_at IS 
 findByScheduleType:
 SELECT * FROM routine WHERE user_id = ? AND schedule_type = ? AND is_active = 1 AND deleted_at IS NULL ORDER BY name;
 
-findByEnergyLevel:
-SELECT * FROM routine WHERE user_id = ? AND energy_level = ? AND is_active = 1 AND deleted_at IS NULL ORDER BY name;
+findByEnergyCost:
+SELECT * FROM routine WHERE user_id = ? AND energy_cost = ? AND is_active = 1 AND deleted_at IS NULL ORDER BY name;
 
 insert:
-INSERT INTO routine (id, user_id, name, description, schedule_type, schedule_config, time_of_day, duration_minutes, initiative_id, energy_level, is_active, created_at, updated_at)
+INSERT INTO routine (id, user_id, name, description, schedule_type, schedule_config, time_of_day, duration_minutes, initiative_id, energy_cost, is_active, created_at, updated_at)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 update:
@@ -59,7 +59,7 @@ UPDATE routine SET
     time_of_day = ?,
     duration_minutes = ?,
     initiative_id = ?,
-    energy_level = ?,
+    energy_cost = ?,
     is_active = ?,
     updated_at = ?
 WHERE id = ? AND user_id = ?;

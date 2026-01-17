@@ -18,7 +18,7 @@ import kotlinx.serialization.json.jsonPrimitive
 
 class SurrealFolderRepository(
     private val db: SurrealDbClient,
-    private val userId: String,
+    private val userId: Ulid,
 ) : FolderRepository {
     private val json =
         Json {
@@ -31,7 +31,7 @@ class SurrealFolderRepository(
             val result =
                 db
                     .query<Any>(
-                        "SELECT * FROM folder:${id.value} WHERE user_id = user:$userId AND deleted_at IS NONE",
+                        "SELECT * FROM folder:${id.value} WHERE user_id = user:${userId.value} AND deleted_at IS NONE",
                     ).bind()
             parseFolder(result) ?: raise(DomainError.NotFoundError("Folder", id.value))
         }
@@ -48,7 +48,7 @@ class SurrealFolderRepository(
                             parent_id = ${entity.parentId?.let { "folder:${it.value}" } ?: "NONE"},
                             sort_order = ${entity.sortOrder},
                             updated_at = time::now()
-                        WHERE user_id = user:$userId;
+                        WHERE user_id = user:${userId.value};
                         """.trimIndent(),
                     ).bind()
             } else {
@@ -56,7 +56,7 @@ class SurrealFolderRepository(
                     .execute(
                         """
                         CREATE folder:${entity.id.value} CONTENT {
-                            user_id: user:$userId,
+                            user_id: user:${userId.value},
                             name: '${entity.name.replace("'", "''")}',
                             parent_id: ${entity.parentId?.let { "folder:${it.value}" } ?: "NONE"},
                             sort_order: ${entity.sortOrder}
@@ -72,7 +72,7 @@ class SurrealFolderRepository(
             findById(id).bind()
             db
                 .execute(
-                    "UPDATE folder:${id.value} SET deleted_at = time::now(), updated_at = time::now() WHERE user_id = user:$userId;",
+                    "UPDATE folder:${id.value} SET deleted_at = time::now(), updated_at = time::now() WHERE user_id = user:${userId.value};",
                 ).bind()
         }
 
@@ -80,7 +80,7 @@ class SurrealFolderRepository(
         flow {
             val result =
                 db.query<Any>(
-                    "SELECT * FROM folder WHERE user_id = user:$userId AND deleted_at IS NONE ORDER BY sort_order",
+                    "SELECT * FROM folder WHERE user_id = user:${userId.value} AND deleted_at IS NONE ORDER BY sort_order",
                 )
             emit(result.fold({ emptyList() }, { parseFolders(it) }))
         }
@@ -89,7 +89,7 @@ class SurrealFolderRepository(
         flow {
             val result =
                 db.query<Any>(
-                    "SELECT * FROM folder WHERE user_id = user:$userId AND parent_id IS NONE AND deleted_at IS NONE ORDER BY sort_order",
+                    "SELECT * FROM folder WHERE user_id = user:${userId.value} AND parent_id IS NONE AND deleted_at IS NONE ORDER BY sort_order",
                 )
             emit(result.fold({ emptyList() }, { parseFolders(it) }))
         }
@@ -98,7 +98,7 @@ class SurrealFolderRepository(
         flow {
             val result =
                 db.query<Any>(
-                    "SELECT * FROM folder WHERE user_id = user:$userId AND parent_id = folder:${parentId.value} AND deleted_at IS NONE ORDER BY sort_order",
+                    "SELECT * FROM folder WHERE user_id = user:${userId.value} AND parent_id = folder:${parentId.value} AND deleted_at IS NONE ORDER BY sort_order",
                 )
             emit(result.fold({ emptyList() }, { parseFolders(it) }))
         }
@@ -107,7 +107,7 @@ class SurrealFolderRepository(
         flow {
             val result =
                 db.query<Any>(
-                    "SELECT * FROM folder WHERE user_id = user:$userId AND deleted_at IS NONE ORDER BY sort_order",
+                    "SELECT * FROM folder WHERE user_id = user:${userId.value} AND deleted_at IS NONE ORDER BY sort_order",
                 )
             val folders = result.fold({ emptyList() }, { parseFolders(it) })
             emit(buildTree(folders))
@@ -133,7 +133,7 @@ class SurrealFolderRepository(
             val parentRef = newParentId?.let { "folder:${it.value}" } ?: "NONE"
             db
                 .execute(
-                    "UPDATE folder:${id.value} SET parent_id = $parentRef, updated_at = time::now() WHERE user_id = user:$userId;",
+                    "UPDATE folder:${id.value} SET parent_id = $parentRef, updated_at = time::now() WHERE user_id = user:${userId.value};",
                 ).bind()
             findById(id).bind()
         }
@@ -146,7 +146,7 @@ class SurrealFolderRepository(
             orderedIds.forEachIndexed { index, id ->
                 db
                     .execute(
-                        "UPDATE folder:${id.value} SET sort_order = $index, updated_at = time::now() WHERE user_id = user:$userId;",
+                        "UPDATE folder:${id.value} SET sort_order = $index, updated_at = time::now() WHERE user_id = user:${userId.value};",
                     ).bind()
             }
         }

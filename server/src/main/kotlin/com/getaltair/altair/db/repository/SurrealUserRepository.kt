@@ -17,6 +17,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import org.slf4j.LoggerFactory
 
 /**
  * SurrealDB implementation of UserRepository.
@@ -32,6 +33,10 @@ class SurrealUserRepository(
             ignoreUnknownKeys = true
             isLenient = true
         }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(SurrealUserRepository::class.java)
+    }
 
     override suspend fun findById(id: Ulid): Either<UserError, User> =
         either {
@@ -198,6 +203,7 @@ class SurrealUserRepository(
             val obj = array.firstOrNull()?.jsonObject ?: return null
             mapToUser(obj)
         } catch (e: Exception) {
+            logger.warn("Failed to parse user: ${e.message}", e)
             null
         }
     }
@@ -209,10 +215,12 @@ class SurrealUserRepository(
                 try {
                     mapToUser(element.jsonObject)
                 } catch (e: Exception) {
+                    logger.warn("Failed to parse user element: ${e.message}", e)
                     null
                 }
             }
         } catch (e: Exception) {
+            logger.warn("Failed to parse users array: ${e.message}", e)
             emptyList()
         }
 
@@ -238,6 +246,7 @@ class SurrealUserRepository(
             try {
                 Instant.parse(it)
             } catch (e: Exception) {
+                logger.warn("Failed to parse instant '$value': ${e.message}")
                 Instant.DISTANT_PAST
             }
         } ?: Instant.DISTANT_PAST
@@ -252,6 +261,7 @@ class SurrealUserRepository(
                 ?.content
                 ?.toIntOrNull() ?: 0
         } catch (e: Exception) {
+            logger.warn("Failed to parse count: ${e.message}", e)
             0
         }
 }

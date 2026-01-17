@@ -19,7 +19,7 @@ import kotlinx.serialization.json.jsonPrimitive
 
 class SurrealSourceDocumentRepository(
     private val db: SurrealDbClient,
-    private val userId: String,
+    private val userId: Ulid,
 ) : SourceDocumentRepository {
     private val json =
         Json {
@@ -32,7 +32,7 @@ class SurrealSourceDocumentRepository(
             val result =
                 db
                     .query<Any>(
-                        "SELECT * FROM source_document:${id.value} WHERE user_id = user:$userId AND deleted_at IS NONE",
+                        "SELECT * FROM source_document:${id.value} WHERE user_id = user:${userId.value} AND deleted_at IS NONE",
                     ).bind()
             parseSourceDocument(result) ?: raise(DomainError.NotFoundError("SourceDocument", id.value))
         }
@@ -55,7 +55,7 @@ class SurrealSourceDocumentRepository(
                             extracted_text = ${entity.extractedText?.let { "'${it.replace("'", "''")}'" } ?: "NONE"},
                             initiative_id = ${entity.initiativeId?.let { "initiative:${it.value}" } ?: "NONE"},
                             updated_at = time::now()
-                        WHERE user_id = user:$userId;
+                        WHERE user_id = user:${userId.value};
                         """.trimIndent(),
                     ).bind()
             } else {
@@ -63,7 +63,7 @@ class SurrealSourceDocumentRepository(
                     .execute(
                         """
                         CREATE source_document:${entity.id.value} CONTENT {
-                            user_id: user:$userId,
+                            user_id: user:${userId.value},
                             title: '${entity.title.replace("'", "''")}',
                             source_type: '${entity.sourceType.name.lowercase()}',
                             source_path: '${entity.sourcePath.replace("'", "''")}',
@@ -86,7 +86,7 @@ class SurrealSourceDocumentRepository(
             findById(id).bind()
             db
                 .execute(
-                    "UPDATE source_document:${id.value} SET deleted_at = time::now(), updated_at = time::now() WHERE user_id = user:$userId;",
+                    "UPDATE source_document:${id.value} SET deleted_at = time::now(), updated_at = time::now() WHERE user_id = user:${userId.value};",
                 ).bind()
         }
 
@@ -94,7 +94,7 @@ class SurrealSourceDocumentRepository(
         flow {
             val result =
                 db.query<Any>(
-                    "SELECT * FROM source_document WHERE user_id = user:$userId AND deleted_at IS NONE ORDER BY created_at DESC",
+                    "SELECT * FROM source_document WHERE user_id = user:${userId.value} AND deleted_at IS NONE ORDER BY created_at DESC",
                 )
             emit(result.fold({ emptyList() }, { parseSourceDocuments(it) }))
         }
@@ -103,7 +103,7 @@ class SurrealSourceDocumentRepository(
         flow {
             val result =
                 db.query<Any>(
-                    "SELECT * FROM source_document WHERE user_id = user:$userId AND extraction_status = '${status.name.lowercase()}' AND deleted_at IS NONE",
+                    "SELECT * FROM source_document WHERE user_id = user:${userId.value} AND extraction_status = '${status.name.lowercase()}' AND deleted_at IS NONE",
                 )
             emit(result.fold({ emptyList() }, { parseSourceDocuments(it) }))
         }
@@ -112,7 +112,7 @@ class SurrealSourceDocumentRepository(
         flow {
             val result =
                 db.query<Any>(
-                    "SELECT * FROM source_document WHERE user_id = user:$userId AND source_type = '${sourceType.name.lowercase()}' AND deleted_at IS NONE",
+                    "SELECT * FROM source_document WHERE user_id = user:${userId.value} AND source_type = '${sourceType.name.lowercase()}' AND deleted_at IS NONE",
                 )
             emit(result.fold({ emptyList() }, { parseSourceDocuments(it) }))
         }
@@ -121,7 +121,7 @@ class SurrealSourceDocumentRepository(
         flow {
             val result =
                 db.query<Any>(
-                    "SELECT * FROM source_document WHERE user_id = user:$userId AND watched_folder_id = '${watchedFolderId.value}' AND deleted_at IS NONE",
+                    "SELECT * FROM source_document WHERE user_id = user:${userId.value} AND watched_folder_id = '${watchedFolderId.value}' AND deleted_at IS NONE",
                 )
             emit(result.fold({ emptyList() }, { parseSourceDocuments(it) }))
         }
@@ -130,7 +130,7 @@ class SurrealSourceDocumentRepository(
         flow {
             val result =
                 db.query<Any>(
-                    "SELECT * FROM source_document WHERE user_id = user:$userId AND initiative_id = initiative:${initiativeId.value} AND deleted_at IS NONE",
+                    "SELECT * FROM source_document WHERE user_id = user:${userId.value} AND initiative_id = initiative:${initiativeId.value} AND deleted_at IS NONE",
                 )
             emit(result.fold({ emptyList() }, { parseSourceDocuments(it) }))
         }
@@ -141,7 +141,7 @@ class SurrealSourceDocumentRepository(
                 db
                     .query<Any>(
                         """
-                        SELECT * FROM source_document WHERE user_id = user:$userId AND deleted_at IS NONE
+                        SELECT * FROM source_document WHERE user_id = user:${userId.value} AND deleted_at IS NONE
                         AND (string::lowercase(title) CONTAINS string::lowercase('${query.replace("'", "''")}')
                              OR string::lowercase(extracted_text) CONTAINS string::lowercase('${query.replace(
                             "'",
@@ -157,7 +157,7 @@ class SurrealSourceDocumentRepository(
             val result =
                 db
                     .query<Any>(
-                        "SELECT * FROM source_document WHERE user_id = user:$userId AND extraction_status IN ['pending', 'failed'] AND deleted_at IS NONE",
+                        "SELECT * FROM source_document WHERE user_id = user:${userId.value} AND extraction_status IN ['pending', 'failed'] AND deleted_at IS NONE",
                     ).bind()
             parseSourceDocuments(result)
         }
@@ -176,7 +176,7 @@ class SurrealSourceDocumentRepository(
                         extraction_status = '${status.name.lowercase()}',
                         extracted_text = ${extractedText?.let { "'${it.replace("'", "''")}'" } ?: "NONE"},
                         updated_at = time::now()
-                    WHERE user_id = user:$userId;
+                    WHERE user_id = user:${userId.value};
                     """.trimIndent(),
                 ).bind()
             findById(id).bind()

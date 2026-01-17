@@ -19,7 +19,7 @@ import kotlinx.serialization.json.jsonPrimitive
 
 class SurrealItemRepository(
     private val db: SurrealDbClient,
-    private val userId: String,
+    private val userId: Ulid,
 ) : ItemRepository {
     private val json =
         Json {
@@ -32,7 +32,7 @@ class SurrealItemRepository(
             val result =
                 db
                     .query<Any>(
-                        "SELECT * FROM item:${id.value} WHERE user_id = user:$userId AND deleted_at IS NONE",
+                        "SELECT * FROM item:${id.value} WHERE user_id = user:${userId.value} AND deleted_at IS NONE",
                     ).mapLeft { ItemError.NotFound(id) }
                     .bind()
             parseItem(result) ?: raise(ItemError.NotFound(id))
@@ -55,7 +55,7 @@ class SurrealItemRepository(
                             photo_attachment_id = ${entity.photoAttachmentId?.let { "attachment:${it.value}" } ?: "NONE"},
                             initiative_id = ${entity.initiativeId?.let { "initiative:${it.value}" } ?: "NONE"},
                             updated_at = time::now()
-                        WHERE user_id = user:$userId;
+                        WHERE user_id = user:${userId.value};
                         """.trimIndent(),
                     ).mapLeft { ItemError.NotFound(entity.id) }
                     .bind()
@@ -64,7 +64,7 @@ class SurrealItemRepository(
                     .execute(
                         """
                         CREATE item:${entity.id.value} CONTENT {
-                            user_id: user:$userId,
+                            user_id: user:${userId.value},
                             name: '${entity.name.replace("'", "''")}',
                             description: ${entity.description?.let { "'${it.replace("'", "''")}'" } ?: "NONE"},
                             template_id: ${entity.templateId?.let { "item_template:${it.value}" } ?: "NONE"},
@@ -86,7 +86,7 @@ class SurrealItemRepository(
             findById(id).bind()
             db
                 .execute(
-                    "UPDATE item:${id.value} SET deleted_at = time::now(), updated_at = time::now() WHERE user_id = user:$userId;",
+                    "UPDATE item:${id.value} SET deleted_at = time::now(), updated_at = time::now() WHERE user_id = user:${userId.value};",
                 ).mapLeft { ItemError.NotFound(id) }
                 .bind()
         }
@@ -95,7 +95,7 @@ class SurrealItemRepository(
         flow {
             val result =
                 db.query<Any>(
-                    "SELECT * FROM item WHERE user_id = user:$userId AND deleted_at IS NONE ORDER BY name",
+                    "SELECT * FROM item WHERE user_id = user:${userId.value} AND deleted_at IS NONE ORDER BY name",
                 )
             emit(result.fold({ emptyList() }, { parseItems(it) }))
         }
@@ -104,7 +104,7 @@ class SurrealItemRepository(
         flow {
             val result =
                 db.query<Any>(
-                    "SELECT * FROM item WHERE user_id = user:$userId AND location_id = location:${locationId.value} AND deleted_at IS NONE",
+                    "SELECT * FROM item WHERE user_id = user:${userId.value} AND location_id = location:${locationId.value} AND deleted_at IS NONE",
                 )
             emit(result.fold({ emptyList() }, { parseItems(it) }))
         }
@@ -113,7 +113,7 @@ class SurrealItemRepository(
         flow {
             val result =
                 db.query<Any>(
-                    "SELECT * FROM item WHERE user_id = user:$userId AND container_id = container:${containerId.value} AND deleted_at IS NONE",
+                    "SELECT * FROM item WHERE user_id = user:${userId.value} AND container_id = container:${containerId.value} AND deleted_at IS NONE",
                 )
             emit(result.fold({ emptyList() }, { parseItems(it) }))
         }
@@ -122,7 +122,7 @@ class SurrealItemRepository(
         flow {
             val result =
                 db.query<Any>(
-                    "SELECT * FROM item WHERE user_id = user:$userId AND template_id = item_template:${templateId.value} AND deleted_at IS NONE",
+                    "SELECT * FROM item WHERE user_id = user:${userId.value} AND template_id = item_template:${templateId.value} AND deleted_at IS NONE",
                 )
             emit(result.fold({ emptyList() }, { parseItems(it) }))
         }
@@ -131,7 +131,7 @@ class SurrealItemRepository(
         flow {
             val result =
                 db.query<Any>(
-                    "SELECT * FROM item WHERE user_id = user:$userId AND initiative_id = initiative:${initiativeId.value} AND deleted_at IS NONE",
+                    "SELECT * FROM item WHERE user_id = user:${userId.value} AND initiative_id = initiative:${initiativeId.value} AND deleted_at IS NONE",
                 )
             emit(result.fold({ emptyList() }, { parseItems(it) }))
         }
@@ -141,7 +141,7 @@ class SurrealItemRepository(
             val result =
                 db
                     .query<Any>(
-                        "SELECT * FROM item WHERE user_id = user:$userId AND string::lowercase(name) CONTAINS string::lowercase('${query.replace("'", "''")}') AND deleted_at IS NONE",
+                        "SELECT * FROM item WHERE user_id = user:${userId.value} AND string::lowercase(name) CONTAINS string::lowercase('${query.replace("'", "''")}') AND deleted_at IS NONE",
                     ).mapLeft { ItemError.NotFound(Ulid.generate()) }
                     .bind()
             parseItems(result)
@@ -167,7 +167,7 @@ class SurrealItemRepository(
             db
                 .execute(
                     "UPDATE item:${id.value} SET location_id = location:$locId, " +
-                        "container_id = NONE, updated_at = time::now() WHERE user_id = user:$userId;",
+                        "container_id = NONE, updated_at = time::now() WHERE user_id = user:${userId.value};",
                 ).mapLeft { ItemError.NotFound(id) }
                 .bind()
             findById(id).bind()
@@ -181,7 +181,7 @@ class SurrealItemRepository(
             findById(id).bind()
             db
                 .execute(
-                    "UPDATE item:${id.value} SET container_id = container:${containerId.value}, updated_at = time::now() WHERE user_id = user:$userId;",
+                    "UPDATE item:${id.value} SET container_id = container:${containerId.value}, updated_at = time::now() WHERE user_id = user:${userId.value};",
                 ).mapLeft { ItemError.NotFound(id) }
                 .bind()
             findById(id).bind()
@@ -195,7 +195,7 @@ class SurrealItemRepository(
             findById(id).bind()
             db
                 .execute(
-                    "UPDATE item:${id.value} SET quantity = $quantity, updated_at = time::now() WHERE user_id = user:$userId;",
+                    "UPDATE item:${id.value} SET quantity = $quantity, updated_at = time::now() WHERE user_id = user:${userId.value};",
                 ).mapLeft { ItemError.NotFound(id) }
                 .bind()
             findById(id).bind()
@@ -205,7 +205,7 @@ class SurrealItemRepository(
         flow {
             val result =
                 db.query<Any>(
-                    "SELECT * FROM item WHERE user_id = user:$userId AND location_id IS NONE AND container_id IS NONE AND deleted_at IS NONE",
+                    "SELECT * FROM item WHERE user_id = user:${userId.value} AND location_id IS NONE AND container_id IS NONE AND deleted_at IS NONE",
                 )
             emit(result.fold({ emptyList() }, { parseItems(it) }))
         }

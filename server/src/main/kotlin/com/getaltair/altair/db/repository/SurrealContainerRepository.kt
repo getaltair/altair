@@ -17,7 +17,7 @@ import kotlinx.serialization.json.jsonPrimitive
 
 class SurrealContainerRepository(
     private val db: SurrealDbClient,
-    private val userId: String,
+    private val userId: Ulid,
 ) : ContainerRepository {
     private val json =
         Json {
@@ -30,7 +30,7 @@ class SurrealContainerRepository(
             val result =
                 db
                     .query<Any>(
-                        "SELECT * FROM container:${id.value} WHERE user_id = user:$userId AND deleted_at IS NONE",
+                        "SELECT * FROM container:${id.value} WHERE user_id = user:${userId.value} AND deleted_at IS NONE",
                     ).mapLeft { ItemError.NotFound(id) }
                     .bind()
             parseContainer(result) ?: raise(ItemError.NotFound(id))
@@ -52,7 +52,7 @@ class SurrealContainerRepository(
                         } ?: "NONE"},
                             label = ${entity.label?.let { "'${it.replace("'", "''")}'" } ?: "NONE"},
                             updated_at = time::now()
-                        WHERE user_id = user:$userId;
+                        WHERE user_id = user:${userId.value};
                         """.trimIndent(),
                     ).mapLeft { ItemError.NotFound(entity.id) }
                     .bind()
@@ -61,7 +61,7 @@ class SurrealContainerRepository(
                     .execute(
                         """
                         CREATE container:${entity.id.value} CONTENT {
-                            user_id: user:$userId,
+                            user_id: user:${userId.value},
                             name: '${entity.name.replace("'", "''")}',
                             description: ${entity.description?.let { "'${it.replace("'", "''")}'" } ?: "NONE"},
                             location_id: ${entity.locationId?.let { "location:${it.value}" } ?: "NONE"},
@@ -80,7 +80,7 @@ class SurrealContainerRepository(
             findById(id).bind()
             db
                 .execute(
-                    "UPDATE container:${id.value} SET deleted_at = time::now(), updated_at = time::now() WHERE user_id = user:$userId;",
+                    "UPDATE container:${id.value} SET deleted_at = time::now(), updated_at = time::now() WHERE user_id = user:${userId.value};",
                 ).mapLeft { ItemError.NotFound(id) }
                 .bind()
         }
@@ -89,7 +89,7 @@ class SurrealContainerRepository(
         flow {
             val result =
                 db.query<Any>(
-                    "SELECT * FROM container WHERE user_id = user:$userId AND deleted_at IS NONE ORDER BY name",
+                    "SELECT * FROM container WHERE user_id = user:${userId.value} AND deleted_at IS NONE ORDER BY name",
                 )
             emit(result.fold({ emptyList() }, { parseContainers(it) }))
         }
@@ -98,7 +98,7 @@ class SurrealContainerRepository(
         flow {
             val result =
                 db.query<Any>(
-                    "SELECT * FROM container WHERE user_id = user:$userId AND location_id = location:${locationId.value} AND deleted_at IS NONE",
+                    "SELECT * FROM container WHERE user_id = user:${userId.value} AND location_id = location:${locationId.value} AND deleted_at IS NONE",
                 )
             emit(result.fold({ emptyList() }, { parseContainers(it) }))
         }
@@ -107,7 +107,7 @@ class SurrealContainerRepository(
         flow {
             val result =
                 db.query<Any>(
-                    "SELECT * FROM container WHERE user_id = user:$userId AND parent_container_id = container:${parentContainerId.value} AND deleted_at IS NONE",
+                    "SELECT * FROM container WHERE user_id = user:${userId.value} AND parent_container_id = container:${parentContainerId.value} AND deleted_at IS NONE",
                 )
             emit(result.fold({ emptyList() }, { parseContainers(it) }))
         }
@@ -116,7 +116,7 @@ class SurrealContainerRepository(
         flow {
             val result =
                 db.query<Any>(
-                    "SELECT * FROM container WHERE user_id = user:$userId AND parent_container_id IS NONE AND deleted_at IS NONE ORDER BY name",
+                    "SELECT * FROM container WHERE user_id = user:${userId.value} AND parent_container_id IS NONE AND deleted_at IS NONE ORDER BY name",
                 )
             emit(result.fold({ emptyList() }, { parseContainers(it) }))
         }
@@ -130,7 +130,7 @@ class SurrealContainerRepository(
             val locRef = locationId?.let { "location:${it.value}" } ?: "NONE"
             db
                 .execute(
-                    "UPDATE container:${id.value} SET location_id = $locRef, parent_container_id = NONE, updated_at = time::now() WHERE user_id = user:$userId;",
+                    "UPDATE container:${id.value} SET location_id = $locRef, parent_container_id = NONE, updated_at = time::now() WHERE user_id = user:${userId.value};",
                 ).mapLeft { ItemError.NotFound(id) }
                 .bind()
             findById(id).bind()
@@ -144,7 +144,7 @@ class SurrealContainerRepository(
             findById(id).bind()
             db
                 .execute(
-                    "UPDATE container:${id.value} SET parent_container_id = container:${parentContainerId.value}, updated_at = time::now() WHERE user_id = user:$userId;",
+                    "UPDATE container:${id.value} SET parent_container_id = container:${parentContainerId.value}, updated_at = time::now() WHERE user_id = user:${userId.value};",
                 ).mapLeft { ItemError.NotFound(id) }
                 .bind()
             findById(id).bind()
@@ -155,7 +155,7 @@ class SurrealContainerRepository(
             findById(id).bind()
             db
                 .execute(
-                    "UPDATE container:${id.value} SET parent_container_id = NONE, updated_at = time::now() WHERE user_id = user:$userId;",
+                    "UPDATE container:${id.value} SET parent_container_id = NONE, updated_at = time::now() WHERE user_id = user:${userId.value};",
                 ).mapLeft { ItemError.NotFound(id) }
                 .bind()
             findById(id).bind()
@@ -167,7 +167,7 @@ class SurrealContainerRepository(
                 db
                     .query<Any>(
                         """
-                        SELECT * FROM container WHERE user_id = user:$userId AND deleted_at IS NONE
+                        SELECT * FROM container WHERE user_id = user:${userId.value} AND deleted_at IS NONE
                         AND (string::lowercase(name) CONTAINS string::lowercase('${query.replace("'", "''")}')
                              OR string::lowercase(label) CONTAINS string::lowercase('${query.replace("'", "''")}'))
                         """.trimIndent(),
@@ -182,7 +182,7 @@ class SurrealContainerRepository(
             val result =
                 db
                     .query<Any>(
-                        "SELECT count() FROM item WHERE user_id = user:$userId AND container_id = container:${id.value} AND deleted_at IS NONE GROUP ALL",
+                        "SELECT count() FROM item WHERE user_id = user:${userId.value} AND container_id = container:${id.value} AND deleted_at IS NONE GROUP ALL",
                     ).mapLeft { ItemError.NotFound(id) }
                     .bind()
             parseCount(result)

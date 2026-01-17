@@ -19,7 +19,7 @@ import kotlinx.serialization.json.jsonPrimitive
  */
 class SurrealInitiativeRepository(
     db: SurrealDbClient,
-    userId: String,
+    userId: Ulid,
 ) : SurrealRepositoryBase(db, userId),
     InitiativeRepository {
     override suspend fun findById(id: Ulid): Either<DomainError, Initiative> =
@@ -27,7 +27,7 @@ class SurrealInitiativeRepository(
             val result =
                 db
                     .query<Any>(
-                        "SELECT * FROM initiative:${id.value} WHERE user_id = user:$userId AND deleted_at IS NONE",
+                        "SELECT * FROM initiative:${id.value} WHERE user_id = user:${userId.value} AND deleted_at IS NONE",
                     ).bind()
 
             parseInitiative(result) ?: raise(DomainError.NotFoundError("Initiative", id.value))
@@ -45,11 +45,11 @@ class SurrealInitiativeRepository(
                         UPDATE initiative:${entity.id.value} SET
                             name = '${entity.name.replace("'", "''")}',
                             description = ${entity.description?.let { "'${it.replace("'", "''")}'" } ?: "NONE"},
-                            color = ${entity.color?.let { "'$it'" } ?: "NONE"},
-                            icon = ${entity.icon?.let { "'$it'" } ?: "NONE"},
+                            color = ${entity.color?.let { "'${it.replace("'", "''")}'" } ?: "NONE"},
+                            icon = ${entity.icon?.let { "'${it.replace("'", "''")}'" } ?: "NONE"},
                             status = '${entity.status.name.lowercase()}',
                             updated_at = time::now()
-                        WHERE user_id = user:$userId;
+                        WHERE user_id = user:${userId.value};
                         """.trimIndent(),
                     ).bind()
             } else {
@@ -58,11 +58,11 @@ class SurrealInitiativeRepository(
                     .execute(
                         """
                         CREATE initiative:${entity.id.value} CONTENT {
-                            user_id: user:$userId,
+                            user_id: user:${userId.value},
                             name: '${entity.name.replace("'", "''")}',
                             description: ${entity.description?.let { "'${it.replace("'", "''")}'" } ?: "NONE"},
-                            color: ${entity.color?.let { "'$it'" } ?: "NONE"},
-                            icon: ${entity.icon?.let { "'$it'" } ?: "NONE"},
+                            color: ${entity.color?.let { "'${it.replace("'", "''")}'" } ?: "NONE"},
+                            icon: ${entity.icon?.let { "'${it.replace("'", "''")}'" } ?: "NONE"},
                             status: '${entity.status.name.lowercase()}'
                         };
                         """.trimIndent(),
@@ -84,7 +84,7 @@ class SurrealInitiativeRepository(
                 val result =
                     db
                         .query<Any>(
-                            "SELECT * FROM initiative WHERE user_id = user:$userId AND deleted_at IS NONE ORDER BY created_at DESC",
+                            "SELECT * FROM initiative WHERE user_id = user:${userId.value} AND deleted_at IS NONE ORDER BY created_at DESC",
                         ).bind()
                 parseInitiatives(result)
             }
@@ -96,8 +96,7 @@ class SurrealInitiativeRepository(
                 val result =
                     db
                         .query<Any>(
-                            "SELECT * FROM initiative WHERE user_id = user:$userId AND status = \$status AND deleted_at IS NONE",
-                            mapOf("status" to status.name.lowercase()),
+                            "SELECT * FROM initiative WHERE user_id = user:${userId.value} AND status = '${status.name.lowercase()}' AND deleted_at IS NONE",
                         ).bind()
                 parseInitiatives(result)
             }
@@ -110,11 +109,10 @@ class SurrealInitiativeRepository(
                     .query<Any>(
                         """
                         SELECT * FROM initiative
-                        WHERE user_id = user:$userId
+                        WHERE user_id = user:${userId.value}
                         AND deleted_at IS NONE
-                        AND string::lowercase(name) CONTAINS string::lowercase(\$query)
+                        AND string::lowercase(name) CONTAINS string::lowercase('${query.replace("'", "''")}')
                         """.trimIndent(),
-                        mapOf("query" to query),
                     ).bind()
             parseInitiatives(result)
         }

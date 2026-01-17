@@ -18,7 +18,7 @@ import kotlin.time.Clock
 
 class SurrealNoteLinkRepository(
     private val db: SurrealDbClient,
-    private val userId: String,
+    private val userId: Ulid,
 ) : NoteLinkRepository {
     private val json =
         Json {
@@ -31,7 +31,7 @@ class SurrealNoteLinkRepository(
             val result =
                 db
                     .query<Any>(
-                        "SELECT * FROM note_link:${id.value} WHERE user_id = user:$userId",
+                        "SELECT * FROM note_link:${id.value} WHERE user_id = user:${userId.value}",
                     ).mapLeft { NoteError.NotFound(id) }
                     .bind()
             parseNoteLink(result) ?: raise(NoteError.NotFound(id))
@@ -43,7 +43,7 @@ class SurrealNoteLinkRepository(
                 .execute(
                     """
                     CREATE note_link:${entity.id.value} CONTENT {
-                        user_id: user:$userId,
+                        user_id: user:${userId.value},
                         source_note_id: note:${entity.sourceNoteId.value},
                         target_note_id: note:${entity.targetNoteId.value},
                         context: ${entity.context?.let { "'${it.replace("'", "''")}'" } ?: "NONE"}
@@ -58,14 +58,14 @@ class SurrealNoteLinkRepository(
         either {
             db
                 .execute(
-                    "DELETE note_link:${id.value} WHERE user_id = user:$userId;",
+                    "DELETE note_link:${id.value} WHERE user_id = user:${userId.value};",
                 ).mapLeft { NoteError.NotFound(id) }
                 .bind()
         }
 
     override fun findAll(): Flow<List<NoteLink>> =
         flow {
-            val result = db.query<Any>("SELECT * FROM note_link WHERE user_id = user:$userId")
+            val result = db.query<Any>("SELECT * FROM note_link WHERE user_id = user:${userId.value}")
             emit(result.fold({ emptyList() }, { parseNoteLinks(it) }))
         }
 
@@ -73,7 +73,7 @@ class SurrealNoteLinkRepository(
         flow {
             val result =
                 db.query<Any>(
-                    "SELECT * FROM note_link WHERE user_id = user:$userId AND source_note_id = note:${sourceNoteId.value}",
+                    "SELECT * FROM note_link WHERE user_id = user:${userId.value} AND source_note_id = note:${sourceNoteId.value}",
                 )
             emit(result.fold({ emptyList() }, { parseNoteLinks(it) }))
         }
@@ -82,7 +82,7 @@ class SurrealNoteLinkRepository(
         flow {
             val result =
                 db.query<Any>(
-                    "SELECT * FROM note_link WHERE user_id = user:$userId AND target_note_id = note:${targetNoteId.value}",
+                    "SELECT * FROM note_link WHERE user_id = user:${userId.value} AND target_note_id = note:${targetNoteId.value}",
                 )
             emit(result.fold({ emptyList() }, { parseNoteLinks(it) }))
         }
@@ -95,7 +95,7 @@ class SurrealNoteLinkRepository(
             val result =
                 db
                     .query<Any>(
-                        "SELECT * FROM note_link WHERE user_id = user:$userId AND source_note_id = note:${sourceNoteId.value} AND target_note_id = note:${targetNoteId.value}",
+                        "SELECT * FROM note_link WHERE user_id = user:${userId.value} AND source_note_id = note:${sourceNoteId.value} AND target_note_id = note:${targetNoteId.value}",
                     ).mapLeft { NoteError.LinkNotFound(sourceNoteId, targetNoteId) }
                     .bind()
             parseNoteLink(result) ?: raise(NoteError.LinkNotFound(sourceNoteId, targetNoteId))
@@ -117,7 +117,7 @@ class SurrealNoteLinkRepository(
                                 "'",
                                 "''",
                             )}'"
-                        } ?: "NONE"}, updated_at = time::now() WHERE user_id = user:$userId;",
+                        } ?: "NONE"}, updated_at = time::now() WHERE user_id = user:${userId.value};",
                     ).mapLeft { NoteError.LinkNotFound(sourceNoteId, targetNoteId) }
                     .bind()
                 findById(link.id).bind()
@@ -126,7 +126,7 @@ class SurrealNoteLinkRepository(
                 val link =
                     NoteLink(
                         id = Ulid.generate(),
-                        userId = Ulid(userId),
+                        userId = userId,
                         sourceNoteId = sourceNoteId,
                         targetNoteId = targetNoteId,
                         context = context,
@@ -153,7 +153,7 @@ class SurrealNoteLinkRepository(
             val result =
                 db
                     .query<Any>(
-                        "SELECT * FROM note_link WHERE user_id = user:$userId AND source_note_id = note:${noteId.value}",
+                        "SELECT * FROM note_link WHERE user_id = user:${userId.value} AND source_note_id = note:${noteId.value}",
                     ).mapLeft { NoteError.NotFound(noteId) }
                     .bind()
             parseNoteLinks(result)

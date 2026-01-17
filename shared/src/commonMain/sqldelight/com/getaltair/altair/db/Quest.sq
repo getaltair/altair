@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS quest (
     description TEXT,
     status TEXT NOT NULL DEFAULT 'backlog',
     priority TEXT NOT NULL DEFAULT 'medium',
-    energy_level TEXT NOT NULL DEFAULT 'medium',
+    energy_cost TEXT NOT NULL DEFAULT 'medium',
     estimated_minutes INTEGER,
     actual_minutes INTEGER,
     due_date TEXT,
@@ -56,8 +56,8 @@ SELECT * FROM quest WHERE user_id = ? AND status = 'backlog' AND deleted_at IS N
 findByPriority:
 SELECT * FROM quest WHERE user_id = ? AND priority = ? AND deleted_at IS NULL ORDER BY created_at;
 
-findByEnergyLevel:
-SELECT * FROM quest WHERE user_id = ? AND energy_level = ? AND status = 'backlog' AND deleted_at IS NULL ORDER BY priority;
+findByEnergyCost:
+SELECT * FROM quest WHERE user_id = ? AND energy_cost = ? AND status = 'backlog' AND deleted_at IS NULL ORDER BY priority;
 
 findDueToday:
 SELECT * FROM quest WHERE user_id = ? AND due_date = ? AND status NOT IN ('completed', 'cancelled') AND deleted_at IS NULL ORDER BY priority;
@@ -69,7 +69,7 @@ countWip:
 SELECT COUNT(*) FROM quest WHERE user_id = ? AND status = 'in_progress' AND deleted_at IS NULL;
 
 insert:
-INSERT INTO quest (id, user_id, epic_id, initiative_id, name, description, status, priority, energy_level, estimated_minutes, due_date, created_at, updated_at)
+INSERT INTO quest (id, user_id, epic_id, initiative_id, name, description, status, priority, energy_cost, estimated_minutes, due_date, created_at, updated_at)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 update:
@@ -80,7 +80,7 @@ UPDATE quest SET
     description = ?,
     status = ?,
     priority = ?,
-    energy_level = ?,
+    energy_cost = ?,
     estimated_minutes = ?,
     actual_minutes = ?,
     due_date = ?,

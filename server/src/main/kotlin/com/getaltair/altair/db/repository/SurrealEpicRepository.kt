@@ -20,7 +20,7 @@ import kotlinx.serialization.json.jsonPrimitive
 
 class SurrealEpicRepository(
     private val db: SurrealDbClient,
-    private val userId: String,
+    private val userId: Ulid,
 ) : EpicRepository {
     private val json =
         Json {
@@ -33,7 +33,7 @@ class SurrealEpicRepository(
             val result =
                 db
                     .query<Any>(
-                        "SELECT * FROM epic:${id.value} WHERE user_id = user:$userId AND deleted_at IS NONE",
+                        "SELECT * FROM epic:${id.value} WHERE user_id = user:${userId.value} AND deleted_at IS NONE",
                     ).mapLeft { EpicError.NotFound(id) }
                     .bind()
             parseEpic(result) ?: raise(EpicError.NotFound(id))
@@ -54,7 +54,7 @@ class SurrealEpicRepository(
                             target_date = ${entity.targetDate?.let { "'$it'" } ?: "NONE"},
                             completed_at = ${entity.completedAt?.let { "<datetime>'$it'" } ?: "NONE"},
                             updated_at = time::now()
-                        WHERE user_id = user:$userId;
+                        WHERE user_id = user:${userId.value};
                         """.trimIndent(),
                     ).mapLeft { EpicError.NotFound(entity.id) }
                     .bind()
@@ -63,7 +63,7 @@ class SurrealEpicRepository(
                     .execute(
                         """
                         CREATE epic:${entity.id.value} CONTENT {
-                            user_id: user:$userId,
+                            user_id: user:${userId.value},
                             title: '${entity.title.replace("'", "''")}',
                             description: ${entity.description?.let { "'${it.replace("'", "''")}'" } ?: "NONE"},
                             status: '${entity.status.name.lowercase()}',
@@ -83,7 +83,7 @@ class SurrealEpicRepository(
             findById(id).bind()
             db
                 .execute(
-                    "UPDATE epic:${id.value} SET deleted_at = time::now(), updated_at = time::now() WHERE user_id = user:$userId;",
+                    "UPDATE epic:${id.value} SET deleted_at = time::now(), updated_at = time::now() WHERE user_id = user:${userId.value};",
                 ).mapLeft { EpicError.NotFound(id) }
                 .bind()
         }
@@ -92,7 +92,7 @@ class SurrealEpicRepository(
         flow {
             val result =
                 db.query<Any>(
-                    "SELECT * FROM epic WHERE user_id = user:$userId AND deleted_at IS NONE ORDER BY created_at DESC",
+                    "SELECT * FROM epic WHERE user_id = user:${userId.value} AND deleted_at IS NONE ORDER BY created_at DESC",
                 )
             emit(result.fold({ emptyList() }, { parseEpics(it) }))
         }
@@ -101,7 +101,7 @@ class SurrealEpicRepository(
         flow {
             val result =
                 db.query<Any>(
-                    "SELECT * FROM epic WHERE user_id = user:$userId AND status = '${status.name.lowercase()}' AND deleted_at IS NONE",
+                    "SELECT * FROM epic WHERE user_id = user:${userId.value} AND status = '${status.name.lowercase()}' AND deleted_at IS NONE",
                 )
             emit(result.fold({ emptyList() }, { parseEpics(it) }))
         }
@@ -110,7 +110,7 @@ class SurrealEpicRepository(
         flow {
             val result =
                 db.query<Any>(
-                    "SELECT * FROM epic WHERE user_id = user:$userId AND initiative_id = initiative:${initiativeId.value} AND deleted_at IS NONE",
+                    "SELECT * FROM epic WHERE user_id = user:${userId.value} AND initiative_id = initiative:${initiativeId.value} AND deleted_at IS NONE",
                 )
             emit(result.fold({ emptyList() }, { parseEpics(it) }))
         }
@@ -140,7 +140,7 @@ class SurrealEpicRepository(
         flow {
             val epicsResult =
                 db.query<Any>(
-                    "SELECT * FROM epic WHERE user_id = user:$userId AND deleted_at IS NONE",
+                    "SELECT * FROM epic WHERE user_id = user:${userId.value} AND deleted_at IS NONE",
                 )
             val epics = epicsResult.fold({ emptyList() }, { parseEpics(it) })
             val withProgress =

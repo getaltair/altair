@@ -51,7 +51,7 @@ class EmbeddedSurrealClient(
                     Unit.right()
                 } catch (e: Exception) {
                     logger.error("Failed to connect to embedded database", e)
-                    DomainError.UnexpectedError("Failed to connect to embedded database: ${e.message}").left()
+                    DomainError.UnexpectedError("Failed to connect to embedded database: ${e.message}", e).left()
                 }
             }
         }
@@ -87,7 +87,7 @@ class EmbeddedSurrealClient(
                     response?.toString()?.right() ?: "[]".right()
                 } catch (e: Exception) {
                     logger.error("Query failed: $query", e)
-                    DomainError.UnexpectedError("Query failed: ${e.message}").left()
+                    DomainError.UnexpectedError("Query failed: ${e.message}", e).left()
                 }
             }
         }
@@ -107,7 +107,7 @@ class EmbeddedSurrealClient(
                     Unit.right()
                 } catch (e: Exception) {
                     logger.error("Execute failed: $statement", e)
-                    DomainError.UnexpectedError("Execute failed: ${e.message}").left()
+                    DomainError.UnexpectedError("Execute failed: ${e.message}", e).left()
                 }
             }
         }

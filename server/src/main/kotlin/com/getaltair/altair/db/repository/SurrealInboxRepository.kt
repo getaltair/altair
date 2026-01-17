@@ -22,7 +22,7 @@ import kotlin.time.Clock
  */
 class SurrealInboxRepository(
     private val db: SurrealDbClient,
-    private val userId: String,
+    private val userId: Ulid,
 ) : InboxRepository {
     private val json =
         Json {
@@ -35,7 +35,7 @@ class SurrealInboxRepository(
             val result =
                 db
                     .query<Any>(
-                        "SELECT * FROM inbox_item:${id.value} WHERE user_id = user:$userId",
+                        "SELECT * FROM inbox_item:${id.value} WHERE user_id = user:${userId.value}",
                     ).bind()
             parseInboxItem(result) ?: raise(DomainError.NotFoundError("InboxItem", id.value))
         }
@@ -47,7 +47,7 @@ class SurrealInboxRepository(
                 .execute(
                     """
                     CREATE inbox_item:${entity.id.value} CONTENT {
-                        user_id: user:$userId,
+                        user_id: user:${userId.value},
                         content: '${entity.content.replace("'", "''")}',
                         source: '${entity.source.name.lowercase()}',
                         attachment_ids: [$attachmentList]
@@ -59,14 +59,14 @@ class SurrealInboxRepository(
 
     override suspend fun delete(id: Ulid): Either<DomainError, Unit> =
         either {
-            db.execute("DELETE inbox_item:${id.value} WHERE user_id = user:$userId;").bind()
+            db.execute("DELETE inbox_item:${id.value} WHERE user_id = user:${userId.value};").bind()
         }
 
     override fun findAll(): Flow<List<InboxItem>> =
         flow {
             val result =
                 db.query<Any>(
-                    "SELECT * FROM inbox_item WHERE user_id = user:$userId ORDER BY created_at DESC",
+                    "SELECT * FROM inbox_item WHERE user_id = user:${userId.value} ORDER BY created_at DESC",
                 )
             emit(result.fold({ emptyList() }, { parseInboxItems(it) }))
         }
@@ -81,7 +81,7 @@ class SurrealInboxRepository(
             val item =
                 InboxItem(
                     id = Ulid.generate(),
-                    userId = Ulid(userId),
+                    userId = userId,
                     content = content,
                     source = source,
                     attachmentIds = attachmentIds,
@@ -98,7 +98,7 @@ class SurrealInboxRepository(
             val result =
                 db
                     .query<Any>(
-                        "SELECT count() FROM inbox_item WHERE user_id = user:$userId GROUP ALL",
+                        "SELECT count() FROM inbox_item WHERE user_id = user:${userId.value} GROUP ALL",
                     ).bind()
             parseCount(result)
         }
@@ -107,7 +107,7 @@ class SurrealInboxRepository(
         flow {
             val result =
                 db.query<Any>(
-                    "SELECT * FROM inbox_item WHERE user_id = user:$userId AND source = '${source.name.lowercase()}'",
+                    "SELECT * FROM inbox_item WHERE user_id = user:${userId.value} AND source = '${source.name.lowercase()}'",
                 )
             emit(result.fold({ emptyList() }, { parseInboxItems(it) }))
         }

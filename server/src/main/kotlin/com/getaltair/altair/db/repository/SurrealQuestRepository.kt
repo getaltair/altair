@@ -16,13 +16,14 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import org.slf4j.LoggerFactory
 
 /**
  * SurrealDB implementation of QuestRepository.
  */
 class SurrealQuestRepository(
     private val db: SurrealDbClient,
-    private val userId: String,
+    private val userId: Ulid,
 ) : QuestRepository {
     private val json =
         Json {
@@ -32,6 +33,7 @@ class SurrealQuestRepository(
 
     companion object {
         private const val DEFAULT_WIP_LIMIT = 5
+        private val logger = LoggerFactory.getLogger(SurrealQuestRepository::class.java)
     }
 
     override suspend fun findById(id: Ulid): Either<QuestError, Quest> =
@@ -39,7 +41,7 @@ class SurrealQuestRepository(
             val result =
                 db
                     .query<Any>(
-                        "SELECT * FROM quest:${id.value} WHERE user_id = user:$userId AND deleted_at IS NONE",
+                        "SELECT * FROM quest:${id.value} WHERE user_id = user:${userId.value} AND deleted_at IS NONE",
                     ).mapLeft { QuestError.NotFound(id) }
                     .bind()
 
@@ -68,7 +70,7 @@ class SurrealQuestRepository(
                             started_at = ${entity.startedAt?.let { "<datetime>'$it'" } ?: "NONE"},
                             completed_at = ${entity.completedAt?.let { "<datetime>'$it'" } ?: "NONE"},
                             updated_at = time::now()
-                        WHERE user_id = user:$userId;
+                        WHERE user_id = user:${userId.value};
                         """.trimIndent(),
                     ).mapLeft { QuestError.NotFound(entity.id) }
                     .bind()
@@ -78,7 +80,7 @@ class SurrealQuestRepository(
                     .execute(
                         """
                         CREATE quest:${entity.id.value} CONTENT {
-                            user_id: user:$userId,
+                            user_id: user:${userId.value},
                             title: '${entity.title.replace("'", "''")}',
                             description: ${entity.description?.let { "'${it.replace("'", "''")}'" } ?: "NONE"},
                             energy_cost: ${entity.energyCost},
@@ -108,7 +110,7 @@ class SurrealQuestRepository(
                     UPDATE quest:${id.value} SET
                         deleted_at = time::now(),
                         updated_at = time::now()
-                    WHERE user_id = user:$userId;
+                    WHERE user_id = user:${userId.value};
                     """.trimIndent(),
                 ).mapLeft { QuestError.NotFound(id) }
                 .bind()
@@ -118,7 +120,7 @@ class SurrealQuestRepository(
         kotlinx.coroutines.flow.flow {
             val result =
                 db.query<Any>(
-                    "SELECT * FROM quest WHERE user_id = user:$userId AND deleted_at IS NONE ORDER BY created_at DESC",
+                    "SELECT * FROM quest WHERE user_id = user:${userId.value} AND deleted_at IS NONE ORDER BY created_at DESC",
                 )
             emit(result.fold({ emptyList() }, { parseQuests(it) }))
         }
@@ -127,8 +129,7 @@ class SurrealQuestRepository(
         kotlinx.coroutines.flow.flow {
             val result =
                 db.query<Any>(
-                    "SELECT * FROM quest WHERE user_id = user:$userId AND status = \$status AND deleted_at IS NONE",
-                    mapOf("status" to status.name.lowercase()),
+                    "SELECT * FROM quest WHERE user_id = user:${userId.value} AND status = '${status.name.lowercase()}' AND deleted_at IS NONE",
                 )
             emit(result.fold({ emptyList() }, { parseQuests(it) }))
         }
@@ -139,8 +140,7 @@ class SurrealQuestRepository(
         kotlinx.coroutines.flow.flow {
             val result =
                 db.query<Any>(
-                    "SELECT * FROM quest WHERE user_id = user:$userId AND scheduled_date = \$date AND deleted_at IS NONE",
-                    mapOf("date" to date.toString()),
+                    "SELECT * FROM quest WHERE user_id = user:${userId.value} AND scheduled_date = '$date' AND deleted_at IS NONE",
                 )
             emit(result.fold({ emptyList() }, { parseQuests(it) }))
         }
@@ -149,8 +149,7 @@ class SurrealQuestRepository(
         kotlinx.coroutines.flow.flow {
             val result =
                 db.query<Any>(
-                    "SELECT * FROM quest WHERE user_id = user:$userId AND due_date <= \$date AND deleted_at IS NONE",
-                    mapOf("date" to date.toString()),
+                    "SELECT * FROM quest WHERE user_id = user:${userId.value} AND due_date <= '$date' AND deleted_at IS NONE",
                 )
             emit(result.fold({ emptyList() }, { parseQuests(it) }))
         }
@@ -159,7 +158,7 @@ class SurrealQuestRepository(
         kotlinx.coroutines.flow.flow {
             val result =
                 db.query<Any>(
-                    "SELECT * FROM quest WHERE user_id = user:$userId AND epic_id = epic:${epicId.value} AND deleted_at IS NONE",
+                    "SELECT * FROM quest WHERE user_id = user:${userId.value} AND epic_id = epic:${epicId.value} AND deleted_at IS NONE",
                 )
             emit(result.fold({ emptyList() }, { parseQuests(it) }))
         }
@@ -168,7 +167,7 @@ class SurrealQuestRepository(
         kotlinx.coroutines.flow.flow {
             val result =
                 db.query<Any>(
-                    "SELECT * FROM quest WHERE user_id = user:$userId AND routine_id = routine:${routineId.value} AND deleted_at IS NONE",
+                    "SELECT * FROM quest WHERE user_id = user:${userId.value} AND routine_id = routine:${routineId.value} AND deleted_at IS NONE",
                 )
             emit(result.fold({ emptyList() }, { parseQuests(it) }))
         }
@@ -177,7 +176,7 @@ class SurrealQuestRepository(
         kotlinx.coroutines.flow.flow {
             val result =
                 db.query<Any>(
-                    "SELECT * FROM quest WHERE user_id = user:$userId AND initiative_id = initiative:${initiativeId.value} AND deleted_at IS NONE",
+                    "SELECT * FROM quest WHERE user_id = user:${userId.value} AND initiative_id = initiative:${initiativeId.value} AND deleted_at IS NONE",
                 )
             emit(result.fold({ emptyList() }, { parseQuests(it) }))
         }
@@ -225,7 +224,7 @@ class SurrealQuestRepository(
                         status = '${newStatus.name.lowercase()}',
                         ${if (statusUpdate.isNotEmpty()) "$statusUpdate," else ""}
                         updated_at = $now
-                    WHERE user_id = user:$userId;
+                    WHERE user_id = user:${userId.value};
                     """.trimIndent(),
                 ).mapLeft { QuestError.NotFound(id) }
                 .bind()
@@ -238,7 +237,7 @@ class SurrealQuestRepository(
             val result =
                 db
                     .query<Any>(
-                        "SELECT count() FROM quest WHERE user_id = user:$userId AND status = 'active' AND deleted_at IS NONE GROUP ALL",
+                        "SELECT count() FROM quest WHERE user_id = user:${userId.value} AND status = 'active' AND deleted_at IS NONE GROUP ALL",
                     ).mapLeft { QuestError.NotFound(Ulid.generate()) }
                     .bind()
 
@@ -251,6 +250,7 @@ class SurrealQuestRepository(
             val obj = array.firstOrNull()?.jsonObject ?: return null
             mapToQuest(obj)
         } catch (e: Exception) {
+            logger.warn("Failed to parse quest: ${e.message}", e)
             null
         }
     }
@@ -262,10 +262,12 @@ class SurrealQuestRepository(
                 try {
                     mapToQuest(element.jsonObject)
                 } catch (e: Exception) {
+                    logger.warn("Failed to parse quest element: ${e.message}", e)
                     null
                 }
             }
         } catch (e: Exception) {
+            logger.warn("Failed to parse quests array: ${e.message}", e)
             emptyList()
         }
 
@@ -314,6 +316,7 @@ class SurrealQuestRepository(
             try {
                 Instant.parse(it)
             } catch (e: Exception) {
+                logger.warn("Failed to parse instant '$value': ${e.message}")
                 Instant.DISTANT_PAST
             }
         } ?: Instant.DISTANT_PAST
@@ -328,6 +331,7 @@ class SurrealQuestRepository(
                 ?.content
                 ?.toIntOrNull() ?: 0
         } catch (e: Exception) {
+            logger.warn("Failed to parse count: ${e.message}", e)
             0
         }
 }

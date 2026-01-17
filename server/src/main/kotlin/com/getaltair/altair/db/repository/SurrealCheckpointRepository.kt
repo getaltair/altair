@@ -18,7 +18,7 @@ import kotlin.time.Clock
 
 class SurrealCheckpointRepository(
     private val db: SurrealDbClient,
-    private val userId: String,
+    private val userId: Ulid,
 ) : CheckpointRepository {
     private val json =
         Json {
@@ -31,7 +31,7 @@ class SurrealCheckpointRepository(
             val result =
                 db
                     .query<Any>(
-                        "SELECT * FROM checkpoint:${id.value} WHERE user_id = user:$userId",
+                        "SELECT * FROM checkpoint:${id.value} WHERE user_id = user:${userId.value}",
                     ).bind()
             parseCheckpoint(result) ?: raise(DomainError.NotFoundError("Checkpoint", id.value))
         }
@@ -49,7 +49,7 @@ class SurrealCheckpointRepository(
                             is_completed = ${entity.isCompleted},
                             completed_at = ${entity.completedAt?.let { "<datetime>'$it'" } ?: "NONE"},
                             updated_at = time::now()
-                        WHERE user_id = user:$userId;
+                        WHERE user_id = user:${userId.value};
                         """.trimIndent(),
                     ).bind()
             } else {
@@ -57,7 +57,7 @@ class SurrealCheckpointRepository(
                     .execute(
                         """
                         CREATE checkpoint:${entity.id.value} CONTENT {
-                            user_id: user:$userId,
+                            user_id: user:${userId.value},
                             quest_id: quest:${entity.questId.value},
                             title: '${entity.title.replace("'", "''")}',
                             sort_order: ${entity.sortOrder},
@@ -72,14 +72,14 @@ class SurrealCheckpointRepository(
 
     override suspend fun delete(id: Ulid): Either<DomainError, Unit> =
         either {
-            db.execute("DELETE checkpoint:${id.value} WHERE user_id = user:$userId;").bind()
+            db.execute("DELETE checkpoint:${id.value} WHERE user_id = user:${userId.value};").bind()
         }
 
     override fun findAll(): Flow<List<Checkpoint>> =
         flow {
             val result =
                 db.query<Any>(
-                    "SELECT * FROM checkpoint WHERE user_id = user:$userId ORDER BY sort_order",
+                    "SELECT * FROM checkpoint WHERE user_id = user:${userId.value} ORDER BY sort_order",
                 )
             emit(result.fold({ emptyList() }, { parseCheckpoints(it) }))
         }
@@ -88,7 +88,7 @@ class SurrealCheckpointRepository(
         flow {
             val result =
                 db.query<Any>(
-                    "SELECT * FROM checkpoint WHERE user_id = user:$userId AND quest_id = quest:${questId.value} ORDER BY sort_order",
+                    "SELECT * FROM checkpoint WHERE user_id = user:${userId.value} AND quest_id = quest:${questId.value} ORDER BY sort_order",
                 )
             emit(result.fold({ emptyList() }, { parseCheckpoints(it) }))
         }
@@ -105,7 +105,7 @@ class SurrealCheckpointRepository(
                         is_completed = $newCompleted,
                         completed_at = ${completedAt?.let { "<datetime>'$it'" } ?: "NONE"},
                         updated_at = time::now()
-                    WHERE user_id = user:$userId;
+                    WHERE user_id = user:${userId.value};
                     """.trimIndent(),
                 ).bind()
             findById(id).bind()
@@ -119,7 +119,7 @@ class SurrealCheckpointRepository(
             orderedIds.forEachIndexed { index, id ->
                 db
                     .execute(
-                        "UPDATE checkpoint:${id.value} SET sort_order = $index, updated_at = time::now() WHERE user_id = user:$userId AND quest_id = quest:${questId.value};",
+                        "UPDATE checkpoint:${id.value} SET sort_order = $index, updated_at = time::now() WHERE user_id = user:${userId.value} AND quest_id = quest:${questId.value};",
                     ).bind()
             }
         }
@@ -133,7 +133,7 @@ class SurrealCheckpointRepository(
             val result =
                 db
                     .query<Any>(
-                        "SELECT count() FROM checkpoint WHERE user_id = user:$userId AND quest_id = quest:${questId.value} $filter GROUP ALL",
+                        "SELECT count() FROM checkpoint WHERE user_id = user:${userId.value} AND quest_id = quest:${questId.value} $filter GROUP ALL",
                     ).bind()
             parseCount(result)
         }

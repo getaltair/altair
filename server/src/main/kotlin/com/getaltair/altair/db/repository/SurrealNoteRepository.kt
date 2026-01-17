@@ -16,10 +16,11 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import org.slf4j.LoggerFactory
 
 class SurrealNoteRepository(
     private val db: SurrealDbClient,
-    private val userId: String,
+    private val userId: Ulid,
 ) : NoteRepository {
     private val json =
         Json {
@@ -27,12 +28,16 @@ class SurrealNoteRepository(
             isLenient = true
         }
 
+    companion object {
+        private val logger = LoggerFactory.getLogger(SurrealNoteRepository::class.java)
+    }
+
     override suspend fun findById(id: Ulid): Either<NoteError, Note> =
         either {
             val result =
                 db
                     .query<Any>(
-                        "SELECT * FROM note:${id.value} WHERE user_id = user:$userId AND deleted_at IS NONE",
+                        "SELECT * FROM note:${id.value} WHERE user_id = user:${userId.value} AND deleted_at IS NONE",
                     ).mapLeft { NoteError.NotFound(id) }
                     .bind()
             parseNote(result) ?: raise(NoteError.NotFound(id))
@@ -52,7 +57,7 @@ class SurrealNoteRepository(
                             initiative_id = ${entity.initiativeId?.let { "initiative:${it.value}" } ?: "NONE"},
                             is_pinned = ${entity.isPinned},
                             updated_at = time::now()
-                        WHERE user_id = user:$userId;
+                        WHERE user_id = user:${userId.value};
                         """.trimIndent(),
                     ).mapLeft { NoteError.NotFound(entity.id) }
                     .bind()
@@ -61,7 +66,7 @@ class SurrealNoteRepository(
                     .execute(
                         """
                         CREATE note:${entity.id.value} CONTENT {
-                            user_id: user:$userId,
+                            user_id: user:${userId.value},
                             title: '${entity.title.replace("'", "''")}',
                             content: '${entity.content.replace("'", "''")}',
                             folder_id: ${entity.folderId?.let { "folder:${it.value}" } ?: "NONE"},
@@ -80,7 +85,7 @@ class SurrealNoteRepository(
             findById(id).bind()
             db
                 .execute(
-                    "UPDATE note:${id.value} SET deleted_at = time::now(), updated_at = time::now() WHERE user_id = user:$userId;",
+                    "UPDATE note:${id.value} SET deleted_at = time::now(), updated_at = time::now() WHERE user_id = user:${userId.value};",
                 ).mapLeft { NoteError.NotFound(id) }
                 .bind()
         }
@@ -89,7 +94,7 @@ class SurrealNoteRepository(
         flow {
             val result =
                 db.query<Any>(
-                    "SELECT * FROM note WHERE user_id = user:$userId AND deleted_at IS NONE ORDER BY updated_at DESC",
+                    "SELECT * FROM note WHERE user_id = user:${userId.value} AND deleted_at IS NONE ORDER BY updated_at DESC",
                 )
             emit(result.fold({ emptyList() }, { parseNotes(it) }))
         }
@@ -99,7 +104,7 @@ class SurrealNoteRepository(
             val filter = folderId?.let { "folder_id = folder:${it.value}" } ?: "folder_id IS NONE"
             val result =
                 db.query<Any>(
-                    "SELECT * FROM note WHERE user_id = user:$userId AND $filter AND deleted_at IS NONE ORDER BY title",
+                    "SELECT * FROM note WHERE user_id = user:${userId.value} AND $filter AND deleted_at IS NONE ORDER BY title",
                 )
             emit(result.fold({ emptyList() }, { parseNotes(it) }))
         }
@@ -108,7 +113,7 @@ class SurrealNoteRepository(
         flow {
             val result =
                 db.query<Any>(
-                    "SELECT * FROM note WHERE user_id = user:$userId AND is_pinned = true AND deleted_at IS NONE",
+                    "SELECT * FROM note WHERE user_id = user:${userId.value} AND is_pinned = true AND deleted_at IS NONE",
                 )
             emit(result.fold({ emptyList() }, { parseNotes(it) }))
         }
@@ -117,7 +122,7 @@ class SurrealNoteRepository(
         flow {
             val result =
                 db.query<Any>(
-                    "SELECT * FROM note WHERE user_id = user:$userId AND initiative_id = initiative:${initiativeId.value} AND deleted_at IS NONE",
+                    "SELECT * FROM note WHERE user_id = user:${userId.value} AND initiative_id = initiative:${initiativeId.value} AND deleted_at IS NONE",
                 )
             emit(result.fold({ emptyList() }, { parseNotes(it) }))
         }
@@ -128,7 +133,7 @@ class SurrealNoteRepository(
                 db
                     .query<Any>(
                         """
-                        SELECT * FROM note WHERE user_id = user:$userId AND deleted_at IS NONE
+                        SELECT * FROM note WHERE user_id = user:${userId.value} AND deleted_at IS NONE
                         AND (string::lowercase(title) CONTAINS string::lowercase('${query.replace("'", "''")}')
                              OR string::lowercase(content) CONTAINS string::lowercase('${query.replace("'", "''")}'))
                         ORDER BY updated_at DESC
@@ -160,7 +165,7 @@ class SurrealNoteRepository(
                     SELECT note.* FROM note_link
                     INNER JOIN note ON note_link.source_note_id = note.id
                     WHERE note_link.target_note_id = note:${noteId.value}
-                    AND note.user_id = user:$userId AND note.deleted_at IS NONE
+                    AND note.user_id = user:${userId.value} AND note.deleted_at IS NONE
                     """.trimIndent(),
                 )
             emit(result.fold({ emptyList() }, { parseNotes(it) }))
@@ -174,7 +179,7 @@ class SurrealNoteRepository(
                     SELECT note.* FROM note_link
                     INNER JOIN note ON note_link.target_note_id = note.id
                     WHERE note_link.source_note_id = note:${noteId.value}
-                    AND note.user_id = user:$userId AND note.deleted_at IS NONE
+                    AND note.user_id = user:${userId.value} AND note.deleted_at IS NONE
                     """.trimIndent(),
                 )
             emit(result.fold({ emptyList() }, { parseNotes(it) }))
@@ -185,7 +190,7 @@ class SurrealNoteRepository(
             val note = findById(id).bind()
             db
                 .execute(
-                    "UPDATE note:${id.value} SET is_pinned = ${!note.isPinned}, updated_at = time::now() WHERE user_id = user:$userId;",
+                    "UPDATE note:${id.value} SET is_pinned = ${!note.isPinned}, updated_at = time::now() WHERE user_id = user:${userId.value};",
                 ).mapLeft { NoteError.NotFound(id) }
                 .bind()
             findById(id).bind()
@@ -200,7 +205,7 @@ class SurrealNoteRepository(
             val folderRef = folderId?.let { "folder:${it.value}" } ?: "NONE"
             db
                 .execute(
-                    "UPDATE note:${id.value} SET folder_id = $folderRef, updated_at = time::now() WHERE user_id = user:$userId;",
+                    "UPDATE note:${id.value} SET folder_id = $folderRef, updated_at = time::now() WHERE user_id = user:${userId.value};",
                 ).mapLeft { NoteError.NotFound(id) }
                 .bind()
             findById(id).bind()
@@ -215,6 +220,7 @@ class SurrealNoteRepository(
                 ?.jsonObject
                 ?.let { mapToNote(it) }
         } catch (e: Exception) {
+            logger.warn("Failed to parse note: ${e.message}", e)
             null
         }
 
@@ -224,10 +230,12 @@ class SurrealNoteRepository(
                 try {
                     mapToNote(it.jsonObject)
                 } catch (e: Exception) {
+                    logger.warn("Failed to parse note element: ${e.message}", e)
                     null
                 }
             }
         } catch (e: Exception) {
+            logger.warn("Failed to parse notes array: ${e.message}", e)
             emptyList()
         }
 
@@ -263,6 +271,7 @@ class SurrealNoteRepository(
             try {
                 Instant.parse(it)
             } catch (e: Exception) {
+                logger.warn("Failed to parse instant '$value': ${e.message}")
                 Instant.DISTANT_PAST
             }
         } ?: Instant.DISTANT_PAST

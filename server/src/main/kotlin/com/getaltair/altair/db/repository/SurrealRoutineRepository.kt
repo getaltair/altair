@@ -23,7 +23,7 @@ import kotlinx.serialization.json.jsonPrimitive
  */
 class SurrealRoutineRepository(
     private val db: SurrealDbClient,
-    private val userId: String,
+    private val userId: Ulid,
 ) : RoutineRepository {
     private val json =
         Json {
@@ -36,7 +36,7 @@ class SurrealRoutineRepository(
             val result =
                 db
                     .query<Any>(
-                        "SELECT * FROM routine:${id.value} WHERE user_id = user:$userId AND deleted_at IS NONE",
+                        "SELECT * FROM routine:${id.value} WHERE user_id = user:${userId.value} AND deleted_at IS NONE",
                     ).bind()
             parseRoutine(result) ?: raise(DomainError.NotFoundError("Routine", id.value))
         }
@@ -60,7 +60,7 @@ class SurrealRoutineRepository(
                             is_active = ${entity.isActive},
                             last_spawned_at = ${entity.lastSpawnedAt?.let { "<datetime>'$it'" } ?: "NONE"},
                             updated_at = time::now()
-                        WHERE user_id = user:$userId;
+                        WHERE user_id = user:${userId.value};
                         """.trimIndent(),
                     ).bind()
             } else {
@@ -68,7 +68,7 @@ class SurrealRoutineRepository(
                     .execute(
                         """
                         CREATE routine:${entity.id.value} CONTENT {
-                            user_id: user:$userId,
+                            user_id: user:${userId.value},
                             title: '${entity.title.replace("'", "''")}',
                             description: ${entity.description?.let { "'${it.replace("'", "''")}'" } ?: "NONE"},
                             energy_cost: ${entity.energyCost},
@@ -89,7 +89,7 @@ class SurrealRoutineRepository(
             findById(id).bind()
             db
                 .execute(
-                    "UPDATE routine:${id.value} SET deleted_at = time::now(), updated_at = time::now() WHERE user_id = user:$userId;",
+                    "UPDATE routine:${id.value} SET deleted_at = time::now(), updated_at = time::now() WHERE user_id = user:${userId.value};",
                 ).bind()
         }
 
@@ -97,7 +97,7 @@ class SurrealRoutineRepository(
         flow {
             val result =
                 db.query<Any>(
-                    "SELECT * FROM routine WHERE user_id = user:$userId AND deleted_at IS NONE ORDER BY created_at DESC",
+                    "SELECT * FROM routine WHERE user_id = user:${userId.value} AND deleted_at IS NONE ORDER BY created_at DESC",
                 )
             emit(result.fold({ emptyList() }, { parseRoutines(it) }))
         }
@@ -106,7 +106,7 @@ class SurrealRoutineRepository(
         flow {
             val result =
                 db.query<Any>(
-                    "SELECT * FROM routine WHERE user_id = user:$userId AND is_active = true AND deleted_at IS NONE",
+                    "SELECT * FROM routine WHERE user_id = user:${userId.value} AND is_active = true AND deleted_at IS NONE",
                 )
             emit(result.fold({ emptyList() }, { parseRoutines(it) }))
         }
@@ -117,7 +117,7 @@ class SurrealRoutineRepository(
             val result =
                 db
                     .query<Any>(
-                        "SELECT * FROM routine WHERE user_id = user:$userId AND is_active = true AND deleted_at IS NONE",
+                        "SELECT * FROM routine WHERE user_id = user:${userId.value} AND is_active = true AND deleted_at IS NONE",
                     ).bind()
             parseRoutines(result)
         }
@@ -126,7 +126,7 @@ class SurrealRoutineRepository(
         flow {
             val result =
                 db.query<Any>(
-                    "SELECT * FROM routine WHERE user_id = user:$userId AND initiative_id = initiative:${initiativeId.value} AND deleted_at IS NONE",
+                    "SELECT * FROM routine WHERE user_id = user:${userId.value} AND initiative_id = initiative:${initiativeId.value} AND deleted_at IS NONE",
                 )
             emit(result.fold({ emptyList() }, { parseRoutines(it) }))
         }
@@ -139,7 +139,7 @@ class SurrealRoutineRepository(
             findById(id).bind()
             db
                 .execute(
-                    "UPDATE routine:${id.value} SET last_spawned_at = <datetime>'$spawnedAt', updated_at = time::now() WHERE user_id = user:$userId;",
+                    "UPDATE routine:${id.value} SET last_spawned_at = <datetime>'$spawnedAt', updated_at = time::now() WHERE user_id = user:${userId.value};",
                 ).bind()
             findById(id).bind()
         }

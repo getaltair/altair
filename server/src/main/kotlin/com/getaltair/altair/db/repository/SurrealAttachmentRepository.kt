@@ -17,7 +17,7 @@ import kotlinx.serialization.json.jsonPrimitive
 
 class SurrealAttachmentRepository(
     private val db: SurrealDbClient,
-    private val userId: String,
+    private val userId: Ulid,
 ) : AttachmentRepository {
     private val json =
         Json {
@@ -30,7 +30,7 @@ class SurrealAttachmentRepository(
             val result =
                 db
                     .query<Any>(
-                        "SELECT * FROM attachment:${id.value} WHERE user_id = user:$userId AND deleted_at IS NONE",
+                        "SELECT * FROM attachment:${id.value} WHERE user_id = user:${userId.value} AND deleted_at IS NONE",
                     ).bind()
             parseAttachment(result) ?: raise(DomainError.NotFoundError("Attachment", id.value))
         }
@@ -41,7 +41,7 @@ class SurrealAttachmentRepository(
                 .execute(
                     """
                     CREATE attachment:${entity.id.value} CONTENT {
-                        user_id: user:$userId,
+                        user_id: user:${userId.value},
                         note_id: ${entity.noteId?.let { "note:${it.value}" } ?: "NONE"},
                         inbox_item_id: ${entity.inboxItemId?.let { "inbox_item:${it.value}" } ?: "NONE"},
                         filename: '${entity.filename.replace("'", "''")}',
@@ -59,7 +59,7 @@ class SurrealAttachmentRepository(
             findById(id).bind()
             db
                 .execute(
-                    "UPDATE attachment:${id.value} SET deleted_at = time::now(), updated_at = time::now() WHERE user_id = user:$userId;",
+                    "UPDATE attachment:${id.value} SET deleted_at = time::now(), updated_at = time::now() WHERE user_id = user:${userId.value};",
                 ).bind()
         }
 
@@ -67,7 +67,7 @@ class SurrealAttachmentRepository(
         flow {
             val result =
                 db.query<Any>(
-                    "SELECT * FROM attachment WHERE user_id = user:$userId AND deleted_at IS NONE ORDER BY created_at DESC",
+                    "SELECT * FROM attachment WHERE user_id = user:${userId.value} AND deleted_at IS NONE ORDER BY created_at DESC",
                 )
             emit(result.fold({ emptyList() }, { parseAttachments(it) }))
         }
@@ -76,7 +76,7 @@ class SurrealAttachmentRepository(
         flow {
             val result =
                 db.query<Any>(
-                    "SELECT * FROM attachment WHERE user_id = user:$userId AND note_id = note:${noteId.value} AND deleted_at IS NONE",
+                    "SELECT * FROM attachment WHERE user_id = user:${userId.value} AND note_id = note:${noteId.value} AND deleted_at IS NONE",
                 )
             emit(result.fold({ emptyList() }, { parseAttachments(it) }))
         }
@@ -85,7 +85,7 @@ class SurrealAttachmentRepository(
         flow {
             val result =
                 db.query<Any>(
-                    "SELECT * FROM attachment WHERE user_id = user:$userId AND inbox_item_id = inbox_item:${inboxItemId.value} AND deleted_at IS NONE",
+                    "SELECT * FROM attachment WHERE user_id = user:${userId.value} AND inbox_item_id = inbox_item:${inboxItemId.value} AND deleted_at IS NONE",
                 )
             emit(result.fold({ emptyList() }, { parseAttachments(it) }))
         }
@@ -98,7 +98,7 @@ class SurrealAttachmentRepository(
             findById(id).bind()
             db
                 .execute(
-                    "UPDATE attachment:${id.value} SET note_id = note:${noteId.value}, updated_at = time::now() WHERE user_id = user:$userId;",
+                    "UPDATE attachment:${id.value} SET note_id = note:${noteId.value}, updated_at = time::now() WHERE user_id = user:${userId.value};",
                 ).bind()
             findById(id).bind()
         }
@@ -108,7 +108,7 @@ class SurrealAttachmentRepository(
             val result =
                 db
                     .query<Any>(
-                        "SELECT math::sum(size_bytes) AS total FROM attachment WHERE user_id = user:$userId AND deleted_at IS NONE GROUP ALL",
+                        "SELECT math::sum(size_bytes) AS total FROM attachment WHERE user_id = user:${userId.value} AND deleted_at IS NONE GROUP ALL",
                     ).bind()
             try {
                 json
@@ -131,7 +131,7 @@ class SurrealAttachmentRepository(
         flow {
             val result =
                 db.query<Any>(
-                    "SELECT * FROM attachment WHERE user_id = user:$userId AND string::startsWith(mime_type, '$mimeTypePrefix') AND deleted_at IS NONE",
+                    "SELECT * FROM attachment WHERE user_id = user:${userId.value} AND string::startsWith(mime_type, '$mimeTypePrefix') AND deleted_at IS NONE",
                 )
             emit(result.fold({ emptyList() }, { parseAttachments(it) }))
         }
@@ -141,7 +141,7 @@ class SurrealAttachmentRepository(
             val result =
                 db
                     .query<Any>(
-                        "SELECT * FROM attachment WHERE user_id = user:$userId AND note_id IS NONE AND inbox_item_id IS NONE AND deleted_at IS NONE",
+                        "SELECT * FROM attachment WHERE user_id = user:${userId.value} AND note_id IS NONE AND inbox_item_id IS NONE AND deleted_at IS NONE",
                     ).bind()
             parseAttachments(result)
         }

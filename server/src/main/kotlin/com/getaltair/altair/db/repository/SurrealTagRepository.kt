@@ -19,7 +19,7 @@ import kotlin.time.Clock
 
 class SurrealTagRepository(
     private val db: SurrealDbClient,
-    private val userId: String,
+    private val userId: Ulid,
 ) : TagRepository {
     private val logger = LoggerFactory.getLogger(SurrealTagRepository::class.java)
     private val json =
@@ -33,7 +33,7 @@ class SurrealTagRepository(
             val result =
                 db
                     .query<Any>(
-                        "SELECT * FROM tag:${id.value} WHERE user_id = user:$userId AND deleted_at IS NONE",
+                        "SELECT * FROM tag:${id.value} WHERE user_id = user:${userId.value} AND deleted_at IS NONE",
                     ).bind()
             parseTag(result) ?: raise(DomainError.NotFoundError("Tag", id.value))
         }
@@ -49,7 +49,7 @@ class SurrealTagRepository(
                             name = '${entity.name.replace("'", "''")}',
                             color = ${entity.color?.let { "'$it'" } ?: "NONE"},
                             updated_at = time::now()
-                        WHERE user_id = user:$userId;
+                        WHERE user_id = user:${userId.value};
                         """.trimIndent(),
                     ).bind()
             } else {
@@ -57,7 +57,7 @@ class SurrealTagRepository(
                     .execute(
                         """
                         CREATE tag:${entity.id.value} CONTENT {
-                            user_id: user:$userId,
+                            user_id: user:${userId.value},
                             name: '${entity.name.replace("'", "''")}',
                             color: ${entity.color?.let { "'$it'" } ?: "NONE"}
                         };
@@ -72,7 +72,7 @@ class SurrealTagRepository(
             findById(id).bind()
             db
                 .execute(
-                    "UPDATE tag:${id.value} SET deleted_at = time::now(), updated_at = time::now() WHERE user_id = user:$userId;",
+                    "UPDATE tag:${id.value} SET deleted_at = time::now(), updated_at = time::now() WHERE user_id = user:${userId.value};",
                 ).bind()
         }
 
@@ -80,7 +80,7 @@ class SurrealTagRepository(
         flow {
             val result =
                 db.query<Any>(
-                    "SELECT * FROM tag WHERE user_id = user:$userId AND deleted_at IS NONE ORDER BY name",
+                    "SELECT * FROM tag WHERE user_id = user:${userId.value} AND deleted_at IS NONE ORDER BY name",
                 )
             emit(result.fold({ emptyList() }, { parseTags(it) }))
         }
@@ -90,7 +90,7 @@ class SurrealTagRepository(
             val result =
                 db
                     .query<Any>(
-                        "SELECT * FROM tag WHERE user_id = user:$userId AND name = '${name.replace(
+                        "SELECT * FROM tag WHERE user_id = user:${userId.value} AND name = '${name.replace(
                             "'",
                             "''",
                         )}' AND deleted_at IS NONE",
@@ -111,7 +111,7 @@ class SurrealTagRepository(
                 val tag =
                     Tag(
                         id = Ulid.generate(),
-                        userId = Ulid(userId),
+                        userId = userId,
                         name = name,
                         color = color,
                         createdAt = now,
@@ -129,8 +129,8 @@ class SurrealTagRepository(
                     SELECT tag.* FROM note_tag
                     INNER JOIN tag ON note_tag.tag_id = tag.id
                     WHERE note_tag.note_id = note:${noteId.value}
-                        AND note_tag.user_id = user:$userId
-                        AND tag.user_id = user:$userId
+                        AND note_tag.user_id = user:${userId.value}
+                        AND tag.user_id = user:${userId.value}
                         AND tag.deleted_at IS NONE
                     """.trimIndent(),
                 )
@@ -146,7 +146,7 @@ class SurrealTagRepository(
                 .execute(
                     """
                     CREATE note_tag CONTENT {
-                        user_id: user:$userId,
+                        user_id: user:${userId.value},
                         note_id: note:${noteId.value},
                         tag_id: tag:${tagId.value}
                     };
@@ -161,7 +161,7 @@ class SurrealTagRepository(
         either {
             db
                 .execute(
-                    "DELETE note_tag WHERE user_id = user:$userId AND note_id = note:${noteId.value} AND tag_id = tag:${tagId.value};",
+                    "DELETE note_tag WHERE user_id = user:${userId.value} AND note_id = note:${noteId.value} AND tag_id = tag:${tagId.value};",
                 ).bind()
         }
 
@@ -172,7 +172,7 @@ class SurrealTagRepository(
                     """
                     SELECT tag.*, count(note_tag.id) AS usage_count FROM tag
                     LEFT JOIN note_tag ON tag.id = note_tag.tag_id
-                    WHERE tag.user_id = user:$userId AND tag.deleted_at IS NONE
+                    WHERE tag.user_id = user:${userId.value} AND tag.deleted_at IS NONE
                     GROUP BY tag.id
                     ORDER BY usage_count DESC
                     LIMIT $limit

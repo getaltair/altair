@@ -21,7 +21,7 @@ import kotlin.time.Clock
 
 class SurrealEnergyBudgetRepository(
     private val db: SurrealDbClient,
-    private val userId: String,
+    private val userId: Ulid,
 ) : EnergyBudgetRepository {
     private val json =
         Json {
@@ -38,7 +38,7 @@ class SurrealEnergyBudgetRepository(
             val result =
                 db
                     .query<Any>(
-                        "SELECT * FROM energy_budget:${id.value} WHERE user_id = user:$userId",
+                        "SELECT * FROM energy_budget:${id.value} WHERE user_id = user:${userId.value}",
                     ).bind()
             parseBudget(result) ?: raise(DomainError.NotFoundError("EnergyBudget", id.value))
         }
@@ -55,7 +55,7 @@ class SurrealEnergyBudgetRepository(
                             total_budget = ${entity.totalBudget},
                             spent_energy = ${entity.spentEnergy},
                             updated_at = time::now()
-                        WHERE user_id = user:$userId;
+                        WHERE user_id = user:${userId.value};
                         """.trimIndent(),
                     ).bind()
             } else {
@@ -63,7 +63,7 @@ class SurrealEnergyBudgetRepository(
                     .execute(
                         """
                         CREATE energy_budget:${entity.id.value} CONTENT {
-                            user_id: user:$userId,
+                            user_id: user:${userId.value},
                             date: '${entity.date}',
                             total_budget: ${entity.totalBudget},
                             spent_energy: ${entity.spentEnergy}
@@ -76,14 +76,14 @@ class SurrealEnergyBudgetRepository(
 
     override suspend fun delete(id: Ulid): Either<DomainError, Unit> =
         either {
-            db.execute("DELETE energy_budget:${id.value} WHERE user_id = user:$userId;").bind()
+            db.execute("DELETE energy_budget:${id.value} WHERE user_id = user:${userId.value};").bind()
         }
 
     override fun findAll(): Flow<List<EnergyBudget>> =
         flow {
             val result =
                 db.query<Any>(
-                    "SELECT * FROM energy_budget WHERE user_id = user:$userId ORDER BY date DESC",
+                    "SELECT * FROM energy_budget WHERE user_id = user:${userId.value} ORDER BY date DESC",
                 )
             emit(result.fold({ emptyList() }, { parseBudgets(it) }))
         }
@@ -93,7 +93,7 @@ class SurrealEnergyBudgetRepository(
             val result =
                 db
                     .query<Any>(
-                        "SELECT * FROM energy_budget WHERE user_id = user:$userId AND date = '$date'",
+                        "SELECT * FROM energy_budget WHERE user_id = user:${userId.value} AND date = '$date'",
                     ).bind()
             val existing = parseBudget(result)
             if (existing != null) {
@@ -103,7 +103,7 @@ class SurrealEnergyBudgetRepository(
                 val newBudget =
                     EnergyBudget(
                         id = Ulid.generate(),
-                        userId = Ulid(userId),
+                        userId = userId,
                         date = date,
                         totalBudget = DEFAULT_BUDGET,
                         spentEnergy = 0,
@@ -127,7 +127,7 @@ class SurrealEnergyBudgetRepository(
         flow {
             val result =
                 db.query<Any>(
-                    "SELECT * FROM energy_budget WHERE user_id = user:$userId AND date >= '$startDate' AND date <= '$endDate' ORDER BY date",
+                    "SELECT * FROM energy_budget WHERE user_id = user:${userId.value} AND date >= '$startDate' AND date <= '$endDate' ORDER BY date",
                 )
             emit(result.fold({ emptyList() }, { parseBudgets(it) }))
         }
@@ -141,7 +141,7 @@ class SurrealEnergyBudgetRepository(
             val newSpent = budget.spentEnergy + energyToAdd
             db
                 .execute(
-                    "UPDATE energy_budget:${budget.id.value} SET spent_energy = $newSpent, updated_at = time::now() WHERE user_id = user:$userId;",
+                    "UPDATE energy_budget:${budget.id.value} SET spent_energy = $newSpent, updated_at = time::now() WHERE user_id = user:${userId.value};",
                 ).bind()
             findById(budget.id).bind()
         }
@@ -154,7 +154,7 @@ class SurrealEnergyBudgetRepository(
             val budget = findOrCreateByDate(date).bind()
             db
                 .execute(
-                    "UPDATE energy_budget:${budget.id.value} SET total_budget = $newBudget, updated_at = time::now() WHERE user_id = user:$userId;",
+                    "UPDATE energy_budget:${budget.id.value} SET total_budget = $newBudget, updated_at = time::now() WHERE user_id = user:${userId.value};",
                 ).bind()
             findById(budget.id).bind()
         }
