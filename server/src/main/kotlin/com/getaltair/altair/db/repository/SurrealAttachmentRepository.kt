@@ -47,7 +47,7 @@ class SurrealAttachmentRepository(
                         note_id: ${entity.noteId?.let { "note:${it.value}" } ?: "NONE"},
                         inbox_item_id: ${entity.inboxItemId?.let { "inbox_item:${it.value}" } ?: "NONE"},
                         filename: '${entity.filename.replace("'", "''")}',
-                        mime_type: '${entity.mimeType}',
+                        mime_type: '${entity.mimeType.replace("'", "''")}',
                         size_bytes: ${entity.sizeBytes},
                         storage_path: '${entity.storagePath.replace("'", "''")}'
                     };
