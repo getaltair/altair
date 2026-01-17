@@ -14,6 +14,17 @@ application {
     mainClass = "io.ktor.server.netty.EngineMain"
 }
 
+// Force Netty version to fix CVE vulnerabilities (CRLF Injection in netty-codec-http)
+val nettyVersion = "4.2.9.Final"
+
+configurations.all {
+    resolutionStrategy.eachDependency {
+        if (requested.group == "io.netty") {
+            useVersion(nettyVersion)
+        }
+    }
+}
+
 dependencies {
     implementation(libs.ktor.server.core)
     implementation(libs.ktor.server.content.negotiation)

@@ -1,0 +1,80 @@
+name: Test Suite
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  jvm-tests:
+    name: JVM Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Run shared module JVM tests
+        run: ./gradlew :shared:jvmTest --no-daemon
+
+      - name: Run composeApp JVM tests
+        run: ./gradlew :composeApp:jvmTest --no-daemon
+
+      - name: Run server tests
+        run: ./gradlew :server:test --no-daemon
+
+      - name: Upload test reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: jvm-test-reports
+          path: |
+            shared/build/reports/tests/
+            composeApp/build/reports/tests/
+            server/build/reports/tests/
+          retention-days: 7
+
+  android-unit-tests:
+    name: Android Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Run shared module Android unit tests
+        run: ./gradlew :shared:testDebugUnitTest --no-daemon
+
+      - name: Run composeApp Android unit tests
+        run: ./gradlew :composeApp:testDebugUnitTest --no-daemon
+
+      - name: Upload Android test reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: android-test-reports
+          path: |
+            shared/build/reports/tests/
+            composeApp/build/reports/tests/
+          retention-days: 7
