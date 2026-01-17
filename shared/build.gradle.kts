@@ -35,6 +35,10 @@ kotlin {
         commonTest.dependencies {
             implementation(libs.kotlin.test)
             implementation(libs.turbine)
+            // Kotest - Property-based testing
+            implementation(libs.kotest.framework.engine)
+            implementation(libs.kotest.assertions.core)
+            implementation(libs.kotest.property)
         }
 
         jvmMain.dependencies {
