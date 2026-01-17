@@ -24,6 +24,7 @@ decompose = "3.3.0"
 arrow = "2.1.2"
 mokkery = "3.1.1"
 turbine = "1.2.1"
+kotest = "5.9.1"
 ksp = "2.3.0"
 
 [libraries]
@@ -45,6 +46,10 @@ arrow-optics = { module = "io.arrow-kt:arrow-optics", version.ref = "arrow" }
 arrow-optics-ksp = { module = "io.arrow-kt:arrow-optics-ksp-plugin", version.ref = "arrow" }
 # Testing
 turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
+# Kotest - Property-based testing
+kotest-framework-engine = { module = "io.kotest:kotest-framework-engine", version.ref = "kotest" }
+kotest-assertions-core = { module = "io.kotest:kotest-assertions-core", version.ref = "kotest" }
+kotest-property = { module = "io.kotest:kotest-property", version.ref = "kotest" }
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "androidx-core" }
 androidx-testExt-junit = { module = "androidx.test.ext:junit", version.ref = "androidx-testExt" }
 androidx-espresso-core = { module = "androidx.test.espresso:espresso-core", version.ref = "androidx-espresso" }

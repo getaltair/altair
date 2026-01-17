@@ -19,7 +19,7 @@ What we accomplished in the initial session:
 
 ---
 
-## Phase 1: Core Libraries & Architecture
+## Phase 1: Core Libraries & Architecture -- Completed
 
 ### 1.1 Add ADR-009 Dependencies to Version Catalog
 
@@ -59,7 +59,7 @@ Add versions and libraries for:
 
 ---
 
-## Phase 2: Domain Models in Shared
+## Phase 2: Domain Models in Shared -- In Progress
 
 ### 2.1 System-Level Entities
 
@@ -406,16 +406,16 @@ Create minimal placeholder screens for:
 
 ## Recommended Order of Attack
 
-| Priority | Phase                           | Rationale                              |
-| -------- | ------------------------------- | -------------------------------------- |
-| 1        | Phase 1 (Core Libraries)        | Foundation for everything else         |
-| 2        | Phase 2 (Domain Models)         | Shared module becomes useful           |
-| 3        | Phase 7.1-7.2 (UI Foundation)   | Can see something on screen            |
-| 4        | Phase 6 (Auth)                  | Required for multi-user data isolation |
-| 5        | Phase 5.1 (Server DB)           | Server can persist data                |
-| 6        | Phase 4 (kotlinx-rpc)           | Client-server communication            |
-| 7        | Phase 8.1-8.2 (Inbox + Guidance MVP) | First usable feature              |
-| 8        | Remaining phases iteratively    | Build out based on priorities          |
+| Priority | Phase                                | Rationale                              |
+| -------- | ------------------------------------ | -------------------------------------- |
+| 1        | Phase 1 (Core Libraries)             | Foundation for everything else         |
+| 2        | Phase 2 (Domain Models)              | Shared module becomes useful           |
+| 3        | Phase 7.1-7.2 (UI Foundation)        | Can see something on screen            |
+| 4        | Phase 6 (Auth)                       | Required for multi-user data isolation |
+| 5        | Phase 5.1 (Server DB)                | Server can persist data                |
+| 6        | Phase 4 (kotlinx-rpc)                | Client-server communication            |
+| 7        | Phase 8.1-8.2 (Inbox + Guidance MVP) | First usable feature                   |
+| 8        | Remaining phases iteratively         | Build out based on priorities          |
 
 ---
 
