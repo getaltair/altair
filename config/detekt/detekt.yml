@@ -337,6 +337,20 @@ style:
       - "0"
       - "1"
       - "2"
+      # Domain validation limits - centralized in:
+      # shared/src/commonMain/kotlin/com/getaltair/altair/domain/common/DomainConstants.kt
+      # When adding new domain constants, update both the Kotlin file and this list.
+      - "5"     # DomainConstants.MAX_ENERGY_COST
+      - "26"    # DomainConstants.ULID_LENGTH
+      - "31"    # DomainConstants.MAX_DAY_OF_MONTH
+      - "32"    # DomainConstants.ULID_ENCODING_BASE
+      - "50"    # DomainConstants.MAX_TAG_NAME_LENGTH
+      - "100"   # DomainConstants.MAX_NAME_LENGTH
+      - "200"   # DomainConstants.MAX_TITLE_LENGTH
+      - "255"   # DomainConstants.MAX_FILENAME_LENGTH
+      - "500"   # DomainConstants.MAX_CONTEXT_LENGTH
+      - "5000"  # DomainConstants.MAX_CONTENT_LENGTH
+      - "10000" # DomainConstants.MAX_ANNOTATION_CONTENT_LENGTH
     ignoreHashCodeFunction: true
     ignorePropertyDeclaration: false
     ignoreLocalVariableDeclaration: false
@@ -345,7 +359,7 @@ style:
     ignoreAnnotation: false
     ignoreNamedArgument: true
     ignoreEnums: false
-    ignoreRanges: false
+    ignoreRanges: true
     ignoreExtensionFunctions: true
   BracesOnIfStatements:
     active: false

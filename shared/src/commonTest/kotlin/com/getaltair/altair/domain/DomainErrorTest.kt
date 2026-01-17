@@ -5,12 +5,16 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertNull
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
 /**
  * Tests for DomainError sealed interface.
  * Verifies construction, validation, pattern matching, and user messages.
  */
 class DomainErrorTest {
+    private val json = Json { prettyPrint = false }
+
     @Test
     fun `NetworkError stores message and cause`() {
         val cause = RuntimeException("Connection reset")
@@ -222,5 +226,58 @@ class DomainErrorTest {
             "Unable to connect. Please check your internet connection and try again.",
             message,
         )
+    }
+
+    // Serialization tests
+
+    @Test
+    fun `NetworkError serializes with type discriminator`() {
+        val error: DomainError = DomainError.NetworkError("Connection timeout")
+        val serialized = json.encodeToString(error)
+        assertEquals("""{"type":"network","message":"Connection timeout"}""", serialized)
+    }
+
+    @Test
+    fun `ValidationError round-trips through JSON`() {
+        val error: DomainError = DomainError.ValidationError("email", "Invalid format")
+        val serialized = json.encodeToString(error)
+        val deserialized = json.decodeFromString<DomainError>(serialized)
+        assertEquals(error, deserialized)
+    }
+
+    @Test
+    fun `NotFoundError round-trips through JSON`() {
+        val error: DomainError = DomainError.NotFoundError("User", "user-123")
+        val serialized = json.encodeToString(error)
+        val deserialized = json.decodeFromString<DomainError>(serialized)
+        assertEquals(error, deserialized)
+    }
+
+    @Test
+    fun `UnauthorizedError round-trips through JSON`() {
+        val error: DomainError = DomainError.UnauthorizedError("Token expired")
+        val serialized = json.encodeToString(error)
+        val deserialized = json.decodeFromString<DomainError>(serialized)
+        assertEquals(error, deserialized)
+    }
+
+    @Test
+    fun `UnexpectedError round-trips through JSON`() {
+        val error: DomainError = DomainError.UnexpectedError("Internal failure")
+        val serialized = json.encodeToString(error)
+        val deserialized = json.decodeFromString<DomainError>(serialized)
+        assertEquals(error, deserialized)
+    }
+
+    @Test
+    fun `cause field is not serialized`() {
+        val error = DomainError.NetworkError("Test", cause = RuntimeException("Cause"))
+        val serialized = json.encodeToString<DomainError>(error)
+        // Cause should not appear in serialized output
+        assertEquals("""{"type":"network","message":"Test"}""", serialized)
+
+        // Deserialized error should have null cause
+        val deserialized = json.decodeFromString<DomainError>(serialized) as DomainError.NetworkError
+        assertNull(deserialized.cause)
     }
 }
