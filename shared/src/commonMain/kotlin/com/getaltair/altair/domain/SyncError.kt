@@ -20,8 +20,8 @@ sealed interface SyncError : DomainError {
      *
      * @property entityType The type of entity that has a conflict (e.g., "Quest", "Note")
      * @property entityId The ULID of the conflicting entity
-     * @property clientVersion The version number on the client
-     * @property serverVersion The version number on the server
+     * @property clientVersion The version number on the client (must be >= 0)
+     * @property serverVersion The version number on the server (must be >= 0)
      */
     @Serializable
     @SerialName("sync_conflict_detected")
@@ -31,6 +31,13 @@ sealed interface SyncError : DomainError {
         val clientVersion: Long,
         val serverVersion: Long,
     ) : SyncError {
+        init {
+            require(entityType.isNotBlank()) { "Entity type must not be blank" }
+            require(clientVersion >= 0) { "Client version must be non-negative" }
+            require(serverVersion >= 0) { "Server version must be non-negative" }
+            require(clientVersion != serverVersion) { "Client and server versions must differ for a conflict" }
+        }
+
         override fun toUserMessage(): String = "A sync conflict was detected. Your changes and the server's changes need to be merged."
     }
 
@@ -39,8 +46,8 @@ sealed interface SyncError : DomainError {
      *
      * This typically means the client needs to perform a full re-sync.
      *
-     * @property clientVersion The version the client is at
-     * @property serverMinVersion The minimum version the server supports
+     * @property clientVersion The version the client is at (must be >= 0)
+     * @property serverMinVersion The minimum version the server supports (must be >= 0)
      */
     @Serializable
     @SerialName("sync_version_mismatch")
@@ -48,6 +55,11 @@ sealed interface SyncError : DomainError {
         val clientVersion: Long,
         val serverMinVersion: Long,
     ) : SyncError {
+        init {
+            require(clientVersion >= 0) { "Client version must be non-negative" }
+            require(serverMinVersion >= 0) { "Server min version must be non-negative" }
+        }
+
         override fun toUserMessage(): String = "Your data is out of date. A full sync is required."
     }
 
@@ -66,6 +78,10 @@ sealed interface SyncError : DomainError {
     data class ServerUnreachable(
         val reason: String,
     ) : SyncError {
+        init {
+            require(reason.isNotBlank()) { "Reason must not be blank" }
+        }
+
         override fun toUserMessage(): String = "Unable to connect to the server. Please check your connection and try again."
     }
 
@@ -85,19 +101,27 @@ sealed interface SyncError : DomainError {
     data class InvalidChangeSet(
         val reason: String,
     ) : SyncError {
+        init {
+            require(reason.isNotBlank()) { "Reason must not be blank" }
+        }
+
         override fun toUserMessage(): String = "The sync data appears to be corrupted. Please try again."
     }
 
     /**
      * The sync operation timed out before completing.
      *
-     * @property elapsedMs How long the sync ran before timing out
+     * @property elapsedMs How long the sync ran before timing out (must be > 0)
      */
     @Serializable
     @SerialName("sync_timeout")
     data class Timeout(
         val elapsedMs: Long,
     ) : SyncError {
+        init {
+            require(elapsedMs > 0) { "Elapsed time must be positive" }
+        }
+
         override fun toUserMessage(): String = "The sync took too long and was cancelled. Please try again with a better connection."
     }
 }

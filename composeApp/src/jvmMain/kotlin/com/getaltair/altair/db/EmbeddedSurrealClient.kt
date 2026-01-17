@@ -9,17 +9,20 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import org.slf4j.LoggerFactory
 import java.nio.file.Files
 
 /**
  * Client for embedded SurrealDB on desktop.
  *
  * Uses SurrealKV storage engine for persistent local storage with
- * graph query and vector search capabilities.
+ * graph query and vector search capabilities. All operations are
+ * mutex-protected for thread safety.
  */
 class EmbeddedSurrealClient(
     private val config: DesktopDatabaseConfig,
 ) {
+    private val logger = LoggerFactory.getLogger(EmbeddedSurrealClient::class.java)
     private var surreal: Surreal? = null
     private val mutex = Mutex()
 
@@ -44,8 +47,10 @@ class EmbeddedSurrealClient(
                     db.useNs(config.namespace)?.useDb(config.database)
 
                     surreal = db
+                    logger.info("Connected to embedded SurrealDB at ${config.databasePath}")
                     Unit.right()
                 } catch (e: Exception) {
+                    logger.error("Failed to connect to embedded database", e)
                     DomainError.UnexpectedError("Failed to connect to embedded database: ${e.message}").left()
                 }
             }
@@ -57,8 +62,13 @@ class EmbeddedSurrealClient(
     suspend fun close() =
         withContext(Dispatchers.IO) {
             mutex.withLock {
-                surreal?.close()
-                surreal = null
+                try {
+                    surreal?.close()
+                    surreal = null
+                    logger.info("Disconnected from embedded SurrealDB")
+                } catch (e: Exception) {
+                    logger.error("Error closing embedded SurrealDB connection", e)
+                }
             }
         }
 
@@ -76,6 +86,7 @@ class EmbeddedSurrealClient(
                     val response = db.query(query)
                     response?.toString()?.right() ?: "[]".right()
                 } catch (e: Exception) {
+                    logger.error("Query failed: $query", e)
                     DomainError.UnexpectedError("Query failed: ${e.message}").left()
                 }
             }
@@ -95,6 +106,7 @@ class EmbeddedSurrealClient(
                     db.query(statement)
                     Unit.right()
                 } catch (e: Exception) {
+                    logger.error("Execute failed: $statement", e)
                     DomainError.UnexpectedError("Execute failed: ${e.message}").left()
                 }
             }

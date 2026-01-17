@@ -14,12 +14,14 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import org.slf4j.LoggerFactory
 import kotlin.time.Clock
 
 class SurrealTagRepository(
     private val db: SurrealDbClient,
     private val userId: String,
 ) : TagRepository {
+    private val logger = LoggerFactory.getLogger(SurrealTagRepository::class.java)
     private val json =
         Json {
             ignoreUnknownKeys = true
@@ -126,7 +128,10 @@ class SurrealTagRepository(
                     """
                     SELECT tag.* FROM note_tag
                     INNER JOIN tag ON note_tag.tag_id = tag.id
-                    WHERE note_tag.note_id = note:${noteId.value} AND tag.deleted_at IS NONE
+                    WHERE note_tag.note_id = note:${noteId.value}
+                        AND note_tag.user_id = user:$userId
+                        AND tag.user_id = user:$userId
+                        AND tag.deleted_at IS NONE
                     """.trimIndent(),
                 )
             emit(result.fold({ emptyList() }, { parseTags(it) }))
@@ -141,6 +146,7 @@ class SurrealTagRepository(
                 .execute(
                     """
                     CREATE note_tag CONTENT {
+                        user_id: user:$userId,
                         note_id: note:${noteId.value},
                         tag_id: tag:${tagId.value}
                     };
@@ -155,7 +161,7 @@ class SurrealTagRepository(
         either {
             db
                 .execute(
-                    "DELETE note_tag WHERE note_id = note:${noteId.value} AND tag_id = tag:${tagId.value};",
+                    "DELETE note_tag WHERE user_id = user:$userId AND note_id = note:${noteId.value} AND tag_id = tag:${tagId.value};",
                 ).bind()
         }
 
@@ -184,6 +190,7 @@ class SurrealTagRepository(
                 ?.jsonObject
                 ?.let { mapToTag(it) }
         } catch (e: Exception) {
+            logger.warn("Failed to parse tag from result: ${e.message}", e)
             null
         }
 
@@ -193,10 +200,12 @@ class SurrealTagRepository(
                 try {
                     mapToTag(it.jsonObject)
                 } catch (e: Exception) {
+                    logger.warn("Failed to parse individual tag: ${e.message}")
                     null
                 }
             }
         } catch (e: Exception) {
+            logger.warn("Failed to parse tags array: ${e.message}", e)
             emptyList()
         }
 
@@ -209,10 +218,12 @@ class SurrealTagRepository(
                     val count = obj["usage_count"]?.jsonPrimitive?.content?.toIntOrNull() ?: 0
                     tag to count
                 } catch (e: Exception) {
+                    logger.warn("Failed to parse tag with count: ${e.message}")
                     null
                 }
             }
         } catch (e: Exception) {
+            logger.warn("Failed to parse tags with count array: ${e.message}", e)
             emptyList()
         }
 
@@ -235,6 +246,7 @@ class SurrealTagRepository(
             try {
                 Instant.parse(it)
             } catch (e: Exception) {
+                logger.warn("Failed to parse instant '$value', using DISTANT_PAST: ${e.message}")
                 Instant.DISTANT_PAST
             }
         } ?: Instant.DISTANT_PAST

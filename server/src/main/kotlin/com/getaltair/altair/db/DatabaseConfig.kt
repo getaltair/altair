@@ -16,7 +16,6 @@ sealed interface DatabaseConfig {
      * @property database The SurrealDB database name
      * @property username The username for authentication
      * @property password The password for authentication
-     * @property poolSize The connection pool size (default: 10)
      */
     data class Network(
         val host: String,
@@ -26,7 +25,6 @@ sealed interface DatabaseConfig {
         val database: String,
         val username: String,
         val password: String,
-        val poolSize: Int = DEFAULT_POOL_SIZE,
     ) : DatabaseConfig {
         init {
             require(host.isNotBlank()) { "Host must not be blank" }
@@ -34,7 +32,6 @@ sealed interface DatabaseConfig {
             require(namespace.isNotBlank()) { "Namespace must not be blank" }
             require(database.isNotBlank()) { "Database must not be blank" }
             require(username.isNotBlank()) { "Username must not be blank" }
-            require(poolSize >= 1) { "Pool size must be at least 1" }
         }
 
         val connectionUrl: String
@@ -67,7 +64,6 @@ sealed interface DatabaseConfig {
 
     companion object {
         const val DEFAULT_PORT = 8000
-        const val DEFAULT_POOL_SIZE = 10
         const val DEFAULT_NAMESPACE = "altair"
         const val DEFAULT_DATABASE = "main"
 
@@ -82,7 +78,6 @@ sealed interface DatabaseConfig {
          * - SURREALDB_DATABASE (optional, default: main)
          * - SURREALDB_USERNAME (required)
          * - SURREALDB_PASSWORD (required)
-         * - SURREALDB_POOL_SIZE (optional, default: 10)
          */
         fun fromEnvironment(): Network {
             val host =
@@ -98,7 +93,6 @@ sealed interface DatabaseConfig {
             val password =
                 System.getenv("SURREALDB_PASSWORD")
                     ?: error("SURREALDB_PASSWORD environment variable is required")
-            val poolSize = System.getenv("SURREALDB_POOL_SIZE")?.toIntOrNull() ?: DEFAULT_POOL_SIZE
 
             return Network(
                 host = host,
@@ -108,7 +102,6 @@ sealed interface DatabaseConfig {
                 database = database,
                 username = username,
                 password = password,
-                poolSize = poolSize,
             )
         }
     }

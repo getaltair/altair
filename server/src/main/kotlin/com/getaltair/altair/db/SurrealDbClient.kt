@@ -16,8 +16,9 @@ import org.slf4j.LoggerFactory
 /**
  * Wrapper around SurrealDB Java client with connection management.
  *
- * Provides coroutine-friendly access to SurrealDB with automatic
- * connection pooling for network mode and direct access for embedded mode.
+ * Provides coroutine-friendly access to SurrealDB with mutex-based
+ * thread safety for concurrent access. Supports both network and
+ * embedded connection modes.
  */
 class SurrealDbClient(
     private val config: DatabaseConfig,
@@ -74,16 +75,15 @@ class SurrealDbClient(
     }
 
     /**
-     * Executes a SurrealQL query with parameters.
+     * Executes a SurrealQL query.
      *
-     * @param query The SurrealQL query string
-     * @param params Optional query parameters
+     * Note: Query parameters should be embedded directly in the query string
+     * with proper escaping. The repositories handle escaping for user-provided values.
+     *
+     * @param query The SurrealQL query string with parameters embedded
      * @return Either an error or the raw result string
      */
-    suspend fun <T> query(
-        query: String,
-        params: Map<String, Any?> = emptyMap(),
-    ): Either<DomainError, String> =
+    suspend fun <T> query(query: String): Either<DomainError, String> =
         either {
             ensure(isConnected) {
                 DomainError.UnexpectedError("Database not connected")
@@ -105,18 +105,16 @@ class SurrealDbClient(
     /**
      * Executes a SurrealQL query and deserializes the result.
      *
-     * @param query The SurrealQL query string
-     * @param params Optional query parameters
+     * @param query The SurrealQL query string with parameters embedded
      * @param deserializer Function to deserialize the JSON result
      * @return Either an error or the deserialized result
      */
     suspend fun <T> queryAs(
         query: String,
-        params: Map<String, Any?> = emptyMap(),
         deserializer: (String) -> T,
     ): Either<DomainError, T> =
         either {
-            val result = query<Any>(query, params).bind()
+            val result = query<Any>(query).bind()
             try {
                 deserializer(result)
             } catch (e: Exception) {

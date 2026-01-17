@@ -189,12 +189,14 @@ DEFINE INDEX idx_tag_name ON tag FIELDS user_id, name UNIQUE;
 
 -- Note-Tag junction table
 DEFINE TABLE note_tag SCHEMAFULL;
+DEFINE FIELD user_id ON note_tag TYPE record<user>;
 DEFINE FIELD note_id ON note_tag TYPE record<note>;
 DEFINE FIELD tag_id ON note_tag TYPE record<tag>;
 DEFINE FIELD created_at ON note_tag TYPE datetime DEFAULT time::now();
+DEFINE INDEX idx_note_tag_user ON note_tag FIELDS user_id;
 DEFINE INDEX idx_note_tag_note ON note_tag FIELDS note_id;
 DEFINE INDEX idx_note_tag_tag ON note_tag FIELDS tag_id;
-DEFINE INDEX idx_note_tag_unique ON note_tag FIELDS note_id, tag_id UNIQUE;
+DEFINE INDEX idx_note_tag_unique ON note_tag FIELDS user_id, note_id, tag_id UNIQUE;
 
 -- Attachments (file metadata)
 DEFINE TABLE attachment SCHEMAFULL;

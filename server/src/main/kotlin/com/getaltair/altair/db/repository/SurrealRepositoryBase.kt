@@ -11,6 +11,7 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import org.slf4j.LoggerFactory
 
 /**
  * Base class for SurrealDB repository implementations.
@@ -21,6 +22,7 @@ abstract class SurrealRepositoryBase(
     protected val db: SurrealDbClient,
     protected val userId: String,
 ) {
+    protected val logger = LoggerFactory.getLogger(this::class.java)
     protected val json =
         Json {
             ignoreUnknownKeys = true
@@ -48,12 +50,18 @@ abstract class SurrealRepositoryBase(
      * Note: SurrealDB doesn't have native reactive queries,
      * so this is a snapshot query wrapped in a Flow.
      * Real-time updates would require SurrealDB's LIVE queries.
+     *
+     * Warning: Query errors are logged and converted to empty lists.
+     * Callers needing error handling should use direct query methods.
      */
     protected fun <T> queryAsFlow(query: suspend () -> Either<DomainError, List<T>>): Flow<List<T>> =
         flow {
             val result = query()
             result.fold(
-                ifLeft = { emit(emptyList()) },
+                ifLeft = { error ->
+                    logger.warn("Query failed in Flow, emitting empty list: ${error.toUserMessage()}")
+                    emit(emptyList())
+                },
                 ifRight = { emit(it) },
             )
         }
@@ -65,6 +73,7 @@ abstract class SurrealRepositoryBase(
         try {
             json.parseToJsonElement(result).jsonArray.toList()
         } catch (e: Exception) {
+            logger.warn("Failed to parse JSON array: ${e.message}", e)
             emptyList()
         }
 
@@ -76,6 +85,7 @@ abstract class SurrealRepositoryBase(
             val array = json.parseToJsonElement(result).jsonArray
             array.firstOrNull()
         } catch (e: Exception) {
+            logger.warn("Failed to parse JSON object: ${e.message}", e)
             null
         }
 
@@ -86,6 +96,7 @@ abstract class SurrealRepositoryBase(
         try {
             jsonObject[key]?.jsonPrimitive?.content
         } catch (e: Exception) {
+            logger.debug("Failed to get string field '$key': ${e.message}")
             null
         }
 
@@ -96,6 +107,7 @@ abstract class SurrealRepositoryBase(
         try {
             jsonObject[key]?.jsonPrimitive?.content?.toIntOrNull()
         } catch (e: Exception) {
+            logger.debug("Failed to get int field '$key': ${e.message}")
             null
         }
 
@@ -106,6 +118,7 @@ abstract class SurrealRepositoryBase(
         try {
             jsonObject[key]?.jsonPrimitive?.content?.toLongOrNull()
         } catch (e: Exception) {
+            logger.debug("Failed to get long field '$key': ${e.message}")
             null
         }
 
@@ -116,6 +129,7 @@ abstract class SurrealRepositoryBase(
         try {
             jsonObject[key]?.jsonPrimitive?.content?.toBooleanStrictOrNull()
         } catch (e: Exception) {
+            logger.debug("Failed to get boolean field '$key': ${e.message}")
             null
         }
 

@@ -17,11 +17,11 @@ data class DesktopDatabaseConfig(
     val namespace: String = "altair",
     /** Database name */
     val database: String = "desktop",
-    /** Maximum memory usage in MB for cache */
-    val maxMemoryMb: Int = 256,
-    /** Enable strict mode for schema validation */
-    val strictMode: Boolean = true,
 ) {
+    init {
+        require(namespace.isNotBlank()) { "Namespace must not be blank" }
+        require(database.isNotBlank()) { "Database must not be blank" }
+    }
     companion object {
         /**
          * Creates a default desktop database configuration.
@@ -43,7 +43,6 @@ data class DesktopDatabaseConfig(
          * - ALTAIR_DATA_DIR: Override the data directory
          * - ALTAIR_DB_NAMESPACE: Override the namespace (default: altair)
          * - ALTAIR_DB_DATABASE: Override the database name (default: desktop)
-         * - ALTAIR_DB_MAX_MEMORY_MB: Override max memory (default: 256)
          */
         fun fromEnvironment(): DesktopDatabaseConfig {
             val dataDir =
@@ -54,7 +53,6 @@ data class DesktopDatabaseConfig(
                 dataDirectory = dataDir,
                 namespace = System.getenv("ALTAIR_DB_NAMESPACE") ?: "altair",
                 database = System.getenv("ALTAIR_DB_DATABASE") ?: "desktop",
-                maxMemoryMb = System.getenv("ALTAIR_DB_MAX_MEMORY_MB")?.toIntOrNull() ?: 256,
             )
         }
 

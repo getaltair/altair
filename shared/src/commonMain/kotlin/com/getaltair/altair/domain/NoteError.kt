@@ -29,7 +29,7 @@ sealed interface NoteError : DomainError {
     /**
      * A note with the given title already exists in the same folder.
      *
-     * @property title The conflicting title
+     * @property title The conflicting title (must not be blank)
      * @property folderId The folder where the conflict exists (null for root)
      */
     @Serializable
@@ -38,13 +38,17 @@ sealed interface NoteError : DomainError {
         val title: String,
         val folderId: Ulid?,
     ) : NoteError {
+        init {
+            require(title.isNotBlank()) { "Title must not be blank" }
+        }
+
         override fun toUserMessage(): String = "A note with the title \"$title\" already exists in this folder."
     }
 
     /**
      * A wiki-style link in the note content references an invalid target.
      *
-     * @property linkText The wiki link text that could not be resolved
+     * @property linkText The wiki link text that could not be resolved (must not be blank)
      * @property noteId The note containing the invalid link
      */
     @Serializable
@@ -53,6 +57,10 @@ sealed interface NoteError : DomainError {
         val linkText: String,
         val noteId: Ulid,
     ) : NoteError {
+        init {
+            require(linkText.isNotBlank()) { "Link text must not be blank" }
+        }
+
         override fun toUserMessage(): String = "The link \"$linkText\" could not be resolved to an existing note."
     }
 
@@ -60,7 +68,7 @@ sealed interface NoteError : DomainError {
      * Creating the link would introduce a circular reference chain.
      *
      * @property sourceNoteId The note where the link would originate
-     * @property targetNoteId The note being linked to
+     * @property targetNoteId The note being linked to (must differ from sourceNoteId)
      */
     @Serializable
     @SerialName("note_circular_link")
@@ -68,6 +76,10 @@ sealed interface NoteError : DomainError {
         val sourceNoteId: Ulid,
         val targetNoteId: Ulid,
     ) : NoteError {
+        init {
+            require(sourceNoteId != targetNoteId) { "Source and target note IDs must differ" }
+        }
+
         override fun toUserMessage(): String = "Cannot create this link because it would create a circular reference."
     }
 

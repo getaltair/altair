@@ -30,8 +30,8 @@ sealed interface QuestError : DomainError {
     /**
      * The quest's energy cost would exceed the user's daily energy budget.
      *
-     * @property required The energy cost of the quest
-     * @property available The remaining energy in the user's budget
+     * @property required The energy cost of the quest (must be >= 0)
+     * @property available The remaining energy in the user's budget (must be >= 0)
      */
     @Serializable
     @SerialName("quest_energy_budget_exceeded")
@@ -39,6 +39,12 @@ sealed interface QuestError : DomainError {
         val required: Int,
         val available: Int,
     ) : QuestError {
+        init {
+            require(required >= 0) { "Required energy must be non-negative" }
+            require(available >= 0) { "Available energy must be non-negative" }
+            require(required > available) { "Required energy must exceed available for this error" }
+        }
+
         override fun toUserMessage(): String = "Not enough energy available. This quest requires $required energy, but only $available remains."
     }
 
@@ -62,8 +68,8 @@ sealed interface QuestError : DomainError {
     /**
      * The user has reached the maximum number of active (work-in-progress) quests.
      *
-     * @property currentWip The current number of active quests
-     * @property maxWip The maximum allowed number of active quests
+     * @property currentWip The current number of active quests (must be >= 0)
+     * @property maxWip The maximum allowed number of active quests (must be > 0)
      */
     @Serializable
     @SerialName("quest_wip_limit_exceeded")
@@ -71,6 +77,12 @@ sealed interface QuestError : DomainError {
         val currentWip: Int,
         val maxWip: Int,
     ) : QuestError {
+        init {
+            require(currentWip >= 0) { "Current WIP must be non-negative" }
+            require(maxWip > 0) { "Max WIP must be positive" }
+            require(currentWip >= maxWip) { "Current WIP must meet or exceed max for this error" }
+        }
+
         override fun toUserMessage(): String = "You have reached the maximum of $maxWip active quests. Complete or abandon a quest first."
     }
 }

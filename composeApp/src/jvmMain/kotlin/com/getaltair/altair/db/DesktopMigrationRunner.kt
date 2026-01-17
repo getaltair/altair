@@ -3,6 +3,7 @@ package com.getaltair.altair.db
 import arrow.core.Either
 import arrow.core.flatMap
 import arrow.core.right
+import org.slf4j.LoggerFactory
 
 /**
  * Runs SurrealDB schema migrations for desktop embedded database.
@@ -15,19 +16,19 @@ import arrow.core.right
 class DesktopMigrationRunner(
     private val db: EmbeddedSurrealClient,
 ) {
+    private val logger = LoggerFactory.getLogger(DesktopMigrationRunner::class.java)
     /**
      * Runs all pending migrations.
      *
      * @return Either an error or the number of migrations applied
      */
     suspend fun runMigrations(): Either<Throwable, Int> {
-        // Ensure migrations table exists
+        logger.info("Starting desktop database migrations...")
         return createMigrationsTable()
             .flatMap {
-                // Get applied migrations
                 getAppliedMigrations()
             }.flatMap { appliedVersions ->
-                // Load and filter pending migrations
+                logger.info("Found ${appliedVersions.size} previously applied migrations")
                 val allMigrations = loadMigrations()
                 val pendingMigrations =
                     allMigrations
@@ -35,10 +36,11 @@ class DesktopMigrationRunner(
                         .sortedBy { it.version }
 
                 if (pendingMigrations.isEmpty()) {
+                    logger.info("No pending migrations")
                     return@flatMap 0.right()
                 }
 
-                // Apply each migration
+                logger.info("Applying ${pendingMigrations.size} pending migrations")
                 applyMigrations(pendingMigrations)
             }
     }
@@ -47,9 +49,15 @@ class DesktopMigrationRunner(
         var result: Either<Throwable, Unit> = Unit.right()
         for (migration in migrations) {
             result = result.flatMap { applyMigration(migration) }
-            if (result.isLeft()) break
+            if (result.isLeft()) {
+                logger.error("Migration failed, stopping further migrations")
+                break
+            }
         }
-        return result.map { migrations.size }
+        return result.map {
+            logger.info("Successfully applied ${migrations.size} migrations")
+            migrations.size
+        }
     }
 
     private suspend fun createMigrationsTable(): Either<Throwable, Unit> =
@@ -79,12 +87,11 @@ class DesktopMigrationRunner(
             }
 
     private suspend fun applyMigration(migration: Migration): Either<Throwable, Unit> {
-        // Execute the migration SQL
+        logger.info("Applying migration V${migration.version}: ${migration.description}")
         return db
             .execute(migration.sql)
             .mapLeft { RuntimeException(it.toUserMessage()) }
             .flatMap {
-                // Record the migration
                 db
                     .execute(
                         """
@@ -94,6 +101,11 @@ class DesktopMigrationRunner(
                         };
                         """.trimIndent(),
                     ).mapLeft { RuntimeException(it.toUserMessage()) }
+            }.also { result ->
+                result.fold(
+                    { error -> logger.error("Migration V${migration.version} failed: ${error.message}") },
+                    { logger.info("Migration V${migration.version} applied successfully") },
+                )
             }
     }
 
@@ -101,17 +113,15 @@ class DesktopMigrationRunner(
         val migrations = mutableListOf<Migration>()
         val classLoader = this::class.java.classLoader
 
-        // List all migration files
         val migrationsDir = classLoader.getResource("migrations")
         if (migrationsDir == null) {
+            logger.warn("No migrations directory found in resources")
             return emptyList()
         }
 
-        // Read migration files from resources
         val migrationPattern = """V(\d+)__(.+)\.surql""".toRegex()
 
         try {
-            // Get all resources in migrations folder
             val resources = classLoader.getResources("migrations").toList()
             for (resource in resources) {
                 val uri = resource.toURI()
@@ -122,7 +132,7 @@ class DesktopMigrationRunner(
                 }
             }
         } catch (e: Exception) {
-            // Silently ignore - no migrations to run
+            logger.error("Failed to load migrations from resources", e)
         }
 
         return migrations.sortedBy { it.version }
