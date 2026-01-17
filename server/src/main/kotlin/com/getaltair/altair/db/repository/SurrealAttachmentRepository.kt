@@ -131,9 +131,10 @@ class SurrealAttachmentRepository(
 
     override fun findByMimeType(mimeTypePrefix: String): Flow<List<Attachment>> =
         flow {
+            val escapedPrefix = mimeTypePrefix.replace("'", "''")
             val result =
                 db.query<Any>(
-                    "SELECT * FROM attachment WHERE user_id = user:${userId.value} AND string::startsWith(mime_type, '$mimeTypePrefix') AND deleted_at IS NONE",
+                    "SELECT * FROM attachment WHERE user_id = user:${userId.value} AND string::startsWith(mime_type, '$escapedPrefix') AND deleted_at IS NONE",
                 )
             emit(result.fold({ emptyList() }, { parseAttachments(it) }))
         }
