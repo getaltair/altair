@@ -22,7 +22,8 @@ data class Folder(
     override val createdAt: Instant,
     override val updatedAt: Instant,
     override val deletedAt: Instant? = null,
-) : Timestamped, SoftDeletable {
+) : Timestamped,
+    SoftDeletable {
     init {
         require(name.isNotBlank()) { "Folder name must not be blank" }
         require(name.length <= 100) { "Folder name must be at most 100 characters" }

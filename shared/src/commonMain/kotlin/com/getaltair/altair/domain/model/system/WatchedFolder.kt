@@ -26,7 +26,8 @@ data class WatchedFolder(
     override val createdAt: Instant,
     override val updatedAt: Instant,
     override val deletedAt: Instant? = null,
-) : Timestamped, SoftDeletable {
+) : Timestamped,
+    SoftDeletable {
     init {
         require(path.isNotBlank()) { "WatchedFolder path must not be blank" }
         require(name.isNotBlank()) { "WatchedFolder name must not be blank" }

@@ -32,7 +32,8 @@ data class SourceDocument(
     override val createdAt: Instant,
     override val updatedAt: Instant,
     override val deletedAt: Instant? = null,
-) : Timestamped, SoftDeletable {
+) : Timestamped,
+    SoftDeletable {
     init {
         require(title.isNotBlank()) { "SourceDocument title must not be blank" }
         require(title.length <= 500) { "SourceDocument title must be at most 500 characters" }

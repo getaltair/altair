@@ -33,14 +33,20 @@ import com.getaltair.altair.domain.types.enums.QuestStatus
 import com.getaltair.altair.domain.types.enums.SourceType
 import com.getaltair.altair.domain.types.enums.UserRole
 import com.getaltair.altair.domain.types.enums.UserStatus
+import kotlinx.datetime.Instant
+import kotlinx.datetime.LocalDate
 import kotlin.test.Test
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
-import kotlinx.datetime.Instant
-import kotlinx.datetime.LocalDate
 
+@Suppress("LargeClass") // Test class covering validation for all domain entities
 class EntityValidationTest {
-    private val now: Instant = Instant.fromEpochMilliseconds(kotlin.time.Clock.System.now().toEpochMilliseconds())
+    private val now: Instant =
+        Instant.fromEpochMilliseconds(
+            kotlin.time.Clock.System
+                .now()
+                .toEpochMilliseconds(),
+        )
     private val userId = Ulid.generate()
 
     // User validation tests
@@ -328,30 +334,32 @@ class EntityValidationTest {
     // EnergyBudget tests
     @Test
     fun `EnergyBudget calculates remaining energy correctly`() {
-        val budget = EnergyBudget(
-            id = Ulid.generate(),
-            userId = userId,
-            date = LocalDate(2024, 1, 15),
-            totalBudget = 10,
-            spentEnergy = 3,
-            createdAt = now,
-            updatedAt = now,
-        )
+        val budget =
+            EnergyBudget(
+                id = Ulid.generate(),
+                userId = userId,
+                date = LocalDate(2024, 1, 15),
+                totalBudget = 10,
+                spentEnergy = 3,
+                createdAt = now,
+                updatedAt = now,
+            )
         assertTrue(budget.remainingEnergy == 7)
         assertTrue(!budget.isOverBudget)
     }
 
     @Test
     fun `EnergyBudget detects over budget`() {
-        val budget = EnergyBudget(
-            id = Ulid.generate(),
-            userId = userId,
-            date = LocalDate(2024, 1, 15),
-            totalBudget = 5,
-            spentEnergy = 8,
-            createdAt = now,
-            updatedAt = now,
-        )
+        val budget =
+            EnergyBudget(
+                id = Ulid.generate(),
+                userId = userId,
+                date = LocalDate(2024, 1, 15),
+                totalBudget = 5,
+                spentEnergy = 8,
+                createdAt = now,
+                updatedAt = now,
+            )
         assertTrue(budget.remainingEnergy == 0)
         assertTrue(budget.isOverBudget)
     }
@@ -410,19 +418,18 @@ class EntityValidationTest {
         updatedAt = now,
     )
 
-    private fun createNote(
-        title: String = "Test Note",
-    ) = Note(
-        id = Ulid.generate(),
-        userId = userId,
-        title = title,
-        content = "Test content",
-        folderId = null,
-        initiativeId = null,
-        isPinned = false,
-        createdAt = now,
-        updatedAt = now,
-    )
+    private fun createNote(title: String = "Test Note") =
+        Note(
+            id = Ulid.generate(),
+            userId = userId,
+            title = title,
+            content = "Test content",
+            folderId = null,
+            initiativeId = null,
+            isPinned = false,
+            createdAt = now,
+            updatedAt = now,
+        )
 
     // Epic validation tests
     @Test
@@ -459,18 +466,19 @@ class EntityValidationTest {
 
     @Test
     fun `Epic accepts completed status with completedAt`() {
-        val epic = Epic(
-            id = Ulid.generate(),
-            userId = userId,
-            title = "Test Epic",
-            description = null,
-            status = EpicStatus.COMPLETED,
-            initiativeId = null,
-            targetDate = null,
-            createdAt = now,
-            updatedAt = now,
-            completedAt = now,
-        )
+        val epic =
+            Epic(
+                id = Ulid.generate(),
+                userId = userId,
+                title = "Test Epic",
+                description = null,
+                status = EpicStatus.COMPLETED,
+                initiativeId = null,
+                targetDate = null,
+                createdAt = now,
+                updatedAt = now,
+                completedAt = now,
+            )
         assertTrue(epic.status == EpicStatus.COMPLETED)
     }
 
@@ -947,20 +955,19 @@ class EntityValidationTest {
     }
 
     // Additional helper functions
-    private fun createEpic(
-        title: String = "Test Epic",
-    ) = Epic(
-        id = Ulid.generate(),
-        userId = userId,
-        title = title,
-        description = null,
-        status = EpicStatus.ACTIVE,
-        initiativeId = null,
-        targetDate = null,
-        createdAt = now,
-        updatedAt = now,
-        completedAt = null,
-    )
+    private fun createEpic(title: String = "Test Epic") =
+        Epic(
+            id = Ulid.generate(),
+            userId = userId,
+            title = title,
+            description = null,
+            status = EpicStatus.ACTIVE,
+            initiativeId = null,
+            targetDate = null,
+            createdAt = now,
+            updatedAt = now,
+            completedAt = null,
+        )
 
     private fun createRoutine(
         title: String = "Test Routine",
@@ -995,17 +1002,16 @@ class EntityValidationTest {
         updatedAt = now,
     )
 
-    private fun createInboxItem(
-        content: String = "Test content",
-    ) = InboxItem(
-        id = Ulid.generate(),
-        userId = userId,
-        content = content,
-        source = CaptureSource.KEYBOARD,
-        attachmentIds = emptyList(),
-        createdAt = now,
-        updatedAt = now,
-    )
+    private fun createInboxItem(content: String = "Test content") =
+        InboxItem(
+            id = Ulid.generate(),
+            userId = userId,
+            content = content,
+            source = CaptureSource.KEYBOARD,
+            attachmentIds = emptyList(),
+            createdAt = now,
+            updatedAt = now,
+        )
 
     private fun createSourceDocument(
         title: String = "Test Document",

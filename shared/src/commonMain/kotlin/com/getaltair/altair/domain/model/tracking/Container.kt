@@ -25,7 +25,8 @@ data class Container(
     override val createdAt: Instant,
     override val updatedAt: Instant,
     override val deletedAt: Instant? = null,
-) : Timestamped, SoftDeletable {
+) : Timestamped,
+    SoftDeletable {
     init {
         require(name.isNotBlank()) { "Container name must not be blank" }
         require(name.length <= 100) { "Container name must be at most 100 characters" }

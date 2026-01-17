@@ -29,7 +29,8 @@ data class Item(
     override val createdAt: Instant,
     override val updatedAt: Instant,
     override val deletedAt: Instant? = null,
-) : Timestamped, SoftDeletable {
+) : Timestamped,
+    SoftDeletable {
     init {
         require(name.isNotBlank()) { "Item name must not be blank" }
         require(name.length <= 200) { "Item name must be at most 200 characters" }

@@ -99,13 +99,14 @@ class ScheduleTest {
 
     @Test
     fun `all schedule types round-trip through serialization`() {
-        val schedules: List<Schedule> = listOf(
-            Schedule.Daily,
-            Schedule.Weekly(setOf(DayOfWeek.FRIDAY)),
-            Schedule.MonthlyDate(28),
-            Schedule.MonthlyRelative(WeekOfMonth.LAST, DayOfWeek.FRIDAY),
-            Schedule.Interval(14),
-        )
+        val schedules: List<Schedule> =
+            listOf(
+                Schedule.Daily,
+                Schedule.Weekly(setOf(DayOfWeek.FRIDAY)),
+                Schedule.MonthlyDate(28),
+                Schedule.MonthlyRelative(WeekOfMonth.LAST, DayOfWeek.FRIDAY),
+                Schedule.Interval(14),
+            )
 
         schedules.forEach { original ->
             val serialized = json.encodeToString(original)

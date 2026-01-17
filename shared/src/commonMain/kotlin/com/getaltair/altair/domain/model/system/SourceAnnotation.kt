@@ -27,7 +27,8 @@ data class SourceAnnotation(
     override val createdAt: Instant,
     override val updatedAt: Instant,
     override val deletedAt: Instant? = null,
-) : Timestamped, SoftDeletable {
+) : Timestamped,
+    SoftDeletable {
     init {
         require(content.isNotBlank()) { "SourceAnnotation content must not be blank" }
         require(content.length <= 10_000) { "SourceAnnotation content must be at most 10000 characters" }

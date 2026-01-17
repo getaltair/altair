@@ -29,7 +29,8 @@ data class Initiative(
     override val createdAt: Instant,
     override val updatedAt: Instant,
     override val deletedAt: Instant? = null,
-) : Timestamped, SoftDeletable {
+) : Timestamped,
+    SoftDeletable {
     init {
         require(name.isNotBlank()) { "Initiative name must not be blank" }
         require(name.length <= 100) { "Initiative name must be at most 100 characters" }

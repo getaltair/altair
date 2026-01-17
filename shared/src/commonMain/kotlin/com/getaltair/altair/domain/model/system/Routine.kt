@@ -30,7 +30,8 @@ data class Routine(
     override val createdAt: Instant,
     override val updatedAt: Instant,
     override val deletedAt: Instant? = null,
-) : Timestamped, SoftDeletable {
+) : Timestamped,
+    SoftDeletable {
     init {
         require(title.isNotBlank()) { "Routine title must not be blank" }
         require(title.length <= 200) { "Routine title must be at most 200 characters" }

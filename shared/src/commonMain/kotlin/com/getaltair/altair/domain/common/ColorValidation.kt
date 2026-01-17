@@ -19,7 +19,10 @@ object ColorValidation {
      * @param fieldName The field name for error messages
      * @throws IllegalArgumentException if the color is not null and not a valid hex color
      */
-    fun requireValidHexColor(color: String?, fieldName: String) {
+    fun requireValidHexColor(
+        color: String?,
+        fieldName: String,
+    ) {
         color?.let {
             require(it.matches(HEX_COLOR_REGEX)) {
                 "$fieldName must be a hex color (e.g., #RGB, #RRGGBB, or #RRGGBBAA)"

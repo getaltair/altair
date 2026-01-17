@@ -26,7 +26,8 @@ data class User(
     override val createdAt: Instant,
     override val updatedAt: Instant,
     override val deletedAt: Instant? = null,
-) : Timestamped, SoftDeletable {
+) : Timestamped,
+    SoftDeletable {
     val storageRemainingBytes: Long get() = (storageQuotaBytes - storageUsedBytes).coerceAtLeast(0)
     val isOverQuota: Boolean get() = storageUsedBytes > storageQuotaBytes
 

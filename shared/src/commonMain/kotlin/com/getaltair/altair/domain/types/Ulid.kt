@@ -1,9 +1,9 @@
 package com.getaltair.altair.domain.types
 
-import kotlin.time.Clock
 import kotlinx.serialization.Serializable
 import kotlin.jvm.JvmInline
 import kotlin.random.Random
+import kotlin.time.Clock
 
 private val ulidChars = "0123456789ABCDEFGHJKMNPQRSTVWXYZ".toSet()
 private const val ULID_LENGTH = 26
@@ -24,7 +24,9 @@ private val ulidEncoding = "0123456789ABCDEFGHJKMNPQRSTVWXYZ".toCharArray()
  */
 @JvmInline
 @Serializable
-value class Ulid private constructor(val value: String) {
+value class Ulid private constructor(
+    val value: String,
+) {
     override fun toString(): String = value
 
     companion object {

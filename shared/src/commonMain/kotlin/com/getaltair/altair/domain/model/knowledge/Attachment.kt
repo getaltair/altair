@@ -31,7 +31,8 @@ data class Attachment(
     override val createdAt: Instant,
     override val updatedAt: Instant,
     override val deletedAt: Instant? = null,
-) : Timestamped, SoftDeletable {
+) : Timestamped,
+    SoftDeletable {
     init {
         require(filename.isNotBlank()) { "Attachment filename must not be blank" }
         require(filename.length <= 255) { "Attachment filename must be at most 255 characters" }

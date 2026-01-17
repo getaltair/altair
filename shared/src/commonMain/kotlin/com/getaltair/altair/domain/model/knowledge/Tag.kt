@@ -22,7 +22,8 @@ data class Tag(
     override val createdAt: Instant,
     override val updatedAt: Instant,
     override val deletedAt: Instant? = null,
-) : Timestamped, SoftDeletable {
+) : Timestamped,
+    SoftDeletable {
     init {
         require(name.isNotBlank()) { "Tag name must not be blank" }
         require(name.length <= 50) { "Tag name must be at most 50 characters" }

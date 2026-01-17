@@ -28,7 +28,8 @@ data class Epic(
     override val updatedAt: Instant,
     val completedAt: Instant?,
     override val deletedAt: Instant? = null,
-) : Timestamped, SoftDeletable {
+) : Timestamped,
+    SoftDeletable {
     init {
         require(title.isNotBlank()) { "Epic title must not be blank" }
         require(title.length <= 200) { "Epic title must be at most 200 characters" }

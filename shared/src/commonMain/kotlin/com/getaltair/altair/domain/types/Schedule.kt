@@ -57,7 +57,9 @@ sealed interface Schedule {
      */
     @Serializable
     @SerialName("monthly_date")
-    data class MonthlyDate(val dayOfMonth: Int) : Schedule {
+    data class MonthlyDate(
+        val dayOfMonth: Int,
+    ) : Schedule {
         init {
             require(dayOfMonth in 1..31) { "Day of month must be 1-31, got $dayOfMonth" }
         }
@@ -83,7 +85,9 @@ sealed interface Schedule {
      */
     @Serializable
     @SerialName("interval")
-    data class Interval(val days: Int) : Schedule {
+    data class Interval(
+        val days: Int,
+    ) : Schedule {
         init {
             require(days >= 1) { "Interval must be at least 1 day, got $days" }
         }
