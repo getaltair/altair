@@ -485,11 +485,5 @@ style:
   WildcardImport:
     active: true
 
-security:
-  active: true
-  # Detects hardcoded secrets, passwords, and credentials in code
-  HardcodedSecretValue:
-    active: true
-    # Patterns for identifying hardcoded secrets
-    allowedSecrets: []
-    excludes: ["**/test/**", "**/androidTest/**", "**/commonTest/**", "**/jvmTest/**"]
+# Note: Security ruleset requires detekt 2.0+ or a third-party plugin
+# For now, consider using tools like gitleaks or trufflehog for secret detection
