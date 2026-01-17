@@ -5,6 +5,7 @@ import com.getaltair.altair.dto.auth.AuthResponse
 import com.getaltair.altair.dto.auth.RegisterRequest
 import com.getaltair.altair.dto.auth.TokenRefreshResponse
 import com.getaltair.altair.rpc.AuthService
+import org.slf4j.LoggerFactory
 
 /**
  * Stub implementation of AuthService for infrastructure validation.
@@ -13,8 +14,10 @@ import com.getaltair.altair.rpc.AuthService
  * Real implementation will integrate with JWT and user repository in Phase 5+.
  */
 class AuthServiceImpl : AuthService {
+    private val logger = LoggerFactory.getLogger(AuthServiceImpl::class.java)
+
     override suspend fun login(request: AuthRequest): AuthResponse {
-        // Stub: Accept any credentials, return test token
+        logger.warn("STUB: AuthService.login() accepting any credentials for {}", request.email)
         return AuthResponse(
             accessToken = "test-access-token-${System.currentTimeMillis()}",
             refreshToken = "test-refresh-token-${System.currentTimeMillis()}",
@@ -26,7 +29,7 @@ class AuthServiceImpl : AuthService {
     }
 
     override suspend fun refresh(refreshToken: String): TokenRefreshResponse {
-        // Stub: Return new access token
+        logger.warn("STUB: AuthService.refresh() returning new token without validation")
         return TokenRefreshResponse(
             accessToken = "test-access-token-refreshed-${System.currentTimeMillis()}",
             expiresIn = 3600,
@@ -34,11 +37,11 @@ class AuthServiceImpl : AuthService {
     }
 
     override suspend fun logout() {
-        // Stub: No-op
+        logger.warn("STUB: AuthService.logout() is a no-op")
     }
 
     override suspend fun register(request: RegisterRequest): AuthResponse {
-        // Stub: Return test response for any registration
+        logger.warn("STUB: AuthService.register() accepting any registration for {}", request.email)
         return AuthResponse(
             accessToken = "test-access-token-${System.currentTimeMillis()}",
             refreshToken = "test-refresh-token-${System.currentTimeMillis()}",

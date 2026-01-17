@@ -5,6 +5,7 @@ import com.getaltair.altair.rpc.CompletionRequest
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import org.slf4j.LoggerFactory
 import kotlin.random.Random
 
 /**
@@ -14,8 +15,10 @@ import kotlin.random.Random
  * Real implementation will integrate with AI providers in Phase 5+.
  */
 class AiServiceImpl : AiService {
+    private val logger = LoggerFactory.getLogger(AiServiceImpl::class.java)
+
     override suspend fun embed(texts: List<String>): List<List<Float>> {
-        // Stub: Return random embeddings (typical small model embedding dimensions)
+        logger.debug("STUB: AiService.embed() generating fake embeddings for {} texts", texts.size)
         return texts.map {
             List(EMBEDDING_DIMENSIONS) { Random.nextFloat() * 2 - 1 }
         }
@@ -25,15 +28,15 @@ class AiServiceImpl : AiService {
         audioData: ByteArray,
         format: String,
     ): String {
-        // Stub: Return placeholder transcription
+        logger.debug("STUB: AiService.transcribe() received {} bytes of {} audio", audioData.size, format)
         return "[Transcription placeholder - received ${audioData.size} bytes of $format audio]"
     }
 
     override fun complete(request: CompletionRequest): Flow<String> =
         flow {
-            // Stub: Stream a simple response token by token
-            val maxPromptPreview = 50
-            val response = "This is a stub response to: ${request.prompt.take(maxPromptPreview)}..."
+            val promptPreview = request.prompt.take(LOG_PROMPT_PREVIEW_LENGTH)
+            logger.debug("STUB: AiService.complete() streaming response for prompt: {}...", promptPreview)
+            val response = "This is a stub response to: ${request.prompt.take(RESPONSE_PROMPT_PREVIEW_LENGTH)}..."
             val tokens = response.split(" ")
             for (token in tokens) {
                 emit("$token ")
@@ -44,5 +47,7 @@ class AiServiceImpl : AiService {
     private companion object {
         const val EMBEDDING_DIMENSIONS = 384
         const val TOKEN_GENERATION_DELAY_MS = 50L
+        const val LOG_PROMPT_PREVIEW_LENGTH = 30
+        const val RESPONSE_PROMPT_PREVIEW_LENGTH = 50
     }
 }

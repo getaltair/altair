@@ -2,20 +2,29 @@ package com.getaltair.rpc
 
 import com.getaltair.altair.dto.auth.AuthRequest
 import com.getaltair.altair.dto.auth.RegisterRequest
+import com.getaltair.altair.dto.sync.ChangeOperation
 import com.getaltair.altair.dto.sync.ChangeSet
+import com.getaltair.altair.dto.sync.EntityChange
 import com.getaltair.altair.rpc.AiService
 import com.getaltair.altair.rpc.AuthService
 import com.getaltair.altair.rpc.CompletionRequest
+import com.getaltair.altair.rpc.ContextMessage
+import com.getaltair.altair.rpc.MessageRole
 import com.getaltair.altair.rpc.SyncService
 import com.getaltair.configureRpc
 import io.ktor.client.plugins.websocket.WebSockets
 import io.ktor.server.testing.testApplication
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
 import kotlinx.rpc.krpc.ktor.client.installKrpc
 import kotlinx.rpc.krpc.ktor.client.rpc
 import kotlinx.rpc.krpc.ktor.client.rpcConfig
 import kotlinx.rpc.krpc.serialization.json.json
 import kotlinx.rpc.withService
+import kotlinx.serialization.json.JsonPrimitive
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -80,6 +89,18 @@ class RpcIntegrationTest {
         }
 
     @Test
+    fun `AuthService logout completes without error`() =
+        testApplication {
+            application { configureRpc() }
+
+            val client = createRpcClient()
+            val authService = client.withService<AuthService>()
+
+            // Should complete without throwing
+            authService.logout()
+        }
+
+    @Test
     fun `SyncService pull returns SyncResponse`() =
         testApplication {
             application { configureRpc() }
@@ -107,6 +128,83 @@ class RpcIntegrationTest {
 
             assertTrue(result.success)
             assertTrue(result.serverVersion > 0)
+        }
+
+    @Test
+    fun `SyncService push acknowledges entity IDs from changes`() =
+        testApplication {
+            application { configureRpc() }
+
+            val client = createRpcClient()
+            val syncService = client.withService<SyncService>()
+
+            val changes =
+                ChangeSet(
+                    changes =
+                        listOf(
+                            EntityChange(
+                                entityType = "Quest",
+                                entityId = "01HWTEST000000000000000001",
+                                operation = ChangeOperation.CREATE,
+                                version = 1L,
+                                data = JsonPrimitive("test"),
+                                timestamp = System.currentTimeMillis(),
+                            ),
+                            EntityChange(
+                                entityType = "Note",
+                                entityId = "01HWTEST000000000000000002",
+                                operation = ChangeOperation.UPDATE,
+                                version = 2L,
+                                data = null,
+                                timestamp = System.currentTimeMillis(),
+                            ),
+                        ),
+                    clientTimestamp = System.currentTimeMillis(),
+                )
+
+            val result = syncService.push(changes)
+
+            assertTrue(result.success)
+            assertEquals(2, result.acknowledged.size)
+            assertTrue(result.acknowledged.contains("01HWTEST000000000000000001"))
+            assertTrue(result.acknowledged.contains("01HWTEST000000000000000002"))
+        }
+
+    @Test
+    fun `SyncService pull with non-zero since returns incremented version`() =
+        testApplication {
+            application { configureRpc() }
+
+            val client = createRpcClient()
+            val syncService = client.withService<SyncService>()
+
+            val response = syncService.pull(since = 100L, entityTypes = setOf("Quest", "Note"))
+
+            assertEquals(101L, response.serverVersion)
+        }
+
+    @Test
+    fun `SyncService streamChanges can be started and cancelled`() =
+        testApplication {
+            application { configureRpc() }
+
+            val client = createRpcClient()
+            val syncService = client.withService<SyncService>()
+
+            val scope = CoroutineScope(Dispatchers.Default)
+            val job =
+                scope.launch {
+                    syncService.streamChanges(setOf("Quest")).collect { /* no-op */ }
+                }
+
+            // Let it establish connection
+            delay(100)
+            assertTrue(job.isActive)
+
+            // Verify cancellation works
+            job.cancel()
+            job.join()
+            assertTrue(job.isCancelled)
         }
 
     @Test
@@ -153,6 +251,40 @@ class RpcIntegrationTest {
             assertTrue(tokens.isNotEmpty())
             val fullResponse = tokens.joinToString("")
             assertTrue(fullResponse.contains("stub response"))
+        }
+
+    @Test
+    fun `AiService complete handles request with all optional parameters`() =
+        testApplication {
+            application { configureRpc() }
+
+            val client = createRpcClient()
+            val aiService = client.withService<AiService>()
+
+            val request =
+                CompletionRequest(
+                    prompt = "Test",
+                    systemPrompt = "You are helpful",
+                    maxTokens = 512,
+                    temperature = 0.5f,
+                    context = listOf(ContextMessage(role = MessageRole.USER, content = "Hello")),
+                )
+
+            val tokens = aiService.complete(request).toList()
+            assertTrue(tokens.isNotEmpty())
+        }
+
+    @Test
+    fun `AiService embed handles empty list`() =
+        testApplication {
+            application { configureRpc() }
+
+            val client = createRpcClient()
+            val aiService = client.withService<AiService>()
+
+            val embeddings = aiService.embed(emptyList())
+
+            assertTrue(embeddings.isEmpty())
         }
 
     private fun io.ktor.server.testing.ApplicationTestBuilder.createRpcClient() =

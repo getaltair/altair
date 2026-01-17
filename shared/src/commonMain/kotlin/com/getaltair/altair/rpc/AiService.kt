@@ -2,6 +2,7 @@ package com.getaltair.altair.rpc
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.rpc.annotations.Rpc
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
@@ -11,6 +12,15 @@ import kotlinx.serialization.Serializable
  * semantic search, audio transcription, and streaming text completions.
  * All AI processing happens server-side to leverage GPU resources and
  * manage API costs.
+ *
+ * **Requires authentication.** All operations are scoped to the authenticated user
+ * for usage tracking and rate limiting.
+ *
+ * ## Error Handling
+ *
+ * RPC services use exception-based error handling at the transport layer.
+ * Callers should wrap RPC calls with Arrow's `Either.catch {}` to convert
+ * exceptions to typed errors at the repository layer.
  */
 @Rpc
 interface AiService {
@@ -51,6 +61,12 @@ interface AiService {
 
 /**
  * Request for AI text completion.
+ *
+ * @property prompt The main prompt text to complete (must not be blank)
+ * @property systemPrompt Optional system message to set AI behavior
+ * @property maxTokens Maximum tokens to generate (must be positive, default: 1024)
+ * @property temperature Creativity parameter from 0.0 to 2.0 (default: 0.7)
+ * @property context Previous conversation messages for context
  */
 @Serializable
 data class CompletionRequest(
@@ -59,13 +75,37 @@ data class CompletionRequest(
     val maxTokens: Int = 1024,
     val temperature: Float = 0.7f,
     val context: List<ContextMessage> = emptyList(),
-)
+) {
+    init {
+        require(prompt.isNotBlank()) { "Prompt must not be blank" }
+        require(maxTokens > 0) { "maxTokens must be positive" }
+        require(temperature in 0f..2f) { "temperature must be between 0 and 2" }
+    }
+}
+
+/**
+ * Role of a message author in a conversation context.
+ */
+@Serializable
+enum class MessageRole {
+    @SerialName("user")
+    USER,
+
+    @SerialName("assistant")
+    ASSISTANT,
+
+    @SerialName("system")
+    SYSTEM,
+}
 
 /**
  * A message in the conversation context for completions.
+ *
+ * @property role Message author role (user, assistant, or system)
+ * @property content The message content
  */
 @Serializable
 data class ContextMessage(
-    val role: String,
+    val role: MessageRole,
     val content: String,
 )
