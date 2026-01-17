@@ -1,0 +1,53 @@
+-- EnergyBudget table schema
+-- Daily energy allocation for task planning
+
+CREATE TABLE IF NOT EXISTS energy_budget (
+    id TEXT NOT NULL PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    date TEXT NOT NULL,
+    total_energy INTEGER NOT NULL,
+    allocated_energy INTEGER NOT NULL DEFAULT 0,
+    notes TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    deleted_at TEXT,
+    FOREIGN KEY (user_id) REFERENCES user(id)
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_energy_budget_user_date ON energy_budget(user_id, date);
+CREATE INDEX IF NOT EXISTS idx_energy_budget_deleted_at ON energy_budget(deleted_at);
+
+-- Queries
+
+findById:
+SELECT * FROM energy_budget WHERE id = ? AND user_id = ? AND deleted_at IS NULL;
+
+findByDate:
+SELECT * FROM energy_budget WHERE user_id = ? AND date = ? AND deleted_at IS NULL;
+
+findByDateRange:
+SELECT * FROM energy_budget WHERE user_id = ? AND date >= ? AND date <= ? AND deleted_at IS NULL ORDER BY date;
+
+findAll:
+SELECT * FROM energy_budget WHERE user_id = ? AND deleted_at IS NULL ORDER BY date DESC;
+
+insert:
+INSERT INTO energy_budget (id, user_id, date, total_energy, allocated_energy, notes, created_at, updated_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+
+update:
+UPDATE energy_budget SET
+    total_energy = ?,
+    allocated_energy = ?,
+    notes = ?,
+    updated_at = ?
+WHERE id = ? AND user_id = ?;
+
+softDelete:
+UPDATE energy_budget SET deleted_at = ?, updated_at = ? WHERE id = ? AND user_id = ?;
+
+updateAllocated:
+UPDATE energy_budget SET allocated_energy = ?, updated_at = ? WHERE id = ? AND user_id = ?;
+
+getOrCreateForDate:
+SELECT * FROM energy_budget WHERE user_id = ? AND date = ? AND deleted_at IS NULL;

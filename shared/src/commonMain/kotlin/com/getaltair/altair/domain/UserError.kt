@@ -56,8 +56,8 @@ sealed interface UserError : DomainError {
     /**
      * The user's storage quota has been exceeded.
      *
-     * @property currentUsage Current storage used in bytes
-     * @property quota Maximum storage allowed in bytes
+     * @property currentUsage Current storage used in bytes (must be >= 0)
+     * @property quota Maximum storage allowed in bytes (must be >= 0)
      */
     @Serializable
     @SerialName("user_storage_quota_exceeded")
@@ -65,8 +65,13 @@ sealed interface UserError : DomainError {
         val currentUsage: Long,
         val quota: Long,
     ) : UserError {
-        override fun toUserMessage(): String =
-            "You have exceeded your storage quota. Please free up space or upgrade your plan."
+        init {
+            require(currentUsage >= 0) { "Current usage must be non-negative" }
+            require(quota >= 0) { "Quota must be non-negative" }
+            require(currentUsage > quota) { "Current usage must exceed quota for this error" }
+        }
+
+        override fun toUserMessage(): String = "You have exceeded your storage quota. Please free up space or upgrade your plan."
     }
 
     /**

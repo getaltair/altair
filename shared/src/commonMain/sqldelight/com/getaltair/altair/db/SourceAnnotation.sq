@@ -1,0 +1,67 @@
+-- SourceAnnotation table schema
+-- Annotations and highlights on source documents
+
+CREATE TABLE IF NOT EXISTS source_annotation (
+    id TEXT NOT NULL PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    source_document_id TEXT NOT NULL,
+    annotation_type TEXT NOT NULL,
+    content TEXT NOT NULL,
+    page_number INTEGER,
+    position_data TEXT,
+    note_id TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    deleted_at TEXT,
+    FOREIGN KEY (user_id) REFERENCES user(id),
+    FOREIGN KEY (source_document_id) REFERENCES source_document(id),
+    FOREIGN KEY (note_id) REFERENCES note(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_source_annotation_user_id ON source_annotation(user_id);
+CREATE INDEX IF NOT EXISTS idx_source_annotation_document_id ON source_annotation(source_document_id);
+CREATE INDEX IF NOT EXISTS idx_source_annotation_note_id ON source_annotation(note_id);
+CREATE INDEX IF NOT EXISTS idx_source_annotation_deleted_at ON source_annotation(deleted_at);
+
+-- Queries
+
+findById:
+SELECT * FROM source_annotation WHERE id = ? AND user_id = ? AND deleted_at IS NULL;
+
+findByDocument:
+SELECT * FROM source_annotation WHERE user_id = ? AND source_document_id = ? AND deleted_at IS NULL ORDER BY page_number, created_at;
+
+findByNote:
+SELECT * FROM source_annotation WHERE user_id = ? AND note_id = ? AND deleted_at IS NULL ORDER BY created_at;
+
+findByType:
+SELECT * FROM source_annotation WHERE user_id = ? AND annotation_type = ? AND deleted_at IS NULL ORDER BY created_at DESC;
+
+findByPage:
+SELECT * FROM source_annotation WHERE user_id = ? AND source_document_id = ? AND page_number = ? AND deleted_at IS NULL ORDER BY created_at;
+
+insert:
+INSERT INTO source_annotation (id, user_id, source_document_id, annotation_type, content, page_number, position_data, note_id, created_at, updated_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+update:
+UPDATE source_annotation SET
+    annotation_type = ?,
+    content = ?,
+    page_number = ?,
+    position_data = ?,
+    note_id = ?,
+    updated_at = ?
+WHERE id = ? AND user_id = ?;
+
+softDelete:
+UPDATE source_annotation SET deleted_at = ?, updated_at = ? WHERE id = ? AND user_id = ?;
+
+linkToNote:
+UPDATE source_annotation SET note_id = ?, updated_at = ? WHERE id = ? AND user_id = ?;
+
+countByDocument:
+SELECT COUNT(*) FROM source_annotation WHERE user_id = ? AND source_document_id = ? AND deleted_at IS NULL;
+
+deleteByDocument:
+UPDATE source_annotation SET deleted_at = ?, updated_at = ? WHERE user_id = ? AND source_document_id = ?;

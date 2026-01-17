@@ -34,6 +34,8 @@ complexity:
     thresholdInInterfaces: 11
     thresholdInObjects: 11
     thresholdInEnums: 11
+    # Repository classes implement interfaces with many methods
+    excludes: ["**/repository/**"]
 
 coroutines:
   active: true
@@ -101,6 +103,8 @@ exceptions:
       - NumberFormatException
       - ParseException
     allowedExceptionNameRegex: "_|(ignore|expected).*"
+    # Repository JSON parsing catches exceptions to return empty/null for malformed data
+    excludes: ["**/repository/**", "**/db/**"]
   ThrowingExceptionFromFinally:
     active: true
   ThrowingExceptionInMain:

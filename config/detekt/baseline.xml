@@ -2,21 +2,212 @@
 <SmellBaseline>
   <ManuallySuppressedIssues></ManuallySuppressedIssues>
   <CurrentIssues>
+    <ID>ClassOrdering:DesktopDatabaseConfig.kt$DesktopDatabaseConfig$Companion</ID>
+    <ID>ClassOrdering:SurrealEnergyBudgetRepository.kt$SurrealEnergyBudgetRepository$Companion</ID>
+    <ID>ClassOrdering:SurrealInitiativeRepositoryTest.kt$SurrealInitiativeRepositoryTest$Companion</ID>
+    <ID>ClassOrdering:SurrealQuestRepository.kt$SurrealQuestRepository$Companion</ID>
+    <ID>CyclomaticComplexMethod:SurrealContainerRepository.kt$SurrealContainerRepository$override suspend fun save(entity: Container): Either&lt;ItemError, Container&gt;</ID>
+    <ID>CyclomaticComplexMethod:SurrealEpicRepository.kt$SurrealEpicRepository$override suspend fun save(entity: Epic): Either&lt;EpicError, Epic&gt;</ID>
+    <ID>CyclomaticComplexMethod:SurrealItemRepository.kt$SurrealItemRepository$override suspend fun save(entity: Item): Either&lt;ItemError, Item&gt;</ID>
+    <ID>CyclomaticComplexMethod:SurrealQuestRepository.kt$SurrealQuestRepository$override suspend fun save(entity: Quest): Either&lt;QuestError, Quest&gt;</ID>
+    <ID>CyclomaticComplexMethod:SurrealRoutineRepository.kt$SurrealRoutineRepository$override suspend fun save(entity: Routine): Either&lt;DomainError, Routine&gt;</ID>
+    <ID>CyclomaticComplexMethod:SurrealSourceDocumentRepository.kt$SurrealSourceDocumentRepository$override suspend fun save(entity: SourceDocument): Either&lt;DomainError, SourceDocument&gt;</ID>
     <ID>FunctionNaming:MainViewController.kt$fun MainViewController()</ID>
     <ID>InvalidPackageDeclaration:Application.kt$package com.getaltair</ID>
     <ID>InvalidPackageDeclaration:ApplicationTest.kt$package com.getaltair</ID>
+    <ID>InvalidPackageDeclaration:Database.kt$package com.getaltair</ID>
     <ID>InvalidPackageDeclaration:HTTP.kt$package com.getaltair</ID>
     <ID>InvalidPackageDeclaration:Monitoring.kt$package com.getaltair</ID>
     <ID>InvalidPackageDeclaration:Routing.kt$package com.getaltair</ID>
     <ID>InvalidPackageDeclaration:Rpc.kt$package com.getaltair</ID>
     <ID>InvalidPackageDeclaration:Security.kt$package com.getaltair</ID>
     <ID>InvalidPackageDeclaration:Serialization.kt$package com.getaltair</ID>
+    <ID>LongMethod:main.kt$fun main()</ID>
+    <ID>LoopWithTooManyJumpStatements:DesktopMigrationRunner.kt$DesktopMigrationRunner$for</ID>
+    <ID>LoopWithTooManyJumpStatements:MigrationRunner.kt$MigrationRunner$for</ID>
     <ID>MatchingDeclarationName:Platform.android.kt$AndroidPlatform : Platform</ID>
     <ID>MatchingDeclarationName:Platform.ios.kt$IOSPlatform : Platform</ID>
     <ID>MatchingDeclarationName:Platform.jvm.kt$JVMPlatform : Platform</ID>
     <ID>MatchingDeclarationName:Platform.kt$Shared</ID>
+    <ID>MaxLineLength:AuthError.kt$AuthError.EmailAlreadyExists$override fun toUserMessage(): String</ID>
+    <ID>MaxLineLength:PropertyBasedValidationTest.kt$PropertyBasedValidationTest$private</ID>
+    <ID>MaxLineLength:QuestError.kt$QuestError.EnergyBudgetExceeded$override fun toUserMessage(): String</ID>
+    <ID>MaxLineLength:QuestError.kt$QuestError.InvalidStatusTransition$override fun toUserMessage(): String</ID>
+    <ID>MaxLineLength:QuestError.kt$QuestError.WipLimitExceeded$override fun toUserMessage(): String</ID>
+    <ID>MaxLineLength:SurrealAttachmentRepository.kt$SurrealAttachmentRepository$"SELECT * FROM attachment WHERE user_id = user:$userId AND deleted_at IS NONE ORDER BY created_at DESC"</ID>
+    <ID>MaxLineLength:SurrealAttachmentRepository.kt$SurrealAttachmentRepository$"SELECT * FROM attachment WHERE user_id = user:$userId AND inbox_item_id = inbox_item:${inboxItemId.value} AND deleted_at IS NONE"</ID>
+    <ID>MaxLineLength:SurrealAttachmentRepository.kt$SurrealAttachmentRepository$"SELECT * FROM attachment WHERE user_id = user:$userId AND note_id = note:${noteId.value} AND deleted_at IS NONE"</ID>
+    <ID>MaxLineLength:SurrealAttachmentRepository.kt$SurrealAttachmentRepository$"SELECT * FROM attachment WHERE user_id = user:$userId AND note_id IS NONE AND inbox_item_id IS NONE AND deleted_at IS NONE"</ID>
+    <ID>MaxLineLength:SurrealAttachmentRepository.kt$SurrealAttachmentRepository$"SELECT * FROM attachment WHERE user_id = user:$userId AND string::startsWith(mime_type, '$mimeTypePrefix') AND deleted_at IS NONE"</ID>
+    <ID>MaxLineLength:SurrealAttachmentRepository.kt$SurrealAttachmentRepository$"SELECT math::sum(size_bytes) AS total FROM attachment WHERE user_id = user:$userId AND deleted_at IS NONE GROUP ALL"</ID>
+    <ID>MaxLineLength:SurrealAttachmentRepository.kt$SurrealAttachmentRepository$"UPDATE attachment:${id.value} SET deleted_at = time::now(), updated_at = time::now() WHERE user_id = user:$userId;"</ID>
+    <ID>MaxLineLength:SurrealAttachmentRepository.kt$SurrealAttachmentRepository$"UPDATE attachment:${id.value} SET note_id = note:${noteId.value}, updated_at = time::now() WHERE user_id = user:$userId;"</ID>
+    <ID>MaxLineLength:SurrealCheckpointRepository.kt$SurrealCheckpointRepository$"SELECT * FROM checkpoint WHERE user_id = user:$userId AND quest_id = quest:${questId.value} ORDER BY sort_order"</ID>
+    <ID>MaxLineLength:SurrealCheckpointRepository.kt$SurrealCheckpointRepository$"SELECT count() FROM checkpoint WHERE user_id = user:$userId AND quest_id = quest:${questId.value} $filter GROUP ALL"</ID>
+    <ID>MaxLineLength:SurrealCheckpointRepository.kt$SurrealCheckpointRepository$"UPDATE checkpoint:${id.value} SET sort_order = $index, updated_at = time::now() WHERE user_id = user:$userId AND quest_id = quest:${questId.value};"</ID>
+    <ID>MaxLineLength:SurrealContainerRepository.kt$SurrealContainerRepository$"SELECT * FROM container WHERE user_id = user:$userId AND location_id = location:${locationId.value} AND deleted_at IS NONE"</ID>
+    <ID>MaxLineLength:SurrealContainerRepository.kt$SurrealContainerRepository$"SELECT * FROM container WHERE user_id = user:$userId AND parent_container_id = container:${parentContainerId.value} AND deleted_at IS NONE"</ID>
+    <ID>MaxLineLength:SurrealContainerRepository.kt$SurrealContainerRepository$"SELECT * FROM container WHERE user_id = user:$userId AND parent_container_id IS NONE AND deleted_at IS NONE ORDER BY name"</ID>
+    <ID>MaxLineLength:SurrealContainerRepository.kt$SurrealContainerRepository$"SELECT count() FROM item WHERE user_id = user:$userId AND container_id = container:${id.value} AND deleted_at IS NONE GROUP ALL"</ID>
+    <ID>MaxLineLength:SurrealContainerRepository.kt$SurrealContainerRepository$"UPDATE container:${id.value} SET deleted_at = time::now(), updated_at = time::now() WHERE user_id = user:$userId;"</ID>
+    <ID>MaxLineLength:SurrealContainerRepository.kt$SurrealContainerRepository$"UPDATE container:${id.value} SET location_id = $locRef, parent_container_id = NONE, updated_at = time::now() WHERE user_id = user:$userId;"</ID>
+    <ID>MaxLineLength:SurrealContainerRepository.kt$SurrealContainerRepository$"UPDATE container:${id.value} SET parent_container_id = NONE, updated_at = time::now() WHERE user_id = user:$userId;"</ID>
+    <ID>MaxLineLength:SurrealContainerRepository.kt$SurrealContainerRepository$"UPDATE container:${id.value} SET parent_container_id = container:${parentContainerId.value}, updated_at = time::now() WHERE user_id = user:$userId;"</ID>
+    <ID>MaxLineLength:SurrealEnergyBudgetRepository.kt$SurrealEnergyBudgetRepository$"SELECT * FROM energy_budget WHERE user_id = user:$userId AND date &gt;= '$startDate' AND date &lt;= '$endDate' ORDER BY date"</ID>
+    <ID>MaxLineLength:SurrealEnergyBudgetRepository.kt$SurrealEnergyBudgetRepository$"UPDATE energy_budget:${budget.id.value} SET spent_energy = $newSpent, updated_at = time::now() WHERE user_id = user:$userId;"</ID>
+    <ID>MaxLineLength:SurrealEnergyBudgetRepository.kt$SurrealEnergyBudgetRepository$"UPDATE energy_budget:${budget.id.value} SET total_budget = $newBudget, updated_at = time::now() WHERE user_id = user:$userId;"</ID>
+    <ID>MaxLineLength:SurrealEpicRepository.kt$SurrealEpicRepository$"SELECT * FROM epic WHERE user_id = user:$userId AND initiative_id = initiative:${initiativeId.value} AND deleted_at IS NONE"</ID>
+    <ID>MaxLineLength:SurrealEpicRepository.kt$SurrealEpicRepository$"SELECT * FROM epic WHERE user_id = user:$userId AND status = '${status.name.lowercase()}' AND deleted_at IS NONE"</ID>
+    <ID>MaxLineLength:SurrealEpicRepository.kt$SurrealEpicRepository$"UPDATE epic:${id.value} SET deleted_at = time::now(), updated_at = time::now() WHERE user_id = user:$userId;"</ID>
+    <ID>MaxLineLength:SurrealFolderRepository.kt$SurrealFolderRepository$"SELECT * FROM folder WHERE user_id = user:$userId AND parent_id = folder:${parentId.value} AND deleted_at IS NONE ORDER BY sort_order"</ID>
+    <ID>MaxLineLength:SurrealFolderRepository.kt$SurrealFolderRepository$"SELECT * FROM folder WHERE user_id = user:$userId AND parent_id IS NONE AND deleted_at IS NONE ORDER BY sort_order"</ID>
+    <ID>MaxLineLength:SurrealFolderRepository.kt$SurrealFolderRepository$"UPDATE folder:${id.value} SET deleted_at = time::now(), updated_at = time::now() WHERE user_id = user:$userId;"</ID>
+    <ID>MaxLineLength:SurrealFolderRepository.kt$SurrealFolderRepository$"UPDATE folder:${id.value} SET parent_id = $parentRef, updated_at = time::now() WHERE user_id = user:$userId;"</ID>
+    <ID>MaxLineLength:SurrealFolderRepository.kt$SurrealFolderRepository$"UPDATE folder:${id.value} SET sort_order = $index, updated_at = time::now() WHERE user_id = user:$userId;"</ID>
+    <ID>MaxLineLength:SurrealInitiativeRepository.kt$SurrealInitiativeRepository$"SELECT * FROM initiative WHERE user_id = user:$userId AND deleted_at IS NONE ORDER BY created_at DESC"</ID>
+    <ID>MaxLineLength:SurrealInitiativeRepository.kt$SurrealInitiativeRepository$"SELECT * FROM initiative WHERE user_id = user:$userId AND status = \$status AND deleted_at IS NONE"</ID>
+    <ID>MaxLineLength:SurrealInitiativeRepositoryTest.kt$SurrealInitiativeRepositoryTest$"CREATE user:$testUserId CONTENT { email: 'test@test.com', hashed_password: 'hash', display_name: 'Test User', role: 'member' };"</ID>
+    <ID>MaxLineLength:SurrealItemRepository.kt$SurrealItemRepository$"SELECT * FROM item WHERE user_id = user:$userId AND container_id = container:${containerId.value} AND deleted_at IS NONE"</ID>
+    <ID>MaxLineLength:SurrealItemRepository.kt$SurrealItemRepository$"SELECT * FROM item WHERE user_id = user:$userId AND initiative_id = initiative:${initiativeId.value} AND deleted_at IS NONE"</ID>
+    <ID>MaxLineLength:SurrealItemRepository.kt$SurrealItemRepository$"SELECT * FROM item WHERE user_id = user:$userId AND location_id = location:${locationId.value} AND deleted_at IS NONE"</ID>
+    <ID>MaxLineLength:SurrealItemRepository.kt$SurrealItemRepository$"SELECT * FROM item WHERE user_id = user:$userId AND location_id IS NONE AND container_id IS NONE AND deleted_at IS NONE"</ID>
+    <ID>MaxLineLength:SurrealItemRepository.kt$SurrealItemRepository$"SELECT * FROM item WHERE user_id = user:$userId AND string::lowercase(name) CONTAINS string::lowercase('${query.replace("'", "''")}') AND deleted_at IS NONE"</ID>
+    <ID>MaxLineLength:SurrealItemRepository.kt$SurrealItemRepository$"SELECT * FROM item WHERE user_id = user:$userId AND template_id = item_template:${templateId.value} AND deleted_at IS NONE"</ID>
+    <ID>MaxLineLength:SurrealItemRepository.kt$SurrealItemRepository$"UPDATE item:${id.value} SET container_id = container:${containerId.value}, updated_at = time::now() WHERE user_id = user:$userId;"</ID>
+    <ID>MaxLineLength:SurrealItemRepository.kt$SurrealItemRepository$"UPDATE item:${id.value} SET deleted_at = time::now(), updated_at = time::now() WHERE user_id = user:$userId;"</ID>
+    <ID>MaxLineLength:SurrealItemRepository.kt$SurrealItemRepository$"UPDATE item:${id.value} SET quantity = $quantity, updated_at = time::now() WHERE user_id = user:$userId;"</ID>
+    <ID>MaxLineLength:SurrealItemTemplateRepository.kt$SurrealItemTemplateRepository$"SELECT * FROM field_definition WHERE user_id = user:$userId AND template_id = item_template:${template.id.value} AND deleted_at IS NONE ORDER BY sort_order"</ID>
+    <ID>MaxLineLength:SurrealItemTemplateRepository.kt$SurrealItemTemplateRepository$"SELECT * FROM field_definition:${id.value} WHERE user_id = user:$userId AND deleted_at IS NONE"</ID>
+    <ID>MaxLineLength:SurrealItemTemplateRepository.kt$SurrealItemTemplateRepository$"SELECT * FROM item_template WHERE user_id = user:$userId AND string::lowercase(name) CONTAINS string::lowercase('${query.replace("'", "''")}') AND deleted_at IS NONE"</ID>
+    <ID>MaxLineLength:SurrealItemTemplateRepository.kt$SurrealItemTemplateRepository$"SELECT count() FROM item WHERE user_id = user:$userId AND template_id = item_template:${id.value} AND deleted_at IS NONE GROUP ALL"</ID>
+    <ID>MaxLineLength:SurrealItemTemplateRepository.kt$SurrealItemTemplateRepository$"UPDATE custom_field SET deleted_at = time::now(), updated_at = time::now() WHERE user_id = user:$userId AND field_definition_id = field_definition:${fieldId.value};"</ID>
+    <ID>MaxLineLength:SurrealItemTemplateRepository.kt$SurrealItemTemplateRepository$"UPDATE field_definition SET deleted_at = time::now(), updated_at = time::now() WHERE user_id = user:$userId AND template_id = item_template:${id.value};"</ID>
+    <ID>MaxLineLength:SurrealItemTemplateRepository.kt$SurrealItemTemplateRepository$"UPDATE field_definition:${fieldId.value} SET deleted_at = time::now(), updated_at = time::now() WHERE user_id = user:$userId;"</ID>
+    <ID>MaxLineLength:SurrealItemTemplateRepository.kt$SurrealItemTemplateRepository$"UPDATE field_definition:${fieldId.value} SET sort_order = $index, updated_at = time::now() WHERE user_id = user:$userId AND template_id = item_template:${templateId.value};"</ID>
+    <ID>MaxLineLength:SurrealItemTemplateRepository.kt$SurrealItemTemplateRepository$"UPDATE item_template:${id.value} SET deleted_at = time::now(), updated_at = time::now() WHERE user_id = user:$userId;"</ID>
+    <ID>MaxLineLength:SurrealItemTemplateRepository.kt$SurrealItemTemplateRepository$val templateIdStr = obj["template_id"]?.jsonPrimitive?.content?.substringAfter(":") ?: throw IllegalStateException()</ID>
+    <ID>MaxLineLength:SurrealLocationRepository.kt$SurrealLocationRepository$"SELECT * FROM location WHERE user_id = user:$userId AND parent_id = location:${parentId.value} AND deleted_at IS NONE ORDER BY name"</ID>
+    <ID>MaxLineLength:SurrealLocationRepository.kt$SurrealLocationRepository$"SELECT * FROM location WHERE user_id = user:$userId AND parent_id IS NONE AND deleted_at IS NONE ORDER BY name"</ID>
+    <ID>MaxLineLength:SurrealLocationRepository.kt$SurrealLocationRepository$"SELECT count() FROM container WHERE user_id = user:$userId AND location_id = location:${id.value} AND deleted_at IS NONE GROUP ALL"</ID>
+    <ID>MaxLineLength:SurrealLocationRepository.kt$SurrealLocationRepository$"SELECT count() FROM item WHERE user_id = user:$userId AND location_id = location:${id.value} AND deleted_at IS NONE GROUP ALL"</ID>
+    <ID>MaxLineLength:SurrealLocationRepository.kt$SurrealLocationRepository$"UPDATE location:${id.value} SET deleted_at = time::now(), updated_at = time::now() WHERE user_id = user:$userId;"</ID>
+    <ID>MaxLineLength:SurrealLocationRepository.kt$SurrealLocationRepository$"UPDATE location:${id.value} SET parent_id = $parentRef, updated_at = time::now() WHERE user_id = user:$userId;"</ID>
+    <ID>MaxLineLength:SurrealNoteLinkRepository.kt$SurrealNoteLinkRepository$"SELECT * FROM note_link WHERE user_id = user:$userId AND source_note_id = note:${noteId.value}"</ID>
+    <ID>MaxLineLength:SurrealNoteLinkRepository.kt$SurrealNoteLinkRepository$"SELECT * FROM note_link WHERE user_id = user:$userId AND source_note_id = note:${sourceNoteId.value} AND target_note_id = note:${targetNoteId.value}"</ID>
+    <ID>MaxLineLength:SurrealNoteLinkRepository.kt$SurrealNoteLinkRepository$"SELECT * FROM note_link WHERE user_id = user:$userId AND source_note_id = note:${sourceNoteId.value}"</ID>
+    <ID>MaxLineLength:SurrealNoteLinkRepository.kt$SurrealNoteLinkRepository$"SELECT * FROM note_link WHERE user_id = user:$userId AND target_note_id = note:${targetNoteId.value}"</ID>
+    <ID>MaxLineLength:SurrealNoteRepository.kt$SurrealNoteRepository$"SELECT * FROM note WHERE user_id = user:$userId AND initiative_id = initiative:${initiativeId.value} AND deleted_at IS NONE"</ID>
+    <ID>MaxLineLength:SurrealNoteRepository.kt$SurrealNoteRepository$"UPDATE note:${id.value} SET deleted_at = time::now(), updated_at = time::now() WHERE user_id = user:$userId;"</ID>
+    <ID>MaxLineLength:SurrealNoteRepository.kt$SurrealNoteRepository$"UPDATE note:${id.value} SET folder_id = $folderRef, updated_at = time::now() WHERE user_id = user:$userId;"</ID>
+    <ID>MaxLineLength:SurrealNoteRepository.kt$SurrealNoteRepository$"UPDATE note:${id.value} SET is_pinned = ${!note.isPinned}, updated_at = time::now() WHERE user_id = user:$userId;"</ID>
+    <ID>MaxLineLength:SurrealQuestRepository.kt$SurrealQuestRepository$"SELECT * FROM quest WHERE user_id = user:$userId AND epic_id = epic:${epicId.value} AND deleted_at IS NONE"</ID>
+    <ID>MaxLineLength:SurrealQuestRepository.kt$SurrealQuestRepository$"SELECT * FROM quest WHERE user_id = user:$userId AND initiative_id = initiative:${initiativeId.value} AND deleted_at IS NONE"</ID>
+    <ID>MaxLineLength:SurrealQuestRepository.kt$SurrealQuestRepository$"SELECT * FROM quest WHERE user_id = user:$userId AND routine_id = routine:${routineId.value} AND deleted_at IS NONE"</ID>
+    <ID>MaxLineLength:SurrealQuestRepository.kt$SurrealQuestRepository$"SELECT * FROM quest WHERE user_id = user:$userId AND scheduled_date = \$date AND deleted_at IS NONE"</ID>
+    <ID>MaxLineLength:SurrealQuestRepository.kt$SurrealQuestRepository$"SELECT count() FROM quest WHERE user_id = user:$userId AND status = 'active' AND deleted_at IS NONE GROUP ALL"</ID>
+    <ID>MaxLineLength:SurrealRoutineRepository.kt$SurrealRoutineRepository$"SELECT * FROM routine WHERE user_id = user:$userId AND deleted_at IS NONE ORDER BY created_at DESC"</ID>
+    <ID>MaxLineLength:SurrealRoutineRepository.kt$SurrealRoutineRepository$"SELECT * FROM routine WHERE user_id = user:$userId AND initiative_id = initiative:${initiativeId.value} AND deleted_at IS NONE"</ID>
+    <ID>MaxLineLength:SurrealRoutineRepository.kt$SurrealRoutineRepository$"SELECT * FROM routine WHERE user_id = user:$userId AND is_active = true AND deleted_at IS NONE"</ID>
+    <ID>MaxLineLength:SurrealRoutineRepository.kt$SurrealRoutineRepository$"UPDATE routine:${id.value} SET deleted_at = time::now(), updated_at = time::now() WHERE user_id = user:$userId;"</ID>
+    <ID>MaxLineLength:SurrealRoutineRepository.kt$SurrealRoutineRepository$"UPDATE routine:${id.value} SET last_spawned_at = &lt;datetime&gt;'$spawnedAt', updated_at = time::now() WHERE user_id = user:$userId;"</ID>
+    <ID>MaxLineLength:SurrealSourceDocumentRepository.kt$SurrealSourceDocumentRepository$"SELECT * FROM source_document WHERE user_id = user:$userId AND deleted_at IS NONE ORDER BY created_at DESC"</ID>
+    <ID>MaxLineLength:SurrealSourceDocumentRepository.kt$SurrealSourceDocumentRepository$"SELECT * FROM source_document WHERE user_id = user:$userId AND extraction_status = '${status.name.lowercase()}' AND deleted_at IS NONE"</ID>
+    <ID>MaxLineLength:SurrealSourceDocumentRepository.kt$SurrealSourceDocumentRepository$"SELECT * FROM source_document WHERE user_id = user:$userId AND extraction_status IN ['pending', 'failed'] AND deleted_at IS NONE"</ID>
+    <ID>MaxLineLength:SurrealSourceDocumentRepository.kt$SurrealSourceDocumentRepository$"SELECT * FROM source_document WHERE user_id = user:$userId AND initiative_id = initiative:${initiativeId.value} AND deleted_at IS NONE"</ID>
+    <ID>MaxLineLength:SurrealSourceDocumentRepository.kt$SurrealSourceDocumentRepository$"SELECT * FROM source_document WHERE user_id = user:$userId AND source_type = '${sourceType.name.lowercase()}' AND deleted_at IS NONE"</ID>
+    <ID>MaxLineLength:SurrealSourceDocumentRepository.kt$SurrealSourceDocumentRepository$"SELECT * FROM source_document WHERE user_id = user:$userId AND watched_folder_id = '${watchedFolderId.value}' AND deleted_at IS NONE"</ID>
+    <ID>MaxLineLength:SurrealSourceDocumentRepository.kt$SurrealSourceDocumentRepository$"UPDATE source_document:${id.value} SET deleted_at = time::now(), updated_at = time::now() WHERE user_id = user:$userId;"</ID>
+    <ID>MaxLineLength:SurrealTagRepository.kt$SurrealTagRepository$"UPDATE tag:${id.value} SET deleted_at = time::now(), updated_at = time::now() WHERE user_id = user:$userId;"</ID>
+    <ID>MaxLineLength:SyncError.kt$SyncError.ConflictDetected$override fun toUserMessage(): String</ID>
+    <ID>MaxLineLength:SyncError.kt$SyncError.ServerUnreachable$override fun toUserMessage(): String</ID>
+    <ID>MaxLineLength:SyncError.kt$SyncError.Timeout$override fun toUserMessage(): String</ID>
+    <ID>MaxLineLength:UserError.kt$UserError.StorageQuotaExceeded$override fun toUserMessage(): String</ID>
+    <ID>ThrowingExceptionsWithoutMessageOrCause:SurrealAttachmentRepository.kt$SurrealAttachmentRepository$IllegalStateException()</ID>
+    <ID>ThrowingExceptionsWithoutMessageOrCause:SurrealCheckpointRepository.kt$SurrealCheckpointRepository$IllegalStateException()</ID>
+    <ID>ThrowingExceptionsWithoutMessageOrCause:SurrealContainerRepository.kt$SurrealContainerRepository$IllegalStateException()</ID>
+    <ID>ThrowingExceptionsWithoutMessageOrCause:SurrealEnergyBudgetRepository.kt$SurrealEnergyBudgetRepository$IllegalStateException()</ID>
+    <ID>ThrowingExceptionsWithoutMessageOrCause:SurrealEpicRepository.kt$SurrealEpicRepository$IllegalStateException()</ID>
+    <ID>ThrowingExceptionsWithoutMessageOrCause:SurrealFolderRepository.kt$SurrealFolderRepository$IllegalStateException()</ID>
+    <ID>ThrowingExceptionsWithoutMessageOrCause:SurrealInboxRepository.kt$SurrealInboxRepository$IllegalStateException()</ID>
+    <ID>ThrowingExceptionsWithoutMessageOrCause:SurrealItemRepository.kt$SurrealItemRepository$IllegalStateException()</ID>
+    <ID>ThrowingExceptionsWithoutMessageOrCause:SurrealItemTemplateRepository.kt$SurrealItemTemplateRepository$IllegalStateException()</ID>
+    <ID>ThrowingExceptionsWithoutMessageOrCause:SurrealLocationRepository.kt$SurrealLocationRepository$IllegalStateException()</ID>
+    <ID>ThrowingExceptionsWithoutMessageOrCause:SurrealNoteLinkRepository.kt$SurrealNoteLinkRepository$IllegalStateException()</ID>
+    <ID>ThrowingExceptionsWithoutMessageOrCause:SurrealNoteRepository.kt$SurrealNoteRepository$IllegalStateException()</ID>
+    <ID>ThrowingExceptionsWithoutMessageOrCause:SurrealRoutineRepository.kt$SurrealRoutineRepository$IllegalStateException()</ID>
+    <ID>ThrowingExceptionsWithoutMessageOrCause:SurrealSourceDocumentRepository.kt$SurrealSourceDocumentRepository$IllegalStateException()</ID>
+    <ID>ThrowingExceptionsWithoutMessageOrCause:SurrealTagRepository.kt$SurrealTagRepository$IllegalStateException()</ID>
+    <ID>ThrowsCount:SurrealCheckpointRepository.kt$SurrealCheckpointRepository$private fun mapToCheckpoint(obj: kotlinx.serialization.json.JsonObject): Checkpoint</ID>
+    <ID>ThrowsCount:SurrealEnergyBudgetRepository.kt$SurrealEnergyBudgetRepository$private fun mapToBudget(obj: kotlinx.serialization.json.JsonObject): EnergyBudget</ID>
+    <ID>ThrowsCount:SurrealInitiativeRepository.kt$SurrealInitiativeRepository$private fun mapToInitiative(obj: kotlinx.serialization.json.JsonObject): Initiative</ID>
+    <ID>ThrowsCount:SurrealItemTemplateRepository.kt$SurrealItemTemplateRepository$private fun mapToFieldDefinition(obj: kotlinx.serialization.json.JsonObject): FieldDefinition</ID>
+    <ID>ThrowsCount:SurrealNoteLinkRepository.kt$SurrealNoteLinkRepository$private fun mapToNoteLink(obj: kotlinx.serialization.json.JsonObject): NoteLink</ID>
+    <ID>ThrowsCount:SurrealQuestRepository.kt$SurrealQuestRepository$private fun mapToQuest(obj: kotlinx.serialization.json.JsonObject): Quest</ID>
+    <ID>ThrowsCount:SurrealUserRepository.kt$SurrealUserRepository$private fun mapToUser(obj: kotlinx.serialization.json.JsonObject): User</ID>
+    <ID>TooGenericExceptionCaught:DesktopMigrationRunner.kt$DesktopMigrationRunner$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:EmbeddedSurrealClient.kt$EmbeddedSurrealClient$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:MigrationRunner.kt$MigrationRunner$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:SurrealAttachmentRepository.kt$SurrealAttachmentRepository$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:SurrealCheckpointRepository.kt$SurrealCheckpointRepository$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:SurrealContainerRepository.kt$SurrealContainerRepository$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:SurrealDbClient.kt$SurrealDbClient$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:SurrealEnergyBudgetRepository.kt$SurrealEnergyBudgetRepository$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:SurrealEpicRepository.kt$SurrealEpicRepository$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:SurrealFolderRepository.kt$SurrealFolderRepository$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:SurrealInboxRepository.kt$SurrealInboxRepository$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:SurrealInitiativeRepository.kt$SurrealInitiativeRepository$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:SurrealItemRepository.kt$SurrealItemRepository$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:SurrealItemTemplateRepository.kt$SurrealItemTemplateRepository$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:SurrealLocationRepository.kt$SurrealLocationRepository$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:SurrealNoteLinkRepository.kt$SurrealNoteLinkRepository$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:SurrealNoteRepository.kt$SurrealNoteRepository$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:SurrealQuestRepository.kt$SurrealQuestRepository$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:SurrealRepositoryBase.kt$SurrealRepositoryBase$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:SurrealRoutineRepository.kt$SurrealRoutineRepository$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:SurrealSourceDocumentRepository.kt$SurrealSourceDocumentRepository$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:SurrealTagRepository.kt$SurrealTagRepository$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:SurrealUserRepository.kt$SurrealUserRepository$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:main.kt$e: Exception</ID>
+    <ID>TooManyFunctions:DomainErrorTest.kt$DomainErrorTest</ID>
+    <ID>TooManyFunctions:DtoSerializationTest.kt$DtoSerializationTest</ID>
+    <ID>TooManyFunctions:EntitySerializationTest.kt$EntitySerializationTest</ID>
+    <ID>TooManyFunctions:EntityValidationTest.kt$EntityValidationTest</ID>
+    <ID>TooManyFunctions:ModuleErrorsTest.kt$ModuleErrorsTest</ID>
+    <ID>TooManyFunctions:PropertyBasedValidationTest.kt$PropertyBasedValidationTest</ID>
+    <ID>TooManyFunctions:RpcIntegrationTest.kt$RpcIntegrationTest</ID>
+    <ID>TooManyFunctions:ScheduleTest.kt$ScheduleTest</ID>
+    <ID>TooManyFunctions:UlidTest.kt$UlidTest</ID>
+    <ID>UnderscoresInNumericLiterals:DatabaseConfig.kt$DatabaseConfig.Network$65535</ID>
+    <ID>UnderscoresInNumericLiterals:SurrealUserRepository.kt$SurrealUserRepository$10737418240L</ID>
+    <ID>UnusedParameter:DesktopDatabaseModule.kt$userId: String</ID>
     <ID>UnusedParameter:RootComponent.kt$RootComponent$componentContext: ComponentContext</ID>
+    <ID>UnusedParameter:SurrealDbClient.kt$SurrealDbClient$params: Map&lt;String, Any?&gt; = emptyMap()</ID>
     <ID>UnusedPrivateMember:MainActivity.kt$@Preview @Composable private fun AppAndroidPreview()</ID>
+    <ID>UnusedPrivateProperty:DriverFactory.kt$DriverFactory.Companion$private const val DATABASE_NAME = "altair.db"</ID>
+    <ID>UseCheckOrError:SurrealAttachmentRepository.kt$SurrealAttachmentRepository$throw IllegalStateException()</ID>
+    <ID>UseCheckOrError:SurrealCheckpointRepository.kt$SurrealCheckpointRepository$throw IllegalStateException()</ID>
+    <ID>UseCheckOrError:SurrealContainerRepository.kt$SurrealContainerRepository$throw IllegalStateException()</ID>
+    <ID>UseCheckOrError:SurrealEnergyBudgetRepository.kt$SurrealEnergyBudgetRepository$throw IllegalStateException()</ID>
+    <ID>UseCheckOrError:SurrealEpicRepository.kt$SurrealEpicRepository$throw IllegalStateException()</ID>
+    <ID>UseCheckOrError:SurrealFolderRepository.kt$SurrealFolderRepository$throw IllegalStateException()</ID>
+    <ID>UseCheckOrError:SurrealInboxRepository.kt$SurrealInboxRepository$throw IllegalStateException()</ID>
+    <ID>UseCheckOrError:SurrealInitiativeRepository.kt$SurrealInitiativeRepository$throw IllegalStateException("Missing id")</ID>
+    <ID>UseCheckOrError:SurrealInitiativeRepository.kt$SurrealInitiativeRepository$throw IllegalStateException("Missing name")</ID>
+    <ID>UseCheckOrError:SurrealInitiativeRepository.kt$SurrealInitiativeRepository$throw IllegalStateException("Missing user_id")</ID>
+    <ID>UseCheckOrError:SurrealItemRepository.kt$SurrealItemRepository$throw IllegalStateException()</ID>
+    <ID>UseCheckOrError:SurrealItemTemplateRepository.kt$SurrealItemTemplateRepository$throw IllegalStateException()</ID>
+    <ID>UseCheckOrError:SurrealLocationRepository.kt$SurrealLocationRepository$throw IllegalStateException()</ID>
+    <ID>UseCheckOrError:SurrealNoteLinkRepository.kt$SurrealNoteLinkRepository$throw IllegalStateException()</ID>
+    <ID>UseCheckOrError:SurrealNoteRepository.kt$SurrealNoteRepository$throw IllegalStateException()</ID>
+    <ID>UseCheckOrError:SurrealQuestRepository.kt$SurrealQuestRepository$throw IllegalStateException("Missing id")</ID>
+    <ID>UseCheckOrError:SurrealQuestRepository.kt$SurrealQuestRepository$throw IllegalStateException("Missing title")</ID>
+    <ID>UseCheckOrError:SurrealQuestRepository.kt$SurrealQuestRepository$throw IllegalStateException("Missing user_id")</ID>
+    <ID>UseCheckOrError:SurrealRoutineRepository.kt$SurrealRoutineRepository$throw IllegalStateException()</ID>
+    <ID>UseCheckOrError:SurrealSourceDocumentRepository.kt$SurrealSourceDocumentRepository$throw IllegalStateException()</ID>
+    <ID>UseCheckOrError:SurrealTagRepository.kt$SurrealTagRepository$throw IllegalStateException()</ID>
+    <ID>UseCheckOrError:SurrealUserRepository.kt$SurrealUserRepository$throw IllegalStateException("Missing display_name")</ID>
+    <ID>UseCheckOrError:SurrealUserRepository.kt$SurrealUserRepository$throw IllegalStateException("Missing email")</ID>
+    <ID>UseCheckOrError:SurrealUserRepository.kt$SurrealUserRepository$throw IllegalStateException("Missing id")</ID>
     <ID>WildcardImport:App.kt$import androidx.compose.runtime.*</ID>
     <ID>WildcardImport:Application.kt$import io.ktor.server.application.*</ID>
     <ID>WildcardImport:ApplicationTest.kt$import io.ktor.client.request.*</ID>

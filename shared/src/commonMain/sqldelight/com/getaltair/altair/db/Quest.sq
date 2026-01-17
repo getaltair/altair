@@ -1,0 +1,103 @@
+-- Quest table schema
+-- Actionable tasks with checkpoints
+
+CREATE TABLE IF NOT EXISTS quest (
+    id TEXT NOT NULL PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    epic_id TEXT,
+    initiative_id TEXT,
+    name TEXT NOT NULL,
+    description TEXT,
+    status TEXT NOT NULL DEFAULT 'backlog',
+    priority TEXT NOT NULL DEFAULT 'medium',
+    energy_cost TEXT NOT NULL DEFAULT 'medium',
+    estimated_minutes INTEGER,
+    actual_minutes INTEGER,
+    due_date TEXT,
+    started_at TEXT,
+    completed_at TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    deleted_at TEXT,
+    FOREIGN KEY (user_id) REFERENCES user(id),
+    FOREIGN KEY (epic_id) REFERENCES epic(id),
+    FOREIGN KEY (initiative_id) REFERENCES initiative(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_quest_user_id ON quest(user_id);
+CREATE INDEX IF NOT EXISTS idx_quest_epic_id ON quest(epic_id);
+CREATE INDEX IF NOT EXISTS idx_quest_initiative_id ON quest(initiative_id);
+CREATE INDEX IF NOT EXISTS idx_quest_status ON quest(status);
+CREATE INDEX IF NOT EXISTS idx_quest_deleted_at ON quest(deleted_at);
+
+-- Queries
+
+findById:
+SELECT * FROM quest WHERE id = ? AND user_id = ? AND deleted_at IS NULL;
+
+findAll:
+SELECT * FROM quest WHERE user_id = ? AND deleted_at IS NULL ORDER BY created_at DESC;
+
+findByEpic:
+SELECT * FROM quest WHERE user_id = ? AND epic_id = ? AND deleted_at IS NULL ORDER BY created_at;
+
+findByInitiative:
+SELECT * FROM quest WHERE user_id = ? AND initiative_id = ? AND deleted_at IS NULL ORDER BY created_at;
+
+findByStatus:
+SELECT * FROM quest WHERE user_id = ? AND status = ? AND deleted_at IS NULL ORDER BY created_at;
+
+findInProgress:
+SELECT * FROM quest WHERE user_id = ? AND status = 'in_progress' AND deleted_at IS NULL ORDER BY started_at;
+
+findBacklog:
+SELECT * FROM quest WHERE user_id = ? AND status = 'backlog' AND deleted_at IS NULL ORDER BY priority, created_at;
+
+findByPriority:
+SELECT * FROM quest WHERE user_id = ? AND priority = ? AND deleted_at IS NULL ORDER BY created_at;
+
+findByEnergyCost:
+SELECT * FROM quest WHERE user_id = ? AND energy_cost = ? AND status = 'backlog' AND deleted_at IS NULL ORDER BY priority;
+
+findDueToday:
+SELECT * FROM quest WHERE user_id = ? AND due_date = ? AND status NOT IN ('completed', 'cancelled') AND deleted_at IS NULL ORDER BY priority;
+
+findOverdue:
+SELECT * FROM quest WHERE user_id = ? AND due_date < ? AND status NOT IN ('completed', 'cancelled') AND deleted_at IS NULL ORDER BY due_date;
+
+countWip:
+SELECT COUNT(*) FROM quest WHERE user_id = ? AND status = 'in_progress' AND deleted_at IS NULL;
+
+insert:
+INSERT INTO quest (id, user_id, epic_id, initiative_id, name, description, status, priority, energy_cost, estimated_minutes, due_date, created_at, updated_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+update:
+UPDATE quest SET
+    epic_id = ?,
+    initiative_id = ?,
+    name = ?,
+    description = ?,
+    status = ?,
+    priority = ?,
+    energy_cost = ?,
+    estimated_minutes = ?,
+    actual_minutes = ?,
+    due_date = ?,
+    updated_at = ?
+WHERE id = ? AND user_id = ?;
+
+softDelete:
+UPDATE quest SET deleted_at = ?, updated_at = ? WHERE id = ? AND user_id = ?;
+
+updateStatus:
+UPDATE quest SET status = ?, updated_at = ? WHERE id = ? AND user_id = ?;
+
+startQuest:
+UPDATE quest SET status = 'in_progress', started_at = ?, updated_at = ? WHERE id = ? AND user_id = ?;
+
+completeQuest:
+UPDATE quest SET status = 'completed', completed_at = ?, actual_minutes = ?, updated_at = ? WHERE id = ? AND user_id = ?;
+
+searchByName:
+SELECT * FROM quest WHERE user_id = ? AND LOWER(name) LIKE '%' || LOWER(?) || '%' AND deleted_at IS NULL ORDER BY name;

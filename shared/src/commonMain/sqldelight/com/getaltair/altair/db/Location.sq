@@ -1,0 +1,62 @@
+-- Location table schema
+-- Physical locations for item tracking
+
+CREATE TABLE IF NOT EXISTS location (
+    id TEXT NOT NULL PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    description TEXT,
+    parent_id TEXT,
+    address TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    deleted_at TEXT,
+    FOREIGN KEY (user_id) REFERENCES user(id),
+    FOREIGN KEY (parent_id) REFERENCES location(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_location_user_id ON location(user_id);
+CREATE INDEX IF NOT EXISTS idx_location_parent_id ON location(parent_id);
+CREATE INDEX IF NOT EXISTS idx_location_deleted_at ON location(deleted_at);
+
+-- Queries
+
+findById:
+SELECT * FROM location WHERE id = ? AND user_id = ? AND deleted_at IS NULL;
+
+findAll:
+SELECT * FROM location WHERE user_id = ? AND deleted_at IS NULL ORDER BY name;
+
+findRoots:
+SELECT * FROM location WHERE user_id = ? AND parent_id IS NULL AND deleted_at IS NULL ORDER BY name;
+
+findByParent:
+SELECT * FROM location WHERE user_id = ? AND parent_id = ? AND deleted_at IS NULL ORDER BY name;
+
+insert:
+INSERT INTO location (id, user_id, name, description, parent_id, address, created_at, updated_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+
+update:
+UPDATE location SET
+    name = ?,
+    description = ?,
+    parent_id = ?,
+    address = ?,
+    updated_at = ?
+WHERE id = ? AND user_id = ?;
+
+softDelete:
+UPDATE location SET deleted_at = ?, updated_at = ? WHERE id = ? AND user_id = ?;
+
+move:
+UPDATE location SET parent_id = ?, updated_at = ? WHERE id = ? AND user_id = ?;
+
+searchByName:
+SELECT * FROM location WHERE user_id = ? AND LOWER(name) LIKE '%' || LOWER(?) || '%' AND deleted_at IS NULL ORDER BY name;
+
+countItems:
+SELECT COUNT(*) FROM item WHERE user_id = ? AND location_id = ? AND deleted_at IS NULL;
+
+countContainers:
+SELECT COUNT(*) FROM container WHERE user_id = ? AND location_id = ? AND deleted_at IS NULL;

@@ -148,8 +148,7 @@ class PropertyBasedValidationTest {
             .filter { it.isNotBlank() }
 
     /** Generates strings that exceed the length limit */
-    private fun tooLongStringArb(maxLength: Int): Arb<String> =
-        Arb.int(maxLength + 1..maxLength + 50).map { len -> "a".repeat(len) }
+    private fun tooLongStringArb(maxLength: Int): Arb<String> = Arb.int(maxLength + 1..maxLength + 50).map { len -> "a".repeat(len) }
 
     // ============================================================================
     // User Validation Tests

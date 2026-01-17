@@ -1,0 +1,85 @@
+-- Tag table schema
+-- Flexible tagging system for notes
+
+CREATE TABLE IF NOT EXISTS tag (
+    id TEXT NOT NULL PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    color TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    deleted_at TEXT,
+    FOREIGN KEY (user_id) REFERENCES user(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_tag_user_id ON tag(user_id);
+CREATE INDEX IF NOT EXISTS idx_tag_name ON tag(name);
+CREATE INDEX IF NOT EXISTS idx_tag_deleted_at ON tag(deleted_at);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_tag_user_name ON tag(user_id, name);
+
+-- Junction table for note-tag relationship
+CREATE TABLE IF NOT EXISTS note_tag (
+    note_id TEXT NOT NULL,
+    tag_id TEXT NOT NULL,
+    user_id TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    PRIMARY KEY (note_id, tag_id),
+    FOREIGN KEY (note_id) REFERENCES note(id),
+    FOREIGN KEY (tag_id) REFERENCES tag(id),
+    FOREIGN KEY (user_id) REFERENCES user(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_note_tag_note ON note_tag(note_id);
+CREATE INDEX IF NOT EXISTS idx_note_tag_tag ON note_tag(tag_id);
+
+-- Queries
+
+findById:
+SELECT * FROM tag WHERE id = ? AND user_id = ? AND deleted_at IS NULL;
+
+findByName:
+SELECT * FROM tag WHERE user_id = ? AND name = ? AND deleted_at IS NULL;
+
+findAll:
+SELECT * FROM tag WHERE user_id = ? AND deleted_at IS NULL ORDER BY name;
+
+findByNote:
+SELECT tag.* FROM tag
+JOIN note_tag ON tag.id = note_tag.tag_id
+WHERE note_tag.note_id = ? AND note_tag.user_id = ? AND tag.deleted_at IS NULL
+ORDER BY tag.name;
+
+insert:
+INSERT INTO tag (id, user_id, name, color, created_at, updated_at)
+VALUES (?, ?, ?, ?, ?, ?);
+
+update:
+UPDATE tag SET
+    name = ?,
+    color = ?,
+    updated_at = ?
+WHERE id = ? AND user_id = ?;
+
+softDelete:
+UPDATE tag SET deleted_at = ?, updated_at = ? WHERE id = ? AND user_id = ?;
+
+searchByName:
+SELECT * FROM tag WHERE user_id = ? AND LOWER(name) LIKE '%' || LOWER(?) || '%' AND deleted_at IS NULL ORDER BY name;
+
+-- Note-Tag relationship queries
+
+addTagToNote:
+INSERT OR IGNORE INTO note_tag (note_id, tag_id, user_id, created_at)
+VALUES (?, ?, ?, ?);
+
+removeTagFromNote:
+DELETE FROM note_tag WHERE note_id = ? AND tag_id = ? AND user_id = ?;
+
+findNotesByTag:
+SELECT note_id FROM note_tag WHERE tag_id = ? AND user_id = ?;
+
+countNotesWithTag:
+SELECT COUNT(*) FROM note_tag WHERE tag_id = ? AND user_id = ?;
+
+removeAllTagsFromNote:
+DELETE FROM note_tag WHERE note_id = ? AND user_id = ?;

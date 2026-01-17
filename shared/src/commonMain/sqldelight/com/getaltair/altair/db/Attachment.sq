@@ -1,0 +1,57 @@
+-- Attachment table schema
+-- File attachments for notes and inbox items
+
+CREATE TABLE IF NOT EXISTS attachment (
+    id TEXT NOT NULL PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    note_id TEXT,
+    inbox_item_id TEXT,
+    filename TEXT NOT NULL,
+    mime_type TEXT NOT NULL,
+    size_bytes INTEGER NOT NULL,
+    storage_path TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    deleted_at TEXT,
+    FOREIGN KEY (user_id) REFERENCES user(id),
+    FOREIGN KEY (note_id) REFERENCES note(id),
+    FOREIGN KEY (inbox_item_id) REFERENCES inbox_item(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_attachment_user_id ON attachment(user_id);
+CREATE INDEX IF NOT EXISTS idx_attachment_note_id ON attachment(note_id);
+CREATE INDEX IF NOT EXISTS idx_attachment_inbox_item_id ON attachment(inbox_item_id);
+CREATE INDEX IF NOT EXISTS idx_attachment_deleted_at ON attachment(deleted_at);
+
+-- Queries
+
+findById:
+SELECT * FROM attachment WHERE id = ? AND user_id = ? AND deleted_at IS NULL;
+
+findAll:
+SELECT * FROM attachment WHERE user_id = ? AND deleted_at IS NULL ORDER BY created_at DESC;
+
+findByNote:
+SELECT * FROM attachment WHERE user_id = ? AND note_id = ? AND deleted_at IS NULL ORDER BY filename;
+
+findByInboxItem:
+SELECT * FROM attachment WHERE user_id = ? AND inbox_item_id = ? AND deleted_at IS NULL ORDER BY filename;
+
+findByMimeType:
+SELECT * FROM attachment WHERE user_id = ? AND mime_type LIKE ? || '%' AND deleted_at IS NULL ORDER BY created_at DESC;
+
+findOrphaned:
+SELECT * FROM attachment WHERE user_id = ? AND note_id IS NULL AND inbox_item_id IS NULL AND deleted_at IS NULL;
+
+insert:
+INSERT INTO attachment (id, user_id, note_id, inbox_item_id, filename, mime_type, size_bytes, storage_path, created_at, updated_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+softDelete:
+UPDATE attachment SET deleted_at = ?, updated_at = ? WHERE id = ? AND user_id = ?;
+
+associateWithNote:
+UPDATE attachment SET note_id = ?, updated_at = ? WHERE id = ? AND user_id = ?;
+
+getTotalStorageUsed:
+SELECT COALESCE(SUM(size_bytes), 0) FROM attachment WHERE user_id = ? AND deleted_at IS NULL;

@@ -1,0 +1,62 @@
+-- InboxItem table schema
+-- Universal inbox for quick capture
+
+CREATE TABLE IF NOT EXISTS inbox_item (
+    id TEXT NOT NULL PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    content TEXT NOT NULL,
+    source TEXT NOT NULL DEFAULT 'manual',
+    processed INTEGER NOT NULL DEFAULT 0,
+    processed_at TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    deleted_at TEXT,
+    FOREIGN KEY (user_id) REFERENCES user(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_inbox_item_user_id ON inbox_item(user_id);
+CREATE INDEX IF NOT EXISTS idx_inbox_item_processed ON inbox_item(processed);
+CREATE INDEX IF NOT EXISTS idx_inbox_item_deleted_at ON inbox_item(deleted_at);
+
+-- Queries
+
+findById:
+SELECT * FROM inbox_item WHERE id = ? AND user_id = ? AND deleted_at IS NULL;
+
+findAll:
+SELECT * FROM inbox_item WHERE user_id = ? AND deleted_at IS NULL ORDER BY created_at DESC;
+
+findUnprocessed:
+SELECT * FROM inbox_item WHERE user_id = ? AND processed = 0 AND deleted_at IS NULL ORDER BY created_at DESC;
+
+findProcessed:
+SELECT * FROM inbox_item WHERE user_id = ? AND processed = 1 AND deleted_at IS NULL ORDER BY processed_at DESC;
+
+findBySource:
+SELECT * FROM inbox_item WHERE user_id = ? AND source = ? AND deleted_at IS NULL ORDER BY created_at DESC;
+
+insert:
+INSERT INTO inbox_item (id, user_id, content, source, processed, created_at, updated_at)
+VALUES (?, ?, ?, ?, ?, ?, ?);
+
+update:
+UPDATE inbox_item SET
+    content = ?,
+    source = ?,
+    updated_at = ?
+WHERE id = ? AND user_id = ?;
+
+markProcessed:
+UPDATE inbox_item SET processed = 1, processed_at = ?, updated_at = ? WHERE id = ? AND user_id = ?;
+
+softDelete:
+UPDATE inbox_item SET deleted_at = ?, updated_at = ? WHERE id = ? AND user_id = ?;
+
+countUnprocessed:
+SELECT COUNT(*) FROM inbox_item WHERE user_id = ? AND processed = 0 AND deleted_at IS NULL;
+
+searchByContent:
+SELECT * FROM inbox_item WHERE user_id = ? AND LOWER(content) LIKE '%' || LOWER(?) || '%' AND deleted_at IS NULL ORDER BY created_at DESC;
+
+findOlderThan:
+SELECT * FROM inbox_item WHERE user_id = ? AND created_at < ? AND processed = 0 AND deleted_at IS NULL ORDER BY created_at;

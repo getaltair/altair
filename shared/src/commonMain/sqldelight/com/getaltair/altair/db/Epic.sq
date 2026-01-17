@@ -1,0 +1,67 @@
+-- Epic table schema
+-- Large bodies of work containing multiple quests
+
+CREATE TABLE IF NOT EXISTS epic (
+    id TEXT NOT NULL PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    initiative_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    description TEXT,
+    status TEXT NOT NULL DEFAULT 'planned',
+    target_date TEXT,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    deleted_at TEXT,
+    FOREIGN KEY (user_id) REFERENCES user(id),
+    FOREIGN KEY (initiative_id) REFERENCES initiative(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_epic_user_id ON epic(user_id);
+CREATE INDEX IF NOT EXISTS idx_epic_initiative_id ON epic(initiative_id);
+CREATE INDEX IF NOT EXISTS idx_epic_status ON epic(status);
+CREATE INDEX IF NOT EXISTS idx_epic_deleted_at ON epic(deleted_at);
+
+-- Queries
+
+findById:
+SELECT * FROM epic WHERE id = ? AND user_id = ? AND deleted_at IS NULL;
+
+findAll:
+SELECT * FROM epic WHERE user_id = ? AND deleted_at IS NULL ORDER BY sort_order, name;
+
+findByInitiative:
+SELECT * FROM epic WHERE user_id = ? AND initiative_id = ? AND deleted_at IS NULL ORDER BY sort_order, name;
+
+findByStatus:
+SELECT * FROM epic WHERE user_id = ? AND status = ? AND deleted_at IS NULL ORDER BY sort_order, name;
+
+findActive:
+SELECT * FROM epic WHERE user_id = ? AND status IN ('planned', 'in_progress') AND deleted_at IS NULL ORDER BY sort_order, name;
+
+insert:
+INSERT INTO epic (id, user_id, initiative_id, name, description, status, target_date, sort_order, created_at, updated_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+update:
+UPDATE epic SET
+    initiative_id = ?,
+    name = ?,
+    description = ?,
+    status = ?,
+    target_date = ?,
+    sort_order = ?,
+    updated_at = ?
+WHERE id = ? AND user_id = ?;
+
+softDelete:
+UPDATE epic SET deleted_at = ?, updated_at = ? WHERE id = ? AND user_id = ?;
+
+updateStatus:
+UPDATE epic SET status = ?, updated_at = ? WHERE id = ? AND user_id = ?;
+
+searchByName:
+SELECT * FROM epic WHERE user_id = ? AND LOWER(name) LIKE '%' || LOWER(?) || '%' AND deleted_at IS NULL ORDER BY name;
+
+countByInitiative:
+SELECT COUNT(*) FROM epic WHERE user_id = ? AND initiative_id = ? AND deleted_at IS NULL;

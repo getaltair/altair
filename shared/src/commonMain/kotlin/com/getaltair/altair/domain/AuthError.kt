@@ -24,13 +24,17 @@ sealed interface AuthError : DomainError {
     /**
      * The authentication token has expired and the user must re-authenticate.
      *
-     * @property expiredAt The timestamp when the token expired (epoch milliseconds)
+     * @property expiredAt The timestamp when the token expired (epoch milliseconds, must be > 0)
      */
     @Serializable
     @SerialName("auth_token_expired")
     data class TokenExpired(
         val expiredAt: Long,
     ) : AuthError {
+        init {
+            require(expiredAt > 0) { "Expired timestamp must be positive" }
+        }
+
         override fun toUserMessage(): String = "Your session has expired. Please sign in again."
     }
 
@@ -50,6 +54,10 @@ sealed interface AuthError : DomainError {
     data class TokenInvalid(
         val reason: String,
     ) : AuthError {
+        init {
+            require(reason.isNotBlank()) { "Reason must not be blank" }
+        }
+
         override fun toUserMessage(): String = "Your session is invalid. Please sign in again."
     }
 
@@ -65,6 +73,11 @@ sealed interface AuthError : DomainError {
         val reason: String,
         val lockedUntil: Long?,
     ) : AuthError {
+        init {
+            require(reason.isNotBlank()) { "Reason must not be blank" }
+            require(lockedUntil == null || lockedUntil > 0) { "Locked until timestamp must be positive if provided" }
+        }
+
         override fun toUserMessage(): String =
             if (lockedUntil != null) {
                 "Your account has been temporarily locked. Please try again later."
@@ -85,13 +98,17 @@ sealed interface AuthError : DomainError {
     /**
      * The provided invite code is invalid or has already been used.
      *
-     * @property code The invite code that was rejected
+     * @property code The invite code that was rejected (must not be blank)
      */
     @Serializable
     @SerialName("auth_invalid_invite")
     data class InvalidInvite(
         val code: String,
     ) : AuthError {
+        init {
+            require(code.isNotBlank()) { "Code must not be blank" }
+        }
+
         override fun toUserMessage(): String = "The invite code is invalid or has already been used."
     }
 
@@ -104,7 +121,6 @@ sealed interface AuthError : DomainError {
     @Serializable
     @SerialName("auth_email_already_exists")
     data object EmailAlreadyExists : AuthError {
-        override fun toUserMessage(): String =
-            "An account with this email already exists. Please sign in or use a different email."
+        override fun toUserMessage(): String = "An account with this email already exists. Please sign in or use a different email."
     }
 }

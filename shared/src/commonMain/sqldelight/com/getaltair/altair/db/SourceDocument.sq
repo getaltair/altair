@@ -1,0 +1,78 @@
+-- SourceDocument table schema
+-- Documents imported for knowledge extraction
+
+CREATE TABLE IF NOT EXISTS source_document (
+    id TEXT NOT NULL PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    title TEXT NOT NULL,
+    source_type TEXT NOT NULL,
+    source_path TEXT NOT NULL,
+    mime_type TEXT,
+    file_size_bytes INTEGER,
+    page_count INTEGER,
+    extraction_status TEXT NOT NULL DEFAULT 'pending',
+    extracted_text TEXT,
+    watched_folder_id TEXT,
+    initiative_id TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    deleted_at TEXT,
+    FOREIGN KEY (user_id) REFERENCES user(id),
+    FOREIGN KEY (initiative_id) REFERENCES initiative(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_source_document_user_id ON source_document(user_id);
+CREATE INDEX IF NOT EXISTS idx_source_document_extraction_status ON source_document(extraction_status);
+CREATE INDEX IF NOT EXISTS idx_source_document_source_type ON source_document(source_type);
+CREATE INDEX IF NOT EXISTS idx_source_document_initiative_id ON source_document(initiative_id);
+CREATE INDEX IF NOT EXISTS idx_source_document_deleted_at ON source_document(deleted_at);
+
+-- Queries
+
+findById:
+SELECT * FROM source_document WHERE id = ? AND user_id = ? AND deleted_at IS NULL;
+
+findAll:
+SELECT * FROM source_document WHERE user_id = ? AND deleted_at IS NULL ORDER BY created_at DESC;
+
+findByExtractionStatus:
+SELECT * FROM source_document WHERE user_id = ? AND extraction_status = ? AND deleted_at IS NULL ORDER BY created_at;
+
+findBySourceType:
+SELECT * FROM source_document WHERE user_id = ? AND source_type = ? AND deleted_at IS NULL ORDER BY created_at DESC;
+
+findByWatchedFolder:
+SELECT * FROM source_document WHERE user_id = ? AND watched_folder_id = ? AND deleted_at IS NULL ORDER BY created_at DESC;
+
+findByInitiative:
+SELECT * FROM source_document WHERE user_id = ? AND initiative_id = ? AND deleted_at IS NULL ORDER BY title;
+
+findPendingExtraction:
+SELECT * FROM source_document WHERE user_id = ? AND extraction_status IN ('pending', 'failed') AND deleted_at IS NULL;
+
+insert:
+INSERT INTO source_document (id, user_id, title, source_type, source_path, mime_type, file_size_bytes, page_count, extraction_status, watched_folder_id, initiative_id, created_at, updated_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+update:
+UPDATE source_document SET
+    title = ?,
+    source_type = ?,
+    source_path = ?,
+    mime_type = ?,
+    file_size_bytes = ?,
+    page_count = ?,
+    extraction_status = ?,
+    extracted_text = ?,
+    initiative_id = ?,
+    updated_at = ?
+WHERE id = ? AND user_id = ?;
+
+softDelete:
+UPDATE source_document SET deleted_at = ?, updated_at = ? WHERE id = ? AND user_id = ?;
+
+updateExtractionStatus:
+UPDATE source_document SET extraction_status = ?, extracted_text = ?, updated_at = ? WHERE id = ? AND user_id = ?;
+
+search:
+SELECT * FROM source_document WHERE user_id = ? AND (LOWER(title) LIKE '%' || LOWER(?) || '%' OR LOWER(extracted_text) LIKE '%' || LOWER(?) || '%') AND deleted_at IS NULL ORDER BY created_at DESC;

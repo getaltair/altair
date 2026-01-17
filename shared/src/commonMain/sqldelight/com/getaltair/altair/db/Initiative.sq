@@ -1,0 +1,61 @@
+-- Initiative table schema
+-- Represents major life goals or projects
+
+CREATE TABLE IF NOT EXISTS initiative (
+    id TEXT NOT NULL PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    description TEXT,
+    status TEXT NOT NULL DEFAULT 'active',
+    target_date TEXT,
+    color TEXT,
+    icon TEXT,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    deleted_at TEXT,
+    FOREIGN KEY (user_id) REFERENCES user(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_initiative_user_id ON initiative(user_id);
+CREATE INDEX IF NOT EXISTS idx_initiative_status ON initiative(status);
+CREATE INDEX IF NOT EXISTS idx_initiative_deleted_at ON initiative(deleted_at);
+
+-- Queries
+
+findById:
+SELECT * FROM initiative WHERE id = ? AND user_id = ? AND deleted_at IS NULL;
+
+findAll:
+SELECT * FROM initiative WHERE user_id = ? AND deleted_at IS NULL ORDER BY sort_order, name;
+
+findByStatus:
+SELECT * FROM initiative WHERE user_id = ? AND status = ? AND deleted_at IS NULL ORDER BY sort_order, name;
+
+findActive:
+SELECT * FROM initiative WHERE user_id = ? AND status = 'active' AND deleted_at IS NULL ORDER BY sort_order, name;
+
+insert:
+INSERT INTO initiative (id, user_id, name, description, status, target_date, color, icon, sort_order, created_at, updated_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+update:
+UPDATE initiative SET
+    name = ?,
+    description = ?,
+    status = ?,
+    target_date = ?,
+    color = ?,
+    icon = ?,
+    sort_order = ?,
+    updated_at = ?
+WHERE id = ? AND user_id = ?;
+
+softDelete:
+UPDATE initiative SET deleted_at = ?, updated_at = ? WHERE id = ? AND user_id = ?;
+
+searchByName:
+SELECT * FROM initiative WHERE user_id = ? AND LOWER(name) LIKE '%' || LOWER(?) || '%' AND deleted_at IS NULL ORDER BY name;
+
+updateStatus:
+UPDATE initiative SET status = ?, updated_at = ? WHERE id = ? AND user_id = ?;

@@ -1,0 +1,80 @@
+-- Note table schema
+-- Knowledge base notes with rich content
+
+CREATE TABLE IF NOT EXISTS note (
+    id TEXT NOT NULL PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    folder_id TEXT,
+    title TEXT NOT NULL,
+    content TEXT NOT NULL,
+    content_format TEXT NOT NULL DEFAULT 'markdown',
+    initiative_id TEXT,
+    is_pinned INTEGER NOT NULL DEFAULT 0,
+    word_count INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    deleted_at TEXT,
+    FOREIGN KEY (user_id) REFERENCES user(id),
+    FOREIGN KEY (folder_id) REFERENCES folder(id),
+    FOREIGN KEY (initiative_id) REFERENCES initiative(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_note_user_id ON note(user_id);
+CREATE INDEX IF NOT EXISTS idx_note_folder_id ON note(folder_id);
+CREATE INDEX IF NOT EXISTS idx_note_initiative_id ON note(initiative_id);
+CREATE INDEX IF NOT EXISTS idx_note_is_pinned ON note(is_pinned);
+CREATE INDEX IF NOT EXISTS idx_note_deleted_at ON note(deleted_at);
+
+-- Queries
+
+findById:
+SELECT * FROM note WHERE id = ? AND user_id = ? AND deleted_at IS NULL;
+
+findAll:
+SELECT * FROM note WHERE user_id = ? AND deleted_at IS NULL ORDER BY updated_at DESC;
+
+findByFolder:
+SELECT * FROM note WHERE user_id = ? AND folder_id = ? AND deleted_at IS NULL ORDER BY title;
+
+findByInitiative:
+SELECT * FROM note WHERE user_id = ? AND initiative_id = ? AND deleted_at IS NULL ORDER BY title;
+
+findPinned:
+SELECT * FROM note WHERE user_id = ? AND is_pinned = 1 AND deleted_at IS NULL ORDER BY updated_at DESC;
+
+findUnfiled:
+SELECT * FROM note WHERE user_id = ? AND folder_id IS NULL AND deleted_at IS NULL ORDER BY updated_at DESC;
+
+findRecent:
+SELECT * FROM note WHERE user_id = ? AND deleted_at IS NULL ORDER BY updated_at DESC LIMIT ?;
+
+insert:
+INSERT INTO note (id, user_id, folder_id, title, content, content_format, initiative_id, is_pinned, word_count, created_at, updated_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+update:
+UPDATE note SET
+    folder_id = ?,
+    title = ?,
+    content = ?,
+    content_format = ?,
+    initiative_id = ?,
+    is_pinned = ?,
+    word_count = ?,
+    updated_at = ?
+WHERE id = ? AND user_id = ?;
+
+softDelete:
+UPDATE note SET deleted_at = ?, updated_at = ? WHERE id = ? AND user_id = ?;
+
+setPinned:
+UPDATE note SET is_pinned = ?, updated_at = ? WHERE id = ? AND user_id = ?;
+
+moveToFolder:
+UPDATE note SET folder_id = ?, updated_at = ? WHERE id = ? AND user_id = ?;
+
+searchByTitleOrContent:
+SELECT * FROM note WHERE user_id = ? AND (LOWER(title) LIKE '%' || LOWER(?) || '%' OR LOWER(content) LIKE '%' || LOWER(?) || '%') AND deleted_at IS NULL ORDER BY updated_at DESC;
+
+searchByTitle:
+SELECT * FROM note WHERE user_id = ? AND LOWER(title) LIKE '%' || LOWER(?) || '%' AND deleted_at IS NULL ORDER BY title;

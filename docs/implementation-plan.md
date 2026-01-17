@@ -1,6 +1,6 @@
 # Altair Implementation Plan
 
-**Last updated:** 2026-01-15
+**Last updated:** 2026-01-17
 
 This document provides a phased roadmap for implementing Altair, tracking progress and guiding
 development across sessions.
@@ -148,7 +148,7 @@ Create request/response DTOs:
 
 ---
 
-## Phase 4: kotlinx-rpc Service Layer -- In Progress
+## Phase 4: kotlinx-rpc Service Layer -- Completed
 
 ### 4.1 Add kotlinx-rpc Dependencies
 
@@ -197,30 +197,57 @@ Create client that connects to server RPC endpoints.
 
 ---
 
-## Phase 5: Database Layer
+## Phase 5: Database Layer -- Partially Complete
 
-### 5.1 Add SurrealDB to Server
+### 5.1 Add SurrealDB to Server ✅
 
-**Files:** `server/build.gradle.kts`, new repository implementations
+**Files:** `server/build.gradle.kts`, `server/src/main/kotlin/.../db/`
 
-- Add `surrealdb-java` dependency
-- Create `DatabaseConfig` for connection
-- Implement repository interfaces (e.g., `SurrealQuestRepository`)
+- [x] Add `surrealdb-java` dependency
+- [x] Create `DatabaseConfig` for connection (environment-based)
+- [x] Create `SurrealDbClient` with Arrow `Either` error handling
+- [x] Create `MigrationRunner` for schema migrations
+- [x] Implement all 17 repository interfaces:
+  - `SurrealUserRepository`, `SurrealQuestRepository`, `SurrealNoteRepository`
+  - `SurrealInitiativeRepository`, `SurrealInboxRepository`, `SurrealRoutineRepository`
+  - `SurrealEpicRepository`, `SurrealCheckpointRepository`, `SurrealEnergyBudgetRepository`
+  - `SurrealFolderRepository`, `SurrealTagRepository`, `SurrealAttachmentRepository`
+  - `SurrealNoteLinkRepository`, `SurrealSourceDocumentRepository`
+  - `SurrealItemRepository`, `SurrealLocationRepository`, `SurrealContainerRepository`
+  - `SurrealItemTemplateRepository`
+- [x] User-scoped Koin module (`userScopedRepositoryModule`)
+- [x] Integration tests with Testcontainers (`SurrealDbTestContainer`)
+- [x] User isolation tests verifying cross-user data protection
 
-### 5.2 Add SQLDelight to Mobile/Shared
+### 5.2 Add SQLDelight to Mobile/Shared -- Pending
 
 **Files:** `shared/build.gradle.kts`, `.sq` files
 
-- Add SQLDelight plugin and dependencies
-- Create `.sq` schema files mirroring domain entities
-- Generate type-safe queries
+- [ ] Add SQLDelight plugin and dependencies
+- [ ] Create `.sq` schema files mirroring domain entities
+- [ ] Generate type-safe queries
+- [ ] Implement mobile repository interfaces
 
-### 5.3 Desktop Database (SurrealDB Embedded)
+### 5.3 Desktop Database (SurrealDB Embedded) ✅
 
-**Files:** `composeApp/src/jvmMain/...`
+**Files:** `composeApp/src/jvmMain/kotlin/.../db/`
 
-- Add SurrealDB embedded for desktop offline support
-- Implement repository interfaces for desktop
+- [x] Add SurrealDB embedded dependency
+- [x] Create `DesktopDatabaseConfig` (platform-specific paths)
+- [x] Create `EmbeddedSurrealClient` with mutex-protected operations
+- [x] Create `DesktopMigrationRunner` for desktop migrations
+- [x] Create `desktopDatabaseModule` Koin module
+- [x] Wire database into desktop `main()` with error screen on failure
+- [x] Unit tests for `EmbeddedSurrealClient` and `DesktopMigrationRunner`
+- [ ] Desktop repository implementations (placeholder module exists)
+
+### 5.4 Follow-up Items (from PR Review)
+
+**Error Handling Improvements:**
+
+- [ ] Add `DatabaseError` variant to domain error sealed interfaces to avoid mapping all errors to `NotFound`
+- [ ] Change Flow-returning repository methods to `Flow<Either<DomainError, List<T>>>` for proper error propagation
+- [ ] Add logging to all repository parse methods that currently silently return null/empty
 
 ---
 
