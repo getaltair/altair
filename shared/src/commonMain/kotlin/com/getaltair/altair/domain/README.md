@@ -36,20 +36,34 @@ when (val result = getUserById("123")) {
 
 ### Arrow Dependencies
 
-The following Arrow libraries are configured:
+The following Arrow libraries are configured in `shared/build.gradle.kts`:
 - `arrow-core`: Core functional types (Either, Option, etc.)
 - `arrow-optics`: Lens-based data manipulation (for future use)
-- `arrow-optics-ksp-plugin`: KSP plugin for generating optics
+- `arrow-optics-ksp`: KSP plugin for generating optics
+
+### DomainError Hierarchy
+
+All domain errors implement the `DomainError` sealed interface with:
+- **Validation**: All required fields are validated to be non-blank
+- **toUserMessage()**: User-friendly messages for UI display
+- **Pattern matching**: Exhaustive `when` expressions for error handling
+
+Available error types:
+- `NetworkError` - Connectivity and timeout issues
+- `ValidationError` - Invalid input or constraints
+- `NotFoundError` - Resource not found
+- `UnauthorizedError` - Access denied
+- `UnexpectedError` - Generic fallback (use sparingly)
 
 ### When to Use Either
 
-✅ **Use Either for:**
+**Use Either for:**
 - Network calls that can fail
 - Database operations that might not find data
 - Validation that can reject input
 - Any operation with expected failure modes
 
-❌ **Don't use Either for:**
+**Don't use Either for:**
 - Programming errors (bugs) - use require/check/assert
 - Truly unexpected errors - let exceptions propagate
 - Simple null checks - use nullable types

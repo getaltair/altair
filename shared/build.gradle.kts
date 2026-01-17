@@ -2,6 +2,8 @@ plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidLibrary)
     alias(libs.plugins.kotlinxSerialization)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.mokkery)
 }
 
 kotlin {
@@ -25,10 +27,14 @@ kotlin {
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.kotlinx.datetime)
+            // Arrow - Functional Error Handling
+            implementation(libs.arrow.core)
+            implementation(libs.arrow.optics)
         }
 
         commonTest.dependencies {
             implementation(libs.kotlin.test)
+            implementation(libs.turbine)
         }
 
         jvmMain.dependencies {
@@ -43,6 +49,11 @@ kotlin {
             // iOS-specific dependencies
         }
     }
+}
+
+// Arrow Optics KSP configuration
+dependencies {
+    add("kspCommonMainMetadata", libs.arrow.optics.ksp)
 }
 
 android {

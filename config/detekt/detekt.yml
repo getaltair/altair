@@ -154,6 +154,8 @@ naming:
     functionPattern: "[a-z][a-zA-Z0-9]*"
     excludeClassPattern: "$^"
     excludes: ["**/test/**", "**/androidTest/**", "**/commonTest/**", "**/jvmTest/**", "**/androidUnitTest/**"]
+    # Allow PascalCase for @Composable functions - compose-rules handles these
+    ignoreAnnotated: ["Composable"]
   FunctionParameterNaming:
     active: true
     parameterPattern: "[a-z][A-Za-z0-9]*"

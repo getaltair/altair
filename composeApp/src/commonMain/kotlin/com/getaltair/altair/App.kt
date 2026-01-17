@@ -20,7 +20,7 @@ import org.jetbrains.compose.resources.painterResource
 
 @Composable
 @Preview
-private fun App() {
+internal fun App() {
     MaterialTheme {
         var showContent by remember { mutableStateOf(false) }
         Column(

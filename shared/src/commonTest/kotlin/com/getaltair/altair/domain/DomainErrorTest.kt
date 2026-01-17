@@ -2,12 +2,13 @@ package com.getaltair.altair.domain
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertNull
 
 /**
  * Tests for DomainError sealed interface.
- * Verifies construction, pattern matching, and property access.
+ * Verifies construction, validation, pattern matching, and user messages.
  */
 class DomainErrorTest {
     @Test
@@ -32,6 +33,25 @@ class DomainErrorTest {
     }
 
     @Test
+    fun `NetworkError rejects blank message`() {
+        assertFailsWith<IllegalArgumentException> {
+            DomainError.NetworkError(message = "")
+        }
+        assertFailsWith<IllegalArgumentException> {
+            DomainError.NetworkError(message = "   ")
+        }
+    }
+
+    @Test
+    fun `NetworkError toUserMessage returns user-friendly text`() {
+        val error = DomainError.NetworkError(message = "Connection refused")
+        assertEquals(
+            "Unable to connect. Please check your internet connection and try again.",
+            error.toUserMessage(),
+        )
+    }
+
+    @Test
     fun `ValidationError stores field and message`() {
         val error =
             DomainError.ValidationError(
@@ -44,6 +64,26 @@ class DomainErrorTest {
     }
 
     @Test
+    fun `ValidationError rejects blank field`() {
+        assertFailsWith<IllegalArgumentException> {
+            DomainError.ValidationError(field = "", message = "Some message")
+        }
+    }
+
+    @Test
+    fun `ValidationError rejects blank message`() {
+        assertFailsWith<IllegalArgumentException> {
+            DomainError.ValidationError(field = "email", message = "")
+        }
+    }
+
+    @Test
+    fun `ValidationError toUserMessage returns the validation message`() {
+        val error = DomainError.ValidationError(field = "email", message = "Please enter a valid email")
+        assertEquals("Please enter a valid email", error.toUserMessage())
+    }
+
+    @Test
     fun `NotFoundError stores resource and id`() {
         val error =
             DomainError.NotFoundError(
@@ -53,6 +93,26 @@ class DomainErrorTest {
 
         assertEquals("Quest", error.resource)
         assertEquals("quest-123", error.id)
+    }
+
+    @Test
+    fun `NotFoundError rejects blank resource`() {
+        assertFailsWith<IllegalArgumentException> {
+            DomainError.NotFoundError(resource = "", id = "123")
+        }
+    }
+
+    @Test
+    fun `NotFoundError rejects blank id`() {
+        assertFailsWith<IllegalArgumentException> {
+            DomainError.NotFoundError(resource = "Quest", id = "")
+        }
+    }
+
+    @Test
+    fun `NotFoundError toUserMessage includes resource type`() {
+        val error = DomainError.NotFoundError(resource = "Quest", id = "123")
+        assertEquals("The requested Quest could not be found.", error.toUserMessage())
     }
 
     @Test
@@ -70,6 +130,15 @@ class DomainErrorTest {
     }
 
     @Test
+    fun `UnauthorizedError toUserMessage returns user-friendly text`() {
+        val error = DomainError.UnauthorizedError()
+        assertEquals(
+            "You don't have permission to access this. Please sign in and try again.",
+            error.toUserMessage(),
+        )
+    }
+
+    @Test
     fun `UnexpectedError stores message and cause`() {
         val cause = IllegalStateException("Invariant violated")
         val error =
@@ -80,6 +149,19 @@ class DomainErrorTest {
 
         assertEquals("Something went wrong", error.message)
         assertEquals(cause, error.cause)
+    }
+
+    @Test
+    fun `UnexpectedError rejects blank message`() {
+        assertFailsWith<IllegalArgumentException> {
+            DomainError.UnexpectedError(message = "")
+        }
+    }
+
+    @Test
+    fun `UnexpectedError toUserMessage returns generic user-friendly text`() {
+        val error = DomainError.UnexpectedError(message = "Internal database error")
+        assertEquals("Something went wrong. Please try again later.", error.toUserMessage())
     }
 
     @Test
@@ -129,5 +211,16 @@ class DomainErrorTest {
         assertIs<DomainError>(notFoundError)
         assertIs<DomainError>(unauthorizedError)
         assertIs<DomainError>(unexpectedError)
+    }
+
+    @Test
+    fun `toUserMessage is accessible via DomainError interface`() {
+        val error: DomainError = DomainError.NetworkError("test")
+        // Verify toUserMessage can be called on the interface type
+        val message = error.toUserMessage()
+        assertEquals(
+            "Unable to connect. Please check your internet connection and try again.",
+            message,
+        )
     }
 }
