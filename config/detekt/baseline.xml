@@ -1,0 +1,95 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues></ManuallySuppressedIssues>
+  <CurrentIssues>
+    <ID>FunctionNaming:App.kt$@Composable @Preview private fun App()</ID>
+    <ID>FunctionNaming:ErrorScreen.kt$@Composable fun ErrorScreen( error: Throwable, modifier: Modifier = Modifier, )</ID>
+    <ID>FunctionNaming:MainActivity.kt$@Preview @Composable private fun AppAndroidPreview()</ID>
+    <ID>FunctionNaming:MainViewController.kt$fun MainViewController()</ID>
+    <ID>FunctionNaming:RootContent.kt$@Composable fun RootContent(component: RootComponent)</ID>
+    <ID>InvalidPackageDeclaration:Application.kt$package com.getaltair</ID>
+    <ID>InvalidPackageDeclaration:ApplicationTest.kt$package com.getaltair</ID>
+    <ID>InvalidPackageDeclaration:HTTP.kt$package com.getaltair</ID>
+    <ID>InvalidPackageDeclaration:Monitoring.kt$package com.getaltair</ID>
+    <ID>InvalidPackageDeclaration:Routing.kt$package com.getaltair</ID>
+    <ID>InvalidPackageDeclaration:Security.kt$package com.getaltair</ID>
+    <ID>InvalidPackageDeclaration:Serialization.kt$package com.getaltair</ID>
+    <ID>MatchingDeclarationName:Platform.android.kt$AndroidPlatform : Platform</ID>
+    <ID>MatchingDeclarationName:Platform.ios.kt$IOSPlatform : Platform</ID>
+    <ID>MatchingDeclarationName:Platform.jvm.kt$JVMPlatform : Platform</ID>
+    <ID>MatchingDeclarationName:Platform.kt$Shared</ID>
+    <ID>UnusedParameter:RootComponent.kt$RootComponent$componentContext: ComponentContext</ID>
+    <ID>UnusedPrivateMember:App.kt$@Composable @Preview private fun App()</ID>
+    <ID>UnusedPrivateMember:MainActivity.kt$@Preview @Composable private fun AppAndroidPreview()</ID>
+    <ID>WildcardImport:App.kt$import androidx.compose.runtime.*</ID>
+    <ID>WildcardImport:Application.kt$import io.ktor.server.application.*</ID>
+    <ID>WildcardImport:ApplicationTest.kt$import io.ktor.client.request.*</ID>
+    <ID>WildcardImport:ApplicationTest.kt$import io.ktor.http.*</ID>
+    <ID>WildcardImport:ApplicationTest.kt$import io.ktor.server.testing.*</ID>
+    <ID>WildcardImport:HTTP.kt$import io.ktor.http.*</ID>
+    <ID>WildcardImport:HTTP.kt$import io.ktor.serialization.kotlinx.json.*</ID>
+    <ID>WildcardImport:HTTP.kt$import io.ktor.server.application.*</ID>
+    <ID>WildcardImport:HTTP.kt$import io.ktor.server.auth.*</ID>
+    <ID>WildcardImport:HTTP.kt$import io.ktor.server.auth.jwt.*</ID>
+    <ID>WildcardImport:HTTP.kt$import io.ktor.server.plugins.calllogging.*</ID>
+    <ID>WildcardImport:HTTP.kt$import io.ktor.server.plugins.contentnegotiation.*</ID>
+    <ID>WildcardImport:HTTP.kt$import io.ktor.server.plugins.cors.routing.*</ID>
+    <ID>WildcardImport:HTTP.kt$import io.ktor.server.plugins.statuspages.*</ID>
+    <ID>WildcardImport:HTTP.kt$import io.ktor.server.request.*</ID>
+    <ID>WildcardImport:HTTP.kt$import io.ktor.server.response.*</ID>
+    <ID>WildcardImport:HTTP.kt$import io.ktor.server.routing.*</ID>
+    <ID>WildcardImport:HTTP.kt$import org.slf4j.event.*</ID>
+    <ID>WildcardImport:Monitoring.kt$import io.ktor.http.*</ID>
+    <ID>WildcardImport:Monitoring.kt$import io.ktor.serialization.kotlinx.json.*</ID>
+    <ID>WildcardImport:Monitoring.kt$import io.ktor.server.application.*</ID>
+    <ID>WildcardImport:Monitoring.kt$import io.ktor.server.auth.*</ID>
+    <ID>WildcardImport:Monitoring.kt$import io.ktor.server.auth.jwt.*</ID>
+    <ID>WildcardImport:Monitoring.kt$import io.ktor.server.plugins.calllogging.*</ID>
+    <ID>WildcardImport:Monitoring.kt$import io.ktor.server.plugins.contentnegotiation.*</ID>
+    <ID>WildcardImport:Monitoring.kt$import io.ktor.server.plugins.cors.routing.*</ID>
+    <ID>WildcardImport:Monitoring.kt$import io.ktor.server.plugins.statuspages.*</ID>
+    <ID>WildcardImport:Monitoring.kt$import io.ktor.server.request.*</ID>
+    <ID>WildcardImport:Monitoring.kt$import io.ktor.server.response.*</ID>
+    <ID>WildcardImport:Monitoring.kt$import io.ktor.server.routing.*</ID>
+    <ID>WildcardImport:Monitoring.kt$import org.slf4j.event.*</ID>
+    <ID>WildcardImport:Routing.kt$import io.ktor.http.*</ID>
+    <ID>WildcardImport:Routing.kt$import io.ktor.serialization.kotlinx.json.*</ID>
+    <ID>WildcardImport:Routing.kt$import io.ktor.server.application.*</ID>
+    <ID>WildcardImport:Routing.kt$import io.ktor.server.auth.*</ID>
+    <ID>WildcardImport:Routing.kt$import io.ktor.server.auth.jwt.*</ID>
+    <ID>WildcardImport:Routing.kt$import io.ktor.server.plugins.calllogging.*</ID>
+    <ID>WildcardImport:Routing.kt$import io.ktor.server.plugins.contentnegotiation.*</ID>
+    <ID>WildcardImport:Routing.kt$import io.ktor.server.plugins.cors.routing.*</ID>
+    <ID>WildcardImport:Routing.kt$import io.ktor.server.plugins.statuspages.*</ID>
+    <ID>WildcardImport:Routing.kt$import io.ktor.server.request.*</ID>
+    <ID>WildcardImport:Routing.kt$import io.ktor.server.response.*</ID>
+    <ID>WildcardImport:Routing.kt$import io.ktor.server.routing.*</ID>
+    <ID>WildcardImport:Routing.kt$import org.slf4j.event.*</ID>
+    <ID>WildcardImport:Security.kt$import io.ktor.http.*</ID>
+    <ID>WildcardImport:Security.kt$import io.ktor.serialization.kotlinx.json.*</ID>
+    <ID>WildcardImport:Security.kt$import io.ktor.server.application.*</ID>
+    <ID>WildcardImport:Security.kt$import io.ktor.server.auth.*</ID>
+    <ID>WildcardImport:Security.kt$import io.ktor.server.auth.jwt.*</ID>
+    <ID>WildcardImport:Security.kt$import io.ktor.server.plugins.calllogging.*</ID>
+    <ID>WildcardImport:Security.kt$import io.ktor.server.plugins.contentnegotiation.*</ID>
+    <ID>WildcardImport:Security.kt$import io.ktor.server.plugins.cors.routing.*</ID>
+    <ID>WildcardImport:Security.kt$import io.ktor.server.plugins.statuspages.*</ID>
+    <ID>WildcardImport:Security.kt$import io.ktor.server.request.*</ID>
+    <ID>WildcardImport:Security.kt$import io.ktor.server.response.*</ID>
+    <ID>WildcardImport:Security.kt$import io.ktor.server.routing.*</ID>
+    <ID>WildcardImport:Security.kt$import org.slf4j.event.*</ID>
+    <ID>WildcardImport:Serialization.kt$import io.ktor.http.*</ID>
+    <ID>WildcardImport:Serialization.kt$import io.ktor.serialization.kotlinx.json.*</ID>
+    <ID>WildcardImport:Serialization.kt$import io.ktor.server.application.*</ID>
+    <ID>WildcardImport:Serialization.kt$import io.ktor.server.auth.*</ID>
+    <ID>WildcardImport:Serialization.kt$import io.ktor.server.auth.jwt.*</ID>
+    <ID>WildcardImport:Serialization.kt$import io.ktor.server.plugins.calllogging.*</ID>
+    <ID>WildcardImport:Serialization.kt$import io.ktor.server.plugins.contentnegotiation.*</ID>
+    <ID>WildcardImport:Serialization.kt$import io.ktor.server.plugins.cors.routing.*</ID>
+    <ID>WildcardImport:Serialization.kt$import io.ktor.server.plugins.statuspages.*</ID>
+    <ID>WildcardImport:Serialization.kt$import io.ktor.server.request.*</ID>
+    <ID>WildcardImport:Serialization.kt$import io.ktor.server.response.*</ID>
+    <ID>WildcardImport:Serialization.kt$import io.ktor.server.routing.*</ID>
+    <ID>WildcardImport:Serialization.kt$import org.slf4j.event.*</ID>
+  </CurrentIssues>
+</SmellBaseline>
