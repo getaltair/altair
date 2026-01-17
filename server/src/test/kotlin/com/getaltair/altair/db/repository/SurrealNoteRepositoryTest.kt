@@ -24,14 +24,9 @@ import kotlin.time.Clock
 @Testcontainers
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class SurrealNoteRepositoryTest {
-    companion object {
-        @Container
-        val container = SurrealDbTestContainer()
-    }
-
     private lateinit var dbClient: SurrealDbClient
     private lateinit var repository: SurrealNoteRepository
-    private val testUserId = "testuser123"
+    private val testUserId = Ulid("01TESTACCT00000000000000")
 
     @BeforeAll
     fun setupContainer() {
@@ -47,7 +42,8 @@ class SurrealNoteRepositoryTest {
 
             // Create test user
             dbClient.execute(
-                "CREATE user:$testUserId CONTENT { email: 'test@test.com', display_name: 'Test User', role: 'member', status: 'active' };",
+                "CREATE user:${testUserId.value} CONTENT { " +
+                    "email: 'test@test.com', display_name: 'Test User', role: 'member', status: 'active' };",
             )
         }
     }
@@ -176,7 +172,8 @@ class SurrealNoteRepositoryTest {
             // Create a folder
             val folderId = Ulid.generate()
             dbClient.execute(
-                "CREATE folder:${folderId.value} CONTENT { user_id: user:$testUserId, name: 'Test Folder' };",
+                "CREATE folder:${folderId.value} CONTENT { " +
+                    "user_id: user:${testUserId.value}, name: 'Test Folder' };",
             )
 
             val noteInFolder = createTestNote(title = "In Folder", folderId = folderId)
@@ -196,7 +193,8 @@ class SurrealNoteRepositoryTest {
             // Create a folder
             val folderId = Ulid.generate()
             dbClient.execute(
-                "CREATE folder:${folderId.value} CONTENT { user_id: user:$testUserId, name: 'Test Folder' };",
+                "CREATE folder:${folderId.value} CONTENT { " +
+                    "user_id: user:${testUserId.value}, name: 'Test Folder' };",
             )
 
             val noteInFolder = createTestNote(title = "In Folder", folderId = folderId)
@@ -217,10 +215,12 @@ class SurrealNoteRepositoryTest {
             val folder1Id = Ulid.generate()
             val folder2Id = Ulid.generate()
             dbClient.execute(
-                "CREATE folder:${folder1Id.value} CONTENT { user_id: user:$testUserId, name: 'Folder 1' };",
+                "CREATE folder:${folder1Id.value} CONTENT { " +
+                    "user_id: user:${testUserId.value}, name: 'Folder 1' };",
             )
             dbClient.execute(
-                "CREATE folder:${folder2Id.value} CONTENT { user_id: user:$testUserId, name: 'Folder 2' };",
+                "CREATE folder:${folder2Id.value} CONTENT { " +
+                    "user_id: user:${testUserId.value}, name: 'Folder 2' };",
             )
 
             val note = createTestNote(folderId = folder1Id)
@@ -239,7 +239,8 @@ class SurrealNoteRepositoryTest {
         runBlocking {
             val folderId = Ulid.generate()
             dbClient.execute(
-                "CREATE folder:${folderId.value} CONTENT { user_id: user:$testUserId, name: 'Test Folder' };",
+                "CREATE folder:${folderId.value} CONTENT { " +
+                    "user_id: user:${testUserId.value}, name: 'Test Folder' };",
             )
 
             val note = createTestNote(folderId = folderId)
@@ -330,6 +331,147 @@ class SurrealNoteRepositoryTest {
             assertEquals(2, allNotes.size)
         }
 
+    // --- User Isolation Tests ---
+
+    @Test
+    fun `findById returns error when accessing another user's note`() =
+        runBlocking {
+            // Create note as testUserId
+            val note = createTestNote()
+            repository.save(note)
+
+            // Create second user and their repository
+            val otherUserId = Ulid("01OTHERACCT0000000000000")
+            dbClient.execute(
+                "CREATE user:${otherUserId.value} CONTENT { " +
+                    "email: 'other@test.com', display_name: 'Other User', " +
+                    "role: 'member', status: 'active' };",
+            )
+            val otherUserRepository = SurrealNoteRepository(dbClient, otherUserId)
+
+            // Other user should not be able to access the note
+            val result = otherUserRepository.findById(note.id)
+
+            assertTrue(result.isLeft())
+            result.onLeft { error ->
+                assertIs<NoteError.NotFound>(error)
+            }
+        }
+
+    @Test
+    fun `findAll only returns current user's notes`() =
+        runBlocking {
+            // Create notes for testUserId
+            repository.save(createTestNote(title = "User1 Note 1"))
+            repository.save(createTestNote(title = "User1 Note 2"))
+
+            // Create second user and their notes
+            val otherUserId = Ulid("01OTHERACCT0000000000000")
+            dbClient.execute(
+                "CREATE user:${otherUserId.value} CONTENT { " +
+                    "email: 'other@test.com', display_name: 'Other User', " +
+                    "role: 'member', status: 'active' };",
+            )
+            val otherUserRepository = SurrealNoteRepository(dbClient, otherUserId)
+            val now = Clock.System.now()
+            val otherUserNote =
+                Note(
+                    id = Ulid.generate(),
+                    userId = otherUserId,
+                    title = "User2 Note",
+                    content = "Other user content",
+                    folderId = null,
+                    initiativeId = null,
+                    isPinned = false,
+                    createdAt = now,
+                    updatedAt = now,
+                    deletedAt = null,
+                )
+            otherUserRepository.save(otherUserNote)
+
+            // testUserId should only see their own notes
+            val testUserNotes = repository.findAll().first()
+            assertEquals(2, testUserNotes.size)
+            assertTrue(testUserNotes.all { it.userId == testUserId })
+
+            // otherUserId should only see their own notes
+            val otherUserNotes = otherUserRepository.findAll().first()
+            assertEquals(1, otherUserNotes.size)
+            assertEquals("User2 Note", otherUserNotes.first().title)
+        }
+
+    @Test
+    fun `delete fails silently for another user's note`() =
+        runBlocking {
+            // Create note as testUserId
+            val note = createTestNote()
+            repository.save(note)
+
+            // Create second user
+            val otherUserId = Ulid("01OTHERACCT0000000000000")
+            dbClient.execute(
+                "CREATE user:${otherUserId.value} CONTENT { " +
+                    "email: 'other@test.com', display_name: 'Other User', " +
+                    "role: 'member', status: 'active' };",
+            )
+            val otherUserRepository = SurrealNoteRepository(dbClient, otherUserId)
+
+            // Other user tries to delete - should fail
+            val deleteResult = otherUserRepository.delete(note.id)
+            assertTrue(deleteResult.isLeft())
+
+            // Original user should still be able to access the note
+            val findResult = repository.findById(note.id)
+            assertTrue(findResult.isRight())
+        }
+
+    @Test
+    fun `search only returns current user's notes`() =
+        runBlocking {
+            // Create a note for testUserId with searchable content
+            repository.save(createTestNote(title = "Searchable Meeting Notes", content = "Important meeting"))
+
+            // Create second user with similar note
+            val otherUserId = Ulid("01OTHERACCT0000000000000")
+            dbClient.execute(
+                "CREATE user:${otherUserId.value} CONTENT { " +
+                    "email: 'other@test.com', display_name: 'Other User', " +
+                    "role: 'member', status: 'active' };",
+            )
+            val otherUserRepository = SurrealNoteRepository(dbClient, otherUserId)
+            val now = Clock.System.now()
+            val otherUserNote =
+                Note(
+                    id = Ulid.generate(),
+                    userId = otherUserId,
+                    title = "Searchable Private Notes",
+                    content = "Private meeting content",
+                    folderId = null,
+                    initiativeId = null,
+                    isPinned = false,
+                    createdAt = now,
+                    updatedAt = now,
+                    deletedAt = null,
+                )
+            otherUserRepository.save(otherUserNote)
+
+            // testUserId searches for "Searchable" - should only find their own note
+            val searchResult = repository.search("Searchable")
+            assertTrue(searchResult.isRight())
+            searchResult.onRight { notes ->
+                assertEquals(1, notes.size)
+                assertEquals("Searchable Meeting Notes", notes.first().title)
+            }
+
+            // otherUserId searches for "Searchable" - should only find their own note
+            val otherSearchResult = otherUserRepository.search("Searchable")
+            assertTrue(otherSearchResult.isRight())
+            otherSearchResult.onRight { notes ->
+                assertEquals(1, notes.size)
+                assertEquals("Searchable Private Notes", notes.first().title)
+            }
+        }
+
     private fun createTestNote(
         title: String = "Test Note",
         content: String = "Test content",
@@ -339,7 +481,7 @@ class SurrealNoteRepositoryTest {
         val now = Clock.System.now()
         return Note(
             id = Ulid.generate(),
-            userId = Ulid(testUserId),
+            userId = testUserId,
             title = title,
             content = content,
             folderId = folderId,
@@ -349,5 +491,10 @@ class SurrealNoteRepositoryTest {
             updatedAt = now,
             deletedAt = null,
         )
+    }
+
+    companion object {
+        @Container
+        val container = SurrealDbTestContainer()
     }
 }

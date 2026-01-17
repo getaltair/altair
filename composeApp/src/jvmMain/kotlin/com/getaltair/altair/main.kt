@@ -46,8 +46,10 @@ fun main() {
                     },
                     ifRight = {
                         migrationRunner.runMigrations().fold(
-                            ifLeft = { error: Throwable ->
-                                throw IllegalStateException("Failed to run database migrations: ${error.message}")
+                            ifLeft = { error ->
+                                throw IllegalStateException(
+                                    "Failed to run database migrations: ${error.toUserMessage()}",
+                                )
                             },
                             ifRight = { /* success */ },
                         )

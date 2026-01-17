@@ -154,11 +154,12 @@ class SurrealDbClient(
     override fun close() {
         try {
             surreal?.close()
+        } catch (e: Exception) {
+            logger.warn("Error closing SurrealDB connection", e)
+        } finally {
             surreal = null
             isConnected = false
             logger.info("Disconnected from SurrealDB")
-        } catch (e: Exception) {
-            logger.warn("Error closing SurrealDB connection", e)
         }
     }
 }

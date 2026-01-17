@@ -1,3 +1,5 @@
+@file:Suppress("detekt:MaxLineLength")
+
 package com.getaltair.altair.db.repository
 
 import arrow.core.Either
@@ -144,6 +146,7 @@ class SurrealInitiativeRepository(
             val obj = array.firstOrNull()?.jsonObject ?: return null
             mapToInitiative(obj)
         } catch (e: Exception) {
+            logger.warn("Failed to parse Initiative: ${e.message}", e)
             null
         }
     }
@@ -155,10 +158,12 @@ class SurrealInitiativeRepository(
                 try {
                     mapToInitiative(element.jsonObject)
                 } catch (e: Exception) {
+                    logger.warn("Failed to parse Initiative element: ${e.message}", e)
                     null
                 }
             }
         } catch (e: Exception) {
+            logger.warn("Failed to parse Initiative list: ${e.message}", e)
             emptyList()
         }
 
@@ -186,6 +191,7 @@ class SurrealInitiativeRepository(
             try {
                 Instant.parse(it)
             } catch (e: Exception) {
+                logger.warn("Failed to parse Instant '$it': ${e.message}", e)
                 Instant.DISTANT_PAST
             }
         } ?: Instant.DISTANT_PAST
@@ -200,6 +206,7 @@ class SurrealInitiativeRepository(
                 ?.content
                 ?.toIntOrNull() ?: 0
         } catch (e: Exception) {
+            logger.warn("Failed to parse count: ${e.message}", e)
             0
         }
 }

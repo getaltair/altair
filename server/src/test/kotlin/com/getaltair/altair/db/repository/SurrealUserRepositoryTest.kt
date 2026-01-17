@@ -26,13 +26,6 @@ import kotlin.time.Clock
 @Testcontainers
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class SurrealUserRepositoryTest {
-    companion object {
-        @Container
-        val container = SurrealDbTestContainer()
-
-        private const val DEFAULT_QUOTA_BYTES = 10737418240L // 10GB
-    }
-
     private lateinit var dbClient: SurrealDbClient
     private lateinit var repository: SurrealUserRepository
 
@@ -168,7 +161,7 @@ class SurrealUserRepositoryTest {
     @Test
     fun `updateStorageUsed succeeds within quota`() =
         runBlocking {
-            val quota = 10000L
+            val quota = 10_000L
             val user = createTestUser(storageQuotaBytes = quota)
             repository.create(user)
 
@@ -183,7 +176,7 @@ class SurrealUserRepositoryTest {
     @Test
     fun `updateStorageUsed succeeds at exactly quota`() =
         runBlocking {
-            val quota = 10000L
+            val quota = 10_000L
             val user = createTestUser(storageQuotaBytes = quota)
             repository.create(user)
 
@@ -213,7 +206,7 @@ class SurrealUserRepositoryTest {
     fun `findByStatus returns only matching users`() =
         runBlocking {
             val active = createTestUser(email = "active@test.com", status = UserStatus.ACTIVE)
-            val suspended = createTestUser(email = "suspended@test.com", status = UserStatus.SUSPENDED)
+            val suspended = createTestUser(email = "suspended@test.com", status = UserStatus.DISABLED)
             repository.create(active)
             repository.create(suspended)
 
@@ -241,7 +234,7 @@ class SurrealUserRepositoryTest {
         runBlocking {
             repository.create(createTestUser(email = "active1@test.com", status = UserStatus.ACTIVE))
             repository.create(createTestUser(email = "active2@test.com", status = UserStatus.ACTIVE))
-            repository.create(createTestUser(email = "suspended@test.com", status = UserStatus.SUSPENDED))
+            repository.create(createTestUser(email = "suspended@test.com", status = UserStatus.DISABLED))
 
             val result = repository.countActive()
 
@@ -270,5 +263,12 @@ class SurrealUserRepositoryTest {
             updatedAt = now,
             deletedAt = null,
         )
+    }
+
+    companion object {
+        @Container
+        val container = SurrealDbTestContainer()
+
+        private const val DEFAULT_QUOTA_BYTES = 10_737_418_240L // 10GB
     }
 }

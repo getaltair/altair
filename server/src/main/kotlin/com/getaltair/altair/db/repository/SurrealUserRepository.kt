@@ -1,3 +1,5 @@
+@file:Suppress("detekt:MaxLineLength")
+
 package com.getaltair.altair.db.repository
 
 import arrow.core.Either
@@ -33,10 +35,6 @@ class SurrealUserRepository(
             ignoreUnknownKeys = true
             isLenient = true
         }
-
-    companion object {
-        private val logger = LoggerFactory.getLogger(SurrealUserRepository::class.java)
-    }
 
     override suspend fun findById(id: Ulid): Either<UserError, User> =
         either {
@@ -234,7 +232,8 @@ class SurrealUserRepository(
             role = UserRole.valueOf(obj["role"]?.jsonPrimitive?.content?.uppercase() ?: "MEMBER"),
             status = UserStatus.valueOf(obj["status"]?.jsonPrimitive?.content?.uppercase() ?: "ACTIVE"),
             storageUsedBytes = obj["storage_used_bytes"]?.jsonPrimitive?.content?.toLongOrNull() ?: 0L,
-            storageQuotaBytes = obj["storage_quota_bytes"]?.jsonPrimitive?.content?.toLongOrNull() ?: 10737418240L,
+            storageQuotaBytes =
+                obj["storage_quota_bytes"]?.jsonPrimitive?.content?.toLongOrNull() ?: 10_737_418_240L,
             createdAt = parseInstant(obj["created_at"]?.jsonPrimitive?.content),
             updatedAt = parseInstant(obj["updated_at"]?.jsonPrimitive?.content),
             deletedAt = obj["deleted_at"]?.jsonPrimitive?.content?.let { parseInstant(it) },
@@ -264,4 +263,8 @@ class SurrealUserRepository(
             logger.warn("Failed to parse count: ${e.message}", e)
             0
         }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(SurrealUserRepository::class.java)
+    }
 }

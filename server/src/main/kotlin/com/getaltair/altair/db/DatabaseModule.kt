@@ -18,6 +18,7 @@ import com.getaltair.altair.db.repository.SurrealRoutineRepository
 import com.getaltair.altair.db.repository.SurrealSourceDocumentRepository
 import com.getaltair.altair.db.repository.SurrealTagRepository
 import com.getaltair.altair.db.repository.SurrealUserRepository
+import com.getaltair.altair.domain.types.Ulid
 import com.getaltair.altair.repository.AttachmentRepository
 import com.getaltair.altair.repository.CheckpointRepository
 import com.getaltair.altair.repository.ContainerRepository
@@ -36,7 +37,6 @@ import com.getaltair.altair.repository.RoutineRepository
 import com.getaltair.altair.repository.SourceDocumentRepository
 import com.getaltair.altair.repository.TagRepository
 import com.getaltair.altair.repository.UserRepository
-import com.getaltair.altair.domain.types.Ulid
 import org.koin.dsl.module
 
 /**

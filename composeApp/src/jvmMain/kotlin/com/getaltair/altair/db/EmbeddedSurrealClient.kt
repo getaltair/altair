@@ -64,10 +64,11 @@ class EmbeddedSurrealClient(
             mutex.withLock {
                 try {
                     surreal?.close()
-                    surreal = null
-                    logger.info("Disconnected from embedded SurrealDB")
                 } catch (e: Exception) {
                     logger.error("Error closing embedded SurrealDB connection", e)
+                } finally {
+                    surreal = null
+                    logger.info("Disconnected from embedded SurrealDB")
                 }
             }
         }

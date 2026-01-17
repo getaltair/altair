@@ -1,3 +1,5 @@
+@file:Suppress("detekt:MaxLineLength")
+
 package com.getaltair.altair.db.repository
 
 import arrow.core.Either
@@ -14,11 +16,13 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import org.slf4j.LoggerFactory
 
 class SurrealContainerRepository(
     private val db: SurrealDbClient,
     private val userId: Ulid,
 ) : ContainerRepository {
+    private val logger = LoggerFactory.getLogger(SurrealContainerRepository::class.java)
     private val json =
         Json {
             ignoreUnknownKeys = true
@@ -208,6 +212,7 @@ class SurrealContainerRepository(
                 ?.jsonObject
                 ?.let { mapToContainer(it) }
         } catch (e: Exception) {
+            logger.warn("Failed to parse Container: ${e.message}", e)
             null
         }
 
@@ -217,10 +222,12 @@ class SurrealContainerRepository(
                 try {
                     mapToContainer(it.jsonObject)
                 } catch (e: Exception) {
+                    logger.warn("Failed to parse Container element: ${e.message}", e)
                     null
                 }
             }
         } catch (e: Exception) {
+            logger.warn("Failed to parse Container list: ${e.message}", e)
             emptyList()
         }
 
@@ -266,6 +273,7 @@ class SurrealContainerRepository(
                 ?.toIntOrNull()
                 ?: 0
         } catch (e: Exception) {
+            logger.warn("Failed to parse count: ${e.message}", e)
             0
         }
 
@@ -274,6 +282,7 @@ class SurrealContainerRepository(
             try {
                 Instant.parse(it)
             } catch (e: Exception) {
+                logger.warn("Failed to parse Instant '$it': ${e.message}", e)
                 Instant.DISTANT_PAST
             }
         } ?: Instant.DISTANT_PAST

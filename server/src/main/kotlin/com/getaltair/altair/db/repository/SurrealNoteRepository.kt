@@ -1,3 +1,5 @@
+@file:Suppress("detekt:MaxLineLength")
+
 package com.getaltair.altair.db.repository
 
 import arrow.core.Either
@@ -27,10 +29,6 @@ class SurrealNoteRepository(
             ignoreUnknownKeys = true
             isLenient = true
         }
-
-    companion object {
-        private val logger = LoggerFactory.getLogger(SurrealNoteRepository::class.java)
-    }
 
     override suspend fun findById(id: Ulid): Either<NoteError, Note> =
         either {
@@ -275,4 +273,8 @@ class SurrealNoteRepository(
                 Instant.DISTANT_PAST
             }
         } ?: Instant.DISTANT_PAST
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(SurrealNoteRepository::class.java)
+    }
 }

@@ -22,6 +22,7 @@ data class DesktopDatabaseConfig(
         require(namespace.isNotBlank()) { "Namespace must not be blank" }
         require(database.isNotBlank()) { "Database must not be blank" }
     }
+
     companion object {
         /**
          * Creates a default desktop database configuration.

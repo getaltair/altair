@@ -1,3 +1,5 @@
+@file:Suppress("detekt:MaxLineLength")
+
 package com.getaltair.altair.db.repository
 
 import arrow.core.Either

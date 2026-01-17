@@ -24,16 +24,9 @@ import kotlin.time.Clock
 @Testcontainers
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class SurrealQuestRepositoryTest {
-    companion object {
-        @Container
-        val container = SurrealDbTestContainer()
-
-        private const val DEFAULT_WIP_LIMIT = 5
-    }
-
     private lateinit var dbClient: SurrealDbClient
     private lateinit var repository: SurrealQuestRepository
-    private val testUserId = "testuser123"
+    private val testUserId = Ulid("01TESTACCT00000000000000")
 
     @BeforeAll
     fun setupContainer() {
@@ -49,7 +42,8 @@ class SurrealQuestRepositoryTest {
 
             // Create test user
             dbClient.execute(
-                "CREATE user:$testUserId CONTENT { email: 'test@test.com', display_name: 'Test User', role: 'member', status: 'active' };",
+                "CREATE user:${testUserId.value} CONTENT { " +
+                    "email: 'test@test.com', display_name: 'Test User', role: 'member', status: 'active' };",
             )
         }
     }
@@ -255,12 +249,13 @@ class SurrealQuestRepositoryTest {
     fun `WIP limit allows activation after completing an active quest`() =
         runBlocking {
             // Fill up WIP limit
-            val activeQuests = (1..DEFAULT_WIP_LIMIT).map { i ->
-                val quest = createTestQuest(title = "Active Quest $i", status = QuestStatus.BACKLOG)
-                repository.save(quest)
-                repository.transitionStatus(quest.id, QuestStatus.ACTIVE)
-                quest
-            }
+            val activeQuests =
+                (1..DEFAULT_WIP_LIMIT).map { i ->
+                    val quest = createTestQuest(title = "Active Quest $i", status = QuestStatus.BACKLOG)
+                    repository.save(quest)
+                    repository.transitionStatus(quest.id, QuestStatus.ACTIVE)
+                    quest
+                }
 
             // Complete one quest
             repository.transitionStatus(activeQuests.first().id, QuestStatus.COMPLETED)
@@ -284,7 +279,7 @@ class SurrealQuestRepositoryTest {
         val now = Clock.System.now()
         return Quest(
             id = Ulid.generate(),
-            userId = Ulid(testUserId),
+            userId = testUserId,
             title = title,
             description = "Test description",
             energyCost = 2,
@@ -300,5 +295,12 @@ class SurrealQuestRepositoryTest {
             completedAt = null,
             deletedAt = null,
         )
+    }
+
+    companion object {
+        @Container
+        val container = SurrealDbTestContainer()
+
+        private const val DEFAULT_WIP_LIMIT = 5
     }
 }

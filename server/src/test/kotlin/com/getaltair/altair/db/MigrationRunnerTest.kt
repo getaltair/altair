@@ -14,11 +14,6 @@ import kotlin.test.assertTrue
 @Testcontainers
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class MigrationRunnerTest {
-    companion object {
-        @Container
-        val container = SurrealDbTestContainer()
-    }
-
     private lateinit var dbClient: SurrealDbClient
     private lateinit var migrationRunner: MigrationRunner
 
@@ -183,4 +178,9 @@ class MigrationRunnerTest {
                 assertEquals(0, count, "Should skip already applied migration")
             }
         }
+
+    companion object {
+        @Container
+        val container = SurrealDbTestContainer()
+    }
 }

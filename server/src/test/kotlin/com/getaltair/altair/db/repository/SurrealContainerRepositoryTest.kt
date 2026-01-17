@@ -13,25 +13,20 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
-import org.testcontainers.junit.jupiter.Container as TestContainer
 import org.testcontainers.junit.jupiter.Testcontainers
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Clock
+import org.testcontainers.junit.jupiter.Container as TestContainer
 
 @Testcontainers
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class SurrealContainerRepositoryTest {
-    companion object {
-        @TestContainer
-        val container = SurrealDbTestContainer()
-    }
-
     private lateinit var dbClient: SurrealDbClient
     private lateinit var repository: SurrealContainerRepository
-    private val testUserId = "testuser123"
+    private val testUserId = Ulid("01TESTACCT00000000000000")
 
     @BeforeAll
     fun setupContainer() {
@@ -47,7 +42,8 @@ class SurrealContainerRepositoryTest {
 
             // Create test user
             dbClient.execute(
-                "CREATE user:$testUserId CONTENT { email: 'test@test.com', display_name: 'Test User', role: 'member', status: 'active' };",
+                "CREATE user:${testUserId.value} CONTENT { " +
+                    "email: 'test@test.com', display_name: 'Test User', role: 'member', status: 'active' };",
             )
         }
     }
@@ -189,7 +185,8 @@ class SurrealContainerRepositoryTest {
             // Create a location
             val locationId = Ulid.generate()
             dbClient.execute(
-                "CREATE location:${locationId.value} CONTENT { user_id: user:$testUserId, name: 'Test Location' };",
+                "CREATE location:${locationId.value} CONTENT { " +
+                    "user_id: user:${testUserId.value}, name: 'Test Location' };",
             )
 
             val container = createTestContainer()
@@ -214,7 +211,8 @@ class SurrealContainerRepositoryTest {
 
             val locationId = Ulid.generate()
             dbClient.execute(
-                "CREATE location:${locationId.value} CONTENT { user_id: user:$testUserId, name: 'New Location' };",
+                "CREATE location:${locationId.value} CONTENT { " +
+                    "user_id: user:${testUserId.value}, name: 'New Location' };",
             )
 
             val result = repository.moveToLocation(childContainer.id, locationId)
@@ -231,7 +229,8 @@ class SurrealContainerRepositoryTest {
         runBlocking {
             val locationId = Ulid.generate()
             dbClient.execute(
-                "CREATE location:${locationId.value} CONTENT { user_id: user:$testUserId, name: 'Test Location' };",
+                "CREATE location:${locationId.value} CONTENT { " +
+                    "user_id: user:${testUserId.value}, name: 'Test Location' };",
             )
 
             val containerAtLocation = createTestContainer(name = "At Location")
@@ -344,7 +343,7 @@ class SurrealContainerRepositoryTest {
         val now = Clock.System.now()
         return Container(
             id = Ulid.generate(),
-            userId = Ulid(testUserId),
+            userId = testUserId,
             name = name,
             description = description,
             locationId = null,
@@ -354,5 +353,10 @@ class SurrealContainerRepositoryTest {
             updatedAt = now,
             deletedAt = null,
         )
+    }
+
+    companion object {
+        @TestContainer
+        val container = SurrealDbTestContainer()
     }
 }

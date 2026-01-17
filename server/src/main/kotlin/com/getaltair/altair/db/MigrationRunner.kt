@@ -35,7 +35,7 @@ class MigrationRunner(
             logger.info("Found ${appliedVersions.size} previously applied migrations")
 
             // Load and filter pending migrations
-            val allMigrations = loadMigrations()
+            val allMigrations = loadMigrations().bind()
             val pendingMigrations =
                 allMigrations
                     .filter { it.version !in appliedVersions }
@@ -108,21 +108,25 @@ class MigrationRunner(
             logger.info("Migration V${migration.version} applied successfully")
         }
 
-    private fun loadMigrations(): List<Migration> {
+    private fun loadMigrations(): Either<DomainError, List<Migration>> {
         val migrations = mutableListOf<Migration>()
         val classLoader = this::class.java.classLoader
 
         // List all migration files
         val migrationsDir = classLoader.getResource("migrations")
         if (migrationsDir == null) {
-            logger.warn("No migrations directory found")
-            return emptyList()
+            logger.error("No migrations directory found - database schema cannot be initialized")
+            return Either.Left(
+                DomainError.UnexpectedError(
+                    "Migrations directory not found. Cannot initialize database schema.",
+                ),
+            )
         }
 
         // Read migration files from resources
         val migrationPattern = """V(\d+)__(.+)\.surql""".toRegex()
 
-        try {
+        return try {
             // Get all resources in migrations folder
             val resources = classLoader.getResources("migrations").toList()
             for (resource in resources) {
@@ -135,11 +139,11 @@ class MigrationRunner(
                     loadMigrationsFromFilesystem(migrations, migrationPattern)
                 }
             }
+            Either.Right(migrations.sortedBy { it.version })
         } catch (e: Exception) {
             logger.error("Failed to load migrations", e)
+            Either.Left(DomainError.UnexpectedError("Failed to load migrations: ${e.message}", e))
         }
-
-        return migrations.sortedBy { it.version }
     }
 
     private fun loadMigrationsFromJar(

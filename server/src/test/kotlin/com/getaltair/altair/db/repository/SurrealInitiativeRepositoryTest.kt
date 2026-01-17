@@ -22,14 +22,9 @@ import kotlin.time.Clock
 @Testcontainers
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class SurrealInitiativeRepositoryTest {
-    companion object {
-        @Container
-        val container = SurrealDbTestContainer()
-    }
-
     private lateinit var dbClient: SurrealDbClient
     private lateinit var repository: SurrealInitiativeRepository
-    private val testUserId = "testuser123"
+    private val testUserId = Ulid("01TESTACCT00000000000000")
 
     @BeforeAll
     fun setupContainer() {
@@ -45,7 +40,9 @@ class SurrealInitiativeRepositoryTest {
 
             // Create test user
             dbClient.execute(
-                "CREATE user:$testUserId CONTENT { email: 'test@test.com', hashed_password: 'hash', display_name: 'Test User', role: 'member' };",
+                "CREATE user:${testUserId.value} CONTENT { " +
+                    "email: 'test@test.com', hashed_password: 'hash', " +
+                    "display_name: 'Test User', role: 'member' };",
             )
         }
     }
@@ -182,7 +179,7 @@ class SurrealInitiativeRepositoryTest {
         val now = Clock.System.now()
         return Initiative(
             id = Ulid.generate(),
-            userId = Ulid(testUserId),
+            userId = testUserId,
             name = name,
             description = "Test description",
             status = status,
@@ -192,5 +189,10 @@ class SurrealInitiativeRepositoryTest {
             updatedAt = now,
             deletedAt = null,
         )
+    }
+
+    companion object {
+        @Container
+        val container = SurrealDbTestContainer()
     }
 }

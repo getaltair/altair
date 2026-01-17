@@ -1,3 +1,5 @@
+@file:Suppress("detekt:MaxLineLength")
+
 package com.getaltair.altair.db.repository
 
 import arrow.core.Either
@@ -15,6 +17,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import org.slf4j.LoggerFactory
 import kotlin.time.Clock
 
 /**
@@ -24,6 +27,7 @@ class SurrealInboxRepository(
     private val db: SurrealDbClient,
     private val userId: Ulid,
 ) : InboxRepository {
+    private val logger = LoggerFactory.getLogger(SurrealInboxRepository::class.java)
     private val json =
         Json {
             ignoreUnknownKeys = true
@@ -118,6 +122,7 @@ class SurrealInboxRepository(
             val obj = array.firstOrNull()?.jsonObject ?: return null
             mapToInboxItem(obj)
         } catch (e: Exception) {
+            logger.warn("Failed to parse InboxItem: ${e.message}", e)
             null
         }
     }
@@ -128,10 +133,12 @@ class SurrealInboxRepository(
                 try {
                     mapToInboxItem(it.jsonObject)
                 } catch (e: Exception) {
+                    logger.warn("Failed to parse InboxItem element: ${e.message}", e)
                     null
                 }
             }
         } catch (e: Exception) {
+            logger.warn("Failed to parse InboxItem list: ${e.message}", e)
             emptyList()
         }
 
@@ -143,6 +150,7 @@ class SurrealInboxRepository(
                 obj["attachment_ids"]?.jsonArray?.mapNotNull { it.jsonPrimitive.content.let { id -> Ulid(id) } }
                     ?: emptyList()
             } catch (e: Exception) {
+                logger.warn("Failed to parse attachment_ids: ${e.message}", e)
                 emptyList()
             }
         return InboxItem(
@@ -161,6 +169,7 @@ class SurrealInboxRepository(
             try {
                 Instant.parse(it)
             } catch (e: Exception) {
+                logger.warn("Failed to parse Instant '$it': ${e.message}", e)
                 Instant.DISTANT_PAST
             }
         } ?: Instant.DISTANT_PAST
@@ -179,6 +188,7 @@ class SurrealInboxRepository(
                 ?.toIntOrNull()
                 ?: 0
         } catch (e: Exception) {
+            logger.warn("Failed to parse count: ${e.message}", e)
             0
         }
 }

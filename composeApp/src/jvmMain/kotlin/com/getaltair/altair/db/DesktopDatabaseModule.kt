@@ -33,17 +33,3 @@ val desktopDatabaseModule =
         // repository implementations are added.
     }
 
-/**
- * Creates a user-scoped Koin module with repositories bound to a specific user.
- *
- * This should be called when a user logs in to inject the authenticated user's ID
- * into all repository implementations.
- *
- * @param userId The authenticated user's ULID string
- */
-fun desktopUserScopedRepositoryModule(userId: String) =
-    module {
-        // TODO: Add user-scoped repository implementations for desktop
-        // Example:
-        // factory<InitiativeRepository> { DesktopInitiativeRepository(get(), userId) }
-    }
