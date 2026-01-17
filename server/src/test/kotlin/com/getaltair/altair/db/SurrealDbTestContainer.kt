@@ -19,15 +19,13 @@ class SurrealDbTestContainer :
         waitingFor(Wait.forLogMessage(".*Started web server.*\\n", 1))
     }
 
-    fun getConnectionUrl(): String = "ws://$host:${getMappedPort(SURREALDB_PORT)}/rpc"
-
-    override fun getHost(): String = host
+    fun getConnectionUrl(): String = "ws://${super.getHost()}:${getMappedPort(SURREALDB_PORT)}/rpc"
 
     fun getPort(): Int = getMappedPort(SURREALDB_PORT)
 
     fun createNetworkConfig(): DatabaseConfig.Network =
         DatabaseConfig.Network(
-            host = host,
+            host = super.getHost(),
             port = getMappedPort(SURREALDB_PORT),
             useTls = false,
             namespace = "test",

@@ -56,7 +56,14 @@ dependencies {
     implementation(libs.kotlinx.datetime)
 
     testImplementation(libs.ktor.server.test.host)
-    testImplementation("org.jetbrains.kotlin:kotlin-test-junit:$kotlinVersion")
+    testImplementation(libs.kotlin.test)
+    // JUnit Jupiter for server tests.
+    // Note: While kotlin.test is preferred for KMP projects, server tests use JUnit Jupiter
+    // because Testcontainers requires the @Container and @Testcontainers annotations from
+    // the testcontainers-junit5 module. Since server code is JVM-only, this is acceptable.
+    testImplementation(platform("org.junit:junit-bom:5.11.4"))
+    testImplementation("org.junit.jupiter:junit-jupiter")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     // kotlinx-rpc client for testing
     testImplementation(libs.kotlinx.rpc.krpc.client)
     testImplementation(libs.kotlinx.rpc.krpc.ktor.client)
@@ -65,4 +72,8 @@ dependencies {
     // Testcontainers for integration tests
     testImplementation(libs.testcontainers)
     testImplementation(libs.testcontainers.junit5)
+}
+
+tasks.withType<Test> {
+    useJUnitPlatform()
 }
