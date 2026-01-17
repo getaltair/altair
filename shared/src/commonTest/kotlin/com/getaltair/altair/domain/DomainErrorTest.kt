@@ -197,6 +197,14 @@ class DomainErrorTest {
                     is DomainError.NotFoundError -> "notfound:${error.resource}:${error.id}"
                     is DomainError.UnauthorizedError -> "unauthorized"
                     is DomainError.UnexpectedError -> "unexpected:${error.message}"
+                    // Module-specific errors (tested in ModuleErrorsTest)
+                    is QuestError -> "quest"
+                    is NoteError -> "note"
+                    is ItemError -> "item"
+                    is SyncError -> "sync"
+                    is AuthError -> "auth"
+                    is UserError -> "user"
+                    is EpicError -> "epic"
                 }
             }
 
