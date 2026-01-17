@@ -5,6 +5,7 @@ plugins {
     kotlin("jvm")
     id("io.ktor.plugin") version "3.3.3"
     id("org.jetbrains.kotlin.plugin.serialization") version "2.3.0"
+    alias(libs.plugins.kotlinx.rpc)
 }
 
 group = "com.getaltair"
@@ -36,9 +37,19 @@ dependencies {
     implementation(libs.ktor.server.host.common)
     implementation(libs.ktor.server.status.pages)
     implementation(libs.ktor.server.netty)
+    implementation(libs.ktor.server.websockets)
     implementation("ch.qos.logback:logback-classic:$logbackVersion")
     implementation(projects.shared)
+    // kotlinx-rpc server
+    implementation(libs.kotlinx.rpc.krpc.server)
+    implementation(libs.kotlinx.rpc.krpc.serialization.json)
+    implementation(libs.kotlinx.rpc.krpc.ktor.server)
 
     testImplementation(libs.ktor.server.test.host)
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit:$kotlinVersion")
+    // kotlinx-rpc client for testing
+    testImplementation(libs.kotlinx.rpc.krpc.client)
+    testImplementation(libs.kotlinx.rpc.krpc.ktor.client)
+    testImplementation(libs.ktor.client.cio)
+    testImplementation(libs.ktor.client.websockets)
 }

@@ -2,16 +2,13 @@
 <SmellBaseline>
   <ManuallySuppressedIssues></ManuallySuppressedIssues>
   <CurrentIssues>
-    <ID>FunctionNaming:App.kt$@Composable @Preview private fun App()</ID>
-    <ID>FunctionNaming:ErrorScreen.kt$@Composable fun ErrorScreen( error: Throwable, modifier: Modifier = Modifier, )</ID>
-    <ID>FunctionNaming:MainActivity.kt$@Preview @Composable private fun AppAndroidPreview()</ID>
     <ID>FunctionNaming:MainViewController.kt$fun MainViewController()</ID>
-    <ID>FunctionNaming:RootContent.kt$@Composable fun RootContent(component: RootComponent)</ID>
     <ID>InvalidPackageDeclaration:Application.kt$package com.getaltair</ID>
     <ID>InvalidPackageDeclaration:ApplicationTest.kt$package com.getaltair</ID>
     <ID>InvalidPackageDeclaration:HTTP.kt$package com.getaltair</ID>
     <ID>InvalidPackageDeclaration:Monitoring.kt$package com.getaltair</ID>
     <ID>InvalidPackageDeclaration:Routing.kt$package com.getaltair</ID>
+    <ID>InvalidPackageDeclaration:Rpc.kt$package com.getaltair</ID>
     <ID>InvalidPackageDeclaration:Security.kt$package com.getaltair</ID>
     <ID>InvalidPackageDeclaration:Serialization.kt$package com.getaltair</ID>
     <ID>MatchingDeclarationName:Platform.android.kt$AndroidPlatform : Platform</ID>
@@ -19,7 +16,6 @@
     <ID>MatchingDeclarationName:Platform.jvm.kt$JVMPlatform : Platform</ID>
     <ID>MatchingDeclarationName:Platform.kt$Shared</ID>
     <ID>UnusedParameter:RootComponent.kt$RootComponent$componentContext: ComponentContext</ID>
-    <ID>UnusedPrivateMember:App.kt$@Composable @Preview private fun App()</ID>
     <ID>UnusedPrivateMember:MainActivity.kt$@Preview @Composable private fun AppAndroidPreview()</ID>
     <ID>WildcardImport:App.kt$import androidx.compose.runtime.*</ID>
     <ID>WildcardImport:Application.kt$import io.ktor.server.application.*</ID>
