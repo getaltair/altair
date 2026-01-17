@@ -49,18 +49,24 @@ sealed interface SyncError : DomainError {
         val clientVersion: Long,
         val serverMinVersion: Long,
     ) : SyncError {
-        override fun toUserMessage(): String =
-            "Your data is out of date. A full sync is required."
+        override fun toUserMessage(): String = "Your data is out of date. A full sync is required."
     }
 
     /**
      * The server could not be reached for synchronization.
      *
-     * @property reason A technical description of why the server is unreachable
+     * **IMPORTANT**: The [reason] property contains technical details that are intentionally
+     * hidden from users. Implementations returning this error SHOULD log the reason at an
+     * appropriate level (e.g., WARN) before returning, as it helps diagnose connectivity issues.
+     *
+     * @property reason A technical description of why the server is unreachable (e.g.,
+     *                  "connection refused", "DNS lookup failed", "TLS handshake timeout")
      */
     @Serializable
     @SerialName("sync_server_unreachable")
-    data class ServerUnreachable(val reason: String) : SyncError {
+    data class ServerUnreachable(
+        val reason: String,
+    ) : SyncError {
         override fun toUserMessage(): String =
             "Unable to connect to the server. Please check your connection and try again."
     }
@@ -68,13 +74,20 @@ sealed interface SyncError : DomainError {
     /**
      * The change set sent by the client is invalid or corrupted.
      *
-     * @property reason A description of what made the change set invalid
+     * **IMPORTANT**: The [reason] property contains technical details that are intentionally
+     * hidden from users. Implementations returning this error MUST log the reason at an
+     * appropriate level (e.g., WARN or ERROR) before returning, as it is critical for
+     * diagnosing sync corruption issues.
+     *
+     * @property reason A description of what made the change set invalid (e.g., "missing
+     *                  required field: entityId", "checksum mismatch", "invalid entity version")
      */
     @Serializable
     @SerialName("sync_invalid_change_set")
-    data class InvalidChangeSet(val reason: String) : SyncError {
-        override fun toUserMessage(): String =
-            "The sync data appears to be corrupted. Please try again."
+    data class InvalidChangeSet(
+        val reason: String,
+    ) : SyncError {
+        override fun toUserMessage(): String = "The sync data appears to be corrupted. Please try again."
     }
 
     /**
@@ -84,7 +97,9 @@ sealed interface SyncError : DomainError {
      */
     @Serializable
     @SerialName("sync_timeout")
-    data class Timeout(val elapsedMs: Long) : SyncError {
+    data class Timeout(
+        val elapsedMs: Long,
+    ) : SyncError {
         override fun toUserMessage(): String =
             "The sync took too long and was cancelled. Please try again with a better connection."
     }

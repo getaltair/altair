@@ -1,9 +1,87 @@
 package com.getaltair.altair.repository
 
 import arrow.core.Either
+import arrow.core.raise.either
+import arrow.core.raise.ensure
 import com.getaltair.altair.domain.DomainError
 import com.getaltair.altair.domain.types.Ulid
 import kotlinx.coroutines.flow.Flow
+
+/**
+ * Pagination parameters for repository queries.
+ *
+ * Use the [invoke] factory method to create instances with validation,
+ * or [unsafeCreate] when you are certain the values are valid.
+ *
+ * @property limit Maximum number of items to return (default: 50, max: 100)
+ * @property offset Number of items to skip (default: 0)
+ */
+data class PageRequest private constructor(
+    val limit: Int,
+    val offset: Int,
+) {
+    companion object {
+        const val DEFAULT_PAGE_SIZE = 50
+        const val MAX_PAGE_SIZE = 100
+
+        /**
+         * Creates a PageRequest with validation.
+         *
+         * @param limit Maximum number of items to return (1 to 100)
+         * @param offset Number of items to skip (must be non-negative)
+         * @return Either a [DomainError.ValidationError] if parameters are invalid,
+         *         or a valid [PageRequest]
+         */
+        operator fun invoke(
+            limit: Int = DEFAULT_PAGE_SIZE,
+            offset: Int = 0,
+        ): Either<DomainError.ValidationError, PageRequest> =
+            either {
+                ensure(limit in 1..MAX_PAGE_SIZE) {
+                    DomainError.ValidationError("limit", "Limit must be between 1 and $MAX_PAGE_SIZE")
+                }
+                ensure(offset >= 0) {
+                    DomainError.ValidationError("offset", "Offset must be non-negative")
+                }
+                PageRequest(limit, offset)
+            }
+
+        /**
+         * Creates a PageRequest without validation.
+         *
+         * Use this only when you are certain the values are valid (e.g., from
+         * trusted internal sources or when values have already been validated).
+         *
+         * @throws IllegalArgumentException if limit or offset are invalid
+         */
+        fun unsafeCreate(
+            limit: Int = DEFAULT_PAGE_SIZE,
+            offset: Int = 0,
+        ): PageRequest {
+            require(limit in 1..MAX_PAGE_SIZE) { "Limit must be between 1 and $MAX_PAGE_SIZE" }
+            require(offset >= 0) { "Offset must be non-negative" }
+            return PageRequest(limit, offset)
+        }
+    }
+}
+
+/**
+ * Paginated result containing items and pagination metadata.
+ *
+ * @property items The items in this page
+ * @property totalCount Total number of items matching the query (must be >= items.size)
+ * @property hasMore Whether there are more items after this page
+ */
+data class PageResult<T>(
+    val items: List<T>,
+    val totalCount: Int,
+    val hasMore: Boolean,
+) {
+    init {
+        require(totalCount >= 0) { "Total count must be non-negative" }
+        require(totalCount >= items.size) { "Total count must be >= items size" }
+    }
+}
 
 /**
  * Base repository interface defining common CRUD operations.

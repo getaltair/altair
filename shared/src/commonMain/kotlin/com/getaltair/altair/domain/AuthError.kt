@@ -18,8 +18,7 @@ sealed interface AuthError : DomainError {
     @Serializable
     @SerialName("auth_invalid_credentials")
     data object InvalidCredentials : AuthError {
-        override fun toUserMessage(): String =
-            "Invalid email or password. Please check your credentials and try again."
+        override fun toUserMessage(): String = "Invalid email or password. Please check your credentials and try again."
     }
 
     /**
@@ -29,21 +28,29 @@ sealed interface AuthError : DomainError {
      */
     @Serializable
     @SerialName("auth_token_expired")
-    data class TokenExpired(val expiredAt: Long) : AuthError {
-        override fun toUserMessage(): String =
-            "Your session has expired. Please sign in again."
+    data class TokenExpired(
+        val expiredAt: Long,
+    ) : AuthError {
+        override fun toUserMessage(): String = "Your session has expired. Please sign in again."
     }
 
     /**
      * The authentication token is malformed or has an invalid signature.
      *
-     * @property reason Technical description of why the token is invalid
+     * **IMPORTANT**: The [reason] property contains technical details that are intentionally
+     * hidden from users for security. Implementations returning this error MUST log the reason
+     * at an appropriate level (e.g., WARN or DEBUG) before returning, as it is not exposed
+     * in the user message. This is essential for debugging authentication issues.
+     *
+     * @property reason Technical description of why the token is invalid (e.g., "signature
+     *                  verification failed", "missing required claims", "token expired")
      */
     @Serializable
     @SerialName("auth_token_invalid")
-    data class TokenInvalid(val reason: String) : AuthError {
-        override fun toUserMessage(): String =
-            "Your session is invalid. Please sign in again."
+    data class TokenInvalid(
+        val reason: String,
+    ) : AuthError {
+        override fun toUserMessage(): String = "Your session is invalid. Please sign in again."
     }
 
     /**
@@ -72,8 +79,7 @@ sealed interface AuthError : DomainError {
     @Serializable
     @SerialName("auth_invite_required")
     data object InviteRequired : AuthError {
-        override fun toUserMessage(): String =
-            "An invite code is required to create an account on this server."
+        override fun toUserMessage(): String = "An invite code is required to create an account on this server."
     }
 
     /**
@@ -83,19 +89,21 @@ sealed interface AuthError : DomainError {
      */
     @Serializable
     @SerialName("auth_invalid_invite")
-    data class InvalidInvite(val code: String) : AuthError {
-        override fun toUserMessage(): String =
-            "The invite code is invalid or has already been used."
+    data class InvalidInvite(
+        val code: String,
+    ) : AuthError {
+        override fun toUserMessage(): String = "The invite code is invalid or has already been used."
     }
 
     /**
      * The email address is already registered to another account.
      *
-     * @property email The email that already exists
+     * Note: The email is intentionally not stored in this error to prevent
+     * potential information leakage in logs or error responses.
      */
     @Serializable
     @SerialName("auth_email_already_exists")
-    data class EmailAlreadyExists(val email: String) : AuthError {
+    data object EmailAlreadyExists : AuthError {
         override fun toUserMessage(): String =
             "An account with this email already exists. Please sign in or use a different email."
     }

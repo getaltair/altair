@@ -45,6 +45,20 @@ interface NoteRepository : Repository<Note, NoteError> {
     suspend fun search(query: String): Either<NoteError, List<Note>>
 
     /**
+     * Searches notes with pagination support.
+     *
+     * Use this for large result sets to avoid memory pressure.
+     *
+     * @param query The search query
+     * @param page Pagination parameters
+     * @return Either an error on failure, or paginated results
+     */
+    suspend fun searchPaged(
+        query: String,
+        page: PageRequest = PageRequest.unsafeCreate(),
+    ): Either<NoteError, PageResult<Note>>
+
+    /**
      * Finds notes that link TO the specified note (backlinks).
      *
      * @param noteId The ULID of the target note

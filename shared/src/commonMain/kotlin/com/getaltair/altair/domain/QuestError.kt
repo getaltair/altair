@@ -21,7 +21,9 @@ sealed interface QuestError : DomainError {
      */
     @Serializable
     @SerialName("quest_not_found")
-    data class NotFound(val id: Ulid) : QuestError {
+    data class NotFound(
+        val id: Ulid,
+    ) : QuestError {
         override fun toUserMessage(): String = "The requested quest could not be found."
     }
 

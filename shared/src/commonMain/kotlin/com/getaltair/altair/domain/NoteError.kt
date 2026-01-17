@@ -20,7 +20,9 @@ sealed interface NoteError : DomainError {
      */
     @Serializable
     @SerialName("note_not_found")
-    data class NotFound(val id: Ulid) : NoteError {
+    data class NotFound(
+        val id: Ulid,
+    ) : NoteError {
         override fun toUserMessage(): String = "The requested note could not be found."
     }
 
@@ -36,8 +38,7 @@ sealed interface NoteError : DomainError {
         val title: String,
         val folderId: Ulid?,
     ) : NoteError {
-        override fun toUserMessage(): String =
-            "A note with the title \"$title\" already exists in this folder."
+        override fun toUserMessage(): String = "A note with the title \"$title\" already exists in this folder."
     }
 
     /**
@@ -52,8 +53,7 @@ sealed interface NoteError : DomainError {
         val linkText: String,
         val noteId: Ulid,
     ) : NoteError {
-        override fun toUserMessage(): String =
-            "The link \"$linkText\" could not be resolved to an existing note."
+        override fun toUserMessage(): String = "The link \"$linkText\" could not be resolved to an existing note."
     }
 
     /**
@@ -68,8 +68,7 @@ sealed interface NoteError : DomainError {
         val sourceNoteId: Ulid,
         val targetNoteId: Ulid,
     ) : NoteError {
-        override fun toUserMessage(): String =
-            "Cannot create this link because it would create a circular reference."
+        override fun toUserMessage(): String = "Cannot create this link because it would create a circular reference."
     }
 
     /**
@@ -79,7 +78,9 @@ sealed interface NoteError : DomainError {
      */
     @Serializable
     @SerialName("note_folder_not_found")
-    data class FolderNotFound(val folderId: Ulid) : NoteError {
+    data class FolderNotFound(
+        val folderId: Ulid,
+    ) : NoteError {
         override fun toUserMessage(): String = "The specified folder could not be found."
     }
 }

@@ -203,6 +203,8 @@ class DomainErrorTest {
                     is ItemError -> "item"
                     is SyncError -> "sync"
                     is AuthError -> "auth"
+                    is UserError -> "user"
+                    is EpicError -> "epic"
                 }
             }
 

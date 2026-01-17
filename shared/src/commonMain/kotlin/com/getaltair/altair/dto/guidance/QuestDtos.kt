@@ -4,6 +4,14 @@ import kotlinx.serialization.Serializable
 
 /**
  * Request to create a new quest.
+ *
+ * @property title The quest title (1-200 characters)
+ * @property description Optional detailed description
+ * @property energyCost Energy cost from 1-5
+ * @property epicId Optional epic ULID (26-character string)
+ * @property initiativeId Optional initiative ULID (26-character string)
+ * @property dueDate Optional due date in ISO-8601 format (YYYY-MM-DD)
+ * @property scheduledDate Optional scheduled date in ISO-8601 format (YYYY-MM-DD)
  */
 @Serializable
 data class CreateQuestRequest(
@@ -40,6 +48,12 @@ data class TransitionQuestStatusRequest(
 
 /**
  * Response containing quest data.
+ *
+ * ## String Formats
+ * - **IDs** (`id`, `epicId`, `routineId`, `initiativeId`): ULID format (26-character string)
+ * - **Dates** (`dueDate`, `scheduledDate`): ISO-8601 date format (YYYY-MM-DD)
+ * - **Timestamps** (`createdAt`, `updatedAt`, `startedAt`, `completedAt`): ISO-8601 datetime (YYYY-MM-DDTHH:MM:SSZ)
+ * - **Status**: One of: backlog, active, completed, abandoned
  */
 @Serializable
 data class QuestResponse(

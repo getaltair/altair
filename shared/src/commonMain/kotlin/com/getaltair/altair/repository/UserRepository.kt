@@ -1,8 +1,7 @@
 package com.getaltair.altair.repository
 
 import arrow.core.Either
-import com.getaltair.altair.domain.AuthError
-import com.getaltair.altair.domain.DomainError
+import com.getaltair.altair.domain.UserError
 import com.getaltair.altair.domain.model.system.User
 import com.getaltair.altair.domain.types.Ulid
 import com.getaltair.altair.domain.types.enums.UserRole
@@ -15,47 +14,51 @@ import kotlinx.coroutines.flow.Flow
  * Users own all their data; every other entity references a userId for
  * multi-user isolation. This repository is primarily used by the server
  * for user management and authentication.
+ *
+ * All methods use [UserError] for consistent error handling across
+ * both CRUD operations and auth-related scenarios.
  */
+@Suppress("TooManyFunctions")
 interface UserRepository {
     /**
      * Finds a user by their unique identifier.
      *
      * @param id The ULID of the user
-     * @return Either an error if not found, or the user
+     * @return Either [UserError.NotFound] if not found, or the user
      */
-    suspend fun findById(id: Ulid): Either<DomainError, User>
+    suspend fun findById(id: Ulid): Either<UserError, User>
 
     /**
      * Finds a user by their email address.
      *
      * @param email The email address to search for
-     * @return Either an error if not found, or the user
+     * @return Either [UserError.EmailNotFound] if not found, or the user
      */
-    suspend fun findByEmail(email: String): Either<AuthError, User>
+    suspend fun findByEmail(email: String): Either<UserError, User>
 
     /**
      * Creates a new user.
      *
      * @param user The user to create
-     * @return Either an error (e.g., email already exists), or the created user
+     * @return Either [UserError.EmailAlreadyExists] if email taken, or the created user
      */
-    suspend fun create(user: User): Either<AuthError, User>
+    suspend fun create(user: User): Either<UserError, User>
 
     /**
      * Updates an existing user.
      *
      * @param user The user to update
-     * @return Either an error on failure, or the updated user
+     * @return Either [UserError.NotFound] on failure, or the updated user
      */
-    suspend fun update(user: User): Either<DomainError, User>
+    suspend fun update(user: User): Either<UserError, User>
 
     /**
      * Soft-deletes a user by setting their deletedAt timestamp.
      *
      * @param id The ULID of the user
-     * @return Either an error on failure, or Unit on success
+     * @return Either [UserError.NotFound] on failure, or Unit on success
      */
-    suspend fun delete(id: Ulid): Either<DomainError, Unit>
+    suspend fun delete(id: Ulid): Either<UserError, Unit>
 
     /**
      * Finds all users (admin only).
@@ -85,12 +88,12 @@ interface UserRepository {
      *
      * @param id The ULID of the user
      * @param bytesUsed The new storage used value
-     * @return Either an error on failure, or the updated user
+     * @return Either [UserError.NotFound] or [UserError.StorageQuotaExceeded] on failure, or the updated user
      */
     suspend fun updateStorageUsed(
         id: Ulid,
         bytesUsed: Long,
-    ): Either<DomainError, User>
+    ): Either<UserError, User>
 
     /**
      * Checks if an email is available (not already registered).
@@ -98,12 +101,12 @@ interface UserRepository {
      * @param email The email to check
      * @return Either an error on failure, or true if available
      */
-    suspend fun isEmailAvailable(email: String): Either<DomainError, Boolean>
+    suspend fun isEmailAvailable(email: String): Either<UserError, Boolean>
 
     /**
      * Counts all active users.
      *
      * @return Either an error on failure, or the count
      */
-    suspend fun countActive(): Either<DomainError, Int>
+    suspend fun countActive(): Either<UserError, Int>
 }

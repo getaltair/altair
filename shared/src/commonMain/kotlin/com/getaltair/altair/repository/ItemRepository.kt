@@ -55,6 +55,20 @@ interface ItemRepository : Repository<Item, ItemError> {
     suspend fun searchByName(query: String): Either<ItemError, List<Item>>
 
     /**
+     * Searches items by name with pagination support.
+     *
+     * Use this for large result sets to avoid memory pressure.
+     *
+     * @param query The search query
+     * @param page Pagination parameters
+     * @return Either an error on failure, or paginated results
+     */
+    suspend fun searchByNamePaged(
+        query: String,
+        page: PageRequest = PageRequest.unsafeCreate(),
+    ): Either<ItemError, PageResult<Item>>
+
+    /**
      * Moves an item to a new location.
      *
      * Clears any container association when moving to a location.

@@ -20,7 +20,9 @@ sealed interface ItemError : DomainError {
      */
     @Serializable
     @SerialName("item_not_found")
-    data class NotFound(val id: Ulid) : ItemError {
+    data class NotFound(
+        val id: Ulid,
+    ) : ItemError {
         override fun toUserMessage(): String = "The requested item could not be found."
     }
 
@@ -56,8 +58,7 @@ sealed interface ItemError : DomainError {
         val containerId: Ulid,
         val targetContainerId: Ulid,
     ) : ItemError {
-        override fun toUserMessage(): String =
-            "Cannot place this container inside itself or one of its contents."
+        override fun toUserMessage(): String = "Cannot place this container inside itself or one of its contents."
     }
 
     /**
@@ -67,7 +68,9 @@ sealed interface ItemError : DomainError {
      */
     @Serializable
     @SerialName("item_location_not_found")
-    data class LocationNotFound(val locationId: Ulid) : ItemError {
+    data class LocationNotFound(
+        val locationId: Ulid,
+    ) : ItemError {
         override fun toUserMessage(): String = "The specified location could not be found."
     }
 
@@ -78,7 +81,9 @@ sealed interface ItemError : DomainError {
      */
     @Serializable
     @SerialName("item_container_not_found")
-    data class ContainerNotFound(val containerId: Ulid) : ItemError {
+    data class ContainerNotFound(
+        val containerId: Ulid,
+    ) : ItemError {
         override fun toUserMessage(): String = "The specified container could not be found."
     }
 
@@ -89,7 +94,9 @@ sealed interface ItemError : DomainError {
      */
     @Serializable
     @SerialName("item_template_not_found")
-    data class TemplateNotFound(val templateId: Ulid) : ItemError {
+    data class TemplateNotFound(
+        val templateId: Ulid,
+    ) : ItemError {
         override fun toUserMessage(): String = "The specified item template could not be found."
     }
 }

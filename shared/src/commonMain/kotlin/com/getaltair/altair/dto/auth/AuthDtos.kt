@@ -13,6 +13,11 @@ data class AuthRequest(
 
 /**
  * Response containing authentication tokens and user information.
+ *
+ * ## String Formats
+ * - **userId**: ULID format (26-character string)
+ * - **role**: One of: member, admin
+ * - **expiresIn**: Token validity duration in seconds
  */
 @Serializable
 data class AuthResponse(

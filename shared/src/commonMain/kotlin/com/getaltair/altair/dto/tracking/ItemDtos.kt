@@ -33,6 +33,12 @@ data class UpdateItemRequest(
 
 /**
  * Response containing item data.
+ *
+ * ## String Formats
+ * - **IDs** (`id`, `templateId`, `locationId`, `containerId`, `photoAttachmentId`,
+ *   `initiativeId`): ULID format (26-character string)
+ * - **Timestamps** (`createdAt`, `updatedAt`): ISO-8601 datetime (YYYY-MM-DDTHH:MM:SSZ)
+ * - **Paths** (`locationPath`, `containerPath`): Human-readable breadcrumb (e.g., "Home > Office > Desk")
  */
 @Serializable
 data class ItemResponse(
