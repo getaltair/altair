@@ -1,0 +1,27 @@
+#!/bin/bash
+
+# Pre-commit hook for running Spotless checks
+# This hook runs Spotless to check code formatting before commits
+
+echo "Running Spotless check..."
+
+# Get the root directory of the git repository
+ROOT_DIR=$(git rev-parse --show-toplevel)
+
+# Run Spotless check
+cd "$ROOT_DIR" || exit 1
+
+./gradlew spotlessCheck --quiet
+
+SPOTLESS_EXIT_CODE=$?
+
+if [ $SPOTLESS_EXIT_CODE -ne 0 ]; then
+    echo ""
+    echo "Spotless check failed!"
+    echo "Run './gradlew spotlessApply' to fix formatting issues."
+    echo ""
+    exit 1
+fi
+
+echo "Spotless check passed!"
+exit 0

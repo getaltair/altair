@@ -3,11 +3,12 @@ package com.getaltair.altair
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 
-fun main() = application {
-    Window(
-        onCloseRequest = ::exitApplication,
-        title = "Altair",
-    ) {
-        App()
+fun main() =
+    application {
+        Window(
+            onCloseRequest = ::exitApplication,
+            title = "Altair",
+        ) {
+            App()
+        }
     }
-}

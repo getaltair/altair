@@ -1,0 +1,25 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+indent_size = 4
+indent_style = space
+insert_final_newline = true
+max_line_length = 120
+trim_trailing_whitespace = true
+
+[*.{kt,kts}]
+ktlint_code_style = ktlint_official
+
+# Compose function naming is handled by compose-rules plugin
+ktlint_standard_function-naming = disabled
+
+# Allow wildcard imports (Ktor uses them extensively in generated code)
+ktlint_standard_no-wildcard-imports = disabled
+
+# Disable filename rule (conflicts with Platform.kt multiplatform expect/actual pattern)
+ktlint_standard_filename = disabled
+
+[*.md]
+trim_trailing_whitespace = false
