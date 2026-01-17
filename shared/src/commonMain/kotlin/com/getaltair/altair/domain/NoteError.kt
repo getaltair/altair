@@ -83,4 +83,19 @@ sealed interface NoteError : DomainError {
     ) : NoteError {
         override fun toUserMessage(): String = "The specified folder could not be found."
     }
+
+    /**
+     * The link between two notes was not found.
+     *
+     * @property sourceNoteId The source note of the link
+     * @property targetNoteId The target note of the link
+     */
+    @Serializable
+    @SerialName("note_link_not_found")
+    data class LinkNotFound(
+        val sourceNoteId: Ulid,
+        val targetNoteId: Ulid,
+    ) : NoteError {
+        override fun toUserMessage(): String = "The link between these notes could not be found."
+    }
 }

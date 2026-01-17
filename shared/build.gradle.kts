@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.ksp)
     alias(libs.plugins.mokkery)
     alias(libs.plugins.kotlinx.rpc)
+    alias(libs.plugins.sqldelight)
 }
 
 kotlin {
@@ -31,9 +32,14 @@ kotlin {
             // Arrow - Functional Error Handling
             implementation(libs.arrow.core)
             implementation(libs.arrow.optics)
+            // Koin - Dependency Injection
+            implementation(libs.koin.core)
             // kotlinx-rpc - Type-safe RPC interfaces
             implementation(libs.kotlinx.rpc.core)
             implementation(libs.kotlinx.rpc.krpc.serialization.json)
+            // SQLDelight - Type-safe SQL
+            implementation(libs.sqldelight.runtime)
+            implementation(libs.sqldelight.coroutines)
         }
 
         commonTest.dependencies {
@@ -47,14 +53,24 @@ kotlin {
 
         jvmMain.dependencies {
             // JVM-specific dependencies (server + desktop)
+            // SurrealDB - Database (ADR-002)
+            implementation(libs.surrealdb)
+            // SQLDelight JVM driver for testing
+            implementation(libs.sqldelight.jvm.driver)
         }
 
         androidMain.dependencies {
             // Android-specific dependencies
+            // Koin Android
+            implementation(libs.koin.android)
+            // SQLDelight Android driver
+            implementation(libs.sqldelight.android.driver)
         }
 
         iosMain.dependencies {
             // iOS-specific dependencies
+            // SQLDelight Native driver
+            implementation(libs.sqldelight.native.driver)
         }
     }
 }
@@ -81,5 +97,15 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
+    }
+}
+
+// SQLDelight configuration (ADR-002)
+sqldelight {
+    databases {
+        create("AltairDatabase") {
+            packageName.set("com.getaltair.altair.db")
+            generateAsync.set(true)
+        }
     }
 }

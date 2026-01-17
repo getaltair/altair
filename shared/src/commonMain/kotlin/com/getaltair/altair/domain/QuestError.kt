@@ -39,8 +39,7 @@ sealed interface QuestError : DomainError {
         val required: Int,
         val available: Int,
     ) : QuestError {
-        override fun toUserMessage(): String =
-            "Not enough energy available. This quest requires $required energy, but only $available remains."
+        override fun toUserMessage(): String = "Not enough energy available. This quest requires $required energy, but only $available remains."
     }
 
     /**
@@ -57,8 +56,7 @@ sealed interface QuestError : DomainError {
         val currentStatus: QuestStatus,
         val targetStatus: QuestStatus,
     ) : QuestError {
-        override fun toUserMessage(): String =
-            "Cannot change quest from ${currentStatus.name.lowercase()} to ${targetStatus.name.lowercase()}."
+        override fun toUserMessage(): String = "Cannot change quest from ${currentStatus.name.lowercase()} to ${targetStatus.name.lowercase()}."
     }
 
     /**
@@ -73,7 +71,6 @@ sealed interface QuestError : DomainError {
         val currentWip: Int,
         val maxWip: Int,
     ) : QuestError {
-        override fun toUserMessage(): String =
-            "You have reached the maximum of $maxWip active quests. Complete or abandon a quest first."
+        override fun toUserMessage(): String = "You have reached the maximum of $maxWip active quests. Complete or abandon a quest first."
     }
 }

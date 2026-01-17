@@ -1,0 +1,72 @@
+-- Container table schema
+-- Containers within locations for organizing items
+
+CREATE TABLE IF NOT EXISTS container (
+    id TEXT NOT NULL PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    description TEXT,
+    location_id TEXT,
+    parent_container_id TEXT,
+    label TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    deleted_at TEXT,
+    FOREIGN KEY (user_id) REFERENCES user(id),
+    FOREIGN KEY (location_id) REFERENCES location(id),
+    FOREIGN KEY (parent_container_id) REFERENCES container(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_container_user_id ON container(user_id);
+CREATE INDEX IF NOT EXISTS idx_container_location_id ON container(location_id);
+CREATE INDEX IF NOT EXISTS idx_container_parent_id ON container(parent_container_id);
+CREATE INDEX IF NOT EXISTS idx_container_deleted_at ON container(deleted_at);
+
+-- Queries
+
+findById:
+SELECT * FROM container WHERE id = ? AND user_id = ? AND deleted_at IS NULL;
+
+findAll:
+SELECT * FROM container WHERE user_id = ? AND deleted_at IS NULL ORDER BY name;
+
+findByLocation:
+SELECT * FROM container WHERE user_id = ? AND location_id = ? AND deleted_at IS NULL ORDER BY name;
+
+findByParentContainer:
+SELECT * FROM container WHERE user_id = ? AND parent_container_id = ? AND deleted_at IS NULL ORDER BY name;
+
+findRoots:
+SELECT * FROM container WHERE user_id = ? AND parent_container_id IS NULL AND deleted_at IS NULL ORDER BY name;
+
+insert:
+INSERT INTO container (id, user_id, name, description, location_id, parent_container_id, label, created_at, updated_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+update:
+UPDATE container SET
+    name = ?,
+    description = ?,
+    location_id = ?,
+    parent_container_id = ?,
+    label = ?,
+    updated_at = ?
+WHERE id = ? AND user_id = ?;
+
+softDelete:
+UPDATE container SET deleted_at = ?, updated_at = ? WHERE id = ? AND user_id = ?;
+
+moveToLocation:
+UPDATE container SET location_id = ?, parent_container_id = NULL, updated_at = ? WHERE id = ? AND user_id = ?;
+
+nestInContainer:
+UPDATE container SET parent_container_id = ?, updated_at = ? WHERE id = ? AND user_id = ?;
+
+unnest:
+UPDATE container SET parent_container_id = NULL, updated_at = ? WHERE id = ? AND user_id = ?;
+
+searchByNameOrLabel:
+SELECT * FROM container WHERE user_id = ? AND (LOWER(name) LIKE '%' || LOWER(?) || '%' OR LOWER(label) LIKE '%' || LOWER(?) || '%') AND deleted_at IS NULL ORDER BY name;
+
+countItems:
+SELECT COUNT(*) FROM item WHERE user_id = ? AND container_id = ? AND deleted_at IS NULL;

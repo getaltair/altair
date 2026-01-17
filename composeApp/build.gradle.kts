@@ -72,6 +72,10 @@ kotlin {
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutinesSwing)
             implementation(libs.ktor.client.cio)
+            // SurrealDB - Embedded database for desktop (ADR-002)
+            implementation(libs.surrealdb)
+            // Arrow - Functional Error Handling (needed for repository implementations)
+            implementation(libs.arrow.core)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

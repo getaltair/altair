@@ -1,0 +1,66 @@
+-- NoteLink table schema
+-- Bidirectional links between notes
+
+CREATE TABLE IF NOT EXISTS note_link (
+    id TEXT NOT NULL PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    source_note_id TEXT NOT NULL,
+    target_note_id TEXT NOT NULL,
+    link_type TEXT NOT NULL DEFAULT 'reference',
+    context TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    deleted_at TEXT,
+    FOREIGN KEY (user_id) REFERENCES user(id),
+    FOREIGN KEY (source_note_id) REFERENCES note(id),
+    FOREIGN KEY (target_note_id) REFERENCES note(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_note_link_user_id ON note_link(user_id);
+CREATE INDEX IF NOT EXISTS idx_note_link_source ON note_link(source_note_id);
+CREATE INDEX IF NOT EXISTS idx_note_link_target ON note_link(target_note_id);
+CREATE INDEX IF NOT EXISTS idx_note_link_deleted_at ON note_link(deleted_at);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_note_link_unique ON note_link(user_id, source_note_id, target_note_id);
+
+-- Queries
+
+findById:
+SELECT * FROM note_link WHERE id = ? AND user_id = ? AND deleted_at IS NULL;
+
+findBySourceNote:
+SELECT * FROM note_link WHERE user_id = ? AND source_note_id = ? AND deleted_at IS NULL;
+
+findByTargetNote:
+SELECT * FROM note_link WHERE user_id = ? AND target_note_id = ? AND deleted_at IS NULL;
+
+findBacklinks:
+SELECT * FROM note_link WHERE user_id = ? AND target_note_id = ? AND deleted_at IS NULL;
+
+findByLinkType:
+SELECT * FROM note_link WHERE user_id = ? AND link_type = ? AND deleted_at IS NULL;
+
+findLink:
+SELECT * FROM note_link WHERE user_id = ? AND source_note_id = ? AND target_note_id = ? AND deleted_at IS NULL;
+
+insert:
+INSERT INTO note_link (id, user_id, source_note_id, target_note_id, link_type, context, created_at, updated_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+
+update:
+UPDATE note_link SET
+    link_type = ?,
+    context = ?,
+    updated_at = ?
+WHERE id = ? AND user_id = ?;
+
+softDelete:
+UPDATE note_link SET deleted_at = ?, updated_at = ? WHERE id = ? AND user_id = ?;
+
+deleteBySourceNote:
+UPDATE note_link SET deleted_at = ?, updated_at = ? WHERE user_id = ? AND source_note_id = ?;
+
+countOutgoingLinks:
+SELECT COUNT(*) FROM note_link WHERE user_id = ? AND source_note_id = ? AND deleted_at IS NULL;
+
+countBacklinks:
+SELECT COUNT(*) FROM note_link WHERE user_id = ? AND target_note_id = ? AND deleted_at IS NULL;

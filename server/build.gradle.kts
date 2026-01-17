@@ -44,6 +44,16 @@ dependencies {
     implementation(libs.kotlinx.rpc.krpc.server)
     implementation(libs.kotlinx.rpc.krpc.serialization.json)
     implementation(libs.kotlinx.rpc.krpc.ktor.server)
+    // SurrealDB - Database (ADR-002)
+    implementation(libs.surrealdb)
+    // Koin - Dependency Injection
+    implementation(libs.koin.core)
+    implementation(libs.koin.ktor)
+    implementation(libs.koin.logger.slf4j)
+    // Arrow - Functional Error Handling
+    implementation(libs.arrow.core)
+    // kotlinx-datetime
+    implementation(libs.kotlinx.datetime)
 
     testImplementation(libs.ktor.server.test.host)
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit:$kotlinVersion")
@@ -52,4 +62,7 @@ dependencies {
     testImplementation(libs.kotlinx.rpc.krpc.ktor.client)
     testImplementation(libs.ktor.client.cio)
     testImplementation(libs.ktor.client.websockets)
+    // Testcontainers for integration tests
+    testImplementation(libs.testcontainers)
+    testImplementation(libs.testcontainers.junit5)
 }

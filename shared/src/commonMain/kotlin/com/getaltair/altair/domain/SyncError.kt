@@ -31,8 +31,7 @@ sealed interface SyncError : DomainError {
         val clientVersion: Long,
         val serverVersion: Long,
     ) : SyncError {
-        override fun toUserMessage(): String =
-            "A sync conflict was detected. Your changes and the server's changes need to be merged."
+        override fun toUserMessage(): String = "A sync conflict was detected. Your changes and the server's changes need to be merged."
     }
 
     /**
@@ -67,8 +66,7 @@ sealed interface SyncError : DomainError {
     data class ServerUnreachable(
         val reason: String,
     ) : SyncError {
-        override fun toUserMessage(): String =
-            "Unable to connect to the server. Please check your connection and try again."
+        override fun toUserMessage(): String = "Unable to connect to the server. Please check your connection and try again."
     }
 
     /**
@@ -100,7 +98,6 @@ sealed interface SyncError : DomainError {
     data class Timeout(
         val elapsedMs: Long,
     ) : SyncError {
-        override fun toUserMessage(): String =
-            "The sync took too long and was cancelled. Please try again with a better connection."
+        override fun toUserMessage(): String = "The sync took too long and was cancelled. Please try again with a better connection."
     }
 }

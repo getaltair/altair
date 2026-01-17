@@ -1,0 +1,48 @@
+-- User table schema
+-- Stores user account information
+
+CREATE TABLE IF NOT EXISTS user (
+    id TEXT NOT NULL PRIMARY KEY,
+    email TEXT NOT NULL UNIQUE,
+    hashed_password TEXT NOT NULL,
+    display_name TEXT NOT NULL,
+    role TEXT NOT NULL DEFAULT 'member',
+    preferences TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    deleted_at TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_email ON user(email);
+CREATE INDEX IF NOT EXISTS idx_user_deleted_at ON user(deleted_at);
+
+-- Queries
+
+findById:
+SELECT * FROM user WHERE id = ? AND deleted_at IS NULL;
+
+findByEmail:
+SELECT * FROM user WHERE email = ? AND deleted_at IS NULL;
+
+findAll:
+SELECT * FROM user WHERE deleted_at IS NULL ORDER BY display_name;
+
+insert:
+INSERT INTO user (id, email, hashed_password, display_name, role, preferences, created_at, updated_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+
+update:
+UPDATE user SET
+    email = ?,
+    hashed_password = ?,
+    display_name = ?,
+    role = ?,
+    preferences = ?,
+    updated_at = ?
+WHERE id = ?;
+
+softDelete:
+UPDATE user SET deleted_at = ?, updated_at = ? WHERE id = ?;
+
+emailExists:
+SELECT COUNT(*) FROM user WHERE email = ? AND deleted_at IS NULL;

@@ -11,7 +11,13 @@ class ApplicationTest {
     fun testRoot() =
         testApplication {
             application {
-                module()
+                // Skip database setup for basic routing test
+                // Use moduleWithoutDatabase() for tests that don't need DB
+                configureSerialization()
+                configureSecurity()
+                configureMonitoring()
+                configureHTTP()
+                configureRouting()
             }
             client.get("/").apply {
                 assertEquals(HttpStatusCode.OK, status)

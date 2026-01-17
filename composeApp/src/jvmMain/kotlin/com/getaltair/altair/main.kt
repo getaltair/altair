@@ -2,19 +2,26 @@ package com.getaltair.altair
 
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
+import com.getaltair.altair.db.DesktopMigrationRunner
+import com.getaltair.altair.db.EmbeddedSurrealClient
+import com.getaltair.altair.db.desktopDatabaseModule
 import com.getaltair.altair.di.initKoin
 import com.getaltair.altair.ui.ErrorScreen
+import kotlinx.coroutines.runBlocking
+import org.koin.core.context.GlobalContext
 import org.koin.core.error.KoinApplicationAlreadyStartedException
 
 /**
  * Desktop application entry point.
- * Initializes Koin and displays the main application window with error handling.
+ * Initializes Koin, database, and displays the main application window with error handling.
  */
 fun main() {
     var startupError: Throwable? = null
 
     try {
-        initKoin()
+        initKoin {
+            modules(desktopDatabaseModule)
+        }
     } catch (e: KoinApplicationAlreadyStartedException) {
         // Koin already started - this is recoverable, log and continue
         System.err.println("Koin already initialized: ${e.message}")
@@ -24,9 +31,49 @@ fun main() {
         startupError = e
     }
 
+    // Initialize database connection and run migrations
+    if (startupError == null) {
+        try {
+            val koin = GlobalContext.get()
+            val dbClient = koin.get<EmbeddedSurrealClient>()
+            val migrationRunner = koin.get<DesktopMigrationRunner>()
+
+            runBlocking {
+                val connectResult = dbClient.connect()
+                connectResult.fold(
+                    ifLeft = { error ->
+                        throw IllegalStateException("Failed to connect to database: ${error.toUserMessage()}")
+                    },
+                    ifRight = {
+                        migrationRunner.runMigrations().fold(
+                            ifLeft = { error: Throwable ->
+                                throw IllegalStateException("Failed to run database migrations: ${error.message}")
+                            },
+                            ifRight = { /* success */ },
+                        )
+                    },
+                )
+            }
+        } catch (e: Exception) {
+            System.err.println("Database initialization failed: ${e.message}")
+            startupError = e
+        }
+    }
+
     application {
         Window(
-            onCloseRequest = ::exitApplication,
+            onCloseRequest = {
+                // Close database connection on shutdown
+                try {
+                    val koin = GlobalContext.getOrNull()
+                    koin?.getOrNull<EmbeddedSurrealClient>()?.let { dbClient ->
+                        runBlocking { dbClient.close() }
+                    }
+                } catch (e: Exception) {
+                    System.err.println("Error closing database: ${e.message}")
+                }
+                exitApplication()
+            },
             title = if (startupError != null) "Altair - Error" else "Altair",
         ) {
             if (startupError != null) {

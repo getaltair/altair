@@ -1,0 +1,92 @@
+-- Item table schema
+-- Physical items being tracked
+
+CREATE TABLE IF NOT EXISTS item (
+    id TEXT NOT NULL PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    description TEXT,
+    template_id TEXT,
+    location_id TEXT,
+    container_id TEXT,
+    quantity INTEGER NOT NULL DEFAULT 1,
+    photo_attachment_id TEXT,
+    initiative_id TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    deleted_at TEXT,
+    FOREIGN KEY (user_id) REFERENCES user(id),
+    FOREIGN KEY (template_id) REFERENCES item_template(id),
+    FOREIGN KEY (location_id) REFERENCES location(id),
+    FOREIGN KEY (container_id) REFERENCES container(id),
+    FOREIGN KEY (photo_attachment_id) REFERENCES attachment(id),
+    FOREIGN KEY (initiative_id) REFERENCES initiative(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_item_user_id ON item(user_id);
+CREATE INDEX IF NOT EXISTS idx_item_template_id ON item(template_id);
+CREATE INDEX IF NOT EXISTS idx_item_location_id ON item(location_id);
+CREATE INDEX IF NOT EXISTS idx_item_container_id ON item(container_id);
+CREATE INDEX IF NOT EXISTS idx_item_initiative_id ON item(initiative_id);
+CREATE INDEX IF NOT EXISTS idx_item_deleted_at ON item(deleted_at);
+
+-- Queries
+
+findById:
+SELECT * FROM item WHERE id = ? AND user_id = ? AND deleted_at IS NULL;
+
+findAll:
+SELECT * FROM item WHERE user_id = ? AND deleted_at IS NULL ORDER BY name;
+
+findByLocation:
+SELECT * FROM item WHERE user_id = ? AND location_id = ? AND deleted_at IS NULL ORDER BY name;
+
+findByContainer:
+SELECT * FROM item WHERE user_id = ? AND container_id = ? AND deleted_at IS NULL ORDER BY name;
+
+findByTemplate:
+SELECT * FROM item WHERE user_id = ? AND template_id = ? AND deleted_at IS NULL ORDER BY name;
+
+findByInitiative:
+SELECT * FROM item WHERE user_id = ? AND initiative_id = ? AND deleted_at IS NULL ORDER BY name;
+
+findUnplaced:
+SELECT * FROM item WHERE user_id = ? AND location_id IS NULL AND container_id IS NULL AND deleted_at IS NULL ORDER BY name;
+
+insert:
+INSERT INTO item (id, user_id, name, description, template_id, location_id, container_id, quantity, photo_attachment_id, initiative_id, created_at, updated_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+update:
+UPDATE item SET
+    name = ?,
+    description = ?,
+    template_id = ?,
+    location_id = ?,
+    container_id = ?,
+    quantity = ?,
+    photo_attachment_id = ?,
+    initiative_id = ?,
+    updated_at = ?
+WHERE id = ? AND user_id = ?;
+
+softDelete:
+UPDATE item SET deleted_at = ?, updated_at = ? WHERE id = ? AND user_id = ?;
+
+moveToLocation:
+UPDATE item SET location_id = ?, container_id = NULL, updated_at = ? WHERE id = ? AND user_id = ?;
+
+moveToContainer:
+UPDATE item SET container_id = ?, updated_at = ? WHERE id = ? AND user_id = ?;
+
+updateQuantity:
+UPDATE item SET quantity = ?, updated_at = ? WHERE id = ? AND user_id = ?;
+
+searchByName:
+SELECT * FROM item WHERE user_id = ? AND LOWER(name) LIKE '%' || LOWER(?) || '%' AND deleted_at IS NULL ORDER BY name;
+
+searchByNamePaged:
+SELECT * FROM item WHERE user_id = ? AND LOWER(name) LIKE '%' || LOWER(?) || '%' AND deleted_at IS NULL ORDER BY name LIMIT ? OFFSET ?;
+
+countSearchResults:
+SELECT COUNT(*) FROM item WHERE user_id = ? AND LOWER(name) LIKE '%' || LOWER(?) || '%' AND deleted_at IS NULL;

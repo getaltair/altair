@@ -104,7 +104,6 @@ sealed interface AuthError : DomainError {
     @Serializable
     @SerialName("auth_email_already_exists")
     data object EmailAlreadyExists : AuthError {
-        override fun toUserMessage(): String =
-            "An account with this email already exists. Please sign in or use a different email."
+        override fun toUserMessage(): String = "An account with this email already exists. Please sign in or use a different email."
     }
 }

@@ -1,0 +1,77 @@
+-- Routine table schema
+-- Recurring tasks with flexible scheduling
+
+CREATE TABLE IF NOT EXISTS routine (
+    id TEXT NOT NULL PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    description TEXT,
+    schedule_type TEXT NOT NULL,
+    schedule_config TEXT NOT NULL,
+    time_of_day TEXT,
+    duration_minutes INTEGER,
+    initiative_id TEXT,
+    energy_level TEXT NOT NULL DEFAULT 'medium',
+    is_active INTEGER NOT NULL DEFAULT 1,
+    last_completed_at TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    deleted_at TEXT,
+    FOREIGN KEY (user_id) REFERENCES user(id),
+    FOREIGN KEY (initiative_id) REFERENCES initiative(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_routine_user_id ON routine(user_id);
+CREATE INDEX IF NOT EXISTS idx_routine_initiative_id ON routine(initiative_id);
+CREATE INDEX IF NOT EXISTS idx_routine_is_active ON routine(is_active);
+CREATE INDEX IF NOT EXISTS idx_routine_deleted_at ON routine(deleted_at);
+
+-- Queries
+
+findById:
+SELECT * FROM routine WHERE id = ? AND user_id = ? AND deleted_at IS NULL;
+
+findAll:
+SELECT * FROM routine WHERE user_id = ? AND deleted_at IS NULL ORDER BY name;
+
+findActive:
+SELECT * FROM routine WHERE user_id = ? AND is_active = 1 AND deleted_at IS NULL ORDER BY name;
+
+findByInitiative:
+SELECT * FROM routine WHERE user_id = ? AND initiative_id = ? AND deleted_at IS NULL ORDER BY name;
+
+findByScheduleType:
+SELECT * FROM routine WHERE user_id = ? AND schedule_type = ? AND is_active = 1 AND deleted_at IS NULL ORDER BY name;
+
+findByEnergyLevel:
+SELECT * FROM routine WHERE user_id = ? AND energy_level = ? AND is_active = 1 AND deleted_at IS NULL ORDER BY name;
+
+insert:
+INSERT INTO routine (id, user_id, name, description, schedule_type, schedule_config, time_of_day, duration_minutes, initiative_id, energy_level, is_active, created_at, updated_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+update:
+UPDATE routine SET
+    name = ?,
+    description = ?,
+    schedule_type = ?,
+    schedule_config = ?,
+    time_of_day = ?,
+    duration_minutes = ?,
+    initiative_id = ?,
+    energy_level = ?,
+    is_active = ?,
+    updated_at = ?
+WHERE id = ? AND user_id = ?;
+
+softDelete:
+UPDATE routine SET deleted_at = ?, updated_at = ? WHERE id = ? AND user_id = ?;
+
+markCompleted:
+UPDATE routine SET last_completed_at = ?, updated_at = ? WHERE id = ? AND user_id = ?;
+
+setActive:
+UPDATE routine SET is_active = ?, updated_at = ? WHERE id = ? AND user_id = ?;
+
+findDueToday:
+SELECT * FROM routine WHERE user_id = ? AND is_active = 1 AND deleted_at IS NULL;

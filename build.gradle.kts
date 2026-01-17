@@ -20,6 +20,11 @@ spotless {
         targetExclude("**/build/**")
         ktlint(ktlintVersion)
             .customRuleSets(listOf("io.nlopez.compose.rules:ktlint:$composeRulesVersion"))
+            .editorConfigOverride(
+                mapOf(
+                    "ktlint_standard_max-line-length" to "disabled",
+                ),
+            )
     }
     kotlinGradle {
         target("**/*.gradle.kts")

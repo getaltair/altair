@@ -65,8 +65,7 @@ sealed interface UserError : DomainError {
         val currentUsage: Long,
         val quota: Long,
     ) : UserError {
-        override fun toUserMessage(): String =
-            "You have exceeded your storage quota. Please free up space or upgrade your plan."
+        override fun toUserMessage(): String = "You have exceeded your storage quota. Please free up space or upgrade your plan."
     }
 
     /**
