@@ -47,7 +47,7 @@ class SurrealAttachmentRepository(
                         note_id: ${entity.noteId?.let { "note:${it.value}" } ?: "NONE"},
                         inbox_item_id: ${entity.inboxItemId?.let { "inbox_item:${it.value}" } ?: "NONE"},
                         filename: '${entity.filename.replace("'", "''")}',
-                        mime_type: '${entity.mimeType}',
+                        mime_type: '${entity.mimeType.replace("'", "''")}',
                         size_bytes: ${entity.sizeBytes},
                         storage_path: '${entity.storagePath.replace("'", "''")}'
                     };
@@ -131,9 +131,10 @@ class SurrealAttachmentRepository(
 
     override fun findByMimeType(mimeTypePrefix: String): Flow<List<Attachment>> =
         flow {
+            val escapedPrefix = mimeTypePrefix.replace("'", "''")
             val result =
                 db.query<Any>(
-                    "SELECT * FROM attachment WHERE user_id = user:${userId.value} AND string::startsWith(mime_type, '$mimeTypePrefix') AND deleted_at IS NONE",
+                    "SELECT * FROM attachment WHERE user_id = user:${userId.value} AND string::startsWith(mime_type, '$escapedPrefix') AND deleted_at IS NONE",
                 )
             emit(result.fold({ emptyList() }, { parseAttachments(it) }))
         }

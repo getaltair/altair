@@ -126,13 +126,13 @@ class SurrealInitiativeRepository(
                     .query<Any>(
                         """
                         SELECT count() as total FROM (
-                            SELECT id FROM quest WHERE initiative_id = initiative:${id.value} AND deleted_at IS NONE
+                            SELECT id FROM quest WHERE user_id = user:${userId.value} AND initiative_id = initiative:${id.value} AND deleted_at IS NONE
                             UNION ALL
-                            SELECT id FROM epic WHERE initiative_id = initiative:${id.value} AND deleted_at IS NONE
+                            SELECT id FROM epic WHERE user_id = user:${userId.value} AND initiative_id = initiative:${id.value} AND deleted_at IS NONE
                             UNION ALL
-                            SELECT id FROM note WHERE initiative_id = initiative:${id.value} AND deleted_at IS NONE
+                            SELECT id FROM note WHERE user_id = user:${userId.value} AND initiative_id = initiative:${id.value} AND deleted_at IS NONE
                             UNION ALL
-                            SELECT id FROM item WHERE initiative_id = initiative:${id.value} AND deleted_at IS NONE
+                            SELECT id FROM item WHERE user_id = user:${userId.value} AND initiative_id = initiative:${id.value} AND deleted_at IS NONE
                         ) GROUP ALL;
                         """.trimIndent(),
                     ).bind()
