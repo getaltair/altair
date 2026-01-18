@@ -129,9 +129,12 @@ private class FakeTokenStorage : SecureTokenStorage {
 }
 
 private class FakePublicAuthService : PublicAuthService {
-    override suspend fun login(request: AuthRequest): AuthResponse = throw NotImplementedError("Not used in navigation tests")
+    override suspend fun login(request: AuthRequest): AuthResponse =
+        throw NotImplementedError("Not used in navigation tests")
 
-    override suspend fun refresh(refreshToken: String): TokenRefreshResponse = throw NotImplementedError("Not used in navigation tests")
+    override suspend fun refresh(refreshToken: String): TokenRefreshResponse =
+        throw NotImplementedError("Not used in navigation tests")
 
-    override suspend fun register(request: RegisterRequest): AuthResponse = throw NotImplementedError("Not used in navigation tests")
+    override suspend fun register(request: RegisterRequest): AuthResponse =
+        throw NotImplementedError("Not used in navigation tests")
 }
