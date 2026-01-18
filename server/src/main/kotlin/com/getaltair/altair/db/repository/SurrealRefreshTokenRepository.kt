@@ -63,13 +63,14 @@ class SurrealRefreshTokenRepository(
             parseRefreshToken(result) ?: raise(AuthError.TokenInvalid("Refresh token not found"))
         }
 
-    override suspend fun revoke(id: Ulid): Either<AuthError, Unit> =
+    override suspend fun revoke(id: Ulid, userId: Ulid): Either<AuthError, Unit> =
         either {
             db
                 .execute(
                     """
                     UPDATE refresh_token:${id.value} SET
-                        revoked_at = time::now();
+                        revoked_at = time::now()
+                    WHERE user_id = user:${userId.value};
                     """.trimIndent(),
                 ).mapLeft { AuthError.TokenInvalid("Failed to revoke refresh token") }
                 .bind()

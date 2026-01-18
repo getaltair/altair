@@ -112,7 +112,7 @@ class PublicAuthServiceImpl(
         }
 
         // Revoke the old refresh token (rotation)
-        refreshTokenRepository.revoke(storedToken.id).fold(
+        refreshTokenRepository.revoke(storedToken.id, storedToken.userId).fold(
             ifLeft = { error ->
                 logger.warn("Failed to revoke old refresh token {}: {}", storedToken.id.value, error)
                 // Continue with refresh - security is degraded but user shouldn't be blocked

@@ -14,6 +14,7 @@ import com.getaltair.altair.service.auth.PasswordService
 import com.getaltair.auth.JwtConfig
 import kotlinx.datetime.Instant
 import org.slf4j.LoggerFactory
+import java.security.SecureRandom
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.days
 
@@ -124,8 +125,9 @@ class AuthServiceImpl(
 
     private fun generateSecureCode(): String {
         val chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789" // Exclude ambiguous characters
+        val secureRandom = SecureRandom()
         return (1..INVITE_CODE_LENGTH)
-            .map { chars.random() }
+            .map { chars[secureRandom.nextInt(chars.length)] }
             .joinToString("")
     }
 
