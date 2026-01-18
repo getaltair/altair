@@ -33,7 +33,7 @@ class SurrealCheckpointRepository(
             val result =
                 db
                     .query<Any>(
-                        "SELECT * FROM checkpoint:${id.value} WHERE user_id = user:${userId.value}",
+                        "SELECT * FROM checkpoint WHERE id = checkpoint:${id.value} AND user_id = user:${userId.value}",
                     ).bind()
             parseCheckpoint(result) ?: raise(DomainError.NotFoundError("Checkpoint", id.value))
         }

@@ -35,7 +35,7 @@ class SurrealEpicRepository(
             val result =
                 db
                     .query<Any>(
-                        "SELECT * FROM epic:${id.value} WHERE user_id = user:${userId.value} AND deleted_at IS NONE",
+                        "SELECT * FROM epic WHERE id = epic:${id.value} AND user_id = user:${userId.value} AND deleted_at IS NONE",
                     ).mapLeft { EpicError.NotFound(id) }
                     .bind()
             parseEpic(result) ?: raise(EpicError.NotFound(id))

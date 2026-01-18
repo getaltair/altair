@@ -34,7 +34,7 @@ class SurrealLocationRepository(
             val result =
                 db
                     .query<Any>(
-                        "SELECT * FROM location:${id.value} WHERE user_id = user:${userId.value} AND deleted_at IS NONE",
+                        "SELECT * FROM location WHERE id = location:${id.value} AND user_id = user:${userId.value} AND deleted_at IS NONE",
                     ).bind()
             parseLocation(result) ?: raise(DomainError.NotFoundError("Location", id.value))
         }

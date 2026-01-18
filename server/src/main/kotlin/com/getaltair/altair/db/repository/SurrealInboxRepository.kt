@@ -39,7 +39,7 @@ class SurrealInboxRepository(
             val result =
                 db
                     .query<Any>(
-                        "SELECT * FROM inbox_item:${id.value} WHERE user_id = user:${userId.value}",
+                        "SELECT * FROM inbox_item WHERE id = inbox_item:${id.value} AND user_id = user:${userId.value}",
                     ).bind()
             parseInboxItem(result) ?: raise(DomainError.NotFoundError("InboxItem", id.value))
         }

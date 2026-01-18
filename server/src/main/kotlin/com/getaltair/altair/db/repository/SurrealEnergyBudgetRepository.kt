@@ -40,7 +40,7 @@ class SurrealEnergyBudgetRepository(
             val result =
                 db
                     .query<Any>(
-                        "SELECT * FROM energy_budget:${id.value} WHERE user_id = user:${userId.value}",
+                        "SELECT * FROM energy_budget WHERE id = energy_budget:${id.value} AND user_id = user:${userId.value}",
                     ).bind()
             parseBudget(result) ?: raise(DomainError.NotFoundError("EnergyBudget", id.value))
         }

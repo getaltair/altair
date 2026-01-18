@@ -35,7 +35,7 @@ class SurrealTagRepository(
             val result =
                 db
                     .query<Any>(
-                        "SELECT * FROM tag:${id.value} WHERE user_id = user:${userId.value} AND deleted_at IS NONE",
+                        "SELECT * FROM tag WHERE id = tag:${id.value} AND user_id = user:${userId.value} AND deleted_at IS NONE",
                     ).bind()
             parseTag(result) ?: raise(DomainError.NotFoundError("Tag", id.value))
         }

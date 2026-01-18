@@ -33,7 +33,7 @@ class SurrealNoteLinkRepository(
             val result =
                 db
                     .query<Any>(
-                        "SELECT * FROM note_link:${id.value} WHERE user_id = user:${userId.value}",
+                        "SELECT * FROM note_link WHERE id = note_link:${id.value} AND user_id = user:${userId.value}",
                     ).mapLeft { NoteError.NotFound(id) }
                     .bind()
             parseNoteLink(result) ?: raise(NoteError.NotFound(id))

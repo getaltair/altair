@@ -29,7 +29,7 @@ class SurrealInitiativeRepository(
             val result =
                 db
                     .query<Any>(
-                        "SELECT * FROM initiative:${id.value} WHERE user_id = user:${userId.value} AND deleted_at IS NONE",
+                        "SELECT * FROM initiative WHERE id = initiative:${id.value} AND user_id = user:${userId.value} AND deleted_at IS NONE",
                     ).bind()
 
             parseInitiative(result) ?: raise(DomainError.NotFoundError("Initiative", id.value))

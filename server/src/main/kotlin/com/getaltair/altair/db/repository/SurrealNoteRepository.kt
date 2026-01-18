@@ -35,7 +35,7 @@ class SurrealNoteRepository(
             val result =
                 db
                     .query<Any>(
-                        "SELECT * FROM note:${id.value} WHERE user_id = user:${userId.value} AND deleted_at IS NONE",
+                        "SELECT * FROM note WHERE id = note:${id.value} AND user_id = user:${userId.value} AND deleted_at IS NONE",
                     ).mapLeft { NoteError.NotFound(id) }
                     .bind()
             parseNote(result) ?: raise(NoteError.NotFound(id))
