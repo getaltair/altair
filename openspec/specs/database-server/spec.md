@@ -71,6 +71,13 @@ The server SHALL implement all repository interfaces using SurrealDB queries.
 - **AND** the original exception is logged
 - **AND** sensitive details are not exposed to callers
 
+#### Scenario: Query by ID with user scope
+
+- **WHEN** findById is called with a record ID
+- **THEN** the query uses table query pattern with ID filter: `SELECT * FROM table WHERE id = table:id AND user_id = ...`
+- **AND** the query does NOT use direct record access with WHERE clause: `SELECT * FROM table:id WHERE ...`
+- **BECAUSE** SurrealDB direct record access cannot be combined with WHERE clause filtering
+
 ### Requirement: Server Database Configuration
 
 The server SHALL support configurable database settings via environment variables.
