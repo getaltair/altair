@@ -39,6 +39,18 @@ sealed interface AuthError : DomainError {
     }
 
     /**
+     * The user's session has expired or is no longer valid.
+     *
+     * Use this when the expiration timestamp is unknown or unavailable (e.g., missing refresh token).
+     * For cases where the expiration time is known, use [TokenExpired] instead.
+     */
+    @Serializable
+    @SerialName("auth_session_expired")
+    data object SessionExpired : AuthError {
+        override fun toUserMessage(): String = "Your session has expired. Please sign in again."
+    }
+
+    /**
      * The authentication token is malformed or has an invalid signature.
      *
      * **IMPORTANT**: The [reason] property contains technical details that are intentionally
@@ -153,5 +165,39 @@ sealed interface AuthError : DomainError {
         val reason: String,
     ) : AuthError {
         override fun toUserMessage(): String = "Registration failed. Please try again later."
+    }
+
+    /**
+     * Network or connectivity error during authentication.
+     *
+     * @property message Technical description of the network error
+     */
+    @Serializable
+    @SerialName("auth_network_failure")
+    data class NetworkFailure(
+        val message: String,
+    ) : AuthError {
+        init {
+            require(message.isNotBlank()) { "Message must not be blank" }
+        }
+
+        override fun toUserMessage(): String = "Unable to connect. Please check your internet connection and try again."
+    }
+
+    /**
+     * Server returned an unexpected error during authentication.
+     *
+     * @property message Technical description of the server error
+     */
+    @Serializable
+    @SerialName("auth_server_error")
+    data class ServerError(
+        val message: String,
+    ) : AuthError {
+        init {
+            require(message.isNotBlank()) { "Message must not be blank" }
+        }
+
+        override fun toUserMessage(): String = "The server encountered an error. Please try again later."
     }
 }

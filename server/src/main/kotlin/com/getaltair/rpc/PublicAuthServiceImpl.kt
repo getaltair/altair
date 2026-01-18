@@ -112,7 +112,13 @@ class PublicAuthServiceImpl(
         }
 
         // Revoke the old refresh token (rotation)
-        refreshTokenRepository.revoke(storedToken.id)
+        refreshTokenRepository.revoke(storedToken.id).fold(
+            ifLeft = { error ->
+                logger.warn("Failed to revoke old refresh token {}: {}", storedToken.id.value, error)
+                // Continue with refresh - security is degraded but user shouldn't be blocked
+            },
+            ifRight = { logger.debug("Old refresh token {} revoked", storedToken.id.value) },
+        )
 
         // Get user info for new access token
         val user =
@@ -126,19 +132,23 @@ class PublicAuthServiceImpl(
                     ifRight = { it },
                 )
 
-        // Generate new access token
-        val (newAccessToken, expiresIn) =
-            jwtTokenService.generateAccessToken(
+        // Generate new tokens (rotation: new access + new refresh token)
+        val tokenPair =
+            jwtTokenService.generateTokens(
                 userId = user.id,
                 email = user.email,
                 role = user.role.name.lowercase(),
             )
 
+        // Store new refresh token
+        storeRefreshToken(user.id, tokenPair.refreshToken, storedToken.deviceName)
+
         logger.debug("Token refresh successful for user: {}", user.id.value)
 
         return TokenRefreshResponse(
-            accessToken = newAccessToken,
-            expiresIn = expiresIn,
+            accessToken = tokenPair.accessToken,
+            refreshToken = tokenPair.refreshToken,
+            expiresIn = tokenPair.accessTokenExpiresIn,
         )
     }
 
@@ -163,7 +173,13 @@ class PublicAuthServiceImpl(
     private suspend fun checkIsFirstUser(): Boolean =
         userRepository
             .countActive()
-            .fold(ifLeft = { false }, ifRight = { it == 0 })
+            .fold(
+                ifLeft = { error ->
+                    logger.warn("Failed to check user count, assuming not first user: {}", error)
+                    false
+                },
+                ifRight = { it == 0 },
+            )
 
     @Suppress("ThrowsCount") // Validation function with multiple failure conditions
     private suspend fun validateInviteCodeIfRequired(
@@ -193,11 +209,18 @@ class PublicAuthServiceImpl(
     }
 
     private suspend fun validateEmailAvailable(email: String) {
-        val emailAvailable = userRepository.isEmailAvailable(email).fold(ifLeft = { false }, ifRight = { it })
-        if (!emailAvailable) {
-            logger.warn("Registration failed: email already exists")
-            throw IllegalArgumentException("Email is already registered")
-        }
+        userRepository.isEmailAvailable(email).fold(
+            ifLeft = { error ->
+                logger.error("Failed to check email availability: {}", error)
+                throw IllegalStateException("Unable to verify email availability. Please try again.")
+            },
+            ifRight = { isAvailable ->
+                if (!isAvailable) {
+                    logger.warn("Registration failed: email already exists")
+                    throw IllegalArgumentException("Email is already registered")
+                }
+            },
+        )
     }
 
     private suspend fun createUser(
@@ -238,7 +261,13 @@ class PublicAuthServiceImpl(
         if (!isFirstUser && !inviteCode.isNullOrBlank()) {
             val invite = inviteCodeRepository.findByCode(inviteCode).getOrNull()
             if (invite != null) {
-                inviteCodeRepository.markUsed(invite.id, userId)
+                inviteCodeRepository.markUsed(invite.id, userId).fold(
+                    ifLeft = { error ->
+                        logger.warn("Failed to mark invite code as used: {}", error)
+                        // Continue registration - code validation already passed
+                    },
+                    ifRight = { logger.debug("Invite code {} marked as used by {}", inviteCode, userId.value) },
+                )
             }
         }
     }
@@ -294,7 +323,10 @@ class PublicAuthServiceImpl(
         refreshTokenRepository
             .create(token)
             .fold(
-                ifLeft = { logger.error("Failed to store refresh token") },
+                ifLeft = { error ->
+                    logger.error("Failed to store refresh token for user {}: {}", userId.value, error)
+                    throw IllegalStateException("Failed to establish session. Please try again.")
+                },
                 ifRight = { logger.debug("Refresh token stored for user: {}", userId.value) },
             )
     }

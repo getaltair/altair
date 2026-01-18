@@ -122,4 +122,78 @@ class JwtTokenServiceImplTest {
         assertTrue(!token.contains('+'))
         assertTrue(!token.contains('/'))
     }
+
+    @Test
+    fun `validateAccessToken rejects token signed with different secret`() {
+        val attackerConfig =
+            JwtConfig(
+                secret = "attacker-secret-that-is-32-characters-long",
+                issuer = config.issuer, // Same issuer
+                audience = config.audience, // Same audience
+            )
+        val attackerService = JwtTokenServiceImpl(attackerConfig)
+
+        val userId = Ulid.generate()
+        val tokenPair = attackerService.generateTokens(userId, "test@example.com", "admin")
+
+        // Try to validate attacker's token with our service
+        val result = tokenService.validateAccessToken(tokenPair.accessToken)
+
+        assertTrue(result.isLeft())
+        result.onLeft { error ->
+            assertIs<AuthError.TokenInvalid>(error)
+        }
+    }
+
+    @Test
+    fun `validateAccessToken rejects token with wrong audience`() {
+        val wrongAudienceConfig =
+            JwtConfig(
+                secret = config.secret, // Same secret
+                issuer = config.issuer, // Same issuer
+                audience = "wrong-audience",
+            )
+        val wrongAudienceService = JwtTokenServiceImpl(wrongAudienceConfig)
+
+        val userId = Ulid.generate()
+        val tokenPair = wrongAudienceService.generateTokens(userId, "test@example.com", "member")
+
+        val result = tokenService.validateAccessToken(tokenPair.accessToken)
+
+        assertTrue(result.isLeft())
+        result.onLeft { error ->
+            assertIs<AuthError.TokenInvalid>(error)
+        }
+    }
+
+    @Test
+    fun `validateAccessToken rejects tampered token`() {
+        val userId = Ulid.generate()
+        val tokenPair = tokenService.generateTokens(userId, "test@example.com", "member")
+
+        // Tamper with the token (flip a character in the signature)
+        val tamperedToken =
+            tokenPair.accessToken.let { token ->
+                val parts = token.split(".")
+                if (parts.size == 3) {
+                    val signature = parts[2]
+                    val tamperedSignature =
+                        if (signature.first() == 'a') {
+                            "b${signature.drop(1)}"
+                        } else {
+                            "a${signature.drop(1)}"
+                        }
+                    "${parts[0]}.${parts[1]}.$tamperedSignature"
+                } else {
+                    token
+                }
+            }
+
+        val result = tokenService.validateAccessToken(tamperedToken)
+
+        assertTrue(result.isLeft())
+        result.onLeft { error ->
+            assertIs<AuthError.TokenInvalid>(error)
+        }
+    }
 }

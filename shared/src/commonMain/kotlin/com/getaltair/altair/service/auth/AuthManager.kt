@@ -102,16 +102,20 @@ class AuthManager(
     ): Either<AuthError, String> {
         _authState.value = AuthState.Loading
 
-        @Suppress("TooGenericExceptionCaught", "SwallowedException") // RPC calls can throw various exceptions
+        @Suppress("TooGenericExceptionCaught") // RPC calls can throw various exceptions
         return try {
             val response = publicAuthService.login(AuthRequest(email, password))
             storeTokens(response)
             _authState.value = AuthState.Authenticated(response.userId)
             startTokenRefreshTimer()
             response.userId.right()
-        } catch (e: Exception) {
+        } catch (e: IllegalArgumentException) {
+            // Server validation errors (invalid credentials, account not active)
             _authState.value = AuthState.Unauthenticated
             AuthError.InvalidCredentials.left()
+        } catch (e: Exception) {
+            _authState.value = AuthState.Unauthenticated
+            mapExceptionToAuthError(e).left()
         }
     }
 
@@ -147,9 +151,13 @@ class AuthManager(
             _authState.value = AuthState.Authenticated(response.userId)
             startTokenRefreshTimer()
             response.userId.right()
-        } catch (e: Exception) {
+        } catch (e: IllegalArgumentException) {
+            // Server validation errors
             _authState.value = AuthState.Unauthenticated
             mapRegistrationError(e).left()
+        } catch (e: Exception) {
+            _authState.value = AuthState.Unauthenticated
+            mapExceptionToAuthError(e).left()
         }
     }
 
@@ -188,24 +196,25 @@ class AuthManager(
         refreshMutex.withLock {
             val refreshToken =
                 tokenStorage.getRefreshToken()
-                    ?: return AuthError.TokenExpired(0L).left()
+                    ?: return AuthError.SessionExpired.left()
 
-            @Suppress("TooGenericExceptionCaught", "SwallowedException") // RPC can throw various exceptions
+            @Suppress("TooGenericExceptionCaught") // RPC can throw various exceptions
             return try {
                 val response = publicAuthService.refresh(refreshToken)
 
-                // Store new access token (refresh token is not rotated by server for refresh calls)
+                // Store new tokens (server uses token rotation - new refresh token each time)
                 val expiresAtMillis =
                     Clock.System.now().toEpochMilliseconds() +
                         response.expiresIn * MILLIS_PER_SECOND
                 tokenStorage.saveAccessToken(response.accessToken)
+                tokenStorage.saveRefreshToken(response.refreshToken)
                 tokenStorage.saveTokenExpiration(expiresAtMillis)
 
                 Unit.right()
             } catch (e: Exception) {
                 // Refresh failed, user needs to re-login
                 logout()
-                AuthError.TokenExpired(0L).left()
+                AuthError.SessionExpired.left()
             }
         }
 
@@ -262,7 +271,31 @@ class AuthManager(
             message.contains("already registered", ignoreCase = true) -> AuthError.EmailAlreadyExists
             message.contains("invite code", ignoreCase = true) -> AuthError.InvalidInviteCode
             message.contains("password", ignoreCase = true) -> AuthError.WeakPassword
-            else -> AuthError.RegistrationFailed(message)
+            else -> AuthError.RegistrationFailed(message.ifBlank { "Unknown registration error" })
+        }
+    }
+
+    private fun mapExceptionToAuthError(e: Exception): AuthError {
+        val message = e.message ?: ""
+        return when {
+            // Network-related errors
+            e::class.simpleName?.contains("IOException") == true ||
+                e::class.simpleName?.contains("ConnectException") == true ||
+                e::class.simpleName?.contains("SocketException") == true ||
+                e::class.simpleName?.contains("TimeoutException") == true ||
+                message.contains("connect", ignoreCase = true) ||
+                message.contains("timeout", ignoreCase = true) ||
+                message.contains("network", ignoreCase = true) ->
+                AuthError.NetworkFailure(message.ifBlank { "Connection failed" })
+
+            // Server errors
+            message.contains("500", ignoreCase = true) ||
+                message.contains("503", ignoreCase = true) ||
+                message.contains("server error", ignoreCase = true) ->
+                AuthError.ServerError(message.ifBlank { "Server error" })
+
+            // Default to server error for unknown exceptions
+            else -> AuthError.ServerError(message.ifBlank { "Unknown error occurred" })
         }
     }
 

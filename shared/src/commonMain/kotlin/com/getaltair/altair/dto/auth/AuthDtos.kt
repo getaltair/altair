@@ -38,11 +38,15 @@ data class TokenRefreshRequest(
 )
 
 /**
- * Response containing a new access token.
+ * Response containing new access and refresh tokens.
+ *
+ * Implements refresh token rotation: each refresh invalidates the old
+ * refresh token and issues a new one to prevent token replay attacks.
  */
 @Serializable
 data class TokenRefreshResponse(
     val accessToken: String,
+    val refreshToken: String,
     val expiresIn: Long,
 )
 

@@ -59,6 +59,7 @@ private class StubPublicAuthService : PublicAuthService {
     override suspend fun refresh(refreshToken: String) =
         TokenRefreshResponse(
             accessToken = "test-refreshed-token",
+            refreshToken = "test-new-refresh-token",
             expiresIn = 3600,
         )
 
@@ -172,7 +173,7 @@ class RpcIntegrationTest {
         }
 
     @Test
-    fun `PublicAuthService refresh returns new token`() =
+    fun `PublicAuthService refresh returns new tokens with rotation`() =
         testApplication {
             application { configureTestRpc() }
 
@@ -182,6 +183,7 @@ class RpcIntegrationTest {
             val response = authService.refresh("some-refresh-token")
 
             assertNotNull(response.accessToken)
+            assertNotNull(response.refreshToken)
             assertTrue(response.expiresIn > 0)
         }
 
