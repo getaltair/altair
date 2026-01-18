@@ -26,7 +26,7 @@ import kotlin.time.Clock
 class SurrealNoteRepositoryTest {
     private lateinit var dbClient: SurrealDbClient
     private lateinit var repository: SurrealNoteRepository
-    private val testUserId = Ulid("01TESTACCT0000000000000000")
+    private val testUserId = Ulid("01TESTACCT00000000000000")
 
     @BeforeAll
     fun setupContainer() {
@@ -341,7 +341,7 @@ class SurrealNoteRepositoryTest {
             repository.save(note)
 
             // Create second user and their repository
-            val otherUserId = Ulid("0100HERACCT000000000000000")
+            val otherUserId = Ulid("01OTHERACCT0000000000000")
             dbClient.execute(
                 "CREATE user:${otherUserId.value} CONTENT { " +
                     "email: 'other@test.com', display_name: 'Other User', " +
@@ -366,7 +366,7 @@ class SurrealNoteRepositoryTest {
             repository.save(createTestNote(title = "User1 Note 2"))
 
             // Create second user and their notes
-            val otherUserId = Ulid("0100HERACCT000000000000000")
+            val otherUserId = Ulid("01OTHERACCT0000000000000")
             dbClient.execute(
                 "CREATE user:${otherUserId.value} CONTENT { " +
                     "email: 'other@test.com', display_name: 'Other User', " +
@@ -408,7 +408,7 @@ class SurrealNoteRepositoryTest {
             repository.save(note)
 
             // Create second user
-            val otherUserId = Ulid("0100HERACCT000000000000000")
+            val otherUserId = Ulid("01OTHERACCT0000000000000")
             dbClient.execute(
                 "CREATE user:${otherUserId.value} CONTENT { " +
                     "email: 'other@test.com', display_name: 'Other User', " +
@@ -432,7 +432,7 @@ class SurrealNoteRepositoryTest {
             repository.save(createTestNote(title = "Searchable Meeting Notes", content = "Important meeting"))
 
             // Create second user with similar note
-            val otherUserId = Ulid("0100HERACCT000000000000000")
+            val otherUserId = Ulid("01OTHERACCT0000000000000")
             dbClient.execute(
                 "CREATE user:${otherUserId.value} CONTENT { " +
                     "email: 'other@test.com', display_name: 'Other User', " +

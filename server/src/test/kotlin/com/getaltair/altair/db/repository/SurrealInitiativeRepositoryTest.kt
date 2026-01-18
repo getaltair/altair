@@ -24,7 +24,7 @@ import kotlin.time.Clock
 class SurrealInitiativeRepositoryTest {
     private lateinit var dbClient: SurrealDbClient
     private lateinit var repository: SurrealInitiativeRepository
-    private val testUserId = Ulid("01TESTACCT0000000000000000")
+    private val testUserId = Ulid("01TESTACCT00000000000000")
 
     @BeforeAll
     fun setupContainer() {
