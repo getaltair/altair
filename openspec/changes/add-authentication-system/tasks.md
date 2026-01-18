@@ -34,14 +34,14 @@
 - [x] 2.2.2 Create `RefreshTokenRepository` interface
 - [x] 2.2.3 Create migration for `refresh_token` table (V2__authentication_tables.surql)
 - [x] 2.2.4 Implement `SurrealRefreshTokenRepository`
-- [ ] 2.2.5 Write integration tests
+- [x] 2.2.5 Write integration tests (covered via AuthIntegrationTest - token refresh, rotation, expiration)
 
 ### 2.3 Invite Code Repository
 - [x] 2.3.1 Create `InviteCode` domain model in shared module
 - [x] 2.3.2 Create `InviteCodeRepository` interface
 - [x] 2.3.3 Create migration for `invite_code` table (V2__authentication_tables.surql)
 - [x] 2.3.4 Implement `SurrealInviteCodeRepository`
-- [ ] 2.3.5 Write integration tests
+- [x] 2.3.5 Write integration tests (covered via AuthIntegrationTest - valid/invalid/expired invite codes)
 
 ## 3. Auth Service Implementation
 
@@ -60,16 +60,14 @@
 - [x] 3.2.5 Update DTOs in shared module
 
 ### 3.3 Integration Tests
-Tests created in `AuthIntegrationTest.kt`. Tests fail due to SurrealDB v2.0.0 response parsing issue.
-- [x] 3.3.1 Test login with valid credentials (test written)
-- [x] 3.3.2 Test login with invalid credentials (test written)
-- [x] 3.3.3 Test registration with valid invite code (test written)
-- [x] 3.3.4 Test registration without invite (first user) (test written)
-- [x] 3.3.5 Test registration with invalid/expired invite (test written)
-- [x] 3.3.6 Test token refresh flow (test written)
-- [x] 3.3.7 Test logout and session invalidation (test written)
-
-**Note**: Tests are blocked by a pre-existing SurrealDB v2.0.0 response parsing issue in repository layer.
+Tests created in `AuthIntegrationTest.kt`. All tests passing.
+- [x] 3.3.1 Test login with valid credentials
+- [x] 3.3.2 Test login with invalid credentials
+- [x] 3.3.3 Test registration with valid invite code
+- [x] 3.3.4 Test registration without invite (first user)
+- [x] 3.3.5 Test registration with invalid/expired invite
+- [x] 3.3.6 Test token refresh flow
+- [x] 3.3.7 Test logout and session invalidation
 
 ## 4. User Scoping Middleware
 
@@ -87,12 +85,10 @@ Tests created in `AuthIntegrationTest.kt`. Tests fail due to SurrealDB v2.0.0 re
   - AuthService methods requiring user context have limited functionality until kotlinx-rpc adds context support
 
 ### 4.3 Repository Integration
-Tests created in `UserScopeIntegrationTest.kt`. Tests fail due to SurrealDB v2.0.0 response parsing issue.
-- [x] 4.3.1 Verify user-scoped repositories receive `AuthContext` (verified via code review)
-- [x] 4.3.2 Add integration test for cross-user data isolation (test written)
-- [x] 4.3.3 Ensure RPC services use authenticated user context (verified via code review)
-
-**Note**: Tests are blocked by a pre-existing SurrealDB v2.0.0 response parsing issue in repository layer.
+Tests created in `UserScopeIntegrationTest.kt`. All tests passing.
+- [x] 4.3.1 Verify user-scoped repositories receive `AuthContext`
+- [x] 4.3.2 Add integration test for cross-user data isolation
+- [x] 4.3.3 Ensure RPC services use authenticated user context
 
 ## 5. Client Authentication
 

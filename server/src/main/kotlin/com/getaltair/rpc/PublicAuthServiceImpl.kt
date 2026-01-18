@@ -212,7 +212,7 @@ class PublicAuthServiceImpl(
         userRepository.isEmailAvailable(email).fold(
             ifLeft = { error ->
                 logger.error("Failed to check email availability: {}", error)
-                throw IllegalStateException("Unable to verify email availability. Please try again.")
+                error("Unable to verify email availability. Please try again.")
             },
             ifRight = { isAvailable ->
                 if (!isAvailable) {
@@ -325,7 +325,7 @@ class PublicAuthServiceImpl(
             .fold(
                 ifLeft = { error ->
                     logger.error("Failed to store refresh token for user {}: {}", userId.value, error)
-                    throw IllegalStateException("Failed to establish session. Please try again.")
+                    error("Failed to establish session. Please try again.")
                 },
                 ifRight = { logger.debug("Refresh token stored for user: {}", userId.value) },
             )

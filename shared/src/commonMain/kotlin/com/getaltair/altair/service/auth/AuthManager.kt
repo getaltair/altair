@@ -109,8 +109,9 @@ class AuthManager(
             _authState.value = AuthState.Authenticated(response.userId)
             startTokenRefreshTimer()
             response.userId.right()
-        } catch (e: IllegalArgumentException) {
+        } catch (@Suppress("SwallowedException") e: IllegalArgumentException) {
             // Server validation errors (invalid credentials, account not active)
+            // Exception message intentionally not logged to avoid leaking credential status
             _authState.value = AuthState.Unauthenticated
             AuthError.InvalidCredentials.left()
         } catch (e: Exception) {
@@ -211,8 +212,9 @@ class AuthManager(
                 tokenStorage.saveTokenExpiration(expiresAtMillis)
 
                 Unit.right()
-            } catch (e: Exception) {
-                // Refresh failed, user needs to re-login
+            } catch (@Suppress("SwallowedException") e: Exception) {
+                // Refresh failed (token revoked, expired, or network error), user needs to re-login
+                // Exception details intentionally not propagated - all refresh failures result in logout
                 logout()
                 AuthError.SessionExpired.left()
             }
