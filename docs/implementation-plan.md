@@ -208,13 +208,13 @@ Create client that connects to server RPC endpoints.
 - [x] Create `SurrealDbClient` with Arrow `Either` error handling
 - [x] Create `MigrationRunner` for schema migrations
 - [x] Implement all 17 repository interfaces:
-  - `SurrealUserRepository`, `SurrealQuestRepository`, `SurrealNoteRepository`
-  - `SurrealInitiativeRepository`, `SurrealInboxRepository`, `SurrealRoutineRepository`
-  - `SurrealEpicRepository`, `SurrealCheckpointRepository`, `SurrealEnergyBudgetRepository`
-  - `SurrealFolderRepository`, `SurrealTagRepository`, `SurrealAttachmentRepository`
-  - `SurrealNoteLinkRepository`, `SurrealSourceDocumentRepository`
-  - `SurrealItemRepository`, `SurrealLocationRepository`, `SurrealContainerRepository`
-  - `SurrealItemTemplateRepository`
+    - `SurrealUserRepository`, `SurrealQuestRepository`, `SurrealNoteRepository`
+    - `SurrealInitiativeRepository`, `SurrealInboxRepository`, `SurrealRoutineRepository`
+    - `SurrealEpicRepository`, `SurrealCheckpointRepository`, `SurrealEnergyBudgetRepository`
+    - `SurrealFolderRepository`, `SurrealTagRepository`, `SurrealAttachmentRepository`
+    - `SurrealNoteLinkRepository`, `SurrealSourceDocumentRepository`
+    - `SurrealItemRepository`, `SurrealLocationRepository`, `SurrealContainerRepository`
+    - `SurrealItemTemplateRepository`
 - [x] User-scoped Koin module (`userScopedRepositoryModule`)
 - [x] Integration tests with Testcontainers (`SurrealDbTestContainer`)
 - [x] User isolation tests verifying cross-user data protection
@@ -251,7 +251,7 @@ Create client that connects to server RPC endpoints.
 
 ---
 
-## Phase 6: Authentication & Multi-User
+## Phase 6: Authentication & Multi-User -- Partially Complete
 
 ### 6.1 Server Auth Implementation
 
@@ -273,7 +273,7 @@ Create client that connects to server RPC endpoints.
 
 ---
 
-## Phase 7: UI Foundation
+## Phase 7: UI Foundation -- In Progress
 
 ### 7.1 Altair Design System (ADR-008)
 
