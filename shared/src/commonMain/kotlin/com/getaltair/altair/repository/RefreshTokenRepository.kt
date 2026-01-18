@@ -35,7 +35,10 @@ interface RefreshTokenRepository {
      * @param userId The user's ULID (required for data isolation)
      * @return Either an error or Unit on success
      */
-    suspend fun revoke(id: Ulid, userId: Ulid): Either<AuthError, Unit>
+    suspend fun revoke(
+        id: Ulid,
+        userId: Ulid,
+    ): Either<AuthError, Unit>
 
     /**
      * Revoke all refresh tokens for a user (logout all sessions).

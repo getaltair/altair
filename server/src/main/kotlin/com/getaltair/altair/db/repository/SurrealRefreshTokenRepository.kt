@@ -63,7 +63,10 @@ class SurrealRefreshTokenRepository(
             parseRefreshToken(result) ?: raise(AuthError.TokenInvalid("Refresh token not found"))
         }
 
-    override suspend fun revoke(id: Ulid, userId: Ulid): Either<AuthError, Unit> =
+    override suspend fun revoke(
+        id: Ulid,
+        userId: Ulid,
+    ): Either<AuthError, Unit> =
         either {
             db
                 .execute(
