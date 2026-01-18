@@ -1,67 +1,61 @@
 package com.getaltair.altair.rpc
 
-import com.getaltair.altair.dto.auth.AuthRequest
-import com.getaltair.altair.dto.auth.AuthResponse
-import com.getaltair.altair.dto.auth.RegisterRequest
-import com.getaltair.altair.dto.auth.TokenRefreshResponse
+import com.getaltair.altair.dto.auth.ChangePasswordRequest
+import com.getaltair.altair.dto.auth.InviteCodeResponse
+import com.getaltair.altair.dto.auth.SuccessResponse
 import kotlinx.rpc.annotations.Rpc
 
 /**
- * RPC service for authentication operations.
+ * RPC service for authenticated user operations.
  *
- * Handles user login, registration, token refresh, and logout.
- * This service does not require authentication middleware for
- * login/register endpoints.
+ * This service handles operations that require a valid session, such as
+ * logout, password changes, and session management.
+ *
+ * This service is exposed on the authenticated `/rpc` endpoint and requires
+ * a valid JWT token in the WebSocket connection headers.
  *
  * ## Error Handling
  *
  * RPC services use exception-based error handling at the transport layer.
  * Callers should wrap RPC calls with Arrow's `Either.catch {}` to convert
- * exceptions to typed errors:
+ * exceptions to typed errors.
  *
- * ```kotlin
- * suspend fun login(request: AuthRequest): Either<AuthError, AuthResponse> =
- *     Either.catch { authService.login(request) }
- *         .mapLeft { e -> AuthError.fromException(e) }
- * ```
- *
- * This pattern allows the RPC layer to use kotlinx-rpc's native error handling
- * while maintaining the project's `Either<DomainError, T>` convention at the
- * repository/use-case layer.
+ * @see PublicAuthService for login, register, and token refresh operations
  */
 @Rpc
 interface AuthService {
     /**
-     * Authenticate a user with email and password.
-     *
-     * @param request Credentials for authentication
-     * @return AuthResponse with tokens and user info on success
-     * @throws IllegalArgumentException if credentials are invalid (real implementation)
-     */
-    suspend fun login(request: AuthRequest): AuthResponse
-
-    /**
-     * Refresh an expired access token using a refresh token.
-     *
-     * @param refreshToken Valid refresh token from previous authentication
-     * @return TokenRefreshResponse with new access token
-     * @throws IllegalArgumentException if refresh token is invalid or expired (real implementation)
-     */
-    suspend fun refresh(refreshToken: String): TokenRefreshResponse
-
-    /**
      * Invalidate the current session and revoke tokens.
      *
      * After logout, the refresh token will no longer be valid.
+     *
+     * @return SuccessResponse indicating success
      */
-    suspend fun logout()
+    suspend fun logout(): SuccessResponse
 
     /**
-     * Register a new user account.
+     * Generate a new invite code (admin only).
      *
-     * @param request Registration details including email, password, display name
-     * @return AuthResponse with tokens and user info for the new account
-     * @throws IllegalArgumentException if email already exists or validation fails (real implementation)
+     * @return InviteCodeResponse with the generated code and expiration
+     * @throws IllegalArgumentException if the user is not an admin
      */
-    suspend fun register(request: RegisterRequest): AuthResponse
+    suspend fun generateInviteCode(): InviteCodeResponse
+
+    /**
+     * Change the current user's password.
+     *
+     * @param request The current and new passwords
+     * @return SuccessResponse indicating success or failure
+     * @throws IllegalArgumentException if the current password is incorrect
+     */
+    suspend fun changePassword(request: ChangePasswordRequest): SuccessResponse
+
+    /**
+     * Revoke all sessions for the current user.
+     *
+     * This invalidates all refresh tokens, forcing re-authentication on all devices.
+     *
+     * @return SuccessResponse with the count of revoked sessions
+     */
+    suspend fun revokeAllSessions(): SuccessResponse
 }

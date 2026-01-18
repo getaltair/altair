@@ -1,5 +1,6 @@
 package com.getaltair.altair.di
 
+import com.getaltair.altair.rpc.rpcModule
 import org.koin.core.context.startKoin
 import org.koin.dsl.KoinAppDeclaration
 import org.koin.mp.KoinPlatform
@@ -22,7 +23,11 @@ fun initKoin(config: KoinAppDeclaration? = null): Boolean {
 
     startKoin {
         config?.invoke(this)
-        modules(appModule)
+        modules(
+            appModule,
+            rpcModule,
+            authModule,
+        )
     }
     return true
 }

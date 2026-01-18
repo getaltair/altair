@@ -2,6 +2,8 @@ package com.getaltair.altair
 
 import androidx.compose.ui.window.ComposeUIViewController
 import com.getaltair.altair.di.initKoin
+import com.getaltair.altair.di.iosAuthModule
+import com.getaltair.altair.rpc.httpClientModule
 import com.getaltair.altair.ui.ErrorScreen
 import org.koin.core.error.KoinApplicationAlreadyStartedException
 
@@ -28,7 +30,9 @@ fun MainViewController() =
  */
 fun doInitKoin(): String? =
     try {
-        initKoin()
+        initKoin {
+            modules(iosAuthModule, httpClientModule)
+        }
         null
     } catch (e: KoinApplicationAlreadyStartedException) {
         // Koin already started - this is not an error, return null (success)

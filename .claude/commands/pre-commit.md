@@ -25,6 +25,7 @@ Run `./gradlew test` to execute all unit tests. Fix any failing tests.
 **Repeat this step iteratively** until all tests pass successfully with zero failures.
 
 **CRITICAL TEST RULES - YOU MUST FOLLOW THESE**:
+
 - **DO NOT** mark test cases as "skipped" or ignored
 - **DO NOT** disable tests using annotations like `@Ignore`, `@Disabled`, or platform equivalents
 - **DO NOT** comment out test code
@@ -35,13 +36,19 @@ Run `./gradlew test` to execute all unit tests. Fix any failing tests.
 If any of the above actions seem necessary, you **MUST obtain explicit user approval first** before proceeding.
 
 Any test modifications must:
+
 - Preserve the original test intent
 - Maintain the same test coverage
 - Fix the underlying code issue rather than the test itself (when the test is correct)
 
+## Step 4: Repeat
+
+**Repeat all steps iteratively** until no further changes are made at any step
+
 ## Completion
 
 Report a summary of:
+
 1. Number of spotless issues fixed
 2. Number of detekt issues fixed
 3. Number of test failures fixed

@@ -54,9 +54,13 @@ dependencies {
     implementation(libs.arrow.core)
     // kotlinx-datetime
     implementation(libs.kotlinx.datetime)
+    // Argon2 - Password hashing (ADR-012: Authentication)
+    implementation("de.mkammerer:argon2-jvm:2.11")
 
     testImplementation(libs.ktor.server.test.host)
-    testImplementation("org.jetbrains.kotlin:kotlin-test-junit:$kotlinVersion")
+    testImplementation("org.jetbrains.kotlin:kotlin-test-junit5:$kotlinVersion")
+    testImplementation("org.junit.jupiter:junit-jupiter-api:5.11.4")
+    testImplementation("org.junit.jupiter:junit-jupiter-engine:5.11.4")
     // kotlinx-rpc client for testing
     testImplementation(libs.kotlinx.rpc.krpc.client)
     testImplementation(libs.kotlinx.rpc.krpc.ktor.client)
@@ -65,4 +69,8 @@ dependencies {
     // Testcontainers for integration tests
     testImplementation(libs.testcontainers)
     testImplementation(libs.testcontainers.junit5)
+}
+
+tasks.withType<Test> {
+    useJUnitPlatform()
 }

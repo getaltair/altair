@@ -26,7 +26,7 @@ import org.testcontainers.junit.jupiter.Container as TestContainer
 class SurrealContainerRepositoryTest {
     private lateinit var dbClient: SurrealDbClient
     private lateinit var repository: SurrealContainerRepository
-    private val testUserId = Ulid("01TESTACCT00000000000000")
+    private val testUserId = Ulid("01TESTACCT0000000000000001")
 
     @BeforeAll
     fun setupContainer() {

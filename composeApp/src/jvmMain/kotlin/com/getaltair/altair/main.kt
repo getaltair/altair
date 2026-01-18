@@ -5,7 +5,9 @@ import androidx.compose.ui.window.application
 import com.getaltair.altair.db.DesktopMigrationRunner
 import com.getaltair.altair.db.EmbeddedSurrealClient
 import com.getaltair.altair.db.desktopDatabaseModule
+import com.getaltair.altair.di.desktopAuthModule
 import com.getaltair.altair.di.initKoin
+import com.getaltair.altair.rpc.httpClientModule
 import com.getaltair.altair.ui.ErrorScreen
 import kotlinx.coroutines.runBlocking
 import org.koin.core.context.GlobalContext
@@ -20,7 +22,7 @@ fun main() {
 
     try {
         initKoin {
-            modules(desktopDatabaseModule)
+            modules(desktopDatabaseModule, desktopAuthModule, httpClientModule)
         }
     } catch (e: KoinApplicationAlreadyStartedException) {
         // Koin already started - this is recoverable, log and continue

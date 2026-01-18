@@ -225,8 +225,46 @@ class AuthServiceImpl : AuthService {
 
 **Available services:**
 - `SyncService` - Pull/push sync with optional streaming
-- `AuthService` - Login, register, token refresh, logout
+- `PublicAuthService` - Login, register, token refresh (unauthenticated endpoint at `/rpc/auth`)
+- `AuthService` - Logout, invite code generation (authenticated endpoint at `/rpc`)
 - `AiService` - Embeddings, transcription, streaming completions
+
+### Authentication Architecture
+
+The authentication system uses JWT tokens with refresh token rotation:
+
+**Server-side components** (`server/src/main/kotlin/`):
+- `JwtConfig` - Configuration from environment variables (JWT_SECRET required)
+- `JwtTokenServiceImpl` - JWT generation and validation with HMAC-SHA256
+- `Argon2PasswordService` - Password hashing with Argon2id (OWASP-recommended parameters)
+- `PublicAuthServiceImpl` - Handles login, registration, token refresh
+- `AuthServiceImpl` - Authenticated operations (invite codes, logout)
+
+**Client-side components** (`shared/src/`):
+- `AuthManager` - Token lifecycle, auto-refresh, session state (StateFlow)
+- `SecureTokenStorage` - Platform-specific secure storage interface
+  - Android: `EncryptedSharedPreferences` with Android Keystore
+  - iOS: Keychain Services with `kSecAttrAccessibleWhenUnlockedThisDeviceOnly`
+  - Desktop: AES-256-GCM encrypted Java Preferences
+
+**Auth flow:**
+```kotlin
+// Login/Register -> store tokens -> navigate to Home
+val response = publicAuthService.login(AuthRequest(email, password))
+tokenStorage.saveAccessToken(response.accessToken)
+tokenStorage.saveRefreshToken(response.refreshToken)
+
+// RPC client automatically includes Authorization header
+val factory: RpcClientFactory = get()
+val syncService = factory.syncService() // Uses TokenProvider
+```
+
+**Required environment variables:**
+- `JWT_SECRET` - HMAC secret (minimum 32 characters, required)
+- `JWT_ISSUER` - Token issuer (default: altair-server)
+- `JWT_AUDIENCE` - Token audience (default: altair-client)
+- `JWT_ACCESS_EXPIRY_MINUTES` - Access token expiry (default: 15)
+- `JWT_REFRESH_EXPIRY_DAYS` - Refresh token expiry (default: 30)
 
 ## Code Organization Principles
 

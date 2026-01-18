@@ -65,6 +65,8 @@ kotlin {
             implementation(libs.koin.android)
             // SQLDelight Android driver
             implementation(libs.sqldelight.android.driver)
+            // EncryptedSharedPreferences for secure token storage
+            implementation(libs.androidx.security.crypto)
         }
 
         iosMain.dependencies {

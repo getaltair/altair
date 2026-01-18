@@ -4,6 +4,7 @@ import arrow.core.Either
 import arrow.core.raise.either
 import arrow.core.raise.ensure
 import com.getaltair.altair.domain.DomainError
+import com.surrealdb.Response
 import com.surrealdb.Surreal
 import com.surrealdb.signin.Root
 import kotlinx.coroutines.Dispatchers
@@ -20,6 +21,7 @@ import org.slf4j.LoggerFactory
  * thread safety for concurrent access. Supports both network and
  * embedded connection modes.
  */
+@Suppress("TooManyFunctions") // Contains necessary Response-to-JSON conversion helpers
 class SurrealDbClient(
     private val config: DatabaseConfig,
 ) : AutoCloseable {
@@ -81,7 +83,7 @@ class SurrealDbClient(
      * with proper escaping. The repositories handle escaping for user-provided values.
      *
      * @param query The SurrealQL query string with parameters embedded
-     * @return Either an error or the raw result string
+     * @return Either an error or the raw result string (JSON array)
      */
     suspend fun <T> query(query: String): Either<DomainError, String> =
         either {
@@ -93,14 +95,113 @@ class SurrealDbClient(
                 try {
                     val db = surreal ?: raise(DomainError.UnexpectedError("Database client is null"))
                     val response = db.query(query)
-                    // The Response class returns results - convert to JSON string
-                    response?.toString() ?: "[]"
+                    convertResponseToJson(response)
                 } catch (e: Exception) {
                     logger.error("Query failed: $query", e)
                     raise(DomainError.UnexpectedError("Query failed: ${e.message}", e))
                 }
             }
         }
+
+    /**
+     * Converts a SurrealDB Response to a JSON string array.
+     *
+     * Uses the SDK's Value API to properly extract and serialize results.
+     */
+    private fun convertResponseToJson(response: Response?): String {
+        if (response == null || response.size() == 0) {
+            return "[]"
+        }
+
+        val result = response.take(0)
+        if (result.isNone() || result.isNull()) {
+            return "[]"
+        }
+
+        return if (result.isArray()) {
+            val array = result.getArray()
+            val items =
+                buildList {
+                    val iter = array.synchronizedIterator()
+                    while (iter.hasNext()) {
+                        add(convertValueToJson(iter.next()))
+                    }
+                }
+            "[${items.joinToString(",")}]"
+        } else {
+            // Single object result, wrap in array
+            "[${convertValueToJson(result)}]"
+        }
+    }
+
+    /**
+     * Converts a single Value to its JSON representation.
+     */
+    @Suppress("CyclomaticComplexMethod") // Necessary to handle all Value types
+    private fun convertValueToJson(value: com.surrealdb.Value): String =
+        when {
+            value.isNone() || value.isNull() -> "null"
+            value.isBoolean() -> value.getBoolean().toString()
+            value.isLong() -> value.getLong().toString()
+            value.isDouble() -> value.getDouble().toString()
+            value.isDuration() -> "\"${value.getDuration()}\""
+            value.isString() -> "\"${escapeJsonString(value.getString())}\""
+            value.isThing() -> "\"${value.getThing()}\""
+            value.isUuid() -> "\"${value.getUuid()}\""
+            value.isBytes() -> "\"${java.util.Base64.getEncoder().encodeToString(value.getBytes())}\""
+            value.isArray() -> {
+                val array = value.getArray()
+                val items =
+                    buildList {
+                        val iter = array.synchronizedIterator()
+                        while (iter.hasNext()) {
+                            add(convertValueToJson(iter.next()))
+                        }
+                    }
+                "[${items.joinToString(",")}]"
+            }
+            value.isObject() -> {
+                val obj = value.getObject()
+                val entries =
+                    buildList {
+                        val iter = obj.synchronizedIterator()
+                        while (iter.hasNext()) {
+                            val entry = iter.next()
+                            add("\"${entry.key}\":${convertValueToJson(entry.value)}")
+                        }
+                    }
+                "{${entries.joinToString(",")}}"
+            }
+            else -> {
+                // Handle unknown types (including datetime which returns as d'...' format)
+                val str = value.toString()
+                val result = extractDatetimeIfPresent(str) ?: escapeJsonString(str)
+                logger.warn("Unhandled Value type, converting to string: {}", value)
+                "\"$result\""
+            }
+        }
+
+    /**
+     * Extracts ISO datetime string from SurrealDB datetime format (d'...' or d"...").
+     * Returns null if the string is not a datetime format.
+     */
+    private fun extractDatetimeIfPresent(str: String): String? =
+        when {
+            str.startsWith("d'") && str.endsWith("'") -> str.substring(2, str.length - 1)
+            str.startsWith("d\"") && str.endsWith("\"") -> str.substring(2, str.length - 1)
+            else -> null
+        }
+
+    /**
+     * Escapes special characters in a JSON string.
+     */
+    private fun escapeJsonString(s: String): String =
+        s
+            .replace("\\", "\\\\")
+            .replace("\"", "\\\"")
+            .replace("\n", "\\n")
+            .replace("\r", "\\r")
+            .replace("\t", "\\t")
 
     /**
      * Executes a SurrealQL query and deserializes the result.

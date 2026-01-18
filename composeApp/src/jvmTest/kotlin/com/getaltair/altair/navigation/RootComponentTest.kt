@@ -4,6 +4,16 @@ import com.arkivanov.decompose.DefaultComponentContext
 import com.arkivanov.essenty.lifecycle.Lifecycle
 import com.arkivanov.essenty.lifecycle.LifecycleRegistry
 import com.arkivanov.essenty.lifecycle.resume
+import com.getaltair.altair.dto.auth.AuthRequest
+import com.getaltair.altair.dto.auth.AuthResponse
+import com.getaltair.altair.dto.auth.RegisterRequest
+import com.getaltair.altair.dto.auth.TokenRefreshResponse
+import com.getaltair.altair.rpc.PublicAuthService
+import com.getaltair.altair.service.auth.AuthManager
+import com.getaltair.altair.service.auth.SecureTokenStorage
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -19,31 +29,40 @@ class RootComponentTest {
         return DefaultComponentContext(lifecycle = lifecycle)
     }
 
+    private fun createTestAuthManager(): AuthManager =
+        AuthManager(
+            tokenStorage = FakeTokenStorage(),
+            publicAuthService = FakePublicAuthService(),
+            scope = CoroutineScope(Dispatchers.Default + SupervisorJob()),
+        )
+
     // ============================================
     // RootComponent Tests
     // ============================================
 
     @Test
-    fun `initial stack contains Home configuration`() {
+    fun `initial stack contains Login configuration`() {
         val component =
             RootComponent(
                 componentContext = createTestComponentContext(),
+                authManager = createTestAuthManager(),
             )
 
         val stack = component.stack.value
         assertEquals(1, stack.items.size, "Stack should have exactly one item")
-        assertIs<Config.Home>(stack.active.configuration, "Active configuration should be Home")
+        assertIs<Config.Login>(stack.active.configuration, "Active configuration should be Login")
     }
 
     @Test
-    fun `initial child is Home`() {
+    fun `initial child is Login`() {
         val component =
             RootComponent(
                 componentContext = createTestComponentContext(),
+                authManager = createTestAuthManager(),
             )
 
         val activeChild = component.stack.value.active.instance
-        assertIs<RootComponent.Child.Home>(activeChild, "Active child should be Home")
+        assertIs<RootComponent.Child.Login>(activeChild, "Active child should be Login")
     }
 
     // ============================================
@@ -81,4 +100,38 @@ class RootComponentTest {
         val state = context.getLifecycleState()
         assertEquals(Lifecycle.State.RESUMED, state)
     }
+}
+
+// ============================================
+// Test Fakes
+// ============================================
+
+private class FakeTokenStorage : SecureTokenStorage {
+    override suspend fun saveAccessToken(token: String) = Unit
+
+    override suspend fun getAccessToken(): String? = null
+
+    override suspend fun saveRefreshToken(token: String) = Unit
+
+    override suspend fun getRefreshToken(): String? = null
+
+    override suspend fun saveTokenExpiration(expiresAtMillis: Long) = Unit
+
+    override suspend fun getTokenExpiration(): Long? = null
+
+    override suspend fun saveUserId(userId: String) = Unit
+
+    override suspend fun getUserId(): String? = null
+
+    override suspend fun clear() = Unit
+
+    override suspend fun hasStoredCredentials(): Boolean = false
+}
+
+private class FakePublicAuthService : PublicAuthService {
+    override suspend fun login(request: AuthRequest): AuthResponse = error("Stub")
+
+    override suspend fun refresh(refreshToken: String): TokenRefreshResponse = error("Stub")
+
+    override suspend fun register(request: RegisterRequest): AuthResponse = error("Stub")
 }

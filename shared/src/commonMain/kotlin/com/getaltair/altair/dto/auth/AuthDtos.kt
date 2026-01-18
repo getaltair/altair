@@ -38,11 +38,15 @@ data class TokenRefreshRequest(
 )
 
 /**
- * Response containing a new access token.
+ * Response containing new access and refresh tokens.
+ *
+ * Implements refresh token rotation: each refresh invalidates the old
+ * refresh token and issues a new one to prevent token replay attacks.
  */
 @Serializable
 data class TokenRefreshResponse(
     val accessToken: String,
+    val refreshToken: String,
     val expiresIn: Long,
 )
 
@@ -81,4 +85,22 @@ data class ForgotPasswordRequest(
 data class ResetPasswordRequest(
     val token: String,
     val newPassword: String,
+)
+
+/**
+ * Response containing a newly generated invite code.
+ */
+@Serializable
+data class InviteCodeResponse(
+    val code: String,
+    val expiresAt: String,
+)
+
+/**
+ * Simple success/failure response.
+ */
+@Serializable
+data class SuccessResponse(
+    val success: Boolean,
+    val message: String? = null,
 )

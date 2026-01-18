@@ -49,6 +49,7 @@ kotlin {
             // Decompose - Navigation
             implementation(libs.decompose)
             implementation(libs.decompose.extensions.compose)
+            implementation(libs.essenty.lifecycle.coroutines)
             // kotlinx-rpc client
             implementation(libs.kotlinx.rpc.krpc.client)
             implementation(libs.kotlinx.rpc.krpc.serialization.json)
@@ -58,6 +59,8 @@ kotlin {
             implementation(libs.ktor.client.content.negotiation)
             implementation(libs.ktor.serialization.kotlinx.json)
             implementation(libs.ktor.client.websockets)
+            // Arrow - Functional Error Handling
+            implementation(libs.arrow.core)
         }
         androidMain.dependencies {
             implementation(compose.preview)
@@ -74,8 +77,6 @@ kotlin {
             implementation(libs.ktor.client.cio)
             // SurrealDB - Embedded database for desktop (ADR-002)
             implementation(libs.surrealdb)
-            // Arrow - Functional Error Handling (needed for repository implementations)
-            implementation(libs.arrow.core)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
