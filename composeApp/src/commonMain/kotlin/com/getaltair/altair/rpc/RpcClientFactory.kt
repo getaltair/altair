@@ -2,6 +2,8 @@ package com.getaltair.altair.rpc
 
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.websocket.WebSockets
+import io.ktor.client.request.header
+import io.ktor.http.HttpHeaders
 import kotlinx.rpc.krpc.ktor.client.installKrpc
 import kotlinx.rpc.krpc.ktor.client.rpc
 import kotlinx.rpc.krpc.ktor.client.rpcConfig
@@ -31,14 +33,34 @@ data class ServerConfig(
 }
 
 /**
+ * Provides access tokens for authenticated RPC requests.
+ */
+fun interface TokenProvider {
+    /**
+     * Returns the current valid access token, or null if not authenticated.
+     * Implementations should handle token refresh as needed.
+     */
+    suspend fun getAccessToken(): String?
+}
+
+/**
  * Factory for creating RPC service clients.
  *
- * Creates a single HttpClient with WebSocket support and RPC configuration,
+ * Creates HttpClients with WebSocket support and RPC configuration,
  * then provides typed service stubs for each RPC service.
+ *
+ * The server exposes two RPC endpoints:
+ * - `/rpc/auth` - Public (unauthenticated) operations like login, register, refresh
+ * - `/rpc` - Authenticated operations requiring a valid JWT token
+ *
+ * @param config Server connection configuration
+ * @param httpClientProvider Provider for the base HttpClient
+ * @param tokenProvider Provider for access tokens (used for authenticated endpoints)
  */
 class RpcClientFactory(
     private val config: ServerConfig,
     private val httpClientProvider: () -> HttpClient,
+    private val tokenProvider: TokenProvider? = null,
 ) {
     private val httpClient: HttpClient by lazy {
         httpClientProvider().config {
@@ -47,8 +69,40 @@ class RpcClientFactory(
         }
     }
 
-    private val rpcClient by lazy {
+    /**
+     * RPC client for public (unauthenticated) endpoints at /rpc/auth.
+     */
+    private val publicRpcClient by lazy {
         httpClient.rpc {
+            url {
+                host = config.host
+                port = config.port
+                protocol =
+                    if (config.secure) {
+                        io.ktor.http.URLProtocol.WSS
+                    } else {
+                        io.ktor.http.URLProtocol.WS
+                    }
+                pathSegments = listOf("rpc", "auth")
+            }
+
+            rpcConfig {
+                serialization {
+                    json()
+                }
+            }
+        }
+    }
+
+    /**
+     * Creates an authenticated RPC client with the current access token.
+     * A new client is created each time to ensure fresh token.
+     */
+    private suspend fun createAuthenticatedRpcClient(): kotlinx.rpc.RpcClient {
+        // Get token before entering the builder (suspend call)
+        val accessToken = tokenProvider?.getAccessToken()
+
+        return httpClient.rpc {
             url {
                 host = config.host
                 port = config.port
@@ -61,6 +115,11 @@ class RpcClientFactory(
                 pathSegments = listOf("rpc")
             }
 
+            // Add Authorization header if token is available
+            accessToken?.let { token ->
+                header(HttpHeaders.Authorization, "Bearer $token")
+            }
+
             rpcConfig {
                 serialization {
                     json()
@@ -70,19 +129,28 @@ class RpcClientFactory(
     }
 
     /**
-     * Get the SyncService client stub.
+     * Get the PublicAuthService client stub for login, register, and token refresh.
+     * This endpoint does not require authentication.
      */
-    suspend fun syncService(): SyncService = rpcClient.withService<SyncService>()
+    suspend fun publicAuthService(): PublicAuthService = publicRpcClient.withService<PublicAuthService>()
 
     /**
-     * Get the AuthService client stub.
+     * Get the SyncService client stub.
+     * Requires authentication - includes Authorization header with current token.
      */
-    suspend fun authService(): AuthService = rpcClient.withService<AuthService>()
+    suspend fun syncService(): SyncService = createAuthenticatedRpcClient().withService<SyncService>()
+
+    /**
+     * Get the AuthService client stub for authenticated operations.
+     * Requires authentication - includes Authorization header with current token.
+     */
+    suspend fun authService(): AuthService = createAuthenticatedRpcClient().withService<AuthService>()
 
     /**
      * Get the AiService client stub.
+     * Requires authentication - includes Authorization header with current token.
      */
-    suspend fun aiService(): AiService = rpcClient.withService<AiService>()
+    suspend fun aiService(): AiService = createAuthenticatedRpcClient().withService<AiService>()
 
     /**
      * Close the underlying HTTP client and RPC connection.

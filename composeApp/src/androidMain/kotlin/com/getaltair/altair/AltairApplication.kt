@@ -2,7 +2,9 @@ package com.getaltair.altair
 
 import android.app.Application
 import android.util.Log
+import com.getaltair.altair.di.androidAuthModule
 import com.getaltair.altair.di.initKoin
+import com.getaltair.altair.rpc.httpClientModule
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.error.KoinApplicationAlreadyStartedException
 
@@ -23,6 +25,7 @@ class AltairApplication : Application() {
         try {
             initKoin {
                 androidContext(this@AltairApplication)
+                modules(androidAuthModule, httpClientModule)
             }
             Log.i(TAG, "Koin initialized successfully")
         } catch (e: KoinApplicationAlreadyStartedException) {

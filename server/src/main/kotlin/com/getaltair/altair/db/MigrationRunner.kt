@@ -156,6 +156,7 @@ class MigrationRunner(
         val knownMigrations =
             listOf(
                 "V1__initial_schema.surql",
+                "V2__authentication_tables.surql",
             )
 
         for (filename in knownMigrations) {

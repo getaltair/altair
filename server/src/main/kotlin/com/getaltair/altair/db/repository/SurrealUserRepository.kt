@@ -8,6 +8,7 @@ import arrow.core.raise.ensure
 import com.getaltair.altair.db.SurrealDbClient
 import com.getaltair.altair.domain.UserError
 import com.getaltair.altair.domain.model.system.User
+import com.getaltair.altair.domain.model.system.UserWithCredentials
 import com.getaltair.altair.domain.types.Ulid
 import com.getaltair.altair.domain.types.enums.UserRole
 import com.getaltair.altair.domain.types.enums.UserStatus
@@ -60,6 +61,30 @@ class SurrealUserRepository(
             parseUser(result) ?: raise(UserError.EmailNotFound)
         }
 
+    override suspend fun findByEmailWithCredentials(email: String): Either<UserError, UserWithCredentials> =
+        either {
+            val result =
+                db
+                    .query<Any>(
+                        "SELECT * FROM user WHERE email = '${email.replace("'", "''")}' AND deleted_at IS NONE",
+                    ).mapLeft { UserError.EmailNotFound }
+                    .bind()
+
+            parseUserWithCredentials(result) ?: raise(UserError.EmailNotFound)
+        }
+
+    override suspend fun findByIdWithCredentials(id: Ulid): Either<UserError, UserWithCredentials> =
+        either {
+            val result =
+                db
+                    .query<Any>(
+                        "SELECT * FROM user WHERE id = user:${id.value} AND deleted_at IS NONE",
+                    ).mapLeft { UserError.NotFound(id) }
+                    .bind()
+
+            parseUserWithCredentials(result) ?: raise(UserError.NotFound(id))
+        }
+
     override suspend fun create(user: User): Either<UserError, User> =
         either {
             // Check if email already exists
@@ -84,6 +109,54 @@ class SurrealUserRepository(
                 .bind()
 
             findById(user.id).bind()
+        }
+
+    override suspend fun createWithPassword(
+        user: User,
+        passwordHash: String,
+    ): Either<UserError, User> =
+        either {
+            // Check if email already exists
+            val existing = findByEmail(user.email)
+            ensure(existing.isLeft()) {
+                UserError.EmailAlreadyExists
+            }
+
+            db
+                .execute(
+                    """
+                    CREATE user:${user.id.value} CONTENT {
+                        email: '${user.email.replace("'", "''")}',
+                        display_name: '${user.displayName.replace("'", "''")}',
+                        role: '${user.role.name.lowercase()}',
+                        status: '${user.status.name.lowercase()}',
+                        storage_used_bytes: ${user.storageUsedBytes},
+                        storage_quota_bytes: ${user.storageQuotaBytes},
+                        password_hash: '${passwordHash.replace("'", "''")}'
+                    };
+                    """.trimIndent(),
+                ).mapLeft { UserError.NotFound(user.id) }
+                .bind()
+
+            findById(user.id).bind()
+        }
+
+    override suspend fun updatePassword(
+        id: Ulid,
+        passwordHash: String,
+    ): Either<UserError, Unit> =
+        either {
+            findById(id).bind()
+
+            db
+                .execute(
+                    """
+                    UPDATE user:${id.value} SET
+                        password_hash = '${passwordHash.replace("'", "''")}',
+                        updated_at = time::now();
+                    """.trimIndent(),
+                ).mapLeft { UserError.NotFound(id) }
+                .bind()
         }
 
     override suspend fun update(user: User): Either<UserError, User> =
@@ -205,6 +278,21 @@ class SurrealUserRepository(
             null
         }
     }
+
+    @Suppress("ReturnCount") // Parsing requires multiple validation points
+    private fun parseUserWithCredentials(result: String): UserWithCredentials? =
+        try {
+            val array = json.parseToJsonElement(result).jsonArray
+            val obj = array.firstOrNull()?.jsonObject ?: return null
+            val user = mapToUser(obj)
+            val passwordHash =
+                obj["password_hash"]?.jsonPrimitive?.content
+                    ?: return null // User has no password set
+            UserWithCredentials(user, passwordHash)
+        } catch (e: Exception) {
+            logger.warn("Failed to parse user with credentials: ${e.message}", e)
+            null
+        }
 
     private fun parseUsers(result: String): List<User> =
         try {

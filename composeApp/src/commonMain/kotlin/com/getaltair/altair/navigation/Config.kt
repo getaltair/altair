@@ -11,4 +11,10 @@ import kotlinx.serialization.Serializable
 sealed class Config {
     @Serializable
     data object Home : Config()
+
+    @Serializable
+    data object Login : Config()
+
+    @Serializable
+    data object Register : Config()
 }

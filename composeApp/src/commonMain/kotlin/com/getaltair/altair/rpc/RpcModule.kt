@@ -1,5 +1,6 @@
 package com.getaltair.altair.rpc
 
+import com.getaltair.altair.service.auth.SecureTokenStorage
 import io.ktor.client.HttpClient
 import org.koin.dsl.module
 
@@ -30,6 +31,12 @@ val rpcModule =
             RpcClientFactory(
                 config = get(),
                 httpClientProvider = { get<HttpClient>() },
+                tokenProvider =
+                    TokenProvider {
+                        // Get token from SecureTokenStorage
+                        // This avoids circular dependency with AuthManager
+                        get<SecureTokenStorage>().getAccessToken()
+                    },
             )
         }
     }

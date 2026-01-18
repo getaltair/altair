@@ -11,10 +11,9 @@ class ApplicationTest {
     fun testRoot() =
         testApplication {
             application {
-                // Skip database setup for basic routing test
-                // Use moduleWithoutDatabase() for tests that don't need DB
+                // Skip database and security setup for basic routing test
+                // Security requires JwtConfig from Koin which needs environment variables
                 configureSerialization()
-                configureSecurity()
                 configureMonitoring()
                 configureHTTP()
                 configureRouting()

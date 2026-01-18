@@ -3,6 +3,7 @@ package com.getaltair.altair.repository
 import arrow.core.Either
 import com.getaltair.altair.domain.UserError
 import com.getaltair.altair.domain.model.system.User
+import com.getaltair.altair.domain.model.system.UserWithCredentials
 import com.getaltair.altair.domain.types.Ulid
 import com.getaltair.altair.domain.types.enums.UserRole
 import com.getaltair.altair.domain.types.enums.UserStatus
@@ -37,12 +38,58 @@ interface UserRepository {
     suspend fun findByEmail(email: String): Either<UserError, User>
 
     /**
+     * Finds a user by email with credentials for authentication.
+     *
+     * This method is used only during login to verify passwords.
+     * The returned [UserWithCredentials] should never be serialized or logged.
+     *
+     * @param email The email address to search for
+     * @return Either [UserError.EmailNotFound] if not found, or the user with credentials
+     */
+    suspend fun findByEmailWithCredentials(email: String): Either<UserError, UserWithCredentials>
+
+    /**
+     * Finds a user by ID with credentials for password verification.
+     *
+     * This method is used for password changes where the current password must be verified.
+     * The returned [UserWithCredentials] should never be serialized or logged.
+     *
+     * @param id The ULID of the user
+     * @return Either [UserError.NotFound] if not found, or the user with credentials
+     */
+    suspend fun findByIdWithCredentials(id: Ulid): Either<UserError, UserWithCredentials>
+
+    /**
      * Creates a new user.
      *
      * @param user The user to create
      * @return Either [UserError.EmailAlreadyExists] if email taken, or the created user
      */
     suspend fun create(user: User): Either<UserError, User>
+
+    /**
+     * Creates a new user with password hash for authentication.
+     *
+     * @param user The user to create
+     * @param passwordHash The Argon2 password hash
+     * @return Either [UserError.EmailAlreadyExists] if email taken, or the created user
+     */
+    suspend fun createWithPassword(
+        user: User,
+        passwordHash: String,
+    ): Either<UserError, User>
+
+    /**
+     * Updates a user's password hash.
+     *
+     * @param id The user's ULID
+     * @param passwordHash The new Argon2 password hash
+     * @return Either [UserError.NotFound] on failure, or Unit on success
+     */
+    suspend fun updatePassword(
+        id: Ulid,
+        passwordHash: String,
+    ): Either<UserError, Unit>
 
     /**
      * Updates an existing user.

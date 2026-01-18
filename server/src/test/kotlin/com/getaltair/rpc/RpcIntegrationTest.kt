@@ -1,7 +1,12 @@
 package com.getaltair.rpc
 
 import com.getaltair.altair.dto.auth.AuthRequest
+import com.getaltair.altair.dto.auth.AuthResponse
+import com.getaltair.altair.dto.auth.ChangePasswordRequest
+import com.getaltair.altair.dto.auth.InviteCodeResponse
 import com.getaltair.altair.dto.auth.RegisterRequest
+import com.getaltair.altair.dto.auth.SuccessResponse
+import com.getaltair.altair.dto.auth.TokenRefreshResponse
 import com.getaltair.altair.dto.sync.ChangeOperation
 import com.getaltair.altair.dto.sync.ChangeSet
 import com.getaltair.altair.dto.sync.EntityChange
@@ -10,9 +15,12 @@ import com.getaltair.altair.rpc.AuthService
 import com.getaltair.altair.rpc.CompletionRequest
 import com.getaltair.altair.rpc.ContextMessage
 import com.getaltair.altair.rpc.MessageRole
+import com.getaltair.altair.rpc.PublicAuthService
 import com.getaltair.altair.rpc.SyncService
-import com.getaltair.configureRpc
 import io.ktor.client.plugins.websocket.WebSockets
+import io.ktor.server.application.Application
+import io.ktor.server.application.install
+import io.ktor.server.routing.routing
 import io.ktor.server.testing.testApplication
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -20,8 +28,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.rpc.krpc.ktor.client.installKrpc
-import kotlinx.rpc.krpc.ktor.client.rpc
 import kotlinx.rpc.krpc.ktor.client.rpcConfig
+import kotlinx.rpc.krpc.ktor.server.Krpc
+import kotlinx.rpc.krpc.ktor.server.rpc
 import kotlinx.rpc.krpc.serialization.json.json
 import kotlinx.rpc.withService
 import kotlinx.serialization.json.JsonPrimitive
@@ -29,6 +38,94 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
+import io.ktor.server.websocket.WebSockets as ServerWebSockets
+import kotlinx.rpc.krpc.ktor.client.rpc as clientRpc
+
+/**
+ * Stub PublicAuthService for testing RPC infrastructure.
+ * Returns predictable test data without requiring real auth dependencies.
+ */
+private class StubPublicAuthService : PublicAuthService {
+    override suspend fun login(request: AuthRequest) =
+        AuthResponse(
+            accessToken = "test-access-token",
+            refreshToken = "test-refresh-token",
+            expiresIn = 3600,
+            userId = "01HWTEST000000000000000001",
+            displayName = "Test User",
+            role = "member",
+        )
+
+    override suspend fun refresh(refreshToken: String) =
+        TokenRefreshResponse(
+            accessToken = "test-refreshed-token",
+            expiresIn = 3600,
+        )
+
+    override suspend fun register(request: RegisterRequest) =
+        AuthResponse(
+            accessToken = "test-access-token",
+            refreshToken = "test-refresh-token",
+            expiresIn = 3600,
+            userId = "01HWTEST000000000000000002",
+            displayName = request.displayName,
+            role = "member",
+        )
+}
+
+/**
+ * Stub AuthService for testing authenticated RPC operations.
+ * Returns predictable test data without requiring real auth dependencies.
+ */
+private class StubAuthService : AuthService {
+    override suspend fun logout() =
+        SuccessResponse(
+            success = true,
+            message = "Logged out",
+        )
+
+    override suspend fun generateInviteCode() =
+        InviteCodeResponse(
+            code = "TESTCODE",
+            expiresAt = "2099-12-31T23:59:59Z",
+        )
+
+    override suspend fun changePassword(request: ChangePasswordRequest) =
+        SuccessResponse(
+            success = true,
+            message = "Password changed",
+        )
+
+    override suspend fun revokeAllSessions() =
+        SuccessResponse(
+            success = true,
+            message = "All sessions revoked",
+        )
+}
+
+/**
+ * Configure RPC for tests with stub services.
+ * Uses a single unauthenticated endpoint for simplicity in tests.
+ */
+private fun Application.configureTestRpc() {
+    install(ServerWebSockets)
+    install(Krpc)
+
+    routing {
+        rpc("/rpc") {
+            rpcConfig {
+                serialization {
+                    json()
+                }
+            }
+
+            registerService<SyncService> { SyncServiceImpl() }
+            registerService<PublicAuthService> { StubPublicAuthService() }
+            registerService<AuthService> { StubAuthService() }
+            registerService<AiService> { AiServiceImpl() }
+        }
+    }
+}
 
 /**
  * Integration tests for RPC services.
@@ -38,12 +135,12 @@ import kotlin.test.assertTrue
  */
 class RpcIntegrationTest {
     @Test
-    fun `AuthService login returns valid response`() =
+    fun `PublicAuthService login returns valid response`() =
         testApplication {
-            application { configureRpc() }
+            application { configureTestRpc() }
 
             val client = createRpcClient()
-            val authService = client.withService<AuthService>()
+            val authService = client.withService<PublicAuthService>()
 
             val response = authService.login(AuthRequest("test@example.com", "password"))
 
@@ -54,12 +151,12 @@ class RpcIntegrationTest {
         }
 
     @Test
-    fun `AuthService register returns valid response`() =
+    fun `PublicAuthService register returns valid response`() =
         testApplication {
-            application { configureRpc() }
+            application { configureTestRpc() }
 
             val client = createRpcClient()
-            val authService = client.withService<AuthService>()
+            val authService = client.withService<PublicAuthService>()
 
             val response =
                 authService.register(
@@ -75,12 +172,12 @@ class RpcIntegrationTest {
         }
 
     @Test
-    fun `AuthService refresh returns new token`() =
+    fun `PublicAuthService refresh returns new token`() =
         testApplication {
-            application { configureRpc() }
+            application { configureTestRpc() }
 
             val client = createRpcClient()
-            val authService = client.withService<AuthService>()
+            val authService = client.withService<PublicAuthService>()
 
             val response = authService.refresh("some-refresh-token")
 
@@ -89,21 +186,36 @@ class RpcIntegrationTest {
         }
 
     @Test
-    fun `AuthService logout completes without error`() =
+    fun `AuthService logout completes successfully`() =
         testApplication {
-            application { configureRpc() }
+            application { configureTestRpc() }
 
             val client = createRpcClient()
             val authService = client.withService<AuthService>()
 
-            // Should complete without throwing
-            authService.logout()
+            val response = authService.logout()
+
+            assertTrue(response.success)
+        }
+
+    @Test
+    fun `AuthService generateInviteCode returns code`() =
+        testApplication {
+            application { configureTestRpc() }
+
+            val client = createRpcClient()
+            val authService = client.withService<AuthService>()
+
+            val response = authService.generateInviteCode()
+
+            assertNotNull(response.code)
+            assertNotNull(response.expiresAt)
         }
 
     @Test
     fun `SyncService pull returns SyncResponse`() =
         testApplication {
-            application { configureRpc() }
+            application { configureTestRpc() }
 
             val client = createRpcClient()
             val syncService = client.withService<SyncService>()
@@ -118,7 +230,7 @@ class RpcIntegrationTest {
     @Test
     fun `SyncService push acknowledges changes`() =
         testApplication {
-            application { configureRpc() }
+            application { configureTestRpc() }
 
             val client = createRpcClient()
             val syncService = client.withService<SyncService>()
@@ -133,7 +245,7 @@ class RpcIntegrationTest {
     @Test
     fun `SyncService push acknowledges entity IDs from changes`() =
         testApplication {
-            application { configureRpc() }
+            application { configureTestRpc() }
 
             val client = createRpcClient()
             val syncService = client.withService<SyncService>()
@@ -173,7 +285,7 @@ class RpcIntegrationTest {
     @Test
     fun `SyncService pull with non-zero since returns incremented version`() =
         testApplication {
-            application { configureRpc() }
+            application { configureTestRpc() }
 
             val client = createRpcClient()
             val syncService = client.withService<SyncService>()
@@ -186,7 +298,7 @@ class RpcIntegrationTest {
     @Test
     fun `SyncService streamChanges can be started and cancelled`() =
         testApplication {
-            application { configureRpc() }
+            application { configureTestRpc() }
 
             val client = createRpcClient()
             val syncService = client.withService<SyncService>()
@@ -210,7 +322,7 @@ class RpcIntegrationTest {
     @Test
     fun `AiService embed returns embeddings`() =
         testApplication {
-            application { configureRpc() }
+            application { configureTestRpc() }
 
             val client = createRpcClient()
             val aiService = client.withService<AiService>()
@@ -225,7 +337,7 @@ class RpcIntegrationTest {
     @Test
     fun `AiService transcribe returns placeholder text`() =
         testApplication {
-            application { configureRpc() }
+            application { configureTestRpc() }
 
             val client = createRpcClient()
             val aiService = client.withService<AiService>()
@@ -240,7 +352,7 @@ class RpcIntegrationTest {
     @Test
     fun `AiService complete streams tokens`() =
         testApplication {
-            application { configureRpc() }
+            application { configureTestRpc() }
 
             val client = createRpcClient()
             val aiService = client.withService<AiService>()
@@ -256,7 +368,7 @@ class RpcIntegrationTest {
     @Test
     fun `AiService complete handles request with all optional parameters`() =
         testApplication {
-            application { configureRpc() }
+            application { configureTestRpc() }
 
             val client = createRpcClient()
             val aiService = client.withService<AiService>()
@@ -277,7 +389,7 @@ class RpcIntegrationTest {
     @Test
     fun `AiService embed handles empty list`() =
         testApplication {
-            application { configureRpc() }
+            application { configureTestRpc() }
 
             val client = createRpcClient()
             val aiService = client.withService<AiService>()
@@ -291,7 +403,7 @@ class RpcIntegrationTest {
         createClient {
             install(WebSockets)
             installKrpc()
-        }.rpc {
+        }.clientRpc {
             url {
                 host = "localhost"
                 port = 80

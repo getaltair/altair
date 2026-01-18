@@ -123,4 +123,35 @@ sealed interface AuthError : DomainError {
     data object EmailAlreadyExists : AuthError {
         override fun toUserMessage(): String = "An account with this email already exists. Please sign in or use a different email."
     }
+
+    /**
+     * The provided invite code is invalid or expired.
+     */
+    @Serializable
+    @SerialName("auth_invalid_invite_code")
+    data object InvalidInviteCode : AuthError {
+        override fun toUserMessage(): String = "The invite code is invalid or has expired."
+    }
+
+    /**
+     * The password does not meet security requirements.
+     */
+    @Serializable
+    @SerialName("auth_weak_password")
+    data object WeakPassword : AuthError {
+        override fun toUserMessage(): String = "Password must be at least 8 characters long."
+    }
+
+    /**
+     * Registration failed for an unspecified reason.
+     *
+     * @property reason Technical description of the failure
+     */
+    @Serializable
+    @SerialName("auth_registration_failed")
+    data class RegistrationFailed(
+        val reason: String,
+    ) : AuthError {
+        override fun toUserMessage(): String = "Registration failed. Please try again later."
+    }
 }

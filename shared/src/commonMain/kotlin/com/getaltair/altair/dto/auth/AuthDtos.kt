@@ -82,3 +82,21 @@ data class ResetPasswordRequest(
     val token: String,
     val newPassword: String,
 )
+
+/**
+ * Response containing a newly generated invite code.
+ */
+@Serializable
+data class InviteCodeResponse(
+    val code: String,
+    val expiresAt: String,
+)
+
+/**
+ * Simple success/failure response.
+ */
+@Serializable
+data class SuccessResponse(
+    val success: Boolean,
+    val message: String? = null,
+)

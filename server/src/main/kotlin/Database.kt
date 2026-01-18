@@ -3,6 +3,7 @@ package com.getaltair
 import com.getaltair.altair.db.MigrationRunner
 import com.getaltair.altair.db.SurrealDbClient
 import com.getaltair.altair.db.databaseModule
+import com.getaltair.auth.authModule
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationStopped
 import io.ktor.server.application.install
@@ -23,7 +24,7 @@ fun Application.configureDatabase() {
     // Install Koin for dependency injection
     install(Koin) {
         slf4jLogger()
-        modules(databaseModule)
+        modules(databaseModule, authModule)
     }
 
     // Get database client from Koin and initialize
