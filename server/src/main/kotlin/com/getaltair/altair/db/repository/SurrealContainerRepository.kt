@@ -34,7 +34,7 @@ class SurrealContainerRepository(
             val result =
                 db
                     .query<Any>(
-                        "SELECT * FROM container:${id.value} WHERE user_id = user:${userId.value} AND deleted_at IS NONE",
+                        "SELECT * FROM container WHERE id = container:${id.value} AND user_id = user:${userId.value} AND deleted_at IS NONE",
                     ).mapLeft { ItemError.NotFound(id) }
                     .bind()
             parseContainer(result) ?: raise(ItemError.NotFound(id))

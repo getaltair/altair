@@ -33,7 +33,7 @@ class SurrealFolderRepository(
             val result =
                 db
                     .query<Any>(
-                        "SELECT * FROM folder:${id.value} WHERE user_id = user:${userId.value} AND deleted_at IS NONE",
+                        "SELECT * FROM folder WHERE id = folder:${id.value} AND user_id = user:${userId.value} AND deleted_at IS NONE",
                     ).bind()
             parseFolder(result) ?: raise(DomainError.NotFoundError("Folder", id.value))
         }

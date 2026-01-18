@@ -32,7 +32,7 @@ class SurrealAttachmentRepository(
             val result =
                 db
                     .query<Any>(
-                        "SELECT * FROM attachment:${id.value} WHERE user_id = user:${userId.value} AND deleted_at IS NONE",
+                        "SELECT * FROM attachment WHERE id = attachment:${id.value} AND user_id = user:${userId.value} AND deleted_at IS NONE",
                     ).bind()
             parseAttachment(result) ?: raise(DomainError.NotFoundError("Attachment", id.value))
         }

@@ -38,7 +38,7 @@ class SurrealRoutineRepository(
             val result =
                 db
                     .query<Any>(
-                        "SELECT * FROM routine:${id.value} WHERE user_id = user:${userId.value} AND deleted_at IS NONE",
+                        "SELECT * FROM routine WHERE id = routine:${id.value} AND user_id = user:${userId.value} AND deleted_at IS NONE",
                     ).bind()
             parseRoutine(result) ?: raise(DomainError.NotFoundError("Routine", id.value))
         }

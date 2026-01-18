@@ -36,7 +36,7 @@ class SurrealItemTemplateRepository(
             val result =
                 db
                     .query<Any>(
-                        "SELECT * FROM item_template:${id.value} WHERE user_id = user:${userId.value} AND deleted_at IS NONE",
+                        "SELECT * FROM item_template WHERE id = item_template:${id.value} AND user_id = user:${userId.value} AND deleted_at IS NONE",
                     ).bind()
             parseTemplate(result) ?: raise(DomainError.NotFoundError("ItemTemplate", id.value))
         }
@@ -235,7 +235,7 @@ class SurrealItemTemplateRepository(
             val result =
                 db
                     .query<Any>(
-                        "SELECT * FROM field_definition:${id.value} WHERE user_id = user:${userId.value} AND deleted_at IS NONE",
+                        "SELECT * FROM field_definition WHERE id = field_definition:${id.value} AND user_id = user:${userId.value} AND deleted_at IS NONE",
                     ).bind()
             parseFieldDefinition(result) ?: raise(DomainError.NotFoundError("FieldDefinition", id.value))
         }

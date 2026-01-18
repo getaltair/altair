@@ -34,7 +34,7 @@ class SurrealSourceDocumentRepository(
             val result =
                 db
                     .query<Any>(
-                        "SELECT * FROM source_document:${id.value} WHERE user_id = user:${userId.value} AND deleted_at IS NONE",
+                        "SELECT * FROM source_document WHERE id = source_document:${id.value} AND user_id = user:${userId.value} AND deleted_at IS NONE",
                     ).bind()
             parseSourceDocument(result) ?: raise(DomainError.NotFoundError("SourceDocument", id.value))
         }

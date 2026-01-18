@@ -34,7 +34,7 @@ class SurrealItemRepository(
             val result =
                 db
                     .query<Any>(
-                        "SELECT * FROM item:${id.value} WHERE user_id = user:${userId.value} AND deleted_at IS NONE",
+                        "SELECT * FROM item WHERE id = item:${id.value} AND user_id = user:${userId.value} AND deleted_at IS NONE",
                     ).mapLeft { ItemError.NotFound(id) }
                     .bind()
             parseItem(result) ?: raise(ItemError.NotFound(id))

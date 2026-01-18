@@ -41,7 +41,7 @@ class SurrealUserRepository(
             val result =
                 db
                     .query<Any>(
-                        "SELECT * FROM user:${id.value} WHERE deleted_at IS NONE",
+                        "SELECT * FROM user WHERE id = user:${id.value} AND deleted_at IS NONE",
                     ).mapLeft { UserError.NotFound(id) }
                     .bind()
 

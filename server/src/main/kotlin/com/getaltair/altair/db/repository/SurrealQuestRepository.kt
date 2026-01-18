@@ -43,7 +43,7 @@ class SurrealQuestRepository(
             val result =
                 db
                     .query<Any>(
-                        "SELECT * FROM quest:${id.value} WHERE user_id = user:${userId.value} AND deleted_at IS NONE",
+                        "SELECT * FROM quest WHERE id = quest:${id.value} AND user_id = user:${userId.value} AND deleted_at IS NONE",
                     ).mapLeft { QuestError.NotFound(id) }
                     .bind()
 
