@@ -89,6 +89,12 @@ kotlin {
     }
 }
 
+// Android instrumented test dependencies
+dependencies {
+    androidTestImplementation(libs.androidx.testExt.junit)
+    androidTestImplementation(libs.kotlin.test)
+}
+
 android {
     namespace = "com.getaltair.altair"
     compileSdk =
@@ -108,6 +114,7 @@ android {
                 .toInt()
         versionCode = 1
         versionName = "1.0"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     packaging {
         resources {

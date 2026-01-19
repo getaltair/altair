@@ -97,7 +97,10 @@ Tests created in `UserScopeIntegrationTest.kt`. All tests passing.
 - [x] 5.1.2 Implement Android: `AndroidSecureTokenStorage` (EncryptedSharedPreferences)
 - [x] 5.1.3 Implement iOS: `IosSecureTokenStorage` (Keychain)
 - [x] 5.1.4 Implement Desktop: `DesktopSecureTokenStorage` (AES-GCM encrypted preferences)
-- [ ] 5.1.5 Write platform tests for each implementation
+- [x] 5.1.5 Write platform tests for each implementation
+  - Desktop: `shared/src/jvmTest/.../DesktopSecureTokenStorageTest.kt` - run with `./gradlew :shared:jvmTest`
+  - Android: `composeApp/src/androidInstrumentedTest/.../AndroidSecureTokenStorageTest.kt` - run with `./gradlew :composeApp:connectedAndroidTest`
+  - iOS: `shared/src/iosTest/.../IosSecureTokenStorageTest.kt` - run with `./gradlew :shared:iosSimulatorArm64Test`
 
 ### 5.2 Auth Manager
 - [x] 5.2.1 Create `AuthManager` class for token lifecycle
