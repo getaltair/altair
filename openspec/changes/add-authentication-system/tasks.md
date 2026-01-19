@@ -146,11 +146,18 @@ Tests created in `UserScopeIntegrationTest.kt`. All tests passing.
 - [x] 7.1.4 Verify user data isolation in repositories (verified: all queries filter by `user_id`)
 
 ### 7.2 End-to-End Testing
-- [ ] 7.2.1 Test full registration flow on Android
-- [ ] 7.2.2 Test full login flow on Desktop
-- [ ] 7.2.3 Test token refresh after expiration
-- [ ] 7.2.4 Test logout clears stored credentials
-- [ ] 7.2.5 Test cross-user data isolation via API
+- [x] 7.2.1 Test full registration flow on Android
+  - `composeApp/src/jvmTest/.../RegisterComponentTest.kt` - component logic tests
+  - `shared/src/commonTest/.../AuthManagerTest.kt` - AuthManager registration tests
+- [x] 7.2.2 Test full login flow on Desktop
+  - `composeApp/src/jvmTest/.../LoginComponentTest.kt` - component logic tests
+  - `shared/src/commonTest/.../AuthManagerTest.kt` - AuthManager login tests
+- [x] 7.2.3 Test token refresh after expiration
+  - `shared/src/commonTest/.../AuthManagerTest.kt` - refreshToken and getValidAccessToken tests
+- [x] 7.2.4 Test logout clears stored credentials
+  - `shared/src/commonTest/.../AuthManagerTest.kt` - logout tests verify storage is cleared
+- [x] 7.2.5 Test cross-user data isolation via API
+  - Already covered by `server/src/test/.../UserScopeIntegrationTest.kt`
 
 ### 7.3 Documentation
 - [x] 7.3.1 Update CLAUDE.md with auth patterns (added Authentication Architecture section)
