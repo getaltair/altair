@@ -351,8 +351,8 @@ class ModuleErrorsTest {
     }
 
     @Test
-    fun `AuthError InvalidInvite round-trips through JSON`() {
-        val error: DomainError = AuthError.InvalidInvite(code = "ABC123")
+    fun `AuthError InvalidInviteCode round-trips through JSON`() {
+        val error: DomainError = AuthError.InvalidInviteCode
         val serialized = json.encodeToString(error)
         val deserialized = json.decodeFromString<DomainError>(serialized)
         assertEquals(error, deserialized)
@@ -550,7 +550,7 @@ class ModuleErrorsTest {
                 AuthError.TokenInvalid("test"),
                 AuthError.AccountLocked("test", 1000),
                 AuthError.InviteRequired,
-                AuthError.InvalidInvite("test"),
+                AuthError.InvalidInviteCode,
                 AuthError.EmailAlreadyExists,
                 UserError.NotFound(Ulid.generate()),
                 UserError.EmailAlreadyExists,

@@ -95,7 +95,7 @@ class RegisterComponent(
                             isLoading = false,
                             error = error.toUserMessage(),
                             inviteCodeError =
-                                if (error is AuthError.InvalidInviteCode || error is AuthError.InvalidInvite) {
+                                if (error is AuthError.InvalidInviteCode) {
                                     "Invalid or expired invite code"
                                 } else {
                                     null

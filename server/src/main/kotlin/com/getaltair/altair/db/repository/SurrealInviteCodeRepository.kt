@@ -42,7 +42,7 @@ class SurrealInviteCodeRepository(
                         used_at: NONE
                     };
                     """.trimIndent(),
-                ).mapLeft { AuthError.InvalidInvite(inviteCode.code) }
+                ).mapLeft { AuthError.InvalidInviteCode }
                 .bind()
 
             inviteCode
@@ -57,11 +57,11 @@ class SurrealInviteCodeRepository(
             val result =
                 db
                     .query<Any>(query)
-                    .mapLeft { AuthError.InvalidInvite(code) }
+                    .mapLeft { AuthError.InvalidInviteCode }
                     .bind()
 
             logger.debug("findByCode query='{}' result='{}'", query, result)
-            parseInviteCode(result) ?: raise(AuthError.InvalidInvite(code))
+            parseInviteCode(result) ?: raise(AuthError.InvalidInviteCode)
         }
 
     override suspend fun markUsed(
@@ -76,7 +76,7 @@ class SurrealInviteCodeRepository(
                         used_by = user:${usedBy.value},
                         used_at = time::now();
                     """.trimIndent(),
-                ).mapLeft { AuthError.InvalidInvite(id.value) }
+                ).mapLeft { AuthError.InvalidInviteCode }
                 .bind()
         }
 
@@ -101,7 +101,7 @@ class SurrealInviteCodeRepository(
             ).fold(
                 ifLeft = {
                     logger.error("Failed to delete expired invite codes")
-                    AuthError.InvalidInvite("cleanup").left()
+                    AuthError.InvalidInviteCode.left()
                 },
                 ifRight = { 0.right() },
             )

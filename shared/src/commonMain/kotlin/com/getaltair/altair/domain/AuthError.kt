@@ -108,23 +108,6 @@ sealed interface AuthError : DomainError {
     }
 
     /**
-     * The provided invite code is invalid or has already been used.
-     *
-     * @property code The invite code that was rejected (must not be blank)
-     */
-    @Serializable
-    @SerialName("auth_invalid_invite")
-    data class InvalidInvite(
-        val code: String,
-    ) : AuthError {
-        init {
-            require(code.isNotBlank()) { "Code must not be blank" }
-        }
-
-        override fun toUserMessage(): String = "The invite code is invalid or has already been used."
-    }
-
-    /**
      * The email address is already registered to another account.
      *
      * Note: The email is intentionally not stored in this error to prevent
