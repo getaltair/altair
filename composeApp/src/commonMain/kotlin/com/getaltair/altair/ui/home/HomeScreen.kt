@@ -4,13 +4,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
+import com.getaltair.altair.ui.components.AltairSurface
+import com.getaltair.altair.ui.components.AltairText
+import com.getaltair.altair.ui.theme.AltairTheme
 
 /**
  * Home screen displayed after successful authentication.
@@ -20,28 +19,25 @@ import androidx.compose.ui.unit.dp
  */
 @Composable
 fun HomeScreen(modifier: Modifier = Modifier) {
-    Surface(
-        modifier = modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background,
-    ) {
+    AltairSurface(modifier = modifier.fillMaxSize()) {
         Column(
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .padding(24.dp),
+                    .padding(AltairTheme.Spacing.lg),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
-            Text(
+            AltairText(
                 text = "Welcome to Altair",
-                style = MaterialTheme.typography.headlineMedium,
-                color = MaterialTheme.colorScheme.onBackground,
+                style = AltairTheme.Typography.headlineLarge,
+                color = AltairTheme.Colors.textPrimary,
             )
-            Text(
+            AltairText(
                 text = "You are signed in",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 8.dp),
+                style = AltairTheme.Typography.bodyLarge,
+                color = AltairTheme.Colors.textSecondary,
+                modifier = Modifier.padding(top = AltairTheme.Spacing.sm),
             )
         }
     }

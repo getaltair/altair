@@ -8,24 +8,20 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import com.getaltair.altair.ui.components.AltairButton
+import com.getaltair.altair.ui.components.AltairCircularProgressIndicator
+import com.getaltair.altair.ui.components.AltairSurface
+import com.getaltair.altair.ui.components.AltairText
+import com.getaltair.altair.ui.components.AltairTextButton
+import com.getaltair.altair.ui.components.AltairTextField
+import com.getaltair.altair.ui.theme.AltairTheme
 
 /**
  * Login screen composable.
@@ -40,15 +36,12 @@ fun LoginScreen(
 ) {
     val state by component.state.collectAsState()
 
-    Surface(
-        modifier = modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background,
-    ) {
+    AltairSurface(modifier = modifier.fillMaxSize()) {
         Column(
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .padding(24.dp),
+                    .padding(AltairTheme.Spacing.lg),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
@@ -62,7 +55,6 @@ fun LoginScreen(
                     state = state,
                     onEmailChange = component::onEmailChanged,
                     onPasswordChange = component::onPasswordChanged,
-                    onLoginClick = component::onLoginClicked,
                 )
                 LoginActions(
                     isLoading = state.isLoading,
@@ -77,29 +69,29 @@ fun LoginScreen(
 @Composable
 private fun LoginHeader() {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(
+        AltairText(
             text = "Welcome to Altair",
-            style = MaterialTheme.typography.headlineMedium,
-            color = MaterialTheme.colorScheme.onBackground,
+            style = AltairTheme.Typography.headlineLarge,
+            color = AltairTheme.Colors.textPrimary,
         )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
+        Spacer(modifier = Modifier.height(AltairTheme.Spacing.sm))
+        AltairText(
             text = "Sign in to continue",
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = AltairTheme.Typography.bodyLarge,
+            color = AltairTheme.Colors.textSecondary,
         )
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(AltairTheme.Spacing.xl))
     }
 }
 
 @Composable
 private fun LoginErrorMessage(error: String?) {
     if (error != null) {
-        Text(
+        AltairText(
             text = error,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.error,
-            modifier = Modifier.padding(bottom = 16.dp),
+            style = AltairTheme.Typography.bodyMedium,
+            color = AltairTheme.Colors.error,
+            modifier = Modifier.padding(bottom = AltairTheme.Spacing.md),
         )
     }
 }
@@ -109,46 +101,31 @@ private fun LoginForm(
     state: LoginState,
     onEmailChange: (String) -> Unit,
     onPasswordChange: (String) -> Unit,
-    onLoginClick: () -> Unit,
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
-        OutlinedTextField(
+        AltairTextField(
             value = state.email,
             onValueChange = onEmailChange,
-            label = { Text("Email") },
-            singleLine = true,
+            label = "Email",
+            placeholder = "Enter your email",
             isError = state.emailError != null,
-            supportingText = state.emailError?.let { { Text(it) } },
-            keyboardOptions =
-                KeyboardOptions(
-                    keyboardType = KeyboardType.Email,
-                    imeAction = ImeAction.Next,
-                ),
+            errorMessage = state.emailError,
             enabled = !state.isLoading,
             modifier = Modifier.fillMaxWidth(),
         )
-        Spacer(modifier = Modifier.height(16.dp))
-        OutlinedTextField(
+        Spacer(modifier = Modifier.height(AltairTheme.Spacing.md))
+        AltairTextField(
             value = state.password,
             onValueChange = onPasswordChange,
-            label = { Text("Password") },
-            singleLine = true,
+            label = "Password",
+            placeholder = "Enter your password",
             isError = state.passwordError != null,
-            supportingText = state.passwordError?.let { { Text(it) } },
+            errorMessage = state.passwordError,
             visualTransformation = PasswordVisualTransformation(),
-            keyboardOptions =
-                KeyboardOptions(
-                    keyboardType = KeyboardType.Password,
-                    imeAction = ImeAction.Done,
-                ),
-            keyboardActions =
-                KeyboardActions(
-                    onDone = { onLoginClick() },
-                ),
             enabled = !state.isLoading,
             modifier = Modifier.fillMaxWidth(),
         )
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(AltairTheme.Spacing.lg))
     }
 }
 
@@ -159,26 +136,34 @@ private fun LoginActions(
     onRegisterClick: () -> Unit,
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
-        Button(
+        AltairButton(
             onClick = onLoginClick,
             enabled = !isLoading,
             modifier = Modifier.fillMaxWidth(),
         ) {
             if (isLoading) {
-                CircularProgressIndicator(
-                    modifier = Modifier.height(20.dp),
+                AltairCircularProgressIndicator(
+                    size = 20.dp,
                     strokeWidth = 2.dp,
+                    color = AltairTheme.Colors.textPrimary,
                 )
             } else {
-                Text("Sign In")
+                AltairText(
+                    text = "Sign In",
+                    style = AltairTheme.Typography.labelLarge,
+                )
             }
         }
-        Spacer(modifier = Modifier.height(16.dp))
-        TextButton(
+        Spacer(modifier = Modifier.height(AltairTheme.Spacing.md))
+        AltairTextButton(
             onClick = onRegisterClick,
             enabled = !isLoading,
         ) {
-            Text("Don't have an account? Register")
+            AltairText(
+                text = "Don't have an account? Register",
+                style = AltairTheme.Typography.labelLarge,
+                color = AltairTheme.Colors.textSecondary,
+            )
         }
     }
 }

@@ -1,8 +1,6 @@
 package com.getaltair.altair.navigation
 
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.arkivanov.decompose.extensions.compose.stack.Children
@@ -10,7 +8,9 @@ import com.arkivanov.decompose.extensions.compose.stack.animation.fade
 import com.arkivanov.decompose.extensions.compose.stack.animation.stackAnimation
 import com.getaltair.altair.ui.auth.LoginScreen
 import com.getaltair.altair.ui.auth.RegisterScreen
+import com.getaltair.altair.ui.components.AltairSurface
 import com.getaltair.altair.ui.home.HomeScreen
+import com.getaltair.altair.ui.theme.AltairThemeProvider
 
 /**
  * Root content composable that renders the navigation stack.
@@ -23,11 +23,8 @@ fun RootContent(
     component: RootComponent,
     modifier: Modifier = Modifier,
 ) {
-    MaterialTheme {
-        Surface(
-            modifier = modifier.fillMaxSize(),
-            color = MaterialTheme.colorScheme.background,
-        ) {
+    AltairThemeProvider {
+        AltairSurface(modifier = modifier.fillMaxSize()) {
             Children(
                 stack = component.stack,
                 modifier = Modifier.fillMaxSize(),

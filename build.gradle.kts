@@ -23,6 +23,7 @@ spotless {
             .editorConfigOverride(
                 mapOf(
                     "ktlint_standard_max-line-length" to "disabled",
+                    "compose_allowed_composition_locals" to "LocalAltairColors",
                 ),
             )
     }

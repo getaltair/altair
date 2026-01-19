@@ -1,6 +1,6 @@
 # Altair Implementation Plan
 
-**Last updated:** 2026-01-17
+**Last updated:** 2026-01-18
 
 This document provides a phased roadmap for implementing Altair, tracking progress and guiding
 development across sessions.
@@ -208,13 +208,13 @@ Create client that connects to server RPC endpoints.
 - [x] Create `SurrealDbClient` with Arrow `Either` error handling
 - [x] Create `MigrationRunner` for schema migrations
 - [x] Implement all 17 repository interfaces:
-  - `SurrealUserRepository`, `SurrealQuestRepository`, `SurrealNoteRepository`
-  - `SurrealInitiativeRepository`, `SurrealInboxRepository`, `SurrealRoutineRepository`
-  - `SurrealEpicRepository`, `SurrealCheckpointRepository`, `SurrealEnergyBudgetRepository`
-  - `SurrealFolderRepository`, `SurrealTagRepository`, `SurrealAttachmentRepository`
-  - `SurrealNoteLinkRepository`, `SurrealSourceDocumentRepository`
-  - `SurrealItemRepository`, `SurrealLocationRepository`, `SurrealContainerRepository`
-  - `SurrealItemTemplateRepository`
+    - `SurrealUserRepository`, `SurrealQuestRepository`, `SurrealNoteRepository`
+    - `SurrealInitiativeRepository`, `SurrealInboxRepository`, `SurrealRoutineRepository`
+    - `SurrealEpicRepository`, `SurrealCheckpointRepository`, `SurrealEnergyBudgetRepository`
+    - `SurrealFolderRepository`, `SurrealTagRepository`, `SurrealAttachmentRepository`
+    - `SurrealNoteLinkRepository`, `SurrealSourceDocumentRepository`
+    - `SurrealItemRepository`, `SurrealLocationRepository`, `SurrealContainerRepository`
+    - `SurrealItemTemplateRepository`
 - [x] User-scoped Koin module (`userScopedRepositoryModule`)
 - [x] Integration tests with Testcontainers (`SurrealDbTestContainer`)
 - [x] User isolation tests verifying cross-user data protection
@@ -251,7 +251,7 @@ Create client that connects to server RPC endpoints.
 
 ---
 
-## Phase 6: Authentication & Multi-User
+## Phase 6: Authentication & Multi-User -- Partially Complete
 
 ### 6.1 Server Auth Implementation
 
@@ -273,15 +273,28 @@ Create client that connects to server RPC endpoints.
 
 ---
 
-## Phase 7: UI Foundation
+## Phase 7: UI Foundation -- In Progress
 
-### 7.1 Altair Design System (ADR-008)
+### 7.1 Altair Design System (ADR-008) ✅
 
-**Location:** `composeApp/src/commonMain/.../ui/theme/`
+**Location:** `composeApp/src/commonMain/.../ui/theme/`, `composeApp/src/commonMain/.../ui/components/`
 
-- Add Compose Unstyled dependency
-- Create `AltairTheme` object with colors, typography, spacing
-- Create base components: `AltairButton`, `AltairTextField`, `AltairCard`
+- [x] Add Compose Unstyled dependency (v1.49.6)
+- [x] Create `AltairTheme` object with colors, typography, spacing, radii
+- [x] Create `AltairThemeProvider` with CompositionLocal and dark/light support
+- [x] Create `FocusRing` utility for keyboard accessibility
+- [x] Create base components:
+  - `AltairButton` (Primary, Secondary, Ghost, Danger variants)
+  - `AltairTextField` (with label, placeholder, error states)
+  - `AltairCard` (with elevation levels)
+  - `AltairCheckbox` (with row variant)
+  - `AltairDialog` (with confirm and alert variants)
+  - `AltairDropdownMenu` (with items, dividers, headers)
+  - `AltairText`, `AltairCircularProgressIndicator`
+- [x] Create `ComponentPreviews.kt` showcase for visual testing
+- [x] Migrate auth screens (Login, Register) to Altair components
+- [x] Migrate Home and Error screens to Altair components
+- [x] Verify keyboard navigation on desktop
 
 ### 7.2 Navigation Structure
 

@@ -61,6 +61,8 @@ kotlin {
             implementation(libs.ktor.client.websockets)
             // Arrow - Functional Error Handling
             implementation(libs.arrow.core)
+            // Compose Unstyled - Design System (ADR-008)
+            implementation(libs.compose.unstyled)
         }
         androidMain.dependencies {
             implementation(compose.preview)

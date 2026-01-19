@@ -20,10 +20,16 @@ complexity:
   LongMethod:
     active: true
     threshold: 60
+    # UI composables naturally get longer due to layout declarations
+    ignoreAnnotated:
+      - Composable
   LongParameterList:
     active: true
     functionThreshold: 6
     constructorThreshold: 7
+    # UI composables naturally have many parameters for customization
+    ignoreAnnotated:
+      - Composable
   NestedBlockDepth:
     active: true
     threshold: 4
@@ -278,6 +284,21 @@ potential-bugs:
   WrongEqualsTypeParameter:
     active: true
 
+Compose:
+  active: true
+  CompositionLocalAllowlist:
+    active: true
+    allowedCompositionLocals:
+      - LocalAltairColors
+  ModifierMissing:
+    active: true
+    # Theme providers and preview components don't need modifier parameters
+    ignoreAnnotated:
+      - Preview
+    excludes:
+      - "**/theme/**"
+      - "**/ComponentPreviews.kt"
+
 style:
   active: true
   AlsoCouldBeApply:
@@ -335,7 +356,8 @@ style:
     maxJumpCount: 1
   MagicNumber:
     active: true
-    excludes: ["**/test/**", "**/androidTest/**", "**/commonTest/**", "**/jvmTest/**", "**/androidUnitTest/**"]
+    # Exclude test files and theme files (theme files contain color hex codes and dimension values)
+    excludes: ["**/test/**", "**/androidTest/**", "**/commonTest/**", "**/jvmTest/**", "**/androidUnitTest/**", "**/theme/**", "**/ComponentPreviews.kt"]
     ignoreNumbers:
       - "-1"
       - "0"
