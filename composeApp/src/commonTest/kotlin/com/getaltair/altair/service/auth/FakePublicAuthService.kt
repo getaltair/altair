@@ -31,21 +31,21 @@ class FakePublicAuthService : PublicAuthService {
         loginCallCount++
         lastLoginRequest = request
         loginError?.let { throw it }
-        return loginResponse ?: throw IllegalStateException("No login response configured")
+        return loginResponse ?: error("No login response configured")
     }
 
     override suspend fun refresh(refreshToken: String): TokenRefreshResponse {
         refreshCallCount++
         lastRefreshToken = refreshToken
         refreshError?.let { throw it }
-        return refreshResponse ?: throw IllegalStateException("No refresh response configured")
+        return refreshResponse ?: error("No refresh response configured")
     }
 
     override suspend fun register(request: RegisterRequest): AuthResponse {
         registerCallCount++
         lastRegisterRequest = request
         registerError?.let { throw it }
-        return registerResponse ?: throw IllegalStateException("No register response configured")
+        return registerResponse ?: error("No register response configured")
     }
 
     fun reset() {

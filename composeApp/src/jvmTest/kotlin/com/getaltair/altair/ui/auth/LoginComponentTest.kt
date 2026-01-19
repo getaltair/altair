@@ -28,6 +28,7 @@ import kotlin.test.assertTrue
  * - Navigation callbacks
  * - State management
  */
+@Suppress("TooManyFunctions")
 class LoginComponentTest {
     private lateinit var tokenStorage: FakeSecureTokenStorage
     private lateinit var authService: FakePublicAuthService
@@ -168,7 +169,10 @@ class LoginComponentTest {
         assertTrue(component.state.value.isLoading)
     }
 
-    private suspend fun waitForCondition(timeoutMs: Long = 1000, condition: () -> Boolean) {
+    private suspend fun waitForCondition(
+        timeoutMs: Long = 1000,
+        condition: () -> Boolean,
+    ) {
         val start = System.currentTimeMillis()
         while (!condition() && System.currentTimeMillis() - start < timeoutMs) {
             delay(10)
@@ -221,12 +225,13 @@ class LoginComponentTest {
 
     // ===== Helper Methods =====
 
-    private fun createAuthResponse() = AuthResponse(
-        accessToken = "access-token",
-        refreshToken = "refresh-token",
-        expiresIn = 900,
-        userId = "user-123",
-        displayName = "Test User",
-        role = "member",
-    )
+    private fun createAuthResponse() =
+        AuthResponse(
+            accessToken = "access-token",
+            refreshToken = "refresh-token",
+            expiresIn = 900,
+            userId = "user-123",
+            displayName = "Test User",
+            role = "member",
+        )
 }

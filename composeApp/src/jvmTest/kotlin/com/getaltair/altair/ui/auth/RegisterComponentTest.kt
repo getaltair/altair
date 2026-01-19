@@ -28,6 +28,7 @@ import kotlin.test.assertTrue
  * - Navigation callbacks
  * - State management
  */
+@Suppress("TooManyFunctions")
 class RegisterComponentTest {
     private lateinit var tokenStorage: FakeSecureTokenStorage
     private lateinit var authService: FakePublicAuthService
@@ -47,7 +48,10 @@ class RegisterComponentTest {
         navigateToLoginCalled = false
     }
 
-    private suspend fun waitForCondition(timeoutMs: Long = 1000, condition: () -> Boolean) {
+    private suspend fun waitForCondition(
+        timeoutMs: Long = 1000,
+        condition: () -> Boolean,
+    ) {
         val start = System.currentTimeMillis()
         while (!condition() && System.currentTimeMillis() - start < timeoutMs) {
             delay(10)
@@ -335,6 +339,7 @@ class RegisterComponentTest {
 
     // ===== Helper Methods =====
 
+    @Suppress("LongParameterList")
     private fun fillValidForm(
         component: RegisterComponent,
         email: String = "test@example.com",
@@ -350,12 +355,13 @@ class RegisterComponentTest {
         component.onInviteCodeChanged(inviteCode)
     }
 
-    private fun createAuthResponse() = AuthResponse(
-        accessToken = "access-token",
-        refreshToken = "refresh-token",
-        expiresIn = 900,
-        userId = "user-123",
-        displayName = "Test User",
-        role = "member",
-    )
+    private fun createAuthResponse() =
+        AuthResponse(
+            accessToken = "access-token",
+            refreshToken = "refresh-token",
+            expiresIn = 900,
+            userId = "user-123",
+            displayName = "Test User",
+            role = "member",
+        )
 }

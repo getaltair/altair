@@ -17,6 +17,7 @@ import kotlin.test.assertTrue
  *
  * Run with: ./gradlew :shared:iosSimulatorArm64Test
  */
+@Suppress("TooManyFunctions")
 class IosSecureTokenStorageTest {
     private lateinit var storage: IosSecureTokenStorage
 
@@ -33,154 +34,179 @@ class IosSecureTokenStorageTest {
     }
 
     @Test
-    fun accessTokenStorageRoundTripsCorrectly() = runBlocking {
-        val token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.test-access-token"
+    fun accessTokenStorageRoundTripsCorrectly() =
+        runBlocking {
+            val token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.test-access-token"
 
-        storage.saveAccessToken(token)
-        val retrieved = storage.getAccessToken()
+            storage.saveAccessToken(token)
+            val retrieved = storage.getAccessToken()
 
-        assertEquals(token, retrieved)
-    }
-
-    @Test
-    fun refreshTokenStorageRoundTripsCorrectly() = runBlocking {
-        val token = "refresh-token-abc123-xyz789"
-
-        storage.saveRefreshToken(token)
-        val retrieved = storage.getRefreshToken()
-
-        assertEquals(token, retrieved)
-    }
+            assertEquals(token, retrieved)
+        }
 
     @Test
-    fun tokenExpirationStorageRoundTripsCorrectly() = runBlocking {
-        val expiration = 1705500900000L
+    fun refreshTokenStorageRoundTripsCorrectly() =
+        runBlocking {
+            val token = "refresh-token-abc123-xyz789"
 
-        storage.saveTokenExpiration(expiration)
-        val retrieved = storage.getTokenExpiration()
+            storage.saveRefreshToken(token)
+            val retrieved = storage.getRefreshToken()
 
-        assertEquals(expiration, retrieved)
-    }
-
-    @Test
-    fun userIdStorageRoundTripsCorrectly() = runBlocking {
-        val userId = "01HWUSER00000000000000001"
-
-        storage.saveUserId(userId)
-        val retrieved = storage.getUserId()
-
-        assertEquals(userId, retrieved)
-    }
+            assertEquals(token, retrieved)
+        }
 
     @Test
-    fun getAccessTokenReturnsNullWhenNoTokenStored() = runBlocking {
-        val retrieved = storage.getAccessToken()
+    fun tokenExpirationStorageRoundTripsCorrectly() =
+        runBlocking {
+            val expiration = TEST_EXPIRATION_TIMESTAMP
 
-        assertNull(retrieved)
-    }
+            storage.saveTokenExpiration(expiration)
+            val retrieved = storage.getTokenExpiration()
 
-    @Test
-    fun getRefreshTokenReturnsNullWhenNoTokenStored() = runBlocking {
-        val retrieved = storage.getRefreshToken()
-
-        assertNull(retrieved)
-    }
+            assertEquals(expiration, retrieved)
+        }
 
     @Test
-    fun getTokenExpirationReturnsNullWhenNoExpirationStored() = runBlocking {
-        val retrieved = storage.getTokenExpiration()
+    fun userIdStorageRoundTripsCorrectly() =
+        runBlocking {
+            val userId = "01HWUSER00000000000000001"
 
-        assertNull(retrieved)
-    }
+            storage.saveUserId(userId)
+            val retrieved = storage.getUserId()
 
-    @Test
-    fun getUserIdReturnsNullWhenNoUserIdStored() = runBlocking {
-        val retrieved = storage.getUserId()
-
-        assertNull(retrieved)
-    }
+            assertEquals(userId, retrieved)
+        }
 
     @Test
-    fun clearRemovesAllStoredData() = runBlocking {
-        storage.saveAccessToken("access-token")
-        storage.saveRefreshToken("refresh-token")
-        storage.saveTokenExpiration(1705500900000L)
-        storage.saveUserId("user-id")
+    fun getAccessTokenReturnsNullWhenNoTokenStored() =
+        runBlocking {
+            val retrieved = storage.getAccessToken()
 
-        storage.clear()
-
-        assertNull(storage.getAccessToken())
-        assertNull(storage.getRefreshToken())
-        assertNull(storage.getTokenExpiration())
-        assertNull(storage.getUserId())
-    }
+            assertNull(retrieved)
+        }
 
     @Test
-    fun hasStoredCredentialsReturnsTrueWhenRefreshTokenExists() = runBlocking {
-        storage.saveRefreshToken("refresh-token")
+    fun getRefreshTokenReturnsNullWhenNoTokenStored() =
+        runBlocking {
+            val retrieved = storage.getRefreshToken()
 
-        assertTrue(storage.hasStoredCredentials())
-    }
-
-    @Test
-    fun hasStoredCredentialsReturnsFalseWhenNoRefreshToken() = runBlocking {
-        storage.saveAccessToken("access-token")
-
-        assertFalse(storage.hasStoredCredentials())
-    }
+            assertNull(retrieved)
+        }
 
     @Test
-    fun hasStoredCredentialsReturnsFalseAfterClear() = runBlocking {
-        storage.saveRefreshToken("refresh-token")
-        storage.clear()
+    fun getTokenExpirationReturnsNullWhenNoExpirationStored() =
+        runBlocking {
+            val retrieved = storage.getTokenExpiration()
 
-        assertFalse(storage.hasStoredCredentials())
-    }
-
-    @Test
-    fun overwritingTokenReplacesPreviousValue() = runBlocking {
-        storage.saveAccessToken("original-token")
-        storage.saveAccessToken("updated-token")
-
-        assertEquals("updated-token", storage.getAccessToken())
-    }
+            assertNull(retrieved)
+        }
 
     @Test
-    fun tokensWithSpecialCharactersAreStoredCorrectly() = runBlocking {
-        val tokenWithSpecialChars = "token-with-special-chars!@#\$%^&*()_+-=[]{}|;':\",./<>?"
+    fun getUserIdReturnsNullWhenNoUserIdStored() =
+        runBlocking {
+            val retrieved = storage.getUserId()
 
-        storage.saveAccessToken(tokenWithSpecialChars)
-        val retrieved = storage.getAccessToken()
-
-        assertEquals(tokenWithSpecialChars, retrieved)
-    }
+            assertNull(retrieved)
+        }
 
     @Test
-    fun longTokensAreStoredCorrectly() = runBlocking {
-        val longToken = "a".repeat(4096)
+    fun clearRemovesAllStoredData() =
+        runBlocking {
+            storage.saveAccessToken("access-token")
+            storage.saveRefreshToken("refresh-token")
+            storage.saveTokenExpiration(TEST_EXPIRATION_TIMESTAMP)
+            storage.saveUserId("user-id")
 
-        storage.saveAccessToken(longToken)
-        val retrieved = storage.getAccessToken()
+            storage.clear()
 
-        assertEquals(longToken, retrieved)
-    }
-
-    @Test
-    fun unicodeContentIsStoredCorrectly() = runBlocking {
-        val unicodeUserId = "user-日本語-émoji-🎉"
-
-        storage.saveUserId(unicodeUserId)
-        val retrieved = storage.getUserId()
-
-        assertEquals(unicodeUserId, retrieved)
-    }
+            assertNull(storage.getAccessToken())
+            assertNull(storage.getRefreshToken())
+            assertNull(storage.getTokenExpiration())
+            assertNull(storage.getUserId())
+        }
 
     @Test
-    fun tokenExpirationBoundaryValuesWorkCorrectly() = runBlocking {
-        storage.saveTokenExpiration(Long.MAX_VALUE)
-        assertEquals(Long.MAX_VALUE, storage.getTokenExpiration())
+    fun hasStoredCredentialsReturnsTrueWhenRefreshTokenExists() =
+        runBlocking {
+            storage.saveRefreshToken("refresh-token")
 
-        storage.saveTokenExpiration(0L)
-        assertEquals(0L, storage.getTokenExpiration())
+            assertTrue(storage.hasStoredCredentials())
+        }
+
+    @Test
+    fun hasStoredCredentialsReturnsFalseWhenNoRefreshToken() =
+        runBlocking {
+            storage.saveAccessToken("access-token")
+
+            assertFalse(storage.hasStoredCredentials())
+        }
+
+    @Test
+    fun hasStoredCredentialsReturnsFalseAfterClear() =
+        runBlocking {
+            storage.saveRefreshToken("refresh-token")
+            storage.clear()
+
+            assertFalse(storage.hasStoredCredentials())
+        }
+
+    @Test
+    fun overwritingTokenReplacesPreviousValue() =
+        runBlocking {
+            storage.saveAccessToken("original-token")
+            storage.saveAccessToken("updated-token")
+
+            assertEquals("updated-token", storage.getAccessToken())
+        }
+
+    @Test
+    fun tokensWithSpecialCharactersAreStoredCorrectly() =
+        runBlocking {
+            val tokenWithSpecialChars = "token-with-special-chars!@#\$%^&*()_+-=[]{}|;':\",./<>?"
+
+            storage.saveAccessToken(tokenWithSpecialChars)
+            val retrieved = storage.getAccessToken()
+
+            assertEquals(tokenWithSpecialChars, retrieved)
+        }
+
+    @Test
+    fun longTokensAreStoredCorrectly() =
+        runBlocking {
+            val longToken = "a".repeat(LONG_TOKEN_LENGTH)
+
+            storage.saveAccessToken(longToken)
+            val retrieved = storage.getAccessToken()
+
+            assertEquals(longToken, retrieved)
+        }
+
+    @Test
+    fun unicodeContentIsStoredCorrectly() =
+        runBlocking {
+            val unicodeUserId = "user-日本語-émoji-🎉"
+
+            storage.saveUserId(unicodeUserId)
+            val retrieved = storage.getUserId()
+
+            assertEquals(unicodeUserId, retrieved)
+        }
+
+    @Test
+    fun tokenExpirationBoundaryValuesWorkCorrectly() =
+        runBlocking {
+            storage.saveTokenExpiration(Long.MAX_VALUE)
+            assertEquals(Long.MAX_VALUE, storage.getTokenExpiration())
+
+            storage.saveTokenExpiration(0L)
+            assertEquals(0L, storage.getTokenExpiration())
+        }
+
+    companion object {
+        /** Test timestamp representing January 17, 2024 */
+        private const val TEST_EXPIRATION_TIMESTAMP = 1_705_500_900_000L
+
+        /** Long token length for stress testing */
+        private const val LONG_TOKEN_LENGTH = 4096
     }
 }
