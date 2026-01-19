@@ -196,6 +196,12 @@ The system SHALL define an AuthError sealed interface for authentication failure
 - **WHEN** registration is attempted without an invite code
 - **THEN** AuthError.InviteRequired is returned
 
+#### Scenario: InvalidInviteCode error
+
+- **WHEN** an invite code is invalid, expired, or already used
+- **THEN** AuthError.InvalidInviteCode is returned
+- **AND** no details about the rejected code are exposed (consistent with EmailAlreadyExists)
+
 ### Requirement: Error Serialization
 
 All domain error types SHALL be serializable for transmission over RPC and sync protocols.
