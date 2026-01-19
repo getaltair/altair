@@ -1,11 +1,11 @@
-package com.getaltair.altair.ui.home
+package com.getaltair.altair.ui.guidance
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -16,16 +16,16 @@ import com.getaltair.altair.ui.theme.AltairTheme
 import com.getaltair.altair.ui.theme.LocalAltairColors
 
 /**
- * Home screen - the "Today" view showing daily overview and quick actions.
+ * Guidance screen - quest and goal management.
  *
  * This is a placeholder that will be expanded with:
- * - Daily task summary
- * - Upcoming events
- * - Quick capture actions
- * - Focus recommendations
+ * - Quest list and creation
+ * - Goal tracking
+ * - Progress visualization
+ * - Milestone management
  */
 @Composable
-fun HomeScreen(modifier: Modifier = Modifier) {
+fun GuidanceScreen(modifier: Modifier = Modifier) {
     val colors = LocalAltairColors.current
 
     AltairSurface(modifier = modifier.fillMaxSize()) {
@@ -38,18 +38,18 @@ fun HomeScreen(modifier: Modifier = Modifier) {
             verticalArrangement = Arrangement.Center,
         ) {
             Icon(
-                imageVector = Icons.Filled.Home,
+                imageVector = Icons.Filled.Explore,
                 contentDescription = null,
                 tint = colors.accent,
                 modifier = Modifier.padding(bottom = AltairTheme.Spacing.md),
             )
             AltairText(
-                text = "Today",
+                text = "Guidance",
                 style = AltairTheme.Typography.headlineLarge,
                 color = colors.textPrimary,
             )
             AltairText(
-                text = "Your daily overview and quick actions",
+                text = "Quests and goals to guide your path",
                 style = AltairTheme.Typography.bodyLarge,
                 color = colors.textSecondary,
                 modifier = Modifier.padding(top = AltairTheme.Spacing.sm),
