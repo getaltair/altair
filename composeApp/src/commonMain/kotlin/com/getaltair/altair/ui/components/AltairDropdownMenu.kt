@@ -1,10 +1,5 @@
 package com.getaltair.altair.ui.components
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -12,12 +7,10 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -32,6 +25,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 import com.getaltair.altair.ui.theme.AltairTheme
+import com.getaltair.altair.ui.theme.LocalAltairColors
+
+/** Default vertical offset for dropdown menu positioning. */
+private const val DROPDOWN_MENU_OFFSET_Y = 4
 
 /**
  * Altair-styled dropdown menu component.
@@ -50,9 +47,11 @@ fun AltairDropdownMenu(
     expanded: Boolean,
     onDismissRequest: () -> Unit,
     modifier: Modifier = Modifier,
-    offset: IntOffset = IntOffset(0, 4),
+    offset: IntOffset = IntOffset(0, DROPDOWN_MENU_OFFSET_Y),
     content: @Composable ColumnScope.() -> Unit,
 ) {
+    val colors = LocalAltairColors.current
+
     if (expanded) {
         Popup(
             onDismissRequest = onDismissRequest,
@@ -60,22 +59,21 @@ fun AltairDropdownMenu(
             properties = PopupProperties(focusable = true),
         ) {
             Column(
-                modifier = modifier
-                    .widthIn(min = 160.dp, max = 280.dp)
-                    .shadow(
-                        elevation = 8.dp,
-                        shape = RoundedCornerShape(AltairTheme.Radii.md),
-                        ambientColor = Color.Black.copy(alpha = 0.3f),
-                        spotColor = Color.Black.copy(alpha = 0.3f),
-                    )
-                    .clip(RoundedCornerShape(AltairTheme.Radii.md))
-                    .background(AltairTheme.Colors.backgroundElevated)
-                    .border(
-                        width = 1.dp,
-                        color = AltairTheme.Colors.border,
-                        shape = RoundedCornerShape(AltairTheme.Radii.md),
-                    )
-                    .padding(vertical = AltairTheme.Spacing.xs),
+                modifier =
+                    modifier
+                        .widthIn(min = 160.dp, max = 280.dp)
+                        .shadow(
+                            elevation = 8.dp,
+                            shape = RoundedCornerShape(AltairTheme.Radii.md),
+                            ambientColor = Color.Black.copy(alpha = 0.3f),
+                            spotColor = Color.Black.copy(alpha = 0.3f),
+                        ).clip(RoundedCornerShape(AltairTheme.Radii.md))
+                        .background(colors.backgroundElevated)
+                        .border(
+                            width = 1.dp,
+                            color = colors.border,
+                            shape = RoundedCornerShape(AltairTheme.Radii.md),
+                        ).padding(vertical = AltairTheme.Spacing.xs),
                 content = content,
             )
         }
@@ -99,26 +97,20 @@ fun AltairDropdownMenuItem(
 ) {
     val interactionSource = remember { MutableInteractionSource() }
 
-    val textColor = if (enabled) {
-        AltairTheme.Colors.textPrimary
-    } else {
-        AltairTheme.Colors.textDisabled
-    }
-
     Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null,
-                enabled = enabled,
-                onClick = onClick,
-            )
-            .background(Color.Transparent)
-            .padding(
-                horizontal = AltairTheme.Spacing.md,
-                vertical = AltairTheme.Spacing.sm,
-            ),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .clickable(
+                    interactionSource = interactionSource,
+                    indication = null,
+                    enabled = enabled,
+                    onClick = onClick,
+                ).background(Color.Transparent)
+                .padding(
+                    horizontal = AltairTheme.Spacing.md,
+                    vertical = AltairTheme.Spacing.sm,
+                ),
         contentAlignment = Alignment.CenterStart,
     ) {
         content()
@@ -142,6 +134,8 @@ fun AltairDropdownMenuItem(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
 ) {
+    val colors = LocalAltairColors.current
+
     AltairDropdownMenuItem(
         onClick = onClick,
         modifier = modifier,
@@ -150,11 +144,12 @@ fun AltairDropdownMenuItem(
         AltairText(
             text = text,
             style = AltairTheme.Typography.bodyMedium,
-            color = if (enabled) {
-                AltairTheme.Colors.textPrimary
-            } else {
-                AltairTheme.Colors.textDisabled
-            },
+            color =
+                if (enabled) {
+                    colors.textPrimary
+                } else {
+                    colors.textDisabled
+                },
         )
     }
 }
@@ -168,12 +163,15 @@ fun AltairDropdownMenuItem(
 fun AltairDropdownMenuDivider(
     modifier: Modifier = Modifier,
 ) {
+    val colors = LocalAltairColors.current
+
     Spacer(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(vertical = AltairTheme.Spacing.xs)
-            .height(1.dp)
-            .background(AltairTheme.Colors.borderSubtle),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .padding(vertical = AltairTheme.Spacing.xs)
+                .height(1.dp)
+                .background(colors.borderSubtle),
     )
 }
 
@@ -190,15 +188,18 @@ fun AltairDropdownMenuHeader(
     text: String,
     modifier: Modifier = Modifier,
 ) {
+    val colors = LocalAltairColors.current
+
     AltairText(
         text = text,
         style = AltairTheme.Typography.labelSmall,
-        color = AltairTheme.Colors.textTertiary,
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(
-                horizontal = AltairTheme.Spacing.md,
-                vertical = AltairTheme.Spacing.xs,
-            ),
+        color = colors.textTertiary,
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .padding(
+                    horizontal = AltairTheme.Spacing.md,
+                    vertical = AltairTheme.Spacing.xs,
+                ),
     )
 }

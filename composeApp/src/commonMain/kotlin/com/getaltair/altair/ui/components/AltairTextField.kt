@@ -19,7 +19,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import com.getaltair.altair.ui.theme.AltairColors
 import com.getaltair.altair.ui.theme.AltairTheme
+import com.getaltair.altair.ui.theme.LocalAltairColors
 
 /**
  * Altair-styled text field component.
@@ -34,6 +36,7 @@ import com.getaltair.altair.ui.theme.AltairTheme
  * @param placeholder Optional placeholder text shown when input is empty.
  * @param isError Whether the text field is in an error state.
  * @param errorMessage Error message to display below the input when [isError] is true.
+ * @param helperText Optional helper text displayed below the input (only shown when not in error state).
  * @param enabled Whether the text field accepts input.
  * @param singleLine Whether the input is limited to a single line.
  * @param visualTransformation Visual transformation applied to the input (e.g., password masking).
@@ -49,36 +52,42 @@ fun AltairTextField(
     placeholder: String? = null,
     isError: Boolean = false,
     errorMessage: String? = null,
+    helperText: String? = null,
     enabled: Boolean = true,
     singleLine: Boolean = true,
     visualTransformation: VisualTransformation = VisualTransformation.None,
     leading: @Composable (() -> Unit)? = null,
     trailing: @Composable (() -> Unit)? = null,
 ) {
-    val borderColor = when {
-        isError -> AltairTheme.Colors.error
-        !enabled -> AltairTheme.Colors.borderSubtle
-        else -> AltairTheme.Colors.border
-    }
+    val colors = LocalAltairColors.current
 
-    val backgroundColor = if (enabled) {
-        AltairTheme.Colors.backgroundElevated
-    } else {
-        AltairTheme.Colors.backgroundSubtle
-    }
+    val borderColor =
+        when {
+            isError -> colors.error
+            !enabled -> colors.borderSubtle
+            else -> colors.border
+        }
 
-    val textColor = if (enabled) {
-        AltairTheme.Colors.textPrimary
-    } else {
-        AltairTheme.Colors.textDisabled
-    }
+    val backgroundColor =
+        if (enabled) {
+            colors.backgroundElevated
+        } else {
+            colors.backgroundSubtle
+        }
+
+    val textColor =
+        if (enabled) {
+            colors.textPrimary
+        } else {
+            colors.textDisabled
+        }
 
     Column(modifier = modifier) {
         if (label != null) {
             AltairText(
                 text = label,
                 style = AltairTheme.Typography.labelMedium,
-                color = if (isError) AltairTheme.Colors.error else AltairTheme.Colors.textSecondary,
+                color = if (isError) colors.error else colors.textSecondary,
             )
             Spacer(modifier = Modifier.height(AltairTheme.Spacing.xs))
         }
@@ -91,7 +100,7 @@ fun AltairTextField(
             enabled = enabled,
             singleLine = singleLine,
             visualTransformation = visualTransformation,
-            cursorBrush = SolidColor(AltairTheme.Colors.accent),
+            cursorBrush = SolidColor(colors.accent),
             decorationBox = { innerTextField ->
                 TextFieldDecoration(
                     value = value,
@@ -100,6 +109,7 @@ fun AltairTextField(
                     trailing = trailing,
                     backgroundColor = backgroundColor,
                     borderColor = borderColor,
+                    colors = colors,
                     innerTextField = innerTextField,
                 )
             },
@@ -110,7 +120,14 @@ fun AltairTextField(
             AltairText(
                 text = errorMessage,
                 style = AltairTheme.Typography.labelSmall,
-                color = AltairTheme.Colors.error,
+                color = colors.error,
+            )
+        } else if (helperText != null) {
+            Spacer(modifier = Modifier.height(AltairTheme.Spacing.xs))
+            AltairText(
+                text = helperText,
+                style = AltairTheme.Typography.labelSmall,
+                color = colors.textTertiary,
             )
         }
     }
@@ -124,24 +141,24 @@ private fun TextFieldDecoration(
     trailing: @Composable (() -> Unit)?,
     backgroundColor: Color,
     borderColor: Color,
+    colors: AltairColors,
     innerTextField: @Composable () -> Unit,
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(
-                color = backgroundColor,
-                shape = RoundedCornerShape(AltairTheme.Radii.md),
-            )
-            .border(
-                width = 1.dp,
-                color = borderColor,
-                shape = RoundedCornerShape(AltairTheme.Radii.md),
-            )
-            .padding(
-                horizontal = AltairTheme.Spacing.md,
-                vertical = AltairTheme.Spacing.sm + 4.dp,
-            ),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .background(
+                    color = backgroundColor,
+                    shape = RoundedCornerShape(AltairTheme.Radii.md),
+                ).border(
+                    width = 1.dp,
+                    color = borderColor,
+                    shape = RoundedCornerShape(AltairTheme.Radii.md),
+                ).padding(
+                    horizontal = AltairTheme.Spacing.md,
+                    vertical = AltairTheme.Spacing.sm + 4.dp,
+                ),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (leading != null) {
@@ -154,7 +171,7 @@ private fun TextFieldDecoration(
                 AltairText(
                     text = placeholder,
                     style = AltairTheme.Typography.bodyMedium,
-                    color = AltairTheme.Colors.textTertiary,
+                    color = colors.textTertiary,
                 )
             }
             innerTextField()

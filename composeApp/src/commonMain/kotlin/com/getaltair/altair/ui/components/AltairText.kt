@@ -36,10 +36,11 @@ fun AltairText(
     BasicText(
         text = text,
         modifier = modifier,
-        style = style.copy(
-            color = color,
-            textAlign = textAlign ?: style.textAlign,
-        ),
+        style =
+            style.copy(
+                color = color,
+                textAlign = textAlign ?: style.textAlign,
+            ),
         overflow = overflow,
         maxLines = maxLines,
     )

@@ -9,6 +9,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.composeunstyled.UnstyledButton
 import com.getaltair.altair.ui.theme.AltairTheme
+import com.getaltair.altair.ui.theme.LocalAltairColors
 
 /**
  * Altair-styled button component wrapping Compose Unstyled Button.
@@ -30,33 +31,39 @@ fun AltairButton(
     enabled: Boolean = true,
     content: @Composable RowScope.() -> Unit,
 ) {
-    val backgroundColor = if (enabled) {
-        variant.backgroundColor()
-    } else {
-        AltairTheme.Colors.backgroundSubtle
-    }
+    val colors = LocalAltairColors.current
 
-    val contentColor = if (enabled) {
-        variant.contentColor()
-    } else {
-        AltairTheme.Colors.textDisabled
-    }
+    val backgroundColor =
+        if (enabled) {
+            variant.backgroundColor(colors)
+        } else {
+            colors.backgroundSubtle
+        }
 
-    val borderColor = if (enabled) {
-        variant.borderColor()
-    } else {
-        Color.Transparent
-    }
+    val contentColor =
+        if (enabled) {
+            variant.contentColor(colors)
+        } else {
+            colors.textDisabled
+        }
+
+    val borderColor =
+        if (enabled) {
+            variant.borderColor(colors)
+        } else {
+            Color.Transparent
+        }
 
     UnstyledButton(
         onClick = { if (enabled) onClick() },
         modifier = modifier,
         backgroundColor = backgroundColor,
         contentColor = contentColor,
-        contentPadding = PaddingValues(
-            horizontal = AltairTheme.Spacing.md,
-            vertical = AltairTheme.Spacing.sm + 4.dp,
-        ),
+        contentPadding =
+            PaddingValues(
+                horizontal = AltairTheme.Spacing.md,
+                vertical = AltairTheme.Spacing.sm + 4.dp,
+            ),
         shape = RoundedCornerShape(AltairTheme.Radii.md),
         borderColor = borderColor,
         borderWidth = if (borderColor != Color.Transparent) 1.dp else 0.dp,

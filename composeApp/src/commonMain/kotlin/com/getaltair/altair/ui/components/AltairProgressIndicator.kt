@@ -16,7 +16,16 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.getaltair.altair.ui.theme.AltairTheme
+import com.getaltair.altair.ui.theme.LocalAltairColors
+
+/** Sweep angle for the progress indicator arc. */
+private const val PROGRESS_SWEEP_ANGLE = 270f
+
+/** Background track full circle angle. */
+private const val FULL_CIRCLE_ANGLE = 360f
+
+/** Start angle offset to begin rotation from the top of the circle. */
+private const val START_ANGLE_OFFSET = 90f
 
 /**
  * Altair-styled circular progress indicator.
@@ -26,34 +35,34 @@ import com.getaltair.altair.ui.theme.AltairTheme
  * @param modifier Modifier to be applied to the indicator.
  * @param size The diameter of the spinner.
  * @param strokeWidth The width of the spinner stroke.
- * @param color The color of the spinner.
+ * @param color The color of the spinner. Defaults to theme's accent color.
  */
 @Composable
 fun AltairCircularProgressIndicator(
     modifier: Modifier = Modifier,
     size: Dp = 24.dp,
     strokeWidth: Dp = 2.dp,
-    color: Color = AltairTheme.Colors.accent,
+    color: Color = LocalAltairColors.current.accent,
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "progress")
     val rotation by infiniteTransition.animateFloat(
         initialValue = 0f,
         targetValue = 360f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart,
-        ),
+        animationSpec =
+            infiniteRepeatable(
+                animation = tween(durationMillis = 1000, easing = LinearEasing),
+                repeatMode = RepeatMode.Restart,
+            ),
         label = "rotation",
     )
 
     Canvas(modifier = modifier.size(size)) {
-        val sweepAngle = 270f
-        val startAngle = rotation - 90f
+        val startAngle = rotation - START_ANGLE_OFFSET
 
         drawArc(
             color = color.copy(alpha = 0.2f),
             startAngle = 0f,
-            sweepAngle = 360f,
+            sweepAngle = FULL_CIRCLE_ANGLE,
             useCenter = false,
             style = Stroke(width = strokeWidth.toPx(), cap = StrokeCap.Round),
         )
@@ -61,7 +70,7 @@ fun AltairCircularProgressIndicator(
         drawArc(
             color = color,
             startAngle = startAngle,
-            sweepAngle = sweepAngle,
+            sweepAngle = PROGRESS_SWEEP_ANGLE,
             useCenter = false,
             style = Stroke(width = strokeWidth.toPx(), cap = StrokeCap.Round),
         )

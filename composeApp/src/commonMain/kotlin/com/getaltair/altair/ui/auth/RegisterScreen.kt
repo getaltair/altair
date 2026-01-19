@@ -41,10 +41,11 @@ fun RegisterScreen(
 
     AltairSurface(modifier = modifier.fillMaxSize()) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(scrollState)
-                .padding(AltairTheme.Spacing.lg),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .verticalScroll(scrollState)
+                    .padding(AltairTheme.Spacing.lg),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
@@ -153,7 +154,8 @@ private fun RegisterFormFields(
             label = "Invite Code (optional)",
             placeholder = "Enter invite code if you have one",
             isError = state.inviteCodeError != null,
-            errorMessage = state.inviteCodeError ?: "Required after first user is created",
+            errorMessage = state.inviteCodeError,
+            helperText = "Required after first user is created",
             enabled = !state.isLoading,
             modifier = Modifier.fillMaxWidth(),
         )

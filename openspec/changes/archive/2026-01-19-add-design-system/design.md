@@ -66,11 +66,11 @@ object AltairTheme {
 
 ### Decision 3: Component Wrapping Pattern
 
-**What:** Each Altair component wraps a Compose Unstyled primitive, applying styling through Modifier.
+**What:** Altair components wrap Compose Unstyled primitives (for buttons) or Compose Foundation primitives (for other components), applying theme colors via `LocalAltairColors`.
 
 **Why:**
 - Clear separation: Unstyled handles behavior, Altair handles appearance
-- Consistent styling API across all components
+- Theme-aware via CompositionLocal for light/dark mode support
 - Easy to update styling without changing behavior logic
 
 **Pattern:**
@@ -82,14 +82,16 @@ fun AltairButton(
     modifier: Modifier = Modifier,
     content: @Composable RowScope.() -> Unit
 ) {
-    Button(  // From Compose Unstyled
+    val colors = LocalAltairColors.current
+
+    UnstyledButton(  // From Compose Unstyled
         onClick = onClick,
-        modifier = modifier
-            .background(variant.backgroundColor)
-            .focusRing(AltairTheme.Colors.borderFocused)
-    ) {
-        content()
-    }
+        modifier = modifier,
+        backgroundColor = variant.backgroundColor(colors),
+        contentColor = variant.contentColor(colors),
+        shape = RoundedCornerShape(AltairTheme.Radii.md),
+        content = content,
+    )
 }
 ```
 

@@ -13,6 +13,7 @@ import com.getaltair.altair.ui.components.AltairSurface
 import com.getaltair.altair.ui.components.AltairText
 import com.getaltair.altair.ui.theme.AltairTheme
 import com.getaltair.altair.ui.theme.AltairThemeProvider
+import com.getaltair.altair.ui.theme.LocalAltairColors
 
 /**
  * Error screen displayed when app initialization fails.
@@ -25,36 +26,38 @@ fun ErrorScreen(
 ) {
     // Log the full error for debugging
     LaunchedEffect(error) {
-        println("ErrorScreen displayed for: ${error::class.simpleName}: ${error.message}")
-        error.printStackTrace()
+        System.err.println("[ERROR] ErrorScreen displayed for: ${error::class.simpleName}: ${error.message}")
+        error.printStackTrace(System.err)
     }
 
     AltairThemeProvider {
+        val colors = LocalAltairColors.current
         AltairSurface(modifier = modifier.fillMaxSize()) {
             Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(AltairTheme.Spacing.lg),
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .padding(AltairTheme.Spacing.lg),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center,
             ) {
                 AltairText(
                     text = "Failed to start Altair",
                     style = AltairTheme.Typography.headlineMedium,
-                    color = AltairTheme.Colors.error,
+                    color = colors.error,
                     textAlign = TextAlign.Center,
                 )
                 AltairText(
                     text = buildErrorDescription(error),
                     style = AltairTheme.Typography.bodyMedium,
-                    color = AltairTheme.Colors.textPrimary,
+                    color = colors.textPrimary,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(top = AltairTheme.Spacing.md),
                 )
                 AltairText(
                     text = "Please restart the app. If this persists, contact support.",
                     style = AltairTheme.Typography.bodySmall,
-                    color = AltairTheme.Colors.textSecondary,
+                    color = colors.textSecondary,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(top = AltairTheme.Spacing.lg),
                 )

@@ -21,9 +21,10 @@ import com.getaltair.altair.ui.theme.AltairTheme
 fun HomeScreen(modifier: Modifier = Modifier) {
     AltairSurface(modifier = modifier.fillMaxSize()) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(AltairTheme.Spacing.lg),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(AltairTheme.Spacing.lg),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {

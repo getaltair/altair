@@ -1,26 +1,18 @@
 package com.getaltair.altair.ui.components
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -30,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.getaltair.altair.ui.theme.AltairTheme
+import com.getaltair.altair.ui.theme.LocalAltairColors
 
 /**
  * Altair-styled dialog component.
@@ -51,37 +44,39 @@ fun AltairDialog(
     title: String? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
+    val colors = LocalAltairColors.current
+
     if (visible) {
         Dialog(
             onDismissRequest = onDismissRequest,
-            properties = DialogProperties(
-                dismissOnBackPress = true,
-                dismissOnClickOutside = true,
-            ),
+            properties =
+                DialogProperties(
+                    dismissOnBackPress = true,
+                    dismissOnClickOutside = true,
+                ),
         ) {
             Column(
-                modifier = modifier
-                    .widthIn(min = 280.dp, max = 480.dp)
-                    .shadow(
-                        elevation = 8.dp,
-                        shape = RoundedCornerShape(AltairTheme.Radii.lg),
-                        ambientColor = Color.Black.copy(alpha = 0.3f),
-                        spotColor = Color.Black.copy(alpha = 0.3f),
-                    )
-                    .clip(RoundedCornerShape(AltairTheme.Radii.lg))
-                    .background(AltairTheme.Colors.backgroundElevated)
-                    .border(
-                        width = 1.dp,
-                        color = AltairTheme.Colors.border,
-                        shape = RoundedCornerShape(AltairTheme.Radii.lg),
-                    )
-                    .padding(AltairTheme.Spacing.lg),
+                modifier =
+                    modifier
+                        .widthIn(min = 280.dp, max = 480.dp)
+                        .shadow(
+                            elevation = 8.dp,
+                            shape = RoundedCornerShape(AltairTheme.Radii.lg),
+                            ambientColor = Color.Black.copy(alpha = 0.3f),
+                            spotColor = Color.Black.copy(alpha = 0.3f),
+                        ).clip(RoundedCornerShape(AltairTheme.Radii.lg))
+                        .background(colors.backgroundElevated)
+                        .border(
+                            width = 1.dp,
+                            color = colors.border,
+                            shape = RoundedCornerShape(AltairTheme.Radii.lg),
+                        ).padding(AltairTheme.Spacing.lg),
             ) {
                 if (title != null) {
                     AltairText(
                         text = title,
                         style = AltairTheme.Typography.headlineMedium,
-                        color = AltairTheme.Colors.textPrimary,
+                        color = colors.textPrimary,
                     )
                     Spacer(modifier = Modifier.height(AltairTheme.Spacing.md))
                 }
@@ -114,11 +109,13 @@ fun AltairConfirmDialog(
     onConfirm: () -> Unit,
     title: String,
     message: String,
+    modifier: Modifier = Modifier,
     confirmText: String = "Confirm",
     cancelText: String = "Cancel",
     isDestructive: Boolean = false,
-    modifier: Modifier = Modifier,
 ) {
+    val colors = LocalAltairColors.current
+
     AltairDialog(
         visible = visible,
         onDismissRequest = onDismissRequest,
@@ -128,7 +125,7 @@ fun AltairConfirmDialog(
         AltairText(
             text = message,
             style = AltairTheme.Typography.bodyMedium,
-            color = AltairTheme.Colors.textSecondary,
+            color = colors.textSecondary,
         )
         Spacer(modifier = Modifier.height(AltairTheme.Spacing.lg))
         Row(
@@ -179,9 +176,11 @@ fun AltairAlertDialog(
     onDismissRequest: () -> Unit,
     title: String,
     message: String,
-    buttonText: String = "OK",
     modifier: Modifier = Modifier,
+    buttonText: String = "OK",
 ) {
+    val colors = LocalAltairColors.current
+
     AltairDialog(
         visible = visible,
         onDismissRequest = onDismissRequest,
@@ -191,7 +190,7 @@ fun AltairAlertDialog(
         AltairText(
             text = message,
             style = AltairTheme.Typography.bodyMedium,
-            color = AltairTheme.Colors.textSecondary,
+            color = colors.textSecondary,
         )
         Spacer(modifier = Modifier.height(AltairTheme.Spacing.lg))
         Row(

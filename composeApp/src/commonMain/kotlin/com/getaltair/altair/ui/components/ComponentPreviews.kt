@@ -27,15 +27,17 @@ import com.getaltair.altair.ui.theme.AltairThemeProvider
  * Use this composable to visually test and verify component styling.
  * Can be rendered in a test activity or preview window.
  */
+@Suppress("ktlint:compose:modifier-missing-check")
 @Composable
 fun DesignSystemShowcase() {
     AltairThemeProvider {
         AltairSurface(modifier = Modifier.fillMaxSize()) {
             Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(AltairTheme.Spacing.lg),
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                        .padding(AltairTheme.Spacing.lg),
             ) {
                 SectionHeader("Typography")
                 TypographyShowcase()

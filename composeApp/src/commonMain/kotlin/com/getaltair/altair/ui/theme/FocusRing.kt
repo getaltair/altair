@@ -2,15 +2,13 @@ package com.getaltair.altair.ui.theme
 
 import androidx.compose.foundation.border
 import androidx.compose.foundation.focusable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.composed
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.Dp
@@ -22,31 +20,32 @@ import androidx.compose.ui.unit.dp
  * The focus ring appears when the component receives keyboard focus,
  * providing a clear visual indicator for keyboard navigation.
  *
+ * Note: This uses static theme colors. For theme-aware focus rings that
+ * respond to light/dark mode changes, use [themedFocusRing] instead.
+ *
+ * @param interactionSource The interaction source to track focus state.
  * @param color The color of the focus ring. Defaults to the theme's focused border color.
  * @param width The width of the focus ring border.
  * @param shape The shape of the focus ring.
- * @param offset Additional offset around the component (not implemented - consider adding padding).
  * @return A modifier that displays a focus ring when focused.
  */
+@Composable
 fun Modifier.focusRing(
+    interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
     color: Color = AltairTheme.Colors.borderFocused,
     width: Dp = 2.dp,
     shape: Shape = RoundedCornerShape(AltairTheme.Radii.md),
-    offset: Dp = 2.dp,
-): Modifier = composed {
-    var isFocused by remember { mutableStateOf(false) }
+): Modifier {
+    val isFocused by interactionSource.collectIsFocusedAsState()
 
-    this
-        .focusable()
-        .onFocusChanged { focusState ->
-            isFocused = focusState.isFocused
-        }
+    return this
+        .focusable(interactionSource = interactionSource)
         .then(
             if (isFocused) {
                 Modifier.border(width = width, color = color, shape = shape)
             } else {
                 Modifier
-            }
+            },
         )
 }
 

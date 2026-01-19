@@ -19,6 +19,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.getaltair.altair.ui.theme.AltairTheme
+import com.getaltair.altair.ui.theme.LocalAltairColors
 
 /**
  * Altair-styled checkbox component.
@@ -38,41 +39,47 @@ fun AltairCheckbox(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
 ) {
-    val backgroundColor = when {
-        !enabled -> AltairTheme.Colors.backgroundSubtle
-        checked -> AltairTheme.Colors.accent
-        else -> Color.Transparent
-    }
+    val colors = LocalAltairColors.current
 
-    val borderColor = when {
-        !enabled -> AltairTheme.Colors.borderSubtle
-        checked -> Color.Transparent
-        else -> AltairTheme.Colors.border
-    }
+    val backgroundColor =
+        when {
+            !enabled -> colors.backgroundSubtle
+            checked -> colors.accent
+            else -> Color.Transparent
+        }
 
-    val checkColor = when {
-        !enabled -> AltairTheme.Colors.textDisabled
-        else -> AltairTheme.Colors.textPrimary
-    }
+    val borderColor =
+        when {
+            !enabled -> colors.borderSubtle
+            checked -> Color.Transparent
+            else -> colors.border
+        }
+
+    val checkColor =
+        if (!enabled) {
+            colors.textDisabled
+        } else {
+            colors.textPrimary
+        }
 
     val interactionSource = remember { MutableInteractionSource() }
 
     Box(
-        modifier = modifier
-            .size(20.dp)
-            .clip(RoundedCornerShape(AltairTheme.Radii.sm))
-            .background(backgroundColor)
-            .border(
-                width = if (borderColor != Color.Transparent) 2.dp else 0.dp,
-                color = borderColor,
-                shape = RoundedCornerShape(AltairTheme.Radii.sm),
-            )
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null,
-                enabled = enabled,
-                onClick = { onCheckedChange(!checked) },
-            ),
+        modifier =
+            modifier
+                .size(20.dp)
+                .clip(RoundedCornerShape(AltairTheme.Radii.sm))
+                .background(backgroundColor)
+                .border(
+                    width = if (borderColor != Color.Transparent) 2.dp else 0.dp,
+                    color = borderColor,
+                    shape = RoundedCornerShape(AltairTheme.Radii.sm),
+                ).clickable(
+                    interactionSource = interactionSource,
+                    indication = null,
+                    enabled = enabled,
+                    onClick = { onCheckedChange(!checked) },
+                ),
         contentAlignment = Alignment.Center,
     ) {
         if (checked) {
@@ -106,22 +113,25 @@ fun AltairCheckboxRow(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
 ) {
+    val colors = LocalAltairColors.current
     val interactionSource = remember { MutableInteractionSource() }
 
-    val textColor = if (enabled) {
-        AltairTheme.Colors.textPrimary
-    } else {
-        AltairTheme.Colors.textDisabled
-    }
+    val textColor =
+        if (enabled) {
+            colors.textPrimary
+        } else {
+            colors.textDisabled
+        }
 
     Row(
-        modifier = modifier
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null,
-                enabled = enabled,
-                onClick = { onCheckedChange(!checked) },
-            ),
+        modifier =
+            modifier
+                .clickable(
+                    interactionSource = interactionSource,
+                    indication = null,
+                    enabled = enabled,
+                    onClick = { onCheckedChange(!checked) },
+                ),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Start,
     ) {

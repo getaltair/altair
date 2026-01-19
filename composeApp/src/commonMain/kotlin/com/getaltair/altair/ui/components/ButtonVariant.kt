@@ -1,7 +1,7 @@
 package com.getaltair.altair.ui.components
 
 import androidx.compose.ui.graphics.Color
-import com.getaltair.altair.ui.theme.AltairTheme
+import com.getaltair.altair.ui.theme.AltairColors
 
 /**
  * Button style variants for [AltairButton].
@@ -29,49 +29,54 @@ enum class ButtonVariant {
 /**
  * Returns the background color for the button variant.
  */
-internal fun ButtonVariant.backgroundColor(): Color = when (this) {
-    ButtonVariant.Primary -> AltairTheme.Colors.accent
-    ButtonVariant.Secondary -> AltairTheme.Colors.backgroundSubtle
-    ButtonVariant.Ghost -> Color.Transparent
-    ButtonVariant.Danger -> AltairTheme.Colors.error
-}
+internal fun ButtonVariant.backgroundColor(colors: AltairColors): Color =
+    when (this) {
+        ButtonVariant.Primary -> colors.accent
+        ButtonVariant.Secondary -> colors.backgroundSubtle
+        ButtonVariant.Ghost -> Color.Transparent
+        ButtonVariant.Danger -> colors.error
+    }
 
 /**
  * Returns the background color when the button is hovered.
  */
-internal fun ButtonVariant.backgroundColorHover(): Color = when (this) {
-    ButtonVariant.Primary -> AltairTheme.Colors.accentHover
-    ButtonVariant.Secondary -> AltairTheme.Colors.backgroundHover
-    ButtonVariant.Ghost -> AltairTheme.Colors.backgroundHover
-    ButtonVariant.Danger -> Color(0xFFF87171) // Lighter red on hover
-}
+internal fun ButtonVariant.backgroundColorHover(colors: AltairColors): Color =
+    when (this) {
+        ButtonVariant.Primary -> colors.accentHover
+        ButtonVariant.Secondary -> colors.backgroundHover
+        ButtonVariant.Ghost -> colors.backgroundHover
+        ButtonVariant.Danger -> colors.errorHover
+    }
 
 /**
  * Returns the background color when the button is pressed.
  */
-internal fun ButtonVariant.backgroundColorPressed(): Color = when (this) {
-    ButtonVariant.Primary -> AltairTheme.Colors.accentPressed
-    ButtonVariant.Secondary -> AltairTheme.Colors.backgroundPressed
-    ButtonVariant.Ghost -> AltairTheme.Colors.backgroundPressed
-    ButtonVariant.Danger -> Color(0xFFB91C1C) // Darker red on press
-}
+internal fun ButtonVariant.backgroundColorPressed(colors: AltairColors): Color =
+    when (this) {
+        ButtonVariant.Primary -> colors.accentPressed
+        ButtonVariant.Secondary -> colors.backgroundPressed
+        ButtonVariant.Ghost -> colors.backgroundPressed
+        ButtonVariant.Danger -> colors.errorPressed
+    }
 
 /**
  * Returns the text/content color for the button variant.
  */
-internal fun ButtonVariant.contentColor(): Color = when (this) {
-    ButtonVariant.Primary -> AltairTheme.Colors.textPrimary
-    ButtonVariant.Secondary -> AltairTheme.Colors.textPrimary
-    ButtonVariant.Ghost -> AltairTheme.Colors.textSecondary
-    ButtonVariant.Danger -> AltairTheme.Colors.textPrimary
-}
+internal fun ButtonVariant.contentColor(colors: AltairColors): Color =
+    when (this) {
+        ButtonVariant.Primary -> colors.textPrimary
+        ButtonVariant.Secondary -> colors.textPrimary
+        ButtonVariant.Ghost -> colors.textSecondary
+        ButtonVariant.Danger -> colors.textPrimary
+    }
 
 /**
  * Returns the border color for the button variant (if any).
  */
-internal fun ButtonVariant.borderColor(): Color = when (this) {
-    ButtonVariant.Primary -> Color.Transparent
-    ButtonVariant.Secondary -> AltairTheme.Colors.border
-    ButtonVariant.Ghost -> Color.Transparent
-    ButtonVariant.Danger -> Color.Transparent
-}
+internal fun ButtonVariant.borderColor(colors: AltairColors): Color =
+    when (this) {
+        ButtonVariant.Primary -> Color.Transparent
+        ButtonVariant.Secondary -> colors.border
+        ButtonVariant.Ghost -> Color.Transparent
+        ButtonVariant.Danger -> Color.Transparent
+    }

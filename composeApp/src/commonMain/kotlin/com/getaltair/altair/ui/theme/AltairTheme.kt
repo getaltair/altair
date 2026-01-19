@@ -57,6 +57,8 @@ object AltairTheme {
         val warning: Color = Color(0xFFF59E0B)
         val warningSubtle: Color = Color(0xFF78350F)
         val error: Color = Color(0xFFEF4444)
+        val errorHover: Color = Color(0xFFF87171)
+        val errorPressed: Color = Color(0xFFDC2626)
         val errorSubtle: Color = Color(0xFF7F1D1D)
         val info: Color = Color(0xFF3B82F6)
         val infoSubtle: Color = Color(0xFF1E3A5F)
@@ -65,101 +67,113 @@ object AltairTheme {
     /**
      * Typography tokens for the Altair design system.
      *
-     * Scale follows Material Design type scale principles
-     * with system fonts for cross-platform consistency.
+     * Provides a harmonized type ramp with display, headline, body, and label
+     * styles for consistent text hierarchy across all platforms.
      */
     object Typography {
         // Display - Large headings for splash/hero
-        val displayLarge: TextStyle = TextStyle(
-            fontSize = 48.sp,
-            fontWeight = FontWeight.Bold,
-            lineHeight = 56.sp,
-            letterSpacing = (-0.5).sp,
-            color = Colors.textPrimary,
-        )
-        val displayMedium: TextStyle = TextStyle(
-            fontSize = 36.sp,
-            fontWeight = FontWeight.Bold,
-            lineHeight = 44.sp,
-            letterSpacing = (-0.25).sp,
-            color = Colors.textPrimary,
-        )
-        val displaySmall: TextStyle = TextStyle(
-            fontSize = 28.sp,
-            fontWeight = FontWeight.SemiBold,
-            lineHeight = 36.sp,
-            letterSpacing = 0.sp,
-            color = Colors.textPrimary,
-        )
+        val displayLarge: TextStyle =
+            TextStyle(
+                fontSize = 48.sp,
+                fontWeight = FontWeight.Bold,
+                lineHeight = 56.sp,
+                letterSpacing = (-0.5).sp,
+                color = Colors.textPrimary,
+            )
+        val displayMedium: TextStyle =
+            TextStyle(
+                fontSize = 36.sp,
+                fontWeight = FontWeight.Bold,
+                lineHeight = 44.sp,
+                letterSpacing = (-0.25).sp,
+                color = Colors.textPrimary,
+            )
+        val displaySmall: TextStyle =
+            TextStyle(
+                fontSize = 28.sp,
+                fontWeight = FontWeight.SemiBold,
+                lineHeight = 36.sp,
+                letterSpacing = 0.sp,
+                color = Colors.textPrimary,
+            )
 
         // Headline - Section headings
-        val headlineLarge: TextStyle = TextStyle(
-            fontSize = 24.sp,
-            fontWeight = FontWeight.SemiBold,
-            lineHeight = 32.sp,
-            letterSpacing = 0.sp,
-            color = Colors.textPrimary,
-        )
-        val headlineMedium: TextStyle = TextStyle(
-            fontSize = 20.sp,
-            fontWeight = FontWeight.SemiBold,
-            lineHeight = 28.sp,
-            letterSpacing = 0.sp,
-            color = Colors.textPrimary,
-        )
-        val headlineSmall: TextStyle = TextStyle(
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Medium,
-            lineHeight = 24.sp,
-            letterSpacing = 0.sp,
-            color = Colors.textPrimary,
-        )
+        val headlineLarge: TextStyle =
+            TextStyle(
+                fontSize = 24.sp,
+                fontWeight = FontWeight.SemiBold,
+                lineHeight = 32.sp,
+                letterSpacing = 0.sp,
+                color = Colors.textPrimary,
+            )
+        val headlineMedium: TextStyle =
+            TextStyle(
+                fontSize = 20.sp,
+                fontWeight = FontWeight.SemiBold,
+                lineHeight = 28.sp,
+                letterSpacing = 0.sp,
+                color = Colors.textPrimary,
+            )
+        val headlineSmall: TextStyle =
+            TextStyle(
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Medium,
+                lineHeight = 24.sp,
+                letterSpacing = 0.sp,
+                color = Colors.textPrimary,
+            )
 
         // Body - Primary content
-        val bodyLarge: TextStyle = TextStyle(
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Normal,
-            lineHeight = 24.sp,
-            letterSpacing = 0.sp,
-            color = Colors.textPrimary,
-        )
-        val bodyMedium: TextStyle = TextStyle(
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Normal,
-            lineHeight = 20.sp,
-            letterSpacing = 0.sp,
-            color = Colors.textPrimary,
-        )
-        val bodySmall: TextStyle = TextStyle(
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Normal,
-            lineHeight = 16.sp,
-            letterSpacing = 0.sp,
-            color = Colors.textSecondary,
-        )
+        val bodyLarge: TextStyle =
+            TextStyle(
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Normal,
+                lineHeight = 24.sp,
+                letterSpacing = 0.sp,
+                color = Colors.textPrimary,
+            )
+        val bodyMedium: TextStyle =
+            TextStyle(
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Normal,
+                lineHeight = 20.sp,
+                letterSpacing = 0.sp,
+                color = Colors.textPrimary,
+            )
+        val bodySmall: TextStyle =
+            TextStyle(
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Normal,
+                lineHeight = 16.sp,
+                letterSpacing = 0.sp,
+                color = Colors.textSecondary,
+            )
 
         // Label - UI chrome, buttons, inputs
-        val labelLarge: TextStyle = TextStyle(
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Medium,
-            lineHeight = 20.sp,
-            letterSpacing = 0.sp,
-            color = Colors.textPrimary,
-        )
-        val labelMedium: TextStyle = TextStyle(
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Medium,
-            lineHeight = 16.sp,
-            letterSpacing = 0.sp,
-            color = Colors.textPrimary,
-        )
-        val labelSmall: TextStyle = TextStyle(
-            fontSize = 11.sp,
-            fontWeight = FontWeight.Medium,
-            lineHeight = 14.sp,
-            letterSpacing = 0.5.sp,
-            color = Colors.textSecondary,
-        )
+        val labelLarge: TextStyle =
+            TextStyle(
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium,
+                lineHeight = 20.sp,
+                letterSpacing = 0.sp,
+                color = Colors.textPrimary,
+            )
+        val labelMedium: TextStyle =
+            TextStyle(
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium,
+                lineHeight = 16.sp,
+                letterSpacing = 0.sp,
+                color = Colors.textPrimary,
+            )
+        val labelSmall: TextStyle =
+            TextStyle(
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Medium,
+                lineHeight = 14.sp,
+                letterSpacing = 0.5.sp,
+                color = Colors.textSecondary,
+            )
     }
 
     /**
