@@ -21,6 +21,10 @@ import kotlinx.coroutines.launch
  * Root navigation component using Decompose.
  * Manages the navigation stack for the entire application.
  *
+ * Navigation structure:
+ * - Unauthenticated: Login/Register flow
+ * - Authenticated: Main shell with tab navigation (Home, Guidance, Knowledge, Tracking, Settings)
+ *
  * Handles auth state changes to redirect between authenticated
  * and unauthenticated flows.
  */
@@ -52,8 +56,8 @@ class RootComponent(
             .onEach { state ->
                 when (state) {
                     is AuthState.Authenticated -> {
-                        // Navigate to home when authenticated
-                        navigation.replaceAll(Config.Home)
+                        // Navigate to main shell when authenticated
+                        navigation.replaceAll(Config.Main)
                     }
                     is AuthState.Unauthenticated -> {
                         // Navigate to login when unauthenticated
@@ -71,7 +75,12 @@ class RootComponent(
         componentContext: ComponentContext,
     ): Child =
         when (config) {
-            is Config.Home -> Child.Home
+            is Config.Main ->
+                Child.Main(
+                    MainComponent(
+                        componentContext = componentContext,
+                    ),
+                )
 
             is Config.Login ->
                 Child.Login(
@@ -79,7 +88,7 @@ class RootComponent(
                         componentContext = componentContext,
                         authManager = authManager,
                         onLoginSuccess = {
-                            navigation.replaceAll(Config.Home)
+                            navigation.replaceAll(Config.Main)
                         },
                         onNavigateToRegister = {
                             navigation.replaceAll(Config.Register)
@@ -93,7 +102,7 @@ class RootComponent(
                         componentContext = componentContext,
                         authManager = authManager,
                         onRegisterSuccess = {
-                            navigation.replaceAll(Config.Home)
+                            navigation.replaceAll(Config.Main)
                         },
                         onNavigateToLogin = {
                             navigation.replaceAll(Config.Login)
@@ -103,7 +112,9 @@ class RootComponent(
         }
 
     sealed class Child {
-        data object Home : Child()
+        data class Main(
+            val component: MainComponent,
+        ) : Child()
 
         data class Login(
             val component: LoginComponent,
