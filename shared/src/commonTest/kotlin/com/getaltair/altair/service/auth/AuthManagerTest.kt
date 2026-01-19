@@ -312,6 +312,385 @@ class AuthManagerTest {
             assertEquals(AuthState.Unauthenticated, authManager.authState.value)
         }
 
+    @Test
+    fun initializeWithValidTokensSetsAuthenticated() =
+        runTest {
+            // Setup stored credentials with valid (non-expired) token
+            tokenStorage.saveAccessToken("valid-access-token")
+            tokenStorage.saveRefreshToken("valid-refresh-token")
+            tokenStorage.saveUserId("user-123")
+            // Token expires in 10 minutes (not expired)
+            tokenStorage.saveTokenExpiration(Clock.System.now().toEpochMilliseconds() + 600_000L)
+
+            authManager.initialize()
+
+            assertIs<AuthState.Authenticated>(authManager.authState.value)
+            assertEquals("user-123", (authManager.authState.value as AuthState.Authenticated).userId)
+        }
+
+    @Test
+    fun initializeWithMissingAccessTokenSetsUnauthenticated() =
+        runTest {
+            // Only refresh token stored, no access token
+            tokenStorage.saveRefreshToken("refresh-token")
+            tokenStorage.saveUserId("user-123")
+
+            authManager.initialize()
+
+            assertEquals(AuthState.Unauthenticated, authManager.authState.value)
+        }
+
+    @Test
+    fun initializeWithMissingUserIdSetsUnauthenticated() =
+        runTest {
+            // Access token stored but no user ID
+            tokenStorage.saveAccessToken("access-token")
+            tokenStorage.saveRefreshToken("refresh-token")
+
+            authManager.initialize()
+
+            assertEquals(AuthState.Unauthenticated, authManager.authState.value)
+        }
+
+    @Test
+    fun initializeWithExpiredTokenTriesToRefresh() =
+        runTest {
+            // Setup stored credentials with expired token
+            tokenStorage.saveAccessToken("expired-access-token")
+            tokenStorage.saveRefreshToken("valid-refresh-token")
+            tokenStorage.saveUserId("user-123")
+            // Token expired 1 second ago
+            tokenStorage.saveTokenExpiration(Clock.System.now().toEpochMilliseconds() - 1000L)
+
+            // Setup successful refresh response
+            authService.refreshResponse =
+                TokenRefreshResponse(
+                    accessToken = "new-access-token",
+                    refreshToken = "new-refresh-token",
+                    expiresIn = 900,
+                )
+
+            authManager.initialize()
+
+            // Should have attempted refresh
+            assertEquals(1, authService.refreshCallCount)
+            // Should be authenticated after successful refresh
+            assertIs<AuthState.Authenticated>(authManager.authState.value)
+        }
+
+    @Test
+    fun initializeWithExpiredTokenAndFailedRefreshSetsUnauthenticated() =
+        runTest {
+            // Setup stored credentials with expired token
+            tokenStorage.saveAccessToken("expired-access-token")
+            tokenStorage.saveRefreshToken("expired-refresh-token")
+            tokenStorage.saveUserId("user-123")
+            // Token expired 1 second ago
+            tokenStorage.saveTokenExpiration(Clock.System.now().toEpochMilliseconds() - 1000L)
+
+            // Setup failed refresh
+            authService.refreshError = IllegalArgumentException("Refresh token expired")
+
+            authManager.initialize()
+
+            // Should have attempted refresh
+            assertEquals(1, authService.refreshCallCount)
+            // Should be unauthenticated after failed refresh
+            assertEquals(AuthState.Unauthenticated, authManager.authState.value)
+        }
+
+    @Test
+    fun initializeWithNoExpirationInfoSetsAuthenticated() =
+        runTest {
+            // Setup stored credentials but no expiration info
+            tokenStorage.saveAccessToken("access-token")
+            tokenStorage.saveRefreshToken("refresh-token")
+            tokenStorage.saveUserId("user-123")
+            // No expiration saved
+
+            authManager.initialize()
+
+            // Should assume token is valid when no expiration info
+            assertIs<AuthState.Authenticated>(authManager.authState.value)
+        }
+
+    // ===== Loading State Transition Tests =====
+
+    @Test
+    fun loginSetsLoadingStateDuringOperation() =
+        runTest {
+            val response = createAuthResponse()
+            authService.loginResponse = response
+
+            // Initial state is Loading (default)
+            assertIs<AuthState.Loading>(authManager.authState.value)
+
+            authManager.login("test@example.com", "password123")
+
+            // After login, state should be Authenticated
+            assertIs<AuthState.Authenticated>(authManager.authState.value)
+        }
+
+    @Test
+    fun registerSetsLoadingStateDuringOperation() =
+        runTest {
+            val response = createAuthResponse()
+            authService.registerResponse = response
+
+            // Initial state is Loading (default)
+            assertIs<AuthState.Loading>(authManager.authState.value)
+
+            authManager.register(
+                email = "new@example.com",
+                password = "password123",
+                displayName = "New User",
+            )
+
+            // After register, state should be Authenticated
+            assertIs<AuthState.Authenticated>(authManager.authState.value)
+        }
+
+    // ===== Error Mapping Tests for mapRegistrationError =====
+
+    @Test
+    fun registerWithWeakPasswordReturnsWeakPasswordError() =
+        runTest {
+            authService.registerError = IllegalArgumentException("Password is too weak")
+
+            val result =
+                authManager.register(
+                    email = "new@example.com",
+                    password = "123",
+                    displayName = "User",
+                )
+
+            assertTrue(result.isLeft())
+            assertIs<AuthError.WeakPassword>(result.leftOrNull())
+        }
+
+    @Test
+    fun registerWithUnknownErrorReturnsRegistrationFailed() =
+        runTest {
+            authService.registerError = IllegalArgumentException("Some unknown server issue")
+
+            val result =
+                authManager.register(
+                    email = "new@example.com",
+                    password = "password123",
+                    displayName = "User",
+                )
+
+            assertTrue(result.isLeft())
+            val error = result.leftOrNull()
+            assertIs<AuthError.RegistrationFailed>(error)
+            assertEquals("Some unknown server issue", error.reason)
+        }
+
+    @Test
+    fun registerWithBlankErrorMessageReturnsDefaultMessage() =
+        runTest {
+            authService.registerError = IllegalArgumentException("")
+
+            val result =
+                authManager.register(
+                    email = "new@example.com",
+                    password = "password123",
+                    displayName = "User",
+                )
+
+            assertTrue(result.isLeft())
+            val error = result.leftOrNull()
+            assertIs<AuthError.RegistrationFailed>(error)
+            assertEquals("Unknown registration error", error.reason)
+        }
+
+    // ===== Error Mapping Tests for mapExceptionToAuthError =====
+
+    @Test
+    fun loginWithTimeoutErrorReturnsNetworkFailure() =
+        runTest {
+            authService.loginError = Exception("Request timeout")
+
+            val result = authManager.login("test@example.com", "password")
+
+            assertTrue(result.isLeft())
+            assertIs<AuthError.NetworkFailure>(result.leftOrNull())
+        }
+
+    @Test
+    fun loginWithNetworkKeywordReturnsNetworkFailure() =
+        runTest {
+            authService.loginError = Exception("Network unreachable")
+
+            val result = authManager.login("test@example.com", "password")
+
+            assertTrue(result.isLeft())
+            assertIs<AuthError.NetworkFailure>(result.leftOrNull())
+        }
+
+    @Test
+    fun loginWith500ErrorReturnsServerError() =
+        runTest {
+            authService.loginError = Exception("HTTP 500 Internal Server Error")
+
+            val result = authManager.login("test@example.com", "password")
+
+            assertTrue(result.isLeft())
+            assertIs<AuthError.ServerError>(result.leftOrNull())
+        }
+
+    @Test
+    fun loginWith503ErrorReturnsServerError() =
+        runTest {
+            authService.loginError = Exception("HTTP 503 Service Unavailable")
+
+            val result = authManager.login("test@example.com", "password")
+
+            assertTrue(result.isLeft())
+            assertIs<AuthError.ServerError>(result.leftOrNull())
+        }
+
+    @Test
+    fun loginWithServerErrorKeywordReturnsServerError() =
+        runTest {
+            authService.loginError = Exception("Internal server error occurred")
+
+            val result = authManager.login("test@example.com", "password")
+
+            assertTrue(result.isLeft())
+            assertIs<AuthError.ServerError>(result.leftOrNull())
+        }
+
+    @Test
+    fun loginWithUnknownExceptionReturnsServerError() =
+        runTest {
+            authService.loginError = Exception("Something unexpected happened")
+
+            val result = authManager.login("test@example.com", "password")
+
+            assertTrue(result.isLeft())
+            val error = result.leftOrNull()
+            assertIs<AuthError.ServerError>(error)
+            assertEquals("Something unexpected happened", error.message)
+        }
+
+    @Test
+    fun loginWithBlankExceptionMessageReturnsDefaultMessage() =
+        runTest {
+            authService.loginError = Exception("")
+
+            val result = authManager.login("test@example.com", "password")
+
+            assertTrue(result.isLeft())
+            val error = result.leftOrNull()
+            assertIs<AuthError.ServerError>(error)
+            assertEquals("Unknown error occurred", error.message)
+        }
+
+    // ===== Token Refresh Timing Tests =====
+
+    @Test
+    fun getValidAccessTokenRefreshesWhenTokenExpiresWithinFiveMinutes() =
+        runTest {
+            // Setup token that expires in 4 minutes (within the 5-minute buffer)
+            tokenStorage.saveAccessToken("old-access-token")
+            tokenStorage.saveRefreshToken("valid-refresh-token")
+            tokenStorage.saveTokenExpiration(Clock.System.now().toEpochMilliseconds() + 240_000L) // 4 minutes
+
+            authService.refreshResponse =
+                TokenRefreshResponse(
+                    accessToken = "new-access-token",
+                    refreshToken = "new-refresh-token",
+                    expiresIn = 900,
+                )
+
+            val token = authManager.getValidAccessToken()
+
+            // Should have refreshed since token expires within 5-minute buffer
+            assertEquals(1, authService.refreshCallCount)
+            assertEquals("new-access-token", token)
+        }
+
+    @Test
+    fun getValidAccessTokenDoesNotRefreshWhenTokenExpiresAfterFiveMinutes() =
+        runTest {
+            // Setup token that expires in 6 minutes (outside the 5-minute buffer)
+            tokenStorage.saveAccessToken("valid-access-token")
+            tokenStorage.saveRefreshToken("valid-refresh-token")
+            tokenStorage.saveTokenExpiration(Clock.System.now().toEpochMilliseconds() + 360_000L) // 6 minutes
+
+            val token = authManager.getValidAccessToken()
+
+            // Should NOT refresh since token expires after the 5-minute buffer
+            assertEquals(0, authService.refreshCallCount)
+            assertEquals("valid-access-token", token)
+        }
+
+    @Test
+    fun getValidAccessTokenWithNoExpirationReturnsCurrentToken() =
+        runTest {
+            // Setup token with no expiration info
+            tokenStorage.saveAccessToken("access-token")
+            tokenStorage.saveRefreshToken("refresh-token")
+            // No expiration saved
+
+            val token = authManager.getValidAccessToken()
+
+            // Should NOT refresh when no expiration info (cannot determine if refresh needed)
+            assertEquals(0, authService.refreshCallCount)
+            assertEquals("access-token", token)
+        }
+
+    // ===== Token Storage Verification Tests =====
+
+    @Test
+    fun loginPassesCorrectCredentialsToService() =
+        runTest {
+            val response = createAuthResponse()
+            authService.loginResponse = response
+
+            authManager.login("user@example.com", "mypassword")
+
+            assertEquals("user@example.com", authService.lastLoginRequest?.email)
+            assertEquals("mypassword", authService.lastLoginRequest?.password)
+        }
+
+    @Test
+    fun registerPassesCorrectDataToService() =
+        runTest {
+            val response = createAuthResponse()
+            authService.registerResponse = response
+
+            authManager.register(
+                email = "new@example.com",
+                password = "password123",
+                displayName = "Test User",
+                inviteCode = "INVITE-ABC",
+            )
+
+            assertEquals("new@example.com", authService.lastRegisterRequest?.email)
+            assertEquals("password123", authService.lastRegisterRequest?.password)
+            assertEquals("Test User", authService.lastRegisterRequest?.displayName)
+            assertEquals("INVITE-ABC", authService.lastRegisterRequest?.inviteCode)
+        }
+
+    @Test
+    fun refreshPassesCorrectTokenToService() =
+        runTest {
+            tokenStorage.saveRefreshToken("my-refresh-token")
+
+            authService.refreshResponse =
+                TokenRefreshResponse(
+                    accessToken = "new-access",
+                    refreshToken = "new-refresh",
+                    expiresIn = 900,
+                )
+
+            authManager.refreshToken()
+
+            assertEquals("my-refresh-token", authService.lastRefreshToken)
+        }
+
     // ===== Helper Methods =====
 
     private fun createAuthResponse(
