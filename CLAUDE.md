@@ -245,7 +245,11 @@ The authentication system uses JWT tokens with refresh token rotation:
 - `SecureTokenStorage` - Platform-specific secure storage interface
   - Android: `EncryptedSharedPreferences` with Android Keystore
   - iOS: Keychain Services with `kSecAttrAccessibleWhenUnlockedThisDeviceOnly`
-  - Desktop: AES-256-GCM encrypted Java Preferences
+  - Desktop: Native credential stores with encrypted preferences fallback
+    - macOS: Keychain Services via JNA
+    - Windows: Credential Manager (advapi32.dll) via JNA
+    - Linux: Secret Service (libsecret / GNOME Keyring / KDE Wallet) via JNA
+    - Fallback: AES-256-GCM encrypted Java Preferences when native stores unavailable
 
 **Auth flow:**
 ```kotlin

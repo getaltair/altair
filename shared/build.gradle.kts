@@ -58,6 +58,9 @@ kotlin {
             implementation(libs.surrealdb)
             // SQLDelight JVM driver for testing
             implementation(libs.sqldelight.jvm.driver)
+            // JNA - Java Native Access for native credential stores
+            implementation(libs.jna)
+            implementation(libs.jna.platform)
         }
 
         androidMain.dependencies {

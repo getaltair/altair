@@ -37,6 +37,8 @@ sqldelight = "2.0.2"
 testcontainers = "1.21.0"
 # Design System (ADR-008)
 compose-unstyled = "1.49.6"
+# JNA - Java Native Access (native credential stores)
+jna = "5.18.1"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -116,6 +118,9 @@ testcontainers = { module = "org.testcontainers:testcontainers", version.ref = "
 testcontainers-junit5 = { module = "org.testcontainers:junit-jupiter", version.ref = "testcontainers" }
 # Compose Unstyled - Design System (ADR-008)
 compose-unstyled = { module = "com.composables:composeunstyled", version.ref = "compose-unstyled" }
+# JNA - Java Native Access (native credential stores)
+jna = { module = "net.java.dev.jna:jna", version.ref = "jna" }
+jna-platform = { module = "net.java.dev.jna:jna-platform", version.ref = "jna" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }
