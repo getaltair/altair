@@ -14,7 +14,6 @@ import com.getaltair.auth.Argon2PasswordService
 import com.getaltair.auth.JwtConfig
 import com.getaltair.auth.JwtTokenServiceImpl
 import kotlinx.coroutines.runBlocking
-import kotlinx.datetime.Instant
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
@@ -615,9 +614,13 @@ class AuthIntegrationTest {
                 )
 
             // Manually expire the refresh token in the database
+            // Set both created_at (2 days ago) and expires_at (1 day ago) to satisfy temporal invariants
+            // while still making the token expired
             dbClient.execute(
                 """
-                UPDATE refresh_token SET expires_at = d"1970-01-01T00:00:00Z"
+                UPDATE refresh_token SET
+                    created_at = d"1970-01-01T00:00:00Z",
+                    expires_at = d"1970-01-02T00:00:00Z"
                 WHERE user_id = user:${registerResponse.userId};
                 """.trimIndent(),
             )
@@ -694,36 +697,36 @@ class AuthIntegrationTest {
     // ===== Helper methods =====
 
     private suspend fun createInviteCode(createdBy: Ulid): InviteCode {
-        val now = currentInstant()
+        // Use the factory method for correct and convenient construction
         val inviteCode =
-            InviteCode(
+            InviteCode.create(
                 id = Ulid.generate(),
                 code = generateCode(),
                 createdBy = createdBy,
-                expiresAt = Instant.fromEpochMilliseconds(now.toEpochMilliseconds() + 7.days.inWholeMilliseconds),
-                createdAt = now,
+                expiresIn = 7.days,
             )
         inviteCodeRepository.create(inviteCode)
         return inviteCode
     }
 
     private suspend fun createExpiredInviteCode(createdBy: Ulid): InviteCode {
-        val now = currentInstant()
-        // Expired yesterday
-        val expiredAt = now.toEpochMilliseconds() - 1.days.inWholeMilliseconds
+        // Create an invite code that was created 2 days ago and expired 1 day ago
+        // Both timestamps are in the past, but expiresAt > createdAt to satisfy invariants
+        val now = Clock.System.now()
+        val createdAt = now - 2.days
+        val expiresAt = now - 1.days
+
         val inviteCode =
             InviteCode(
                 id = Ulid.generate(),
                 code = generateCode(),
                 createdBy = createdBy,
-                expiresAt = Instant.fromEpochMilliseconds(expiredAt),
-                createdAt = now,
+                expiresAt = expiresAt,
+                createdAt = createdAt,
             )
         inviteCodeRepository.create(inviteCode)
         return inviteCode
     }
-
-    private fun currentInstant(): Instant = Instant.fromEpochMilliseconds(Clock.System.now().toEpochMilliseconds())
 
     private fun generateCode(): String {
         val chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"

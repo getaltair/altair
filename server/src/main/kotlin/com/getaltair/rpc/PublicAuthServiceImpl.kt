@@ -304,20 +304,14 @@ class PublicAuthServiceImpl(
         deviceName: String?,
     ) {
         val tokenHash = TokenHasher.hash(refreshToken)
-        val now = currentInstant()
-        val expiresAt =
-            Instant.fromEpochMilliseconds(
-                now.toEpochMilliseconds() + jwtConfig.refreshTokenExpiration.inWholeMilliseconds,
-            )
 
         val token =
-            RefreshToken(
+            RefreshToken.create(
                 id = Ulid.generate(),
                 userId = userId,
                 tokenHash = tokenHash,
                 deviceName = deviceName,
-                expiresAt = expiresAt,
-                createdAt = now,
+                expiresIn = jwtConfig.refreshTokenExpiration,
             )
 
         refreshTokenRepository
