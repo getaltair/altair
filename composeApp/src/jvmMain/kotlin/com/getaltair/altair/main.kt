@@ -1,13 +1,20 @@
 package com.getaltair.altair
 
+import androidx.compose.runtime.remember
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
+import com.arkivanov.essenty.lifecycle.destroy
 import com.getaltair.altair.db.DesktopMigrationRunner
 import com.getaltair.altair.db.EmbeddedSurrealClient
 import com.getaltair.altair.db.desktopDatabaseModule
 import com.getaltair.altair.di.desktopAuthModule
 import com.getaltair.altair.di.initKoin
+import com.getaltair.altair.navigation.RootComponent
+import com.getaltair.altair.navigation.RootContent
+import com.getaltair.altair.navigation.createRootComponentContext
+import com.getaltair.altair.navigation.getLifecycle
 import com.getaltair.altair.rpc.httpClientModule
+import com.getaltair.altair.service.auth.AuthManager
 import com.getaltair.altair.ui.ErrorScreen
 import kotlinx.coroutines.runBlocking
 import org.koin.core.context.GlobalContext
@@ -65,8 +72,37 @@ fun main() {
     }
 
     application {
+        // Create navigation component context on the Compose main thread
+        val componentContext = remember { createRootComponentContext() }
+
+        // Create the root component if startup was successful
+        val rootComponent = remember(startupError) {
+            if (startupError == null) {
+                try {
+                    val koin = GlobalContext.get()
+                    val authManager = koin.get<AuthManager>()
+                    RootComponent(
+                        componentContext = componentContext,
+                        authManager = authManager,
+                    )
+                } catch (e: Exception) {
+                    System.err.println("Failed to create RootComponent: ${e.message}")
+                    null
+                }
+            } else {
+                null
+            }
+        }
+
         Window(
             onCloseRequest = {
+                // Destroy the component lifecycle
+                try {
+                    componentContext.getLifecycle().destroy()
+                } catch (e: Exception) {
+                    System.err.println("Error destroying lifecycle: ${e.message}")
+                }
+
                 // Close database connection on shutdown
                 try {
                     val koin = GlobalContext.getOrNull()
@@ -80,10 +116,10 @@ fun main() {
             },
             title = if (startupError != null) "Altair - Error" else "Altair",
         ) {
-            if (startupError != null) {
-                ErrorScreen(startupError)
+            if (startupError != null || rootComponent == null) {
+                ErrorScreen(startupError ?: IllegalStateException("Failed to initialize app"))
             } else {
-                App()
+                RootContent(component = rootComponent)
             }
         }
     }

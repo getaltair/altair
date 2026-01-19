@@ -35,6 +35,8 @@ ktor = "3.3.3"
 surrealdb = "1.0.0-beta.1"
 sqldelight = "2.0.2"
 testcontainers = "1.21.0"
+# Design System (ADR-008)
+compose-unstyled = "1.49.6"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -111,6 +113,8 @@ sqldelight-jvm-driver = { module = "app.cash.sqldelight:sqlite-driver", version.
 # Testcontainers - Integration testing
 testcontainers = { module = "org.testcontainers:testcontainers", version.ref = "testcontainers" }
 testcontainers-junit5 = { module = "org.testcontainers:junit-jupiter", version.ref = "testcontainers" }
+# Compose Unstyled - Design System (ADR-008)
+compose-unstyled = { module = "com.composables:composeunstyled", version.ref = "compose-unstyled" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }
