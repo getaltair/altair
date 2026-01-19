@@ -61,7 +61,7 @@ class SurrealUserRepositoryTest {
     }
 
     @Test
-    fun `create creates new user`() =
+    fun `create creates new user`(): Unit =
         runBlocking {
             val user = createTestUser()
 
@@ -76,7 +76,7 @@ class SurrealUserRepositoryTest {
         }
 
     @Test
-    fun `create rejects duplicate email`() =
+    fun `create rejects duplicate email`(): Unit =
         runBlocking {
             val user1 = createTestUser(email = "duplicate@test.com")
             repository.create(user1)
@@ -91,7 +91,7 @@ class SurrealUserRepositoryTest {
         }
 
     @Test
-    fun `findByEmail returns user when exists`() =
+    fun `findByEmail returns user when exists`(): Unit =
         runBlocking {
             val user = createTestUser(email = "find@test.com")
             repository.create(user)
@@ -105,7 +105,7 @@ class SurrealUserRepositoryTest {
         }
 
     @Test
-    fun `findByEmail returns error when not found`() =
+    fun `findByEmail returns error when not found`(): Unit =
         runBlocking {
             val result = repository.findByEmail("nonexistent@test.com")
 
@@ -116,7 +116,7 @@ class SurrealUserRepositoryTest {
         }
 
     @Test
-    fun `isEmailAvailable returns true for unused email`() =
+    fun `isEmailAvailable returns true for unused email`(): Unit =
         runBlocking {
             val result = repository.isEmailAvailable("available@test.com")
 
@@ -127,7 +127,7 @@ class SurrealUserRepositoryTest {
         }
 
     @Test
-    fun `isEmailAvailable returns false for used email`() =
+    fun `isEmailAvailable returns false for used email`(): Unit =
         runBlocking {
             val user = createTestUser(email = "taken@test.com")
             repository.create(user)
@@ -141,7 +141,7 @@ class SurrealUserRepositoryTest {
         }
 
     @Test
-    fun `updateStorageUsed enforces storage quota`() =
+    fun `updateStorageUsed enforces storage quota`(): Unit =
         runBlocking {
             val smallQuota = 1000L // 1KB quota
             val user = createTestUser(storageQuotaBytes = smallQuota)
@@ -159,7 +159,7 @@ class SurrealUserRepositoryTest {
         }
 
     @Test
-    fun `updateStorageUsed succeeds within quota`() =
+    fun `updateStorageUsed succeeds within quota`(): Unit =
         runBlocking {
             val quota = 10_000L
             val user = createTestUser(storageQuotaBytes = quota)
@@ -174,7 +174,7 @@ class SurrealUserRepositoryTest {
         }
 
     @Test
-    fun `updateStorageUsed succeeds at exactly quota`() =
+    fun `updateStorageUsed succeeds at exactly quota`(): Unit =
         runBlocking {
             val quota = 10_000L
             val user = createTestUser(storageQuotaBytes = quota)
@@ -189,7 +189,7 @@ class SurrealUserRepositoryTest {
         }
 
     @Test
-    fun `findByRole returns only matching users`() =
+    fun `findByRole returns only matching users`(): Unit =
         runBlocking {
             val admin = createTestUser(email = "admin@test.com", role = UserRole.ADMIN)
             val member = createTestUser(email = "member@test.com", role = UserRole.MEMBER)
@@ -203,7 +203,7 @@ class SurrealUserRepositoryTest {
         }
 
     @Test
-    fun `findByStatus returns only matching users`() =
+    fun `findByStatus returns only matching users`(): Unit =
         runBlocking {
             val active = createTestUser(email = "active@test.com", status = UserStatus.ACTIVE)
             val suspended = createTestUser(email = "suspended@test.com", status = UserStatus.DISABLED)
@@ -217,7 +217,7 @@ class SurrealUserRepositoryTest {
         }
 
     @Test
-    fun `delete soft deletes user`() =
+    fun `delete soft deletes user`(): Unit =
         runBlocking {
             val user = createTestUser()
             repository.create(user)
@@ -230,7 +230,7 @@ class SurrealUserRepositoryTest {
         }
 
     @Test
-    fun `countActive returns correct count`() =
+    fun `countActive returns correct count`(): Unit =
         runBlocking {
             repository.create(createTestUser(email = "active1@test.com", status = UserStatus.ACTIVE))
             repository.create(createTestUser(email = "active2@test.com", status = UserStatus.ACTIVE))

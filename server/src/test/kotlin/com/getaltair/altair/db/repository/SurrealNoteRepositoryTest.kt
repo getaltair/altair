@@ -67,7 +67,7 @@ class SurrealNoteRepositoryTest {
     }
 
     @Test
-    fun `save creates new note`() =
+    fun `save creates new note`(): Unit =
         runBlocking {
             val note = createTestNote()
 
@@ -82,7 +82,7 @@ class SurrealNoteRepositoryTest {
         }
 
     @Test
-    fun `findById returns saved note`() =
+    fun `findById returns saved note`(): Unit =
         runBlocking {
             val note = createTestNote()
             repository.save(note)
@@ -97,7 +97,7 @@ class SurrealNoteRepositoryTest {
         }
 
     @Test
-    fun `findById returns error for non-existent note`() =
+    fun `findById returns error for non-existent note`(): Unit =
         runBlocking {
             val result = repository.findById(Ulid.generate())
 
@@ -108,7 +108,7 @@ class SurrealNoteRepositoryTest {
         }
 
     @Test
-    fun `save updates existing note`() =
+    fun `save updates existing note`(): Unit =
         runBlocking {
             val note = createTestNote(title = "Original Title")
             repository.save(note)
@@ -124,7 +124,7 @@ class SurrealNoteRepositoryTest {
         }
 
     @Test
-    fun `togglePinned pins unpinned note`() =
+    fun `togglePinned pins unpinned note`(): Unit =
         runBlocking {
             val note = createTestNote(isPinned = false)
             repository.save(note)
@@ -138,7 +138,7 @@ class SurrealNoteRepositoryTest {
         }
 
     @Test
-    fun `togglePinned unpins pinned note`() =
+    fun `togglePinned unpins pinned note`(): Unit =
         runBlocking {
             val note = createTestNote(isPinned = true)
             repository.save(note)
@@ -152,7 +152,7 @@ class SurrealNoteRepositoryTest {
         }
 
     @Test
-    fun `findPinned returns only pinned notes`() =
+    fun `findPinned returns only pinned notes`(): Unit =
         runBlocking {
             val pinnedNote = createTestNote(title = "Pinned Note", isPinned = true)
             val unpinnedNote = createTestNote(title = "Unpinned Note", isPinned = false)
@@ -167,7 +167,7 @@ class SurrealNoteRepositoryTest {
         }
 
     @Test
-    fun `findByFolder returns notes in specific folder`() =
+    fun `findByFolder returns notes in specific folder`(): Unit =
         runBlocking {
             // Create a folder
             val folderId = Ulid.generate()
@@ -188,7 +188,7 @@ class SurrealNoteRepositoryTest {
         }
 
     @Test
-    fun `findByFolder with null returns root notes`() =
+    fun `findByFolder with null returns root notes`(): Unit =
         runBlocking {
             // Create a folder
             val folderId = Ulid.generate()
@@ -209,7 +209,7 @@ class SurrealNoteRepositoryTest {
         }
 
     @Test
-    fun `moveToFolder moves note to different folder`() =
+    fun `moveToFolder moves note to different folder`(): Unit =
         runBlocking {
             // Create two folders
             val folder1Id = Ulid.generate()
@@ -235,7 +235,7 @@ class SurrealNoteRepositoryTest {
         }
 
     @Test
-    fun `moveToFolder moves note to root`() =
+    fun `moveToFolder moves note to root`(): Unit =
         runBlocking {
             val folderId = Ulid.generate()
             dbClient.execute(
@@ -255,7 +255,7 @@ class SurrealNoteRepositoryTest {
         }
 
     @Test
-    fun `search finds notes by title`() =
+    fun `search finds notes by title`(): Unit =
         runBlocking {
             val note1 = createTestNote(title = "Meeting Notes", content = "Some content")
             val note2 = createTestNote(title = "Shopping List", content = "Buy groceries")
@@ -272,7 +272,7 @@ class SurrealNoteRepositoryTest {
         }
 
     @Test
-    fun `search finds notes by content`() =
+    fun `search finds notes by content`(): Unit =
         runBlocking {
             val note1 = createTestNote(title = "Note 1", content = "Contains important information")
             val note2 = createTestNote(title = "Note 2", content = "Something else")
@@ -289,7 +289,7 @@ class SurrealNoteRepositoryTest {
         }
 
     @Test
-    fun `search is case insensitive`() =
+    fun `search is case insensitive`(): Unit =
         runBlocking {
             val note = createTestNote(title = "UPPERCASE Title", content = "lowercase content")
             repository.save(note)
@@ -303,7 +303,7 @@ class SurrealNoteRepositoryTest {
         }
 
     @Test
-    fun `delete soft deletes note`() =
+    fun `delete soft deletes note`(): Unit =
         runBlocking {
             val note = createTestNote()
             repository.save(note)
@@ -316,7 +316,7 @@ class SurrealNoteRepositoryTest {
         }
 
     @Test
-    fun `findAll returns all non-deleted notes`() =
+    fun `findAll returns all non-deleted notes`(): Unit =
         runBlocking {
             val note1 = createTestNote(title = "Note 1")
             val note2 = createTestNote(title = "Note 2")
@@ -334,7 +334,7 @@ class SurrealNoteRepositoryTest {
     // --- User Isolation Tests ---
 
     @Test
-    fun `findById returns error when accessing another user's note`() =
+    fun `findById returns error when accessing another user's note`(): Unit =
         runBlocking {
             // Create note as testUserId
             val note = createTestNote()
@@ -359,7 +359,7 @@ class SurrealNoteRepositoryTest {
         }
 
     @Test
-    fun `findAll only returns current user's notes`() =
+    fun `findAll only returns current user's notes`(): Unit =
         runBlocking {
             // Create notes for testUserId
             repository.save(createTestNote(title = "User1 Note 1"))
@@ -401,7 +401,7 @@ class SurrealNoteRepositoryTest {
         }
 
     @Test
-    fun `delete fails silently for another user's note`() =
+    fun `delete fails silently for another user's note`(): Unit =
         runBlocking {
             // Create note as testUserId
             val note = createTestNote()
@@ -426,7 +426,7 @@ class SurrealNoteRepositoryTest {
         }
 
     @Test
-    fun `search only returns current user's notes`() =
+    fun `search only returns current user's notes`(): Unit =
         runBlocking {
             // Create a note for testUserId with searchable content
             repository.save(createTestNote(title = "Searchable Meeting Notes", content = "Important meeting"))

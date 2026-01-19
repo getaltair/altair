@@ -191,7 +191,7 @@ class AuthIntegrationTest {
         }
 
     @Test
-    fun `login returns valid JWT token`() =
+    fun `login returns valid JWT token`(): Unit =
         runBlocking {
             publicAuthService.register(
                 RegisterRequest(
@@ -488,7 +488,7 @@ class AuthIntegrationTest {
         }
 
     @Test
-    fun `refreshed access token is valid`() =
+    fun `refreshed access token is valid`(): Unit =
         runBlocking {
             val registerResponse =
                 publicAuthService.register(
@@ -554,7 +554,7 @@ class AuthIntegrationTest {
     // ===== 3.3.7 Test logout and session invalidation =====
 
     @Test
-    fun `logout returns success response`() =
+    fun `logout returns success response`(): Unit =
         runBlocking {
             // Note: Due to kotlinx-rpc limitations, logout doesn't have access to auth context
             // It returns a success response instructing client to discard tokens
@@ -569,7 +569,7 @@ class AuthIntegrationTest {
     // See GitHub issue for tracking. These tests verify the status check exists in the login flow.
 
     @Test
-    fun `login status check rejects non-active status`() =
+    fun `login status check rejects non-active status`(): Unit =
         runBlocking {
             // This test verifies that PublicAuthServiceImpl.login() checks user status
             // The actual status check is at line 63: if (userWithCredentials.status != UserStatus.ACTIVE)

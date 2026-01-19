@@ -55,7 +55,7 @@ class MigrationRunnerTest {
     }
 
     @Test
-    fun `runMigrations applies pending migrations`() =
+    fun `runMigrations applies pending migrations`(): Unit =
         runBlocking {
             val result = migrationRunner.runMigrations()
 
@@ -67,7 +67,7 @@ class MigrationRunnerTest {
         }
 
     @Test
-    fun `runMigrations is idempotent - running twice applies nothing new`() =
+    fun `runMigrations is idempotent - running twice applies nothing new`(): Unit =
         runBlocking {
             // First run
             val firstResult = migrationRunner.runMigrations()
@@ -86,7 +86,7 @@ class MigrationRunnerTest {
         }
 
     @Test
-    fun `runMigrations creates migrations tracking table`() =
+    fun `runMigrations creates migrations tracking table`(): Unit =
         runBlocking {
             migrationRunner.runMigrations()
 
@@ -101,7 +101,7 @@ class MigrationRunnerTest {
         }
 
     @Test
-    fun `runMigrations records version numbers`() =
+    fun `runMigrations records version numbers`(): Unit =
         runBlocking {
             migrationRunner.runMigrations()
 
@@ -116,7 +116,7 @@ class MigrationRunnerTest {
         }
 
     @Test
-    fun `runMigrations creates schema tables`() =
+    fun `runMigrations creates schema tables`(): Unit =
         runBlocking {
             migrationRunner.runMigrations()
 
@@ -133,7 +133,7 @@ class MigrationRunnerTest {
         }
 
     @Test
-    fun `runMigrations applies migrations in order`() =
+    fun `runMigrations applies migrations in order`(): Unit =
         runBlocking {
             migrationRunner.runMigrations()
 
@@ -149,9 +149,9 @@ class MigrationRunnerTest {
         }
 
     @Test
-    fun `runMigrations skips already applied migrations`() =
+    fun `runMigrations skips already applied migrations`(): Unit =
         runBlocking {
-            // Manually insert a migration record
+            // Manually insert migration records for all known migrations
             dbClient.execute(
                 """
                 DEFINE TABLE IF NOT EXISTS _migrations SCHEMAFULL;
@@ -169,13 +169,21 @@ class MigrationRunnerTest {
                 };
                 """.trimIndent(),
             )
+            dbClient.execute(
+                """
+                CREATE _migrations CONTENT {
+                    version: 2,
+                    description: 'authentication tables'
+                };
+                """.trimIndent(),
+            )
 
-            // Run migrations - should skip V1 since it's already recorded
+            // Run migrations - should skip all since they're already recorded
             val result = migrationRunner.runMigrations()
 
             assertTrue(result.isRight())
             result.onRight { count ->
-                assertEquals(0, count, "Should skip already applied migration")
+                assertEquals(0, count, "Should skip already applied migrations")
             }
         }
 

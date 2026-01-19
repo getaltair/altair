@@ -67,7 +67,7 @@ class SurrealContainerRepositoryTest {
     }
 
     @Test
-    fun `save creates new container`() =
+    fun `save creates new container`(): Unit =
         runBlocking {
             val container = createTestContainer()
 
@@ -81,7 +81,7 @@ class SurrealContainerRepositoryTest {
         }
 
     @Test
-    fun `findById returns saved container`() =
+    fun `findById returns saved container`(): Unit =
         runBlocking {
             val container = createTestContainer()
             repository.save(container)
@@ -96,7 +96,7 @@ class SurrealContainerRepositoryTest {
         }
 
     @Test
-    fun `findById returns error for non-existent container`() =
+    fun `findById returns error for non-existent container`(): Unit =
         runBlocking {
             val result = repository.findById(Ulid.generate())
 
@@ -107,7 +107,7 @@ class SurrealContainerRepositoryTest {
         }
 
     @Test
-    fun `nestInContainer creates parent-child relationship`() =
+    fun `nestInContainer creates parent-child relationship`(): Unit =
         runBlocking {
             val parentContainer = createTestContainer(name = "Parent Box")
             val childContainer = createTestContainer(name = "Child Box")
@@ -123,7 +123,7 @@ class SurrealContainerRepositoryTest {
         }
 
     @Test
-    fun `findByParentContainer returns nested containers`() =
+    fun `findByParentContainer returns nested containers`(): Unit =
         runBlocking {
             val parentContainer = createTestContainer(name = "Parent Box")
             val childContainer1 = createTestContainer(name = "Child 1")
@@ -145,7 +145,7 @@ class SurrealContainerRepositoryTest {
         }
 
     @Test
-    fun `unnest removes parent relationship`() =
+    fun `unnest removes parent relationship`(): Unit =
         runBlocking {
             val parentContainer = createTestContainer(name = "Parent Box")
             val childContainer = createTestContainer(name = "Child Box")
@@ -162,7 +162,7 @@ class SurrealContainerRepositoryTest {
         }
 
     @Test
-    fun `findRoots returns only containers without parent`() =
+    fun `findRoots returns only containers without parent`(): Unit =
         runBlocking {
             val rootContainer1 = createTestContainer(name = "Root 1")
             val rootContainer2 = createTestContainer(name = "Root 2")
@@ -180,7 +180,7 @@ class SurrealContainerRepositoryTest {
         }
 
     @Test
-    fun `moveToLocation updates container location`() =
+    fun `moveToLocation updates container location`(): Unit =
         runBlocking {
             // Create a location
             val locationId = Ulid.generate()
@@ -201,7 +201,7 @@ class SurrealContainerRepositoryTest {
         }
 
     @Test
-    fun `moveToLocation removes container from parent`() =
+    fun `moveToLocation removes container from parent`(): Unit =
         runBlocking {
             val parentContainer = createTestContainer(name = "Parent")
             val childContainer = createTestContainer(name = "Child")
@@ -225,7 +225,7 @@ class SurrealContainerRepositoryTest {
         }
 
     @Test
-    fun `findByLocation returns containers at location`() =
+    fun `findByLocation returns containers at location`(): Unit =
         runBlocking {
             val locationId = Ulid.generate()
             dbClient.execute(
@@ -247,7 +247,7 @@ class SurrealContainerRepositoryTest {
         }
 
     @Test
-    fun `searchByNameOrLabel finds by name`() =
+    fun `searchByNameOrLabel finds by name`(): Unit =
         runBlocking {
             val container1 = createTestContainer(name = "Kitchen Box", label = "K-001")
             val container2 = createTestContainer(name = "Bedroom Box", label = "B-001")
@@ -264,7 +264,7 @@ class SurrealContainerRepositoryTest {
         }
 
     @Test
-    fun `searchByNameOrLabel finds by label`() =
+    fun `searchByNameOrLabel finds by label`(): Unit =
         runBlocking {
             val container1 = createTestContainer(name = "Box 1", label = "STORAGE-A")
             val container2 = createTestContainer(name = "Box 2", label = "STORAGE-B")
@@ -281,7 +281,7 @@ class SurrealContainerRepositoryTest {
         }
 
     @Test
-    fun `getPath returns container hierarchy`() =
+    fun `getPath returns container hierarchy`(): Unit =
         runBlocking {
             val grandparent = createTestContainer(name = "Grandparent")
             val parent = createTestContainer(name = "Parent")
@@ -306,7 +306,7 @@ class SurrealContainerRepositoryTest {
         }
 
     @Test
-    fun `delete soft deletes container`() =
+    fun `delete soft deletes container`(): Unit =
         runBlocking {
             val container = createTestContainer()
             repository.save(container)
@@ -319,7 +319,7 @@ class SurrealContainerRepositoryTest {
         }
 
     @Test
-    fun `findAll returns only non-deleted containers`() =
+    fun `findAll returns only non-deleted containers`(): Unit =
         runBlocking {
             val container1 = createTestContainer(name = "Container 1")
             val container2 = createTestContainer(name = "Container 2")
