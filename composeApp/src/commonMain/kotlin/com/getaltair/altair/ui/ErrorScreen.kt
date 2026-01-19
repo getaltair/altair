@@ -26,8 +26,8 @@ fun ErrorScreen(
 ) {
     // Log the full error for debugging
     LaunchedEffect(error) {
-        System.err.println("[ERROR] ErrorScreen displayed for: ${error::class.simpleName}: ${error.message}")
-        error.printStackTrace(System.err)
+        println("[ERROR] ErrorScreen displayed for: ${error::class.simpleName}: ${error.message}")
+        error.printStackTrace()
     }
 
     AltairThemeProvider {
