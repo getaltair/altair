@@ -49,6 +49,15 @@ data class InviteCode(
         require(expiresAt <= createdAt + MAX_EXPIRY_DURATION) {
             "expiresAt must be within $MAX_EXPIRY_DURATION of createdAt"
         }
+
+        // Cross-field validation for usage state
+        if (usedBy != null) {
+            require(usedAt != null) { "usedAt must be set when usedBy is set" }
+            require(usedAt >= createdAt) { "usedAt must be after or equal to createdAt" }
+        }
+        if (usedAt != null) {
+            require(usedBy != null) { "usedBy must be set when usedAt is set" }
+        }
     }
 
     companion object {

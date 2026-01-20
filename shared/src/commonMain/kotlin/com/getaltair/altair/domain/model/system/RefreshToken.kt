@@ -52,6 +52,11 @@ data class RefreshToken(
         require(expiresAt <= createdAt + MAX_EXPIRY_DURATION) {
             "expiresAt must be within $MAX_EXPIRY_DURATION of createdAt"
         }
+
+        // Cross-field validation for revocation state
+        if (revokedAt != null) {
+            require(revokedAt >= createdAt) { "revokedAt must be after or equal to createdAt" }
+        }
     }
 
     companion object {
