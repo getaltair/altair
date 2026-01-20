@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
+import com.getaltair.altair.domain.types.Ulid
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -78,14 +79,14 @@ class AndroidSecureTokenStorage(
             }
         }
 
-    override suspend fun saveUserId(userId: String) =
+    override suspend fun saveUserId(userId: Ulid) =
         withContext(Dispatchers.IO) {
-            sharedPreferences.edit().putString(KEY_USER_ID, userId).apply()
+            sharedPreferences.edit().putString(KEY_USER_ID, userId.value).apply()
         }
 
-    override suspend fun getUserId(): String? =
+    override suspend fun getUserId(): Ulid? =
         withContext(Dispatchers.IO) {
-            sharedPreferences.getString(KEY_USER_ID, null)
+            sharedPreferences.getString(KEY_USER_ID, null)?.let { Ulid(it) }
         }
 
     override suspend fun clear() =

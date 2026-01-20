@@ -1,5 +1,6 @@
 package com.getaltair.altair.service.auth
 
+import com.getaltair.altair.domain.types.Ulid
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -47,15 +48,15 @@ class NativeSecureTokenStorage(
             provider.retrieve(KEY_TOKEN_EXPIRATION)?.toLongOrNull()
         }
 
-    override suspend fun saveUserId(userId: String) =
+    override suspend fun saveUserId(userId: Ulid) =
         withContext(Dispatchers.IO) {
-            provider.store(KEY_USER_ID, userId)
+            provider.store(KEY_USER_ID, userId.value)
             Unit
         }
 
-    override suspend fun getUserId(): String? =
+    override suspend fun getUserId(): Ulid? =
         withContext(Dispatchers.IO) {
-            provider.retrieve(KEY_USER_ID)
+            provider.retrieve(KEY_USER_ID)?.let { Ulid(it) }
         }
 
     override suspend fun clear() {

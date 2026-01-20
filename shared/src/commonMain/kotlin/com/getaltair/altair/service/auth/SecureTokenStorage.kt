@@ -1,5 +1,7 @@
 package com.getaltair.altair.service.auth
 
+import com.getaltair.altair.domain.types.Ulid
+
 /**
  * Secure storage interface for authentication tokens.
  *
@@ -60,16 +62,16 @@ interface SecureTokenStorage {
     /**
      * Store the authenticated user's ID.
      *
-     * @param userId The user's ULID
+     * @param userId The user's unique identifier
      */
-    suspend fun saveUserId(userId: String)
+    suspend fun saveUserId(userId: Ulid)
 
     /**
      * Retrieve the authenticated user's ID.
      *
-     * @return The user's ULID, or null if not stored
+     * @return The user's unique identifier, or null if not stored
      */
-    suspend fun getUserId(): String?
+    suspend fun getUserId(): Ulid?
 
     /**
      * Clear all stored authentication data.

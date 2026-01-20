@@ -1,5 +1,7 @@
 package com.getaltair.altair.dto.auth
 
+import com.getaltair.altair.domain.types.Ulid
+import com.getaltair.altair.domain.types.enums.UserRole
 import kotlinx.serialization.Serializable
 
 /**
@@ -14,19 +16,21 @@ data class AuthRequest(
 /**
  * Response containing authentication tokens and user information.
  *
- * ## String Formats
- * - **userId**: ULID format (26-character string)
- * - **role**: One of: member, admin
- * - **expiresIn**: Token validity duration in seconds
+ * @property accessToken JWT access token for API authentication
+ * @property refreshToken JWT refresh token for obtaining new access tokens
+ * @property expiresIn Token validity duration in seconds
+ * @property userId Unique identifier for the authenticated user
+ * @property displayName User's display name
+ * @property role User's permission level (admin or member)
  */
 @Serializable
 data class AuthResponse(
     val accessToken: String,
     val refreshToken: String,
     val expiresIn: Long,
-    val userId: String,
+    val userId: Ulid,
     val displayName: String,
-    val role: String,
+    val role: UserRole,
 )
 
 /**

@@ -83,9 +83,9 @@ class PublicAuthServiceImpl(
             accessToken = tokenPair.accessToken,
             refreshToken = tokenPair.refreshToken,
             expiresIn = tokenPair.accessTokenExpiresIn,
-            userId = user.id.value,
+            userId = user.id,
             displayName = user.displayName,
-            role = user.role.name.lowercase(),
+            role = user.role,
         )
     }
 
@@ -292,9 +292,9 @@ class PublicAuthServiceImpl(
             accessToken = tokenPair.accessToken,
             refreshToken = tokenPair.refreshToken,
             expiresIn = tokenPair.accessTokenExpiresIn,
-            userId = userId.value,
+            userId = userId,
             displayName = request.displayName,
-            role = role.name.lowercase(),
+            role = role,
         )
     }
 

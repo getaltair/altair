@@ -1,5 +1,6 @@
 package com.getaltair.altair.service.auth
 
+import com.getaltair.altair.domain.types.Ulid
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -69,14 +70,14 @@ class DesktopSecureTokenStorage(
             getDecrypted(KEY_TOKEN_EXPIRATION)?.toLongOrNull()
         }
 
-    override suspend fun saveUserId(userId: String) =
+    override suspend fun saveUserId(userId: Ulid) =
         withContext(Dispatchers.IO) {
-            saveEncrypted(KEY_USER_ID, userId)
+            saveEncrypted(KEY_USER_ID, userId.value)
         }
 
-    override suspend fun getUserId(): String? =
+    override suspend fun getUserId(): Ulid? =
         withContext(Dispatchers.IO) {
-            getDecrypted(KEY_USER_ID)
+            getDecrypted(KEY_USER_ID)?.let { Ulid(it) }
         }
 
     override suspend fun clear() =

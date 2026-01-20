@@ -1,6 +1,8 @@
 package com.getaltair.altair.service.auth
 
 import com.getaltair.altair.domain.AuthError
+import com.getaltair.altair.domain.types.Ulid
+import com.getaltair.altair.domain.types.enums.UserRole
 import com.getaltair.altair.dto.auth.AuthResponse
 import com.getaltair.altair.dto.auth.TokenRefreshResponse
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -52,7 +54,7 @@ class AuthManagerTest {
             val result = authManager.login("test@example.com", "password123")
 
             assertTrue(result.isRight())
-            assertEquals("user-123", result.getOrNull())
+            assertEquals(Ulid("01HW0ABCD00000000000000001"), result.getOrNull())
             assertIs<AuthState.Authenticated>(authManager.authState.value)
         }
 
@@ -66,7 +68,7 @@ class AuthManagerTest {
 
             assertEquals("access-token-123", tokenStorage.getAccessToken())
             assertEquals("refresh-token-123", tokenStorage.getRefreshToken())
-            assertEquals("user-123", tokenStorage.getUserId())
+            assertEquals(Ulid("01HW0ABCD00000000000000001"), tokenStorage.getUserId())
             assertTrue(tokenStorage.hasStoredCredentials())
         }
 
@@ -111,7 +113,7 @@ class AuthManagerTest {
                 )
 
             assertTrue(result.isRight())
-            assertEquals("user-123", result.getOrNull())
+            assertEquals(Ulid("01HW0ABCD00000000000000001"), result.getOrNull())
             assertIs<AuthState.Authenticated>(authManager.authState.value)
         }
 
@@ -129,7 +131,7 @@ class AuthManagerTest {
 
             assertEquals("access-token-123", tokenStorage.getAccessToken())
             assertEquals("refresh-token-123", tokenStorage.getRefreshToken())
-            assertEquals("user-123", tokenStorage.getUserId())
+            assertEquals(Ulid("01HW0ABCD00000000000000001"), tokenStorage.getUserId())
             assertTrue(tokenStorage.hasStoredCredentials())
         }
 
@@ -196,7 +198,7 @@ class AuthManagerTest {
             // Setup initial tokens
             tokenStorage.saveAccessToken("old-access-token")
             tokenStorage.saveRefreshToken("old-refresh-token")
-            tokenStorage.saveUserId("user-123")
+            tokenStorage.saveUserId(Ulid("01HW0ABCD00000000000000001"))
 
             authService.refreshError = IllegalArgumentException("Refresh token expired")
 
@@ -262,7 +264,7 @@ class AuthManagerTest {
             tokenStorage.saveAccessToken("access-token")
             tokenStorage.saveRefreshToken("refresh-token")
             tokenStorage.saveTokenExpiration(Clock.System.now().toEpochMilliseconds() + 3_600_000L)
-            tokenStorage.saveUserId("user-123")
+            tokenStorage.saveUserId(Ulid("01HW0ABCD00000000000000001"))
 
             assertTrue(tokenStorage.hasStoredCredentials())
 
@@ -318,14 +320,17 @@ class AuthManagerTest {
             // Setup stored credentials with valid (non-expired) token
             tokenStorage.saveAccessToken("valid-access-token")
             tokenStorage.saveRefreshToken("valid-refresh-token")
-            tokenStorage.saveUserId("user-123")
+            tokenStorage.saveUserId(Ulid("01HW0ABCD00000000000000001"))
             // Token expires in 10 minutes (not expired)
             tokenStorage.saveTokenExpiration(Clock.System.now().toEpochMilliseconds() + 600_000L)
 
             authManager.initialize()
 
             assertIs<AuthState.Authenticated>(authManager.authState.value)
-            assertEquals("user-123", (authManager.authState.value as AuthState.Authenticated).userId)
+            assertEquals(
+                Ulid("01HW0ABCD00000000000000001"),
+                (authManager.authState.value as AuthState.Authenticated).userId,
+            )
         }
 
     @Test
@@ -333,7 +338,7 @@ class AuthManagerTest {
         runTest {
             // Only refresh token stored, no access token
             tokenStorage.saveRefreshToken("refresh-token")
-            tokenStorage.saveUserId("user-123")
+            tokenStorage.saveUserId(Ulid("01HW0ABCD00000000000000001"))
 
             authManager.initialize()
 
@@ -358,7 +363,7 @@ class AuthManagerTest {
             // Setup stored credentials with expired token
             tokenStorage.saveAccessToken("expired-access-token")
             tokenStorage.saveRefreshToken("valid-refresh-token")
-            tokenStorage.saveUserId("user-123")
+            tokenStorage.saveUserId(Ulid("01HW0ABCD00000000000000001"))
             // Token expired 1 second ago
             tokenStorage.saveTokenExpiration(Clock.System.now().toEpochMilliseconds() - 1000L)
 
@@ -384,7 +389,7 @@ class AuthManagerTest {
             // Setup stored credentials with expired token
             tokenStorage.saveAccessToken("expired-access-token")
             tokenStorage.saveRefreshToken("expired-refresh-token")
-            tokenStorage.saveUserId("user-123")
+            tokenStorage.saveUserId(Ulid("01HW0ABCD00000000000000001"))
             // Token expired 1 second ago
             tokenStorage.saveTokenExpiration(Clock.System.now().toEpochMilliseconds() - 1000L)
 
@@ -405,7 +410,7 @@ class AuthManagerTest {
             // Setup stored credentials but no expiration info
             tokenStorage.saveAccessToken("access-token")
             tokenStorage.saveRefreshToken("refresh-token")
-            tokenStorage.saveUserId("user-123")
+            tokenStorage.saveUserId(Ulid("01HW0ABCD00000000000000001"))
             // No expiration saved
 
             authManager.initialize()
@@ -694,7 +699,7 @@ class AuthManagerTest {
     // ===== Helper Methods =====
 
     private fun createAuthResponse(
-        userId: String = "user-123",
+        userId: Ulid = Ulid("01HW0ABCD00000000000000001"),
         accessToken: String = "access-token-123",
         refreshToken: String = "refresh-token-123",
         expiresIn: Long = 900,
@@ -704,6 +709,6 @@ class AuthManagerTest {
         expiresIn = expiresIn,
         userId = userId,
         displayName = "Test User",
-        role = "member",
+        role = UserRole.MEMBER,
     )
 }

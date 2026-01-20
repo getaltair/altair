@@ -1,5 +1,6 @@
 package com.getaltair.altair.service.auth
 
+import com.getaltair.altair.domain.types.Ulid
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -54,7 +55,7 @@ class NativeSecureTokenStorageTest {
     @Test
     fun `user id storage round-trips correctly`() =
         runTest {
-            val userId = "01HWUSER00000000000000001"
+            val userId = Ulid("01HW0ABCD00000000000000001")
 
             storage.saveUserId(userId)
             val retrieved = storage.getUserId()
@@ -100,7 +101,7 @@ class NativeSecureTokenStorageTest {
             storage.saveAccessToken("access-token")
             storage.saveRefreshToken("refresh-token")
             storage.saveTokenExpiration(1_705_500_900_000L)
-            storage.saveUserId("user-id")
+            storage.saveUserId(Ulid("01HW0ABCD00000000000000001"))
 
             storage.clear()
 
@@ -156,14 +157,14 @@ class NativeSecureTokenStorageTest {
         }
 
     @Test
-    fun `unicode content is stored correctly`() =
+    fun `different ulid values are stored correctly`() =
         runTest {
-            val unicodeUserId = "user-日本語-émoji-🎉"
+            val differentUserId = Ulid("01HW0ABCD99999999999999999")
 
-            storage.saveUserId(unicodeUserId)
+            storage.saveUserId(differentUserId)
             val retrieved = storage.getUserId()
 
-            assertEquals(unicodeUserId, retrieved)
+            assertEquals(differentUserId, retrieved)
         }
 
     @Test

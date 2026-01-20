@@ -1,5 +1,6 @@
 package com.getaltair.altair.service.auth
 
+import com.getaltair.altair.domain.types.Ulid
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.alloc
 import kotlinx.cinterop.memScoped
@@ -78,14 +79,14 @@ class IosSecureTokenStorage(
             getFromKeychain(KEY_TOKEN_EXPIRATION)?.toLongOrNull()
         }
 
-    override suspend fun saveUserId(userId: String) =
+    override suspend fun saveUserId(userId: Ulid) =
         withContext(Dispatchers.IO) {
-            saveToKeychain(KEY_USER_ID, userId)
+            saveToKeychain(KEY_USER_ID, userId.value)
         }
 
-    override suspend fun getUserId(): String? =
+    override suspend fun getUserId(): Ulid? =
         withContext(Dispatchers.IO) {
-            getFromKeychain(KEY_USER_ID)
+            getFromKeychain(KEY_USER_ID)?.let { Ulid(it) }
         }
 
     override suspend fun clear() =

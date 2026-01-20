@@ -1,5 +1,7 @@
 package com.getaltair.rpc
 
+import com.getaltair.altair.domain.types.Ulid
+import com.getaltair.altair.domain.types.enums.UserRole
 import com.getaltair.altair.dto.auth.AuthRequest
 import com.getaltair.altair.dto.auth.AuthResponse
 import com.getaltair.altair.dto.auth.ChangePasswordRequest
@@ -51,9 +53,9 @@ private class StubPublicAuthService : PublicAuthService {
             accessToken = "test-access-token",
             refreshToken = "test-refresh-token",
             expiresIn = 3600,
-            userId = "01HWTEST000000000000000001",
+            userId = Ulid("01HWT3ST000000000000000001"),
             displayName = "Test User",
-            role = "member",
+            role = UserRole.MEMBER,
         )
 
     override suspend fun refresh(refreshToken: String) =
@@ -68,9 +70,9 @@ private class StubPublicAuthService : PublicAuthService {
             accessToken = "test-access-token",
             refreshToken = "test-refresh-token",
             expiresIn = 3600,
-            userId = "01HWTEST000000000000000002",
+            userId = Ulid("01HWT3ST000000000000000002"),
             displayName = request.displayName,
-            role = "member",
+            role = UserRole.MEMBER,
         )
 }
 
@@ -147,7 +149,7 @@ class RpcIntegrationTest {
 
             assertNotNull(response.accessToken)
             assertNotNull(response.refreshToken)
-            assertEquals("member", response.role)
+            assertEquals(UserRole.MEMBER, response.role)
             assertTrue(response.expiresIn > 0)
         }
 

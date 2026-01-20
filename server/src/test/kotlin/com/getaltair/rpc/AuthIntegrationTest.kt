@@ -8,6 +8,7 @@ import com.getaltair.altair.db.repository.SurrealRefreshTokenRepository
 import com.getaltair.altair.db.repository.SurrealUserRepository
 import com.getaltair.altair.domain.model.system.InviteCode
 import com.getaltair.altair.domain.types.Ulid
+import com.getaltair.altair.domain.types.enums.UserRole
 import com.getaltair.altair.dto.auth.AuthRequest
 import com.getaltair.altair.dto.auth.RegisterRequest
 import com.getaltair.auth.Argon2PasswordService
@@ -135,7 +136,7 @@ class AuthIntegrationTest {
 
             assertNotNull(response.accessToken)
             assertNotNull(response.refreshToken)
-            assertEquals("admin", response.role) // First user is admin
+            assertEquals(UserRole.ADMIN, response.role) // First user is admin
             assertEquals("Admin User", response.displayName)
             assertTrue(response.expiresIn > 0)
         }
@@ -153,7 +154,7 @@ class AuthIntegrationTest {
                     ),
                 )
 
-            assertEquals("admin", response.role)
+            assertEquals(UserRole.ADMIN, response.role)
 
             // Verify in database
             val user = userRepository.findByEmail("first@test.com").getOrNull()
@@ -214,7 +215,7 @@ class AuthIntegrationTest {
             assertTrue(claims.isRight())
             claims.onRight { tokenClaims ->
                 assertEquals("jwt@test.com", tokenClaims.email)
-                assertEquals(response.userId, tokenClaims.userId.value)
+                assertEquals(response.userId.value, tokenClaims.userId.value)
             }
         }
 
@@ -294,7 +295,7 @@ class AuthIntegrationTest {
                 )
 
             assertNotNull(response.accessToken)
-            assertEquals("member", response.role) // Invited user is member
+            assertEquals(UserRole.MEMBER, response.role) // Invited user is member
             assertEquals("Invited User", response.displayName)
         }
 
@@ -674,7 +675,7 @@ class AuthIntegrationTest {
                 )
 
             // Create an invite code for the second registration attempt
-            val inviteCode = createInviteCode(Ulid(firstUserResponse.userId))
+            val inviteCode = createInviteCode(firstUserResponse.userId)
 
             // Try to register with the same email but valid invite code
             val exception =

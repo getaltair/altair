@@ -93,10 +93,11 @@ class SurrealEnergyBudgetRepository(
 
     override suspend fun delete(id: Ulid): Either<DomainError, Unit> =
         either {
-            db.executeBind(
-                "DELETE energy_budget:${'$'}id WHERE user_id = user:${'$'}userId;",
-                mapOf("id" to id.value, "userId" to userId.value),
-            ).bind()
+            db
+                .executeBind(
+                    "DELETE energy_budget:${'$'}id WHERE user_id = user:${'$'}userId;",
+                    mapOf("id" to id.value, "userId" to userId.value),
+                ).bind()
         }
 
     override fun findAll(): Flow<List<EnergyBudget>> =

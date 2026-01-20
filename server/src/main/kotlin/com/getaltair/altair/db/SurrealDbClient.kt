@@ -174,12 +174,12 @@ class SurrealDbClient(
      */
     private fun escapeSurrealString(value: String): String =
         value
-            .replace("\\", "\\\\")  // Backslash must be escaped first
-            .replace("'", "\\'")     // Single quote
-            .replace("\n", "\\n")    // Newline
-            .replace("\r", "\\r")    // Carriage return
-            .replace("\t", "\\t")    // Tab
-            .replace("\b", "\\b")    // Backspace
+            .replace("\\", "\\\\") // Backslash must be escaped first
+            .replace("'", "\\'") // Single quote
+            .replace("\n", "\\n") // Newline
+            .replace("\r", "\\r") // Carriage return
+            .replace("\t", "\\t") // Tab
+            .replace("\b", "\\b") // Backspace
             .replace("\u000C", "\\f") // Form feed
 
     /**

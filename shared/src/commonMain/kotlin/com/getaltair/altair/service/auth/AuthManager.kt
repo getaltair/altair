@@ -4,6 +4,7 @@ import arrow.core.Either
 import arrow.core.left
 import arrow.core.right
 import com.getaltair.altair.domain.AuthError
+import com.getaltair.altair.domain.types.Ulid
 import com.getaltair.altair.dto.auth.AuthRequest
 import com.getaltair.altair.dto.auth.AuthResponse
 import com.getaltair.altair.dto.auth.RegisterRequest
@@ -69,7 +70,7 @@ class AuthManager(
 
     private suspend fun handleTokenExpiration(
         expiration: Long?,
-        userId: String,
+        userId: Ulid,
     ) {
         if (expiration != null && isTokenExpired(expiration)) {
             // Try to refresh
@@ -99,7 +100,7 @@ class AuthManager(
     suspend fun login(
         email: String,
         password: String,
-    ): Either<AuthError, String> {
+    ): Either<AuthError, Ulid> {
         _authState.value = AuthState.Loading
 
         @Suppress("TooGenericExceptionCaught") // RPC calls can throw various exceptions
@@ -136,7 +137,7 @@ class AuthManager(
         password: String,
         displayName: String,
         inviteCode: String? = null,
-    ): Either<AuthError, String> {
+    ): Either<AuthError, Ulid> {
         _authState.value = AuthState.Loading
 
         @Suppress("TooGenericExceptionCaught") // RPC calls can throw various exceptions
@@ -333,6 +334,6 @@ sealed class AuthState {
      * @param userId The authenticated user's ID
      */
     data class Authenticated(
-        val userId: String,
+        val userId: Ulid,
     ) : AuthState()
 }
