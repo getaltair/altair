@@ -9,7 +9,6 @@ import com.getaltair.altair.domain.types.Ulid
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.runBlocking
-import kotlin.time.Clock
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
@@ -22,6 +21,7 @@ import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.time.Clock
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
 
@@ -322,11 +322,12 @@ class SurrealRefreshTokenRepositoryTest {
 
             // Launch 10 concurrent revoke operations
             val results =
-                (1..10).map {
-                    async {
-                        repository.revoke(token.id, token.userId)
-                    }
-                }.awaitAll()
+                (1..10)
+                    .map {
+                        async {
+                            repository.revoke(token.id, token.userId)
+                        }
+                    }.awaitAll()
 
             // All operations should complete (some may be no-ops if already revoked)
             results.forEach { result ->
@@ -350,11 +351,12 @@ class SurrealRefreshTokenRepositoryTest {
 
             // Launch 5 concurrent revokeAllForUser operations
             val results =
-                (1..5).map {
-                    async {
-                        repository.revokeAllForUser(userId)
-                    }
-                }.awaitAll()
+                (1..5)
+                    .map {
+                        async {
+                            repository.revokeAllForUser(userId)
+                        }
+                    }.awaitAll()
 
             // All operations should complete
             results.forEach { result ->

@@ -97,6 +97,7 @@ class DesktopSecureTokenStorage(
             getDecrypted(KEY_REFRESH_TOKEN) != null
         }
 
+    @Suppress("TooGenericExceptionCaught") // Multiple crypto/IO exceptions possible
     private fun saveEncrypted(
         key: String,
         value: String,
@@ -105,40 +106,35 @@ class DesktopSecureTokenStorage(
             val encrypted = encrypt(value)
             preferences.put(key, encrypted)
             preferences.flush()
-        } catch (e: GeneralSecurityException) {
-            System.err.println("[TokenStorage] CRITICAL: Encryption failed for $key: ${e.message}")
-            e.printStackTrace()
-            // Encryption failure is critical - user's tokens cannot be stored securely
-            throw TokenStorageException("Failed to encrypt token", e)
-        } catch (e: BackingStoreException) {
-            System.err.println("[TokenStorage] ERROR: Failed to persist $key: ${e.message}")
-            e.printStackTrace()
-            // Persistence failure - disk full, permissions, etc.
-            throw TokenStorageException("Failed to save token to storage", e)
-        } catch (e: IllegalArgumentException) {
-            System.err.println("[TokenStorage] ERROR: Invalid data for $key: ${e.message}")
-            throw TokenStorageException("Invalid token data", e)
+        } catch (e: Exception) {
+            val errorType =
+                when (e) {
+                    is GeneralSecurityException -> "Encryption"
+                    is BackingStoreException -> "Persistence"
+                    is IllegalArgumentException -> "Validation"
+                    else -> "Unknown"
+                }
+            System.err.println(
+                "[TokenStorage] ERROR: $errorType failed for $key: ${e.javaClass.simpleName} - ${e.message}",
+            )
+            throw TokenStorageException("Failed to save token: $errorType error", e)
         }
     }
 
+    @Suppress("TooGenericExceptionCaught") // Multiple crypto exceptions possible
     private fun getDecrypted(key: String): String? =
         try {
             val encrypted = preferences.get(key, null) ?: return null
             decrypt(encrypted)
-        } catch (e: AEADBadTagException) {
-            // Authentication tag mismatch - data corrupted or wrong key
-            System.err.println(
-                "[TokenStorage] CRITICAL: Data corruption detected for $key: " +
-                    "authentication tag verification failed. This may indicate tampering or encryption key change.",
-            )
-            e.printStackTrace()
-            null
-        } catch (e: IllegalArgumentException) {
-            System.err.println("[TokenStorage] ERROR: Malformed encrypted data for $key: ${e.message}")
-            null
-        } catch (e: GeneralSecurityException) {
-            System.err.println("[TokenStorage] ERROR: Decryption failed for $key: ${e.message}")
-            e.printStackTrace()
+        } catch (e: Exception) {
+            val errorType =
+                when (e) {
+                    is AEADBadTagException -> "Data corruption (authentication tag mismatch)"
+                    is IllegalArgumentException -> "Malformed data"
+                    is GeneralSecurityException -> "Decryption failure"
+                    else -> "Unknown error"
+                }
+            System.err.println("[TokenStorage] ERROR: $errorType for $key: ${e.javaClass.simpleName} - ${e.message}")
             null
         }
 

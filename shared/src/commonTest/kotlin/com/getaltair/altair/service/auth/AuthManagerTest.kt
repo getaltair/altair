@@ -6,7 +6,6 @@ import com.getaltair.altair.domain.types.enums.UserRole
 import com.getaltair.altair.dto.auth.AuthResponse
 import com.getaltair.altair.dto.auth.TokenRefreshResponse
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.async
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
@@ -902,7 +901,7 @@ class AuthManagerTest {
             val uniqueTokens = tokens.toSet()
             assertTrue(uniqueTokens.size <= 3, "Expected <= 3 unique tokens, got ${uniqueTokens.size}")
         }
-    */
+     */
 
     // ===== Helper Methods =====
 

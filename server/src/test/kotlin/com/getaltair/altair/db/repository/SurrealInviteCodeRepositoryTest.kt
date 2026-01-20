@@ -9,7 +9,6 @@ import com.getaltair.altair.domain.types.Ulid
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.runBlocking
-import kotlin.time.Clock
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
@@ -22,6 +21,7 @@ import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.time.Clock
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
 
@@ -203,18 +203,19 @@ class SurrealInviteCodeRepositoryTest {
                 }
 
             val results =
-                userIds.map { userId ->
-                    async {
-                        // First try to find the code (this is what the registration flow does)
-                        val findResult = repository.findByCode("CONCURRENT")
-                        if (findResult.isRight()) {
-                            // If found, try to mark as used
-                            repository.markUsed(inviteCode.id, userId)
-                        } else {
-                            findResult
+                userIds
+                    .map { userId ->
+                        async {
+                            // First try to find the code (this is what the registration flow does)
+                            val findResult = repository.findByCode("CONCURRENT")
+                            if (findResult.isRight()) {
+                                // If found, try to mark as used
+                                repository.markUsed(inviteCode.id, userId)
+                            } else {
+                                findResult
+                            }
                         }
-                    }
-                }.awaitAll()
+                    }.awaitAll()
 
             // At least one should succeed in finding and marking
             val successCount = results.count { it.isRight() }

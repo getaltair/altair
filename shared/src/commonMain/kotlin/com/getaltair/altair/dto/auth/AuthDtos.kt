@@ -88,7 +88,9 @@ data class RegisterRequest(
         require(email.matches(EMAIL_REGEX)) { "Invalid email format" }
         require(password.length >= MIN_PASSWORD_LENGTH) { "Password must be at least $MIN_PASSWORD_LENGTH characters" }
         require(displayName.isNotBlank()) { "Display name must not be blank" }
-        require(displayName.length <= MAX_DISPLAY_NAME_LENGTH) { "Display name too long (max $MAX_DISPLAY_NAME_LENGTH characters)" }
+        require(displayName.length <= MAX_DISPLAY_NAME_LENGTH) {
+            "Display name too long (max $MAX_DISPLAY_NAME_LENGTH characters)"
+        }
         require(inviteCode?.isNotBlank() != false) { "Invite code must not be blank if provided" }
     }
 
