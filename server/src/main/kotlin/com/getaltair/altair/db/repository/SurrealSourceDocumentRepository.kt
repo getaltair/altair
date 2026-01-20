@@ -44,70 +44,72 @@ class SurrealSourceDocumentRepository(
         either {
             val existing = findById(entity.id)
             if (existing.isRight()) {
-                db
-                    .executeBind(
-                        """
-                        UPDATE source_document:${'$'}id SET
-                            title = ${'$'}title,
-                            source_type = ${'$'}sourceType,
-                            source_path = ${'$'}sourcePath,
-                            mime_type = ${'$'}mimeType,
-                            file_size_bytes = ${'$'}fileSizeBytes,
-                            page_count = ${'$'}pageCount,
-                            extraction_status = ${'$'}extractionStatus,
-                            extracted_text = ${'$'}extractedText,
-                            initiative_id = ${'$'}initiativeId,
-                            updated_at = time::now()
-                        WHERE user_id = user:${'$'}userId;
-                        """.trimIndent(),
-                        mapOf(
-                            "id" to entity.id.value,
-                            "title" to entity.title,
-                            "sourceType" to entity.sourceType.name.lowercase(),
-                            "sourcePath" to entity.sourcePath,
-                            "mimeType" to entity.mimeType,
-                            "fileSizeBytes" to entity.fileSizeBytes,
-                            "pageCount" to entity.pageCount,
-                            "extractionStatus" to entity.extractionStatus.name.lowercase(),
-                            "extractedText" to entity.extractedText,
-                            "initiativeId" to entity.initiativeId?.let { "initiative:${it.value}" },
-                            "userId" to userId.value,
-                        ),
-                    ).bind()
+                updateSourceDocument(entity).bind()
             } else {
-                db
-                    .executeBind(
-                        """
-                        CREATE source_document:${'$'}id CONTENT {
-                            user_id: user:${'$'}userId,
-                            title: ${'$'}title,
-                            source_type: ${'$'}sourceType,
-                            source_path: ${'$'}sourcePath,
-                            mime_type: ${'$'}mimeType,
-                            file_size_bytes: ${'$'}fileSizeBytes,
-                            page_count: ${'$'}pageCount,
-                            extraction_status: ${'$'}extractionStatus,
-                            extracted_text: NONE,
-                            watched_folder_id: ${'$'}watchedFolderId,
-                            initiative_id: ${'$'}initiativeId
-                        };
-                        """.trimIndent(),
-                        mapOf(
-                            "id" to entity.id.value,
-                            "userId" to userId.value,
-                            "title" to entity.title,
-                            "sourceType" to entity.sourceType.name.lowercase(),
-                            "sourcePath" to entity.sourcePath,
-                            "mimeType" to entity.mimeType,
-                            "fileSizeBytes" to entity.fileSizeBytes,
-                            "pageCount" to entity.pageCount,
-                            "extractionStatus" to entity.extractionStatus.name.lowercase(),
-                            "watchedFolderId" to entity.watchedFolderId?.value,
-                            "initiativeId" to entity.initiativeId?.let { "initiative:${it.value}" },
-                        ),
-                    ).bind()
+                insertSourceDocument(entity).bind()
             }
             findById(entity.id).bind()
+        }
+
+    private suspend fun updateSourceDocument(entity: SourceDocument): Either<DomainError, Unit> =
+        db.executeBind(
+            """
+            UPDATE source_document:${'$'}id SET
+                title = ${'$'}title,
+                source_type = ${'$'}sourceType,
+                source_path = ${'$'}sourcePath,
+                mime_type = ${'$'}mimeType,
+                file_size_bytes = ${'$'}fileSizeBytes,
+                page_count = ${'$'}pageCount,
+                extraction_status = ${'$'}extractionStatus,
+                extracted_text = ${'$'}extractedText,
+                initiative_id = ${'$'}initiativeId,
+                updated_at = time::now()
+            WHERE user_id = user:${'$'}userId;
+            """.trimIndent(),
+            buildSourceDocumentParams(entity, isUpdate = true),
+        )
+
+    private suspend fun insertSourceDocument(entity: SourceDocument): Either<DomainError, Unit> =
+        db.executeBind(
+            """
+            CREATE source_document:${'$'}id CONTENT {
+                user_id: user:${'$'}userId,
+                title: ${'$'}title,
+                source_type: ${'$'}sourceType,
+                source_path: ${'$'}sourcePath,
+                mime_type: ${'$'}mimeType,
+                file_size_bytes: ${'$'}fileSizeBytes,
+                page_count: ${'$'}pageCount,
+                extraction_status: ${'$'}extractionStatus,
+                extracted_text: NONE,
+                watched_folder_id: ${'$'}watchedFolderId,
+                initiative_id: ${'$'}initiativeId
+            };
+            """.trimIndent(),
+            buildSourceDocumentParams(entity, isUpdate = false),
+        )
+
+    private fun buildSourceDocumentParams(
+        entity: SourceDocument,
+        isUpdate: Boolean,
+    ): Map<String, Any?> =
+        buildMap {
+            put("id", entity.id.value)
+            put("userId", userId.value)
+            put("title", entity.title)
+            put("sourceType", entity.sourceType.name.lowercase())
+            put("sourcePath", entity.sourcePath)
+            put("mimeType", entity.mimeType)
+            put("fileSizeBytes", entity.fileSizeBytes)
+            put("pageCount", entity.pageCount)
+            put("extractionStatus", entity.extractionStatus.name.lowercase())
+            put("initiativeId", entity.initiativeId?.let { "initiative:${it.value}" })
+            if (isUpdate) {
+                put("extractedText", entity.extractedText)
+            } else {
+                put("watchedFolderId", entity.watchedFolderId?.value)
+            }
         }
 
     override suspend fun delete(id: Ulid): Either<DomainError, Unit> =

@@ -46,66 +46,72 @@ class SurrealRoutineRepository(
 
     override suspend fun save(entity: Routine): Either<DomainError, Routine> =
         either {
-            val scheduleJson = json.encodeToString(Schedule.serializer(), entity.schedule)
             val existing = findById(entity.id)
 
             if (existing.isRight()) {
-                db
-                    .executeBind(
-                        """
-                        UPDATE routine:${'$'}id SET
-                            title = ${'$'}title,
-                            description = ${'$'}description,
-                            energy_cost = ${'$'}energyCost,
-                            schedule = $scheduleJson,
-                            scheduled_time = ${'$'}scheduledTime,
-                            initiative_id = ${'$'}initiativeId,
-                            is_active = ${'$'}isActive,
-                            last_spawned_at = ${'$'}lastSpawnedAt,
-                            updated_at = time::now()
-                        WHERE user_id = user:${'$'}userId;
-                        """.trimIndent(),
-                        mapOf(
-                            "id" to entity.id.value,
-                            "title" to entity.title,
-                            "description" to entity.description,
-                            "energyCost" to entity.energyCost,
-                            "scheduledTime" to entity.scheduledTime?.toString(),
-                            "initiativeId" to entity.initiativeId?.let { "initiative:${it.value}" },
-                            "isActive" to entity.isActive,
-                            "lastSpawnedAt" to entity.lastSpawnedAt?.toString(),
-                            "userId" to userId.value,
-                        ),
-                    ).bind()
+                updateRoutine(entity).bind()
             } else {
-                db
-                    .executeBind(
-                        """
-                        CREATE routine:${'$'}id CONTENT {
-                            user_id: user:${'$'}userId,
-                            title: ${'$'}title,
-                            description: ${'$'}description,
-                            energy_cost: ${'$'}energyCost,
-                            schedule: $scheduleJson,
-                            scheduled_time: ${'$'}scheduledTime,
-                            initiative_id: ${'$'}initiativeId,
-                            is_active: ${'$'}isActive,
-                            last_spawned_at: NONE
-                        };
-                        """.trimIndent(),
-                        mapOf(
-                            "id" to entity.id.value,
-                            "userId" to userId.value,
-                            "title" to entity.title,
-                            "description" to entity.description,
-                            "energyCost" to entity.energyCost,
-                            "scheduledTime" to entity.scheduledTime?.toString(),
-                            "initiativeId" to entity.initiativeId?.let { "initiative:${it.value}" },
-                            "isActive" to entity.isActive,
-                        ),
-                    ).bind()
+                insertRoutine(entity).bind()
             }
             findById(entity.id).bind()
+        }
+
+    private suspend fun updateRoutine(entity: Routine): Either<DomainError, Unit> {
+        val scheduleJson = json.encodeToString(Schedule.serializer(), entity.schedule)
+        return db.executeBind(
+            """
+            UPDATE routine:${'$'}id SET
+                title = ${'$'}title,
+                description = ${'$'}description,
+                energy_cost = ${'$'}energyCost,
+                schedule = $scheduleJson,
+                scheduled_time = ${'$'}scheduledTime,
+                initiative_id = ${'$'}initiativeId,
+                is_active = ${'$'}isActive,
+                last_spawned_at = ${'$'}lastSpawnedAt,
+                updated_at = time::now()
+            WHERE user_id = user:${'$'}userId;
+            """.trimIndent(),
+            buildRoutineParams(entity, includeLastSpawned = true),
+        )
+    }
+
+    private suspend fun insertRoutine(entity: Routine): Either<DomainError, Unit> {
+        val scheduleJson = json.encodeToString(Schedule.serializer(), entity.schedule)
+        return db.executeBind(
+            """
+            CREATE routine:${'$'}id CONTENT {
+                user_id: user:${'$'}userId,
+                title: ${'$'}title,
+                description: ${'$'}description,
+                energy_cost: ${'$'}energyCost,
+                schedule: $scheduleJson,
+                scheduled_time: ${'$'}scheduledTime,
+                initiative_id: ${'$'}initiativeId,
+                is_active: ${'$'}isActive,
+                last_spawned_at: NONE
+            };
+            """.trimIndent(),
+            buildRoutineParams(entity, includeLastSpawned = false),
+        )
+    }
+
+    private fun buildRoutineParams(
+        entity: Routine,
+        includeLastSpawned: Boolean,
+    ): Map<String, Any?> =
+        buildMap {
+            put("id", entity.id.value)
+            put("userId", userId.value)
+            put("title", entity.title)
+            put("description", entity.description)
+            put("energyCost", entity.energyCost)
+            put("scheduledTime", entity.scheduledTime?.toString())
+            put("initiativeId", entity.initiativeId?.let { "initiative:${it.value}" })
+            put("isActive", entity.isActive)
+            if (includeLastSpawned) {
+                put("lastSpawnedAt", entity.lastSpawnedAt?.toString())
+            }
         }
 
     override suspend fun delete(id: Ulid): Either<DomainError, Unit> =

@@ -56,83 +56,74 @@ class SurrealQuestRepository(
             val existing = findById(entity.id)
 
             if (existing.isRight()) {
-                // Update
-                db
-                    .executeBind(
-                        """
-                        UPDATE quest:${'$'}id SET
-                            title = ${'$'}title,
-                            description = ${'$'}description,
-                            energy_cost = ${'$'}energyCost,
-                            status = ${'$'}status,
-                            epic_id = ${'$'}epicId,
-                            routine_id = ${'$'}routineId,
-                            initiative_id = ${'$'}initiativeId,
-                            due_date = ${'$'}dueDate,
-                            scheduled_date = ${'$'}scheduledDate,
-                            started_at = ${'$'}startedAt,
-                            completed_at = ${'$'}completedAt,
-                            updated_at = time::now()
-                        WHERE user_id = user:${'$'}userId;
-                        """.trimIndent(),
-                        mapOf(
-                            "id" to entity.id.value,
-                            "title" to entity.title,
-                            "description" to entity.description,
-                            "energyCost" to entity.energyCost,
-                            "status" to entity.status.name.lowercase(),
-                            "epicId" to entity.epicId?.let { "epic:${it.value}" },
-                            "routineId" to entity.routineId?.let { "routine:${it.value}" },
-                            "initiativeId" to entity.initiativeId?.let { "initiative:${it.value}" },
-                            "dueDate" to entity.dueDate?.toString(),
-                            "scheduledDate" to entity.scheduledDate?.toString(),
-                            "startedAt" to entity.startedAt?.toString(),
-                            "completedAt" to entity.completedAt?.toString(),
-                            "userId" to userId.value,
-                        ),
-                    ).mapLeft { QuestError.NotFound(entity.id) }
-                    .bind()
+                updateQuest(entity).bind()
             } else {
-                // Insert
-                db
-                    .executeBind(
-                        """
-                        CREATE quest:${'$'}id CONTENT {
-                            user_id: user:${'$'}userId,
-                            title: ${'$'}title,
-                            description: ${'$'}description,
-                            energy_cost: ${'$'}energyCost,
-                            status: ${'$'}status,
-                            epic_id: ${'$'}epicId,
-                            routine_id: ${'$'}routineId,
-                            initiative_id: ${'$'}initiativeId,
-                            due_date: ${'$'}dueDate,
-                            scheduled_date: ${'$'}scheduledDate,
-                            started_at: ${'$'}startedAt,
-                            completed_at: ${'$'}completedAt
-                        };
-                        """.trimIndent(),
-                        mapOf(
-                            "id" to entity.id.value,
-                            "userId" to userId.value,
-                            "title" to entity.title,
-                            "description" to entity.description,
-                            "energyCost" to entity.energyCost,
-                            "status" to entity.status.name.lowercase(),
-                            "epicId" to entity.epicId?.let { "epic:${it.value}" },
-                            "routineId" to entity.routineId?.let { "routine:${it.value}" },
-                            "initiativeId" to entity.initiativeId?.let { "initiative:${it.value}" },
-                            "dueDate" to entity.dueDate?.toString(),
-                            "scheduledDate" to entity.scheduledDate?.toString(),
-                            "startedAt" to entity.startedAt?.toString(),
-                            "completedAt" to entity.completedAt?.toString(),
-                        ),
-                    ).mapLeft { QuestError.NotFound(entity.id) }
-                    .bind()
+                insertQuest(entity).bind()
             }
 
             findById(entity.id).bind()
         }
+
+    private suspend fun updateQuest(entity: Quest): Either<QuestError, Unit> =
+        db
+            .executeBind(
+                """
+                UPDATE quest:${'$'}id SET
+                    title = ${'$'}title,
+                    description = ${'$'}description,
+                    energy_cost = ${'$'}energyCost,
+                    status = ${'$'}status,
+                    epic_id = ${'$'}epicId,
+                    routine_id = ${'$'}routineId,
+                    initiative_id = ${'$'}initiativeId,
+                    due_date = ${'$'}dueDate,
+                    scheduled_date = ${'$'}scheduledDate,
+                    started_at = ${'$'}startedAt,
+                    completed_at = ${'$'}completedAt,
+                    updated_at = time::now()
+                WHERE user_id = user:${'$'}userId;
+                """.trimIndent(),
+                buildQuestParams(entity),
+            ).mapLeft { QuestError.NotFound(entity.id) }
+
+    private suspend fun insertQuest(entity: Quest): Either<QuestError, Unit> =
+        db
+            .executeBind(
+                """
+                CREATE quest:${'$'}id CONTENT {
+                    user_id: user:${'$'}userId,
+                    title: ${'$'}title,
+                    description: ${'$'}description,
+                    energy_cost: ${'$'}energyCost,
+                    status: ${'$'}status,
+                    epic_id: ${'$'}epicId,
+                    routine_id: ${'$'}routineId,
+                    initiative_id: ${'$'}initiativeId,
+                    due_date: ${'$'}dueDate,
+                    scheduled_date: ${'$'}scheduledDate,
+                    started_at: ${'$'}startedAt,
+                    completed_at: ${'$'}completedAt
+                };
+                """.trimIndent(),
+                buildQuestParams(entity),
+            ).mapLeft { QuestError.NotFound(entity.id) }
+
+    private fun buildQuestParams(entity: Quest): Map<String, Any?> =
+        mapOf(
+            "id" to entity.id.value,
+            "userId" to userId.value,
+            "title" to entity.title,
+            "description" to entity.description,
+            "energyCost" to entity.energyCost,
+            "status" to entity.status.name.lowercase(),
+            "epicId" to entity.epicId?.let { "epic:${it.value}" },
+            "routineId" to entity.routineId?.let { "routine:${it.value}" },
+            "initiativeId" to entity.initiativeId?.let { "initiative:${it.value}" },
+            "dueDate" to entity.dueDate?.toString(),
+            "scheduledDate" to entity.scheduledDate?.toString(),
+            "startedAt" to entity.startedAt?.toString(),
+            "completedAt" to entity.completedAt?.toString(),
+        )
 
     override suspend fun delete(id: Ulid): Either<QuestError, Unit> =
         either {

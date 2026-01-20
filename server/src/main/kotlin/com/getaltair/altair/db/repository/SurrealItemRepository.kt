@@ -45,67 +45,63 @@ class SurrealItemRepository(
         either {
             val existing = findById(entity.id)
             if (existing.isRight()) {
-                db
-                    .executeBind(
-                        """
-                        UPDATE item:${'$'}id SET
-                            name = ${'$'}name,
-                            description = ${'$'}description,
-                            template_id = ${entity.templateId?.let { "item_template:${'$'}templateId" } ?: "NONE"},
-                            location_id = ${entity.locationId?.let { "location:${'$'}locationId" } ?: "NONE"},
-                            container_id = ${entity.containerId?.let { "container:${'$'}containerId" } ?: "NONE"},
-                            quantity = ${'$'}quantity,
-                            photo_attachment_id = ${entity.photoAttachmentId?.let { "attachment:${'$'}photoAttachmentId" } ?: "NONE"},
-                            initiative_id = ${entity.initiativeId?.let { "initiative:${'$'}initiativeId" } ?: "NONE"},
-                            updated_at = time::now()
-                        WHERE user_id = user:${'$'}userId
-                        """.trimIndent(),
-                        buildMap {
-                            put("id", entity.id.value)
-                            put("name", entity.name)
-                            put("description", entity.description)
-                            entity.templateId?.let { put("templateId", it.value) }
-                            entity.locationId?.let { put("locationId", it.value) }
-                            entity.containerId?.let { put("containerId", it.value) }
-                            put("quantity", entity.quantity)
-                            entity.photoAttachmentId?.let { put("photoAttachmentId", it.value) }
-                            entity.initiativeId?.let { put("initiativeId", it.value) }
-                            put("userId", userId.value)
-                        },
-                    ).mapLeft { ItemError.NotFound(entity.id) }
-                    .bind()
+                updateItem(entity).bind()
             } else {
-                db
-                    .executeBind(
-                        """
-                        CREATE item:${'$'}id CONTENT {
-                            user_id: user:${'$'}userId,
-                            name: ${'$'}name,
-                            description: ${'$'}description,
-                            template_id: ${entity.templateId?.let { "item_template:${'$'}templateId" } ?: "NONE"},
-                            location_id: ${entity.locationId?.let { "location:${'$'}locationId" } ?: "NONE"},
-                            container_id: ${entity.containerId?.let { "container:${'$'}containerId" } ?: "NONE"},
-                            quantity: ${'$'}quantity,
-                            photo_attachment_id: ${entity.photoAttachmentId?.let { "attachment:${'$'}photoAttachmentId" } ?: "NONE"},
-                            initiative_id: ${entity.initiativeId?.let { "initiative:${'$'}initiativeId" } ?: "NONE"}
-                        }
-                        """.trimIndent(),
-                        buildMap {
-                            put("id", entity.id.value)
-                            put("userId", userId.value)
-                            put("name", entity.name)
-                            put("description", entity.description)
-                            entity.templateId?.let { put("templateId", it.value) }
-                            entity.locationId?.let { put("locationId", it.value) }
-                            entity.containerId?.let { put("containerId", it.value) }
-                            put("quantity", entity.quantity)
-                            entity.photoAttachmentId?.let { put("photoAttachmentId", it.value) }
-                            entity.initiativeId?.let { put("initiativeId", it.value) }
-                        },
-                    ).mapLeft { ItemError.NotFound(entity.id) }
-                    .bind()
+                insertItem(entity).bind()
             }
             findById(entity.id).bind()
+        }
+
+    private suspend fun updateItem(entity: Item): Either<ItemError, Unit> =
+        db
+            .executeBind(
+                """
+                UPDATE item:${'$'}id SET
+                    name = ${'$'}name,
+                    description = ${'$'}description,
+                    template_id = ${entity.templateId?.let { "item_template:${'$'}templateId" } ?: "NONE"},
+                    location_id = ${entity.locationId?.let { "location:${'$'}locationId" } ?: "NONE"},
+                    container_id = ${entity.containerId?.let { "container:${'$'}containerId" } ?: "NONE"},
+                    quantity = ${'$'}quantity,
+                    photo_attachment_id = ${entity.photoAttachmentId?.let { "attachment:${'$'}photoAttachmentId" } ?: "NONE"},
+                    initiative_id = ${entity.initiativeId?.let { "initiative:${'$'}initiativeId" } ?: "NONE"},
+                    updated_at = time::now()
+                WHERE user_id = user:${'$'}userId
+                """.trimIndent(),
+                buildItemParams(entity),
+            ).mapLeft { ItemError.NotFound(entity.id) }
+
+    private suspend fun insertItem(entity: Item): Either<ItemError, Unit> =
+        db
+            .executeBind(
+                """
+                CREATE item:${'$'}id CONTENT {
+                    user_id: user:${'$'}userId,
+                    name: ${'$'}name,
+                    description: ${'$'}description,
+                    template_id: ${entity.templateId?.let { "item_template:${'$'}templateId" } ?: "NONE"},
+                    location_id: ${entity.locationId?.let { "location:${'$'}locationId" } ?: "NONE"},
+                    container_id: ${entity.containerId?.let { "container:${'$'}containerId" } ?: "NONE"},
+                    quantity: ${'$'}quantity,
+                    photo_attachment_id: ${entity.photoAttachmentId?.let { "attachment:${'$'}photoAttachmentId" } ?: "NONE"},
+                    initiative_id: ${entity.initiativeId?.let { "initiative:${'$'}initiativeId" } ?: "NONE"}
+                }
+                """.trimIndent(),
+                buildItemParams(entity),
+            ).mapLeft { ItemError.NotFound(entity.id) }
+
+    private fun buildItemParams(entity: Item): Map<String, Any?> =
+        buildMap {
+            put("id", entity.id.value)
+            put("userId", userId.value)
+            put("name", entity.name)
+            put("description", entity.description)
+            entity.templateId?.let { put("templateId", it.value) }
+            entity.locationId?.let { put("locationId", it.value) }
+            entity.containerId?.let { put("containerId", it.value) }
+            put("quantity", entity.quantity)
+            entity.photoAttachmentId?.let { put("photoAttachmentId", it.value) }
+            entity.initiativeId?.let { put("initiativeId", it.value) }
         }
 
     override suspend fun delete(id: Ulid): Either<ItemError, Unit> =

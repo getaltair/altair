@@ -171,66 +171,52 @@ class SurrealDbClientTest {
         }
 
     @Test
-    fun `queryBind handles null parameters`(): Unit =
+    fun `queryBind handles null and special characters in parameters`(): Unit =
         runBlocking {
             dbClient.execute(
                 """
                 CREATE test_table:user1 CONTENT { name: "Alice", status: null };
                 CREATE test_table:user2 CONTENT { name: "Bob", status: "active" };
-                """.trimIndent(),
-            )
-
-            // Test with actual string value, not null (since = NULL doesn't work in SQL)
-            val result =
-                dbClient.queryBind(
-                    "SELECT * FROM test_table WHERE status = \$status",
-                    mapOf("status" to "active"),
-                )
-
-            assertTrue(result.isRight())
-            result.onRight { json ->
-                // Should find Bob who has status = "active"
-                assertTrue(json.contains("Bob"))
-            }
-        }
-
-    @Test
-    fun `queryBind handles special characters in strings`(): Unit =
-        runBlocking {
-            val specialString = "Test's \"quoted\" value with \n newlines and \t tabs"
-
-            dbClient.execute(
-                """
-                CREATE test_table:user1 CONTENT {
+                CREATE test_table:user3 CONTENT {
                     name: "Test's \"quoted\" value with \n newlines and \t tabs"
                 };
                 """.trimIndent(),
             )
 
+            // Test with actual string value (since = NULL doesn't work in SQL)
             val result =
+                dbClient.queryBind(
+                    "SELECT * FROM test_table WHERE status = \$status",
+                    mapOf("status" to "active"),
+                )
+            assertTrue(result.isRight())
+            result.onRight { json -> assertTrue(json.contains("Bob")) }
+
+            // Test special characters
+            val specialString = "Test's \"quoted\" value with \n newlines and \t tabs"
+            val specialResult =
                 dbClient.queryBind(
                     "SELECT * FROM test_table WHERE name = \$name",
                     mapOf("name" to specialString),
                 )
-
-            assertTrue(result.isRight())
-            result.onRight { json ->
-                // Verify the special characters are handled correctly
-                assertTrue(json.isNotEmpty())
-            }
+            assertTrue(specialResult.isRight())
+            specialResult.onRight { json -> assertTrue(json.isNotEmpty()) }
         }
 
     @Test
-    fun `queryBind handles numeric parameters`(): Unit =
+    fun `queryBind handles numeric and boolean parameters`(): Unit =
         runBlocking {
             dbClient.execute(
                 """
-                CREATE test_table:item1 CONTENT { price: 19.99, quantity: 5 };
-                CREATE test_table:item2 CONTENT { price: 29.99, quantity: 10 };
+                CREATE test_table:item1 CONTENT { price: 19.99, quantity: 5, in_stock: true };
+                CREATE test_table:item2 CONTENT { price: 29.99, quantity: 10, in_stock: true };
+                CREATE test_table:user1 CONTENT { name: "Alice", is_active: true };
+                CREATE test_table:user2 CONTENT { name: "Bob", is_active: false };
                 """.trimIndent(),
             )
 
-            val result =
+            // Test numeric parameters
+            val numericResult =
                 dbClient.queryBind(
                     "SELECT * FROM test_table WHERE price > \$minPrice AND quantity >= \$minQuantity",
                     mapOf(
@@ -238,32 +224,20 @@ class SurrealDbClientTest {
                         "minQuantity" to 5,
                     ),
                 )
-
-            assertTrue(result.isRight())
-            result.onRight { json ->
+            assertTrue(numericResult.isRight())
+            numericResult.onRight { json ->
                 assertTrue(json.contains("19.99"))
                 assertTrue(json.contains("29.99"))
             }
-        }
 
-    @Test
-    fun `queryBind handles boolean parameters`(): Unit =
-        runBlocking {
-            dbClient.execute(
-                """
-                CREATE test_table:user1 CONTENT { name: "Alice", is_active: true };
-                CREATE test_table:user2 CONTENT { name: "Bob", is_active: false };
-                """.trimIndent(),
-            )
-
-            val result =
+            // Test boolean parameters
+            val booleanResult =
                 dbClient.queryBind(
                     "SELECT * FROM test_table WHERE is_active = \$active",
                     mapOf("active" to true),
                 )
-
-            assertTrue(result.isRight())
-            result.onRight { json ->
+            assertTrue(booleanResult.isRight())
+            booleanResult.onRight { json ->
                 assertTrue(json.contains("Alice"))
             }
         }
