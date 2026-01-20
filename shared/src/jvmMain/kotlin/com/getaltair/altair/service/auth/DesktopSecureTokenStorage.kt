@@ -4,9 +4,12 @@ import com.getaltair.altair.domain.types.Ulid
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.security.GeneralSecurityException
 import java.security.SecureRandom
 import java.util.Base64
+import java.util.prefs.BackingStoreException
 import java.util.prefs.Preferences
+import javax.crypto.AEADBadTagException
 import javax.crypto.Cipher
 import javax.crypto.SecretKey
 import javax.crypto.SecretKeyFactory
@@ -94,7 +97,6 @@ class DesktopSecureTokenStorage(
             getDecrypted(KEY_REFRESH_TOKEN) != null
         }
 
-    @Suppress("TooGenericExceptionCaught") // Crypto operations can throw various exceptions
     private fun saveEncrypted(
         key: String,
         value: String,
@@ -103,20 +105,40 @@ class DesktopSecureTokenStorage(
             val encrypted = encrypt(value)
             preferences.put(key, encrypted)
             preferences.flush()
-        } catch (e: Exception) {
-            // Log error but don't crash
-            System.err.println("Failed to save encrypted value for $key: ${e.message}")
+        } catch (e: GeneralSecurityException) {
+            System.err.println("[TokenStorage] CRITICAL: Encryption failed for $key: ${e.message}")
+            e.printStackTrace()
+            // Encryption failure is critical - user's tokens cannot be stored securely
+            throw TokenStorageException("Failed to encrypt token", e)
+        } catch (e: BackingStoreException) {
+            System.err.println("[TokenStorage] ERROR: Failed to persist $key: ${e.message}")
+            e.printStackTrace()
+            // Persistence failure - disk full, permissions, etc.
+            throw TokenStorageException("Failed to save token to storage", e)
+        } catch (e: IllegalArgumentException) {
+            System.err.println("[TokenStorage] ERROR: Invalid data for $key: ${e.message}")
+            throw TokenStorageException("Invalid token data", e)
         }
     }
 
-    @Suppress("TooGenericExceptionCaught") // Crypto operations can throw various exceptions
     private fun getDecrypted(key: String): String? =
         try {
             val encrypted = preferences.get(key, null) ?: return null
             decrypt(encrypted)
-        } catch (e: Exception) {
-            // If decryption fails, the data may be corrupted
-            System.err.println("Failed to decrypt value for $key: ${e.message}")
+        } catch (e: AEADBadTagException) {
+            // Authentication tag mismatch - data corrupted or wrong key
+            System.err.println(
+                "[TokenStorage] CRITICAL: Data corruption detected for $key: " +
+                    "authentication tag verification failed. This may indicate tampering or encryption key change.",
+            )
+            e.printStackTrace()
+            null
+        } catch (e: IllegalArgumentException) {
+            System.err.println("[TokenStorage] ERROR: Malformed encrypted data for $key: ${e.message}")
+            null
+        } catch (e: GeneralSecurityException) {
+            System.err.println("[TokenStorage] ERROR: Decryption failed for $key: ${e.message}")
+            e.printStackTrace()
             null
         }
 
