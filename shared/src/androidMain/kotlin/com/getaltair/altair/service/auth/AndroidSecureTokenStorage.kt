@@ -4,6 +4,9 @@ import android.content.Context
 import android.content.SharedPreferences
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
+import arrow.core.Either
+import arrow.core.left
+import arrow.core.right
 import com.getaltair.altair.domain.types.Ulid
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -45,9 +48,9 @@ class AndroidSecureTokenStorage(
         )
     }
 
-    override suspend fun saveAccessToken(token: String) =
+    override suspend fun saveAccessToken(token: String): Either<TokenStorageError, Unit> =
         withContext(Dispatchers.IO) {
-            sharedPreferences.edit().putString(KEY_ACCESS_TOKEN, token).apply()
+            saveString(KEY_ACCESS_TOKEN, token)
         }
 
     override suspend fun getAccessToken(): String? =
@@ -55,9 +58,9 @@ class AndroidSecureTokenStorage(
             sharedPreferences.getString(KEY_ACCESS_TOKEN, null)
         }
 
-    override suspend fun saveRefreshToken(token: String) =
+    override suspend fun saveRefreshToken(token: String): Either<TokenStorageError, Unit> =
         withContext(Dispatchers.IO) {
-            sharedPreferences.edit().putString(KEY_REFRESH_TOKEN, token).apply()
+            saveString(KEY_REFRESH_TOKEN, token)
         }
 
     override suspend fun getRefreshToken(): String? =
@@ -65,9 +68,9 @@ class AndroidSecureTokenStorage(
             sharedPreferences.getString(KEY_REFRESH_TOKEN, null)
         }
 
-    override suspend fun saveTokenExpiration(expiresAtMillis: Long) =
+    override suspend fun saveTokenExpiration(expiresAtMillis: Long): Either<TokenStorageError, Unit> =
         withContext(Dispatchers.IO) {
-            sharedPreferences.edit().putLong(KEY_TOKEN_EXPIRATION, expiresAtMillis).apply()
+            saveLong(KEY_TOKEN_EXPIRATION, expiresAtMillis)
         }
 
     override suspend fun getTokenExpiration(): Long? =
@@ -79,9 +82,9 @@ class AndroidSecureTokenStorage(
             }
         }
 
-    override suspend fun saveUserId(userId: Ulid) =
+    override suspend fun saveUserId(userId: Ulid): Either<TokenStorageError, Unit> =
         withContext(Dispatchers.IO) {
-            sharedPreferences.edit().putString(KEY_USER_ID, userId.value).apply()
+            saveString(KEY_USER_ID, userId.value)
         }
 
     override suspend fun getUserId(): Ulid? =
@@ -89,9 +92,39 @@ class AndroidSecureTokenStorage(
             sharedPreferences.getString(KEY_USER_ID, null)?.let { Ulid(it) }
         }
 
-    override suspend fun clear() =
+    @Suppress("TooGenericExceptionCaught") // EncryptedSharedPreferences can throw various exceptions
+    override suspend fun clear(): Either<TokenStorageError, Unit> =
         withContext(Dispatchers.IO) {
-            sharedPreferences.edit().clear().apply()
+            try {
+                sharedPreferences.edit().clear().apply()
+                Unit.right()
+            } catch (e: Exception) {
+                TokenStorageError.PersistenceFailed("Failed to clear credentials: ${e.message}").left()
+            }
+        }
+
+    @Suppress("TooGenericExceptionCaught") // EncryptedSharedPreferences can throw various exceptions
+    private fun saveString(
+        key: String,
+        value: String,
+    ): Either<TokenStorageError, Unit> =
+        try {
+            sharedPreferences.edit().putString(key, value).apply()
+            Unit.right()
+        } catch (e: Exception) {
+            TokenStorageError.PersistenceFailed("Failed to save $key: ${e.message}").left()
+        }
+
+    @Suppress("TooGenericExceptionCaught") // EncryptedSharedPreferences can throw various exceptions
+    private fun saveLong(
+        key: String,
+        value: Long,
+    ): Either<TokenStorageError, Unit> =
+        try {
+            sharedPreferences.edit().putLong(key, value).apply()
+            Unit.right()
+        } catch (e: Exception) {
+            TokenStorageError.PersistenceFailed("Failed to save $key: ${e.message}").left()
         }
 
     override suspend fun hasStoredCredentials(): Boolean =

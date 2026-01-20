@@ -2,6 +2,7 @@ package com.getaltair.altair.service.auth
 
 import arrow.core.Either
 import arrow.core.left
+import arrow.core.raise.either
 import arrow.core.right
 import com.getaltair.altair.domain.AuthError
 import com.getaltair.altair.domain.types.Ulid
@@ -106,10 +107,17 @@ class AuthManager(
         @Suppress("TooGenericExceptionCaught") // RPC calls can throw various exceptions
         return try {
             val response = publicAuthService.login(AuthRequest(email, password))
-            storeTokens(response)
-            _authState.value = AuthState.Authenticated(response.userId)
-            startTokenRefreshTimer()
-            response.userId.right()
+            storeTokens(response).fold(
+                ifLeft = {
+                    _authState.value = AuthState.Unauthenticated
+                    return it.left()
+                },
+                ifRight = {
+                    _authState.value = AuthState.Authenticated(response.userId)
+                    startTokenRefreshTimer()
+                    response.userId.right()
+                },
+            )
         } catch (
             @Suppress("SwallowedException") e: IllegalArgumentException,
         ) {
@@ -151,10 +159,17 @@ class AuthManager(
                         inviteCode = inviteCode,
                     ),
                 )
-            storeTokens(response)
-            _authState.value = AuthState.Authenticated(response.userId)
-            startTokenRefreshTimer()
-            response.userId.right()
+            storeTokens(response).fold(
+                ifLeft = {
+                    _authState.value = AuthState.Unauthenticated
+                    return it.left()
+                },
+                ifRight = {
+                    _authState.value = AuthState.Authenticated(response.userId)
+                    startTokenRefreshTimer()
+                    response.userId.right()
+                },
+            )
         } catch (e: IllegalArgumentException) {
             // Server validation errors
             _authState.value = AuthState.Unauthenticated
@@ -171,6 +186,7 @@ class AuthManager(
     suspend fun logout() {
         refreshJob?.cancel()
         refreshJob = null
+        // Clear tokens - ignore errors as we're logging out anyway
         tokenStorage.clear()
         _authState.value = AuthState.Unauthenticated
     }
@@ -207,14 +223,28 @@ class AuthManager(
                 val response = publicAuthService.refresh(refreshToken)
 
                 // Store new tokens (server uses token rotation - new refresh token each time)
-                val expiresAtMillis =
-                    Clock.System.now().toEpochMilliseconds() +
-                        response.expiresIn * MILLIS_PER_SECOND
-                tokenStorage.saveAccessToken(response.accessToken)
-                tokenStorage.saveRefreshToken(response.refreshToken)
-                tokenStorage.saveTokenExpiration(expiresAtMillis)
+                either {
+                    val expiresAtMillis =
+                        Clock.System.now().toEpochMilliseconds() +
+                            response.expiresIn * MILLIS_PER_SECOND
 
-                Unit.right()
+                    tokenStorage
+                        .saveAccessToken(response.accessToken)
+                        .mapLeft { AuthError.ServerError("Failed to store access token: ${it::class.simpleName}") }
+                        .bind()
+
+                    tokenStorage
+                        .saveRefreshToken(response.refreshToken)
+                        .mapLeft { AuthError.ServerError("Failed to store refresh token: ${it::class.simpleName}") }
+                        .bind()
+
+                    tokenStorage
+                        .saveTokenExpiration(expiresAtMillis)
+                        .mapLeft { AuthError.ServerError("Failed to store token expiration: ${it::class.simpleName}") }
+                        .bind()
+                }.onLeft {
+                    logout()
+                }
             } catch (
                 @Suppress("SwallowedException") e: Exception,
             ) {
@@ -225,16 +255,33 @@ class AuthManager(
             }
         }
 
-    private suspend fun storeTokens(response: AuthResponse) {
-        val expiresAtMillis =
-            Clock.System.now().toEpochMilliseconds() +
-                response.expiresIn * MILLIS_PER_SECOND
+    private suspend fun storeTokens(response: AuthResponse): Either<AuthError, Unit> =
+        either {
+            val expiresAtMillis =
+                Clock.System.now().toEpochMilliseconds() +
+                    response.expiresIn * MILLIS_PER_SECOND
 
-        tokenStorage.saveAccessToken(response.accessToken)
-        tokenStorage.saveRefreshToken(response.refreshToken)
-        tokenStorage.saveTokenExpiration(expiresAtMillis)
-        tokenStorage.saveUserId(response.userId)
-    }
+            // Store all tokens, failing fast on first error
+            tokenStorage
+                .saveAccessToken(response.accessToken)
+                .mapLeft { AuthError.ServerError("Failed to store access token: ${it::class.simpleName}") }
+                .bind()
+
+            tokenStorage
+                .saveRefreshToken(response.refreshToken)
+                .mapLeft { AuthError.ServerError("Failed to store refresh token: ${it::class.simpleName}") }
+                .bind()
+
+            tokenStorage
+                .saveTokenExpiration(expiresAtMillis)
+                .mapLeft { AuthError.ServerError("Failed to store token expiration: ${it::class.simpleName}") }
+                .bind()
+
+            tokenStorage
+                .saveUserId(response.userId)
+                .mapLeft { AuthError.ServerError("Failed to store user ID: ${it::class.simpleName}") }
+                .bind()
+        }
 
     private fun startTokenRefreshTimer() {
         refreshJob?.cancel()

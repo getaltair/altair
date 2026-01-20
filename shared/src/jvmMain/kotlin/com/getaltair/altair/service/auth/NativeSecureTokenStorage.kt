@@ -1,5 +1,8 @@
 package com.getaltair.altair.service.auth
 
+import arrow.core.Either
+import arrow.core.left
+import arrow.core.right
 import com.getaltair.altair.domain.types.Ulid
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -15,10 +18,13 @@ import kotlinx.coroutines.withContext
 class NativeSecureTokenStorage(
     private val provider: CredentialStoreProvider,
 ) : SecureTokenStorage {
-    override suspend fun saveAccessToken(token: String) =
+    override suspend fun saveAccessToken(token: String): Either<TokenStorageError, Unit> =
         withContext(Dispatchers.IO) {
-            provider.store(KEY_ACCESS_TOKEN, token)
-            Unit
+            if (provider.store(KEY_ACCESS_TOKEN, token)) {
+                Unit.right()
+            } else {
+                TokenStorageError.PersistenceFailed("Failed to store access token").left()
+            }
         }
 
     override suspend fun getAccessToken(): String? =
@@ -26,10 +32,13 @@ class NativeSecureTokenStorage(
             provider.retrieve(KEY_ACCESS_TOKEN)
         }
 
-    override suspend fun saveRefreshToken(token: String) =
+    override suspend fun saveRefreshToken(token: String): Either<TokenStorageError, Unit> =
         withContext(Dispatchers.IO) {
-            provider.store(KEY_REFRESH_TOKEN, token)
-            Unit
+            if (provider.store(KEY_REFRESH_TOKEN, token)) {
+                Unit.right()
+            } else {
+                TokenStorageError.PersistenceFailed("Failed to store refresh token").left()
+            }
         }
 
     override suspend fun getRefreshToken(): String? =
@@ -37,10 +46,13 @@ class NativeSecureTokenStorage(
             provider.retrieve(KEY_REFRESH_TOKEN)
         }
 
-    override suspend fun saveTokenExpiration(expiresAtMillis: Long) =
+    override suspend fun saveTokenExpiration(expiresAtMillis: Long): Either<TokenStorageError, Unit> =
         withContext(Dispatchers.IO) {
-            provider.store(KEY_TOKEN_EXPIRATION, expiresAtMillis.toString())
-            Unit
+            if (provider.store(KEY_TOKEN_EXPIRATION, expiresAtMillis.toString())) {
+                Unit.right()
+            } else {
+                TokenStorageError.PersistenceFailed("Failed to store token expiration").left()
+            }
         }
 
     override suspend fun getTokenExpiration(): Long? =
@@ -48,10 +60,13 @@ class NativeSecureTokenStorage(
             provider.retrieve(KEY_TOKEN_EXPIRATION)?.toLongOrNull()
         }
 
-    override suspend fun saveUserId(userId: Ulid) =
+    override suspend fun saveUserId(userId: Ulid): Either<TokenStorageError, Unit> =
         withContext(Dispatchers.IO) {
-            provider.store(KEY_USER_ID, userId.value)
-            Unit
+            if (provider.store(KEY_USER_ID, userId.value)) {
+                Unit.right()
+            } else {
+                TokenStorageError.PersistenceFailed("Failed to store user ID").left()
+            }
         }
 
     override suspend fun getUserId(): Ulid? =
@@ -59,14 +74,20 @@ class NativeSecureTokenStorage(
             provider.retrieve(KEY_USER_ID)?.let { Ulid(it) }
         }
 
-    override suspend fun clear() {
+    override suspend fun clear(): Either<TokenStorageError, Unit> =
         withContext(Dispatchers.IO) {
-            provider.delete(KEY_ACCESS_TOKEN)
-            provider.delete(KEY_REFRESH_TOKEN)
-            provider.delete(KEY_TOKEN_EXPIRATION)
-            provider.delete(KEY_USER_ID)
+            var allSuccess = true
+            if (!provider.delete(KEY_ACCESS_TOKEN)) allSuccess = false
+            if (!provider.delete(KEY_REFRESH_TOKEN)) allSuccess = false
+            if (!provider.delete(KEY_TOKEN_EXPIRATION)) allSuccess = false
+            if (!provider.delete(KEY_USER_ID)) allSuccess = false
+
+            if (allSuccess) {
+                Unit.right()
+            } else {
+                TokenStorageError.PersistenceFailed("Failed to delete some credentials").left()
+            }
         }
-    }
 
     override suspend fun hasStoredCredentials(): Boolean =
         withContext(Dispatchers.IO) {
