@@ -11,7 +11,13 @@ import kotlinx.serialization.Serializable
 data class AuthRequest(
     val email: String,
     val password: String,
-)
+) {
+    init {
+        require(email.isNotBlank()) { "Email must not be blank" }
+        require(email.contains("@")) { "Email must contain @" }
+        require(password.isNotBlank()) { "Password must not be blank" }
+    }
+}
 
 /**
  * Response containing authentication tokens and user information.
@@ -31,7 +37,14 @@ data class AuthResponse(
     val userId: Ulid,
     val displayName: String,
     val role: UserRole,
-)
+) {
+    init {
+        require(accessToken.isNotBlank()) { "Access token must not be blank" }
+        require(refreshToken.isNotBlank()) { "Refresh token must not be blank" }
+        require(expiresIn > 0) { "Token expiry must be positive" }
+        require(displayName.isNotBlank()) { "Display name must not be blank" }
+    }
+}
 
 /**
  * Request to refresh an expired access token.
@@ -52,7 +65,13 @@ data class TokenRefreshResponse(
     val accessToken: String,
     val refreshToken: String,
     val expiresIn: Long,
-)
+) {
+    init {
+        require(accessToken.isNotBlank()) { "Access token must not be blank" }
+        require(refreshToken.isNotBlank()) { "Refresh token must not be blank" }
+        require(expiresIn > 0) { "Token expiry must be positive" }
+    }
+}
 
 /**
  * Request to register a new user account.
@@ -63,7 +82,22 @@ data class RegisterRequest(
     val password: String,
     val displayName: String,
     val inviteCode: String? = null,
-)
+) {
+    init {
+        require(email.isNotBlank()) { "Email must not be blank" }
+        require(email.matches(EMAIL_REGEX)) { "Invalid email format" }
+        require(password.length >= MIN_PASSWORD_LENGTH) { "Password must be at least $MIN_PASSWORD_LENGTH characters" }
+        require(displayName.isNotBlank()) { "Display name must not be blank" }
+        require(displayName.length <= MAX_DISPLAY_NAME_LENGTH) { "Display name too long (max $MAX_DISPLAY_NAME_LENGTH characters)" }
+        require(inviteCode?.isNotBlank() != false) { "Invite code must not be blank if provided" }
+    }
+
+    companion object {
+        private val EMAIL_REGEX = Regex("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")
+        private const val MIN_PASSWORD_LENGTH = 8
+        private const val MAX_DISPLAY_NAME_LENGTH = 100
+    }
+}
 
 /**
  * Request to change user password.
