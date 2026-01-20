@@ -177,6 +177,14 @@ class MigrationRunnerTest {
                 };
                 """.trimIndent(),
             )
+            dbClient.execute(
+                """
+                CREATE _migrations CONTENT {
+                    version: 3,
+                    description: 'fix user status values'
+                };
+                """.trimIndent(),
+            )
 
             // Run migrations - should skip all since they're already recorded
             val result = migrationRunner.runMigrations()

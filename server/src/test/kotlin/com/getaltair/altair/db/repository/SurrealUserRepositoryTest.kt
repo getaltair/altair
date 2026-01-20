@@ -244,6 +244,84 @@ class SurrealUserRepositoryTest {
             }
         }
 
+    @Test
+    fun `update persists status change from ACTIVE to DISABLED`(): Unit =
+        runBlocking {
+            val user = createTestUser(email = "suspend@test.com", status = UserStatus.ACTIVE)
+            repository.create(user)
+
+            val updatedUser = user.copy(status = UserStatus.DISABLED)
+            val result = repository.update(updatedUser)
+
+            assertTrue(result.isRight())
+            result.onRight { updated ->
+                assertEquals(UserStatus.DISABLED, updated.status)
+            }
+
+            // Verify by fetching again
+            val fetchResult = repository.findById(user.id)
+            assertTrue(fetchResult.isRight())
+            fetchResult.onRight { fetched ->
+                assertEquals(UserStatus.DISABLED, fetched.status)
+            }
+        }
+
+    @Test
+    fun `update persists status change from DISABLED to ACTIVE`(): Unit =
+        runBlocking {
+            val user = createTestUser(email = "restore@test.com", status = UserStatus.DISABLED)
+            repository.create(user)
+
+            val updatedUser = user.copy(status = UserStatus.ACTIVE)
+            val result = repository.update(updatedUser)
+
+            assertTrue(result.isRight())
+            result.onRight { updated ->
+                assertEquals(UserStatus.ACTIVE, updated.status)
+            }
+
+            // Verify by fetching again
+            val fetchResult = repository.findById(user.id)
+            assertTrue(fetchResult.isRight())
+            fetchResult.onRight { fetched ->
+                assertEquals(UserStatus.ACTIVE, fetched.status)
+            }
+        }
+
+    @Test
+    fun `update persists multiple field changes including status`(): Unit =
+        runBlocking {
+            val user = createTestUser(email = "original@test.com", status = UserStatus.ACTIVE)
+            repository.create(user)
+
+            val updatedUser = user.copy(
+                email = "updated@test.com",
+                displayName = "Updated Name",
+                status = UserStatus.DISABLED,
+            )
+            val result = repository.update(updatedUser)
+
+            assertTrue(result.isRight())
+            result.onRight { updated ->
+                assertEquals("updated@test.com", updated.email)
+                assertEquals("Updated Name", updated.displayName)
+                assertEquals(UserStatus.DISABLED, updated.status)
+            }
+        }
+
+    @Test
+    fun `update returns NotFound error for non-existent user`(): Unit =
+        runBlocking {
+            val nonExistentUser = createTestUser()
+
+            val result = repository.update(nonExistentUser)
+
+            assertTrue(result.isLeft())
+            result.onLeft { error ->
+                assertIs<UserError.NotFound>(error)
+            }
+        }
+
     private fun createTestUser(
         email: String = "test@test.com",
         role: UserRole = UserRole.MEMBER,

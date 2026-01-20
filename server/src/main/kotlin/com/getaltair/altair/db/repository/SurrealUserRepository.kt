@@ -186,30 +186,32 @@ class SurrealUserRepository(
             // Verify user exists
             findById(user.id).bind()
 
-            db
-                .executeBind(
-                    """
-                    UPDATE user:${user.id.value} SET
-                        email = ${'$'}email,
-                        display_name = ${'$'}displayName,
-                        role = ${'$'}role,
-                        status = ${'$'}status,
-                        storage_used_bytes = ${'$'}storageUsed,
-                        storage_quota_bytes = ${'$'}storageQuota,
-                        updated_at = time::now();
-                    """.trimIndent(),
-                    mapOf(
-                        "email" to user.email,
-                        "displayName" to user.displayName,
-                        "role" to user.role.name.lowercase(),
-                        "status" to user.status.name.lowercase(),
-                        "storageUsed" to user.storageUsedBytes,
-                        "storageQuota" to user.storageQuotaBytes,
-                    ),
-                ).mapLeft { UserError.NotFound(user.id) }
-                .bind()
+            val result =
+                db
+                    .queryBind(
+                        """
+                        UPDATE user:${user.id.value} SET
+                            email = ${'$'}email,
+                            display_name = ${'$'}displayName,
+                            role = ${'$'}role,
+                            status = ${'$'}status,
+                            storage_used_bytes = ${'$'}storageUsed,
+                            storage_quota_bytes = ${'$'}storageQuota,
+                            updated_at = time::now()
+                        RETURN AFTER;
+                        """.trimIndent(),
+                        mapOf(
+                            "email" to user.email,
+                            "displayName" to user.displayName,
+                            "role" to user.role.name.lowercase(),
+                            "status" to user.status.name.lowercase(),
+                            "storageUsed" to user.storageUsedBytes,
+                            "storageQuota" to user.storageQuotaBytes,
+                        ),
+                    ).mapLeft { UserError.NotFound(user.id) }
+                    .bind()
 
-            findById(user.id).bind()
+            parseUser(result) ?: raise(UserError.NotFound(user.id))
         }
 
     override suspend fun delete(id: Ulid): Either<UserError, Unit> =
@@ -268,18 +270,20 @@ class SurrealUserRepository(
                 UserError.StorageQuotaExceeded(bytesUsed, user.storageQuotaBytes)
             }
 
-            db
-                .executeBind(
-                    """
-                    UPDATE user:${id.value} SET
-                        storage_used_bytes = ${'$'}bytesUsed,
-                        updated_at = time::now();
-                    """.trimIndent(),
-                    mapOf("bytesUsed" to bytesUsed),
-                ).mapLeft { UserError.NotFound(id) }
-                .bind()
+            val result =
+                db
+                    .queryBind(
+                        """
+                        UPDATE user:${id.value} SET
+                            storage_used_bytes = ${'$'}bytesUsed,
+                            updated_at = time::now()
+                        RETURN AFTER;
+                        """.trimIndent(),
+                        mapOf("bytesUsed" to bytesUsed),
+                    ).mapLeft { UserError.NotFound(id) }
+                    .bind()
 
-            findById(id).bind()
+            parseUser(result) ?: raise(UserError.NotFound(id))
         }
 
     override suspend fun isEmailAvailable(email: String): Either<UserError, Boolean> =
