@@ -4,6 +4,7 @@ import com.arkivanov.decompose.DefaultComponentContext
 import com.arkivanov.essenty.lifecycle.Lifecycle
 import com.arkivanov.essenty.lifecycle.LifecycleRegistry
 import com.arkivanov.essenty.lifecycle.resume
+import com.getaltair.altair.domain.types.Ulid
 import com.getaltair.altair.dto.auth.AuthRequest
 import com.getaltair.altair.dto.auth.AuthResponse
 import com.getaltair.altair.dto.auth.RegisterRequest
@@ -119,9 +120,9 @@ private class FakeTokenStorage : SecureTokenStorage {
 
     override suspend fun getTokenExpiration(): Long? = null
 
-    override suspend fun saveUserId(userId: String) = Unit
+    override suspend fun saveUserId(userId: Ulid) = Unit
 
-    override suspend fun getUserId(): String? = null
+    override suspend fun getUserId(): Ulid? = null
 
     override suspend fun clear() = Unit
 

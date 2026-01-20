@@ -1,5 +1,6 @@
 package com.getaltair.altair.service.auth
 
+import com.getaltair.altair.domain.types.Ulid
 import kotlinx.coroutines.runBlocking
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
@@ -69,7 +70,7 @@ class IosSecureTokenStorageTest {
     @Test
     fun userIdStorageRoundTripsCorrectly() =
         runBlocking {
-            val userId = "01HWUSER00000000000000001"
+            val userId = Ulid("01ARZ3NDEKTSV4RRFFQ69G5FAV")
 
             storage.saveUserId(userId)
             val retrieved = storage.getUserId()
@@ -115,7 +116,7 @@ class IosSecureTokenStorageTest {
             storage.saveAccessToken("access-token")
             storage.saveRefreshToken("refresh-token")
             storage.saveTokenExpiration(TEST_EXPIRATION_TIMESTAMP)
-            storage.saveUserId("user-id")
+            storage.saveUserId(Ulid("01ARZ3NDEKTSV4RRFFQ69G5FAV"))
 
             storage.clear()
 
@@ -182,14 +183,16 @@ class IosSecureTokenStorageTest {
         }
 
     @Test
-    fun unicodeContentIsStoredCorrectly() =
+    fun differentUserIdsAreStoredCorrectly() =
         runBlocking {
-            val unicodeUserId = "user-日本語-émoji-🎉"
+            val userId1 = Ulid("01ARZ3NDEKTSV4RRFFQ69G5FAV")
+            val userId2 = Ulid("01BRCD4EFGHTSV5SSGHR8H6GBX")
 
-            storage.saveUserId(unicodeUserId)
-            val retrieved = storage.getUserId()
+            storage.saveUserId(userId1)
+            assertEquals(userId1, storage.getUserId())
 
-            assertEquals(unicodeUserId, retrieved)
+            storage.saveUserId(userId2)
+            assertEquals(userId2, storage.getUserId())
         }
 
     @Test

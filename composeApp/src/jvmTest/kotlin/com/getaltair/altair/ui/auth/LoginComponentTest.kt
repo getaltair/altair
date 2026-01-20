@@ -3,6 +3,8 @@ package com.getaltair.altair.ui.auth
 import com.arkivanov.decompose.DefaultComponentContext
 import com.arkivanov.essenty.lifecycle.LifecycleRegistry
 import com.arkivanov.essenty.lifecycle.resume
+import com.getaltair.altair.domain.types.Ulid
+import com.getaltair.altair.domain.types.enums.UserRole
 import com.getaltair.altair.dto.auth.AuthResponse
 import com.getaltair.altair.service.auth.AuthManager
 import com.getaltair.altair.service.auth.FakePublicAuthService
@@ -230,8 +232,8 @@ class LoginComponentTest {
             accessToken = "access-token",
             refreshToken = "refresh-token",
             expiresIn = 900,
-            userId = "user-123",
+            userId = Ulid("01ARZ3NDEKTSV4RRFFQ69G5FAV"),
             displayName = "Test User",
-            role = "member",
+            role = UserRole.MEMBER,
         )
 }
