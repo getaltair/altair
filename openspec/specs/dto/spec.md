@@ -26,14 +26,16 @@ The system SHALL define DTOs for authentication flows.
 #### Scenario: Login request
 
 - **WHEN** a user submits login credentials
-- **THEN** AuthRequest contains username and password fields
+- **THEN** AuthRequest contains email and password fields
 - **AND** password is never logged or persisted
 
 #### Scenario: Login response
 
 - **WHEN** login succeeds
-- **THEN** AuthResponse contains accessToken, refreshToken, and expiresAt
-- **AND** user profile data is included
+- **THEN** AuthResponse contains accessToken, refreshToken, and expiresIn
+- **AND** userId is typed as Ulid for compile-time safety
+- **AND** role is typed as UserRole enum for compile-time safety
+- **AND** user displayName is included
 
 #### Scenario: Token refresh request
 
@@ -44,7 +46,7 @@ The system SHALL define DTOs for authentication flows.
 #### Scenario: Registration request
 
 - **WHEN** a new user registers
-- **THEN** RegisterRequest contains username, password, and inviteCode
+- **THEN** RegisterRequest contains email, password, displayName, and optional inviteCode
 - **AND** password complexity is not validated at DTO level
 
 ### Requirement: Synchronization DTOs
