@@ -3,7 +3,6 @@ package com.getaltair.altair.service.auth
 import arrow.core.Either
 import arrow.core.left
 import arrow.core.raise.either
-import arrow.core.right
 import com.getaltair.altair.domain.AuthError
 import com.getaltair.altair.domain.types.Ulid
 import com.getaltair.altair.dto.auth.AuthRequest
@@ -105,29 +104,34 @@ class AuthManager(
         _authState.value = AuthState.Loading
 
         @Suppress("TooGenericExceptionCaught") // RPC calls can throw various exceptions
-        return try {
-            val response = publicAuthService.login(AuthRequest(email, password))
-            storeTokens(response).fold(
-                ifLeft = {
+        return either {
+            // Validate request before making RPC call
+            val request =
+                AuthRequest
+                    .create(email, password)
+                    .mapLeft { AuthError.InvalidCredentials }
+                    .bind()
+
+            val response =
+                try {
+                    publicAuthService.login(request)
+                } catch (
+                    @Suppress("SwallowedException") e: IllegalArgumentException,
+                ) {
+                    // Server validation errors (invalid credentials, account not active)
                     _authState.value = AuthState.Unauthenticated
-                    return it.left()
-                },
-                ifRight = {
-                    _authState.value = AuthState.Authenticated(response.userId)
-                    startTokenRefreshTimer()
-                    response.userId.right()
-                },
-            )
-        } catch (
-            @Suppress("SwallowedException") e: IllegalArgumentException,
-        ) {
-            // Server validation errors (invalid credentials, account not active)
-            // Exception message intentionally not logged to avoid leaking credential status
+                    raise(AuthError.InvalidCredentials)
+                } catch (e: Exception) {
+                    _authState.value = AuthState.Unauthenticated
+                    raise(mapExceptionToAuthError(e))
+                }
+
+            storeTokens(response).bind()
+            _authState.value = AuthState.Authenticated(response.userId)
+            startTokenRefreshTimer()
+            response.userId
+        }.onLeft {
             _authState.value = AuthState.Unauthenticated
-            AuthError.InvalidCredentials.left()
-        } catch (e: Exception) {
-            _authState.value = AuthState.Unauthenticated
-            mapExceptionToAuthError(e).left()
         }
     }
 
@@ -149,34 +153,43 @@ class AuthManager(
         _authState.value = AuthState.Loading
 
         @Suppress("TooGenericExceptionCaught") // RPC calls can throw various exceptions
-        return try {
-            val response =
-                publicAuthService.register(
-                    RegisterRequest(
+        return either {
+            // Validate request before making RPC call
+            val request =
+                RegisterRequest
+                    .create(
                         email = email,
                         password = password,
                         displayName = displayName,
                         inviteCode = inviteCode,
-                    ),
-                )
-            storeTokens(response).fold(
-                ifLeft = {
+                    ).mapLeft { validationError ->
+                        // Map specific validation errors to appropriate AuthErrors
+                        when (validationError.field) {
+                            "email" -> AuthError.InvalidCredentials
+                            "password" -> AuthError.WeakPassword
+                            "displayName" -> AuthError.RegistrationFailed(validationError.message)
+                            "inviteCode" -> AuthError.InvalidInviteCode
+                            else -> AuthError.RegistrationFailed(validationError.message)
+                        }
+                    }.bind()
+
+            val response =
+                try {
+                    publicAuthService.register(request)
+                } catch (e: IllegalArgumentException) {
                     _authState.value = AuthState.Unauthenticated
-                    return it.left()
-                },
-                ifRight = {
-                    _authState.value = AuthState.Authenticated(response.userId)
-                    startTokenRefreshTimer()
-                    response.userId.right()
-                },
-            )
-        } catch (e: IllegalArgumentException) {
-            // Server validation errors
+                    raise(mapRegistrationError(e))
+                } catch (e: Exception) {
+                    _authState.value = AuthState.Unauthenticated
+                    raise(mapExceptionToAuthError(e))
+                }
+
+            storeTokens(response).bind()
+            _authState.value = AuthState.Authenticated(response.userId)
+            startTokenRefreshTimer()
+            response.userId
+        }.onLeft {
             _authState.value = AuthState.Unauthenticated
-            mapRegistrationError(e).left()
-        } catch (e: Exception) {
-            _authState.value = AuthState.Unauthenticated
-            mapExceptionToAuthError(e).left()
         }
     }
 
