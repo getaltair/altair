@@ -42,8 +42,9 @@ class SurrealQuestRepository(
         either {
             val result =
                 db
-                    .query<Any>(
-                        "SELECT * FROM quest WHERE id = quest:${id.value} AND user_id = user:${userId.value} AND deleted_at IS NONE",
+                    .queryBind(
+                        "SELECT * FROM quest WHERE id = quest:\$id AND user_id = user:\$userId AND deleted_at IS NONE",
+                        mapOf("id" to id.value, "userId" to userId.value),
                     ).mapLeft { QuestError.NotFound(id) }
                     .bind()
 
@@ -57,45 +58,75 @@ class SurrealQuestRepository(
             if (existing.isRight()) {
                 // Update
                 db
-                    .execute(
+                    .executeBind(
                         """
-                        UPDATE quest:${entity.id.value} SET
-                            title = '${entity.title.replace("'", "''")}',
-                            description = ${entity.description?.let { "'${it.replace("'", "''")}'" } ?: "NONE"},
-                            energy_cost = ${entity.energyCost},
-                            status = '${entity.status.name.lowercase()}',
-                            epic_id = ${entity.epicId?.let { "epic:${it.value}" } ?: "NONE"},
-                            routine_id = ${entity.routineId?.let { "routine:${it.value}" } ?: "NONE"},
-                            initiative_id = ${entity.initiativeId?.let { "initiative:${it.value}" } ?: "NONE"},
-                            due_date = ${entity.dueDate?.let { "'$it'" } ?: "NONE"},
-                            scheduled_date = ${entity.scheduledDate?.let { "'$it'" } ?: "NONE"},
-                            started_at = ${entity.startedAt?.let { "<datetime>'$it'" } ?: "NONE"},
-                            completed_at = ${entity.completedAt?.let { "<datetime>'$it'" } ?: "NONE"},
+                        UPDATE quest:${'$'}id SET
+                            title = ${'$'}title,
+                            description = ${'$'}description,
+                            energy_cost = ${'$'}energyCost,
+                            status = ${'$'}status,
+                            epic_id = ${'$'}epicId,
+                            routine_id = ${'$'}routineId,
+                            initiative_id = ${'$'}initiativeId,
+                            due_date = ${'$'}dueDate,
+                            scheduled_date = ${'$'}scheduledDate,
+                            started_at = ${'$'}startedAt,
+                            completed_at = ${'$'}completedAt,
                             updated_at = time::now()
-                        WHERE user_id = user:${userId.value};
+                        WHERE user_id = user:${'$'}userId;
                         """.trimIndent(),
+                        mapOf(
+                            "id" to entity.id.value,
+                            "title" to entity.title,
+                            "description" to entity.description,
+                            "energyCost" to entity.energyCost,
+                            "status" to entity.status.name.lowercase(),
+                            "epicId" to entity.epicId?.let { "epic:${it.value}" },
+                            "routineId" to entity.routineId?.let { "routine:${it.value}" },
+                            "initiativeId" to entity.initiativeId?.let { "initiative:${it.value}" },
+                            "dueDate" to entity.dueDate?.toString(),
+                            "scheduledDate" to entity.scheduledDate?.toString(),
+                            "startedAt" to entity.startedAt?.toString(),
+                            "completedAt" to entity.completedAt?.toString(),
+                            "userId" to userId.value,
+                        ),
                     ).mapLeft { QuestError.NotFound(entity.id) }
                     .bind()
             } else {
                 // Insert
                 db
-                    .execute(
+                    .executeBind(
                         """
-                        CREATE quest:${entity.id.value} CONTENT {
-                            user_id: user:${userId.value},
-                            title: '${entity.title.replace("'", "''")}',
-                            description: ${entity.description?.let { "'${it.replace("'", "''")}'" } ?: "NONE"},
-                            energy_cost: ${entity.energyCost},
-                            status: '${entity.status.name.lowercase()}',
-                            epic_id: ${entity.epicId?.let { "epic:${it.value}" } ?: "NONE"},
-                            routine_id: ${entity.routineId?.let { "routine:${it.value}" } ?: "NONE"},
-                            initiative_id: ${entity.initiativeId?.let { "initiative:${it.value}" } ?: "NONE"},
-                            due_date: ${entity.dueDate?.let { "'$it'" } ?: "NONE"},
-                            scheduled_date: ${entity.scheduledDate?.let { "'$it'" } ?: "NONE"},
-                            started_at: ${entity.startedAt?.let { "<datetime>'$it'" } ?: "NONE"},
-                            completed_at: ${entity.completedAt?.let { "<datetime>'$it'" } ?: "NONE"}
+                        CREATE quest:${'$'}id CONTENT {
+                            user_id: user:${'$'}userId,
+                            title: ${'$'}title,
+                            description: ${'$'}description,
+                            energy_cost: ${'$'}energyCost,
+                            status: ${'$'}status,
+                            epic_id: ${'$'}epicId,
+                            routine_id: ${'$'}routineId,
+                            initiative_id: ${'$'}initiativeId,
+                            due_date: ${'$'}dueDate,
+                            scheduled_date: ${'$'}scheduledDate,
+                            started_at: ${'$'}startedAt,
+                            completed_at: ${'$'}completedAt
                         };
                         """.trimIndent(),
+                        mapOf(
+                            "id" to entity.id.value,
+                            "userId" to userId.value,
+                            "title" to entity.title,
+                            "description" to entity.description,
+                            "energyCost" to entity.energyCost,
+                            "status" to entity.status.name.lowercase(),
+                            "epicId" to entity.epicId?.let { "epic:${it.value}" },
+                            "routineId" to entity.routineId?.let { "routine:${it.value}" },
+                            "initiativeId" to entity.initiativeId?.let { "initiative:${it.value}" },
+                            "dueDate" to entity.dueDate?.toString(),
+                            "scheduledDate" to entity.scheduledDate?.toString(),
+                            "startedAt" to entity.startedAt?.toString(),
+                            "completedAt" to entity.completedAt?.toString(),
+                        ),
                     ).mapLeft { QuestError.NotFound(entity.id) }
                     .bind()
             }
@@ -107,13 +138,14 @@ class SurrealQuestRepository(
         either {
             findById(id).bind()
             db
-                .execute(
+                .executeBind(
                     """
-                    UPDATE quest:${id.value} SET
+                    UPDATE quest:${'$'}id SET
                         deleted_at = time::now(),
                         updated_at = time::now()
-                    WHERE user_id = user:${userId.value};
+                    WHERE user_id = user:${'$'}userId;
                     """.trimIndent(),
+                    mapOf("id" to id.value, "userId" to userId.value),
                 ).mapLeft { QuestError.NotFound(id) }
                 .bind()
         }
@@ -121,8 +153,9 @@ class SurrealQuestRepository(
     override fun findAll(): Flow<List<Quest>> =
         kotlinx.coroutines.flow.flow {
             val result =
-                db.query<Any>(
-                    "SELECT * FROM quest WHERE user_id = user:${userId.value} AND deleted_at IS NONE ORDER BY created_at DESC",
+                db.queryBind(
+                    "SELECT * FROM quest WHERE user_id = user:\$userId AND deleted_at IS NONE ORDER BY created_at DESC",
+                    mapOf("userId" to userId.value),
                 )
             emit(result.fold({ emptyList() }, { parseQuests(it) }))
         }
@@ -130,8 +163,9 @@ class SurrealQuestRepository(
     override fun findByStatus(status: QuestStatus): Flow<List<Quest>> =
         kotlinx.coroutines.flow.flow {
             val result =
-                db.query<Any>(
-                    "SELECT * FROM quest WHERE user_id = user:${userId.value} AND status = '${status.name.lowercase()}' AND deleted_at IS NONE",
+                db.queryBind(
+                    "SELECT * FROM quest WHERE user_id = user:\$userId AND status = \$status AND deleted_at IS NONE",
+                    mapOf("userId" to userId.value, "status" to status.name.lowercase()),
                 )
             emit(result.fold({ emptyList() }, { parseQuests(it) }))
         }
@@ -141,8 +175,9 @@ class SurrealQuestRepository(
     override fun findByScheduledDate(date: LocalDate): Flow<List<Quest>> =
         kotlinx.coroutines.flow.flow {
             val result =
-                db.query<Any>(
-                    "SELECT * FROM quest WHERE user_id = user:${userId.value} AND scheduled_date = '$date' AND deleted_at IS NONE",
+                db.queryBind(
+                    "SELECT * FROM quest WHERE user_id = user:\$userId AND scheduled_date = \$date AND deleted_at IS NONE",
+                    mapOf("userId" to userId.value, "date" to date.toString()),
                 )
             emit(result.fold({ emptyList() }, { parseQuests(it) }))
         }
@@ -150,8 +185,9 @@ class SurrealQuestRepository(
     override fun findDueByDate(date: LocalDate): Flow<List<Quest>> =
         kotlinx.coroutines.flow.flow {
             val result =
-                db.query<Any>(
-                    "SELECT * FROM quest WHERE user_id = user:${userId.value} AND due_date <= '$date' AND deleted_at IS NONE",
+                db.queryBind(
+                    "SELECT * FROM quest WHERE user_id = user:\$userId AND due_date <= \$date AND deleted_at IS NONE",
+                    mapOf("userId" to userId.value, "date" to date.toString()),
                 )
             emit(result.fold({ emptyList() }, { parseQuests(it) }))
         }
@@ -159,8 +195,9 @@ class SurrealQuestRepository(
     override fun findByEpic(epicId: Ulid): Flow<List<Quest>> =
         kotlinx.coroutines.flow.flow {
             val result =
-                db.query<Any>(
-                    "SELECT * FROM quest WHERE user_id = user:${userId.value} AND epic_id = epic:${epicId.value} AND deleted_at IS NONE",
+                db.queryBind(
+                    "SELECT * FROM quest WHERE user_id = user:\$userId AND epic_id = epic:\$epicId AND deleted_at IS NONE",
+                    mapOf("userId" to userId.value, "epicId" to epicId.value),
                 )
             emit(result.fold({ emptyList() }, { parseQuests(it) }))
         }
@@ -168,8 +205,9 @@ class SurrealQuestRepository(
     override fun findByRoutine(routineId: Ulid): Flow<List<Quest>> =
         kotlinx.coroutines.flow.flow {
             val result =
-                db.query<Any>(
-                    "SELECT * FROM quest WHERE user_id = user:${userId.value} AND routine_id = routine:${routineId.value} AND deleted_at IS NONE",
+                db.queryBind(
+                    "SELECT * FROM quest WHERE user_id = user:\$userId AND routine_id = routine:\$routineId AND deleted_at IS NONE",
+                    mapOf("userId" to userId.value, "routineId" to routineId.value),
                 )
             emit(result.fold({ emptyList() }, { parseQuests(it) }))
         }
@@ -177,8 +215,9 @@ class SurrealQuestRepository(
     override fun findByInitiative(initiativeId: Ulid): Flow<List<Quest>> =
         kotlinx.coroutines.flow.flow {
             val result =
-                db.query<Any>(
-                    "SELECT * FROM quest WHERE user_id = user:${userId.value} AND initiative_id = initiative:${initiativeId.value} AND deleted_at IS NONE",
+                db.queryBind(
+                    "SELECT * FROM quest WHERE user_id = user:\$userId AND initiative_id = initiative:\$initiativeId AND deleted_at IS NONE",
+                    mapOf("userId" to userId.value, "initiativeId" to initiativeId.value),
                 )
             emit(result.fold({ emptyList() }, { parseQuests(it) }))
         }
@@ -220,14 +259,15 @@ class SurrealQuestRepository(
                 }
 
             db
-                .execute(
+                .executeBind(
                     """
-                    UPDATE quest:${id.value} SET
-                        status = '${newStatus.name.lowercase()}',
+                    UPDATE quest:${'$'}id SET
+                        status = ${'$'}status,
                         ${if (statusUpdate.isNotEmpty()) "$statusUpdate," else ""}
                         updated_at = $now
-                    WHERE user_id = user:${userId.value};
+                    WHERE user_id = user:${'$'}userId;
                     """.trimIndent(),
+                    mapOf("id" to id.value, "status" to newStatus.name.lowercase(), "userId" to userId.value),
                 ).mapLeft { QuestError.NotFound(id) }
                 .bind()
 
@@ -238,8 +278,9 @@ class SurrealQuestRepository(
         either {
             val result =
                 db
-                    .query<Any>(
-                        "SELECT count() FROM quest WHERE user_id = user:${userId.value} AND status = 'active' AND deleted_at IS NONE GROUP ALL",
+                    .queryBind(
+                        "SELECT count() FROM quest WHERE user_id = user:\$userId AND status = \$status AND deleted_at IS NONE GROUP ALL",
+                        mapOf("userId" to userId.value, "status" to "active"),
                     ).mapLeft { QuestError.NotFound(Ulid.generate()) }
                     .bind()
 

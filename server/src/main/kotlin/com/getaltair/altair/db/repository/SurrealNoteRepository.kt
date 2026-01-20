@@ -34,8 +34,9 @@ class SurrealNoteRepository(
         either {
             val result =
                 db
-                    .query<Any>(
-                        "SELECT * FROM note WHERE id = note:${id.value} AND user_id = user:${userId.value} AND deleted_at IS NONE",
+                    .queryBind(
+                        "SELECT * FROM note WHERE id = note:\$id AND user_id = user:\$userId AND deleted_at IS NONE",
+                        mapOf("id" to id.value, "userId" to userId.value),
                     ).mapLeft { NoteError.NotFound(id) }
                     .bind()
             parseNote(result) ?: raise(NoteError.NotFound(id))
@@ -46,32 +47,50 @@ class SurrealNoteRepository(
             val existing = findById(entity.id)
             if (existing.isRight()) {
                 db
-                    .execute(
+                    .executeBind(
                         """
-                        UPDATE note:${entity.id.value} SET
-                            title = '${entity.title.replace("'", "''")}',
-                            content = '${entity.content.replace("'", "''")}',
-                            folder_id = ${entity.folderId?.let { "folder:${it.value}" } ?: "NONE"},
-                            initiative_id = ${entity.initiativeId?.let { "initiative:${it.value}" } ?: "NONE"},
-                            is_pinned = ${entity.isPinned},
+                        UPDATE note:${'$'}id SET
+                            title = ${'$'}title,
+                            content = ${'$'}content,
+                            folder_id = ${entity.folderId?.let { "folder:${'$'}folderId" } ?: "NONE"},
+                            initiative_id = ${entity.initiativeId?.let { "initiative:${'$'}initiativeId" } ?: "NONE"},
+                            is_pinned = ${'$'}isPinned,
                             updated_at = time::now()
-                        WHERE user_id = user:${userId.value};
+                        WHERE user_id = user:${'$'}userId
                         """.trimIndent(),
+                        buildMap {
+                            put("id", entity.id.value)
+                            put("title", entity.title)
+                            put("content", entity.content)
+                            entity.folderId?.let { put("folderId", it.value) }
+                            entity.initiativeId?.let { put("initiativeId", it.value) }
+                            put("isPinned", entity.isPinned)
+                            put("userId", userId.value)
+                        },
                     ).mapLeft { NoteError.NotFound(entity.id) }
                     .bind()
             } else {
                 db
-                    .execute(
+                    .executeBind(
                         """
-                        CREATE note:${entity.id.value} CONTENT {
-                            user_id: user:${userId.value},
-                            title: '${entity.title.replace("'", "''")}',
-                            content: '${entity.content.replace("'", "''")}',
-                            folder_id: ${entity.folderId?.let { "folder:${it.value}" } ?: "NONE"},
-                            initiative_id: ${entity.initiativeId?.let { "initiative:${it.value}" } ?: "NONE"},
-                            is_pinned: ${entity.isPinned}
-                        };
+                        CREATE note:${'$'}id CONTENT {
+                            user_id: user:${'$'}userId,
+                            title: ${'$'}title,
+                            content: ${'$'}content,
+                            folder_id: ${entity.folderId?.let { "folder:${'$'}folderId" } ?: "NONE"},
+                            initiative_id: ${entity.initiativeId?.let { "initiative:${'$'}initiativeId" } ?: "NONE"},
+                            is_pinned: ${'$'}isPinned
+                        }
                         """.trimIndent(),
+                        buildMap {
+                            put("id", entity.id.value)
+                            put("userId", userId.value)
+                            put("title", entity.title)
+                            put("content", entity.content)
+                            entity.folderId?.let { put("folderId", it.value) }
+                            entity.initiativeId?.let { put("initiativeId", it.value) }
+                            put("isPinned", entity.isPinned)
+                        },
                     ).mapLeft { NoteError.NotFound(entity.id) }
                     .bind()
             }
@@ -82,8 +101,9 @@ class SurrealNoteRepository(
         either {
             findById(id).bind()
             db
-                .execute(
-                    "UPDATE note:${id.value} SET deleted_at = time::now(), updated_at = time::now() WHERE user_id = user:${userId.value};",
+                .executeBind(
+                    "UPDATE note:\$id SET deleted_at = time::now(), updated_at = time::now() WHERE user_id = user:\$userId;",
+                    mapOf("id" to id.value, "userId" to userId.value),
                 ).mapLeft { NoteError.NotFound(id) }
                 .bind()
         }
@@ -91,27 +111,36 @@ class SurrealNoteRepository(
     override fun findAll(): Flow<List<Note>> =
         flow {
             val result =
-                db.query<Any>(
-                    "SELECT * FROM note WHERE user_id = user:${userId.value} AND deleted_at IS NONE ORDER BY updated_at DESC",
+                db.queryBind(
+                    "SELECT * FROM note WHERE user_id = user:\$userId AND deleted_at IS NONE ORDER BY updated_at DESC",
+                    mapOf("userId" to userId.value),
                 )
             emit(result.fold({ emptyList() }, { parseNotes(it) }))
         }
 
     override fun findByFolder(folderId: Ulid?): Flow<List<Note>> =
         flow {
-            val filter = folderId?.let { "folder_id = folder:${it.value}" } ?: "folder_id IS NONE"
             val result =
-                db.query<Any>(
-                    "SELECT * FROM note WHERE user_id = user:${userId.value} AND $filter AND deleted_at IS NONE ORDER BY title",
-                )
+                if (folderId != null) {
+                    db.queryBind(
+                        "SELECT * FROM note WHERE user_id = user:\$userId AND folder_id = folder:\$folderId AND deleted_at IS NONE ORDER BY title",
+                        mapOf("userId" to userId.value, "folderId" to folderId.value),
+                    )
+                } else {
+                    db.queryBind(
+                        "SELECT * FROM note WHERE user_id = user:\$userId AND folder_id IS NONE AND deleted_at IS NONE ORDER BY title",
+                        mapOf("userId" to userId.value),
+                    )
+                }
             emit(result.fold({ emptyList() }, { parseNotes(it) }))
         }
 
     override fun findPinned(): Flow<List<Note>> =
         flow {
             val result =
-                db.query<Any>(
-                    "SELECT * FROM note WHERE user_id = user:${userId.value} AND is_pinned = true AND deleted_at IS NONE",
+                db.queryBind(
+                    "SELECT * FROM note WHERE user_id = user:\$userId AND is_pinned = true AND deleted_at IS NONE",
+                    mapOf("userId" to userId.value),
                 )
             emit(result.fold({ emptyList() }, { parseNotes(it) }))
         }
@@ -119,8 +148,9 @@ class SurrealNoteRepository(
     override fun findByInitiative(initiativeId: Ulid): Flow<List<Note>> =
         flow {
             val result =
-                db.query<Any>(
-                    "SELECT * FROM note WHERE user_id = user:${userId.value} AND initiative_id = initiative:${initiativeId.value} AND deleted_at IS NONE",
+                db.queryBind(
+                    "SELECT * FROM note WHERE user_id = user:\$userId AND initiative_id = initiative:\$initiativeId AND deleted_at IS NONE",
+                    mapOf("userId" to userId.value, "initiativeId" to initiativeId.value),
                 )
             emit(result.fold({ emptyList() }, { parseNotes(it) }))
         }
@@ -129,13 +159,14 @@ class SurrealNoteRepository(
         either {
             val result =
                 db
-                    .query<Any>(
+                    .queryBind(
                         """
-                        SELECT * FROM note WHERE user_id = user:${userId.value} AND deleted_at IS NONE
-                        AND (string::lowercase(title) CONTAINS string::lowercase('${query.replace("'", "''")}')
-                             OR string::lowercase(content) CONTAINS string::lowercase('${query.replace("'", "''")}'))
+                        SELECT * FROM note WHERE user_id = user:${'$'}userId AND deleted_at IS NONE
+                        AND (string::lowercase(title) CONTAINS string::lowercase(${'$'}query)
+                             OR string::lowercase(content) CONTAINS string::lowercase(${'$'}query))
                         ORDER BY updated_at DESC
                         """.trimIndent(),
+                        mapOf("userId" to userId.value, "query" to query),
                     ).mapLeft { NoteError.NotFound(Ulid.generate()) }
                     .bind()
             parseNotes(result)
@@ -158,13 +189,14 @@ class SurrealNoteRepository(
     override fun findBacklinks(noteId: Ulid): Flow<List<Note>> =
         flow {
             val result =
-                db.query<Any>(
+                db.queryBind(
                     """
                     SELECT note.* FROM note_link
                     INNER JOIN note ON note_link.source_note_id = note.id
-                    WHERE note_link.target_note_id = note:${noteId.value}
-                    AND note.user_id = user:${userId.value} AND note.deleted_at IS NONE
+                    WHERE note_link.target_note_id = note:${'$'}noteId
+                    AND note.user_id = user:${'$'}userId AND note.deleted_at IS NONE
                     """.trimIndent(),
+                    mapOf("noteId" to noteId.value, "userId" to userId.value),
                 )
             emit(result.fold({ emptyList() }, { parseNotes(it) }))
         }
@@ -172,13 +204,14 @@ class SurrealNoteRepository(
     override fun findForwardLinks(noteId: Ulid): Flow<List<Note>> =
         flow {
             val result =
-                db.query<Any>(
+                db.queryBind(
                     """
                     SELECT note.* FROM note_link
                     INNER JOIN note ON note_link.target_note_id = note.id
-                    WHERE note_link.source_note_id = note:${noteId.value}
-                    AND note.user_id = user:${userId.value} AND note.deleted_at IS NONE
+                    WHERE note_link.source_note_id = note:${'$'}noteId
+                    AND note.user_id = user:${'$'}userId AND note.deleted_at IS NONE
                     """.trimIndent(),
+                    mapOf("noteId" to noteId.value, "userId" to userId.value),
                 )
             emit(result.fold({ emptyList() }, { parseNotes(it) }))
         }
@@ -187,8 +220,9 @@ class SurrealNoteRepository(
         either {
             val note = findById(id).bind()
             db
-                .execute(
-                    "UPDATE note:${id.value} SET is_pinned = ${!note.isPinned}, updated_at = time::now() WHERE user_id = user:${userId.value};",
+                .executeBind(
+                    "UPDATE note:\$id SET is_pinned = \$isPinned, updated_at = time::now() WHERE user_id = user:\$userId;",
+                    mapOf("id" to id.value, "isPinned" to !note.isPinned, "userId" to userId.value),
                 ).mapLeft { NoteError.NotFound(id) }
                 .bind()
             findById(id).bind()
@@ -200,10 +234,14 @@ class SurrealNoteRepository(
     ): Either<NoteError, Note> =
         either {
             findById(id).bind()
-            val folderRef = folderId?.let { "folder:${it.value}" } ?: "NONE"
             db
-                .execute(
-                    "UPDATE note:${id.value} SET folder_id = $folderRef, updated_at = time::now() WHERE user_id = user:${userId.value};",
+                .executeBind(
+                    "UPDATE note:\$id SET folder_id = ${folderId?.let { "folder:\$folderId" } ?: "NONE"}, updated_at = time::now() WHERE user_id = user:\$userId",
+                    buildMap {
+                        put("id", id.value)
+                        folderId?.let { put("folderId", it.value) }
+                        put("userId", userId.value)
+                    },
                 ).mapLeft { NoteError.NotFound(id) }
                 .bind()
             findById(id).bind()

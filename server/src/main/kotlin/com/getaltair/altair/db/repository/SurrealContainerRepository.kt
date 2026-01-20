@@ -33,8 +33,9 @@ class SurrealContainerRepository(
         either {
             val result =
                 db
-                    .query<Any>(
-                        "SELECT * FROM container WHERE id = container:${id.value} AND user_id = user:${userId.value} AND deleted_at IS NONE",
+                    .queryBind(
+                        "SELECT * FROM container:${'$'}id WHERE user_id = user:${'$'}userId AND deleted_at IS NONE",
+                        mapOf("id" to id.value, "userId" to userId.value),
                     ).mapLeft { ItemError.NotFound(id) }
                     .bind()
             parseContainer(result) ?: raise(ItemError.NotFound(id))
@@ -45,34 +46,50 @@ class SurrealContainerRepository(
             val existing = findById(entity.id)
             if (existing.isRight()) {
                 db
-                    .execute(
+                    .executeBind(
                         """
-                        UPDATE container:${entity.id.value} SET
-                            name = '${entity.name.replace("'", "''")}',
-                            description = ${entity.description?.let { "'${it.replace("'", "''")}'" } ?: "NONE"},
-                            location_id = ${entity.locationId?.let { "location:${it.value}" } ?: "NONE"},
-                            parent_container_id = ${entity.parentContainerId?.let {
-                            "container:${it.value}"
-                        } ?: "NONE"},
-                            label = ${entity.label?.let { "'${it.replace("'", "''")}'" } ?: "NONE"},
+                        UPDATE container:${'$'}id SET
+                            name = ${'$'}name,
+                            description = ${'$'}description,
+                            location_id = ${entity.locationId?.let { "location:${'$'}locationId" } ?: "NONE"},
+                            parent_container_id = ${entity.parentContainerId?.let { "container:${'$'}parentContainerId" } ?: "NONE"},
+                            label = ${'$'}label,
                             updated_at = time::now()
-                        WHERE user_id = user:${userId.value};
+                        WHERE user_id = user:${'$'}userId
                         """.trimIndent(),
+                        buildMap {
+                            put("id", entity.id.value)
+                            put("name", entity.name)
+                            put("description", entity.description)
+                            entity.locationId?.let { put("locationId", it.value) }
+                            entity.parentContainerId?.let { put("parentContainerId", it.value) }
+                            put("label", entity.label)
+                            put("userId", userId.value)
+                        },
                     ).mapLeft { ItemError.NotFound(entity.id) }
                     .bind()
             } else {
                 db
-                    .execute(
+                    .executeBind(
                         """
-                        CREATE container:${entity.id.value} CONTENT {
-                            user_id: user:${userId.value},
-                            name: '${entity.name.replace("'", "''")}',
-                            description: ${entity.description?.let { "'${it.replace("'", "''")}'" } ?: "NONE"},
-                            location_id: ${entity.locationId?.let { "location:${it.value}" } ?: "NONE"},
-                            parent_container_id: ${entity.parentContainerId?.let { "container:${it.value}" } ?: "NONE"},
-                            label: ${entity.label?.let { "'${it.replace("'", "''")}'" } ?: "NONE"}
-                        };
+                        CREATE container:${'$'}id CONTENT {
+                            user_id: user:${'$'}userId,
+                            name: ${'$'}name,
+                            description: ${'$'}description,
+                            location_id: ${entity.locationId?.let { "location:${'$'}locationId" } ?: "NONE"},
+                            parent_container_id: ${entity.parentContainerId?.let { "container:${'$'}parentContainerId" } ?: "NONE"},
+                            label: ${'$'}label
+                        }
                         """.trimIndent(),
+                        buildMap {
+                            put("id", entity.id.value)
+                            put("userId", userId.value)
+                            put("name", entity.name)
+                            put("description", entity.description)
+                            entity.locationId?.let { put("locationId", it.value) }
+                            entity.parentContainerId?.let { put("parentContainerId", it.value) }
+                            put("label", entity.label)
+                        },
                     ).mapLeft { ItemError.NotFound(entity.id) }
                     .bind()
             }
@@ -83,8 +100,9 @@ class SurrealContainerRepository(
         either {
             findById(id).bind()
             db
-                .execute(
-                    "UPDATE container:${id.value} SET deleted_at = time::now(), updated_at = time::now() WHERE user_id = user:${userId.value};",
+                .executeBind(
+                    "UPDATE container:${'$'}id SET deleted_at = time::now(), updated_at = time::now() WHERE user_id = user:${'$'}userId",
+                    mapOf("id" to id.value, "userId" to userId.value),
                 ).mapLeft { ItemError.NotFound(id) }
                 .bind()
         }
@@ -92,8 +110,9 @@ class SurrealContainerRepository(
     override fun findAll(): Flow<List<Container>> =
         flow {
             val result =
-                db.query<Any>(
-                    "SELECT * FROM container WHERE user_id = user:${userId.value} AND deleted_at IS NONE ORDER BY name",
+                db.queryBind(
+                    "SELECT * FROM container WHERE user_id = user:${'$'}userId AND deleted_at IS NONE ORDER BY name",
+                    mapOf("userId" to userId.value),
                 )
             emit(result.fold({ emptyList() }, { parseContainers(it) }))
         }
@@ -101,8 +120,9 @@ class SurrealContainerRepository(
     override fun findByLocation(locationId: Ulid): Flow<List<Container>> =
         flow {
             val result =
-                db.query<Any>(
-                    "SELECT * FROM container WHERE user_id = user:${userId.value} AND location_id = location:${locationId.value} AND deleted_at IS NONE",
+                db.queryBind(
+                    "SELECT * FROM container WHERE user_id = user:${'$'}userId AND location_id = location:${'$'}locationId AND deleted_at IS NONE",
+                    mapOf("userId" to userId.value, "locationId" to locationId.value),
                 )
             emit(result.fold({ emptyList() }, { parseContainers(it) }))
         }
@@ -110,8 +130,9 @@ class SurrealContainerRepository(
     override fun findByParentContainer(parentContainerId: Ulid): Flow<List<Container>> =
         flow {
             val result =
-                db.query<Any>(
-                    "SELECT * FROM container WHERE user_id = user:${userId.value} AND parent_container_id = container:${parentContainerId.value} AND deleted_at IS NONE",
+                db.queryBind(
+                    "SELECT * FROM container WHERE user_id = user:${'$'}userId AND parent_container_id = container:${'$'}parentContainerId AND deleted_at IS NONE",
+                    mapOf("userId" to userId.value, "parentContainerId" to parentContainerId.value),
                 )
             emit(result.fold({ emptyList() }, { parseContainers(it) }))
         }
@@ -119,8 +140,9 @@ class SurrealContainerRepository(
     override fun findRoots(): Flow<List<Container>> =
         flow {
             val result =
-                db.query<Any>(
-                    "SELECT * FROM container WHERE user_id = user:${userId.value} AND parent_container_id IS NONE AND deleted_at IS NONE ORDER BY name",
+                db.queryBind(
+                    "SELECT * FROM container WHERE user_id = user:${'$'}userId AND parent_container_id IS NONE AND deleted_at IS NONE ORDER BY name",
+                    mapOf("userId" to userId.value),
                 )
             emit(result.fold({ emptyList() }, { parseContainers(it) }))
         }
@@ -131,10 +153,14 @@ class SurrealContainerRepository(
     ): Either<ItemError, Container> =
         either {
             findById(id).bind()
-            val locRef = locationId?.let { "location:${it.value}" } ?: "NONE"
             db
-                .execute(
-                    "UPDATE container:${id.value} SET location_id = $locRef, parent_container_id = NONE, updated_at = time::now() WHERE user_id = user:${userId.value};",
+                .executeBind(
+                    "UPDATE container:${'$'}id SET location_id = ${locationId?.let { "location:${'$'}locationId" } ?: "NONE"}, parent_container_id = NONE, updated_at = time::now() WHERE user_id = user:${'$'}userId",
+                    buildMap {
+                        put("id", id.value)
+                        locationId?.let { put("locationId", it.value) }
+                        put("userId", userId.value)
+                    },
                 ).mapLeft { ItemError.NotFound(id) }
                 .bind()
             findById(id).bind()
@@ -147,8 +173,9 @@ class SurrealContainerRepository(
         either {
             findById(id).bind()
             db
-                .execute(
-                    "UPDATE container:${id.value} SET parent_container_id = container:${parentContainerId.value}, updated_at = time::now() WHERE user_id = user:${userId.value};",
+                .executeBind(
+                    "UPDATE container:${'$'}id SET parent_container_id = container:${'$'}parentContainerId, updated_at = time::now() WHERE user_id = user:${'$'}userId",
+                    mapOf("id" to id.value, "parentContainerId" to parentContainerId.value, "userId" to userId.value),
                 ).mapLeft { ItemError.NotFound(id) }
                 .bind()
             findById(id).bind()
@@ -158,8 +185,9 @@ class SurrealContainerRepository(
         either {
             findById(id).bind()
             db
-                .execute(
-                    "UPDATE container:${id.value} SET parent_container_id = NONE, updated_at = time::now() WHERE user_id = user:${userId.value};",
+                .executeBind(
+                    "UPDATE container:${'$'}id SET parent_container_id = NONE, updated_at = time::now() WHERE user_id = user:${'$'}userId",
+                    mapOf("id" to id.value, "userId" to userId.value),
                 ).mapLeft { ItemError.NotFound(id) }
                 .bind()
             findById(id).bind()
@@ -169,12 +197,13 @@ class SurrealContainerRepository(
         either {
             val result =
                 db
-                    .query<Any>(
+                    .queryBind(
                         """
-                        SELECT * FROM container WHERE user_id = user:${userId.value} AND deleted_at IS NONE
-                        AND (string::lowercase(name) CONTAINS string::lowercase('${query.replace("'", "''")}')
-                             OR string::lowercase(label) CONTAINS string::lowercase('${query.replace("'", "''")}'))
+                        SELECT * FROM container WHERE user_id = user:${'$'}userId AND deleted_at IS NONE
+                        AND (string::lowercase(name) CONTAINS string::lowercase(${'$'}query)
+                             OR string::lowercase(label) CONTAINS string::lowercase(${'$'}query))
                         """.trimIndent(),
+                        mapOf("userId" to userId.value, "query" to query),
                     ).mapLeft { ItemError.NotFound(Ulid.generate()) }
                     .bind()
             parseContainers(result)
@@ -185,8 +214,9 @@ class SurrealContainerRepository(
             findById(id).bind()
             val result =
                 db
-                    .query<Any>(
-                        "SELECT count() FROM item WHERE user_id = user:${userId.value} AND container_id = container:${id.value} AND deleted_at IS NONE GROUP ALL",
+                    .queryBind(
+                        "SELECT count() FROM item WHERE user_id = user:${'$'}userId AND container_id = container:${'$'}containerId AND deleted_at IS NONE GROUP ALL",
+                        mapOf("userId" to userId.value, "containerId" to id.value),
                     ).mapLeft { ItemError.NotFound(id) }
                     .bind()
             parseCount(result)

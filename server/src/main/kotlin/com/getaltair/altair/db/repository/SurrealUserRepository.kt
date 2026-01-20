@@ -41,8 +41,9 @@ class SurrealUserRepository(
         either {
             val result =
                 db
-                    .query<Any>(
-                        "SELECT * FROM user WHERE id = user:${id.value} AND deleted_at IS NONE",
+                    .queryBind(
+                        "SELECT * FROM user WHERE id = user:${'$'}id AND deleted_at IS NONE",
+                        mapOf("id" to id.value),
                     ).mapLeft { UserError.NotFound(id) }
                     .bind()
 
@@ -53,8 +54,9 @@ class SurrealUserRepository(
         either {
             val result =
                 db
-                    .query<Any>(
-                        "SELECT * FROM user WHERE email = '${email.replace("'", "''")}' AND deleted_at IS NONE",
+                    .queryBind(
+                        "SELECT * FROM user WHERE email = ${'$'}email AND deleted_at IS NONE",
+                        mapOf("email" to email),
                     ).mapLeft { UserError.EmailNotFound }
                     .bind()
 
@@ -65,8 +67,9 @@ class SurrealUserRepository(
         either {
             val result =
                 db
-                    .query<Any>(
-                        "SELECT * FROM user WHERE email = '${email.replace("'", "''")}' AND deleted_at IS NONE",
+                    .queryBind(
+                        "SELECT * FROM user WHERE email = ${'$'}email AND deleted_at IS NONE",
+                        mapOf("email" to email),
                     ).mapLeft { UserError.EmailNotFound }
                     .bind()
 
@@ -77,8 +80,9 @@ class SurrealUserRepository(
         either {
             val result =
                 db
-                    .query<Any>(
-                        "SELECT * FROM user WHERE id = user:${id.value} AND deleted_at IS NONE",
+                    .queryBind(
+                        "SELECT * FROM user WHERE id = user:${'$'}id AND deleted_at IS NONE",
+                        mapOf("id" to id.value),
                     ).mapLeft { UserError.NotFound(id) }
                     .bind()
 
@@ -94,17 +98,25 @@ class SurrealUserRepository(
             }
 
             db
-                .execute(
+                .executeBind(
                     """
                     CREATE user:${user.id.value} CONTENT {
-                        email: '${user.email.replace("'", "''")}',
-                        display_name: '${user.displayName.replace("'", "''")}',
-                        role: '${user.role.name.lowercase()}',
-                        status: '${user.status.name.lowercase()}',
-                        storage_used_bytes: ${user.storageUsedBytes},
-                        storage_quota_bytes: ${user.storageQuotaBytes}
+                        email: ${'$'}email,
+                        display_name: ${'$'}displayName,
+                        role: ${'$'}role,
+                        status: ${'$'}status,
+                        storage_used_bytes: ${'$'}storageUsed,
+                        storage_quota_bytes: ${'$'}storageQuota
                     };
                     """.trimIndent(),
+                    mapOf(
+                        "email" to user.email,
+                        "displayName" to user.displayName,
+                        "role" to user.role.name.lowercase(),
+                        "status" to user.status.name.lowercase(),
+                        "storageUsed" to user.storageUsedBytes,
+                        "storageQuota" to user.storageQuotaBytes,
+                    ),
                 ).mapLeft { UserError.NotFound(user.id) }
                 .bind()
 
@@ -123,18 +135,27 @@ class SurrealUserRepository(
             }
 
             db
-                .execute(
+                .executeBind(
                     """
                     CREATE user:${user.id.value} CONTENT {
-                        email: '${user.email.replace("'", "''")}',
-                        display_name: '${user.displayName.replace("'", "''")}',
-                        role: '${user.role.name.lowercase()}',
-                        status: '${user.status.name.lowercase()}',
-                        storage_used_bytes: ${user.storageUsedBytes},
-                        storage_quota_bytes: ${user.storageQuotaBytes},
-                        password_hash: '${passwordHash.replace("'", "''")}'
+                        email: ${'$'}email,
+                        display_name: ${'$'}displayName,
+                        role: ${'$'}role,
+                        status: ${'$'}status,
+                        storage_used_bytes: ${'$'}storageUsed,
+                        storage_quota_bytes: ${'$'}storageQuota,
+                        password_hash: ${'$'}passwordHash
                     };
                     """.trimIndent(),
+                    mapOf(
+                        "email" to user.email,
+                        "displayName" to user.displayName,
+                        "role" to user.role.name.lowercase(),
+                        "status" to user.status.name.lowercase(),
+                        "storageUsed" to user.storageUsedBytes,
+                        "storageQuota" to user.storageQuotaBytes,
+                        "passwordHash" to passwordHash,
+                    ),
                 ).mapLeft { UserError.NotFound(user.id) }
                 .bind()
 
@@ -149,12 +170,13 @@ class SurrealUserRepository(
             findById(id).bind()
 
             db
-                .execute(
+                .executeBind(
                     """
                     UPDATE user:${id.value} SET
-                        password_hash = '${passwordHash.replace("'", "''")}',
+                        password_hash = ${'$'}passwordHash,
                         updated_at = time::now();
                     """.trimIndent(),
+                    mapOf("passwordHash" to passwordHash),
                 ).mapLeft { UserError.NotFound(id) }
                 .bind()
         }
@@ -165,17 +187,25 @@ class SurrealUserRepository(
             findById(user.id).bind()
 
             db
-                .execute(
+                .executeBind(
                     """
                     UPDATE user:${user.id.value} SET
-                        email = '${user.email.replace("'", "''")}',
-                        display_name = '${user.displayName.replace("'", "''")}',
-                        role = '${user.role.name.lowercase()}',
-                        status = '${user.status.name.lowercase()}',
-                        storage_used_bytes = ${user.storageUsedBytes},
-                        storage_quota_bytes = ${user.storageQuotaBytes},
+                        email = ${'$'}email,
+                        display_name = ${'$'}displayName,
+                        role = ${'$'}role,
+                        status = ${'$'}status,
+                        storage_used_bytes = ${'$'}storageUsed,
+                        storage_quota_bytes = ${'$'}storageQuota,
                         updated_at = time::now();
                     """.trimIndent(),
+                    mapOf(
+                        "email" to user.email,
+                        "displayName" to user.displayName,
+                        "role" to user.role.name.lowercase(),
+                        "status" to user.status.name.lowercase(),
+                        "storageUsed" to user.storageUsedBytes,
+                        "storageQuota" to user.storageQuotaBytes,
+                    ),
                 ).mapLeft { UserError.NotFound(user.id) }
                 .bind()
 
@@ -187,12 +217,13 @@ class SurrealUserRepository(
             findById(id).bind()
 
             db
-                .execute(
+                .executeBind(
                     """
                     UPDATE user:${id.value} SET
                         deleted_at = time::now(),
                         updated_at = time::now();
                     """.trimIndent(),
+                    emptyMap(),
                 ).mapLeft { UserError.NotFound(id) }
                 .bind()
         }
@@ -209,8 +240,9 @@ class SurrealUserRepository(
     override fun findByRole(role: UserRole): Flow<List<User>> =
         flow {
             val result =
-                db.query<Any>(
-                    "SELECT * FROM user WHERE role = '${role.name.lowercase()}' AND deleted_at IS NONE",
+                db.queryBind(
+                    "SELECT * FROM user WHERE role = ${'$'}role AND deleted_at IS NONE",
+                    mapOf("role" to role.name.lowercase()),
                 )
             emit(result.fold({ emptyList() }, { parseUsers(it) }))
         }
@@ -218,8 +250,9 @@ class SurrealUserRepository(
     override fun findByStatus(status: UserStatus): Flow<List<User>> =
         flow {
             val result =
-                db.query<Any>(
-                    "SELECT * FROM user WHERE status = '${status.name.lowercase()}' AND deleted_at IS NONE",
+                db.queryBind(
+                    "SELECT * FROM user WHERE status = ${'$'}status AND deleted_at IS NONE",
+                    mapOf("status" to status.name.lowercase()),
                 )
             emit(result.fold({ emptyList() }, { parseUsers(it) }))
         }
@@ -236,12 +269,13 @@ class SurrealUserRepository(
             }
 
             db
-                .execute(
+                .executeBind(
                     """
                     UPDATE user:${id.value} SET
-                        storage_used_bytes = $bytesUsed,
+                        storage_used_bytes = ${'$'}bytesUsed,
                         updated_at = time::now();
                     """.trimIndent(),
+                    mapOf("bytesUsed" to bytesUsed),
                 ).mapLeft { UserError.NotFound(id) }
                 .bind()
 

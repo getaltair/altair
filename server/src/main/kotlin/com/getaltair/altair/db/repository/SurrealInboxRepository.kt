@@ -38,39 +38,51 @@ class SurrealInboxRepository(
         either {
             val result =
                 db
-                    .query<Any>(
-                        "SELECT * FROM inbox_item WHERE id = inbox_item:${id.value} AND user_id = user:${userId.value}",
+                    .queryBind(
+                        "SELECT * FROM inbox_item WHERE id = inbox_item:\$id AND user_id = user:\$userId",
+                        mapOf("id" to id.value, "userId" to userId.value),
                     ).bind()
             parseInboxItem(result) ?: raise(DomainError.NotFoundError("InboxItem", id.value))
         }
 
     override suspend fun save(entity: InboxItem): Either<DomainError, InboxItem> =
         either {
-            val attachmentList = entity.attachmentIds.joinToString(", ") { "'${it.value}'" }
+            val attachmentIds = entity.attachmentIds.map { it.value }
             db
-                .execute(
+                .executeBind(
                     """
-                    CREATE inbox_item:${entity.id.value} CONTENT {
-                        user_id: user:${userId.value},
-                        content: '${entity.content.replace("'", "''")}',
-                        source: '${entity.source.name.lowercase()}',
-                        attachment_ids: [$attachmentList]
+                    CREATE inbox_item:${'$'}id CONTENT {
+                        user_id: user:${'$'}userId,
+                        content: ${'$'}content,
+                        source: ${'$'}source,
+                        attachment_ids: ${'$'}attachmentIds
                     };
                     """.trimIndent(),
+                    mapOf(
+                        "id" to entity.id.value,
+                        "userId" to userId.value,
+                        "content" to entity.content,
+                        "source" to entity.source.name.lowercase(),
+                        "attachmentIds" to attachmentIds,
+                    ),
                 ).bind()
             findById(entity.id).bind()
         }
 
     override suspend fun delete(id: Ulid): Either<DomainError, Unit> =
         either {
-            db.execute("DELETE inbox_item:${id.value} WHERE user_id = user:${userId.value};").bind()
+            db.executeBind(
+                "DELETE inbox_item:${'$'}id WHERE user_id = user:${'$'}userId;",
+                mapOf("id" to id.value, "userId" to userId.value),
+            ).bind()
         }
 
     override fun findAll(): Flow<List<InboxItem>> =
         flow {
             val result =
-                db.query<Any>(
-                    "SELECT * FROM inbox_item WHERE user_id = user:${userId.value} ORDER BY created_at DESC",
+                db.queryBind(
+                    "SELECT * FROM inbox_item WHERE user_id = user:\$userId ORDER BY created_at DESC",
+                    mapOf("userId" to userId.value),
                 )
             emit(result.fold({ emptyList() }, { parseInboxItems(it) }))
         }
@@ -101,8 +113,9 @@ class SurrealInboxRepository(
         either {
             val result =
                 db
-                    .query<Any>(
-                        "SELECT count() FROM inbox_item WHERE user_id = user:${userId.value} GROUP ALL",
+                    .queryBind(
+                        "SELECT count() FROM inbox_item WHERE user_id = user:\$userId GROUP ALL",
+                        mapOf("userId" to userId.value),
                     ).bind()
             parseCount(result)
         }
@@ -110,8 +123,9 @@ class SurrealInboxRepository(
     override fun findBySource(source: CaptureSource): Flow<List<InboxItem>> =
         flow {
             val result =
-                db.query<Any>(
-                    "SELECT * FROM inbox_item WHERE user_id = user:${userId.value} AND source = '${source.name.lowercase()}'",
+                db.queryBind(
+                    "SELECT * FROM inbox_item WHERE user_id = user:\$userId AND source = \$source",
+                    mapOf("userId" to userId.value, "source" to source.name.lowercase()),
                 )
             emit(result.fold({ emptyList() }, { parseInboxItems(it) }))
         }

@@ -28,8 +28,9 @@ class SurrealInitiativeRepository(
         either {
             val result =
                 db
-                    .query<Any>(
-                        "SELECT * FROM initiative WHERE id = initiative:${id.value} AND user_id = user:${userId.value} AND deleted_at IS NONE",
+                    .queryBind(
+                        "SELECT * FROM initiative WHERE id = initiative:\$id AND user_id = user:\$userId AND deleted_at IS NONE",
+                        mapOf("id" to id.value, "userId" to userId.value),
                     ).bind()
 
             parseInitiative(result) ?: raise(DomainError.NotFoundError("Initiative", id.value))
@@ -42,32 +43,50 @@ class SurrealInitiativeRepository(
             if (existing.isRight()) {
                 // Update
                 db
-                    .execute(
+                    .executeBind(
                         """
-                        UPDATE initiative:${entity.id.value} SET
-                            name = '${entity.name.replace("'", "''")}',
-                            description = ${entity.description?.let { "'${it.replace("'", "''")}'" } ?: "NONE"},
-                            color = ${entity.color?.let { "'${it.replace("'", "''")}'" } ?: "NONE"},
-                            icon = ${entity.icon?.let { "'${it.replace("'", "''")}'" } ?: "NONE"},
-                            status = '${entity.status.name.lowercase()}',
+                        UPDATE initiative:${'$'}id SET
+                            name = ${'$'}name,
+                            description = ${'$'}description,
+                            color = ${'$'}color,
+                            icon = ${'$'}icon,
+                            status = ${'$'}status,
                             updated_at = time::now()
-                        WHERE user_id = user:${userId.value};
+                        WHERE user_id = user:${'$'}userId;
                         """.trimIndent(),
+                        mapOf(
+                            "id" to entity.id.value,
+                            "name" to entity.name,
+                            "description" to entity.description,
+                            "color" to entity.color,
+                            "icon" to entity.icon,
+                            "status" to entity.status.name.lowercase(),
+                            "userId" to userId.value,
+                        ),
                     ).bind()
             } else {
                 // Insert
                 db
-                    .execute(
+                    .executeBind(
                         """
-                        CREATE initiative:${entity.id.value} CONTENT {
-                            user_id: user:${userId.value},
-                            name: '${entity.name.replace("'", "''")}',
-                            description: ${entity.description?.let { "'${it.replace("'", "''")}'" } ?: "NONE"},
-                            color: ${entity.color?.let { "'${it.replace("'", "''")}'" } ?: "NONE"},
-                            icon: ${entity.icon?.let { "'${it.replace("'", "''")}'" } ?: "NONE"},
-                            status: '${entity.status.name.lowercase()}'
+                        CREATE initiative:${'$'}id CONTENT {
+                            user_id: user:${'$'}userId,
+                            name: ${'$'}name,
+                            description: ${'$'}description,
+                            color: ${'$'}color,
+                            icon: ${'$'}icon,
+                            status: ${'$'}status
                         };
                         """.trimIndent(),
+                        mapOf(
+                            "id" to entity.id.value,
+                            "userId" to userId.value,
+                            "name" to entity.name,
+                            "description" to entity.description,
+                            "color" to entity.color,
+                            "icon" to entity.icon,
+                            "status" to entity.status.name.lowercase(),
+                        ),
                     ).bind()
             }
 
@@ -85,8 +104,9 @@ class SurrealInitiativeRepository(
             either {
                 val result =
                     db
-                        .query<Any>(
-                            "SELECT * FROM initiative WHERE user_id = user:${userId.value} AND deleted_at IS NONE ORDER BY created_at DESC",
+                        .queryBind(
+                            "SELECT * FROM initiative WHERE user_id = user:\$userId AND deleted_at IS NONE ORDER BY created_at DESC",
+                            mapOf("userId" to userId.value),
                         ).bind()
                 parseInitiatives(result)
             }
@@ -97,8 +117,9 @@ class SurrealInitiativeRepository(
             either {
                 val result =
                     db
-                        .query<Any>(
-                            "SELECT * FROM initiative WHERE user_id = user:${userId.value} AND status = '${status.name.lowercase()}' AND deleted_at IS NONE",
+                        .queryBind(
+                            "SELECT * FROM initiative WHERE user_id = user:\$userId AND status = \$status AND deleted_at IS NONE",
+                            mapOf("userId" to userId.value, "status" to status.name.lowercase()),
                         ).bind()
                 parseInitiatives(result)
             }
@@ -108,13 +129,14 @@ class SurrealInitiativeRepository(
         either {
             val result =
                 db
-                    .query<Any>(
+                    .queryBind(
                         """
                         SELECT * FROM initiative
-                        WHERE user_id = user:${userId.value}
+                        WHERE user_id = user:${'$'}userId
                         AND deleted_at IS NONE
-                        AND string::lowercase(name) CONTAINS string::lowercase('${query.replace("'", "''")}')
+                        AND string::lowercase(name) CONTAINS string::lowercase(${'$'}query)
                         """.trimIndent(),
+                        mapOf("userId" to userId.value, "query" to query),
                     ).bind()
             parseInitiatives(result)
         }
@@ -123,18 +145,19 @@ class SurrealInitiativeRepository(
         either {
             val result =
                 db
-                    .query<Any>(
+                    .queryBind(
                         """
                         SELECT count() as total FROM (
-                            SELECT id FROM quest WHERE user_id = user:${userId.value} AND initiative_id = initiative:${id.value} AND deleted_at IS NONE
+                            SELECT id FROM quest WHERE user_id = user:${'$'}userId AND initiative_id = initiative:${'$'}id AND deleted_at IS NONE
                             UNION ALL
-                            SELECT id FROM epic WHERE user_id = user:${userId.value} AND initiative_id = initiative:${id.value} AND deleted_at IS NONE
+                            SELECT id FROM epic WHERE user_id = user:${'$'}userId AND initiative_id = initiative:${'$'}id AND deleted_at IS NONE
                             UNION ALL
-                            SELECT id FROM note WHERE user_id = user:${userId.value} AND initiative_id = initiative:${id.value} AND deleted_at IS NONE
+                            SELECT id FROM note WHERE user_id = user:${'$'}userId AND initiative_id = initiative:${'$'}id AND deleted_at IS NONE
                             UNION ALL
-                            SELECT id FROM item WHERE user_id = user:${userId.value} AND initiative_id = initiative:${id.value} AND deleted_at IS NONE
+                            SELECT id FROM item WHERE user_id = user:${'$'}userId AND initiative_id = initiative:${'$'}id AND deleted_at IS NONE
                         ) GROUP ALL;
                         """.trimIndent(),
+                        mapOf("userId" to userId.value, "id" to id.value),
                     ).bind()
 
             parseCount(result)

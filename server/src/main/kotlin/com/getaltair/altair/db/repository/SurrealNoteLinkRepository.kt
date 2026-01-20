@@ -32,8 +32,9 @@ class SurrealNoteLinkRepository(
         either {
             val result =
                 db
-                    .query<Any>(
-                        "SELECT * FROM note_link WHERE id = note_link:${id.value} AND user_id = user:${userId.value}",
+                    .queryBind(
+                        "SELECT * FROM note_link WHERE id = note_link:\$id AND user_id = user:\$userId",
+                        mapOf("id" to id.value, "userId" to userId.value),
                     ).mapLeft { NoteError.NotFound(id) }
                     .bind()
             parseNoteLink(result) ?: raise(NoteError.NotFound(id))
@@ -42,15 +43,22 @@ class SurrealNoteLinkRepository(
     override suspend fun save(entity: NoteLink): Either<NoteError, NoteLink> =
         either {
             db
-                .execute(
+                .executeBind(
                     """
-                    CREATE note_link:${entity.id.value} CONTENT {
-                        user_id: user:${userId.value},
-                        source_note_id: note:${entity.sourceNoteId.value},
-                        target_note_id: note:${entity.targetNoteId.value},
-                        context: ${entity.context?.let { "'${it.replace("'", "''")}'" } ?: "NONE"}
+                    CREATE note_link:${'$'}id CONTENT {
+                        user_id: user:${'$'}userId,
+                        source_note_id: note:${'$'}sourceNoteId,
+                        target_note_id: note:${'$'}targetNoteId,
+                        context: ${'$'}context
                     };
                     """.trimIndent(),
+                    mapOf(
+                        "id" to entity.id.value,
+                        "userId" to userId.value,
+                        "sourceNoteId" to entity.sourceNoteId.value,
+                        "targetNoteId" to entity.targetNoteId.value,
+                        "context" to entity.context,
+                    ),
                 ).mapLeft { NoteError.NotFound(entity.id) }
                 .bind()
             findById(entity.id).bind()
@@ -59,23 +67,29 @@ class SurrealNoteLinkRepository(
     override suspend fun delete(id: Ulid): Either<NoteError, Unit> =
         either {
             db
-                .execute(
-                    "DELETE note_link:${id.value} WHERE user_id = user:${userId.value};",
+                .executeBind(
+                    "DELETE note_link:\$id WHERE user_id = user:\$userId;",
+                    mapOf("id" to id.value, "userId" to userId.value),
                 ).mapLeft { NoteError.NotFound(id) }
                 .bind()
         }
 
     override fun findAll(): Flow<List<NoteLink>> =
         flow {
-            val result = db.query<Any>("SELECT * FROM note_link WHERE user_id = user:${userId.value}")
+            val result =
+                db.queryBind(
+                    "SELECT * FROM note_link WHERE user_id = user:\$userId",
+                    mapOf("userId" to userId.value),
+                )
             emit(result.fold({ emptyList() }, { parseNoteLinks(it) }))
         }
 
     override fun findBySource(sourceNoteId: Ulid): Flow<List<NoteLink>> =
         flow {
             val result =
-                db.query<Any>(
-                    "SELECT * FROM note_link WHERE user_id = user:${userId.value} AND source_note_id = note:${sourceNoteId.value}",
+                db.queryBind(
+                    "SELECT * FROM note_link WHERE user_id = user:\$userId AND source_note_id = note:\$sourceNoteId",
+                    mapOf("userId" to userId.value, "sourceNoteId" to sourceNoteId.value),
                 )
             emit(result.fold({ emptyList() }, { parseNoteLinks(it) }))
         }
@@ -83,8 +97,9 @@ class SurrealNoteLinkRepository(
     override fun findByTarget(targetNoteId: Ulid): Flow<List<NoteLink>> =
         flow {
             val result =
-                db.query<Any>(
-                    "SELECT * FROM note_link WHERE user_id = user:${userId.value} AND target_note_id = note:${targetNoteId.value}",
+                db.queryBind(
+                    "SELECT * FROM note_link WHERE user_id = user:\$userId AND target_note_id = note:\$targetNoteId",
+                    mapOf("userId" to userId.value, "targetNoteId" to targetNoteId.value),
                 )
             emit(result.fold({ emptyList() }, { parseNoteLinks(it) }))
         }
@@ -96,8 +111,9 @@ class SurrealNoteLinkRepository(
         either {
             val result =
                 db
-                    .query<Any>(
-                        "SELECT * FROM note_link WHERE user_id = user:${userId.value} AND source_note_id = note:${sourceNoteId.value} AND target_note_id = note:${targetNoteId.value}",
+                    .queryBind(
+                        "SELECT * FROM note_link WHERE user_id = user:\$userId AND source_note_id = note:\$sourceNoteId AND target_note_id = note:\$targetNoteId",
+                        mapOf("userId" to userId.value, "sourceNoteId" to sourceNoteId.value, "targetNoteId" to targetNoteId.value),
                     ).mapLeft { NoteError.LinkNotFound(sourceNoteId, targetNoteId) }
                     .bind()
             parseNoteLink(result) ?: raise(NoteError.LinkNotFound(sourceNoteId, targetNoteId))
@@ -113,13 +129,9 @@ class SurrealNoteLinkRepository(
             if (existing.isRight()) {
                 val link = existing.getOrNull()!!
                 db
-                    .execute(
-                        "UPDATE note_link:${link.id.value} SET context = ${context?.let {
-                            "'${it.replace(
-                                "'",
-                                "''",
-                            )}'"
-                        } ?: "NONE"}, updated_at = time::now() WHERE user_id = user:${userId.value};",
+                    .executeBind(
+                        "UPDATE note_link:\$id SET context = \$context, updated_at = time::now() WHERE user_id = user:\$userId;",
+                        mapOf("id" to link.id.value, "context" to context, "userId" to userId.value),
                     ).mapLeft { NoteError.LinkNotFound(sourceNoteId, targetNoteId) }
                     .bind()
                 findById(link.id).bind()
@@ -154,8 +166,9 @@ class SurrealNoteLinkRepository(
             // For now, return existing links from this note
             val result =
                 db
-                    .query<Any>(
-                        "SELECT * FROM note_link WHERE user_id = user:${userId.value} AND source_note_id = note:${noteId.value}",
+                    .queryBind(
+                        "SELECT * FROM note_link WHERE user_id = user:\$userId AND source_note_id = note:\$noteId",
+                        mapOf("userId" to userId.value, "noteId" to noteId.value),
                     ).mapLeft { NoteError.NotFound(noteId) }
                     .bind()
             parseNoteLinks(result)

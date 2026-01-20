@@ -33,8 +33,9 @@ class SurrealItemRepository(
         either {
             val result =
                 db
-                    .query<Any>(
-                        "SELECT * FROM item WHERE id = item:${id.value} AND user_id = user:${userId.value} AND deleted_at IS NONE",
+                    .queryBind(
+                        "SELECT * FROM item:${'$'}id WHERE user_id = user:${'$'}userId AND deleted_at IS NONE",
+                        mapOf("id" to id.value, "userId" to userId.value),
                     ).mapLeft { ItemError.NotFound(id) }
                     .bind()
             parseItem(result) ?: raise(ItemError.NotFound(id))
@@ -45,38 +46,62 @@ class SurrealItemRepository(
             val existing = findById(entity.id)
             if (existing.isRight()) {
                 db
-                    .execute(
+                    .executeBind(
                         """
-                        UPDATE item:${entity.id.value} SET
-                            name = '${entity.name.replace("'", "''")}',
-                            description = ${entity.description?.let { "'${it.replace("'", "''")}'" } ?: "NONE"},
-                            template_id = ${entity.templateId?.let { "item_template:${it.value}" } ?: "NONE"},
-                            location_id = ${entity.locationId?.let { "location:${it.value}" } ?: "NONE"},
-                            container_id = ${entity.containerId?.let { "container:${it.value}" } ?: "NONE"},
-                            quantity = ${entity.quantity},
-                            photo_attachment_id = ${entity.photoAttachmentId?.let { "attachment:${it.value}" } ?: "NONE"},
-                            initiative_id = ${entity.initiativeId?.let { "initiative:${it.value}" } ?: "NONE"},
+                        UPDATE item:${'$'}id SET
+                            name = ${'$'}name,
+                            description = ${'$'}description,
+                            template_id = ${entity.templateId?.let { "item_template:${'$'}templateId" } ?: "NONE"},
+                            location_id = ${entity.locationId?.let { "location:${'$'}locationId" } ?: "NONE"},
+                            container_id = ${entity.containerId?.let { "container:${'$'}containerId" } ?: "NONE"},
+                            quantity = ${'$'}quantity,
+                            photo_attachment_id = ${entity.photoAttachmentId?.let { "attachment:${'$'}photoAttachmentId" } ?: "NONE"},
+                            initiative_id = ${entity.initiativeId?.let { "initiative:${'$'}initiativeId" } ?: "NONE"},
                             updated_at = time::now()
-                        WHERE user_id = user:${userId.value};
+                        WHERE user_id = user:${'$'}userId
                         """.trimIndent(),
+                        buildMap {
+                            put("id", entity.id.value)
+                            put("name", entity.name)
+                            put("description", entity.description)
+                            entity.templateId?.let { put("templateId", it.value) }
+                            entity.locationId?.let { put("locationId", it.value) }
+                            entity.containerId?.let { put("containerId", it.value) }
+                            put("quantity", entity.quantity)
+                            entity.photoAttachmentId?.let { put("photoAttachmentId", it.value) }
+                            entity.initiativeId?.let { put("initiativeId", it.value) }
+                            put("userId", userId.value)
+                        },
                     ).mapLeft { ItemError.NotFound(entity.id) }
                     .bind()
             } else {
                 db
-                    .execute(
+                    .executeBind(
                         """
-                        CREATE item:${entity.id.value} CONTENT {
-                            user_id: user:${userId.value},
-                            name: '${entity.name.replace("'", "''")}',
-                            description: ${entity.description?.let { "'${it.replace("'", "''")}'" } ?: "NONE"},
-                            template_id: ${entity.templateId?.let { "item_template:${it.value}" } ?: "NONE"},
-                            location_id: ${entity.locationId?.let { "location:${it.value}" } ?: "NONE"},
-                            container_id: ${entity.containerId?.let { "container:${it.value}" } ?: "NONE"},
-                            quantity: ${entity.quantity},
-                            photo_attachment_id: ${entity.photoAttachmentId?.let { "attachment:${it.value}" } ?: "NONE"},
-                            initiative_id: ${entity.initiativeId?.let { "initiative:${it.value}" } ?: "NONE"}
-                        };
+                        CREATE item:${'$'}id CONTENT {
+                            user_id: user:${'$'}userId,
+                            name: ${'$'}name,
+                            description: ${'$'}description,
+                            template_id: ${entity.templateId?.let { "item_template:${'$'}templateId" } ?: "NONE"},
+                            location_id: ${entity.locationId?.let { "location:${'$'}locationId" } ?: "NONE"},
+                            container_id: ${entity.containerId?.let { "container:${'$'}containerId" } ?: "NONE"},
+                            quantity: ${'$'}quantity,
+                            photo_attachment_id: ${entity.photoAttachmentId?.let { "attachment:${'$'}photoAttachmentId" } ?: "NONE"},
+                            initiative_id: ${entity.initiativeId?.let { "initiative:${'$'}initiativeId" } ?: "NONE"}
+                        }
                         """.trimIndent(),
+                        buildMap {
+                            put("id", entity.id.value)
+                            put("userId", userId.value)
+                            put("name", entity.name)
+                            put("description", entity.description)
+                            entity.templateId?.let { put("templateId", it.value) }
+                            entity.locationId?.let { put("locationId", it.value) }
+                            entity.containerId?.let { put("containerId", it.value) }
+                            put("quantity", entity.quantity)
+                            entity.photoAttachmentId?.let { put("photoAttachmentId", it.value) }
+                            entity.initiativeId?.let { put("initiativeId", it.value) }
+                        },
                     ).mapLeft { ItemError.NotFound(entity.id) }
                     .bind()
             }
@@ -87,8 +112,9 @@ class SurrealItemRepository(
         either {
             findById(id).bind()
             db
-                .execute(
-                    "UPDATE item:${id.value} SET deleted_at = time::now(), updated_at = time::now() WHERE user_id = user:${userId.value};",
+                .executeBind(
+                    "UPDATE item:${'$'}id SET deleted_at = time::now(), updated_at = time::now() WHERE user_id = user:${'$'}userId",
+                    mapOf("id" to id.value, "userId" to userId.value),
                 ).mapLeft { ItemError.NotFound(id) }
                 .bind()
         }
@@ -96,8 +122,9 @@ class SurrealItemRepository(
     override fun findAll(): Flow<List<Item>> =
         flow {
             val result =
-                db.query<Any>(
-                    "SELECT * FROM item WHERE user_id = user:${userId.value} AND deleted_at IS NONE ORDER BY name",
+                db.queryBind(
+                    "SELECT * FROM item WHERE user_id = user:${'$'}userId AND deleted_at IS NONE ORDER BY name",
+                    mapOf("userId" to userId.value),
                 )
             emit(result.fold({ emptyList() }, { parseItems(it) }))
         }
@@ -105,8 +132,9 @@ class SurrealItemRepository(
     override fun findByLocation(locationId: Ulid): Flow<List<Item>> =
         flow {
             val result =
-                db.query<Any>(
-                    "SELECT * FROM item WHERE user_id = user:${userId.value} AND location_id = location:${locationId.value} AND deleted_at IS NONE",
+                db.queryBind(
+                    "SELECT * FROM item WHERE user_id = user:${'$'}userId AND location_id = location:${'$'}locationId AND deleted_at IS NONE",
+                    mapOf("userId" to userId.value, "locationId" to locationId.value),
                 )
             emit(result.fold({ emptyList() }, { parseItems(it) }))
         }
@@ -114,8 +142,9 @@ class SurrealItemRepository(
     override fun findByContainer(containerId: Ulid): Flow<List<Item>> =
         flow {
             val result =
-                db.query<Any>(
-                    "SELECT * FROM item WHERE user_id = user:${userId.value} AND container_id = container:${containerId.value} AND deleted_at IS NONE",
+                db.queryBind(
+                    "SELECT * FROM item WHERE user_id = user:${'$'}userId AND container_id = container:${'$'}containerId AND deleted_at IS NONE",
+                    mapOf("userId" to userId.value, "containerId" to containerId.value),
                 )
             emit(result.fold({ emptyList() }, { parseItems(it) }))
         }
@@ -123,8 +152,9 @@ class SurrealItemRepository(
     override fun findByTemplate(templateId: Ulid): Flow<List<Item>> =
         flow {
             val result =
-                db.query<Any>(
-                    "SELECT * FROM item WHERE user_id = user:${userId.value} AND template_id = item_template:${templateId.value} AND deleted_at IS NONE",
+                db.queryBind(
+                    "SELECT * FROM item WHERE user_id = user:${'$'}userId AND template_id = item_template:${'$'}templateId AND deleted_at IS NONE",
+                    mapOf("userId" to userId.value, "templateId" to templateId.value),
                 )
             emit(result.fold({ emptyList() }, { parseItems(it) }))
         }
@@ -132,8 +162,9 @@ class SurrealItemRepository(
     override fun findByInitiative(initiativeId: Ulid): Flow<List<Item>> =
         flow {
             val result =
-                db.query<Any>(
-                    "SELECT * FROM item WHERE user_id = user:${userId.value} AND initiative_id = initiative:${initiativeId.value} AND deleted_at IS NONE",
+                db.queryBind(
+                    "SELECT * FROM item WHERE user_id = user:${'$'}userId AND initiative_id = initiative:${'$'}initiativeId AND deleted_at IS NONE",
+                    mapOf("userId" to userId.value, "initiativeId" to initiativeId.value),
                 )
             emit(result.fold({ emptyList() }, { parseItems(it) }))
         }
@@ -142,8 +173,9 @@ class SurrealItemRepository(
         either {
             val result =
                 db
-                    .query<Any>(
-                        "SELECT * FROM item WHERE user_id = user:${userId.value} AND string::lowercase(name) CONTAINS string::lowercase('${query.replace("'", "''")}') AND deleted_at IS NONE",
+                    .queryBind(
+                        "SELECT * FROM item WHERE user_id = user:${'$'}userId AND string::lowercase(name) CONTAINS string::lowercase(${'$'}query) AND deleted_at IS NONE",
+                        mapOf("userId" to userId.value, "query" to query),
                     ).mapLeft { ItemError.NotFound(Ulid.generate()) }
                     .bind()
             parseItems(result)
@@ -165,11 +197,10 @@ class SurrealItemRepository(
     ): Either<ItemError, Item> =
         either {
             findById(id).bind()
-            val locId = locationId.value
             db
-                .execute(
-                    "UPDATE item:${id.value} SET location_id = location:$locId, " +
-                        "container_id = NONE, updated_at = time::now() WHERE user_id = user:${userId.value};",
+                .executeBind(
+                    "UPDATE item:${'$'}id SET location_id = location:${'$'}locationId, container_id = NONE, updated_at = time::now() WHERE user_id = user:${'$'}userId",
+                    mapOf("id" to id.value, "locationId" to locationId.value, "userId" to userId.value),
                 ).mapLeft { ItemError.NotFound(id) }
                 .bind()
             findById(id).bind()
@@ -182,8 +213,9 @@ class SurrealItemRepository(
         either {
             findById(id).bind()
             db
-                .execute(
-                    "UPDATE item:${id.value} SET container_id = container:${containerId.value}, updated_at = time::now() WHERE user_id = user:${userId.value};",
+                .executeBind(
+                    "UPDATE item:${'$'}id SET container_id = container:${'$'}containerId, updated_at = time::now() WHERE user_id = user:${'$'}userId",
+                    mapOf("id" to id.value, "containerId" to containerId.value, "userId" to userId.value),
                 ).mapLeft { ItemError.NotFound(id) }
                 .bind()
             findById(id).bind()
@@ -196,8 +228,9 @@ class SurrealItemRepository(
         either {
             findById(id).bind()
             db
-                .execute(
-                    "UPDATE item:${id.value} SET quantity = $quantity, updated_at = time::now() WHERE user_id = user:${userId.value};",
+                .executeBind(
+                    "UPDATE item:${'$'}id SET quantity = ${'$'}quantity, updated_at = time::now() WHERE user_id = user:${'$'}userId",
+                    mapOf("id" to id.value, "quantity" to quantity, "userId" to userId.value),
                 ).mapLeft { ItemError.NotFound(id) }
                 .bind()
             findById(id).bind()
@@ -206,8 +239,9 @@ class SurrealItemRepository(
     override fun findUnplaced(): Flow<List<Item>> =
         flow {
             val result =
-                db.query<Any>(
-                    "SELECT * FROM item WHERE user_id = user:${userId.value} AND location_id IS NONE AND container_id IS NONE AND deleted_at IS NONE",
+                db.queryBind(
+                    "SELECT * FROM item WHERE user_id = user:${'$'}userId AND location_id IS NONE AND container_id IS NONE AND deleted_at IS NONE",
+                    mapOf("userId" to userId.value),
                 )
             emit(result.fold({ emptyList() }, { parseItems(it) }))
         }
