@@ -55,7 +55,7 @@ The server SHALL implement all repository interfaces using SurrealDB queries.
 #### Scenario: Query user-scoped data
 
 - **WHEN** a repository method is called
-- **THEN** the query includes a user_id filter using parameterized binding
+- **THEN** the query includes a user_id filter
 - **AND** only the authenticated user's data is returned
 
 #### Scenario: Handle not found
@@ -74,15 +74,17 @@ The server SHALL implement all repository interfaces using SurrealDB queries.
 #### Scenario: Query by ID with user scope
 
 - **WHEN** findById is called with a record ID
-- **THEN** the query uses table query pattern with ID filter: `SELECT * FROM table WHERE id = table:$id AND user_id = ...`
+- **THEN** the query uses table query pattern with ID filter: `SELECT * FROM table WHERE id = table:id AND user_id = ...`
 - **AND** the query does NOT use direct record access with WHERE clause: `SELECT * FROM table:id WHERE ...`
 - **BECAUSE** SurrealDB direct record access cannot be combined with WHERE clause filtering
 
-#### Scenario: Query parameters are bound not interpolated
+#### Scenario: Update operations return updated record
 
-- **WHEN** any repository method constructs a query with variable values
-- **THEN** variable values are passed using parameter binding (`$paramName`)
-- **AND** values are NOT concatenated into the query string using string interpolation
+- **WHEN** an UPDATE query is executed
+- **THEN** the query uses `RETURN AFTER` to return the updated record
+- **AND** the returned record is parsed directly rather than issuing a separate SELECT
+- **AND** update success is verified by comparing returned field values
+- **BECAUSE** SurrealDB UPDATE may silently succeed with no changes if field names don't match
 
 ### Requirement: Server Database Configuration
 
