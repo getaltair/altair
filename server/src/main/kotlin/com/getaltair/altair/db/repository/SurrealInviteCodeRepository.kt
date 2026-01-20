@@ -37,6 +37,7 @@ class SurrealInviteCodeRepository(
                     CREATE invite_code:${inviteCode.id.value} CONTENT {
                         code: ${'$'}code,
                         created_by: user:${'$'}createdBy,
+                        created_at: d"${inviteCode.createdAt}",
                         used_by: NONE,
                         expires_at: d"${inviteCode.expiresAt}",
                         used_at: NONE
@@ -153,13 +154,13 @@ class SurrealInviteCodeRepository(
             code = obj["code"]?.jsonPrimitive?.content ?: error("Missing code"),
             createdBy = Ulid(createdBy),
             usedBy = usedBy?.let { Ulid(it) },
-            expiresAt = parseInstant(obj["expires_at"]?.jsonPrimitive?.content),
-            createdAt = parseInstant(obj["created_at"]?.jsonPrimitive?.content),
-            usedAt = obj["used_at"]?.jsonPrimitive?.content?.let { parseInstant(it) },
+            expiresAt = parseInstantRequired(obj["expires_at"]?.jsonPrimitive?.content),
+            createdAt = parseInstantRequired(obj["created_at"]?.jsonPrimitive?.content),
+            usedAt = parseInstantOptional(obj["used_at"]?.jsonPrimitive?.content),
         )
     }
 
-    private fun parseInstant(value: String?): Instant =
+    private fun parseInstantRequired(value: String?): Instant =
         value?.takeIf { it != "null" && it.isNotBlank() }?.let {
             try {
                 Instant.parse(it)
@@ -168,4 +169,14 @@ class SurrealInviteCodeRepository(
                 Instant.DISTANT_PAST
             }
         } ?: Instant.DISTANT_PAST
+
+    private fun parseInstantOptional(value: String?): Instant? =
+        value?.takeIf { it != "null" && it.isNotBlank() }?.let {
+            try {
+                Instant.parse(it)
+            } catch (e: IllegalArgumentException) {
+                logger.warn("Failed to parse instant '$value': ${e.message}")
+                null
+            }
+        }
 }
