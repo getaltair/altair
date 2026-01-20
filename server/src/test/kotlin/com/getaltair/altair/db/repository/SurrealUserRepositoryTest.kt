@@ -294,11 +294,12 @@ class SurrealUserRepositoryTest {
             val user = createTestUser(email = "original@test.com", status = UserStatus.ACTIVE)
             repository.create(user)
 
-            val updatedUser = user.copy(
-                email = "updated@test.com",
-                displayName = "Updated Name",
-                status = UserStatus.DISABLED,
-            )
+            val updatedUser =
+                user.copy(
+                    email = "updated@test.com",
+                    displayName = "Updated Name",
+                    status = UserStatus.DISABLED,
+                )
             val result = repository.update(updatedUser)
 
             assertTrue(result.isRight())

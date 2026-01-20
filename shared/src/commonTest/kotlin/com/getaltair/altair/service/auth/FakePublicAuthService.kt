@@ -21,6 +21,7 @@ class FakePublicAuthService : PublicAuthService {
     var refreshError: Exception? = null
     var refreshCallCount = 0
     var lastRefreshToken: String? = null
+    var onRefresh: (() -> TokenRefreshResponse)? = null
 
     var registerResponse: AuthResponse? = null
     var registerError: Exception? = null
@@ -38,7 +39,7 @@ class FakePublicAuthService : PublicAuthService {
         refreshCallCount++
         lastRefreshToken = refreshToken
         refreshError?.let { throw it }
-        return refreshResponse ?: error("No refresh response configured")
+        return onRefresh?.invoke() ?: refreshResponse ?: error("No refresh response configured")
     }
 
     override suspend fun register(request: RegisterRequest): AuthResponse {
@@ -57,6 +58,7 @@ class FakePublicAuthService : PublicAuthService {
         refreshError = null
         refreshCallCount = 0
         lastRefreshToken = null
+        onRefresh = null
         registerResponse = null
         registerError = null
         registerCallCount = 0
