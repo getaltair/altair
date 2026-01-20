@@ -65,7 +65,7 @@ class SurrealInitiativeRepositoryTest {
     }
 
     @Test
-    fun `save creates new initiative`() =
+    fun `save creates new initiative`(): Unit =
         runBlocking {
             val initiative = createTestInitiative()
 
@@ -80,7 +80,7 @@ class SurrealInitiativeRepositoryTest {
         }
 
     @Test
-    fun `findById returns saved initiative`() =
+    fun `findById returns saved initiative`(): Unit =
         runBlocking {
             val initiative = createTestInitiative()
             repository.save(initiative)
@@ -95,7 +95,7 @@ class SurrealInitiativeRepositoryTest {
         }
 
     @Test
-    fun `findById returns error for non-existent initiative`() =
+    fun `findById returns error for non-existent initiative`(): Unit =
         runBlocking {
             val result = repository.findById(Ulid.generate())
 
@@ -103,7 +103,7 @@ class SurrealInitiativeRepositoryTest {
         }
 
     @Test
-    fun `findAll returns all initiatives`() =
+    fun `findAll returns all initiatives`(): Unit =
         runBlocking {
             val initiative1 = createTestInitiative(name = "Initiative 1")
             val initiative2 = createTestInitiative(name = "Initiative 2")
@@ -116,7 +116,7 @@ class SurrealInitiativeRepositoryTest {
         }
 
     @Test
-    fun `findByStatus returns only matching initiatives`() =
+    fun `findByStatus returns only matching initiatives`(): Unit =
         runBlocking {
             val activeInitiative = createTestInitiative(name = "Active", status = InitiativeStatus.ACTIVE)
             val pausedInitiative = createTestInitiative(name = "Paused", status = InitiativeStatus.PAUSED)
@@ -130,7 +130,7 @@ class SurrealInitiativeRepositoryTest {
         }
 
     @Test
-    fun `delete soft deletes initiative`() =
+    fun `delete soft deletes initiative`(): Unit =
         runBlocking {
             val initiative = createTestInitiative()
             repository.save(initiative)
@@ -143,7 +143,7 @@ class SurrealInitiativeRepositoryTest {
         }
 
     @Test
-    fun `update modifies existing initiative`() =
+    fun `update modifies existing initiative`(): Unit =
         runBlocking {
             val initiative = createTestInitiative(name = "Original")
             repository.save(initiative)
@@ -158,7 +158,7 @@ class SurrealInitiativeRepositoryTest {
         }
 
     @Test
-    fun `searchByName finds initiatives by partial name match`() =
+    fun `searchByName finds initiatives by partial name match`(): Unit =
         runBlocking {
             repository.save(createTestInitiative(name = "My Health Goals"))
             repository.save(createTestInitiative(name = "Career Development"))

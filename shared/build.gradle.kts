@@ -45,6 +45,7 @@ kotlin {
         commonTest.dependencies {
             implementation(libs.kotlin.test)
             implementation(libs.turbine)
+            implementation(libs.kotlinx.coroutines.test)
             // Kotest - Property-based testing
             implementation(libs.kotest.framework.engine)
             implementation(libs.kotest.assertions.core)
@@ -57,6 +58,9 @@ kotlin {
             implementation(libs.surrealdb)
             // SQLDelight JVM driver for testing
             implementation(libs.sqldelight.jvm.driver)
+            // JNA - Java Native Access for native credential stores
+            implementation(libs.jna)
+            implementation(libs.jna.platform)
         }
 
         androidMain.dependencies {

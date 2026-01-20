@@ -157,6 +157,7 @@ class MigrationRunner(
             listOf(
                 "V1__initial_schema.surql",
                 "V2__authentication_tables.surql",
+                "V3__fix_user_status_values.surql",
             )
 
         for (filename in knownMigrations) {

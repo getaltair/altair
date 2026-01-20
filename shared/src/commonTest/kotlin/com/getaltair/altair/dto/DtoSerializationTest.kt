@@ -1,5 +1,7 @@
 package com.getaltair.altair.dto
 
+import com.getaltair.altair.domain.types.Ulid
+import com.getaltair.altair.domain.types.enums.UserRole
 import com.getaltair.altair.dto.auth.AuthRequest
 import com.getaltair.altair.dto.auth.AuthResponse
 import com.getaltair.altair.dto.auth.RegisterRequest
@@ -62,9 +64,9 @@ class DtoSerializationTest {
                 accessToken = "access.token.here",
                 refreshToken = "refresh.token.here",
                 expiresIn = 3600,
-                userId = "01HYQVK...",
+                userId = Ulid("01HW0ABCD00000000000000001"),
                 displayName = "Test User",
-                role = "member",
+                role = UserRole.MEMBER,
             )
         val serialized = json.encodeToString(response)
         val deserialized = json.decodeFromString<AuthResponse>(serialized)

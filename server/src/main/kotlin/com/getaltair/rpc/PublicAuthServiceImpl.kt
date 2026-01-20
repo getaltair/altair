@@ -83,9 +83,9 @@ class PublicAuthServiceImpl(
             accessToken = tokenPair.accessToken,
             refreshToken = tokenPair.refreshToken,
             expiresIn = tokenPair.accessTokenExpiresIn,
-            userId = user.id.value,
+            userId = user.id,
             displayName = user.displayName,
-            role = user.role.name.lowercase(),
+            role = user.role,
         )
     }
 
@@ -292,9 +292,9 @@ class PublicAuthServiceImpl(
             accessToken = tokenPair.accessToken,
             refreshToken = tokenPair.refreshToken,
             expiresIn = tokenPair.accessTokenExpiresIn,
-            userId = userId.value,
+            userId = userId,
             displayName = request.displayName,
-            role = role.name.lowercase(),
+            role = role,
         )
     }
 
@@ -304,20 +304,14 @@ class PublicAuthServiceImpl(
         deviceName: String?,
     ) {
         val tokenHash = TokenHasher.hash(refreshToken)
-        val now = currentInstant()
-        val expiresAt =
-            Instant.fromEpochMilliseconds(
-                now.toEpochMilliseconds() + jwtConfig.refreshTokenExpiration.inWholeMilliseconds,
-            )
 
         val token =
-            RefreshToken(
+            RefreshToken.create(
                 id = Ulid.generate(),
                 userId = userId,
                 tokenHash = tokenHash,
                 deviceName = deviceName,
-                expiresAt = expiresAt,
-                createdAt = now,
+                expiresIn = jwtConfig.refreshTokenExpiration,
             )
 
         refreshTokenRepository

@@ -33,8 +33,9 @@ class SurrealSourceDocumentRepository(
         either {
             val result =
                 db
-                    .query<Any>(
-                        "SELECT * FROM source_document WHERE id = source_document:${id.value} AND user_id = user:${userId.value} AND deleted_at IS NONE",
+                    .queryBind(
+                        "SELECT * FROM source_document WHERE id = source_document:\$id AND user_id = user:\$userId AND deleted_at IS NONE",
+                        mapOf("id" to id.value, "userId" to userId.value),
                     ).bind()
             parseSourceDocument(result) ?: raise(DomainError.NotFoundError("SourceDocument", id.value))
         }
@@ -43,60 +44,90 @@ class SurrealSourceDocumentRepository(
         either {
             val existing = findById(entity.id)
             if (existing.isRight()) {
-                db
-                    .execute(
-                        """
-                        UPDATE source_document:${entity.id.value} SET
-                            title = '${entity.title.replace("'", "''")}',
-                            source_type = '${entity.sourceType.name.lowercase()}',
-                            source_path = '${entity.sourcePath.replace("'", "''")}',
-                            mime_type = ${entity.mimeType?.let { "'${it.replace("'", "''")}'" } ?: "NONE"},
-                            file_size_bytes = ${entity.fileSizeBytes ?: "NONE"},
-                            page_count = ${entity.pageCount ?: "NONE"},
-                            extraction_status = '${entity.extractionStatus.name.lowercase()}',
-                            extracted_text = ${entity.extractedText?.let { "'${it.replace("'", "''")}'" } ?: "NONE"},
-                            initiative_id = ${entity.initiativeId?.let { "initiative:${it.value}" } ?: "NONE"},
-                            updated_at = time::now()
-                        WHERE user_id = user:${userId.value};
-                        """.trimIndent(),
-                    ).bind()
+                updateSourceDocument(entity).bind()
             } else {
-                db
-                    .execute(
-                        """
-                        CREATE source_document:${entity.id.value} CONTENT {
-                            user_id: user:${userId.value},
-                            title: '${entity.title.replace("'", "''")}',
-                            source_type: '${entity.sourceType.name.lowercase()}',
-                            source_path: '${entity.sourcePath.replace("'", "''")}',
-                            mime_type: ${entity.mimeType?.let { "'${it.replace("'", "''")}'" } ?: "NONE"},
-                            file_size_bytes: ${entity.fileSizeBytes ?: "NONE"},
-                            page_count: ${entity.pageCount ?: "NONE"},
-                            extraction_status: '${entity.extractionStatus.name.lowercase()}',
-                            extracted_text: NONE,
-                            watched_folder_id: ${entity.watchedFolderId?.let { "'${it.value}'" } ?: "NONE"},
-                            initiative_id: ${entity.initiativeId?.let { "initiative:${it.value}" } ?: "NONE"}
-                        };
-                        """.trimIndent(),
-                    ).bind()
+                insertSourceDocument(entity).bind()
             }
             findById(entity.id).bind()
+        }
+
+    private suspend fun updateSourceDocument(entity: SourceDocument): Either<DomainError, Unit> =
+        db.executeBind(
+            """
+            UPDATE source_document:${'$'}id SET
+                title = ${'$'}title,
+                source_type = ${'$'}sourceType,
+                source_path = ${'$'}sourcePath,
+                mime_type = ${'$'}mimeType,
+                file_size_bytes = ${'$'}fileSizeBytes,
+                page_count = ${'$'}pageCount,
+                extraction_status = ${'$'}extractionStatus,
+                extracted_text = ${'$'}extractedText,
+                initiative_id = ${'$'}initiativeId,
+                updated_at = time::now()
+            WHERE user_id = user:${'$'}userId;
+            """.trimIndent(),
+            buildSourceDocumentParams(entity, isUpdate = true),
+        )
+
+    private suspend fun insertSourceDocument(entity: SourceDocument): Either<DomainError, Unit> =
+        db.executeBind(
+            """
+            CREATE source_document:${'$'}id CONTENT {
+                user_id: user:${'$'}userId,
+                title: ${'$'}title,
+                source_type: ${'$'}sourceType,
+                source_path: ${'$'}sourcePath,
+                mime_type: ${'$'}mimeType,
+                file_size_bytes: ${'$'}fileSizeBytes,
+                page_count: ${'$'}pageCount,
+                extraction_status: ${'$'}extractionStatus,
+                extracted_text: NONE,
+                watched_folder_id: ${'$'}watchedFolderId,
+                initiative_id: ${'$'}initiativeId
+            };
+            """.trimIndent(),
+            buildSourceDocumentParams(entity, isUpdate = false),
+        )
+
+    private fun buildSourceDocumentParams(
+        entity: SourceDocument,
+        isUpdate: Boolean,
+    ): Map<String, Any?> =
+        buildMap {
+            put("id", entity.id.value)
+            put("userId", userId.value)
+            put("title", entity.title)
+            put("sourceType", entity.sourceType.name.lowercase())
+            put("sourcePath", entity.sourcePath)
+            put("mimeType", entity.mimeType)
+            put("fileSizeBytes", entity.fileSizeBytes)
+            put("pageCount", entity.pageCount)
+            put("extractionStatus", entity.extractionStatus.name.lowercase())
+            put("initiativeId", entity.initiativeId?.let { "initiative:${it.value}" })
+            if (isUpdate) {
+                put("extractedText", entity.extractedText)
+            } else {
+                put("watchedFolderId", entity.watchedFolderId?.value)
+            }
         }
 
     override suspend fun delete(id: Ulid): Either<DomainError, Unit> =
         either {
             findById(id).bind()
             db
-                .execute(
-                    "UPDATE source_document:${id.value} SET deleted_at = time::now(), updated_at = time::now() WHERE user_id = user:${userId.value};",
+                .executeBind(
+                    "UPDATE source_document:\$id SET deleted_at = time::now(), updated_at = time::now() WHERE user_id = user:\$userId;",
+                    mapOf("id" to id.value, "userId" to userId.value),
                 ).bind()
         }
 
     override fun findAll(): Flow<List<SourceDocument>> =
         flow {
             val result =
-                db.query<Any>(
-                    "SELECT * FROM source_document WHERE user_id = user:${userId.value} AND deleted_at IS NONE ORDER BY created_at DESC",
+                db.queryBind(
+                    "SELECT * FROM source_document WHERE user_id = user:\$userId AND deleted_at IS NONE ORDER BY created_at DESC",
+                    mapOf("userId" to userId.value),
                 )
             emit(result.fold({ emptyList() }, { parseSourceDocuments(it) }))
         }
@@ -104,8 +135,9 @@ class SurrealSourceDocumentRepository(
     override fun findByExtractionStatus(status: ExtractionStatus): Flow<List<SourceDocument>> =
         flow {
             val result =
-                db.query<Any>(
-                    "SELECT * FROM source_document WHERE user_id = user:${userId.value} AND extraction_status = '${status.name.lowercase()}' AND deleted_at IS NONE",
+                db.queryBind(
+                    "SELECT * FROM source_document WHERE user_id = user:\$userId AND extraction_status = \$status AND deleted_at IS NONE",
+                    mapOf("userId" to userId.value, "status" to status.name.lowercase()),
                 )
             emit(result.fold({ emptyList() }, { parseSourceDocuments(it) }))
         }
@@ -113,8 +145,9 @@ class SurrealSourceDocumentRepository(
     override fun findBySourceType(sourceType: SourceType): Flow<List<SourceDocument>> =
         flow {
             val result =
-                db.query<Any>(
-                    "SELECT * FROM source_document WHERE user_id = user:${userId.value} AND source_type = '${sourceType.name.lowercase()}' AND deleted_at IS NONE",
+                db.queryBind(
+                    "SELECT * FROM source_document WHERE user_id = user:\$userId AND source_type = \$sourceType AND deleted_at IS NONE",
+                    mapOf("userId" to userId.value, "sourceType" to sourceType.name.lowercase()),
                 )
             emit(result.fold({ emptyList() }, { parseSourceDocuments(it) }))
         }
@@ -122,8 +155,9 @@ class SurrealSourceDocumentRepository(
     override fun findByWatchedFolder(watchedFolderId: Ulid): Flow<List<SourceDocument>> =
         flow {
             val result =
-                db.query<Any>(
-                    "SELECT * FROM source_document WHERE user_id = user:${userId.value} AND watched_folder_id = '${watchedFolderId.value}' AND deleted_at IS NONE",
+                db.queryBind(
+                    "SELECT * FROM source_document WHERE user_id = user:\$userId AND watched_folder_id = \$watchedFolderId AND deleted_at IS NONE",
+                    mapOf("userId" to userId.value, "watchedFolderId" to watchedFolderId.value),
                 )
             emit(result.fold({ emptyList() }, { parseSourceDocuments(it) }))
         }
@@ -131,8 +165,9 @@ class SurrealSourceDocumentRepository(
     override fun findByInitiative(initiativeId: Ulid): Flow<List<SourceDocument>> =
         flow {
             val result =
-                db.query<Any>(
-                    "SELECT * FROM source_document WHERE user_id = user:${userId.value} AND initiative_id = initiative:${initiativeId.value} AND deleted_at IS NONE",
+                db.queryBind(
+                    "SELECT * FROM source_document WHERE user_id = user:\$userId AND initiative_id = initiative:\$initiativeId AND deleted_at IS NONE",
+                    mapOf("userId" to userId.value, "initiativeId" to initiativeId.value),
                 )
             emit(result.fold({ emptyList() }, { parseSourceDocuments(it) }))
         }
@@ -141,15 +176,13 @@ class SurrealSourceDocumentRepository(
         either {
             val result =
                 db
-                    .query<Any>(
+                    .queryBind(
                         """
-                        SELECT * FROM source_document WHERE user_id = user:${userId.value} AND deleted_at IS NONE
-                        AND (string::lowercase(title) CONTAINS string::lowercase('${query.replace("'", "''")}')
-                             OR string::lowercase(extracted_text) CONTAINS string::lowercase('${query.replace(
-                            "'",
-                            "''",
-                        )}'))
+                        SELECT * FROM source_document WHERE user_id = user:${'$'}userId AND deleted_at IS NONE
+                        AND (string::lowercase(title) CONTAINS string::lowercase(${'$'}query)
+                             OR string::lowercase(extracted_text) CONTAINS string::lowercase(${'$'}query))
                         """.trimIndent(),
+                        mapOf("userId" to userId.value, "query" to query),
                     ).bind()
             parseSourceDocuments(result)
         }
@@ -158,8 +191,9 @@ class SurrealSourceDocumentRepository(
         either {
             val result =
                 db
-                    .query<Any>(
-                        "SELECT * FROM source_document WHERE user_id = user:${userId.value} AND extraction_status IN ['pending', 'failed'] AND deleted_at IS NONE",
+                    .queryBind(
+                        "SELECT * FROM source_document WHERE user_id = user:\$userId AND extraction_status IN ['pending', 'failed'] AND deleted_at IS NONE",
+                        mapOf("userId" to userId.value),
                     ).bind()
             parseSourceDocuments(result)
         }
@@ -172,14 +206,20 @@ class SurrealSourceDocumentRepository(
         either {
             findById(id).bind()
             db
-                .execute(
+                .executeBind(
                     """
-                    UPDATE source_document:${id.value} SET
-                        extraction_status = '${status.name.lowercase()}',
-                        extracted_text = ${extractedText?.let { "'${it.replace("'", "''")}'" } ?: "NONE"},
+                    UPDATE source_document:${'$'}id SET
+                        extraction_status = ${'$'}status,
+                        extracted_text = ${'$'}extractedText,
                         updated_at = time::now()
-                    WHERE user_id = user:${userId.value};
+                    WHERE user_id = user:${'$'}userId;
                     """.trimIndent(),
+                    mapOf(
+                        "id" to id.value,
+                        "status" to status.name.lowercase(),
+                        "extractedText" to extractedText,
+                        "userId" to userId.value,
+                    ),
                 ).bind()
             findById(id).bind()
         }

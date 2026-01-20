@@ -1,11 +1,18 @@
 package com.getaltair.altair.service.auth
 
+import arrow.core.Either
+import arrow.core.left
+import arrow.core.right
+import com.getaltair.altair.domain.types.Ulid
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.security.GeneralSecurityException
 import java.security.SecureRandom
 import java.util.Base64
+import java.util.prefs.BackingStoreException
 import java.util.prefs.Preferences
+import javax.crypto.AEADBadTagException
 import javax.crypto.Cipher
 import javax.crypto.SecretKey
 import javax.crypto.SecretKeyFactory
@@ -39,7 +46,7 @@ class DesktopSecureTokenStorage(
         deriveKey()
     }
 
-    override suspend fun saveAccessToken(token: String) =
+    override suspend fun saveAccessToken(token: String): Either<TokenStorageError, Unit> =
         withContext(Dispatchers.IO) {
             saveEncrypted(KEY_ACCESS_TOKEN, token)
         }
@@ -49,7 +56,7 @@ class DesktopSecureTokenStorage(
             getDecrypted(KEY_ACCESS_TOKEN)
         }
 
-    override suspend fun saveRefreshToken(token: String) =
+    override suspend fun saveRefreshToken(token: String): Either<TokenStorageError, Unit> =
         withContext(Dispatchers.IO) {
             saveEncrypted(KEY_REFRESH_TOKEN, token)
         }
@@ -59,7 +66,7 @@ class DesktopSecureTokenStorage(
             getDecrypted(KEY_REFRESH_TOKEN)
         }
 
-    override suspend fun saveTokenExpiration(expiresAtMillis: Long) =
+    override suspend fun saveTokenExpiration(expiresAtMillis: Long): Either<TokenStorageError, Unit> =
         withContext(Dispatchers.IO) {
             saveEncrypted(KEY_TOKEN_EXPIRATION, expiresAtMillis.toString())
         }
@@ -69,23 +76,29 @@ class DesktopSecureTokenStorage(
             getDecrypted(KEY_TOKEN_EXPIRATION)?.toLongOrNull()
         }
 
-    override suspend fun saveUserId(userId: String) =
+    override suspend fun saveUserId(userId: Ulid): Either<TokenStorageError, Unit> =
         withContext(Dispatchers.IO) {
-            saveEncrypted(KEY_USER_ID, userId)
+            saveEncrypted(KEY_USER_ID, userId.value)
         }
 
-    override suspend fun getUserId(): String? =
+    override suspend fun getUserId(): Ulid? =
         withContext(Dispatchers.IO) {
-            getDecrypted(KEY_USER_ID)
+            getDecrypted(KEY_USER_ID)?.let { Ulid(it) }
         }
 
-    override suspend fun clear() =
+    override suspend fun clear(): Either<TokenStorageError, Unit> =
         withContext(Dispatchers.IO) {
-            preferences.remove(KEY_ACCESS_TOKEN)
-            preferences.remove(KEY_REFRESH_TOKEN)
-            preferences.remove(KEY_TOKEN_EXPIRATION)
-            preferences.remove(KEY_USER_ID)
-            preferences.flush()
+            try {
+                preferences.remove(KEY_ACCESS_TOKEN)
+                preferences.remove(KEY_REFRESH_TOKEN)
+                preferences.remove(KEY_TOKEN_EXPIRATION)
+                preferences.remove(KEY_USER_ID)
+                preferences.flush()
+                Unit.right()
+            } catch (e: BackingStoreException) {
+                System.err.println("[TokenStorage] ERROR: Failed to clear credentials: ${e.message}")
+                TokenStorageError.PersistenceFailed("Failed to clear credentials: ${e.message}").left()
+            }
         }
 
     override suspend fun hasStoredCredentials(): Boolean =
@@ -93,29 +106,48 @@ class DesktopSecureTokenStorage(
             getDecrypted(KEY_REFRESH_TOKEN) != null
         }
 
-    @Suppress("TooGenericExceptionCaught") // Crypto operations can throw various exceptions
+    @Suppress("TooGenericExceptionCaught") // Multiple crypto/IO exceptions possible
     private fun saveEncrypted(
         key: String,
         value: String,
-    ) {
+    ): Either<TokenStorageError, Unit> =
         try {
             val encrypted = encrypt(value)
             preferences.put(key, encrypted)
             preferences.flush()
+            Unit.right()
         } catch (e: Exception) {
-            // Log error but don't crash
-            System.err.println("Failed to save encrypted value for $key: ${e.message}")
+            val error =
+                when (e) {
+                    is GeneralSecurityException ->
+                        TokenStorageError.EncryptionFailed("Encryption failed for $key: ${e.message}")
+                    is BackingStoreException ->
+                        TokenStorageError.PersistenceFailed("Persistence failed for $key: ${e.message}")
+                    is IllegalArgumentException ->
+                        TokenStorageError.ValidationFailed("Validation failed for $key: ${e.message}")
+                    else ->
+                        TokenStorageError.Unknown("Unknown error for $key: ${e.message}")
+                }
+            System.err.println(
+                "[TokenStorage] ERROR: ${error::class.simpleName} for $key: ${e.javaClass.simpleName} - ${e.message}",
+            )
+            error.left()
         }
-    }
 
-    @Suppress("TooGenericExceptionCaught") // Crypto operations can throw various exceptions
+    @Suppress("TooGenericExceptionCaught") // Multiple crypto exceptions possible
     private fun getDecrypted(key: String): String? =
         try {
             val encrypted = preferences.get(key, null) ?: return null
             decrypt(encrypted)
         } catch (e: Exception) {
-            // If decryption fails, the data may be corrupted
-            System.err.println("Failed to decrypt value for $key: ${e.message}")
+            val errorType =
+                when (e) {
+                    is AEADBadTagException -> "Data corruption (authentication tag mismatch)"
+                    is IllegalArgumentException -> "Malformed data"
+                    is GeneralSecurityException -> "Decryption failure"
+                    else -> "Unknown error"
+                }
+            System.err.println("[TokenStorage] ERROR: $errorType for $key: ${e.javaClass.simpleName} - ${e.message}")
             null
         }
 

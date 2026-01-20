@@ -1,9 +1,11 @@
 package com.getaltair.altair.navigation
 
+import arrow.core.right
 import com.arkivanov.decompose.DefaultComponentContext
 import com.arkivanov.essenty.lifecycle.Lifecycle
 import com.arkivanov.essenty.lifecycle.LifecycleRegistry
 import com.arkivanov.essenty.lifecycle.resume
+import com.getaltair.altair.domain.types.Ulid
 import com.getaltair.altair.dto.auth.AuthRequest
 import com.getaltair.altair.dto.auth.AuthResponse
 import com.getaltair.altair.dto.auth.RegisterRequest
@@ -107,23 +109,23 @@ class RootComponentTest {
 // ============================================
 
 private class FakeTokenStorage : SecureTokenStorage {
-    override suspend fun saveAccessToken(token: String) = Unit
+    override suspend fun saveAccessToken(token: String) = Unit.right()
 
     override suspend fun getAccessToken(): String? = null
 
-    override suspend fun saveRefreshToken(token: String) = Unit
+    override suspend fun saveRefreshToken(token: String) = Unit.right()
 
     override suspend fun getRefreshToken(): String? = null
 
-    override suspend fun saveTokenExpiration(expiresAtMillis: Long) = Unit
+    override suspend fun saveTokenExpiration(expiresAtMillis: Long) = Unit.right()
 
     override suspend fun getTokenExpiration(): Long? = null
 
-    override suspend fun saveUserId(userId: String) = Unit
+    override suspend fun saveUserId(userId: Ulid) = Unit.right()
 
-    override suspend fun getUserId(): String? = null
+    override suspend fun getUserId(): Ulid? = null
 
-    override suspend fun clear() = Unit
+    override suspend fun clear() = Unit.right()
 
     override suspend fun hasStoredCredentials(): Boolean = false
 }

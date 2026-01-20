@@ -37,69 +37,99 @@ class SurrealRoutineRepository(
         either {
             val result =
                 db
-                    .query<Any>(
-                        "SELECT * FROM routine WHERE id = routine:${id.value} AND user_id = user:${userId.value} AND deleted_at IS NONE",
+                    .queryBind(
+                        "SELECT * FROM routine WHERE id = routine:\$id AND user_id = user:\$userId AND deleted_at IS NONE",
+                        mapOf("id" to id.value, "userId" to userId.value),
                     ).bind()
             parseRoutine(result) ?: raise(DomainError.NotFoundError("Routine", id.value))
         }
 
     override suspend fun save(entity: Routine): Either<DomainError, Routine> =
         either {
-            val scheduleJson = json.encodeToString(Schedule.serializer(), entity.schedule)
             val existing = findById(entity.id)
 
             if (existing.isRight()) {
-                db
-                    .execute(
-                        """
-                        UPDATE routine:${entity.id.value} SET
-                            title = '${entity.title.replace("'", "''")}',
-                            description = ${entity.description?.let { "'${it.replace("'", "''")}'" } ?: "NONE"},
-                            energy_cost = ${entity.energyCost},
-                            schedule = $scheduleJson,
-                            scheduled_time = ${entity.scheduledTime?.let { "'$it'" } ?: "NONE"},
-                            initiative_id = ${entity.initiativeId?.let { "initiative:${it.value}" } ?: "NONE"},
-                            is_active = ${entity.isActive},
-                            last_spawned_at = ${entity.lastSpawnedAt?.let { "<datetime>'$it'" } ?: "NONE"},
-                            updated_at = time::now()
-                        WHERE user_id = user:${userId.value};
-                        """.trimIndent(),
-                    ).bind()
+                updateRoutine(entity).bind()
             } else {
-                db
-                    .execute(
-                        """
-                        CREATE routine:${entity.id.value} CONTENT {
-                            user_id: user:${userId.value},
-                            title: '${entity.title.replace("'", "''")}',
-                            description: ${entity.description?.let { "'${it.replace("'", "''")}'" } ?: "NONE"},
-                            energy_cost: ${entity.energyCost},
-                            schedule: $scheduleJson,
-                            scheduled_time: ${entity.scheduledTime?.let { "'$it'" } ?: "NONE"},
-                            initiative_id: ${entity.initiativeId?.let { "initiative:${it.value}" } ?: "NONE"},
-                            is_active: ${entity.isActive},
-                            last_spawned_at: NONE
-                        };
-                        """.trimIndent(),
-                    ).bind()
+                insertRoutine(entity).bind()
             }
             findById(entity.id).bind()
+        }
+
+    private suspend fun updateRoutine(entity: Routine): Either<DomainError, Unit> {
+        val scheduleJson = json.encodeToString(Schedule.serializer(), entity.schedule)
+        return db.executeBind(
+            """
+            UPDATE routine:${'$'}id SET
+                title = ${'$'}title,
+                description = ${'$'}description,
+                energy_cost = ${'$'}energyCost,
+                schedule = $scheduleJson,
+                scheduled_time = ${'$'}scheduledTime,
+                initiative_id = ${'$'}initiativeId,
+                is_active = ${'$'}isActive,
+                last_spawned_at = ${'$'}lastSpawnedAt,
+                updated_at = time::now()
+            WHERE user_id = user:${'$'}userId;
+            """.trimIndent(),
+            buildRoutineParams(entity, includeLastSpawned = true),
+        )
+    }
+
+    private suspend fun insertRoutine(entity: Routine): Either<DomainError, Unit> {
+        val scheduleJson = json.encodeToString(Schedule.serializer(), entity.schedule)
+        return db.executeBind(
+            """
+            CREATE routine:${'$'}id CONTENT {
+                user_id: user:${'$'}userId,
+                title: ${'$'}title,
+                description: ${'$'}description,
+                energy_cost: ${'$'}energyCost,
+                schedule: $scheduleJson,
+                scheduled_time: ${'$'}scheduledTime,
+                initiative_id: ${'$'}initiativeId,
+                is_active: ${'$'}isActive,
+                last_spawned_at: NONE
+            };
+            """.trimIndent(),
+            buildRoutineParams(entity, includeLastSpawned = false),
+        )
+    }
+
+    private fun buildRoutineParams(
+        entity: Routine,
+        includeLastSpawned: Boolean,
+    ): Map<String, Any?> =
+        buildMap {
+            put("id", entity.id.value)
+            put("userId", userId.value)
+            put("title", entity.title)
+            put("description", entity.description)
+            put("energyCost", entity.energyCost)
+            put("scheduledTime", entity.scheduledTime?.toString())
+            put("initiativeId", entity.initiativeId?.let { "initiative:${it.value}" })
+            put("isActive", entity.isActive)
+            if (includeLastSpawned) {
+                put("lastSpawnedAt", entity.lastSpawnedAt?.toString())
+            }
         }
 
     override suspend fun delete(id: Ulid): Either<DomainError, Unit> =
         either {
             findById(id).bind()
             db
-                .execute(
-                    "UPDATE routine:${id.value} SET deleted_at = time::now(), updated_at = time::now() WHERE user_id = user:${userId.value};",
+                .executeBind(
+                    "UPDATE routine:${'$'}id SET deleted_at = time::now(), updated_at = time::now() WHERE user_id = user:${'$'}userId;",
+                    mapOf("id" to id.value, "userId" to userId.value),
                 ).bind()
         }
 
     override fun findAll(): Flow<List<Routine>> =
         flow {
             val result =
-                db.query<Any>(
-                    "SELECT * FROM routine WHERE user_id = user:${userId.value} AND deleted_at IS NONE ORDER BY created_at DESC",
+                db.queryBind(
+                    "SELECT * FROM routine WHERE user_id = user:\$userId AND deleted_at IS NONE ORDER BY created_at DESC",
+                    mapOf("userId" to userId.value),
                 )
             emit(result.fold({ emptyList() }, { parseRoutines(it) }))
         }
@@ -107,8 +137,9 @@ class SurrealRoutineRepository(
     override fun findActive(): Flow<List<Routine>> =
         flow {
             val result =
-                db.query<Any>(
-                    "SELECT * FROM routine WHERE user_id = user:${userId.value} AND is_active = true AND deleted_at IS NONE",
+                db.queryBind(
+                    "SELECT * FROM routine WHERE user_id = user:\$userId AND is_active = \$isActive AND deleted_at IS NONE",
+                    mapOf("userId" to userId.value, "isActive" to true),
                 )
             emit(result.fold({ emptyList() }, { parseRoutines(it) }))
         }
@@ -118,8 +149,9 @@ class SurrealRoutineRepository(
             // For simplicity, return all active routines; schedule matching would need business logic
             val result =
                 db
-                    .query<Any>(
-                        "SELECT * FROM routine WHERE user_id = user:${userId.value} AND is_active = true AND deleted_at IS NONE",
+                    .queryBind(
+                        "SELECT * FROM routine WHERE user_id = user:\$userId AND is_active = \$isActive AND deleted_at IS NONE",
+                        mapOf("userId" to userId.value, "isActive" to true),
                     ).bind()
             parseRoutines(result)
         }
@@ -127,8 +159,9 @@ class SurrealRoutineRepository(
     override fun findByInitiative(initiativeId: Ulid): Flow<List<Routine>> =
         flow {
             val result =
-                db.query<Any>(
-                    "SELECT * FROM routine WHERE user_id = user:${userId.value} AND initiative_id = initiative:${initiativeId.value} AND deleted_at IS NONE",
+                db.queryBind(
+                    "SELECT * FROM routine WHERE user_id = user:\$userId AND initiative_id = initiative:\$initiativeId AND deleted_at IS NONE",
+                    mapOf("userId" to userId.value, "initiativeId" to initiativeId.value),
                 )
             emit(result.fold({ emptyList() }, { parseRoutines(it) }))
         }
@@ -140,8 +173,9 @@ class SurrealRoutineRepository(
         either {
             findById(id).bind()
             db
-                .execute(
-                    "UPDATE routine:${id.value} SET last_spawned_at = <datetime>'$spawnedAt', updated_at = time::now() WHERE user_id = user:${userId.value};",
+                .executeBind(
+                    "UPDATE routine:${'$'}id SET last_spawned_at = ${'$'}spawnedAt, updated_at = time::now() WHERE user_id = user:${'$'}userId;",
+                    mapOf("id" to id.value, "spawnedAt" to spawnedAt.toString(), "userId" to userId.value),
                 ).bind()
             findById(id).bind()
         }

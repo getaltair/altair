@@ -66,7 +66,7 @@ class SurrealQuestRepositoryTest {
     }
 
     @Test
-    fun `save creates new quest`() =
+    fun `save creates new quest`(): Unit =
         runBlocking {
             val quest = createTestQuest()
 
@@ -81,7 +81,7 @@ class SurrealQuestRepositoryTest {
         }
 
     @Test
-    fun `findById returns saved quest`() =
+    fun `findById returns saved quest`(): Unit =
         runBlocking {
             val quest = createTestQuest()
             repository.save(quest)
@@ -96,7 +96,7 @@ class SurrealQuestRepositoryTest {
         }
 
     @Test
-    fun `findById returns error for non-existent quest`() =
+    fun `findById returns error for non-existent quest`(): Unit =
         runBlocking {
             val result = repository.findById(Ulid.generate())
 
@@ -107,7 +107,7 @@ class SurrealQuestRepositoryTest {
         }
 
     @Test
-    fun `transitionStatus from BACKLOG to ACTIVE succeeds`() =
+    fun `transitionStatus from BACKLOG to ACTIVE succeeds`(): Unit =
         runBlocking {
             val quest = createTestQuest(status = QuestStatus.BACKLOG)
             repository.save(quest)
@@ -121,7 +121,7 @@ class SurrealQuestRepositoryTest {
         }
 
     @Test
-    fun `transitionStatus from BACKLOG to COMPLETED fails`() =
+    fun `transitionStatus from BACKLOG to COMPLETED fails`(): Unit =
         runBlocking {
             val quest = createTestQuest(status = QuestStatus.BACKLOG)
             repository.save(quest)
@@ -137,7 +137,7 @@ class SurrealQuestRepositoryTest {
         }
 
     @Test
-    fun `transitionStatus from ACTIVE to COMPLETED succeeds`() =
+    fun `transitionStatus from ACTIVE to COMPLETED succeeds`(): Unit =
         runBlocking {
             val quest = createTestQuest(status = QuestStatus.BACKLOG)
             repository.save(quest)
@@ -152,7 +152,7 @@ class SurrealQuestRepositoryTest {
         }
 
     @Test
-    fun `transitionStatus from ACTIVE to ABANDONED succeeds`() =
+    fun `transitionStatus from ACTIVE to ABANDONED succeeds`(): Unit =
         runBlocking {
             val quest = createTestQuest(status = QuestStatus.BACKLOG)
             repository.save(quest)
@@ -167,7 +167,7 @@ class SurrealQuestRepositoryTest {
         }
 
     @Test
-    fun `transitionStatus enforces WIP limit when activating quest`() =
+    fun `transitionStatus enforces WIP limit when activating quest`(): Unit =
         runBlocking {
             // Create and activate WIP_LIMIT quests
             repeat(DEFAULT_WIP_LIMIT) { i ->
@@ -195,7 +195,7 @@ class SurrealQuestRepositoryTest {
         }
 
     @Test
-    fun `countActive returns correct count`() =
+    fun `countActive returns correct count`(): Unit =
         runBlocking {
             // Create mix of statuses
             val backlogQuest = createTestQuest(title = "Backlog Quest", status = QuestStatus.BACKLOG)
@@ -218,7 +218,7 @@ class SurrealQuestRepositoryTest {
         }
 
     @Test
-    fun `findByStatus returns only matching quests`() =
+    fun `findByStatus returns only matching quests`(): Unit =
         runBlocking {
             val backlogQuest = createTestQuest(title = "Backlog", status = QuestStatus.BACKLOG)
             val activeQuest = createTestQuest(title = "Active", status = QuestStatus.BACKLOG)
@@ -233,7 +233,7 @@ class SurrealQuestRepositoryTest {
         }
 
     @Test
-    fun `delete soft deletes quest`() =
+    fun `delete soft deletes quest`(): Unit =
         runBlocking {
             val quest = createTestQuest()
             repository.save(quest)
@@ -246,7 +246,7 @@ class SurrealQuestRepositoryTest {
         }
 
     @Test
-    fun `WIP limit allows activation after completing an active quest`() =
+    fun `WIP limit allows activation after completing an active quest`(): Unit =
         runBlocking {
             // Fill up WIP limit
             val activeQuests =

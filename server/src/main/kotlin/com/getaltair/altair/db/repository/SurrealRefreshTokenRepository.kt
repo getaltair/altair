@@ -31,19 +31,22 @@ class SurrealRefreshTokenRepository(
 
     override suspend fun create(token: RefreshToken): Either<AuthError, RefreshToken> =
         either {
-            val deviceNameValue = token.deviceName?.let { "'${it.replace("'", "''")}'" } ?: "NONE"
-
             db
-                .execute(
+                .executeBind(
                     """
                     CREATE refresh_token:${token.id.value} CONTENT {
-                        user_id: user:${token.userId.value},
-                        token_hash: '${token.tokenHash.replace("'", "''")}',
-                        device_name: $deviceNameValue,
+                        user_id: user:${'$'}userId,
+                        token_hash: ${'$'}tokenHash,
+                        device_name: ${'$'}deviceName,
                         expires_at: d"${token.expiresAt}",
                         revoked_at: NONE
                     };
                     """.trimIndent(),
+                    mapOf(
+                        "userId" to token.userId.value,
+                        "tokenHash" to token.tokenHash,
+                        "deviceName" to token.deviceName,
+                    ),
                 ).mapLeft { AuthError.TokenInvalid("Failed to create refresh token") }
                 .bind()
 
@@ -52,11 +55,11 @@ class SurrealRefreshTokenRepository(
 
     override suspend fun findByHash(tokenHash: String): Either<AuthError, RefreshToken> =
         either {
-            val escapedHash = tokenHash.replace("'", "''")
             val result =
                 db
-                    .query<Any>(
-                        "SELECT * FROM refresh_token WHERE token_hash = '$escapedHash' AND revoked_at IS NONE",
+                    .queryBind(
+                        "SELECT * FROM refresh_token WHERE token_hash = ${'$'}tokenHash AND revoked_at IS NONE",
+                        mapOf("tokenHash" to tokenHash),
                     ).mapLeft { AuthError.TokenInvalid("Failed to query refresh token") }
                     .bind()
 
@@ -69,23 +72,25 @@ class SurrealRefreshTokenRepository(
     ): Either<AuthError, Unit> =
         either {
             db
-                .execute(
+                .executeBind(
                     """
                     UPDATE refresh_token:${id.value} SET
                         revoked_at = time::now()
-                    WHERE user_id = user:${userId.value};
+                    WHERE user_id = user:${'$'}userId;
                     """.trimIndent(),
+                    mapOf("userId" to userId.value),
                 ).mapLeft { AuthError.TokenInvalid("Failed to revoke refresh token") }
                 .bind()
         }
 
     override suspend fun revokeAllForUser(userId: Ulid): Either<AuthError, Int> =
         db
-            .execute(
+            .executeBind(
                 """
                 UPDATE refresh_token SET revoked_at = time::now()
-                WHERE user_id = user:${userId.value} AND revoked_at IS NONE;
+                WHERE user_id = user:${'$'}userId AND revoked_at IS NONE;
                 """.trimIndent(),
+                mapOf("userId" to userId.value),
             ).fold(
                 ifLeft = {
                     logger.error("Failed to revoke all tokens for user: {}", userId.value)

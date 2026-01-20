@@ -32,17 +32,22 @@ class SurrealInviteCodeRepository(
     override suspend fun create(inviteCode: InviteCode): Either<AuthError, InviteCode> =
         either {
             db
-                .execute(
+                .executeBind(
                     """
                     CREATE invite_code:${inviteCode.id.value} CONTENT {
-                        code: '${inviteCode.code.replace("'", "''")}',
-                        created_by: user:${inviteCode.createdBy.value},
+                        code: ${'$'}code,
+                        created_by: user:${'$'}createdBy,
+                        created_at: d"${inviteCode.createdAt}",
                         used_by: NONE,
                         expires_at: d"${inviteCode.expiresAt}",
                         used_at: NONE
                     };
                     """.trimIndent(),
-                ).mapLeft { AuthError.InvalidInvite(inviteCode.code) }
+                    mapOf(
+                        "code" to inviteCode.code,
+                        "createdBy" to inviteCode.createdBy.value,
+                    ),
+                ).mapLeft { AuthError.InvalidInviteCode }
                 .bind()
 
             inviteCode
@@ -50,18 +55,16 @@ class SurrealInviteCodeRepository(
 
     override suspend fun findByCode(code: String): Either<AuthError, InviteCode> =
         either {
-            val escapedCode = code.replace("'", "''")
-            val query =
-                "SELECT * FROM invite_code WHERE code = '$escapedCode' " +
-                    "AND used_by IS NONE AND expires_at > time::now()"
             val result =
                 db
-                    .query<Any>(query)
-                    .mapLeft { AuthError.InvalidInvite(code) }
+                    .queryBind(
+                        "SELECT * FROM invite_code WHERE code = ${'$'}code " +
+                            "AND used_by IS NONE AND expires_at > time::now()",
+                        mapOf("code" to code),
+                    ).mapLeft { AuthError.InvalidInviteCode }
                     .bind()
 
-            logger.debug("findByCode query='{}' result='{}'", query, result)
-            parseInviteCode(result) ?: raise(AuthError.InvalidInvite(code))
+            parseInviteCode(result) ?: raise(AuthError.InvalidInviteCode)
         }
 
     override suspend fun markUsed(
@@ -70,20 +73,22 @@ class SurrealInviteCodeRepository(
     ): Either<AuthError, Unit> =
         either {
             db
-                .execute(
+                .executeBind(
                     """
                     UPDATE invite_code:${id.value} SET
-                        used_by = user:${usedBy.value},
+                        used_by = user:${'$'}usedBy,
                         used_at = time::now();
                     """.trimIndent(),
-                ).mapLeft { AuthError.InvalidInvite(id.value) }
+                    mapOf("usedBy" to usedBy.value),
+                ).mapLeft { AuthError.InvalidInviteCode }
                 .bind()
         }
 
     override suspend fun findByCreator(createdBy: Ulid): Either<AuthError, List<InviteCode>> =
         db
-            .query<Any>(
-                "SELECT * FROM invite_code WHERE created_by = user:${createdBy.value} ORDER BY created_at DESC",
+            .queryBind(
+                "SELECT * FROM invite_code WHERE created_by = user:${'$'}createdBy ORDER BY created_at DESC",
+                mapOf("createdBy" to createdBy.value),
             ).fold(
                 ifLeft = {
                     logger.error("Failed to find invite codes by creator: {}", createdBy.value)
@@ -101,7 +106,7 @@ class SurrealInviteCodeRepository(
             ).fold(
                 ifLeft = {
                     logger.error("Failed to delete expired invite codes")
-                    AuthError.InvalidInvite("cleanup").left()
+                    AuthError.InvalidInviteCode.left()
                 },
                 ifRight = { 0.right() },
             )
@@ -149,13 +154,13 @@ class SurrealInviteCodeRepository(
             code = obj["code"]?.jsonPrimitive?.content ?: error("Missing code"),
             createdBy = Ulid(createdBy),
             usedBy = usedBy?.let { Ulid(it) },
-            expiresAt = parseInstant(obj["expires_at"]?.jsonPrimitive?.content),
-            createdAt = parseInstant(obj["created_at"]?.jsonPrimitive?.content),
-            usedAt = obj["used_at"]?.jsonPrimitive?.content?.let { parseInstant(it) },
+            expiresAt = parseInstantRequired(obj["expires_at"]?.jsonPrimitive?.content),
+            createdAt = parseInstantRequired(obj["created_at"]?.jsonPrimitive?.content),
+            usedAt = parseInstantOptional(obj["used_at"]?.jsonPrimitive?.content),
         )
     }
 
-    private fun parseInstant(value: String?): Instant =
+    private fun parseInstantRequired(value: String?): Instant =
         value?.takeIf { it != "null" && it.isNotBlank() }?.let {
             try {
                 Instant.parse(it)
@@ -164,4 +169,14 @@ class SurrealInviteCodeRepository(
                 Instant.DISTANT_PAST
             }
         } ?: Instant.DISTANT_PAST
+
+    private fun parseInstantOptional(value: String?): Instant? =
+        value?.takeIf { it != "null" && it.isNotBlank() }?.let {
+            try {
+                Instant.parse(it)
+            } catch (e: IllegalArgumentException) {
+                logger.warn("Failed to parse instant '$value': ${e.message}")
+                null
+            }
+        }
 }

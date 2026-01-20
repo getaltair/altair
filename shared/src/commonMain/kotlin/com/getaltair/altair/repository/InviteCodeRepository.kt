@@ -23,7 +23,7 @@ interface InviteCodeRepository {
      * Find an invite code by its code string.
      *
      * @param code The invite code string
-     * @return Either [AuthError.InvalidInvite] if not found or invalid, or the invite code
+     * @return Either [AuthError.InvalidInviteCode] if not found or invalid, or the invite code
      */
     suspend fun findByCode(code: String): Either<AuthError, InviteCode>
 

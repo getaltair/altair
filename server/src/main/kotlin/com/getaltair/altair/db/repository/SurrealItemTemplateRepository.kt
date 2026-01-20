@@ -35,8 +35,9 @@ class SurrealItemTemplateRepository(
         either {
             val result =
                 db
-                    .query<Any>(
-                        "SELECT * FROM item_template WHERE id = item_template:${id.value} AND user_id = user:${userId.value} AND deleted_at IS NONE",
+                    .queryBind(
+                        "SELECT * FROM item_template:${'$'}id WHERE user_id = user:${'$'}userId AND deleted_at IS NONE",
+                        mapOf("id" to id.value, "userId" to userId.value),
                     ).bind()
             parseTemplate(result) ?: raise(DomainError.NotFoundError("ItemTemplate", id.value))
         }
@@ -46,27 +47,41 @@ class SurrealItemTemplateRepository(
             val existing = findById(entity.id)
             if (existing.isRight()) {
                 db
-                    .execute(
+                    .executeBind(
                         """
-                        UPDATE item_template:${entity.id.value} SET
-                            name = '${entity.name.replace("'", "''")}',
-                            description = ${entity.description?.let { "'${it.replace("'", "''")}'" } ?: "NONE"},
-                            icon = ${entity.icon?.let { "'${it.replace("'", "''")}'" } ?: "NONE"},
+                        UPDATE item_template:${'$'}id SET
+                            name = ${'$'}name,
+                            description = ${'$'}description,
+                            icon = ${'$'}icon,
                             updated_at = time::now()
-                        WHERE user_id = user:${userId.value};
+                        WHERE user_id = user:${'$'}userId
                         """.trimIndent(),
+                        mapOf(
+                            "id" to entity.id.value,
+                            "name" to entity.name,
+                            "description" to entity.description,
+                            "icon" to entity.icon,
+                            "userId" to userId.value,
+                        ),
                     ).bind()
             } else {
                 db
-                    .execute(
+                    .executeBind(
                         """
-                        CREATE item_template:${entity.id.value} CONTENT {
-                            user_id: user:${userId.value},
-                            name: '${entity.name.replace("'", "''")}',
-                            description: ${entity.description?.let { "'${it.replace("'", "''")}'" } ?: "NONE"},
-                            icon: ${entity.icon?.let { "'${it.replace("'", "''")}'" } ?: "NONE"}
-                        };
+                        CREATE item_template:${'$'}id CONTENT {
+                            user_id: user:${'$'}userId,
+                            name: ${'$'}name,
+                            description: ${'$'}description,
+                            icon: ${'$'}icon
+                        }
                         """.trimIndent(),
+                        mapOf(
+                            "id" to entity.id.value,
+                            "userId" to userId.value,
+                            "name" to entity.name,
+                            "description" to entity.description,
+                            "icon" to entity.icon,
+                        ),
                     ).bind()
             }
             findById(entity.id).bind()
@@ -76,21 +91,24 @@ class SurrealItemTemplateRepository(
         either {
             findById(id).bind()
             db
-                .execute(
-                    "UPDATE item_template:${id.value} SET deleted_at = time::now(), updated_at = time::now() WHERE user_id = user:${userId.value};",
+                .executeBind(
+                    "UPDATE item_template:${'$'}id SET deleted_at = time::now(), updated_at = time::now() WHERE user_id = user:${'$'}userId",
+                    mapOf("id" to id.value, "userId" to userId.value),
                 ).bind()
             // Also soft-delete associated field definitions
             db
-                .execute(
-                    "UPDATE field_definition SET deleted_at = time::now(), updated_at = time::now() WHERE user_id = user:${userId.value} AND template_id = item_template:${id.value};",
+                .executeBind(
+                    "UPDATE field_definition SET deleted_at = time::now(), updated_at = time::now() WHERE user_id = user:${'$'}userId AND template_id = item_template:${'$'}templateId",
+                    mapOf("userId" to userId.value, "templateId" to id.value),
                 ).bind()
         }
 
     override fun findAll(): Flow<List<ItemTemplate>> =
         flow {
             val result =
-                db.query<Any>(
-                    "SELECT * FROM item_template WHERE user_id = user:${userId.value} AND deleted_at IS NONE ORDER BY name",
+                db.queryBind(
+                    "SELECT * FROM item_template WHERE user_id = user:${'$'}userId AND deleted_at IS NONE ORDER BY name",
+                    mapOf("userId" to userId.value),
                 )
             emit(result.fold({ emptyList() }, { parseTemplates(it) }))
         }
@@ -99,8 +117,9 @@ class SurrealItemTemplateRepository(
         either {
             val result =
                 db
-                    .query<Any>(
-                        "SELECT * FROM item_template WHERE user_id = user:${userId.value} AND string::lowercase(name) CONTAINS string::lowercase('${query.replace("'", "''")}') AND deleted_at IS NONE",
+                    .queryBind(
+                        "SELECT * FROM item_template WHERE user_id = user:${'$'}userId AND string::lowercase(name) CONTAINS string::lowercase(${'$'}query) AND deleted_at IS NONE",
+                        mapOf("userId" to userId.value, "query" to query),
                     ).bind()
             parseTemplates(result)
         }
@@ -108,12 +127,11 @@ class SurrealItemTemplateRepository(
     override suspend fun findWithFields(id: Ulid): Either<DomainError, TemplateWithFields> =
         either {
             val template = findById(id).bind()
-            val templateId = id.value
             val fieldsResult =
                 db
-                    .query<Any>(
-                        "SELECT * FROM field_definition WHERE user_id = user:${userId.value} " +
-                            "AND template_id = item_template:$templateId AND deleted_at IS NONE ORDER BY sort_order",
+                    .queryBind(
+                        "SELECT * FROM field_definition WHERE user_id = user:${'$'}userId AND template_id = item_template:${'$'}templateId AND deleted_at IS NONE ORDER BY sort_order",
+                        mapOf("userId" to userId.value, "templateId" to id.value),
                     ).bind()
             val fields = parseFieldDefinitions(fieldsResult)
             TemplateWithFields(template, fields)
@@ -122,16 +140,18 @@ class SurrealItemTemplateRepository(
     override fun findAllWithFields(): Flow<List<TemplateWithFields>> =
         flow {
             val templatesResult =
-                db.query<Any>(
-                    "SELECT * FROM item_template WHERE user_id = user:${userId.value} AND deleted_at IS NONE ORDER BY name",
+                db.queryBind(
+                    "SELECT * FROM item_template WHERE user_id = user:${'$'}userId AND deleted_at IS NONE ORDER BY name",
+                    mapOf("userId" to userId.value),
                 )
             val templates = templatesResult.fold({ emptyList() }, { parseTemplates(it) })
 
             val result =
                 templates.map { template ->
                     val fieldsResult =
-                        db.query<Any>(
-                            "SELECT * FROM field_definition WHERE user_id = user:${userId.value} AND template_id = item_template:${template.id.value} AND deleted_at IS NONE ORDER BY sort_order",
+                        db.queryBind(
+                            "SELECT * FROM field_definition WHERE user_id = user:${'$'}userId AND template_id = item_template:${'$'}templateId AND deleted_at IS NONE ORDER BY sort_order",
+                            mapOf("userId" to userId.value, "templateId" to template.id.value),
                         )
                     val fields = fieldsResult.fold({ emptyList() }, { parseFieldDefinitions(it) })
                     TemplateWithFields(template, fields)
@@ -145,24 +165,31 @@ class SurrealItemTemplateRepository(
     ): Either<DomainError, FieldDefinition> =
         either {
             findById(templateId).bind()
-            val enumOptionsValue =
-                field.enumOptions?.let { options ->
-                    "[${options.joinToString(", ") { "'${it.replace("'", "''")}'" }}]"
-                } ?: "NONE"
             db
-                .execute(
+                .executeBind(
                     """
-                    CREATE field_definition:${field.id.value} CONTENT {
-                        user_id: user:${userId.value},
-                        template_id: item_template:${templateId.value},
-                        name: '${field.name.replace("'", "''")}',
-                        field_type: '${field.fieldType.name.lowercase()}',
-                        is_required: ${field.isRequired},
-                        default_value: ${field.defaultValue?.let { "'${it.replace("'", "''")}'" } ?: "NONE"},
-                        enum_options: $enumOptionsValue,
-                        sort_order: ${field.sortOrder}
-                    };
+                    CREATE field_definition:${'$'}id CONTENT {
+                        user_id: user:${'$'}userId,
+                        template_id: item_template:${'$'}templateId,
+                        name: ${'$'}name,
+                        field_type: ${'$'}fieldType,
+                        is_required: ${'$'}isRequired,
+                        default_value: ${'$'}defaultValue,
+                        enum_options: ${'$'}enumOptions,
+                        sort_order: ${'$'}sortOrder
+                    }
                     """.trimIndent(),
+                    mapOf(
+                        "id" to field.id.value,
+                        "userId" to userId.value,
+                        "templateId" to templateId.value,
+                        "name" to field.name,
+                        "fieldType" to field.fieldType.name.lowercase(),
+                        "isRequired" to field.isRequired,
+                        "defaultValue" to field.defaultValue,
+                        "enumOptions" to field.enumOptions,
+                        "sortOrder" to field.sortOrder,
+                    ),
                 ).bind()
             findFieldById(field.id).bind()
         }
@@ -170,23 +197,29 @@ class SurrealItemTemplateRepository(
     override suspend fun updateField(field: FieldDefinition): Either<DomainError, FieldDefinition> =
         either {
             findFieldById(field.id).bind()
-            val enumOptionsValue =
-                field.enumOptions?.let { options ->
-                    "[${options.joinToString(", ") { "'${it.replace("'", "''")}'" }}]"
-                } ?: "NONE"
             db
-                .execute(
+                .executeBind(
                     """
-                    UPDATE field_definition:${field.id.value} SET
-                        name = '${field.name.replace("'", "''")}',
-                        field_type = '${field.fieldType.name.lowercase()}',
-                        is_required = ${field.isRequired},
-                        default_value = ${field.defaultValue?.let { "'${it.replace("'", "''")}'" } ?: "NONE"},
-                        enum_options = $enumOptionsValue,
-                        sort_order = ${field.sortOrder},
+                    UPDATE field_definition:${'$'}id SET
+                        name = ${'$'}name,
+                        field_type = ${'$'}fieldType,
+                        is_required = ${'$'}isRequired,
+                        default_value = ${'$'}defaultValue,
+                        enum_options = ${'$'}enumOptions,
+                        sort_order = ${'$'}sortOrder,
                         updated_at = time::now()
-                    WHERE user_id = user:${userId.value};
+                    WHERE user_id = user:${'$'}userId
                     """.trimIndent(),
+                    mapOf(
+                        "id" to field.id.value,
+                        "name" to field.name,
+                        "fieldType" to field.fieldType.name.lowercase(),
+                        "isRequired" to field.isRequired,
+                        "defaultValue" to field.defaultValue,
+                        "enumOptions" to field.enumOptions,
+                        "sortOrder" to field.sortOrder,
+                        "userId" to userId.value,
+                    ),
                 ).bind()
             findFieldById(field.id).bind()
         }
@@ -195,13 +228,15 @@ class SurrealItemTemplateRepository(
         either {
             findFieldById(fieldId).bind()
             db
-                .execute(
-                    "UPDATE field_definition:${fieldId.value} SET deleted_at = time::now(), updated_at = time::now() WHERE user_id = user:${userId.value};",
+                .executeBind(
+                    "UPDATE field_definition:${'$'}id SET deleted_at = time::now(), updated_at = time::now() WHERE user_id = user:${'$'}userId",
+                    mapOf("id" to fieldId.value, "userId" to userId.value),
                 ).bind()
             // Also remove associated custom field values
             db
-                .execute(
-                    "UPDATE custom_field SET deleted_at = time::now(), updated_at = time::now() WHERE user_id = user:${userId.value} AND field_definition_id = field_definition:${fieldId.value};",
+                .executeBind(
+                    "UPDATE custom_field SET deleted_at = time::now(), updated_at = time::now() WHERE user_id = user:${'$'}userId AND field_definition_id = field_definition:${'$'}fieldDefinitionId",
+                    mapOf("userId" to userId.value, "fieldDefinitionId" to fieldId.value),
                 ).bind()
         }
 
@@ -213,8 +248,14 @@ class SurrealItemTemplateRepository(
             findById(templateId).bind()
             orderedFieldIds.forEachIndexed { index, fieldId ->
                 db
-                    .execute(
-                        "UPDATE field_definition:${fieldId.value} SET sort_order = $index, updated_at = time::now() WHERE user_id = user:${userId.value} AND template_id = item_template:${templateId.value};",
+                    .executeBind(
+                        "UPDATE field_definition:${'$'}id SET sort_order = ${'$'}sortOrder, updated_at = time::now() WHERE user_id = user:${'$'}userId AND template_id = item_template:${'$'}templateId",
+                        mapOf(
+                            "id" to fieldId.value,
+                            "sortOrder" to index,
+                            "userId" to userId.value,
+                            "templateId" to templateId.value,
+                        ),
                     ).bind()
             }
         }
@@ -224,8 +265,9 @@ class SurrealItemTemplateRepository(
             findById(id).bind()
             val result =
                 db
-                    .query<Any>(
-                        "SELECT count() FROM item WHERE user_id = user:${userId.value} AND template_id = item_template:${id.value} AND deleted_at IS NONE GROUP ALL",
+                    .queryBind(
+                        "SELECT count() FROM item WHERE user_id = user:${'$'}userId AND template_id = item_template:${'$'}templateId AND deleted_at IS NONE GROUP ALL",
+                        mapOf("userId" to userId.value, "templateId" to id.value),
                     ).bind()
             parseCount(result)
         }
@@ -234,8 +276,9 @@ class SurrealItemTemplateRepository(
         either {
             val result =
                 db
-                    .query<Any>(
-                        "SELECT * FROM field_definition WHERE id = field_definition:${id.value} AND user_id = user:${userId.value} AND deleted_at IS NONE",
+                    .queryBind(
+                        "SELECT * FROM field_definition:${'$'}id WHERE user_id = user:${'$'}userId AND deleted_at IS NONE",
+                        mapOf("id" to id.value, "userId" to userId.value),
                     ).bind()
             parseFieldDefinition(result) ?: raise(DomainError.NotFoundError("FieldDefinition", id.value))
         }

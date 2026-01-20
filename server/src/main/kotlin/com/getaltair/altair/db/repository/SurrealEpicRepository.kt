@@ -34,8 +34,9 @@ class SurrealEpicRepository(
         either {
             val result =
                 db
-                    .query<Any>(
-                        "SELECT * FROM epic WHERE id = epic:${id.value} AND user_id = user:${userId.value} AND deleted_at IS NONE",
+                    .queryBind(
+                        "SELECT * FROM epic WHERE id = epic:\$id AND user_id = user:\$userId AND deleted_at IS NONE",
+                        mapOf("id" to id.value, "userId" to userId.value),
                     ).mapLeft { EpicError.NotFound(id) }
                     .bind()
             parseEpic(result) ?: raise(EpicError.NotFound(id))
@@ -46,34 +47,53 @@ class SurrealEpicRepository(
             val existing = findById(entity.id)
             if (existing.isRight()) {
                 db
-                    .execute(
+                    .executeBind(
                         """
-                        UPDATE epic:${entity.id.value} SET
-                            title = '${entity.title.replace("'", "''")}',
-                            description = ${entity.description?.let { "'${it.replace("'", "''")}'" } ?: "NONE"},
-                            status = '${entity.status.name.lowercase()}',
-                            initiative_id = ${entity.initiativeId?.let { "initiative:${it.value}" } ?: "NONE"},
-                            target_date = ${entity.targetDate?.let { "'$it'" } ?: "NONE"},
-                            completed_at = ${entity.completedAt?.let { "<datetime>'$it'" } ?: "NONE"},
+                        UPDATE epic:${'$'}id SET
+                            title = ${'$'}title,
+                            description = ${'$'}description,
+                            status = ${'$'}status,
+                            initiative_id = ${'$'}initiativeId,
+                            target_date = ${'$'}targetDate,
+                            completed_at = ${'$'}completedAt,
                             updated_at = time::now()
-                        WHERE user_id = user:${userId.value};
+                        WHERE user_id = user:${'$'}userId;
                         """.trimIndent(),
+                        mapOf(
+                            "id" to entity.id.value,
+                            "title" to entity.title,
+                            "description" to entity.description,
+                            "status" to entity.status.name.lowercase(),
+                            "initiativeId" to entity.initiativeId?.let { "initiative:${it.value}" },
+                            "targetDate" to entity.targetDate?.toString(),
+                            "completedAt" to entity.completedAt?.toString(),
+                            "userId" to userId.value,
+                        ),
                     ).mapLeft { EpicError.NotFound(entity.id) }
                     .bind()
             } else {
                 db
-                    .execute(
+                    .executeBind(
                         """
-                        CREATE epic:${entity.id.value} CONTENT {
-                            user_id: user:${userId.value},
-                            title: '${entity.title.replace("'", "''")}',
-                            description: ${entity.description?.let { "'${it.replace("'", "''")}'" } ?: "NONE"},
-                            status: '${entity.status.name.lowercase()}',
-                            initiative_id: ${entity.initiativeId?.let { "initiative:${it.value}" } ?: "NONE"},
-                            target_date: ${entity.targetDate?.let { "'$it'" } ?: "NONE"},
+                        CREATE epic:${'$'}id CONTENT {
+                            user_id: user:${'$'}userId,
+                            title: ${'$'}title,
+                            description: ${'$'}description,
+                            status: ${'$'}status,
+                            initiative_id: ${'$'}initiativeId,
+                            target_date: ${'$'}targetDate,
                             completed_at: NONE
                         };
                         """.trimIndent(),
+                        mapOf(
+                            "id" to entity.id.value,
+                            "userId" to userId.value,
+                            "title" to entity.title,
+                            "description" to entity.description,
+                            "status" to entity.status.name.lowercase(),
+                            "initiativeId" to entity.initiativeId?.let { "initiative:${it.value}" },
+                            "targetDate" to entity.targetDate?.toString(),
+                        ),
                     ).mapLeft { EpicError.NotFound(entity.id) }
                     .bind()
             }
@@ -84,8 +104,9 @@ class SurrealEpicRepository(
         either {
             findById(id).bind()
             db
-                .execute(
-                    "UPDATE epic:${id.value} SET deleted_at = time::now(), updated_at = time::now() WHERE user_id = user:${userId.value};",
+                .executeBind(
+                    "UPDATE epic:${'$'}id SET deleted_at = time::now(), updated_at = time::now() WHERE user_id = user:${'$'}userId;",
+                    mapOf("id" to id.value, "userId" to userId.value),
                 ).mapLeft { EpicError.NotFound(id) }
                 .bind()
         }
@@ -93,8 +114,9 @@ class SurrealEpicRepository(
     override fun findAll(): Flow<List<Epic>> =
         flow {
             val result =
-                db.query<Any>(
-                    "SELECT * FROM epic WHERE user_id = user:${userId.value} AND deleted_at IS NONE ORDER BY created_at DESC",
+                db.queryBind(
+                    "SELECT * FROM epic WHERE user_id = user:\$userId AND deleted_at IS NONE ORDER BY created_at DESC",
+                    mapOf("userId" to userId.value),
                 )
             emit(result.fold({ emptyList() }, { parseEpics(it) }))
         }
@@ -102,8 +124,9 @@ class SurrealEpicRepository(
     override fun findByStatus(status: EpicStatus): Flow<List<Epic>> =
         flow {
             val result =
-                db.query<Any>(
-                    "SELECT * FROM epic WHERE user_id = user:${userId.value} AND status = '${status.name.lowercase()}' AND deleted_at IS NONE",
+                db.queryBind(
+                    "SELECT * FROM epic WHERE user_id = user:\$userId AND status = \$status AND deleted_at IS NONE",
+                    mapOf("userId" to userId.value, "status" to status.name.lowercase()),
                 )
             emit(result.fold({ emptyList() }, { parseEpics(it) }))
         }
@@ -111,8 +134,9 @@ class SurrealEpicRepository(
     override fun findByInitiative(initiativeId: Ulid): Flow<List<Epic>> =
         flow {
             val result =
-                db.query<Any>(
-                    "SELECT * FROM epic WHERE user_id = user:${userId.value} AND initiative_id = initiative:${initiativeId.value} AND deleted_at IS NONE",
+                db.queryBind(
+                    "SELECT * FROM epic WHERE user_id = user:\$userId AND initiative_id = initiative:\$initiativeId AND deleted_at IS NONE",
+                    mapOf("userId" to userId.value, "initiativeId" to initiativeId.value),
                 )
             emit(result.fold({ emptyList() }, { parseEpics(it) }))
         }
@@ -122,7 +146,7 @@ class SurrealEpicRepository(
             findById(id).bind()
             val result =
                 db
-                    .query<Any>(
+                    .queryBind(
                         """
                         SELECT
                             count() AS total,
@@ -130,9 +154,10 @@ class SurrealEpicRepository(
                             math::sum(energy_cost) AS total_energy,
                             math::sum(IF status = 'completed' THEN energy_cost ELSE 0 END) AS spent_energy
                         FROM quest
-                        WHERE epic_id = epic:${id.value} AND deleted_at IS NONE
+                        WHERE epic_id = epic:${'$'}id AND deleted_at IS NONE
                         GROUP ALL;
                         """.trimIndent(),
+                        mapOf("id" to id.value),
                     ).mapLeft { EpicError.NotFound(id) }
                     .bind()
             parseProgress(result)
@@ -141,8 +166,9 @@ class SurrealEpicRepository(
     override fun findAllWithProgress(): Flow<List<Pair<Epic, EpicProgress>>> =
         flow {
             val epicsResult =
-                db.query<Any>(
-                    "SELECT * FROM epic WHERE user_id = user:${userId.value} AND deleted_at IS NONE",
+                db.queryBind(
+                    "SELECT * FROM epic WHERE user_id = user:\$userId AND deleted_at IS NONE",
+                    mapOf("userId" to userId.value),
                 )
             val epics = epicsResult.fold({ emptyList() }, { parseEpics(it) })
             val withProgress =

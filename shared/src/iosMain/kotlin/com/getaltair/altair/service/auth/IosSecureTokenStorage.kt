@@ -1,5 +1,9 @@
 package com.getaltair.altair.service.auth
 
+import arrow.core.Either
+import arrow.core.left
+import arrow.core.right
+import com.getaltair.altair.domain.types.Ulid
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.alloc
 import kotlinx.cinterop.memScoped
@@ -48,7 +52,7 @@ import platform.Security.kSecValueData
 class IosSecureTokenStorage(
     private val serviceName: String = "com.getaltair.altair",
 ) : SecureTokenStorage {
-    override suspend fun saveAccessToken(token: String) =
+    override suspend fun saveAccessToken(token: String): Either<TokenStorageError, Unit> =
         withContext(Dispatchers.IO) {
             saveToKeychain(KEY_ACCESS_TOKEN, token)
         }
@@ -58,7 +62,7 @@ class IosSecureTokenStorage(
             getFromKeychain(KEY_ACCESS_TOKEN)
         }
 
-    override suspend fun saveRefreshToken(token: String) =
+    override suspend fun saveRefreshToken(token: String): Either<TokenStorageError, Unit> =
         withContext(Dispatchers.IO) {
             saveToKeychain(KEY_REFRESH_TOKEN, token)
         }
@@ -68,7 +72,7 @@ class IosSecureTokenStorage(
             getFromKeychain(KEY_REFRESH_TOKEN)
         }
 
-    override suspend fun saveTokenExpiration(expiresAtMillis: Long) =
+    override suspend fun saveTokenExpiration(expiresAtMillis: Long): Either<TokenStorageError, Unit> =
         withContext(Dispatchers.IO) {
             saveToKeychain(KEY_TOKEN_EXPIRATION, expiresAtMillis.toString())
         }
@@ -78,22 +82,29 @@ class IosSecureTokenStorage(
             getFromKeychain(KEY_TOKEN_EXPIRATION)?.toLongOrNull()
         }
 
-    override suspend fun saveUserId(userId: String) =
+    override suspend fun saveUserId(userId: Ulid): Either<TokenStorageError, Unit> =
         withContext(Dispatchers.IO) {
-            saveToKeychain(KEY_USER_ID, userId)
+            saveToKeychain(KEY_USER_ID, userId.value)
         }
 
-    override suspend fun getUserId(): String? =
+    override suspend fun getUserId(): Ulid? =
         withContext(Dispatchers.IO) {
-            getFromKeychain(KEY_USER_ID)
+            getFromKeychain(KEY_USER_ID)?.let { Ulid(it) }
         }
 
-    override suspend fun clear() =
+    override suspend fun clear(): Either<TokenStorageError, Unit> =
         withContext(Dispatchers.IO) {
-            deleteFromKeychain(KEY_ACCESS_TOKEN)
-            deleteFromKeychain(KEY_REFRESH_TOKEN)
-            deleteFromKeychain(KEY_TOKEN_EXPIRATION)
-            deleteFromKeychain(KEY_USER_ID)
+            var hasError = false
+            deleteFromKeychain(KEY_ACCESS_TOKEN).onLeft { hasError = true }
+            deleteFromKeychain(KEY_REFRESH_TOKEN).onLeft { hasError = true }
+            deleteFromKeychain(KEY_TOKEN_EXPIRATION).onLeft { hasError = true }
+            deleteFromKeychain(KEY_USER_ID).onLeft { hasError = true }
+
+            if (hasError) {
+                TokenStorageError.PersistenceFailed("Failed to clear some keychain items").left()
+            } else {
+                Unit.right()
+            }
         }
 
     override suspend fun hasStoredCredentials(): Boolean =
@@ -101,11 +112,14 @@ class IosSecureTokenStorage(
             getFromKeychain(KEY_REFRESH_TOKEN) != null
         }
 
+    @Suppress("ReturnCount") // Multiple error conditions require multiple returns
     private fun saveToKeychain(
         key: String,
         value: String,
-    ) {
-        val data = (value as NSString).dataUsingEncoding(NSUTF8StringEncoding) ?: return
+    ): Either<TokenStorageError, Unit> {
+        val data =
+            (value as NSString).dataUsingEncoding(NSUTF8StringEncoding)
+                ?: return TokenStorageError.ValidationFailed("Failed to encode value for $key").left()
 
         // First try to update existing item
         val updateQuery = createQuery(key)
@@ -128,7 +142,20 @@ class IosSecureTokenStorage(
                     put(kSecAttrAccessible, kSecAttrAccessibleWhenUnlockedThisDeviceOnly)
                 }
 
-            SecItemAdd(CFBridgingRetain(addQuery) as CFDictionaryRef, null)
+            val addStatus = SecItemAdd(CFBridgingRetain(addQuery) as CFDictionaryRef, null)
+            return if (addStatus == errSecSuccess) {
+                Unit.right()
+            } else {
+                TokenStorageError
+                    .PersistenceFailed("Failed to add $key to keychain (status: $addStatus)")
+                    .left()
+            }
+        } else if (updateStatus == errSecSuccess) {
+            return Unit.right()
+        } else {
+            return TokenStorageError
+                .PersistenceFailed("Failed to update $key in keychain (status: $updateStatus)")
+                .left()
         }
     }
 
@@ -155,9 +182,15 @@ class IosSecureTokenStorage(
         }
     }
 
-    private fun deleteFromKeychain(key: String) {
+    private fun deleteFromKeychain(key: String): Either<TokenStorageError, Unit> {
         val query = createQuery(key)
-        SecItemDelete(CFBridgingRetain(query) as CFDictionaryRef)
+        val status = SecItemDelete(CFBridgingRetain(query) as CFDictionaryRef)
+        return if (status == errSecSuccess || status == errSecItemNotFound) {
+            // Success or item already deleted
+            Unit.right()
+        } else {
+            TokenStorageError.PersistenceFailed("Failed to delete $key from keychain (status: $status)").left()
+        }
     }
 
     private fun createQuery(key: String): Map<Any?, Any?> =

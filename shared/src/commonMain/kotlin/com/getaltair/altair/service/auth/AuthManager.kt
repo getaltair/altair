@@ -2,8 +2,9 @@ package com.getaltair.altair.service.auth
 
 import arrow.core.Either
 import arrow.core.left
-import arrow.core.right
+import arrow.core.raise.either
 import com.getaltair.altair.domain.AuthError
+import com.getaltair.altair.domain.types.Ulid
 import com.getaltair.altair.dto.auth.AuthRequest
 import com.getaltair.altair.dto.auth.AuthResponse
 import com.getaltair.altair.dto.auth.RegisterRequest
@@ -69,7 +70,7 @@ class AuthManager(
 
     private suspend fun handleTokenExpiration(
         expiration: Long?,
-        userId: String,
+        userId: Ulid,
     ) {
         if (expiration != null && isTokenExpired(expiration)) {
             // Try to refresh
@@ -99,26 +100,38 @@ class AuthManager(
     suspend fun login(
         email: String,
         password: String,
-    ): Either<AuthError, String> {
+    ): Either<AuthError, Ulid> {
         _authState.value = AuthState.Loading
 
         @Suppress("TooGenericExceptionCaught") // RPC calls can throw various exceptions
-        return try {
-            val response = publicAuthService.login(AuthRequest(email, password))
-            storeTokens(response)
+        return either {
+            // Validate request before making RPC call
+            val request =
+                AuthRequest
+                    .create(email, password)
+                    .mapLeft { AuthError.InvalidCredentials }
+                    .bind()
+
+            val response =
+                try {
+                    publicAuthService.login(request)
+                } catch (
+                    @Suppress("SwallowedException") e: IllegalArgumentException,
+                ) {
+                    // Server validation errors (invalid credentials, account not active)
+                    _authState.value = AuthState.Unauthenticated
+                    raise(AuthError.InvalidCredentials)
+                } catch (e: Exception) {
+                    _authState.value = AuthState.Unauthenticated
+                    raise(mapExceptionToAuthError(e))
+                }
+
+            storeTokens(response).bind()
             _authState.value = AuthState.Authenticated(response.userId)
             startTokenRefreshTimer()
-            response.userId.right()
-        } catch (
-            @Suppress("SwallowedException") e: IllegalArgumentException,
-        ) {
-            // Server validation errors (invalid credentials, account not active)
-            // Exception message intentionally not logged to avoid leaking credential status
+            response.userId
+        }.onLeft {
             _authState.value = AuthState.Unauthenticated
-            AuthError.InvalidCredentials.left()
-        } catch (e: Exception) {
-            _authState.value = AuthState.Unauthenticated
-            mapExceptionToAuthError(e).left()
         }
     }
 
@@ -136,31 +149,47 @@ class AuthManager(
         password: String,
         displayName: String,
         inviteCode: String? = null,
-    ): Either<AuthError, String> {
+    ): Either<AuthError, Ulid> {
         _authState.value = AuthState.Loading
 
         @Suppress("TooGenericExceptionCaught") // RPC calls can throw various exceptions
-        return try {
-            val response =
-                publicAuthService.register(
-                    RegisterRequest(
+        return either {
+            // Validate request before making RPC call
+            val request =
+                RegisterRequest
+                    .create(
                         email = email,
                         password = password,
                         displayName = displayName,
                         inviteCode = inviteCode,
-                    ),
-                )
-            storeTokens(response)
+                    ).mapLeft { validationError ->
+                        // Map specific validation errors to appropriate AuthErrors
+                        when (validationError.field) {
+                            "email" -> AuthError.InvalidCredentials
+                            "password" -> AuthError.WeakPassword
+                            "displayName" -> AuthError.RegistrationFailed(validationError.message)
+                            "inviteCode" -> AuthError.InvalidInviteCode
+                            else -> AuthError.RegistrationFailed(validationError.message)
+                        }
+                    }.bind()
+
+            val response =
+                try {
+                    publicAuthService.register(request)
+                } catch (e: IllegalArgumentException) {
+                    _authState.value = AuthState.Unauthenticated
+                    raise(mapRegistrationError(e))
+                } catch (e: Exception) {
+                    _authState.value = AuthState.Unauthenticated
+                    raise(mapExceptionToAuthError(e))
+                }
+
+            storeTokens(response).bind()
             _authState.value = AuthState.Authenticated(response.userId)
             startTokenRefreshTimer()
-            response.userId.right()
-        } catch (e: IllegalArgumentException) {
-            // Server validation errors
+            response.userId
+        }.onLeft {
             _authState.value = AuthState.Unauthenticated
-            mapRegistrationError(e).left()
-        } catch (e: Exception) {
-            _authState.value = AuthState.Unauthenticated
-            mapExceptionToAuthError(e).left()
         }
     }
 
@@ -170,6 +199,7 @@ class AuthManager(
     suspend fun logout() {
         refreshJob?.cancel()
         refreshJob = null
+        // Clear tokens - ignore errors as we're logging out anyway
         tokenStorage.clear()
         _authState.value = AuthState.Unauthenticated
     }
@@ -206,14 +236,28 @@ class AuthManager(
                 val response = publicAuthService.refresh(refreshToken)
 
                 // Store new tokens (server uses token rotation - new refresh token each time)
-                val expiresAtMillis =
-                    Clock.System.now().toEpochMilliseconds() +
-                        response.expiresIn * MILLIS_PER_SECOND
-                tokenStorage.saveAccessToken(response.accessToken)
-                tokenStorage.saveRefreshToken(response.refreshToken)
-                tokenStorage.saveTokenExpiration(expiresAtMillis)
+                either {
+                    val expiresAtMillis =
+                        Clock.System.now().toEpochMilliseconds() +
+                            response.expiresIn * MILLIS_PER_SECOND
 
-                Unit.right()
+                    tokenStorage
+                        .saveAccessToken(response.accessToken)
+                        .mapLeft { AuthError.ServerError("Failed to store access token: ${it::class.simpleName}") }
+                        .bind()
+
+                    tokenStorage
+                        .saveRefreshToken(response.refreshToken)
+                        .mapLeft { AuthError.ServerError("Failed to store refresh token: ${it::class.simpleName}") }
+                        .bind()
+
+                    tokenStorage
+                        .saveTokenExpiration(expiresAtMillis)
+                        .mapLeft { AuthError.ServerError("Failed to store token expiration: ${it::class.simpleName}") }
+                        .bind()
+                }.onLeft {
+                    logout()
+                }
             } catch (
                 @Suppress("SwallowedException") e: Exception,
             ) {
@@ -224,16 +268,33 @@ class AuthManager(
             }
         }
 
-    private suspend fun storeTokens(response: AuthResponse) {
-        val expiresAtMillis =
-            Clock.System.now().toEpochMilliseconds() +
-                response.expiresIn * MILLIS_PER_SECOND
+    private suspend fun storeTokens(response: AuthResponse): Either<AuthError, Unit> =
+        either {
+            val expiresAtMillis =
+                Clock.System.now().toEpochMilliseconds() +
+                    response.expiresIn * MILLIS_PER_SECOND
 
-        tokenStorage.saveAccessToken(response.accessToken)
-        tokenStorage.saveRefreshToken(response.refreshToken)
-        tokenStorage.saveTokenExpiration(expiresAtMillis)
-        tokenStorage.saveUserId(response.userId)
-    }
+            // Store all tokens, failing fast on first error
+            tokenStorage
+                .saveAccessToken(response.accessToken)
+                .mapLeft { AuthError.ServerError("Failed to store access token: ${it::class.simpleName}") }
+                .bind()
+
+            tokenStorage
+                .saveRefreshToken(response.refreshToken)
+                .mapLeft { AuthError.ServerError("Failed to store refresh token: ${it::class.simpleName}") }
+                .bind()
+
+            tokenStorage
+                .saveTokenExpiration(expiresAtMillis)
+                .mapLeft { AuthError.ServerError("Failed to store token expiration: ${it::class.simpleName}") }
+                .bind()
+
+            tokenStorage
+                .saveUserId(response.userId)
+                .mapLeft { AuthError.ServerError("Failed to store user ID: ${it::class.simpleName}") }
+                .bind()
+        }
 
     private fun startTokenRefreshTimer() {
         refreshJob?.cancel()
@@ -333,6 +394,6 @@ sealed class AuthState {
      * @param userId The authenticated user's ID
      */
     data class Authenticated(
-        val userId: String,
+        val userId: Ulid,
     ) : AuthState()
 }

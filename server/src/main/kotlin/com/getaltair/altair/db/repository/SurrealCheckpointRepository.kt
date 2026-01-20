@@ -32,8 +32,9 @@ class SurrealCheckpointRepository(
         either {
             val result =
                 db
-                    .query<Any>(
-                        "SELECT * FROM checkpoint WHERE id = checkpoint:${id.value} AND user_id = user:${userId.value}",
+                    .queryBind(
+                        "SELECT * FROM checkpoint WHERE id = checkpoint:\$id AND user_id = user:\$userId",
+                        mapOf("id" to id.value, "userId" to userId.value),
                     ).bind()
             parseCheckpoint(result) ?: raise(DomainError.NotFoundError("Checkpoint", id.value))
         }
@@ -43,30 +44,47 @@ class SurrealCheckpointRepository(
             val existing = findById(entity.id)
             if (existing.isRight()) {
                 db
-                    .execute(
+                    .executeBind(
                         """
-                        UPDATE checkpoint:${entity.id.value} SET
-                            title = '${entity.title.replace("'", "''")}',
-                            sort_order = ${entity.sortOrder},
-                            is_completed = ${entity.isCompleted},
-                            completed_at = ${entity.completedAt?.let { "<datetime>'$it'" } ?: "NONE"},
+                        UPDATE checkpoint:${'$'}id SET
+                            title = ${'$'}title,
+                            sort_order = ${'$'}sortOrder,
+                            is_completed = ${'$'}isCompleted,
+                            completed_at = ${'$'}completedAt,
                             updated_at = time::now()
-                        WHERE user_id = user:${userId.value};
+                        WHERE user_id = user:${'$'}userId;
                         """.trimIndent(),
+                        mapOf(
+                            "id" to entity.id.value,
+                            "title" to entity.title,
+                            "sortOrder" to entity.sortOrder,
+                            "isCompleted" to entity.isCompleted,
+                            "completedAt" to entity.completedAt?.toString(),
+                            "userId" to userId.value,
+                        ),
                     ).bind()
             } else {
                 db
-                    .execute(
+                    .executeBind(
                         """
-                        CREATE checkpoint:${entity.id.value} CONTENT {
-                            user_id: user:${userId.value},
-                            quest_id: quest:${entity.questId.value},
-                            title: '${entity.title.replace("'", "''")}',
-                            sort_order: ${entity.sortOrder},
-                            is_completed: ${entity.isCompleted},
-                            completed_at: ${entity.completedAt?.let { "<datetime>'$it'" } ?: "NONE"}
+                        CREATE checkpoint:${'$'}id CONTENT {
+                            user_id: user:${'$'}userId,
+                            quest_id: quest:${'$'}questId,
+                            title: ${'$'}title,
+                            sort_order: ${'$'}sortOrder,
+                            is_completed: ${'$'}isCompleted,
+                            completed_at: ${'$'}completedAt
                         };
                         """.trimIndent(),
+                        mapOf(
+                            "id" to entity.id.value,
+                            "userId" to userId.value,
+                            "questId" to entity.questId.value,
+                            "title" to entity.title,
+                            "sortOrder" to entity.sortOrder,
+                            "isCompleted" to entity.isCompleted,
+                            "completedAt" to entity.completedAt?.toString(),
+                        ),
                     ).bind()
             }
             findById(entity.id).bind()
@@ -74,14 +92,19 @@ class SurrealCheckpointRepository(
 
     override suspend fun delete(id: Ulid): Either<DomainError, Unit> =
         either {
-            db.execute("DELETE checkpoint:${id.value} WHERE user_id = user:${userId.value};").bind()
+            db
+                .executeBind(
+                    "DELETE checkpoint:${'$'}id WHERE user_id = user:${'$'}userId;",
+                    mapOf("id" to id.value, "userId" to userId.value),
+                ).bind()
         }
 
     override fun findAll(): Flow<List<Checkpoint>> =
         flow {
             val result =
-                db.query<Any>(
-                    "SELECT * FROM checkpoint WHERE user_id = user:${userId.value} ORDER BY sort_order",
+                db.queryBind(
+                    "SELECT * FROM checkpoint WHERE user_id = user:\$userId ORDER BY sort_order",
+                    mapOf("userId" to userId.value),
                 )
             emit(result.fold({ emptyList() }, { parseCheckpoints(it) }))
         }
@@ -89,8 +112,9 @@ class SurrealCheckpointRepository(
     override fun findByQuest(questId: Ulid): Flow<List<Checkpoint>> =
         flow {
             val result =
-                db.query<Any>(
-                    "SELECT * FROM checkpoint WHERE user_id = user:${userId.value} AND quest_id = quest:${questId.value} ORDER BY sort_order",
+                db.queryBind(
+                    "SELECT * FROM checkpoint WHERE user_id = user:\$userId AND quest_id = quest:\$questId ORDER BY sort_order",
+                    mapOf("userId" to userId.value, "questId" to questId.value),
                 )
             emit(result.fold({ emptyList() }, { parseCheckpoints(it) }))
         }
@@ -101,14 +125,20 @@ class SurrealCheckpointRepository(
             val newCompleted = !checkpoint.isCompleted
             val completedAt = if (newCompleted) Clock.System.now() else null
             db
-                .execute(
+                .executeBind(
                     """
-                    UPDATE checkpoint:${id.value} SET
-                        is_completed = $newCompleted,
-                        completed_at = ${completedAt?.let { "<datetime>'$it'" } ?: "NONE"},
+                    UPDATE checkpoint:${'$'}id SET
+                        is_completed = ${'$'}isCompleted,
+                        completed_at = ${'$'}completedAt,
                         updated_at = time::now()
-                    WHERE user_id = user:${userId.value};
+                    WHERE user_id = user:${'$'}userId;
                     """.trimIndent(),
+                    mapOf(
+                        "id" to id.value,
+                        "isCompleted" to newCompleted,
+                        "completedAt" to completedAt?.toString(),
+                        "userId" to userId.value,
+                    ),
                 ).bind()
             findById(id).bind()
         }
@@ -120,8 +150,9 @@ class SurrealCheckpointRepository(
         either {
             orderedIds.forEachIndexed { index, id ->
                 db
-                    .execute(
-                        "UPDATE checkpoint:${id.value} SET sort_order = $index, updated_at = time::now() WHERE user_id = user:${userId.value} AND quest_id = quest:${questId.value};",
+                    .executeBind(
+                        "UPDATE checkpoint:${'$'}id SET sort_order = ${'$'}sortOrder, updated_at = time::now() WHERE user_id = user:${'$'}userId AND quest_id = quest:${'$'}questId;",
+                        mapOf("id" to id.value, "sortOrder" to index, "userId" to userId.value, "questId" to questId.value),
                     ).bind()
             }
         }
@@ -131,12 +162,20 @@ class SurrealCheckpointRepository(
         completed: Boolean?,
     ): Either<DomainError, Int> =
         either {
-            val filter = completed?.let { "AND is_completed = $it" } ?: ""
+            val query =
+                if (completed != null) {
+                    "SELECT count() FROM checkpoint WHERE user_id = user:\$userId AND quest_id = quest:\$questId AND is_completed = \$completed GROUP ALL"
+                } else {
+                    "SELECT count() FROM checkpoint WHERE user_id = user:\$userId AND quest_id = quest:\$questId GROUP ALL"
+                }
+            val params = mutableMapOf<String, Any?>("userId" to userId.value, "questId" to questId.value)
+            if (completed != null) {
+                params["completed"] = completed
+            }
             val result =
                 db
-                    .query<Any>(
-                        "SELECT count() FROM checkpoint WHERE user_id = user:${userId.value} AND quest_id = quest:${questId.value} $filter GROUP ALL",
-                    ).bind()
+                    .queryBind(query, params)
+                    .bind()
             parseCount(result)
         }
 

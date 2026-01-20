@@ -34,8 +34,9 @@ class SurrealTagRepository(
         either {
             val result =
                 db
-                    .query<Any>(
-                        "SELECT * FROM tag WHERE id = tag:${id.value} AND user_id = user:${userId.value} AND deleted_at IS NONE",
+                    .queryBind(
+                        "SELECT * FROM tag WHERE id = tag:\$id AND user_id = user:\$userId AND deleted_at IS NONE",
+                        mapOf("id" to id.value, "userId" to userId.value),
                     ).bind()
             parseTag(result) ?: raise(DomainError.NotFoundError("Tag", id.value))
         }
@@ -45,25 +46,37 @@ class SurrealTagRepository(
             val existing = findById(entity.id)
             if (existing.isRight()) {
                 db
-                    .execute(
+                    .executeBind(
                         """
-                        UPDATE tag:${entity.id.value} SET
-                            name = '${entity.name.replace("'", "''")}',
-                            color = ${entity.color?.let { "'$it'" } ?: "NONE"},
+                        UPDATE tag:${'$'}id SET
+                            name = ${'$'}name,
+                            color = ${'$'}color,
                             updated_at = time::now()
-                        WHERE user_id = user:${userId.value};
+                        WHERE user_id = user:${'$'}userId;
                         """.trimIndent(),
+                        mapOf(
+                            "id" to entity.id.value,
+                            "name" to entity.name,
+                            "color" to entity.color,
+                            "userId" to userId.value,
+                        ),
                     ).bind()
             } else {
                 db
-                    .execute(
+                    .executeBind(
                         """
-                        CREATE tag:${entity.id.value} CONTENT {
-                            user_id: user:${userId.value},
-                            name: '${entity.name.replace("'", "''")}',
-                            color: ${entity.color?.let { "'$it'" } ?: "NONE"}
+                        CREATE tag:${'$'}id CONTENT {
+                            user_id: user:${'$'}userId,
+                            name: ${'$'}name,
+                            color: ${'$'}color
                         };
                         """.trimIndent(),
+                        mapOf(
+                            "id" to entity.id.value,
+                            "userId" to userId.value,
+                            "name" to entity.name,
+                            "color" to entity.color,
+                        ),
                     ).bind()
             }
             findById(entity.id).bind()
@@ -73,16 +86,18 @@ class SurrealTagRepository(
         either {
             findById(id).bind()
             db
-                .execute(
-                    "UPDATE tag:${id.value} SET deleted_at = time::now(), updated_at = time::now() WHERE user_id = user:${userId.value};",
+                .executeBind(
+                    "UPDATE tag:\$id SET deleted_at = time::now(), updated_at = time::now() WHERE user_id = user:\$userId;",
+                    mapOf("id" to id.value, "userId" to userId.value),
                 ).bind()
         }
 
     override fun findAll(): Flow<List<Tag>> =
         flow {
             val result =
-                db.query<Any>(
-                    "SELECT * FROM tag WHERE user_id = user:${userId.value} AND deleted_at IS NONE ORDER BY name",
+                db.queryBind(
+                    "SELECT * FROM tag WHERE user_id = user:\$userId AND deleted_at IS NONE ORDER BY name",
+                    mapOf("userId" to userId.value),
                 )
             emit(result.fold({ emptyList() }, { parseTags(it) }))
         }
@@ -91,11 +106,9 @@ class SurrealTagRepository(
         either {
             val result =
                 db
-                    .query<Any>(
-                        "SELECT * FROM tag WHERE user_id = user:${userId.value} AND name = '${name.replace(
-                            "'",
-                            "''",
-                        )}' AND deleted_at IS NONE",
+                    .queryBind(
+                        "SELECT * FROM tag WHERE user_id = user:\$userId AND name = \$name AND deleted_at IS NONE",
+                        mapOf("userId" to userId.value, "name" to name),
                     ).bind()
             parseTag(result) ?: raise(DomainError.NotFoundError("Tag", name))
         }
@@ -126,15 +139,16 @@ class SurrealTagRepository(
     override fun findByNote(noteId: Ulid): Flow<List<Tag>> =
         flow {
             val result =
-                db.query<Any>(
+                db.queryBind(
                     """
                     SELECT tag.* FROM note_tag
                     INNER JOIN tag ON note_tag.tag_id = tag.id
-                    WHERE note_tag.note_id = note:${noteId.value}
-                        AND note_tag.user_id = user:${userId.value}
-                        AND tag.user_id = user:${userId.value}
+                    WHERE note_tag.note_id = note:${'$'}noteId
+                        AND note_tag.user_id = user:${'$'}userId
+                        AND tag.user_id = user:${'$'}userId
                         AND tag.deleted_at IS NONE
                     """.trimIndent(),
+                    mapOf("noteId" to noteId.value, "userId" to userId.value),
                 )
             emit(result.fold({ emptyList() }, { parseTags(it) }))
         }
@@ -145,14 +159,15 @@ class SurrealTagRepository(
     ): Either<DomainError, Unit> =
         either {
             db
-                .execute(
+                .executeBind(
                     """
                     CREATE note_tag CONTENT {
-                        user_id: user:${userId.value},
-                        note_id: note:${noteId.value},
-                        tag_id: tag:${tagId.value}
+                        user_id: user:${'$'}userId,
+                        note_id: note:${'$'}noteId,
+                        tag_id: tag:${'$'}tagId
                     };
                     """.trimIndent(),
+                    mapOf("userId" to userId.value, "noteId" to noteId.value, "tagId" to tagId.value),
                 ).bind()
         }
 
@@ -162,23 +177,25 @@ class SurrealTagRepository(
     ): Either<DomainError, Unit> =
         either {
             db
-                .execute(
-                    "DELETE note_tag WHERE user_id = user:${userId.value} AND note_id = note:${noteId.value} AND tag_id = tag:${tagId.value};",
+                .executeBind(
+                    "DELETE note_tag WHERE user_id = user:\$userId AND note_id = note:\$noteId AND tag_id = tag:\$tagId;",
+                    mapOf("userId" to userId.value, "noteId" to noteId.value, "tagId" to tagId.value),
                 ).bind()
         }
 
     override fun findMostUsed(limit: Int): Flow<List<Pair<Tag, Int>>> =
         flow {
             val result =
-                db.query<Any>(
+                db.queryBind(
                     """
                     SELECT tag.*, count(note_tag.id) AS usage_count FROM tag
                     LEFT JOIN note_tag ON tag.id = note_tag.tag_id
-                    WHERE tag.user_id = user:${userId.value} AND tag.deleted_at IS NONE
+                    WHERE tag.user_id = user:${'$'}userId AND tag.deleted_at IS NONE
                     GROUP BY tag.id
                     ORDER BY usage_count DESC
-                    LIMIT $limit
+                    LIMIT ${'$'}limit
                     """.trimIndent(),
+                    mapOf("userId" to userId.value, "limit" to limit),
                 )
             emit(result.fold({ emptyList() }, { parseTagsWithCount(it) }))
         }

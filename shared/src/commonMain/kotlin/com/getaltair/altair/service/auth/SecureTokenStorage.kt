@@ -1,5 +1,8 @@
 package com.getaltair.altair.service.auth
 
+import arrow.core.Either
+import com.getaltair.altair.domain.types.Ulid
+
 /**
  * Secure storage interface for authentication tokens.
  *
@@ -12,15 +15,16 @@ package com.getaltair.altair.service.auth
  * - Encrypt tokens at rest
  * - Not back up tokens to cloud services
  * - Clear tokens on app uninstall (where possible)
- * - Handle storage failures gracefully
+ * - Handle storage failures gracefully using Either
  */
 interface SecureTokenStorage {
     /**
      * Store the access token securely.
      *
      * @param token The JWT access token
+     * @return Either an error or Unit on success
      */
-    suspend fun saveAccessToken(token: String)
+    suspend fun saveAccessToken(token: String): Either<TokenStorageError, Unit>
 
     /**
      * Retrieve the stored access token.
@@ -33,8 +37,9 @@ interface SecureTokenStorage {
      * Store the refresh token securely.
      *
      * @param token The refresh token
+     * @return Either an error or Unit on success
      */
-    suspend fun saveRefreshToken(token: String)
+    suspend fun saveRefreshToken(token: String): Either<TokenStorageError, Unit>
 
     /**
      * Retrieve the stored refresh token.
@@ -47,8 +52,9 @@ interface SecureTokenStorage {
      * Store the token expiration timestamp.
      *
      * @param expiresAtMillis Epoch milliseconds when the access token expires
+     * @return Either an error or Unit on success
      */
-    suspend fun saveTokenExpiration(expiresAtMillis: Long)
+    suspend fun saveTokenExpiration(expiresAtMillis: Long): Either<TokenStorageError, Unit>
 
     /**
      * Retrieve the token expiration timestamp.
@@ -60,23 +66,25 @@ interface SecureTokenStorage {
     /**
      * Store the authenticated user's ID.
      *
-     * @param userId The user's ULID
+     * @param userId The user's unique identifier
+     * @return Either an error or Unit on success
      */
-    suspend fun saveUserId(userId: String)
+    suspend fun saveUserId(userId: Ulid): Either<TokenStorageError, Unit>
 
     /**
      * Retrieve the authenticated user's ID.
      *
-     * @return The user's ULID, or null if not stored
+     * @return The user's unique identifier, or null if not stored
      */
-    suspend fun getUserId(): String?
+    suspend fun getUserId(): Ulid?
 
     /**
      * Clear all stored authentication data.
      *
      * Should be called on logout to ensure no credentials remain.
+     * @return Either an error or Unit on success
      */
-    suspend fun clear()
+    suspend fun clear(): Either<TokenStorageError, Unit>
 
     /**
      * Check if any authentication data is stored.

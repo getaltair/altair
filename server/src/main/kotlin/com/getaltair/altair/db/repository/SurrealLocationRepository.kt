@@ -33,8 +33,9 @@ class SurrealLocationRepository(
         either {
             val result =
                 db
-                    .query<Any>(
-                        "SELECT * FROM location WHERE id = location:${id.value} AND user_id = user:${userId.value} AND deleted_at IS NONE",
+                    .queryBind(
+                        "SELECT * FROM location:${'$'}id WHERE user_id = user:${'$'}userId AND deleted_at IS NONE",
+                        mapOf("id" to id.value, "userId" to userId.value),
                     ).bind()
             parseLocation(result) ?: raise(DomainError.NotFoundError("Location", id.value))
         }
@@ -44,29 +45,45 @@ class SurrealLocationRepository(
             val existing = findById(entity.id)
             if (existing.isRight()) {
                 db
-                    .execute(
+                    .executeBind(
                         """
-                        UPDATE location:${entity.id.value} SET
-                            name = '${entity.name.replace("'", "''")}',
-                            description = ${entity.description?.let { "'${it.replace("'", "''")}'" } ?: "NONE"},
-                            parent_id = ${entity.parentId?.let { "location:${it.value}" } ?: "NONE"},
-                            address = ${entity.address?.let { "'${it.replace("'", "''")}'" } ?: "NONE"},
+                        UPDATE location:${'$'}id SET
+                            name = ${'$'}name,
+                            description = ${'$'}description,
+                            parent_id = ${entity.parentId?.let { "location:${'$'}parentId" } ?: "NONE"},
+                            address = ${'$'}address,
                             updated_at = time::now()
-                        WHERE user_id = user:${userId.value};
+                        WHERE user_id = user:${'$'}userId
                         """.trimIndent(),
+                        buildMap {
+                            put("id", entity.id.value)
+                            put("name", entity.name)
+                            put("description", entity.description)
+                            entity.parentId?.let { put("parentId", it.value) }
+                            put("address", entity.address)
+                            put("userId", userId.value)
+                        },
                     ).bind()
             } else {
                 db
-                    .execute(
+                    .executeBind(
                         """
-                        CREATE location:${entity.id.value} CONTENT {
-                            user_id: user:${userId.value},
-                            name: '${entity.name.replace("'", "''")}',
-                            description: ${entity.description?.let { "'${it.replace("'", "''")}'" } ?: "NONE"},
-                            parent_id: ${entity.parentId?.let { "location:${it.value}" } ?: "NONE"},
-                            address: ${entity.address?.let { "'${it.replace("'", "''")}'" } ?: "NONE"}
-                        };
+                        CREATE location:${'$'}id CONTENT {
+                            user_id: user:${'$'}userId,
+                            name: ${'$'}name,
+                            description: ${'$'}description,
+                            parent_id: ${entity.parentId?.let { "location:${'$'}parentId" } ?: "NONE"},
+                            address: ${'$'}address
+                        }
                         """.trimIndent(),
+                        buildMap {
+                            put("id", entity.id.value)
+                            put("userId", userId.value)
+                            put("name", entity.name)
+                            put("description", entity.description)
+                            entity.parentId?.let { put("parentId", it.value) }
+                            put("address", entity.address)
+                        },
                     ).bind()
             }
             findById(entity.id).bind()
@@ -76,16 +93,18 @@ class SurrealLocationRepository(
         either {
             findById(id).bind()
             db
-                .execute(
-                    "UPDATE location:${id.value} SET deleted_at = time::now(), updated_at = time::now() WHERE user_id = user:${userId.value};",
+                .executeBind(
+                    "UPDATE location:${'$'}id SET deleted_at = time::now(), updated_at = time::now() WHERE user_id = user:${'$'}userId",
+                    mapOf("id" to id.value, "userId" to userId.value),
                 ).bind()
         }
 
     override fun findAll(): Flow<List<Location>> =
         flow {
             val result =
-                db.query<Any>(
-                    "SELECT * FROM location WHERE user_id = user:${userId.value} AND deleted_at IS NONE ORDER BY name",
+                db.queryBind(
+                    "SELECT * FROM location WHERE user_id = user:${'$'}userId AND deleted_at IS NONE ORDER BY name",
+                    mapOf("userId" to userId.value),
                 )
             emit(result.fold({ emptyList() }, { parseLocations(it) }))
         }
@@ -93,8 +112,9 @@ class SurrealLocationRepository(
     override fun findRoots(): Flow<List<Location>> =
         flow {
             val result =
-                db.query<Any>(
-                    "SELECT * FROM location WHERE user_id = user:${userId.value} AND parent_id IS NONE AND deleted_at IS NONE ORDER BY name",
+                db.queryBind(
+                    "SELECT * FROM location WHERE user_id = user:${'$'}userId AND parent_id IS NONE AND deleted_at IS NONE ORDER BY name",
+                    mapOf("userId" to userId.value),
                 )
             emit(result.fold({ emptyList() }, { parseLocations(it) }))
         }
@@ -102,8 +122,9 @@ class SurrealLocationRepository(
     override fun findByParent(parentId: Ulid): Flow<List<Location>> =
         flow {
             val result =
-                db.query<Any>(
-                    "SELECT * FROM location WHERE user_id = user:${userId.value} AND parent_id = location:${parentId.value} AND deleted_at IS NONE ORDER BY name",
+                db.queryBind(
+                    "SELECT * FROM location WHERE user_id = user:${'$'}userId AND parent_id = location:${'$'}parentId AND deleted_at IS NONE ORDER BY name",
+                    mapOf("userId" to userId.value, "parentId" to parentId.value),
                 )
             emit(result.fold({ emptyList() }, { parseLocations(it) }))
         }
@@ -111,8 +132,9 @@ class SurrealLocationRepository(
     override fun findTree(): Flow<List<LocationNode>> =
         flow {
             val result =
-                db.query<Any>(
-                    "SELECT * FROM location WHERE user_id = user:${userId.value} AND deleted_at IS NONE ORDER BY name",
+                db.queryBind(
+                    "SELECT * FROM location WHERE user_id = user:${'$'}userId AND deleted_at IS NONE ORDER BY name",
+                    mapOf("userId" to userId.value),
                 )
             val locations = result.fold({ emptyList() }, { parseLocations(it) })
             emit(buildTree(locations))
@@ -135,25 +157,29 @@ class SurrealLocationRepository(
     ): Either<DomainError, Location> =
         either {
             findById(id).bind()
-            val parentRef = newParentId?.let { "location:${it.value}" } ?: "NONE"
             db
-                .execute(
-                    "UPDATE location:${id.value} SET parent_id = $parentRef, updated_at = time::now() WHERE user_id = user:${userId.value};",
+                .executeBind(
+                    "UPDATE location:${'$'}id SET parent_id = ${newParentId?.let { "location:${'$'}parentId" } ?: "NONE"}, updated_at = time::now() WHERE user_id = user:${'$'}userId",
+                    buildMap {
+                        put("id", id.value)
+                        newParentId?.let { put("parentId", it.value) }
+                        put("userId", userId.value)
+                    },
                 ).bind()
             findById(id).bind()
         }
 
     override suspend fun searchByName(query: String): Either<DomainError, List<Location>> =
         either {
-            val escapedQuery = query.replace("'", "''")
             val result =
                 db
-                    .query<Any>(
+                    .queryBind(
                         """
-                        SELECT * FROM location WHERE user_id = user:${userId.value}
-                        AND string::lowercase(name) CONTAINS string::lowercase('$escapedQuery')
+                        SELECT * FROM location WHERE user_id = user:${'$'}userId
+                        AND string::lowercase(name) CONTAINS string::lowercase(${'$'}query)
                         AND deleted_at IS NONE
                         """.trimIndent(),
+                        mapOf("userId" to userId.value, "query" to query),
                     ).bind()
             parseLocations(result)
         }
@@ -163,13 +189,15 @@ class SurrealLocationRepository(
             findById(id).bind()
             val itemsResult =
                 db
-                    .query<Any>(
-                        "SELECT count() FROM item WHERE user_id = user:${userId.value} AND location_id = location:${id.value} AND deleted_at IS NONE GROUP ALL",
+                    .queryBind(
+                        "SELECT count() FROM item WHERE user_id = user:${'$'}userId AND location_id = location:${'$'}locationId AND deleted_at IS NONE GROUP ALL",
+                        mapOf("userId" to userId.value, "locationId" to id.value),
                     ).bind()
             val containersResult =
                 db
-                    .query<Any>(
-                        "SELECT count() FROM container WHERE user_id = user:${userId.value} AND location_id = location:${id.value} AND deleted_at IS NONE GROUP ALL",
+                    .queryBind(
+                        "SELECT count() FROM container WHERE user_id = user:${'$'}userId AND location_id = location:${'$'}locationId AND deleted_at IS NONE GROUP ALL",
+                        mapOf("userId" to userId.value, "locationId" to id.value),
                     ).bind()
             LocationContents(
                 itemCount = parseCount(itemsResult),

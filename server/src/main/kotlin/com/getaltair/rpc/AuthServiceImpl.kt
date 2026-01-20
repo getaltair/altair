@@ -12,10 +12,8 @@ import com.getaltair.altair.rpc.AuthService
 import com.getaltair.altair.service.auth.JwtTokenService
 import com.getaltair.altair.service.auth.PasswordService
 import com.getaltair.auth.JwtConfig
-import kotlinx.datetime.Instant
 import org.slf4j.LoggerFactory
 import java.security.SecureRandom
-import kotlin.time.Clock
 import kotlin.time.Duration.Companion.days
 
 /**
@@ -72,19 +70,13 @@ class AuthServiceImpl(
         logger.warn("Generating invite code without admin verification - AuthContext not available")
 
         val code = generateSecureCode()
-        val now = currentInstant()
-        val expiresAt =
-            Instant.fromEpochMilliseconds(
-                now.toEpochMilliseconds() + INVITE_CODE_EXPIRY.inWholeMilliseconds,
-            )
 
         val inviteCode =
-            InviteCode(
+            InviteCode.create(
                 id = Ulid.generate(),
                 code = code,
                 createdBy = Ulid.generate(), // Unknown creator - should be from AuthContext
-                expiresAt = expiresAt,
-                createdAt = now,
+                expiresIn = INVITE_CODE_EXPIRY,
             )
 
         inviteCodeRepository
@@ -99,7 +91,7 @@ class AuthServiceImpl(
 
         return InviteCodeResponse(
             code = code,
-            expiresAt = expiresAt.toString(),
+            expiresAt = inviteCode.expiresAt.toString(),
         )
     }
 
@@ -120,8 +112,6 @@ class AuthServiceImpl(
                     "This feature requires AuthContext support in kotlinx-rpc.",
         )
     }
-
-    private fun currentInstant(): Instant = Instant.fromEpochMilliseconds(Clock.System.now().toEpochMilliseconds())
 
     private fun generateSecureCode(): String {
         val chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789" // Exclude ambiguous characters

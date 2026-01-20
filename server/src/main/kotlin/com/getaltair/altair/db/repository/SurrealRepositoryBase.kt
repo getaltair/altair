@@ -145,13 +145,14 @@ abstract class SurrealRepositoryBase(
     ): Either<DomainError, Unit> =
         either {
             db
-                .execute(
+                .executeBind(
                     """
                     UPDATE $table:$id SET
                         deleted_at = time::now(),
                         updated_at = time::now()
-                    WHERE user_id = user:${userId.value};
+                    WHERE user_id = user:${'$'}userId;
                     """.trimIndent(),
+                    mapOf("userId" to userId.value),
                 ).bind()
         }
 
@@ -164,10 +165,11 @@ abstract class SurrealRepositoryBase(
     ): Either<DomainError, Unit> =
         either {
             db
-                .execute(
+                .executeBind(
                     """
-                    DELETE $table:$id WHERE user_id = user:${userId.value};
+                    DELETE $table:$id WHERE user_id = user:${'$'}userId;
                     """.trimIndent(),
+                    mapOf("userId" to userId.value),
                 ).bind()
         }
 }

@@ -104,6 +104,85 @@ class SurrealDbClient(
         }
 
     /**
+     * Executes a SurrealQL query with parameter binding.
+     *
+     * Parameters are bound by safely escaping values and substituting them into the query.
+     * This prevents SQL/NoSQL injection by properly escaping all user-provided values.
+     *
+     * Note: Uses custom parameter binding since SurrealDB Java SDK 1.0.0-beta.1
+     * doesn't yet have native parameter binding support (added in 1.0.0).
+     *
+     * @param query The SurrealQL query string with $paramName placeholders
+     * @param params Map of parameter names to values
+     * @return Either an error or the raw result string (JSON array)
+     */
+    suspend fun queryBind(
+        query: String,
+        params: Map<String, Any?>,
+    ): Either<DomainError, String> =
+        either {
+            val boundQuery = bindParameters(query, params)
+            query<Any>(boundQuery).bind()
+        }
+
+    /**
+     * Binds parameters to a query by safely escaping and substituting values.
+     */
+    private fun bindParameters(
+        query: String,
+        params: Map<String, Any?>,
+    ): String {
+        var result = query
+        for ((key, value) in params) {
+            val placeholder = "$$key"
+            val escapedValue = escapeParameterValue(value)
+            result = result.replace(placeholder, escapedValue)
+        }
+        return result
+    }
+
+    /**
+     * Escapes a parameter value for safe inclusion in SurrealQL.
+     *
+     * Uses backslash escape sequences as per SurrealQL specification:
+     * https://surrealdb.com/docs/surrealql/datamodel/strings
+     */
+    @Suppress("CyclomaticComplexMethod") // Necessary to handle all value types safely
+    private fun escapeParameterValue(value: Any?): String =
+        when (value) {
+            null -> "NONE"
+            is String -> {
+                // ULIDs are 26-character alphanumeric strings and should not be quoted
+                // when used in record IDs (e.g., user:01ABC...)
+                if (value.length == 26 && value.all { it.isLetterOrDigit() }) {
+                    value
+                } else {
+                    "'${escapeSurrealString(value)}'"
+                }
+            }
+            is Boolean -> value.toString()
+            is Number -> value.toString()
+            is kotlinx.datetime.Instant -> "'$value'"
+            else -> "'${escapeSurrealString(value.toString())}'"
+        }
+
+    /**
+     * Escapes special characters in a string using SurrealQL backslash escape sequences.
+     *
+     * Valid escape sequences in SurrealQL: \\ \' \/ \b \f \n \r \t
+     * Note: Double quotes don't need escaping inside single-quoted strings.
+     */
+    private fun escapeSurrealString(value: String): String =
+        value
+            .replace("\\", "\\\\") // Backslash must be escaped first
+            .replace("'", "\\'") // Single quote
+            .replace("\n", "\\n") // Newline
+            .replace("\r", "\\r") // Carriage return
+            .replace("\t", "\\t") // Tab
+            .replace("\b", "\\b") // Backspace
+            .replace("\u000C", "\\f") // Form feed
+
+    /**
      * Converts a SurrealDB Response to a JSON string array.
      *
      * Uses the SDK's Value API to properly extract and serialize results.
@@ -225,6 +304,29 @@ class SurrealDbClient(
         }
 
     /**
+     * Executes a SurrealQL query with parameter binding and deserializes the result.
+     *
+     * @param query The SurrealQL query string with $paramName placeholders
+     * @param params Map of parameter names to values
+     * @param deserializer Function to deserialize the JSON result
+     * @return Either an error or the deserialized result
+     */
+    suspend fun <T> queryBindAs(
+        query: String,
+        params: Map<String, Any?>,
+        deserializer: (String) -> T,
+    ): Either<DomainError, T> =
+        either {
+            val result = queryBind(query, params).bind()
+            try {
+                deserializer(result)
+            } catch (e: Exception) {
+                logger.error("Failed to deserialize query result", e)
+                raise(DomainError.UnexpectedError("Failed to deserialize result: ${e.message}", e))
+            }
+        }
+
+    /**
      * Executes a raw SurrealQL statement (for DDL operations like CREATE TABLE).
      */
     suspend fun execute(statement: String): Either<DomainError, Unit> =
@@ -242,6 +344,22 @@ class SurrealDbClient(
                     raise(DomainError.UnexpectedError("Execute failed: ${e.message}", e))
                 }
             }
+        }
+
+    /**
+     * Executes a raw SurrealQL statement with parameter binding.
+     *
+     * @param statement The SurrealQL statement with $paramName placeholders
+     * @param params Map of parameter names to values
+     * @return Either an error or Unit on success
+     */
+    suspend fun executeBind(
+        statement: String,
+        params: Map<String, Any?>,
+    ): Either<DomainError, Unit> =
+        either {
+            val boundStatement = bindParameters(statement, params)
+            execute(boundStatement).bind()
         }
 
     /**
