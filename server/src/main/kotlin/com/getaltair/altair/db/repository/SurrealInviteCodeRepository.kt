@@ -9,12 +9,13 @@ import com.getaltair.altair.domain.AuthError
 import com.getaltair.altair.domain.model.system.InviteCode
 import com.getaltair.altair.domain.types.Ulid
 import com.getaltair.altair.repository.InviteCodeRepository
-import kotlin.time.Instant
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.slf4j.LoggerFactory
+import kotlin.time.Instant
 
 /**
  * SurrealDB implementation of InviteCodeRepository.
@@ -47,8 +48,10 @@ class SurrealInviteCodeRepository(
                         "code" to inviteCode.code,
                         "createdBy" to inviteCode.createdBy.value,
                     ),
-                ).mapLeft { AuthError.InvalidInviteCode }
-                .bind()
+                ).mapLeft { error ->
+                    logger.warn("Database error: ERROR_MSG (converting to InvalidInviteCode)")
+                    AuthError.InvalidInviteCode
+                }.bind()
 
             inviteCode
         }
@@ -61,8 +64,10 @@ class SurrealInviteCodeRepository(
                         "SELECT * FROM invite_code WHERE code = ${'$'}code " +
                             "AND used_by IS NONE AND expires_at > time::now()",
                         mapOf("code" to code),
-                    ).mapLeft { AuthError.InvalidInviteCode }
-                    .bind()
+                    ).mapLeft { error ->
+                        logger.warn("Database error: ERROR_MSG (converting to InvalidInviteCode)")
+                        AuthError.InvalidInviteCode
+                    }.bind()
 
             parseInviteCode(result) ?: raise(AuthError.InvalidInviteCode)
         }
@@ -80,8 +85,10 @@ class SurrealInviteCodeRepository(
                         used_at = time::now();
                     """.trimIndent(),
                     mapOf("usedBy" to usedBy.value),
-                ).mapLeft { AuthError.InvalidInviteCode }
-                .bind()
+                ).mapLeft { error ->
+                    logger.warn("Database error: ERROR_MSG (converting to InvalidInviteCode)")
+                    AuthError.InvalidInviteCode
+                }.bind()
         }
 
     override suspend fun findByCreator(createdBy: Ulid): Either<AuthError, List<InviteCode>> =

@@ -4,8 +4,8 @@ import com.getaltair.altair.domain.common.ColorValidation
 import com.getaltair.altair.domain.common.SoftDeletable
 import com.getaltair.altair.domain.common.Timestamped
 import com.getaltair.altair.domain.types.Ulid
-import kotlin.time.Instant
 import kotlinx.serialization.Serializable
+import kotlin.time.Instant
 
 /**
  * A flat-namespace label for categorizing Notes.

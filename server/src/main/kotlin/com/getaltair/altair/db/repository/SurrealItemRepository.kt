@@ -5,6 +5,7 @@ package com.getaltair.altair.db.repository
 import arrow.core.Either
 import arrow.core.raise.either
 import com.getaltair.altair.db.SurrealDbClient
+import com.getaltair.altair.domain.DomainError
 import com.getaltair.altair.domain.ItemError
 import com.getaltair.altair.domain.model.tracking.Item
 import com.getaltair.altair.domain.types.Ulid
@@ -13,11 +14,13 @@ import com.getaltair.altair.repository.PageRequest
 import com.getaltair.altair.repository.PageResult
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import kotlin.time.Instant
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import org.slf4j.LoggerFactory
+import kotlin.time.Instant
 
 class SurrealItemRepository(
     private val db: SurrealDbClient,
@@ -29,6 +32,10 @@ class SurrealItemRepository(
             isLenient = true
         }
 
+    companion object {
+        private val logger = LoggerFactory.getLogger(SurrealItemRepository::class.java)
+    }
+
     override suspend fun findById(id: Ulid): Either<ItemError, Item> =
         either {
             val result =
@@ -36,8 +43,10 @@ class SurrealItemRepository(
                     .queryBind(
                         "SELECT * FROM item:${'$'}id WHERE user_id = user:${'$'}userId AND deleted_at IS NONE",
                         mapOf("id" to id.value, "userId" to userId.value),
-                    ).mapLeft { ItemError.NotFound(id) }
-                    .bind()
+                    ).mapLeft { error ->
+                        logger.warn("Database error for ${id.value}: ERROR_MSG (converting to NotFound)")
+                        ItemError.NotFound(id)
+                    }.bind()
             parseItem(result) ?: raise(ItemError.NotFound(id))
         }
 
@@ -69,7 +78,10 @@ class SurrealItemRepository(
                 WHERE user_id = user:${'$'}userId
                 """.trimIndent(),
                 buildItemParams(entity),
-            ).mapLeft { ItemError.NotFound(entity.id) }
+            ).mapLeft { error ->
+                logger.warn("Database error for ${entity.id.value}: ERROR_MSG (converting to NotFound)")
+                ItemError.NotFound(entity.id)
+            }
 
     private suspend fun insertItem(entity: Item): Either<ItemError, Unit> =
         db
@@ -88,7 +100,10 @@ class SurrealItemRepository(
                 }
                 """.trimIndent(),
                 buildItemParams(entity),
-            ).mapLeft { ItemError.NotFound(entity.id) }
+            ).mapLeft { error ->
+                logger.warn("Database error for ${entity.id.value}: ERROR_MSG (converting to NotFound)")
+                ItemError.NotFound(entity.id)
+            }
 
     private fun buildItemParams(entity: Item): Map<String, Any?> =
         buildMap {
@@ -111,8 +126,10 @@ class SurrealItemRepository(
                 .executeBind(
                     "UPDATE item:${'$'}id SET deleted_at = time::now(), updated_at = time::now() WHERE user_id = user:${'$'}userId",
                     mapOf("id" to id.value, "userId" to userId.value),
-                ).mapLeft { ItemError.NotFound(id) }
-                .bind()
+                ).mapLeft { error ->
+                    logger.warn("Database error for ${id.value}: ERROR_MSG (converting to NotFound)")
+                    ItemError.NotFound(id)
+                }.bind()
         }
 
     override fun findAll(): Flow<List<Item>> =
@@ -122,7 +139,28 @@ class SurrealItemRepository(
                     "SELECT * FROM item WHERE user_id = user:${'$'}userId AND deleted_at IS NONE ORDER BY name",
                     mapOf("userId" to userId.value),
                 )
-            emit(result.fold({ emptyList() }, { parseItems(it) }))
+            emit(
+                result.fold(
+                    ifLeft = { error ->
+
+                        when (error) {
+                            is DomainError.NetworkError -> logger.warn("Database error in findAll: ERROR_MSG")
+
+                            is DomainError.UnexpectedError -> logger.warn("Database error in findAll: ERROR_MSG")
+
+                            is DomainError.NotFoundError -> logger.warn("Database error in findAll: ${error.resource} ${error.id}")
+
+                            is DomainError.ValidationError -> logger.warn("Database error in findAll: ${error.field} - ERROR_MSG")
+
+                            is DomainError.UnauthorizedError -> logger.warn("Database error in findAll: ERROR_MSG")
+
+                            else -> logger.warn("Database error in findAll: $error")
+                        }
+                        emptyList()
+                    },
+                    ifRight = { parseItems(it) },
+                ),
+            )
         }
 
     override fun findByLocation(locationId: Ulid): Flow<List<Item>> =
@@ -132,7 +170,28 @@ class SurrealItemRepository(
                     "SELECT * FROM item WHERE user_id = user:${'$'}userId AND location_id = location:${'$'}locationId AND deleted_at IS NONE",
                     mapOf("userId" to userId.value, "locationId" to locationId.value),
                 )
-            emit(result.fold({ emptyList() }, { parseItems(it) }))
+            emit(
+                result.fold(
+                    ifLeft = { error ->
+
+                        when (error) {
+                            is DomainError.NetworkError -> logger.warn("Database error in findByLocation: ERROR_MSG")
+
+                            is DomainError.UnexpectedError -> logger.warn("Database error in findByLocation: ERROR_MSG")
+
+                            is DomainError.NotFoundError -> logger.warn("Database error in findByLocation: ${error.resource} ${error.id}")
+
+                            is DomainError.ValidationError -> logger.warn("Database error in findByLocation: ${error.field} - ERROR_MSG")
+
+                            is DomainError.UnauthorizedError -> logger.warn("Database error in findByLocation: ERROR_MSG")
+
+                            else -> logger.warn("Database error in findByLocation: $error")
+                        }
+                        emptyList()
+                    },
+                    ifRight = { parseItems(it) },
+                ),
+            )
         }
 
     override fun findByContainer(containerId: Ulid): Flow<List<Item>> =
@@ -142,7 +201,28 @@ class SurrealItemRepository(
                     "SELECT * FROM item WHERE user_id = user:${'$'}userId AND container_id = container:${'$'}containerId AND deleted_at IS NONE",
                     mapOf("userId" to userId.value, "containerId" to containerId.value),
                 )
-            emit(result.fold({ emptyList() }, { parseItems(it) }))
+            emit(
+                result.fold(
+                    ifLeft = { error ->
+
+                        when (error) {
+                            is DomainError.NetworkError -> logger.warn("Database error in findByContainer: ERROR_MSG")
+
+                            is DomainError.UnexpectedError -> logger.warn("Database error in findByContainer: ERROR_MSG")
+
+                            is DomainError.NotFoundError -> logger.warn("Database error in findByContainer: ${error.resource} ${error.id}")
+
+                            is DomainError.ValidationError -> logger.warn("Database error in findByContainer: ${error.field} - ERROR_MSG")
+
+                            is DomainError.UnauthorizedError -> logger.warn("Database error in findByContainer: ERROR_MSG")
+
+                            else -> logger.warn("Database error in findByContainer: $error")
+                        }
+                        emptyList()
+                    },
+                    ifRight = { parseItems(it) },
+                ),
+            )
         }
 
     override fun findByTemplate(templateId: Ulid): Flow<List<Item>> =
@@ -152,7 +232,28 @@ class SurrealItemRepository(
                     "SELECT * FROM item WHERE user_id = user:${'$'}userId AND template_id = item_template:${'$'}templateId AND deleted_at IS NONE",
                     mapOf("userId" to userId.value, "templateId" to templateId.value),
                 )
-            emit(result.fold({ emptyList() }, { parseItems(it) }))
+            emit(
+                result.fold(
+                    ifLeft = { error ->
+
+                        when (error) {
+                            is DomainError.NetworkError -> logger.warn("Database error in findByTemplate: ERROR_MSG")
+
+                            is DomainError.UnexpectedError -> logger.warn("Database error in findByTemplate: ERROR_MSG")
+
+                            is DomainError.NotFoundError -> logger.warn("Database error in findByTemplate: ${error.resource} ${error.id}")
+
+                            is DomainError.ValidationError -> logger.warn("Database error in findByTemplate: ${error.field} - ERROR_MSG")
+
+                            is DomainError.UnauthorizedError -> logger.warn("Database error in findByTemplate: ERROR_MSG")
+
+                            else -> logger.warn("Database error in findByTemplate: $error")
+                        }
+                        emptyList()
+                    },
+                    ifRight = { parseItems(it) },
+                ),
+            )
         }
 
     override fun findByInitiative(initiativeId: Ulid): Flow<List<Item>> =
@@ -162,7 +263,28 @@ class SurrealItemRepository(
                     "SELECT * FROM item WHERE user_id = user:${'$'}userId AND initiative_id = initiative:${'$'}initiativeId AND deleted_at IS NONE",
                     mapOf("userId" to userId.value, "initiativeId" to initiativeId.value),
                 )
-            emit(result.fold({ emptyList() }, { parseItems(it) }))
+            emit(
+                result.fold(
+                    ifLeft = { error ->
+
+                        when (error) {
+                            is DomainError.NetworkError -> logger.warn("Database error in findByInitiative: ERROR_MSG")
+
+                            is DomainError.UnexpectedError -> logger.warn("Database error in findByInitiative: ERROR_MSG")
+
+                            is DomainError.NotFoundError -> logger.warn("Database error in findByInitiative: ${error.resource} ${error.id}")
+
+                            is DomainError.ValidationError -> logger.warn("Database error in findByInitiative: ${error.field} - ERROR_MSG")
+
+                            is DomainError.UnauthorizedError -> logger.warn("Database error in findByInitiative: ERROR_MSG")
+
+                            else -> logger.warn("Database error in findByInitiative: $error")
+                        }
+                        emptyList()
+                    },
+                    ifRight = { parseItems(it) },
+                ),
+            )
         }
 
     override suspend fun searchByName(query: String): Either<ItemError, List<Item>> =
@@ -172,8 +294,10 @@ class SurrealItemRepository(
                     .queryBind(
                         "SELECT * FROM item WHERE user_id = user:${'$'}userId AND string::lowercase(name) CONTAINS string::lowercase(${'$'}query) AND deleted_at IS NONE",
                         mapOf("userId" to userId.value, "query" to query),
-                    ).mapLeft { ItemError.NotFound(Ulid.generate()) }
-                    .bind()
+                    ).mapLeft { error ->
+                        logger.warn("Database error in search: ERROR_MSG (converting to NotFound)")
+                        ItemError.NotFound(Ulid.generate())
+                    }.bind()
             parseItems(result)
         }
 
@@ -197,8 +321,10 @@ class SurrealItemRepository(
                 .executeBind(
                     "UPDATE item:${'$'}id SET location_id = location:${'$'}locationId, container_id = NONE, updated_at = time::now() WHERE user_id = user:${'$'}userId",
                     mapOf("id" to id.value, "locationId" to locationId.value, "userId" to userId.value),
-                ).mapLeft { ItemError.NotFound(id) }
-                .bind()
+                ).mapLeft { error ->
+                    logger.warn("Database error for ${id.value}: ERROR_MSG (converting to NotFound)")
+                    ItemError.NotFound(id)
+                }.bind()
             findById(id).bind()
         }
 
@@ -212,8 +338,10 @@ class SurrealItemRepository(
                 .executeBind(
                     "UPDATE item:${'$'}id SET container_id = container:${'$'}containerId, updated_at = time::now() WHERE user_id = user:${'$'}userId",
                     mapOf("id" to id.value, "containerId" to containerId.value, "userId" to userId.value),
-                ).mapLeft { ItemError.NotFound(id) }
-                .bind()
+                ).mapLeft { error ->
+                    logger.warn("Database error for ${id.value}: ERROR_MSG (converting to NotFound)")
+                    ItemError.NotFound(id)
+                }.bind()
             findById(id).bind()
         }
 
@@ -227,8 +355,10 @@ class SurrealItemRepository(
                 .executeBind(
                     "UPDATE item:${'$'}id SET quantity = ${'$'}quantity, updated_at = time::now() WHERE user_id = user:${'$'}userId",
                     mapOf("id" to id.value, "quantity" to quantity, "userId" to userId.value),
-                ).mapLeft { ItemError.NotFound(id) }
-                .bind()
+                ).mapLeft { error ->
+                    logger.warn("Database error for ${id.value}: ERROR_MSG (converting to NotFound)")
+                    ItemError.NotFound(id)
+                }.bind()
             findById(id).bind()
         }
 
@@ -239,7 +369,28 @@ class SurrealItemRepository(
                     "SELECT * FROM item WHERE user_id = user:${'$'}userId AND location_id IS NONE AND container_id IS NONE AND deleted_at IS NONE",
                     mapOf("userId" to userId.value),
                 )
-            emit(result.fold({ emptyList() }, { parseItems(it) }))
+            emit(
+                result.fold(
+                    ifLeft = { error ->
+
+                        when (error) {
+                            is DomainError.NetworkError -> logger.warn("Database error in findUnplaced: ERROR_MSG")
+
+                            is DomainError.UnexpectedError -> logger.warn("Database error in findUnplaced: ERROR_MSG")
+
+                            is DomainError.NotFoundError -> logger.warn("Database error in findUnplaced: ${error.resource} ${error.id}")
+
+                            is DomainError.ValidationError -> logger.warn("Database error in findUnplaced: ${error.field} - ERROR_MSG")
+
+                            is DomainError.UnauthorizedError -> logger.warn("Database error in findUnplaced: ERROR_MSG")
+
+                            else -> logger.warn("Database error in findUnplaced: $error")
+                        }
+                        emptyList()
+                    },
+                    ifRight = { parseItems(it) },
+                ),
+            )
         }
 
     private fun parseItem(result: String): Item? =
@@ -250,7 +401,14 @@ class SurrealItemRepository(
                 .firstOrNull()
                 ?.jsonObject
                 ?.let { mapToItem(it) }
-        } catch (e: Exception) {
+        } catch (e: SerializationException) {
+            logger.warn("Failed to parse item: ${e.message}", e)
+            null
+        } catch (e: IllegalStateException) {
+            logger.warn("Failed to parse item: ${e.message}", e)
+            null
+        } catch (e: IllegalArgumentException) {
+            logger.warn("Failed to parse item: ${e.message}", e)
             null
         }
 
@@ -259,11 +417,25 @@ class SurrealItemRepository(
             json.parseToJsonElement(result).jsonArray.mapNotNull {
                 try {
                     mapToItem(it.jsonObject)
-                } catch (e: Exception) {
+                } catch (e: SerializationException) {
+                    logger.warn("Failed to parse item element: ${e.message}", e)
+                    null
+                } catch (e: IllegalStateException) {
+                    logger.warn("Failed to parse item element: ${e.message}", e)
+                    null
+                } catch (e: IllegalArgumentException) {
+                    logger.warn("Failed to parse item element: ${e.message}", e)
                     null
                 }
             }
-        } catch (e: Exception) {
+        } catch (e: SerializationException) {
+            logger.warn("Failed to parse items array: ${e.message}", e)
+            emptyList()
+        } catch (e: IllegalStateException) {
+            logger.warn("Failed to parse items array: ${e.message}", e)
+            emptyList()
+        } catch (e: IllegalArgumentException) {
+            logger.warn("Failed to parse items array: ${e.message}", e)
             emptyList()
         }
 
@@ -316,7 +488,8 @@ class SurrealItemRepository(
         value?.let {
             try {
                 Instant.parse(it)
-            } catch (e: Exception) {
+            } catch (e: IllegalArgumentException) {
+                logger.warn("Failed to parse instant '$value': ${e.message}")
                 Instant.DISTANT_PAST
             }
         } ?: Instant.DISTANT_PAST

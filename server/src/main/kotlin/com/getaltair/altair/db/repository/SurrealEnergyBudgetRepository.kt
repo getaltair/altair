@@ -11,15 +11,17 @@ import com.getaltair.altair.domain.types.Ulid
 import com.getaltair.altair.repository.EnergyBudgetRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import kotlin.time.Instant
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.todayIn
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import org.slf4j.LoggerFactory
 import kotlin.time.Clock
+import kotlin.time.Instant
 
 class SurrealEnergyBudgetRepository(
     private val db: SurrealDbClient,
@@ -32,6 +34,7 @@ class SurrealEnergyBudgetRepository(
         }
 
     companion object {
+        private val logger = LoggerFactory.getLogger(SurrealEnergyBudgetRepository::class.java)
         private const val DEFAULT_BUDGET = 10
     }
 
@@ -107,7 +110,28 @@ class SurrealEnergyBudgetRepository(
                     "SELECT * FROM energy_budget WHERE user_id = user:\$userId ORDER BY date DESC",
                     mapOf("userId" to userId.value),
                 )
-            emit(result.fold({ emptyList() }, { parseBudgets(it) }))
+            emit(
+                result.fold(
+                    ifLeft = { error ->
+
+                        when (error) {
+                            is DomainError.NetworkError -> logger.warn("Database error in findAll: ERROR_MSG")
+
+                            is DomainError.UnexpectedError -> logger.warn("Database error in findAll: ERROR_MSG")
+
+                            is DomainError.NotFoundError -> logger.warn("Database error in findAll: ${error.resource} ${error.id}")
+
+                            is DomainError.ValidationError -> logger.warn("Database error in findAll: ${error.field} - ERROR_MSG")
+
+                            is DomainError.UnauthorizedError -> logger.warn("Database error in findAll: ERROR_MSG")
+
+                            else -> logger.warn("Database error in findAll: $error")
+                        }
+                        emptyList()
+                    },
+                    ifRight = { parseBudgets(it) },
+                ),
+            )
         }
 
     override suspend fun findOrCreateByDate(date: LocalDate): Either<DomainError, EnergyBudget> =
@@ -153,7 +177,28 @@ class SurrealEnergyBudgetRepository(
                     "SELECT * FROM energy_budget WHERE user_id = user:\$userId AND date >= \$startDate AND date <= \$endDate ORDER BY date",
                     mapOf("userId" to userId.value, "startDate" to startDate.toString(), "endDate" to endDate.toString()),
                 )
-            emit(result.fold({ emptyList() }, { parseBudgets(it) }))
+            emit(
+                result.fold(
+                    ifLeft = { error ->
+
+                        when (error) {
+                            is DomainError.NetworkError -> logger.warn("Database error in findByDateRange: ERROR_MSG")
+
+                            is DomainError.UnexpectedError -> logger.warn("Database error in findByDateRange: ERROR_MSG")
+
+                            is DomainError.NotFoundError -> logger.warn("Database error in findByDateRange: ${error.resource} ${error.id}")
+
+                            is DomainError.ValidationError -> logger.warn("Database error in findByDateRange: ${error.field} - ERROR_MSG")
+
+                            is DomainError.UnauthorizedError -> logger.warn("Database error in findByDateRange: ERROR_MSG")
+
+                            else -> logger.warn("Database error in findByDateRange: $error")
+                        }
+                        emptyList()
+                    },
+                    ifRight = { parseBudgets(it) },
+                ),
+            )
         }
 
     override suspend fun addSpentEnergy(
@@ -193,7 +238,14 @@ class SurrealEnergyBudgetRepository(
                 .firstOrNull()
                 ?.jsonObject
                 ?.let { mapToBudget(it) }
-        } catch (e: Exception) {
+        } catch (e: SerializationException) {
+            logger.warn("Failed to parse energy budget: ${e.message}", e)
+            null
+        } catch (e: IllegalStateException) {
+            logger.warn("Failed to parse energy budget: ${e.message}", e)
+            null
+        } catch (e: IllegalArgumentException) {
+            logger.warn("Failed to parse energy budget: ${e.message}", e)
             null
         }
 
@@ -202,11 +254,25 @@ class SurrealEnergyBudgetRepository(
             json.parseToJsonElement(result).jsonArray.mapNotNull {
                 try {
                     mapToBudget(it.jsonObject)
-                } catch (e: Exception) {
+                } catch (e: SerializationException) {
+                    logger.warn("Failed to parse energy budget element: ${e.message}", e)
+                    null
+                } catch (e: IllegalStateException) {
+                    logger.warn("Failed to parse energy budget element: ${e.message}", e)
+                    null
+                } catch (e: IllegalArgumentException) {
+                    logger.warn("Failed to parse energy budget element: ${e.message}", e)
                     null
                 }
             }
-        } catch (e: Exception) {
+        } catch (e: SerializationException) {
+            logger.warn("Failed to parse energy budgets array: ${e.message}", e)
+            emptyList()
+        } catch (e: IllegalStateException) {
+            logger.warn("Failed to parse energy budgets array: ${e.message}", e)
+            emptyList()
+        } catch (e: IllegalArgumentException) {
+            logger.warn("Failed to parse energy budgets array: ${e.message}", e)
             emptyList()
         }
 
@@ -228,7 +294,8 @@ class SurrealEnergyBudgetRepository(
         value?.let {
             try {
                 Instant.parse(it)
-            } catch (e: Exception) {
+            } catch (e: IllegalArgumentException) {
+                logger.warn("Failed to parse instant '$value': ${e.message}")
                 Instant.DISTANT_PAST
             }
         } ?: Instant.DISTANT_PAST

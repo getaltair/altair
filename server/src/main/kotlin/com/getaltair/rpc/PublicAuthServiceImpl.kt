@@ -17,9 +17,9 @@ import com.getaltair.altair.service.auth.JwtTokenService
 import com.getaltair.altair.service.auth.PasswordService
 import com.getaltair.auth.JwtConfig
 import com.getaltair.auth.TokenHasher
-import kotlin.time.Instant
 import org.slf4j.LoggerFactory
 import kotlin.time.Clock
+import kotlin.time.Instant
 
 /**
  * Public authentication service implementation.

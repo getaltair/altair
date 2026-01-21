@@ -4,9 +4,9 @@ import com.getaltair.altair.domain.common.SoftDeletable
 import com.getaltair.altair.domain.common.Timestamped
 import com.getaltair.altair.domain.types.Schedule
 import com.getaltair.altair.domain.types.Ulid
-import kotlin.time.Instant
 import kotlinx.datetime.LocalTime
 import kotlinx.serialization.Serializable
+import kotlin.time.Instant
 
 /**
  * A recurring template that spawns Quest instances on a schedule.

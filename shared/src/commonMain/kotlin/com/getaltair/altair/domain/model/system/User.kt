@@ -5,8 +5,8 @@ import com.getaltair.altair.domain.common.Timestamped
 import com.getaltair.altair.domain.types.Ulid
 import com.getaltair.altair.domain.types.enums.UserRole
 import com.getaltair.altair.domain.types.enums.UserStatus
-import kotlin.time.Instant
 import kotlinx.serialization.Serializable
+import kotlin.time.Instant
 
 /**
  * An authenticated person in the Altair system.

@@ -5,6 +5,7 @@ package com.getaltair.altair.db.repository
 import arrow.core.Either
 import arrow.core.raise.either
 import com.getaltair.altair.db.SurrealDbClient
+import com.getaltair.altair.domain.DomainError
 import com.getaltair.altair.domain.EpicError
 import com.getaltair.altair.domain.model.guidance.Epic
 import com.getaltair.altair.domain.types.Ulid
@@ -13,12 +14,14 @@ import com.getaltair.altair.repository.EpicProgress
 import com.getaltair.altair.repository.EpicRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import kotlin.time.Instant
 import kotlinx.datetime.LocalDate
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import org.slf4j.LoggerFactory
+import kotlin.time.Instant
 
 class SurrealEpicRepository(
     private val db: SurrealDbClient,
@@ -30,6 +33,10 @@ class SurrealEpicRepository(
             isLenient = true
         }
 
+    companion object {
+        private val logger = LoggerFactory.getLogger(SurrealEpicRepository::class.java)
+    }
+
     override suspend fun findById(id: Ulid): Either<EpicError, Epic> =
         either {
             val result =
@@ -37,8 +44,10 @@ class SurrealEpicRepository(
                     .queryBind(
                         "SELECT * FROM epic WHERE id = epic:\$id AND user_id = user:\$userId AND deleted_at IS NONE",
                         mapOf("id" to id.value, "userId" to userId.value),
-                    ).mapLeft { EpicError.NotFound(id) }
-                    .bind()
+                    ).mapLeft { error ->
+                        logger.warn("Database error in findById for ${id.value}: ERROR_MSG_PH (converting to NotFound)")
+                        EpicError.NotFound(id)
+                    }.bind()
             parseEpic(result) ?: raise(EpicError.NotFound(id))
         }
 
@@ -69,8 +78,10 @@ class SurrealEpicRepository(
                             "completedAt" to entity.completedAt?.toString(),
                             "userId" to userId.value,
                         ),
-                    ).mapLeft { EpicError.NotFound(entity.id) }
-                    .bind()
+                    ).mapLeft { error ->
+                        logger.warn("Database error updating ${entity.id.value}: ERROR_MSG_PH (converting to NotFound)")
+                        EpicError.NotFound(entity.id)
+                    }.bind()
             } else {
                 db
                     .executeBind(
@@ -94,8 +105,10 @@ class SurrealEpicRepository(
                             "initiativeId" to entity.initiativeId?.let { "initiative:${it.value}" },
                             "targetDate" to entity.targetDate?.toString(),
                         ),
-                    ).mapLeft { EpicError.NotFound(entity.id) }
-                    .bind()
+                    ).mapLeft { error ->
+                        logger.warn("Database error inserting ${entity.id.value}: ERROR_MSG_PH (converting to NotFound)")
+                        EpicError.NotFound(entity.id)
+                    }.bind()
             }
             findById(entity.id).bind()
         }
@@ -107,8 +120,10 @@ class SurrealEpicRepository(
                 .executeBind(
                     "UPDATE epic:${'$'}id SET deleted_at = time::now(), updated_at = time::now() WHERE user_id = user:${'$'}userId;",
                     mapOf("id" to id.value, "userId" to userId.value),
-                ).mapLeft { EpicError.NotFound(id) }
-                .bind()
+                ).mapLeft { error ->
+                    logger.warn("Database error in delete for ${id.value}: ERROR_MSG_PH (converting to NotFound)")
+                    EpicError.NotFound(id)
+                }.bind()
         }
 
     override fun findAll(): Flow<List<Epic>> =
@@ -118,7 +133,28 @@ class SurrealEpicRepository(
                     "SELECT * FROM epic WHERE user_id = user:\$userId AND deleted_at IS NONE ORDER BY created_at DESC",
                     mapOf("userId" to userId.value),
                 )
-            emit(result.fold({ emptyList() }, { parseEpics(it) }))
+            emit(
+                result.fold(
+                    ifLeft = { error ->
+
+                        when (error) {
+                            is DomainError.NetworkError -> logger.warn("Database error: ERROR_MSG_PH")
+
+                            is DomainError.UnexpectedError -> logger.warn("Database error: ERROR_MSG_PH")
+
+                            is DomainError.NotFoundError -> logger.warn("Database error: ${error.resource} ${error.id}")
+
+                            is DomainError.ValidationError -> logger.warn("Database error: ${error.field} - ERROR_MSG_PH")
+
+                            is DomainError.UnauthorizedError -> logger.warn("Database error: ERROR_MSG_PH")
+
+                            else -> logger.warn("Database error: $error")
+                        }
+                        emptyList()
+                    },
+                    ifRight = { parseEpics(it) },
+                ),
+            )
         }
 
     override fun findByStatus(status: EpicStatus): Flow<List<Epic>> =
@@ -128,7 +164,28 @@ class SurrealEpicRepository(
                     "SELECT * FROM epic WHERE user_id = user:\$userId AND status = \$status AND deleted_at IS NONE",
                     mapOf("userId" to userId.value, "status" to status.name.lowercase()),
                 )
-            emit(result.fold({ emptyList() }, { parseEpics(it) }))
+            emit(
+                result.fold(
+                    ifLeft = { error ->
+
+                        when (error) {
+                            is DomainError.NetworkError -> logger.warn("Database error: ERROR_MSG_PH")
+
+                            is DomainError.UnexpectedError -> logger.warn("Database error: ERROR_MSG_PH")
+
+                            is DomainError.NotFoundError -> logger.warn("Database error: ${error.resource} ${error.id}")
+
+                            is DomainError.ValidationError -> logger.warn("Database error: ${error.field} - ERROR_MSG_PH")
+
+                            is DomainError.UnauthorizedError -> logger.warn("Database error: ERROR_MSG_PH")
+
+                            else -> logger.warn("Database error: $error")
+                        }
+                        emptyList()
+                    },
+                    ifRight = { parseEpics(it) },
+                ),
+            )
         }
 
     override fun findByInitiative(initiativeId: Ulid): Flow<List<Epic>> =
@@ -138,7 +195,28 @@ class SurrealEpicRepository(
                     "SELECT * FROM epic WHERE user_id = user:\$userId AND initiative_id = initiative:\$initiativeId AND deleted_at IS NONE",
                     mapOf("userId" to userId.value, "initiativeId" to initiativeId.value),
                 )
-            emit(result.fold({ emptyList() }, { parseEpics(it) }))
+            emit(
+                result.fold(
+                    ifLeft = { error ->
+
+                        when (error) {
+                            is DomainError.NetworkError -> logger.warn("Database error: ERROR_MSG_PH")
+
+                            is DomainError.UnexpectedError -> logger.warn("Database error: ERROR_MSG_PH")
+
+                            is DomainError.NotFoundError -> logger.warn("Database error: ${error.resource} ${error.id}")
+
+                            is DomainError.ValidationError -> logger.warn("Database error: ${error.field} - ERROR_MSG_PH")
+
+                            is DomainError.UnauthorizedError -> logger.warn("Database error: ERROR_MSG_PH")
+
+                            else -> logger.warn("Database error: $error")
+                        }
+                        emptyList()
+                    },
+                    ifRight = { parseEpics(it) },
+                ),
+            )
         }
 
     override suspend fun getProgress(id: Ulid): Either<EpicError, EpicProgress> =
@@ -158,8 +236,10 @@ class SurrealEpicRepository(
                         GROUP ALL;
                         """.trimIndent(),
                         mapOf("id" to id.value),
-                    ).mapLeft { EpicError.NotFound(id) }
-                    .bind()
+                    ).mapLeft { error ->
+                        logger.warn("Database error in getProgress for ${id.value}: ERROR_MSG_PH (converting to NotFound)")
+                        EpicError.NotFound(id)
+                    }.bind()
             parseProgress(result)
         }
 
@@ -170,7 +250,27 @@ class SurrealEpicRepository(
                     "SELECT * FROM epic WHERE user_id = user:\$userId AND deleted_at IS NONE",
                     mapOf("userId" to userId.value),
                 )
-            val epics = epicsResult.fold({ emptyList() }, { parseEpics(it) })
+            val epics =
+                epicsResult.fold(
+                    ifLeft = { error ->
+
+                        when (error) {
+                            is DomainError.NetworkError -> logger.warn("Database error in findAllWithProgress: ERROR_MSG_PH")
+
+                            is DomainError.UnexpectedError -> logger.warn("Database error in findAllWithProgress: ERROR_MSG_PH")
+
+                            is DomainError.NotFoundError -> logger.warn("Database error in findAllWithProgress: ${error.resource} ${error.id}")
+
+                            is DomainError.ValidationError -> logger.warn("Database error in findAllWithProgress: ${error.field} - ERROR_MSG_PH")
+
+                            is DomainError.UnauthorizedError -> logger.warn("Database error in findAllWithProgress: ERROR_MSG_PH")
+
+                            else -> logger.warn("Database error in findAllWithProgress: $error")
+                        }
+                        emptyList()
+                    },
+                    ifRight = { parseEpics(it) },
+                )
             val withProgress =
                 epics.map { epic ->
                     val progress =
@@ -191,7 +291,14 @@ class SurrealEpicRepository(
                 .firstOrNull()
                 ?.jsonObject
                 ?.let { mapToEpic(it) }
-        } catch (e: Exception) {
+        } catch (e: SerializationException) {
+            logger.warn("Failed to parse epic: ${e.message}", e)
+            null
+        } catch (e: IllegalStateException) {
+            logger.warn("Failed to parse epic: ${e.message}", e)
+            null
+        } catch (e: IllegalArgumentException) {
+            logger.warn("Failed to parse epic: ${e.message}", e)
             null
         }
 
@@ -200,11 +307,25 @@ class SurrealEpicRepository(
             json.parseToJsonElement(result).jsonArray.mapNotNull {
                 try {
                     mapToEpic(it.jsonObject)
-                } catch (e: Exception) {
+                } catch (e: SerializationException) {
+                    logger.warn("Failed to parse epic element: ${e.message}", e)
+                    null
+                } catch (e: IllegalStateException) {
+                    logger.warn("Failed to parse epic element: ${e.message}", e)
+                    null
+                } catch (e: IllegalArgumentException) {
+                    logger.warn("Failed to parse epic element: ${e.message}", e)
                     null
                 }
             }
-        } catch (e: Exception) {
+        } catch (e: SerializationException) {
+            logger.warn("Failed to parse epics array: ${e.message}", e)
+            emptyList()
+        } catch (e: IllegalStateException) {
+            logger.warn("Failed to parse epics array: ${e.message}", e)
+            emptyList()
+        } catch (e: IllegalArgumentException) {
+            logger.warn("Failed to parse epics array: ${e.message}", e)
             emptyList()
         }
 
@@ -265,7 +386,14 @@ class SurrealEpicRepository(
                         ?.content
                         ?.toIntOrNull() ?: 0,
             )
-        } catch (e: Exception) {
+        } catch (e: SerializationException) {
+            logger.warn("Failed to parse epic progress: ${e.message}", e)
+            EpicProgress(0, 0, 0, 0)
+        } catch (e: IllegalStateException) {
+            logger.warn("Failed to parse epic progress: ${e.message}", e)
+            EpicProgress(0, 0, 0, 0)
+        } catch (e: IllegalArgumentException) {
+            logger.warn("Failed to parse epic progress: ${e.message}", e)
             EpicProgress(0, 0, 0, 0)
         }
 
@@ -273,7 +401,14 @@ class SurrealEpicRepository(
         value?.let {
             try {
                 Instant.parse(it)
-            } catch (e: Exception) {
+            } catch (e: SerializationException) {
+                logger.warn("Failed to parse instant '$value': ${e.message}")
+                Instant.DISTANT_PAST
+            } catch (e: IllegalStateException) {
+                logger.warn("Failed to parse instant '$value': ${e.message}")
+                Instant.DISTANT_PAST
+            } catch (e: IllegalArgumentException) {
+                logger.warn("Failed to parse instant '$value': ${e.message}")
                 Instant.DISTANT_PAST
             }
         } ?: Instant.DISTANT_PAST

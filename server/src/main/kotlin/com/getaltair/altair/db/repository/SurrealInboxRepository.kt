@@ -12,13 +12,14 @@ import com.getaltair.altair.domain.types.enums.CaptureSource
 import com.getaltair.altair.repository.InboxRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import kotlin.time.Instant
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.slf4j.LoggerFactory
 import kotlin.time.Clock
+import kotlin.time.Instant
 
 /**
  * SurrealDB implementation of InboxRepository.
@@ -85,7 +86,28 @@ class SurrealInboxRepository(
                     "SELECT * FROM inbox_item WHERE user_id = user:\$userId ORDER BY created_at DESC",
                     mapOf("userId" to userId.value),
                 )
-            emit(result.fold({ emptyList() }, { parseInboxItems(it) }))
+            emit(
+                result.fold(
+                    ifLeft = { error ->
+
+                        when (error) {
+                            is DomainError.NetworkError -> logger.warn("Database error in findAll: ERROR_MSG")
+
+                            is DomainError.UnexpectedError -> logger.warn("Database error in findAll: ERROR_MSG")
+
+                            is DomainError.NotFoundError -> logger.warn("Database error in findAll: ${error.resource} ${error.id}")
+
+                            is DomainError.ValidationError -> logger.warn("Database error in findAll: ${error.field} - ERROR_MSG")
+
+                            is DomainError.UnauthorizedError -> logger.warn("Database error in findAll: ERROR_MSG")
+
+                            else -> logger.warn("Database error in findAll: $error")
+                        }
+                        emptyList()
+                    },
+                    ifRight = { parseInboxItems(it) },
+                ),
+            )
         }
 
     override suspend fun capture(
@@ -128,7 +150,28 @@ class SurrealInboxRepository(
                     "SELECT * FROM inbox_item WHERE user_id = user:\$userId AND source = \$source",
                     mapOf("userId" to userId.value, "source" to source.name.lowercase()),
                 )
-            emit(result.fold({ emptyList() }, { parseInboxItems(it) }))
+            emit(
+                result.fold(
+                    ifLeft = { error ->
+
+                        when (error) {
+                            is DomainError.NetworkError -> logger.warn("Database error in findBySource: ERROR_MSG")
+
+                            is DomainError.UnexpectedError -> logger.warn("Database error in findBySource: ERROR_MSG")
+
+                            is DomainError.NotFoundError -> logger.warn("Database error in findBySource: ${error.resource} ${error.id}")
+
+                            is DomainError.ValidationError -> logger.warn("Database error in findBySource: ${error.field} - ERROR_MSG")
+
+                            is DomainError.UnauthorizedError -> logger.warn("Database error in findBySource: ERROR_MSG")
+
+                            else -> logger.warn("Database error in findBySource: $error")
+                        }
+                        emptyList()
+                    },
+                    ifRight = { parseInboxItems(it) },
+                ),
+            )
         }
 
     private fun parseInboxItem(result: String): InboxItem? {
@@ -136,7 +179,13 @@ class SurrealInboxRepository(
             val array = json.parseToJsonElement(result).jsonArray
             val obj = array.firstOrNull()?.jsonObject ?: return null
             mapToInboxItem(obj)
-        } catch (e: Exception) {
+        } catch (e: SerializationException) {
+            logger.warn("Failed to parse InboxItem: ${e.message}", e)
+            null
+        } catch (e: IllegalStateException) {
+            logger.warn("Failed to parse InboxItem: ${e.message}", e)
+            null
+        } catch (e: IllegalArgumentException) {
             logger.warn("Failed to parse InboxItem: ${e.message}", e)
             null
         }
@@ -147,12 +196,24 @@ class SurrealInboxRepository(
             json.parseToJsonElement(result).jsonArray.mapNotNull {
                 try {
                     mapToInboxItem(it.jsonObject)
-                } catch (e: Exception) {
+                } catch (e: SerializationException) {
+                    logger.warn("Failed to parse InboxItem element: ${e.message}", e)
+                    null
+                } catch (e: IllegalStateException) {
+                    logger.warn("Failed to parse InboxItem element: ${e.message}", e)
+                    null
+                } catch (e: IllegalArgumentException) {
                     logger.warn("Failed to parse InboxItem element: ${e.message}", e)
                     null
                 }
             }
-        } catch (e: Exception) {
+        } catch (e: SerializationException) {
+            logger.warn("Failed to parse InboxItem list: ${e.message}", e)
+            emptyList()
+        } catch (e: IllegalStateException) {
+            logger.warn("Failed to parse InboxItem list: ${e.message}", e)
+            emptyList()
+        } catch (e: IllegalArgumentException) {
             logger.warn("Failed to parse InboxItem list: ${e.message}", e)
             emptyList()
         }
@@ -164,7 +225,13 @@ class SurrealInboxRepository(
             try {
                 obj["attachment_ids"]?.jsonArray?.mapNotNull { it.jsonPrimitive.content.let { id -> Ulid(id) } }
                     ?: emptyList()
-            } catch (e: Exception) {
+            } catch (e: SerializationException) {
+                logger.warn("Failed to parse attachment_ids: ${e.message}", e)
+                emptyList()
+            } catch (e: IllegalStateException) {
+                logger.warn("Failed to parse attachment_ids: ${e.message}", e)
+                emptyList()
+            } catch (e: IllegalArgumentException) {
                 logger.warn("Failed to parse attachment_ids: ${e.message}", e)
                 emptyList()
             }
@@ -183,7 +250,13 @@ class SurrealInboxRepository(
         value?.let {
             try {
                 Instant.parse(it)
-            } catch (e: Exception) {
+            } catch (e: SerializationException) {
+                logger.warn("Failed to parse Instant '$it': ${e.message}", e)
+                Instant.DISTANT_PAST
+            } catch (e: IllegalStateException) {
+                logger.warn("Failed to parse Instant '$it': ${e.message}", e)
+                Instant.DISTANT_PAST
+            } catch (e: IllegalArgumentException) {
                 logger.warn("Failed to parse Instant '$it': ${e.message}", e)
                 Instant.DISTANT_PAST
             }
@@ -202,7 +275,13 @@ class SurrealInboxRepository(
                 ?.content
                 ?.toIntOrNull()
                 ?: 0
-        } catch (e: Exception) {
+        } catch (e: SerializationException) {
+            logger.warn("Failed to parse count: ${e.message}", e)
+            0
+        } catch (e: IllegalStateException) {
+            logger.warn("Failed to parse count: ${e.message}", e)
+            0
+        } catch (e: IllegalArgumentException) {
             logger.warn("Failed to parse count: ${e.message}", e)
             0
         }

@@ -6,6 +6,7 @@ import arrow.core.Either
 import arrow.core.raise.either
 import arrow.core.raise.ensure
 import com.getaltair.altair.db.SurrealDbClient
+import com.getaltair.altair.domain.DomainError
 import com.getaltair.altair.domain.UserError
 import com.getaltair.altair.domain.model.system.User
 import com.getaltair.altair.domain.model.system.UserWithCredentials
@@ -15,12 +16,13 @@ import com.getaltair.altair.domain.types.enums.UserStatus
 import com.getaltair.altair.repository.UserRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import kotlin.time.Instant
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.slf4j.LoggerFactory
+import kotlin.time.Instant
 
 /**
  * SurrealDB implementation of UserRepository.
@@ -44,8 +46,10 @@ class SurrealUserRepository(
                     .queryBind(
                         "SELECT * FROM user WHERE id = user:${'$'}id AND deleted_at IS NONE",
                         mapOf("id" to id.value),
-                    ).mapLeft { UserError.NotFound(id) }
-                    .bind()
+                    ).mapLeft { error ->
+                        logger.warn("Database error in findById for ${id.value}: ERROR_PLACEHOLDER (converting to NotFound)")
+                        UserError.NotFound(id)
+                    }.bind()
 
             parseUser(result) ?: raise(UserError.NotFound(id))
         }
@@ -57,8 +61,10 @@ class SurrealUserRepository(
                     .queryBind(
                         "SELECT * FROM user WHERE email = ${'$'}email AND deleted_at IS NONE",
                         mapOf("email" to email),
-                    ).mapLeft { UserError.EmailNotFound }
-                    .bind()
+                    ).mapLeft { error ->
+                        logger.warn("Database error in findByEmail for $email: ERROR_PLACEHOLDER (converting to EmailNotFound)")
+                        UserError.EmailNotFound
+                    }.bind()
 
             parseUser(result) ?: raise(UserError.EmailNotFound)
         }
@@ -70,8 +76,10 @@ class SurrealUserRepository(
                     .queryBind(
                         "SELECT * FROM user WHERE email = ${'$'}email AND deleted_at IS NONE",
                         mapOf("email" to email),
-                    ).mapLeft { UserError.EmailNotFound }
-                    .bind()
+                    ).mapLeft { error ->
+                        logger.warn("Database error in findByEmailWithCredentials for $email: ERROR_PLACEHOLDER (converting to EmailNotFound)")
+                        UserError.EmailNotFound
+                    }.bind()
 
             parseUserWithCredentials(result) ?: raise(UserError.EmailNotFound)
         }
@@ -83,8 +91,10 @@ class SurrealUserRepository(
                     .queryBind(
                         "SELECT * FROM user WHERE id = user:${'$'}id AND deleted_at IS NONE",
                         mapOf("id" to id.value),
-                    ).mapLeft { UserError.NotFound(id) }
-                    .bind()
+                    ).mapLeft { error ->
+                        logger.warn("Database error in findByIdWithCredentials for ${id.value}: ERROR_PLACEHOLDER (converting to NotFound)")
+                        UserError.NotFound(id)
+                    }.bind()
 
             parseUserWithCredentials(result) ?: raise(UserError.NotFound(id))
         }
@@ -117,8 +127,10 @@ class SurrealUserRepository(
                         "storageUsed" to user.storageUsedBytes,
                         "storageQuota" to user.storageQuotaBytes,
                     ),
-                ).mapLeft { UserError.NotFound(user.id) }
-                .bind()
+                ).mapLeft { error ->
+                    logger.warn("Database error creating user ${user.id.value}: ERROR_PLACEHOLDER (converting to NotFound)")
+                    UserError.NotFound(user.id)
+                }.bind()
 
             findById(user.id).bind()
         }
@@ -156,8 +168,10 @@ class SurrealUserRepository(
                         "storageQuota" to user.storageQuotaBytes,
                         "passwordHash" to passwordHash,
                     ),
-                ).mapLeft { UserError.NotFound(user.id) }
-                .bind()
+                ).mapLeft { error ->
+                    logger.warn("Database error creating user with password ${user.id.value}: ERROR_PLACEHOLDER (converting to NotFound)")
+                    UserError.NotFound(user.id)
+                }.bind()
 
             findById(user.id).bind()
         }
@@ -177,8 +191,10 @@ class SurrealUserRepository(
                         updated_at = time::now();
                     """.trimIndent(),
                     mapOf("passwordHash" to passwordHash),
-                ).mapLeft { UserError.NotFound(id) }
-                .bind()
+                ).mapLeft { error ->
+                    logger.warn("Database error in updatePassword for ${id.value}: ERROR_PLACEHOLDER (converting to NotFound)")
+                    UserError.NotFound(id)
+                }.bind()
         }
 
     override suspend fun update(user: User): Either<UserError, User> =
@@ -208,8 +224,10 @@ class SurrealUserRepository(
                             "storageUsed" to user.storageUsedBytes,
                             "storageQuota" to user.storageQuotaBytes,
                         ),
-                    ).mapLeft { UserError.NotFound(user.id) }
-                    .bind()
+                    ).mapLeft { error ->
+                        logger.warn("Database error updating user ${user.id.value}: ERROR_PLACEHOLDER (converting to NotFound)")
+                        UserError.NotFound(user.id)
+                    }.bind()
 
             parseUser(result) ?: raise(UserError.NotFound(user.id))
         }
@@ -226,8 +244,10 @@ class SurrealUserRepository(
                         updated_at = time::now();
                     """.trimIndent(),
                     emptyMap(),
-                ).mapLeft { UserError.NotFound(id) }
-                .bind()
+                ).mapLeft { error ->
+                    logger.warn("Database error in delete for ${id.value}: ERROR_PLACEHOLDER (converting to NotFound)")
+                    UserError.NotFound(id)
+                }.bind()
         }
 
     override fun findAll(): Flow<List<User>> =
@@ -236,7 +256,28 @@ class SurrealUserRepository(
                 db.query<Any>(
                     "SELECT * FROM user WHERE deleted_at IS NONE ORDER BY created_at DESC",
                 )
-            emit(result.fold({ emptyList() }, { parseUsers(it) }))
+            emit(
+                result.fold(
+                    ifLeft = { error ->
+
+                        when (error) {
+                            is DomainError.NetworkError -> logger.warn("Database error: ERROR_PLACEHOLDER")
+
+                            is DomainError.UnexpectedError -> logger.warn("Database error: ERROR_PLACEHOLDER")
+
+                            is DomainError.NotFoundError -> logger.warn("Database error: ${error.resource} ${error.id}")
+
+                            is DomainError.ValidationError -> logger.warn("Database error: ${error.field} - ERROR_PLACEHOLDER")
+
+                            is DomainError.UnauthorizedError -> logger.warn("Database error: ERROR_PLACEHOLDER")
+
+                            else -> logger.warn("Database error: $error")
+                        }
+                        emptyList()
+                    },
+                    ifRight = { parseUsers(it) },
+                ),
+            )
         }
 
     override fun findByRole(role: UserRole): Flow<List<User>> =
@@ -246,7 +287,28 @@ class SurrealUserRepository(
                     "SELECT * FROM user WHERE role = ${'$'}role AND deleted_at IS NONE",
                     mapOf("role" to role.name.lowercase()),
                 )
-            emit(result.fold({ emptyList() }, { parseUsers(it) }))
+            emit(
+                result.fold(
+                    ifLeft = { error ->
+
+                        when (error) {
+                            is DomainError.NetworkError -> logger.warn("Database error: ERROR_PLACEHOLDER")
+
+                            is DomainError.UnexpectedError -> logger.warn("Database error: ERROR_PLACEHOLDER")
+
+                            is DomainError.NotFoundError -> logger.warn("Database error: ${error.resource} ${error.id}")
+
+                            is DomainError.ValidationError -> logger.warn("Database error: ${error.field} - ERROR_PLACEHOLDER")
+
+                            is DomainError.UnauthorizedError -> logger.warn("Database error: ERROR_PLACEHOLDER")
+
+                            else -> logger.warn("Database error: $error")
+                        }
+                        emptyList()
+                    },
+                    ifRight = { parseUsers(it) },
+                ),
+            )
         }
 
     override fun findByStatus(status: UserStatus): Flow<List<User>> =
@@ -256,7 +318,28 @@ class SurrealUserRepository(
                     "SELECT * FROM user WHERE status = ${'$'}status AND deleted_at IS NONE",
                     mapOf("status" to status.name.lowercase()),
                 )
-            emit(result.fold({ emptyList() }, { parseUsers(it) }))
+            emit(
+                result.fold(
+                    ifLeft = { error ->
+
+                        when (error) {
+                            is DomainError.NetworkError -> logger.warn("Database error: ERROR_PLACEHOLDER")
+
+                            is DomainError.UnexpectedError -> logger.warn("Database error: ERROR_PLACEHOLDER")
+
+                            is DomainError.NotFoundError -> logger.warn("Database error: ${error.resource} ${error.id}")
+
+                            is DomainError.ValidationError -> logger.warn("Database error: ${error.field} - ERROR_PLACEHOLDER")
+
+                            is DomainError.UnauthorizedError -> logger.warn("Database error: ERROR_PLACEHOLDER")
+
+                            else -> logger.warn("Database error: $error")
+                        }
+                        emptyList()
+                    },
+                    ifRight = { parseUsers(it) },
+                ),
+            )
         }
 
     override suspend fun updateStorageUsed(
@@ -280,8 +363,10 @@ class SurrealUserRepository(
                         RETURN AFTER;
                         """.trimIndent(),
                         mapOf("bytesUsed" to bytesUsed),
-                    ).mapLeft { UserError.NotFound(id) }
-                    .bind()
+                    ).mapLeft { error ->
+                        logger.warn("Database error in updateStorageUsed for ${id.value}: ERROR_PLACEHOLDER (converting to NotFound)")
+                        UserError.NotFound(id)
+                    }.bind()
 
             parseUser(result) ?: raise(UserError.NotFound(id))
         }
@@ -300,8 +385,10 @@ class SurrealUserRepository(
                 db
                     .query<Any>(
                         "SELECT count() FROM user WHERE status = 'active' AND deleted_at IS NONE GROUP ALL",
-                    ).mapLeft { UserError.NotFound(Ulid.generate()) }
-                    .bind()
+                    ).mapLeft { error ->
+                        logger.warn("Database error in countActive: ERROR_PLACEHOLDER (converting to NotFound)")
+                        UserError.NotFound(Ulid.generate())
+                    }.bind()
 
             parseCount(result)
         }
@@ -311,7 +398,13 @@ class SurrealUserRepository(
             val array = json.parseToJsonElement(result).jsonArray
             val obj = array.firstOrNull()?.jsonObject ?: return null
             mapToUser(obj)
-        } catch (e: Exception) {
+        } catch (e: SerializationException) {
+            logger.warn("Failed to parse user: ${e.message}", e)
+            null
+        } catch (e: IllegalStateException) {
+            logger.warn("Failed to parse user: ${e.message}", e)
+            null
+        } catch (e: IllegalArgumentException) {
             logger.warn("Failed to parse user: ${e.message}", e)
             null
         }
@@ -327,7 +420,13 @@ class SurrealUserRepository(
                 obj["password_hash"]?.jsonPrimitive?.content
                     ?: return null // User has no password set
             UserWithCredentials(user, passwordHash)
-        } catch (e: Exception) {
+        } catch (e: SerializationException) {
+            logger.warn("Failed to parse user with credentials: ${e.message}", e)
+            null
+        } catch (e: IllegalStateException) {
+            logger.warn("Failed to parse user with credentials: ${e.message}", e)
+            null
+        } catch (e: IllegalArgumentException) {
             logger.warn("Failed to parse user with credentials: ${e.message}", e)
             null
         }
@@ -338,12 +437,24 @@ class SurrealUserRepository(
             array.mapNotNull { element ->
                 try {
                     mapToUser(element.jsonObject)
-                } catch (e: Exception) {
+                } catch (e: SerializationException) {
+                    logger.warn("Failed to parse user element: ${e.message}", e)
+                    null
+                } catch (e: IllegalStateException) {
+                    logger.warn("Failed to parse user element: ${e.message}", e)
+                    null
+                } catch (e: IllegalArgumentException) {
                     logger.warn("Failed to parse user element: ${e.message}", e)
                     null
                 }
             }
-        } catch (e: Exception) {
+        } catch (e: SerializationException) {
+            logger.warn("Failed to parse users array: ${e.message}", e)
+            emptyList()
+        } catch (e: IllegalStateException) {
+            logger.warn("Failed to parse users array: ${e.message}", e)
+            emptyList()
+        } catch (e: IllegalArgumentException) {
             logger.warn("Failed to parse users array: ${e.message}", e)
             emptyList()
         }
@@ -370,7 +481,13 @@ class SurrealUserRepository(
         value?.let {
             try {
                 Instant.parse(it)
-            } catch (e: Exception) {
+            } catch (e: SerializationException) {
+                logger.warn("Failed to parse instant '$value': ${e.message}")
+                Instant.DISTANT_PAST
+            } catch (e: IllegalStateException) {
+                logger.warn("Failed to parse instant '$value': ${e.message}")
+                Instant.DISTANT_PAST
+            } catch (e: IllegalArgumentException) {
                 logger.warn("Failed to parse instant '$value': ${e.message}")
                 Instant.DISTANT_PAST
             }
@@ -385,7 +502,13 @@ class SurrealUserRepository(
                 ?.jsonPrimitive
                 ?.content
                 ?.toIntOrNull() ?: 0
-        } catch (e: Exception) {
+        } catch (e: SerializationException) {
+            logger.warn("Failed to parse count: ${e.message}", e)
+            0
+        } catch (e: IllegalStateException) {
+            logger.warn("Failed to parse count: ${e.message}", e)
+            0
+        } catch (e: IllegalArgumentException) {
             logger.warn("Failed to parse count: ${e.message}", e)
             0
         }

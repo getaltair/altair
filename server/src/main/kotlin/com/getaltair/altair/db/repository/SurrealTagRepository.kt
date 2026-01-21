@@ -11,13 +11,14 @@ import com.getaltair.altair.domain.types.Ulid
 import com.getaltair.altair.repository.TagRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import kotlin.time.Instant
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.slf4j.LoggerFactory
 import kotlin.time.Clock
+import kotlin.time.Instant
 
 class SurrealTagRepository(
     private val db: SurrealDbClient,
@@ -99,7 +100,28 @@ class SurrealTagRepository(
                     "SELECT * FROM tag WHERE user_id = user:\$userId AND deleted_at IS NONE ORDER BY name",
                     mapOf("userId" to userId.value),
                 )
-            emit(result.fold({ emptyList() }, { parseTags(it) }))
+            emit(
+                result.fold(
+                    ifLeft = { error ->
+
+                        when (error) {
+                            is DomainError.NetworkError -> logger.warn("Database error in findAll: ERROR_MSG")
+
+                            is DomainError.UnexpectedError -> logger.warn("Database error in findAll: ERROR_MSG")
+
+                            is DomainError.NotFoundError -> logger.warn("Database error in findAll: ${error.resource} ${error.id}")
+
+                            is DomainError.ValidationError -> logger.warn("Database error in findAll: ${error.field} - ERROR_MSG")
+
+                            is DomainError.UnauthorizedError -> logger.warn("Database error in findAll: ERROR_MSG")
+
+                            else -> logger.warn("Database error in findAll: $error")
+                        }
+                        emptyList()
+                    },
+                    ifRight = { parseTags(it) },
+                ),
+            )
         }
 
     override suspend fun findByName(name: String): Either<DomainError, Tag> =
@@ -150,7 +172,28 @@ class SurrealTagRepository(
                     """.trimIndent(),
                     mapOf("noteId" to noteId.value, "userId" to userId.value),
                 )
-            emit(result.fold({ emptyList() }, { parseTags(it) }))
+            emit(
+                result.fold(
+                    ifLeft = { error ->
+
+                        when (error) {
+                            is DomainError.NetworkError -> logger.warn("Database error in findByNote: ERROR_MSG")
+
+                            is DomainError.UnexpectedError -> logger.warn("Database error in findByNote: ERROR_MSG")
+
+                            is DomainError.NotFoundError -> logger.warn("Database error in findByNote: ${error.resource} ${error.id}")
+
+                            is DomainError.ValidationError -> logger.warn("Database error in findByNote: ${error.field} - ERROR_MSG")
+
+                            is DomainError.UnauthorizedError -> logger.warn("Database error in findByNote: ERROR_MSG")
+
+                            else -> logger.warn("Database error in findByNote: $error")
+                        }
+                        emptyList()
+                    },
+                    ifRight = { parseTags(it) },
+                ),
+            )
         }
 
     override suspend fun tagNote(
@@ -197,7 +240,28 @@ class SurrealTagRepository(
                     """.trimIndent(),
                     mapOf("userId" to userId.value, "limit" to limit),
                 )
-            emit(result.fold({ emptyList() }, { parseTagsWithCount(it) }))
+            emit(
+                result.fold(
+                    ifLeft = { error ->
+
+                        when (error) {
+                            is DomainError.NetworkError -> logger.warn("Database error in findMostUsed: ERROR_MSG")
+
+                            is DomainError.UnexpectedError -> logger.warn("Database error in findMostUsed: ERROR_MSG")
+
+                            is DomainError.NotFoundError -> logger.warn("Database error in findMostUsed: ${error.resource} ${error.id}")
+
+                            is DomainError.ValidationError -> logger.warn("Database error in findMostUsed: ${error.field} - ERROR_MSG")
+
+                            is DomainError.UnauthorizedError -> logger.warn("Database error in findMostUsed: ERROR_MSG")
+
+                            else -> logger.warn("Database error in findMostUsed: $error")
+                        }
+                        emptyList()
+                    },
+                    ifRight = { parseTagsWithCount(it) },
+                ),
+            )
         }
 
     private fun parseTag(result: String): Tag? =
@@ -208,7 +272,13 @@ class SurrealTagRepository(
                 .firstOrNull()
                 ?.jsonObject
                 ?.let { mapToTag(it) }
-        } catch (e: Exception) {
+        } catch (e: SerializationException) {
+            logger.warn("Failed to parse tag from result: ${e.message}", e)
+            null
+        } catch (e: IllegalStateException) {
+            logger.warn("Failed to parse tag from result: ${e.message}", e)
+            null
+        } catch (e: IllegalArgumentException) {
             logger.warn("Failed to parse tag from result: ${e.message}", e)
             null
         }
@@ -218,12 +288,24 @@ class SurrealTagRepository(
             json.parseToJsonElement(result).jsonArray.mapNotNull {
                 try {
                     mapToTag(it.jsonObject)
-                } catch (e: Exception) {
+                } catch (e: SerializationException) {
+                    logger.warn("Failed to parse individual tag: ${e.message}")
+                    null
+                } catch (e: IllegalStateException) {
+                    logger.warn("Failed to parse individual tag: ${e.message}")
+                    null
+                } catch (e: IllegalArgumentException) {
                     logger.warn("Failed to parse individual tag: ${e.message}")
                     null
                 }
             }
-        } catch (e: Exception) {
+        } catch (e: SerializationException) {
+            logger.warn("Failed to parse tags array: ${e.message}", e)
+            emptyList()
+        } catch (e: IllegalStateException) {
+            logger.warn("Failed to parse tags array: ${e.message}", e)
+            emptyList()
+        } catch (e: IllegalArgumentException) {
             logger.warn("Failed to parse tags array: ${e.message}", e)
             emptyList()
         }
@@ -236,12 +318,24 @@ class SurrealTagRepository(
                     val tag = mapToTag(obj)
                     val count = obj["usage_count"]?.jsonPrimitive?.content?.toIntOrNull() ?: 0
                     tag to count
-                } catch (e: Exception) {
+                } catch (e: SerializationException) {
+                    logger.warn("Failed to parse tag with count: ${e.message}")
+                    null
+                } catch (e: IllegalStateException) {
+                    logger.warn("Failed to parse tag with count: ${e.message}")
+                    null
+                } catch (e: IllegalArgumentException) {
                     logger.warn("Failed to parse tag with count: ${e.message}")
                     null
                 }
             }
-        } catch (e: Exception) {
+        } catch (e: SerializationException) {
+            logger.warn("Failed to parse tags with count array: ${e.message}", e)
+            emptyList()
+        } catch (e: IllegalStateException) {
+            logger.warn("Failed to parse tags with count array: ${e.message}", e)
+            emptyList()
+        } catch (e: IllegalArgumentException) {
             logger.warn("Failed to parse tags with count array: ${e.message}", e)
             emptyList()
         }
@@ -264,7 +358,13 @@ class SurrealTagRepository(
         value?.let {
             try {
                 Instant.parse(it)
-            } catch (e: Exception) {
+            } catch (e: SerializationException) {
+                logger.warn("Failed to parse instant '$value', using DISTANT_PAST: ${e.message}")
+                Instant.DISTANT_PAST
+            } catch (e: IllegalStateException) {
+                logger.warn("Failed to parse instant '$value', using DISTANT_PAST: ${e.message}")
+                Instant.DISTANT_PAST
+            } catch (e: IllegalArgumentException) {
                 logger.warn("Failed to parse instant '$value', using DISTANT_PAST: ${e.message}")
                 Instant.DISTANT_PAST
             }

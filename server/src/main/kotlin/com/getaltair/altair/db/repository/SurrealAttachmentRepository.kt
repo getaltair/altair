@@ -11,11 +11,13 @@ import com.getaltair.altair.domain.types.Ulid
 import com.getaltair.altair.repository.AttachmentRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import kotlin.time.Instant
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import org.slf4j.LoggerFactory
+import kotlin.time.Instant
 
 class SurrealAttachmentRepository(
     private val db: SurrealDbClient,
@@ -26,6 +28,10 @@ class SurrealAttachmentRepository(
             ignoreUnknownKeys = true
             isLenient = true
         }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(SurrealAttachmentRepository::class.java)
+    }
 
     override suspend fun findById(id: Ulid): Either<DomainError, Attachment> =
         either {
@@ -84,7 +90,22 @@ class SurrealAttachmentRepository(
                     "SELECT * FROM attachment WHERE user_id = user:\$userId AND deleted_at IS NONE ORDER BY created_at DESC",
                     mapOf("userId" to userId.value),
                 )
-            emit(result.fold({ emptyList() }, { parseAttachments(it) }))
+            emit(
+                result.fold(
+                    ifLeft = { error ->
+                        when (error) {
+                            is DomainError.NetworkError -> logger.warn("Database network error: ERROR_MSG")
+                            is DomainError.UnexpectedError -> logger.warn("Database unexpected error: ERROR_MSG")
+                            is DomainError.NotFoundError -> logger.warn("Database not found error: ${error.resource} ${error.id}")
+                            is DomainError.ValidationError -> logger.warn("Database validation error: ${error.field} - ERROR_MSG")
+                            is DomainError.UnauthorizedError -> logger.warn("Database unauthorized error: ERROR_MSG")
+                            else -> logger.warn("Database error: $error")
+                        }
+                        emptyList()
+                    },
+                    ifRight = { parseAttachments(it) },
+                ),
+            )
         }
 
     override fun findByNote(noteId: Ulid): Flow<List<Attachment>> =
@@ -94,7 +115,22 @@ class SurrealAttachmentRepository(
                     "SELECT * FROM attachment WHERE user_id = user:\$userId AND note_id = note:\$noteId AND deleted_at IS NONE",
                     mapOf("userId" to userId.value, "noteId" to noteId.value),
                 )
-            emit(result.fold({ emptyList() }, { parseAttachments(it) }))
+            emit(
+                result.fold(
+                    ifLeft = { error ->
+                        when (error) {
+                            is DomainError.NetworkError -> logger.warn("Database network error: ERROR_MSG")
+                            is DomainError.UnexpectedError -> logger.warn("Database unexpected error: ERROR_MSG")
+                            is DomainError.NotFoundError -> logger.warn("Database not found error: ${error.resource} ${error.id}")
+                            is DomainError.ValidationError -> logger.warn("Database validation error: ${error.field} - ERROR_MSG")
+                            is DomainError.UnauthorizedError -> logger.warn("Database unauthorized error: ERROR_MSG")
+                            else -> logger.warn("Database error: $error")
+                        }
+                        emptyList()
+                    },
+                    ifRight = { parseAttachments(it) },
+                ),
+            )
         }
 
     override fun findByInboxItem(inboxItemId: Ulid): Flow<List<Attachment>> =
@@ -104,7 +140,22 @@ class SurrealAttachmentRepository(
                     "SELECT * FROM attachment WHERE user_id = user:\$userId AND inbox_item_id = inbox_item:\$inboxItemId AND deleted_at IS NONE",
                     mapOf("userId" to userId.value, "inboxItemId" to inboxItemId.value),
                 )
-            emit(result.fold({ emptyList() }, { parseAttachments(it) }))
+            emit(
+                result.fold(
+                    ifLeft = { error ->
+                        when (error) {
+                            is DomainError.NetworkError -> logger.warn("Database network error: ERROR_MSG")
+                            is DomainError.UnexpectedError -> logger.warn("Database unexpected error: ERROR_MSG")
+                            is DomainError.NotFoundError -> logger.warn("Database not found error: ${error.resource} ${error.id}")
+                            is DomainError.ValidationError -> logger.warn("Database validation error: ${error.field} - ERROR_MSG")
+                            is DomainError.UnauthorizedError -> logger.warn("Database unauthorized error: ERROR_MSG")
+                            else -> logger.warn("Database error: $error")
+                        }
+                        emptyList()
+                    },
+                    ifRight = { parseAttachments(it) },
+                ),
+            )
         }
 
     override suspend fun associateWithNote(
@@ -141,7 +192,14 @@ class SurrealAttachmentRepository(
                     ?.content
                     ?.toLongOrNull()
                     ?: 0L
-            } catch (e: Exception) {
+            } catch (e: SerializationException) {
+                logger.warn("Failed to parse total storage: ${e.message}", e)
+                0L
+            } catch (e: IllegalStateException) {
+                logger.warn("Failed to parse total storage: ${e.message}", e)
+                0L
+            } catch (e: IllegalArgumentException) {
+                logger.warn("Failed to parse total storage: ${e.message}", e)
                 0L
             }
         }
@@ -153,7 +211,22 @@ class SurrealAttachmentRepository(
                     "SELECT * FROM attachment WHERE user_id = user:\$userId AND string::startsWith(mime_type, \$mimeTypePrefix) AND deleted_at IS NONE",
                     mapOf("userId" to userId.value, "mimeTypePrefix" to mimeTypePrefix),
                 )
-            emit(result.fold({ emptyList() }, { parseAttachments(it) }))
+            emit(
+                result.fold(
+                    ifLeft = { error ->
+                        when (error) {
+                            is DomainError.NetworkError -> logger.warn("Database network error: ERROR_MSG")
+                            is DomainError.UnexpectedError -> logger.warn("Database unexpected error: ERROR_MSG")
+                            is DomainError.NotFoundError -> logger.warn("Database not found error: ${error.resource} ${error.id}")
+                            is DomainError.ValidationError -> logger.warn("Database validation error: ${error.field} - ERROR_MSG")
+                            is DomainError.UnauthorizedError -> logger.warn("Database unauthorized error: ERROR_MSG")
+                            else -> logger.warn("Database error: $error")
+                        }
+                        emptyList()
+                    },
+                    ifRight = { parseAttachments(it) },
+                ),
+            )
         }
 
     override suspend fun findOrphaned(): Either<DomainError, List<Attachment>> =
@@ -175,7 +248,14 @@ class SurrealAttachmentRepository(
                 .firstOrNull()
                 ?.jsonObject
                 ?.let { mapToAttachment(it) }
-        } catch (e: Exception) {
+        } catch (e: SerializationException) {
+            logger.warn("Failed to parse attachment: ${e.message}", e)
+            null
+        } catch (e: IllegalStateException) {
+            logger.warn("Failed to parse attachment: ${e.message}", e)
+            null
+        } catch (e: IllegalArgumentException) {
+            logger.warn("Failed to parse attachment: ${e.message}", e)
             null
         }
 
@@ -184,11 +264,25 @@ class SurrealAttachmentRepository(
             json.parseToJsonElement(result).jsonArray.mapNotNull {
                 try {
                     mapToAttachment(it.jsonObject)
-                } catch (e: Exception) {
+                } catch (e: SerializationException) {
+                    logger.warn("Failed to parse attachment element: ${e.message}", e)
+                    null
+                } catch (e: IllegalStateException) {
+                    logger.warn("Failed to parse attachment element: ${e.message}", e)
+                    null
+                } catch (e: IllegalArgumentException) {
+                    logger.warn("Failed to parse attachment element: ${e.message}", e)
                     null
                 }
             }
-        } catch (e: Exception) {
+        } catch (e: SerializationException) {
+            logger.warn("Failed to parse attachments array: ${e.message}", e)
+            emptyList()
+        } catch (e: IllegalStateException) {
+            logger.warn("Failed to parse attachments array: ${e.message}", e)
+            emptyList()
+        } catch (e: IllegalArgumentException) {
+            logger.warn("Failed to parse attachments array: ${e.message}", e)
             emptyList()
         }
 
@@ -224,7 +318,14 @@ class SurrealAttachmentRepository(
         value?.let {
             try {
                 Instant.parse(it)
-            } catch (e: Exception) {
+            } catch (e: SerializationException) {
+                logger.warn("Failed to parse instant '$value': ${e.message}")
+                Instant.DISTANT_PAST
+            } catch (e: IllegalStateException) {
+                logger.warn("Failed to parse instant '$value': ${e.message}")
+                Instant.DISTANT_PAST
+            } catch (e: IllegalArgumentException) {
+                logger.warn("Failed to parse instant '$value': ${e.message}")
                 Instant.DISTANT_PAST
             }
         } ?: Instant.DISTANT_PAST
