@@ -2,37 +2,41 @@ package com.getaltair.altair.db.repository
 
 import com.getaltair.altair.db.MigrationRunner
 import com.getaltair.altair.db.SurrealDbClient
-import com.getaltair.altair.db.SurrealDbTestContainer
+import com.getaltair.altair.db.SurrealDbContainerExtension
 import com.getaltair.altair.domain.NoteError
 import com.getaltair.altair.domain.model.knowledge.Note
 import com.getaltair.altair.domain.types.Ulid
+import io.kotest.assertions.arrow.core.shouldBeLeft
+import io.kotest.assertions.arrow.core.shouldBeRight
+import io.kotest.core.spec.style.BehaviorSpec
+import io.kotest.inspectors.forAll
+import io.kotest.matchers.booleans.shouldBeFalse
+import io.kotest.matchers.booleans.shouldBeTrue
+import io.kotest.matchers.collections.shouldHaveSize
+import io.kotest.matchers.nulls.shouldBeNull
+import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
-import org.junit.jupiter.api.AfterAll
-import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestInstance
-import org.testcontainers.junit.jupiter.Container
-import org.testcontainers.junit.jupiter.Testcontainers
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertIs
-import kotlin.test.assertTrue
 import kotlin.time.Clock
 
-@Testcontainers
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class SurrealNoteRepositoryTest {
-    private lateinit var dbClient: SurrealDbClient
-    private lateinit var repository: SurrealNoteRepository
-    private val testUserId = Ulid("01TESTACCT0000000000000001")
+/**
+ * Tests for SurrealNoteRepository using Testcontainers.
+ *
+ * Verifies:
+ * - CRUD operations (save, findById, delete, findAll)
+ * - Pinning operations (togglePinned, findPinned)
+ * - Folder operations (findByFolder, moveToFolder)
+ * - Search functionality (by title and content, case insensitive)
+ * - User isolation (notes scoped to user, cross-user access prevention)
+ */
+class SurrealNoteRepositoryTest :
+    BehaviorSpec({
+        lateinit var dbClient: SurrealDbClient
+        lateinit var repository: SurrealNoteRepository
+        val testUserId = Ulid("01TESTACCT0000000000000001")
 
-    @BeforeAll
-    fun setupContainer() {
-        container.start()
-        runBlocking {
-            val config = container.createNetworkConfig()
+        beforeSpec {
+            val config = SurrealDbContainerExtension.createNetworkConfig()
             dbClient = SurrealDbClient(config)
             dbClient.connect().getOrNull()
 
@@ -46,455 +50,403 @@ class SurrealNoteRepositoryTest {
                     "email: 'test@test.com', display_name: 'Test User', role: 'member', status: 'active' };",
             )
         }
-    }
 
-    @AfterAll
-    fun tearDown() {
-        runBlocking {
+        afterSpec {
             dbClient.close()
         }
-        container.stop()
-    }
 
-    @BeforeEach
-    fun setup() {
-        repository = SurrealNoteRepository(dbClient, testUserId)
-        // Clean up notes and folders before each test
-        runBlocking {
+        beforeEach {
+            repository = SurrealNoteRepository(dbClient, testUserId)
+            // Clean up notes and folders before each test
             dbClient.execute("DELETE note;")
             dbClient.execute("DELETE folder;")
         }
-    }
 
-    @Test
-    fun `save creates new note`(): Unit =
-        runBlocking {
-            val note = createTestNote()
+        given("CRUD operations") {
+            `when`("saving a new note") {
+                then("creates the note successfully") {
+                    val note = createTestNote(testUserId)
 
-            val result = repository.save(note)
+                    val result = repository.save(note)
 
-            assertTrue(result.isRight())
-            result.onRight { saved ->
-                assertEquals(note.id, saved.id)
-                assertEquals(note.title, saved.title)
-                assertEquals(note.content, saved.content)
+                    result.shouldBeRight()
+                    val saved = result.getOrNull()
+                    saved?.id shouldBe note.id
+                    saved?.title shouldBe note.title
+                    saved?.content shouldBe note.content
+                }
+            }
+
+            `when`("updating an existing note") {
+                then("persists the changes") {
+                    val note = createTestNote(testUserId, title = "Original Title")
+                    repository.save(note)
+
+                    val updated = note.copy(title = "Updated Title", content = "Updated content")
+                    val result = repository.save(updated)
+
+                    result.shouldBeRight()
+                    val saved = result.getOrNull()
+                    saved?.title shouldBe "Updated Title"
+                    saved?.content shouldBe "Updated content"
+                }
+            }
+
+            `when`("finding a note by ID") {
+                then("returns the note when it exists") {
+                    val note = createTestNote(testUserId)
+                    repository.save(note)
+
+                    val result = repository.findById(note.id)
+
+                    result.shouldBeRight()
+                    val found = result.getOrNull()
+                    found?.id shouldBe note.id
+                    found?.title shouldBe note.title
+                }
+
+                then("returns error when note doesn't exist") {
+                    val result = repository.findById(Ulid.generate())
+
+                    result.shouldBeLeft()
+                    result.leftOrNull().shouldBeInstanceOf<NoteError.NotFound>()
+                }
+            }
+
+            `when`("deleting a note") {
+                then("soft deletes the note") {
+                    val note = createTestNote(testUserId)
+                    repository.save(note)
+
+                    val deleteResult = repository.delete(note.id)
+                    deleteResult.shouldBeRight()
+
+                    val findResult = repository.findById(note.id)
+                    findResult.shouldBeLeft()
+                }
+            }
+
+            `when`("finding all notes") {
+                then("returns all non-deleted notes") {
+                    val note1 = createTestNote(testUserId, title = "Note 1")
+                    val note2 = createTestNote(testUserId, title = "Note 2")
+                    val note3 = createTestNote(testUserId, title = "Note 3")
+                    repository.save(note1)
+                    repository.save(note2)
+                    repository.save(note3)
+                    repository.delete(note3.id)
+
+                    val allNotes = repository.findAll().first()
+
+                    allNotes shouldHaveSize 2
+                }
             }
         }
 
-    @Test
-    fun `findById returns saved note`(): Unit =
-        runBlocking {
-            val note = createTestNote()
-            repository.save(note)
+        given("pinning operations") {
+            `when`("toggling pin on unpinned note") {
+                then("pins the note") {
+                    val note = createTestNote(testUserId, isPinned = false)
+                    repository.save(note)
 
-            val result = repository.findById(note.id)
+                    val result = repository.togglePinned(note.id)
 
-            assertTrue(result.isRight())
-            result.onRight { found ->
-                assertEquals(note.id, found.id)
-                assertEquals(note.title, found.title)
+                    result.shouldBeRight()
+                    val toggled: Note? = result.getOrNull()
+                    toggled!!.isPinned.shouldBeTrue()
+                }
+            }
+
+            `when`("toggling pin on pinned note") {
+                then("unpins the note") {
+                    val note = createTestNote(testUserId, isPinned = true)
+                    repository.save(note)
+
+                    val result = repository.togglePinned(note.id)
+
+                    result.shouldBeRight()
+                    val toggled: Note? = result.getOrNull()
+                    toggled!!.isPinned.shouldBeFalse()
+                }
+            }
+
+            `when`("finding pinned notes") {
+                then("returns only pinned notes") {
+                    val pinnedNote = createTestNote(testUserId, title = "Pinned Note", isPinned = true)
+                    val unpinnedNote = createTestNote(testUserId, title = "Unpinned Note", isPinned = false)
+                    repository.save(pinnedNote)
+                    repository.save(unpinnedNote)
+
+                    val pinnedNotes = repository.findPinned().first()
+
+                    pinnedNotes shouldHaveSize 1
+                    pinnedNotes.first().title shouldBe "Pinned Note"
+                    pinnedNotes.first().isPinned.shouldBeTrue()
+                }
             }
         }
 
-    @Test
-    fun `findById returns error for non-existent note`(): Unit =
-        runBlocking {
-            val result = repository.findById(Ulid.generate())
+        given("folder operations") {
+            `when`("finding notes by folder") {
+                then("returns notes in specific folder") {
+                    // Create a folder
+                    val folderId = Ulid.generate()
+                    dbClient.execute(
+                        "CREATE folder:${folderId.value} CONTENT { " +
+                            "user_id: user:${testUserId.value}, name: 'Test Folder' };",
+                    )
 
-            assertTrue(result.isLeft())
-            result.onLeft { error ->
-                assertIs<NoteError.NotFound>(error)
+                    val noteInFolder = createTestNote(testUserId, title = "In Folder", folderId = folderId)
+                    val noteInRoot = createTestNote(testUserId, title = "In Root", folderId = null)
+                    repository.save(noteInFolder)
+                    repository.save(noteInRoot)
+
+                    val folderNotes = repository.findByFolder(folderId).first()
+
+                    folderNotes shouldHaveSize 1
+                    folderNotes.first().title shouldBe "In Folder"
+                }
+
+                then("returns root notes when folder is null") {
+                    // Create a folder
+                    val folderId = Ulid.generate()
+                    dbClient.execute(
+                        "CREATE folder:${folderId.value} CONTENT { " +
+                            "user_id: user:${testUserId.value}, name: 'Test Folder' };",
+                    )
+
+                    val noteInFolder = createTestNote(testUserId, title = "In Folder", folderId = folderId)
+                    val noteInRoot = createTestNote(testUserId, title = "In Root", folderId = null)
+                    repository.save(noteInFolder)
+                    repository.save(noteInRoot)
+
+                    val rootNotes = repository.findByFolder(null).first()
+
+                    rootNotes shouldHaveSize 1
+                    rootNotes.first().title shouldBe "In Root"
+                }
+            }
+
+            `when`("moving note to different folder") {
+                then("updates the folder reference") {
+                    // Create two folders
+                    val folder1Id = Ulid.generate()
+                    val folder2Id = Ulid.generate()
+                    dbClient.execute(
+                        "CREATE folder:${folder1Id.value} CONTENT { " +
+                            "user_id: user:${testUserId.value}, name: 'Folder 1' };",
+                    )
+                    dbClient.execute(
+                        "CREATE folder:${folder2Id.value} CONTENT { " +
+                            "user_id: user:${testUserId.value}, name: 'Folder 2' };",
+                    )
+
+                    val note = createTestNote(testUserId, folderId = folder1Id)
+                    repository.save(note)
+
+                    val result = repository.moveToFolder(note.id, folder2Id)
+
+                    result.shouldBeRight()
+                    val moved = result.getOrNull()
+                    moved?.folderId shouldBe folder2Id
+                }
+            }
+
+            `when`("moving note to root") {
+                then("clears the folder reference") {
+                    val folderId = Ulid.generate()
+                    dbClient.execute(
+                        "CREATE folder:${folderId.value} CONTENT { " +
+                            "user_id: user:${testUserId.value}, name: 'Test Folder' };",
+                    )
+
+                    val note = createTestNote(testUserId, folderId = folderId)
+                    repository.save(note)
+
+                    val result = repository.moveToFolder(note.id, null)
+
+                    result.shouldBeRight()
+                    val moved = result.getOrNull()
+                    moved?.folderId.shouldBeNull()
+                }
             }
         }
 
-    @Test
-    fun `save updates existing note`(): Unit =
-        runBlocking {
-            val note = createTestNote(title = "Original Title")
-            repository.save(note)
+        given("search functionality") {
+            `when`("searching by title") {
+                then("finds matching notes") {
+                    val note1 = createTestNote(testUserId, title = "Meeting Notes", content = "Some content")
+                    val note2 = createTestNote(testUserId, title = "Shopping List", content = "Buy groceries")
+                    repository.save(note1)
+                    repository.save(note2)
 
-            val updated = note.copy(title = "Updated Title", content = "Updated content")
-            val result = repository.save(updated)
+                    val result = repository.search("Meeting")
 
-            assertTrue(result.isRight())
-            result.onRight { saved ->
-                assertEquals("Updated Title", saved.title)
-                assertEquals("Updated content", saved.content)
+                    result.shouldBeRight()
+                    val found = result.getOrNull() ?: emptyList()
+                    found shouldHaveSize 1
+                    found.first().title shouldBe "Meeting Notes"
+                }
+            }
+
+            `when`("searching by content") {
+                then("finds matching notes") {
+                    val note1 = createTestNote(testUserId, title = "Note 1", content = "Contains important information")
+                    val note2 = createTestNote(testUserId, title = "Note 2", content = "Something else")
+                    repository.save(note1)
+                    repository.save(note2)
+
+                    val result = repository.search("important")
+
+                    result.shouldBeRight()
+                    val found = result.getOrNull() ?: emptyList()
+                    found shouldHaveSize 1
+                    found.first().title shouldBe "Note 1"
+                }
+            }
+
+            `when`("searching with different case") {
+                then("is case insensitive") {
+                    val note = createTestNote(testUserId, title = "UPPERCASE Title", content = "lowercase content")
+                    repository.save(note)
+
+                    val result = repository.search("uppercase")
+
+                    result.shouldBeRight()
+                    val found = result.getOrNull() ?: emptyList()
+                    found shouldHaveSize 1
+                }
             }
         }
 
-    @Test
-    fun `togglePinned pins unpinned note`(): Unit =
-        runBlocking {
-            val note = createTestNote(isPinned = false)
-            repository.save(note)
+        given("user isolation") {
+            `when`("accessing another user's note by ID") {
+                then("returns NotFound error") {
+                    // Create note as testUserId
+                    val note = createTestNote(testUserId)
+                    repository.save(note)
 
-            val result = repository.togglePinned(note.id)
+                    // Create second user and their repository
+                    val (_, otherUserRepository) = createOtherUser(dbClient)
 
-            assertTrue(result.isRight())
-            result.onRight { toggled ->
-                assertTrue(toggled.isPinned)
-            }
-        }
+                    // Other user should not be able to access the note
+                    val result = otherUserRepository.findById(note.id)
 
-    @Test
-    fun `togglePinned unpins pinned note`(): Unit =
-        runBlocking {
-            val note = createTestNote(isPinned = true)
-            repository.save(note)
-
-            val result = repository.togglePinned(note.id)
-
-            assertTrue(result.isRight())
-            result.onRight { toggled ->
-                assertFalse(toggled.isPinned)
-            }
-        }
-
-    @Test
-    fun `findPinned returns only pinned notes`(): Unit =
-        runBlocking {
-            val pinnedNote = createTestNote(title = "Pinned Note", isPinned = true)
-            val unpinnedNote = createTestNote(title = "Unpinned Note", isPinned = false)
-            repository.save(pinnedNote)
-            repository.save(unpinnedNote)
-
-            val pinnedNotes = repository.findPinned().first()
-
-            assertEquals(1, pinnedNotes.size)
-            assertEquals("Pinned Note", pinnedNotes.first().title)
-            assertTrue(pinnedNotes.first().isPinned)
-        }
-
-    @Test
-    fun `findByFolder returns notes in specific folder`(): Unit =
-        runBlocking {
-            // Create a folder
-            val folderId = Ulid.generate()
-            dbClient.execute(
-                "CREATE folder:${folderId.value} CONTENT { " +
-                    "user_id: user:${testUserId.value}, name: 'Test Folder' };",
-            )
-
-            val noteInFolder = createTestNote(title = "In Folder", folderId = folderId)
-            val noteInRoot = createTestNote(title = "In Root", folderId = null)
-            repository.save(noteInFolder)
-            repository.save(noteInRoot)
-
-            val folderNotes = repository.findByFolder(folderId).first()
-
-            assertEquals(1, folderNotes.size)
-            assertEquals("In Folder", folderNotes.first().title)
-        }
-
-    @Test
-    fun `findByFolder with null returns root notes`(): Unit =
-        runBlocking {
-            // Create a folder
-            val folderId = Ulid.generate()
-            dbClient.execute(
-                "CREATE folder:${folderId.value} CONTENT { " +
-                    "user_id: user:${testUserId.value}, name: 'Test Folder' };",
-            )
-
-            val noteInFolder = createTestNote(title = "In Folder", folderId = folderId)
-            val noteInRoot = createTestNote(title = "In Root", folderId = null)
-            repository.save(noteInFolder)
-            repository.save(noteInRoot)
-
-            val rootNotes = repository.findByFolder(null).first()
-
-            assertEquals(1, rootNotes.size)
-            assertEquals("In Root", rootNotes.first().title)
-        }
-
-    @Test
-    fun `moveToFolder moves note to different folder`(): Unit =
-        runBlocking {
-            // Create two folders
-            val folder1Id = Ulid.generate()
-            val folder2Id = Ulid.generate()
-            dbClient.execute(
-                "CREATE folder:${folder1Id.value} CONTENT { " +
-                    "user_id: user:${testUserId.value}, name: 'Folder 1' };",
-            )
-            dbClient.execute(
-                "CREATE folder:${folder2Id.value} CONTENT { " +
-                    "user_id: user:${testUserId.value}, name: 'Folder 2' };",
-            )
-
-            val note = createTestNote(folderId = folder1Id)
-            repository.save(note)
-
-            val result = repository.moveToFolder(note.id, folder2Id)
-
-            assertTrue(result.isRight())
-            result.onRight { moved ->
-                assertEquals(folder2Id, moved.folderId)
-            }
-        }
-
-    @Test
-    fun `moveToFolder moves note to root`(): Unit =
-        runBlocking {
-            val folderId = Ulid.generate()
-            dbClient.execute(
-                "CREATE folder:${folderId.value} CONTENT { " +
-                    "user_id: user:${testUserId.value}, name: 'Test Folder' };",
-            )
-
-            val note = createTestNote(folderId = folderId)
-            repository.save(note)
-
-            val result = repository.moveToFolder(note.id, null)
-
-            assertTrue(result.isRight())
-            result.onRight { moved ->
-                assertEquals(null, moved.folderId)
-            }
-        }
-
-    @Test
-    fun `search finds notes by title`(): Unit =
-        runBlocking {
-            val note1 = createTestNote(title = "Meeting Notes", content = "Some content")
-            val note2 = createTestNote(title = "Shopping List", content = "Buy groceries")
-            repository.save(note1)
-            repository.save(note2)
-
-            val result = repository.search("Meeting")
-
-            assertTrue(result.isRight())
-            result.onRight { found ->
-                assertEquals(1, found.size)
-                assertEquals("Meeting Notes", found.first().title)
-            }
-        }
-
-    @Test
-    fun `search finds notes by content`(): Unit =
-        runBlocking {
-            val note1 = createTestNote(title = "Note 1", content = "Contains important information")
-            val note2 = createTestNote(title = "Note 2", content = "Something else")
-            repository.save(note1)
-            repository.save(note2)
-
-            val result = repository.search("important")
-
-            assertTrue(result.isRight())
-            result.onRight { found ->
-                assertEquals(1, found.size)
-                assertEquals("Note 1", found.first().title)
-            }
-        }
-
-    @Test
-    fun `search is case insensitive`(): Unit =
-        runBlocking {
-            val note = createTestNote(title = "UPPERCASE Title", content = "lowercase content")
-            repository.save(note)
-
-            val result = repository.search("uppercase")
-
-            assertTrue(result.isRight())
-            result.onRight { found ->
-                assertEquals(1, found.size)
-            }
-        }
-
-    @Test
-    fun `delete soft deletes note`(): Unit =
-        runBlocking {
-            val note = createTestNote()
-            repository.save(note)
-
-            val deleteResult = repository.delete(note.id)
-            assertTrue(deleteResult.isRight())
-
-            val findResult = repository.findById(note.id)
-            assertTrue(findResult.isLeft())
-        }
-
-    @Test
-    fun `findAll returns all non-deleted notes`(): Unit =
-        runBlocking {
-            val note1 = createTestNote(title = "Note 1")
-            val note2 = createTestNote(title = "Note 2")
-            val note3 = createTestNote(title = "Note 3")
-            repository.save(note1)
-            repository.save(note2)
-            repository.save(note3)
-            repository.delete(note3.id)
-
-            val allNotes = repository.findAll().first()
-
-            assertEquals(2, allNotes.size)
-        }
-
-    // --- User Isolation Tests ---
-
-    @Test
-    fun `findById returns error when accessing another user's note`(): Unit =
-        runBlocking {
-            // Create note as testUserId
-            val note = createTestNote()
-            repository.save(note)
-
-            // Create second user and their repository
-            val otherUserId = Ulid("01TESTACCT1000000000000001")
-            dbClient.execute(
-                "CREATE user:${otherUserId.value} CONTENT { " +
-                    "email: 'other@test.com', display_name: 'Other User', " +
-                    "role: 'member', status: 'active' };",
-            )
-            val otherUserRepository = SurrealNoteRepository(dbClient, otherUserId)
-
-            // Other user should not be able to access the note
-            val result = otherUserRepository.findById(note.id)
-
-            assertTrue(result.isLeft())
-            result.onLeft { error ->
-                assertIs<NoteError.NotFound>(error)
-            }
-        }
-
-    @Test
-    fun `findAll only returns current user's notes`(): Unit =
-        runBlocking {
-            // Create notes for testUserId
-            repository.save(createTestNote(title = "User1 Note 1"))
-            repository.save(createTestNote(title = "User1 Note 2"))
-
-            // Create second user and their notes
-            val otherUserId = Ulid("01TESTACCT1000000000000001")
-            dbClient.execute(
-                "CREATE user:${otherUserId.value} CONTENT { " +
-                    "email: 'other@test.com', display_name: 'Other User', " +
-                    "role: 'member', status: 'active' };",
-            )
-            val otherUserRepository = SurrealNoteRepository(dbClient, otherUserId)
-            val now = Clock.System.now()
-            val otherUserNote =
-                Note(
-                    id = Ulid.generate(),
-                    userId = otherUserId,
-                    title = "User2 Note",
-                    content = "Other user content",
-                    folderId = null,
-                    initiativeId = null,
-                    isPinned = false,
-                    createdAt = now,
-                    updatedAt = now,
-                    deletedAt = null,
-                )
-            otherUserRepository.save(otherUserNote)
-
-            // testUserId should only see their own notes
-            val testUserNotes = repository.findAll().first()
-            assertEquals(2, testUserNotes.size)
-            assertTrue(testUserNotes.all { it.userId == testUserId })
-
-            // otherUserId should only see their own notes
-            val otherUserNotes = otherUserRepository.findAll().first()
-            assertEquals(1, otherUserNotes.size)
-            assertEquals("User2 Note", otherUserNotes.first().title)
-        }
-
-    @Test
-    fun `delete fails silently for another user's note`(): Unit =
-        runBlocking {
-            // Create note as testUserId
-            val note = createTestNote()
-            repository.save(note)
-
-            // Create second user
-            val otherUserId = Ulid("01TESTACCT1000000000000001")
-            dbClient.execute(
-                "CREATE user:${otherUserId.value} CONTENT { " +
-                    "email: 'other@test.com', display_name: 'Other User', " +
-                    "role: 'member', status: 'active' };",
-            )
-            val otherUserRepository = SurrealNoteRepository(dbClient, otherUserId)
-
-            // Other user tries to delete - should fail
-            val deleteResult = otherUserRepository.delete(note.id)
-            assertTrue(deleteResult.isLeft())
-
-            // Original user should still be able to access the note
-            val findResult = repository.findById(note.id)
-            assertTrue(findResult.isRight())
-        }
-
-    @Test
-    fun `search only returns current user's notes`(): Unit =
-        runBlocking {
-            // Create a note for testUserId with searchable content
-            repository.save(createTestNote(title = "Searchable Meeting Notes", content = "Important meeting"))
-
-            // Create second user with similar note
-            val otherUserId = Ulid("01TESTACCT1000000000000001")
-            dbClient.execute(
-                "CREATE user:${otherUserId.value} CONTENT { " +
-                    "email: 'other@test.com', display_name: 'Other User', " +
-                    "role: 'member', status: 'active' };",
-            )
-            val otherUserRepository = SurrealNoteRepository(dbClient, otherUserId)
-            val now = Clock.System.now()
-            val otherUserNote =
-                Note(
-                    id = Ulid.generate(),
-                    userId = otherUserId,
-                    title = "Searchable Private Notes",
-                    content = "Private meeting content",
-                    folderId = null,
-                    initiativeId = null,
-                    isPinned = false,
-                    createdAt = now,
-                    updatedAt = now,
-                    deletedAt = null,
-                )
-            otherUserRepository.save(otherUserNote)
-
-            // testUserId searches for "Searchable" - should only find their own note
-            val searchResult = repository.search("Searchable")
-            assertTrue(searchResult.isRight())
-            searchResult.onRight { notes ->
-                assertEquals(1, notes.size)
-                assertEquals("Searchable Meeting Notes", notes.first().title)
+                    result.shouldBeLeft()
+                    result.leftOrNull().shouldBeInstanceOf<NoteError.NotFound>()
+                }
             }
 
-            // otherUserId searches for "Searchable" - should only find their own note
-            val otherSearchResult = otherUserRepository.search("Searchable")
-            assertTrue(otherSearchResult.isRight())
-            otherSearchResult.onRight { notes ->
-                assertEquals(1, notes.size)
-                assertEquals("Searchable Private Notes", notes.first().title)
+            `when`("finding all notes") {
+                then("only returns current user's notes") {
+                    // Create notes for testUserId
+                    repository.save(createTestNote(testUserId, title = "User1 Note 1"))
+                    repository.save(createTestNote(testUserId, title = "User1 Note 2"))
+
+                    // Create second user and their notes
+                    val (otherUserId, otherUserRepository) = createOtherUser(dbClient)
+                    otherUserRepository.save(createTestNote(otherUserId, title = "User2 Note"))
+
+                    // testUserId should only see their own notes
+                    val testUserNotes = repository.findAll().first()
+                    testUserNotes shouldHaveSize 2
+                    testUserNotes.forAll { it.userId shouldBe testUserId }
+
+                    // otherUserId should only see their own notes
+                    val otherUserNotes = otherUserRepository.findAll().first()
+                    otherUserNotes shouldHaveSize 1
+                    otherUserNotes.first().title shouldBe "User2 Note"
+                }
+            }
+
+            `when`("attempting to delete another user's note") {
+                then("fails silently") {
+                    // Create note as testUserId
+                    val note = createTestNote(testUserId)
+                    repository.save(note)
+
+                    // Create second user
+                    val (_, otherUserRepository) = createOtherUser(dbClient)
+
+                    // Other user tries to delete - should fail
+                    val deleteResult = otherUserRepository.delete(note.id)
+                    deleteResult.shouldBeLeft()
+
+                    // Original user should still be able to access the note
+                    val findResult = repository.findById(note.id)
+                    findResult.shouldBeRight()
+                }
+            }
+
+            `when`("searching for notes") {
+                then("only returns current user's notes") {
+                    // Create a note for testUserId with searchable content
+                    repository.save(
+                        createTestNote(testUserId, title = "Searchable Meeting Notes", content = "Important meeting"),
+                    )
+
+                    // Create second user with similar note
+                    val (otherUserId, otherUserRepository) = createOtherUser(dbClient)
+                    otherUserRepository.save(
+                        createTestNote(otherUserId, title = "Searchable Private Notes", content = "Private meeting"),
+                    )
+
+                    // testUserId searches for "Searchable" - should only find their own note
+                    val searchResult = repository.search("Searchable")
+                    searchResult.shouldBeRight()
+                    val testUserNotes = searchResult.getOrNull() ?: emptyList()
+                    testUserNotes shouldHaveSize 1
+                    testUserNotes.first().title shouldBe "Searchable Meeting Notes"
+
+                    // otherUserId searches for "Searchable" - should only find their own note
+                    val otherSearchResult = otherUserRepository.search("Searchable")
+                    otherSearchResult.shouldBeRight()
+                    val otherUserNotes = otherSearchResult.getOrNull() ?: emptyList()
+                    otherUserNotes shouldHaveSize 1
+                    otherUserNotes.first().title shouldBe "Searchable Private Notes"
+                }
             }
         }
-
-    private fun createTestNote(
-        title: String = "Test Note",
-        content: String = "Test content",
-        folderId: Ulid? = null,
-        isPinned: Boolean = false,
-    ): Note {
-        val now = Clock.System.now()
-        return Note(
-            id = Ulid.generate(),
-            userId = testUserId,
-            title = title,
-            content = content,
-            folderId = folderId,
-            initiativeId = null,
-            isPinned = isPinned,
-            createdAt = now,
-            updatedAt = now,
-            deletedAt = null,
-        )
-    }
-
+    }) {
     companion object {
-        @Container
-        val container = SurrealDbTestContainer()
+        private const val OTHER_USER_ID = "01TESTACCT1000000000000001"
+        private const val OTHER_USER_EMAIL = "other@test.com"
+
+        /**
+         * Creates a second test user for user isolation tests.
+         *
+         * @return Pair of (userId, repository for that user)
+         */
+        private suspend fun createOtherUser(dbClient: SurrealDbClient): Pair<Ulid, SurrealNoteRepository> {
+            val otherUserId = Ulid(OTHER_USER_ID)
+            dbClient.execute(
+                "CREATE user:${otherUserId.value} CONTENT { " +
+                    "email: '$OTHER_USER_EMAIL', display_name: 'Other User', " +
+                    "role: 'member', status: 'active' };",
+            )
+            return otherUserId to SurrealNoteRepository(dbClient, otherUserId)
+        }
+
+        private fun createTestNote(
+            userId: Ulid,
+            title: String = "Test Note",
+            content: String = "Test content",
+            folderId: Ulid? = null,
+            isPinned: Boolean = false,
+        ): Note {
+            val now = Clock.System.now()
+            return Note(
+                id = Ulid.generate(),
+                userId = userId,
+                title = title,
+                content = content,
+                folderId = folderId,
+                initiativeId = null,
+                isPinned = isPinned,
+                createdAt = now,
+                updatedAt = now,
+                deletedAt = null,
+            )
+        }
     }
 }

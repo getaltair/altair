@@ -1,0 +1,151 @@
+---
+name: kotest
+description: Kotest is a flexible and comprehensive testing project for Kotlin with multiplatform support
+---
+
+# Kotest Skill
+
+Kotest is a flexible and comprehensive testing project for kotlin with multiplatform support, generated from official documentation.
+
+## When to Use This Skill
+
+This skill should be triggered when:
+- Working with kotest
+- Asking about kotest features or APIs
+- Implementing kotest solutions
+- Debugging kotest code
+- Learning kotest best practices
+
+## Quick Reference
+
+### Common Patterns
+
+**Pattern 1:** Changelog5
+
+```
+AnnotationSpec
+```
+
+**Pattern 2:** Option - Test that an Option has the given value or is a None
+
+```
+Option
+```
+
+**Pattern 3:** Either- Test that an Either is either a Right or Left
+
+```
+Either
+```
+
+**Pattern 4:** NonEmptyList- A collection (no pun intended) of matchers for Arrow's NonEmptyList
+
+```
+NonEmptyList
+```
+
+**Pattern 5:** To generate stats on the distribution, use classify with a predicate, a label if the predicate passes, and a label if the predicate fails
+
+```
+assertAll(Gen.string()) { a ->  classify(a.contains(" "), "has whitespace", "no whitespace")  // some test}
+```
+
+**Pattern 6:** Custom GeneratorsTo write your own generator for a type T, you just create an instance of Arb<T> or Exhaustive<T>
+
+```
+Arb<T>
+```
+
+**Pattern 7:** class PropertyExample: FreeSpec({ "testing single digit primes" { checkAll(singleDigitPrimes) { prime -> isPrime(prime) shouldBe true isPrime(prime...
+
+```
+class PropertyExample: FreeSpec({    "testing single digit primes" {        checkAll(singleDigitPrimes) { prime ->           isPrime(prime) shouldBe true           isPrime(prime * prime) shouldBe false        }    }})
+```
+
+**Pattern 8:** Test FactoriesSometimes we may wish to write a set of generic tests and then reuse them for specific inputs
+
+```
+IndexedSeq
+```
+
+### Example Code Patterns
+
+**Example 1** (kotlin):
+```kotlin
+shouldThrow<IllegalAccessException> {  // code in here that you expect to throw an IllegalAccessException}
+```
+
+**Example 2** (kotlin):
+```kotlin
+val exception = shouldThrow<IllegalAccessException> {  // code in here that you expect to throw an IllegalAccessException}exception.message should startWith("Something went wrong")
+```
+
+**Example 3** (kotlin):
+```kotlin
+eventually(5000) { // duration in millis  userRepository.getById(1).name shouldBe "bob"}
+```
+
+**Example 4** (kotlin):
+```kotlin
+eventually({  duration = 5000  interval = 1000.fixed()}) {  userRepository.getById(1).name shouldBe "bob"}
+```
+
+**Example 5** (kotlin):
+```kotlin
+class StringSpecExample : StringSpec() {  val reader = autoClose(StringReader("xyz"))  init {    "your test case" {      // use resource reader here    }  }}
+```
+
+## Reference Files
+
+This skill includes comprehensive documentation in `references/`:
+
+- **5.8.x.md** - 5.8.X documentation
+- **5.9.x.md** - 5.9.X documentation
+- **6.0.md** - 6.0 documentation
+- **assertions.md** - Assertions documentation
+- **extensions.md** - Extensions documentation
+- **framework.md** - Framework documentation
+- **next.md** - Next documentation
+- **other.md** - Other documentation
+- **proptest.md** - Proptest documentation
+
+Use `view` to read specific reference files when detailed information is needed.
+
+## Working with This Skill
+
+### For Beginners
+Start with the getting_started or tutorials reference files for foundational concepts.
+
+### For Specific Features
+Use the appropriate category reference file (api, guides, etc.) for detailed information.
+
+### For Code Examples
+The quick reference section above contains common patterns extracted from the official docs.
+
+## Resources
+
+### references/
+Organized documentation extracted from official sources. These files contain:
+- Detailed explanations
+- Code examples with language annotations
+- Links to original documentation
+- Table of contents for quick navigation
+
+### scripts/
+Add helper scripts here for common automation tasks.
+
+### assets/
+Add templates, boilerplate, or example projects here.
+
+## Notes
+
+- This skill was automatically generated from official documentation
+- Reference files preserve the structure and examples from source docs
+- Code examples include language detection for better syntax highlighting
+- Quick reference patterns are extracted from common usage examples in the docs
+
+## Updating
+
+To refresh this skill with updated documentation:
+1. Re-run the scraper with the same configuration
+2. The skill will be rebuilt with the latest information

@@ -1,11 +1,11 @@
 package com.getaltair.altair.db
 
-import kotlinx.coroutines.runBlocking
+import io.kotest.core.spec.style.BehaviorSpec
+import io.kotest.matchers.collections.shouldHaveSize
+import io.kotest.matchers.nulls.shouldBeNull
+import io.kotest.matchers.nulls.shouldNotBeNull
+import io.kotest.matchers.shouldBe
 import java.util.UUID
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
-import kotlin.test.assertNull
 import kotlin.time.Clock
 
 /**
@@ -13,20 +13,18 @@ import kotlin.time.Clock
  *
  * Uses in-memory database for testing.
  */
-class SqlDelightDatabaseTest {
-    private val database = createDatabase()
+class SqlDelightDatabaseTest :
+    BehaviorSpec({
+        val database = createDatabase()
 
-    @Test
-    fun `user insert and find works`() =
-        runBlocking {
-            val userId = "user123"
-            val email = "test@example.com"
+        suspend fun createTestUser(): String {
+            val userId = "user_${UUID.randomUUID()}"
             val now = Clock.System.now().toString()
 
             database.userQueries.insert(
                 id = userId,
-                email = email,
-                hashed_password = "hashedpassword",
+                email = "test_$userId@example.com",
+                hashed_password = "hash",
                 display_name = "Test User",
                 role = "member",
                 preferences = null,
@@ -34,185 +32,196 @@ class SqlDelightDatabaseTest {
                 updated_at = now,
             )
 
-            val user = database.userQueries.findById(userId).executeAsOneOrNull()
-
-            assertNotNull(user)
-            assertEquals(email, user.email)
-            assertEquals("Test User", user.display_name)
+            return userId
         }
 
-    @Test
-    fun `initiative insert and find works`() =
-        runBlocking {
-            val userId = createTestUser()
-            val initiativeId = "initiative123"
-            val now = Clock.System.now().toString()
+        given("user queries") {
+            `when`("inserting and finding user") {
+                then("user is stored and retrieved correctly") {
+                    val userId = "user123"
+                    val email = "test@example.com"
+                    val now = Clock.System.now().toString()
 
-            database.initiativeQueries.insert(
-                id = initiativeId,
-                user_id = userId,
-                name = "Test Initiative",
-                description = "A test initiative",
-                status = "active",
-                target_date = null,
-                color = "#FF5733",
-                icon = "target",
-                sort_order = 0,
-                created_at = now,
-                updated_at = now,
-            )
+                    database.userQueries.insert(
+                        id = userId,
+                        email = email,
+                        hashed_password = "hashedpassword",
+                        display_name = "Test User",
+                        role = "member",
+                        preferences = null,
+                        created_at = now,
+                        updated_at = now,
+                    )
 
-            val initiative =
-                database.initiativeQueries
-                    .findById(
+                    val user = database.userQueries.findById(userId).executeAsOneOrNull()
+
+                    user.shouldNotBeNull()
+                    user.email shouldBe email
+                    user.display_name shouldBe "Test User"
+                }
+            }
+        }
+
+        given("initiative queries") {
+            `when`("inserting and finding initiative") {
+                then("initiative is stored and retrieved correctly") {
+                    val userId = createTestUser()
+                    val initiativeId = "initiative123"
+                    val now = Clock.System.now().toString()
+
+                    database.initiativeQueries.insert(
                         id = initiativeId,
                         user_id = userId,
-                    ).executeAsOneOrNull()
+                        name = "Test Initiative",
+                        description = "A test initiative",
+                        status = "active",
+                        target_date = null,
+                        color = "#FF5733",
+                        icon = "target",
+                        sort_order = 0,
+                        created_at = now,
+                        updated_at = now,
+                    )
 
-            assertNotNull(initiative)
-            assertEquals("Test Initiative", initiative.name)
-            assertEquals("active", initiative.status)
-        }
+                    val initiative =
+                        database.initiativeQueries
+                            .findById(
+                                id = initiativeId,
+                                user_id = userId,
+                            ).executeAsOneOrNull()
 
-    @Test
-    fun `initiative soft delete hides from queries`() =
-        runBlocking {
-            val userId = createTestUser()
-            val initiativeId = "initiative456"
-            val now = Clock.System.now().toString()
+                    initiative.shouldNotBeNull()
+                    initiative.name shouldBe "Test Initiative"
+                    initiative.status shouldBe "active"
+                }
+            }
 
-            database.initiativeQueries.insert(
-                id = initiativeId,
-                user_id = userId,
-                name = "To Delete",
-                description = null,
-                status = "active",
-                target_date = null,
-                color = null,
-                icon = null,
-                sort_order = 0,
-                created_at = now,
-                updated_at = now,
-            )
+            `when`("soft deleting initiative") {
+                then("initiative is hidden from queries") {
+                    val userId = createTestUser()
+                    val initiativeId = "initiative456"
+                    val now = Clock.System.now().toString()
 
-            // Soft delete
-            database.initiativeQueries.softDelete(
-                deleted_at = now,
-                updated_at = now,
-                id = initiativeId,
-                user_id = userId,
-            )
-
-            val initiative =
-                database.initiativeQueries
-                    .findById(
+                    database.initiativeQueries.insert(
                         id = initiativeId,
                         user_id = userId,
-                    ).executeAsOneOrNull()
+                        name = "To Delete",
+                        description = null,
+                        status = "active",
+                        target_date = null,
+                        color = null,
+                        icon = null,
+                        sort_order = 0,
+                        created_at = now,
+                        updated_at = now,
+                    )
 
-            assertNull(initiative)
-        }
-
-    @Test
-    fun `note insert and search works`() =
-        runBlocking {
-            val userId = createTestUser()
-            val noteId = "note123"
-            val now = Clock.System.now().toString()
-
-            database.noteQueries.insert(
-                id = noteId,
-                user_id = userId,
-                folder_id = null,
-                title = "Meeting Notes",
-                content = "Important points discussed in the meeting",
-                content_format = "markdown",
-                initiative_id = null,
-                is_pinned = 0,
-                word_count = 6,
-                created_at = now,
-                updated_at = now,
-            )
-
-            // searchByTitle takes (user_id, value_)
-            val searchResults =
-                database.noteQueries
-                    .searchByTitle(
+                    // Soft delete
+                    database.initiativeQueries.softDelete(
+                        deleted_at = now,
+                        updated_at = now,
+                        id = initiativeId,
                         user_id = userId,
-                        value_ = "meeting",
-                    ).executeAsList()
+                    )
 
-            assertEquals(1, searchResults.size)
-            assertEquals("Meeting Notes", searchResults.first().title)
+                    val initiative =
+                        database.initiativeQueries
+                            .findById(
+                                id = initiativeId,
+                                user_id = userId,
+                            ).executeAsOneOrNull()
+
+                    initiative.shouldBeNull()
+                }
+            }
         }
 
-    @Test
-    fun `tag and note relationship works`() =
-        runBlocking {
-            val userId = createTestUser()
-            val tagId = "tag123"
-            val noteId = "note456"
-            val now = Clock.System.now().toString()
+        given("note queries") {
+            `when`("inserting and searching notes") {
+                then("notes are found by title search") {
+                    val userId = createTestUser()
+                    val noteId = "note123"
+                    val now = Clock.System.now().toString()
 
-            // Create tag
-            database.tagQueries.insert(
-                id = tagId,
-                user_id = userId,
-                name = "work",
-                color = "#0000FF",
-                created_at = now,
-                updated_at = now,
-            )
+                    database.noteQueries.insert(
+                        id = noteId,
+                        user_id = userId,
+                        folder_id = null,
+                        title = "Meeting Notes",
+                        content = "Important points discussed in the meeting",
+                        content_format = "markdown",
+                        initiative_id = null,
+                        is_pinned = 0,
+                        word_count = 6,
+                        created_at = now,
+                        updated_at = now,
+                    )
 
-            // Create note
-            database.noteQueries.insert(
-                id = noteId,
-                user_id = userId,
-                folder_id = null,
-                title = "Work Note",
-                content = "Content",
-                content_format = "markdown",
-                initiative_id = null,
-                is_pinned = 0,
-                word_count = 1,
-                created_at = now,
-                updated_at = now,
-            )
+                    // searchByTitle takes (user_id, value_)
+                    val searchResults =
+                        database.noteQueries
+                            .searchByTitle(
+                                user_id = userId,
+                                value_ = "meeting",
+                            ).executeAsList()
 
-            // Associate tag with note
-            database.tagQueries.addTagToNote(
-                note_id = noteId,
-                tag_id = tagId,
-                user_id = userId,
-                created_at = now,
-            )
+                    searchResults shouldHaveSize 1
+                    searchResults.first().title shouldBe "Meeting Notes"
+                }
+            }
+        }
 
-            val noteTags =
-                database.tagQueries
-                    .findByNote(
+        given("tag and note relationships") {
+            `when`("associating tag with note") {
+                then("tags are retrieved for note") {
+                    val userId = createTestUser()
+                    val tagId = "tag123"
+                    val noteId = "note456"
+                    val now = Clock.System.now().toString()
+
+                    // Create tag
+                    database.tagQueries.insert(
+                        id = tagId,
+                        user_id = userId,
+                        name = "work",
+                        color = "#0000FF",
+                        created_at = now,
+                        updated_at = now,
+                    )
+
+                    // Create note
+                    database.noteQueries.insert(
+                        id = noteId,
+                        user_id = userId,
+                        folder_id = null,
+                        title = "Work Note",
+                        content = "Content",
+                        content_format = "markdown",
+                        initiative_id = null,
+                        is_pinned = 0,
+                        word_count = 1,
+                        created_at = now,
+                        updated_at = now,
+                    )
+
+                    // Associate tag with note
+                    database.tagQueries.addTagToNote(
                         note_id = noteId,
+                        tag_id = tagId,
                         user_id = userId,
-                    ).executeAsList()
+                        created_at = now,
+                    )
 
-            assertEquals(1, noteTags.size)
-            assertEquals("work", noteTags.first().name)
+                    val noteTags =
+                        database.tagQueries
+                            .findByNote(
+                                note_id = noteId,
+                                user_id = userId,
+                            ).executeAsList()
+
+                    noteTags shouldHaveSize 1
+                    noteTags.first().name shouldBe "work"
+                }
+            }
         }
-
-    private suspend fun createTestUser(): String {
-        val userId = "user_${UUID.randomUUID()}"
-        val now = Clock.System.now().toString()
-
-        database.userQueries.insert(
-            id = userId,
-            email = "test_$userId@example.com",
-            hashed_password = "hash",
-            display_name = "Test User",
-            role = "member",
-            preferences = null,
-            created_at = now,
-            updated_at = now,
-        )
-
-        return userId
-    }
-}
+    })

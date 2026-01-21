@@ -1,63 +1,72 @@
 package com.getaltair.auth
 
-import kotlin.test.Test
-import kotlin.test.assertFalse
-import kotlin.test.assertNotEquals
-import kotlin.test.assertTrue
+import io.kotest.core.spec.style.DescribeSpec
+import io.kotest.matchers.booleans.shouldBeFalse
+import io.kotest.matchers.booleans.shouldBeTrue
+import io.kotest.matchers.shouldNotBe
+import io.kotest.matchers.string.shouldStartWith
 
-class Argon2PasswordServiceTest {
-    private val passwordService = Argon2PasswordService()
+/**
+ * Tests for Argon2PasswordService using Argon2id algorithm.
+ *
+ * Verifies:
+ * - Password hashing produces unique hashes (random salt)
+ * - Password verification works correctly
+ * - Edge cases (empty passwords, unicode characters)
+ * - Hash format compliance (Argon2id)
+ */
+class Argon2PasswordServiceTest :
+    DescribeSpec({
+        val passwordService = Argon2PasswordService()
 
-    @Test
-    fun `hash produces different output for same password`() {
-        val password = "testPassword123!"
-        val hash1 = passwordService.hash(password)
-        val hash2 = passwordService.hash(password)
+        describe("password hashing") {
+            it("produces different output for same password") {
+                val password = "testPassword123!"
+                val hash1 = passwordService.hash(password)
+                val hash2 = passwordService.hash(password)
 
-        // Each hash should be unique due to random salt
-        assertNotEquals(hash1, hash2)
-    }
+                // Each hash should be unique due to random salt
+                hash1 shouldNotBe hash2
+            }
 
-    @Test
-    fun `verify returns true for correct password`() {
-        val password = "correctPassword!"
-        val hash = passwordService.hash(password)
+            it("produces argon2id format") {
+                val password = "testPassword"
+                val hash = passwordService.hash(password)
 
-        assertTrue(passwordService.verify(password, hash))
-    }
+                hash shouldStartWith "\$argon2id\$"
+            }
+        }
 
-    @Test
-    fun `verify returns false for incorrect password`() {
-        val correctPassword = "correctPassword!"
-        val wrongPassword = "wrongPassword!"
-        val hash = passwordService.hash(correctPassword)
+        describe("password verification") {
+            it("returns true for correct password") {
+                val password = "correctPassword!"
+                val hash = passwordService.hash(password)
 
-        assertFalse(passwordService.verify(wrongPassword, hash))
-    }
+                passwordService.verify(password, hash).shouldBeTrue()
+            }
 
-    @Test
-    fun `verify handles empty password`() {
-        val password = ""
-        val hash = passwordService.hash(password)
+            it("returns false for incorrect password") {
+                val correctPassword = "correctPassword!"
+                val wrongPassword = "wrongPassword!"
+                val hash = passwordService.hash(correctPassword)
 
-        assertTrue(passwordService.verify(password, hash))
-        assertFalse(passwordService.verify("notEmpty", hash))
-    }
+                passwordService.verify(wrongPassword, hash).shouldBeFalse()
+            }
 
-    @Test
-    fun `verify handles unicode characters`() {
-        val password = "пароль密码🔐"
-        val hash = passwordService.hash(password)
+            it("handles empty password") {
+                val password = ""
+                val hash = passwordService.hash(password)
 
-        assertTrue(passwordService.verify(password, hash))
-        assertFalse(passwordService.verify("wrong", hash))
-    }
+                passwordService.verify(password, hash).shouldBeTrue()
+                passwordService.verify("notEmpty", hash).shouldBeFalse()
+            }
 
-    @Test
-    fun `hash produces argon2id format`() {
-        val password = "testPassword"
-        val hash = passwordService.hash(password)
+            it("handles unicode characters") {
+                val password = "пароль密码🔐"
+                val hash = passwordService.hash(password)
 
-        assertTrue(hash.startsWith("\$argon2id\$"))
-    }
-}
+                passwordService.verify(password, hash).shouldBeTrue()
+                passwordService.verify("wrong", hash).shouldBeFalse()
+            }
+        }
+    })

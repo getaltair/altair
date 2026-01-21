@@ -13,96 +13,93 @@ import com.getaltair.altair.dto.auth.TokenRefreshResponse
 import com.getaltair.altair.rpc.PublicAuthService
 import com.getaltair.altair.service.auth.AuthManager
 import com.getaltair.altair.service.auth.SecureTokenStorage
+import io.kotest.core.spec.style.BehaviorSpec
+import io.kotest.matchers.collections.shouldHaveSize
+import io.kotest.matchers.nulls.shouldNotBeNull
+import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertIs
-import kotlin.test.assertNotNull
 
 /**
  * Tests for RootComponent navigation behavior and ComponentContextFactory.
+ *
+ * Verifies:
+ * - RootComponent initial stack and child configuration
+ * - ComponentContextFactory functions (createRootComponentContext, getLifecycle, etc.)
  */
-class RootComponentTest {
-    private fun createTestComponentContext(): DefaultComponentContext {
-        val lifecycle = LifecycleRegistry()
-        lifecycle.resume()
-        return DefaultComponentContext(lifecycle = lifecycle)
-    }
+class RootComponentTest :
+    BehaviorSpec({
+        fun createTestComponentContext(): DefaultComponentContext {
+            val lifecycle = LifecycleRegistry()
+            lifecycle.resume()
+            return DefaultComponentContext(lifecycle = lifecycle)
+        }
 
-    private fun createTestAuthManager(): AuthManager =
-        AuthManager(
-            tokenStorage = FakeTokenStorage(),
-            publicAuthService = FakePublicAuthService(),
-            scope = CoroutineScope(Dispatchers.Default + SupervisorJob()),
-        )
-
-    // ============================================
-    // RootComponent Tests
-    // ============================================
-
-    @Test
-    fun `initial stack contains Login configuration`() {
-        val component =
-            RootComponent(
-                componentContext = createTestComponentContext(),
-                authManager = createTestAuthManager(),
+        fun createTestAuthManager(): AuthManager =
+            AuthManager(
+                tokenStorage = FakeTokenStorage(),
+                publicAuthService = FakePublicAuthService(),
+                scope = CoroutineScope(Dispatchers.Default + SupervisorJob()),
             )
 
-        val stack = component.stack.value
-        assertEquals(1, stack.items.size, "Stack should have exactly one item")
-        assertIs<Config.Login>(stack.active.configuration, "Active configuration should be Login")
-    }
+        given("RootComponent initialization") {
+            `when`("created with default settings") {
+                then("initial stack contains Login configuration") {
+                    val component =
+                        RootComponent(
+                            componentContext = createTestComponentContext(),
+                            authManager = createTestAuthManager(),
+                        )
 
-    @Test
-    fun `initial child is Login`() {
-        val component =
-            RootComponent(
-                componentContext = createTestComponentContext(),
-                authManager = createTestAuthManager(),
-            )
+                    val stack = component.stack.value
+                    stack.items shouldHaveSize 1
+                    stack.active.configuration.shouldBeInstanceOf<Config.Login>()
+                }
 
-        val activeChild = component.stack.value.active.instance
-        assertIs<RootComponent.Child.Login>(activeChild, "Active child should be Login")
-    }
+                then("initial child is Login") {
+                    val component =
+                        RootComponent(
+                            componentContext = createTestComponentContext(),
+                            authManager = createTestAuthManager(),
+                        )
 
-    // ============================================
-    // ComponentContextFactory Tests
-    // ============================================
+                    val activeChild = component.stack.value.active.instance
+                    activeChild.shouldBeInstanceOf<RootComponent.Child.Login>()
+                }
+            }
+        }
 
-    @Test
-    fun `createRootComponentContext returns valid context`() {
-        val context = createRootComponentContext()
-        assertNotNull(context, "Context should not be null")
-    }
+        given("ComponentContextFactory") {
+            `when`("creating root component context") {
+                then("returns valid context") {
+                    val context = createRootComponentContext()
+                    context.shouldNotBeNull()
+                }
 
-    @Test
-    fun `createRootComponentContext returns context with resumed lifecycle`() {
-        val context = createRootComponentContext()
-        val lifecycle = context.getLifecycle()
-        assertEquals(
-            Lifecycle.State.RESUMED,
-            lifecycle.state,
-            "Lifecycle should be in RESUMED state",
-        )
-    }
+                then("returns context with resumed lifecycle") {
+                    val context = createRootComponentContext()
+                    val lifecycle = context.getLifecycle()
+                    lifecycle.state shouldBe Lifecycle.State.RESUMED
+                }
 
-    @Test
-    fun `getLifecycle returns LifecycleRegistry from createRootComponentContext`() {
-        val context = createRootComponentContext()
-        val lifecycle = context.getLifecycle()
-        assertNotNull(lifecycle, "getLifecycle should return non-null LifecycleRegistry")
-        assertIs<LifecycleRegistry>(lifecycle, "Should return LifecycleRegistry type")
-    }
+                then("returns LifecycleRegistry from getLifecycle") {
+                    val context = createRootComponentContext()
+                    val lifecycle = context.getLifecycle()
 
-    @Test
-    fun `getLifecycleState returns RESUMED for new context`() {
-        val context = createRootComponentContext()
-        val state = context.getLifecycleState()
-        assertEquals(Lifecycle.State.RESUMED, state)
-    }
-}
+                    lifecycle.shouldNotBeNull()
+                    lifecycle.shouldBeInstanceOf<LifecycleRegistry>()
+                }
+
+                then("getLifecycleState returns RESUMED for new context") {
+                    val context = createRootComponentContext()
+                    val state = context.getLifecycleState()
+                    state shouldBe Lifecycle.State.RESUMED
+                }
+            }
+        }
+    })
 
 // ============================================
 // Test Fakes

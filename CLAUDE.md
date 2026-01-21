@@ -294,10 +294,74 @@ val syncService = factory.syncService() // Uses TokenProvider
 
 ### Testing Strategy
 
+**Framework**: All tests use Kotest 5.9.1 (BDD-style testing framework)
+
+**Test organization**:
 - **Unit tests**: `commonTest` for platform-agnostic logic
 - **Platform tests**: `jvmTest`, `androidTest`, `iosTest` for platform-specific code
+- **Integration tests**: Server module uses Testcontainers for database tests
+
+**Spec styles** (choose based on test type):
+- `BehaviorSpec`: BDD-style `given/when/then` for integration and behavioral tests
+- `DescribeSpec`: RSpec-style `describe/it` for unit tests with hierarchical structure
+- `FunSpec`: Simple `test("name") {}` for straightforward tests
+- `withData`: Data-driven testing for parameterized tests
+
+**Assertions**:
+```kotlin
+// Kotest matchers
+result shouldBe expected
+list shouldHaveSize 3
+value.shouldBeNull()
+flag.shouldBeTrue()
+
+// Arrow Either matchers
+result.shouldBeRight()
+result.shouldBeLeft()
+result.leftOrNull().shouldBeInstanceOf<DomainError.NotFoundError>()
+```
+
+**Async testing**:
+```kotlin
+// Use eventually for non-deterministic operations
+eventually(5.seconds) {
+    repository.getById(id).shouldBeRight()
+}
+```
+
+**Lifecycle hooks**:
+```kotlin
+class MyTest : BehaviorSpec({
+    beforeEach {
+        // Setup before each test
+    }
+
+    afterEach {
+        // Cleanup after each test
+    }
+
+    given("feature") {
+        `when`("action") {
+            then("outcome") {
+                // test logic
+            }
+        }
+    }
+})
+```
+
+**Property-based testing**:
+```kotlin
+checkAll<String, Int> { str, num ->
+    // Test invariants with random inputs
+    str.length shouldBeGreaterThanOrEqual 0
+}
+```
+
+**Additional tools**:
 - **Mocking**: Use Mokkery for multiplatform mocking
 - **Flow testing**: Use Turbine for testing Kotlin Flows
+- **Skill reference**: Use `/kotest` skill for detailed examples and patterns
 
 ## Common Pitfalls
 
@@ -309,6 +373,7 @@ val syncService = factory.syncService() // Uses TokenProvider
 
 ## Skills & Commands
 
+- `/kotest` - Kotest testing framework patterns and examples
 - `/arrow-patterns` - Get help with Arrow functional error handling patterns
 - `/commit` - Create a git commit
 - `/review-pr` - Comprehensive PR review
