@@ -27,6 +27,8 @@ class NativeCredentialStoreFactoryTest :
                             os shouldBe NativeCredentialStoreFactory.OperatingSystem.WINDOWS
                         osName.contains("linux") || osName.contains("nix") || osName.contains("nux") ->
                             os shouldBe NativeCredentialStoreFactory.OperatingSystem.LINUX
+                        else ->
+                            os shouldBe NativeCredentialStoreFactory.OperatingSystem.UNKNOWN
                     }
                 }
             }
@@ -37,22 +39,24 @@ class NativeCredentialStoreFactoryTest :
                 then("returns correct provider type") {
                     // Only test the current platform to avoid JNA library loading errors
                     val currentOS = NativeCredentialStoreFactory.detectOS()
-                    if (currentOS == NativeCredentialStoreFactory.OperatingSystem.UNKNOWN) {
-                        return@then // Skip on unknown platforms
-                    }
-
                     val provider = NativeCredentialStoreFactory.createForOS(currentOS)
-                    provider.shouldNotBeNull()
 
                     when (currentOS) {
-                        NativeCredentialStoreFactory.OperatingSystem.MACOS ->
+                        NativeCredentialStoreFactory.OperatingSystem.MACOS -> {
+                            provider.shouldNotBeNull()
                             provider.name shouldBe "macOS Keychain"
-                        NativeCredentialStoreFactory.OperatingSystem.WINDOWS ->
+                        }
+                        NativeCredentialStoreFactory.OperatingSystem.WINDOWS -> {
+                            provider.shouldNotBeNull()
                             provider.name shouldBe "Windows Credential Manager"
-                        NativeCredentialStoreFactory.OperatingSystem.LINUX ->
+                        }
+                        NativeCredentialStoreFactory.OperatingSystem.LINUX -> {
+                            provider.shouldNotBeNull()
                             provider.name shouldBe "Linux Secret Service (secret-tool)"
-                        NativeCredentialStoreFactory.OperatingSystem.UNKNOWN ->
-                            { /* Skip */ }
+                        }
+                        NativeCredentialStoreFactory.OperatingSystem.UNKNOWN -> {
+                            provider.shouldBeNull()
+                        }
                     }
                 }
             }
@@ -72,8 +76,12 @@ class NativeCredentialStoreFactoryTest :
                     val result = NativeCredentialStoreFactory.create()
 
                     // The result depends on whether native libraries are available
-                    // We just verify it doesn't throw
-                    if (result != null) {
+                    // On known platforms, we expect a provider; on unknown, null is acceptable
+                    val currentOS = NativeCredentialStoreFactory.detectOS()
+                    if (currentOS == NativeCredentialStoreFactory.OperatingSystem.UNKNOWN) {
+                        result.shouldBeNull()
+                    } else {
+                        result.shouldNotBeNull()
                         result.isAvailable().shouldBeTrue()
                     }
                 }
