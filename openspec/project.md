@@ -34,7 +34,8 @@ Self-hosted architecture keeps all data on user infrastructure with complete mul
 | Dependency Injection | Koin 4.x | DI container |
 | Navigation | Decompose 3.x | Composable navigation for KMP |
 | Error Handling | Arrow 2.x | Typed errors, validation, optics |
-| Testing | Mokkery 3.x + Turbine | Mocking and Flow testing |
+| Testing | Kotest 5.9.1 | BDD testing framework with property-based testing |
+| Mocking & Flows | Mokkery 3.x + Turbine | Mocking and Flow testing |
 | Serialization | kotlinx.serialization 1.9.0 | JSON serialization |
 | Async | kotlinx-coroutines 1.10.2 | Coroutines for concurrency |
 | Date/Time | kotlinx-datetime 0.7.1 | Cross-platform date handling |
@@ -82,15 +83,66 @@ Self-hosted architecture keeps all data on user infrastructure with complete mul
 
 ### Testing Strategy
 
-- **Unit Testing**: Kotlin Test with JUnit
-- **Mocking**: Mokkery 3.x (KMP-compatible)
-- **Flow Testing**: Turbine for testing Kotlin Flow
-- **Server Tests**: Ktor test host with `testApplication` DSL
+**Framework**: All tests use **Kotest 5.9.1** (BDD-style testing framework)
 
-Test locations:
+**Test organization**:
+- **Common tests**: `src/commonTest/kotlin/` for platform-agnostic logic
+- **Platform-specific tests**: `src/jvmTest/`, `src/androidTest/`, `src/iosTest/`
+- **Server tests**: `server/src/test/kotlin/` for integration tests
+- **Android instrumented tests**: `composeApp/src/androidInstrumentedTest/` (uses JUnit runner with Kotest matchers)
 
-- Common tests: `src/commonTest/kotlin/`
-- Server tests: `server/src/test/kotlin/`
+**Spec styles** (choose based on test type):
+- **BehaviorSpec**: BDD-style `given/when/then` for integration and behavioral tests
+- **DescribeSpec**: RSpec-style `describe/it` for unit tests with hierarchical structure
+- **FunSpec**: Simple `test("name") {}` for straightforward tests
+- **withData**: Data-driven testing for parameterized tests
+
+**Assertions**:
+```kotlin
+// Kotest matchers
+result shouldBe expected
+list shouldHaveSize 3
+value.shouldBeNull()
+flag.shouldBeTrue()
+
+// Arrow Either matchers (kotest-assertions-arrow)
+result.shouldBeRight()
+result.shouldBeLeft()
+result.leftOrNull().shouldBeInstanceOf<DomainError.NotFoundError>()
+```
+
+**Property-based testing**:
+- Use `checkAll` with `Arb<T>` generators for testing invariants
+- Custom generators in `shared/src/commonTest/kotlin/TestGenerators.kt`
+- Seeds logged for reproducibility
+
+**Async testing**:
+```kotlin
+// Testing coroutines
+test("async operation").config(coroutineTestScope = true) {
+    eventually(5.seconds) {
+        repository.getUser(id).shouldBeRight()
+    }
+}
+```
+
+**Additional tools**:
+- **Mocking**: Mokkery 3.x for multiplatform mocking
+- **Flow testing**: Turbine for testing Kotlin Flows
+- **Server tests**: Ktor `testApplication` DSL with SurrealDB Testcontainers
+- **Testcontainers**: Kotest extension for SurrealDB integration tests
+
+**Running tests**:
+```bash
+./gradlew test                           # All unit tests
+./gradlew :shared:jvmTest                # Shared module JVM tests
+./gradlew :server:test                   # Server integration tests
+./gradlew :composeApp:jvmTest            # ComposeApp JVM tests
+./gradlew :composeApp:connectedAndroidTest  # Android instrumented tests
+./gradlew allTests                       # All targets + aggregated report
+```
+
+**Reference**: Use `/kotest` skill for detailed examples and patterns
 
 ### Git Workflow
 

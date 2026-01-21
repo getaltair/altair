@@ -19,6 +19,15 @@ import com.getaltair.altair.rpc.ContextMessage
 import com.getaltair.altair.rpc.MessageRole
 import com.getaltair.altair.rpc.PublicAuthService
 import com.getaltair.altair.rpc.SyncService
+import io.kotest.core.spec.style.BehaviorSpec
+import io.kotest.matchers.booleans.shouldBeTrue
+import io.kotest.matchers.collections.shouldBeEmpty
+import io.kotest.matchers.collections.shouldContain
+import io.kotest.matchers.collections.shouldHaveSize
+import io.kotest.matchers.comparables.shouldBeGreaterThan
+import io.kotest.matchers.nulls.shouldNotBeNull
+import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldContain
 import io.ktor.client.plugins.websocket.WebSockets
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
@@ -36,10 +45,6 @@ import kotlinx.rpc.krpc.ktor.server.rpc
 import kotlinx.rpc.krpc.serialization.json.json
 import kotlinx.rpc.withService
 import kotlinx.serialization.json.JsonPrimitive
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
 import io.ktor.server.websocket.WebSockets as ServerWebSockets
 import kotlinx.rpc.krpc.ktor.client.rpc as clientRpc
 
@@ -135,289 +140,334 @@ private fun Application.configureTestRpc() {
  *
  * These tests verify that the RPC infrastructure works end-to-end:
  * client -> WebSocket -> server -> service implementation -> response.
+ *
+ * Verifies:
+ * - PublicAuthService (login, register, token refresh)
+ * - AuthService (logout, invite codes)
+ * - SyncService (pull, push, streaming)
+ * - AiService (embeddings, transcription, completions)
  */
-class RpcIntegrationTest {
-    @Test
-    fun `PublicAuthService login returns valid response`() =
-        testApplication {
-            application { configureTestRpc() }
+class RpcIntegrationTest :
+    BehaviorSpec({
+        given("PublicAuthService RPC") {
+            `when`("logging in") {
+                then("returns valid response") {
+                    testApplication {
+                        application { configureTestRpc() }
 
-            val client = createRpcClient()
-            val authService = client.withService<PublicAuthService>()
+                        val client = createRpcClient()
+                        val authService = client.withService<PublicAuthService>()
 
-            val response = authService.login(AuthRequest("test@example.com", "password"))
+                        val response = authService.login(AuthRequest("test@example.com", "password"))
 
-            assertNotNull(response.accessToken)
-            assertNotNull(response.refreshToken)
-            assertEquals(UserRole.MEMBER, response.role)
-            assertTrue(response.expiresIn > 0)
-        }
-
-    @Test
-    fun `PublicAuthService register returns valid response`() =
-        testApplication {
-            application { configureTestRpc() }
-
-            val client = createRpcClient()
-            val authService = client.withService<PublicAuthService>()
-
-            val response =
-                authService.register(
-                    RegisterRequest(
-                        email = "new@example.com",
-                        password = "password123",
-                        displayName = "New User",
-                    ),
-                )
-
-            assertNotNull(response.accessToken)
-            assertEquals("New User", response.displayName)
-        }
-
-    @Test
-    fun `PublicAuthService refresh returns new tokens with rotation`() =
-        testApplication {
-            application { configureTestRpc() }
-
-            val client = createRpcClient()
-            val authService = client.withService<PublicAuthService>()
-
-            val response = authService.refresh("some-refresh-token")
-
-            assertNotNull(response.accessToken)
-            assertNotNull(response.refreshToken)
-            assertTrue(response.expiresIn > 0)
-        }
-
-    @Test
-    fun `AuthService logout completes successfully`() =
-        testApplication {
-            application { configureTestRpc() }
-
-            val client = createRpcClient()
-            val authService = client.withService<AuthService>()
-
-            val response = authService.logout()
-
-            assertTrue(response.success)
-        }
-
-    @Test
-    fun `AuthService generateInviteCode returns code`() =
-        testApplication {
-            application { configureTestRpc() }
-
-            val client = createRpcClient()
-            val authService = client.withService<AuthService>()
-
-            val response = authService.generateInviteCode()
-
-            assertNotNull(response.code)
-            assertNotNull(response.expiresAt)
-        }
-
-    @Test
-    fun `SyncService pull returns SyncResponse`() =
-        testApplication {
-            application { configureTestRpc() }
-
-            val client = createRpcClient()
-            val syncService = client.withService<SyncService>()
-
-            val response = syncService.pull(since = 0L, entityTypes = emptySet())
-
-            assertTrue(response.serverVersion > 0)
-            assertTrue(response.changes.isEmpty())
-            assertTrue(response.conflicts.isEmpty())
-        }
-
-    @Test
-    fun `SyncService push acknowledges changes`() =
-        testApplication {
-            application { configureTestRpc() }
-
-            val client = createRpcClient()
-            val syncService = client.withService<SyncService>()
-
-            val changeSet = ChangeSet(changes = emptyList(), clientTimestamp = System.currentTimeMillis())
-            val result = syncService.push(changeSet)
-
-            assertTrue(result.success)
-            assertTrue(result.serverVersion > 0)
-        }
-
-    @Test
-    fun `SyncService push acknowledges entity IDs from changes`() =
-        testApplication {
-            application { configureTestRpc() }
-
-            val client = createRpcClient()
-            val syncService = client.withService<SyncService>()
-
-            val changes =
-                ChangeSet(
-                    changes =
-                        listOf(
-                            EntityChange(
-                                entityType = "Quest",
-                                entityId = "01HWTEST000000000000000001",
-                                operation = ChangeOperation.CREATE,
-                                version = 1L,
-                                data = JsonPrimitive("test"),
-                                timestamp = System.currentTimeMillis(),
-                            ),
-                            EntityChange(
-                                entityType = "Note",
-                                entityId = "01HWTEST000000000000000002",
-                                operation = ChangeOperation.UPDATE,
-                                version = 2L,
-                                data = null,
-                                timestamp = System.currentTimeMillis(),
-                            ),
-                        ),
-                    clientTimestamp = System.currentTimeMillis(),
-                )
-
-            val result = syncService.push(changes)
-
-            assertTrue(result.success)
-            assertEquals(2, result.acknowledged.size)
-            assertTrue(result.acknowledged.contains("01HWTEST000000000000000001"))
-            assertTrue(result.acknowledged.contains("01HWTEST000000000000000002"))
-        }
-
-    @Test
-    fun `SyncService pull with non-zero since returns incremented version`() =
-        testApplication {
-            application { configureTestRpc() }
-
-            val client = createRpcClient()
-            val syncService = client.withService<SyncService>()
-
-            val response = syncService.pull(since = 100L, entityTypes = setOf("Quest", "Note"))
-
-            assertEquals(101L, response.serverVersion)
-        }
-
-    @Test
-    fun `SyncService streamChanges can be started and cancelled`() =
-        testApplication {
-            application { configureTestRpc() }
-
-            val client = createRpcClient()
-            val syncService = client.withService<SyncService>()
-
-            val scope = CoroutineScope(Dispatchers.Default)
-            val job =
-                scope.launch {
-                    syncService.streamChanges(setOf("Quest")).collect { /* no-op */ }
+                        response.accessToken.shouldNotBeNull()
+                        response.refreshToken.shouldNotBeNull()
+                        response.role shouldBe UserRole.MEMBER
+                        response.expiresIn shouldBe 3600
+                    }
                 }
-
-            // Let it establish connection
-            delay(100)
-            assertTrue(job.isActive)
-
-            // Verify cancellation works
-            job.cancel()
-            job.join()
-            assertTrue(job.isCancelled)
-        }
-
-    @Test
-    fun `AiService embed returns embeddings`() =
-        testApplication {
-            application { configureTestRpc() }
-
-            val client = createRpcClient()
-            val aiService = client.withService<AiService>()
-
-            val embeddings = aiService.embed(listOf("Hello", "World"))
-
-            assertEquals(2, embeddings.size)
-            assertTrue(embeddings[0].isNotEmpty())
-            assertTrue(embeddings[1].isNotEmpty())
-        }
-
-    @Test
-    fun `AiService transcribe returns placeholder text`() =
-        testApplication {
-            application { configureTestRpc() }
-
-            val client = createRpcClient()
-            val aiService = client.withService<AiService>()
-
-            val result = aiService.transcribe(byteArrayOf(1, 2, 3), "wav")
-
-            assertTrue(result.contains("Transcription placeholder"))
-            assertTrue(result.contains("3 bytes"))
-            assertTrue(result.contains("wav"))
-        }
-
-    @Test
-    fun `AiService complete streams tokens`() =
-        testApplication {
-            application { configureTestRpc() }
-
-            val client = createRpcClient()
-            val aiService = client.withService<AiService>()
-
-            val request = CompletionRequest(prompt = "Test prompt")
-            val tokens = aiService.complete(request).toList()
-
-            assertTrue(tokens.isNotEmpty())
-            val fullResponse = tokens.joinToString("")
-            assertTrue(fullResponse.contains("stub response"))
-        }
-
-    @Test
-    fun `AiService complete handles request with all optional parameters`() =
-        testApplication {
-            application { configureTestRpc() }
-
-            val client = createRpcClient()
-            val aiService = client.withService<AiService>()
-
-            val request =
-                CompletionRequest(
-                    prompt = "Test",
-                    systemPrompt = "You are helpful",
-                    maxTokens = 512,
-                    temperature = 0.5f,
-                    context = listOf(ContextMessage(role = MessageRole.USER, content = "Hello")),
-                )
-
-            val tokens = aiService.complete(request).toList()
-            assertTrue(tokens.isNotEmpty())
-        }
-
-    @Test
-    fun `AiService embed handles empty list`() =
-        testApplication {
-            application { configureTestRpc() }
-
-            val client = createRpcClient()
-            val aiService = client.withService<AiService>()
-
-            val embeddings = aiService.embed(emptyList())
-
-            assertTrue(embeddings.isEmpty())
-        }
-
-    private fun io.ktor.server.testing.ApplicationTestBuilder.createRpcClient() =
-        createClient {
-            install(WebSockets)
-            installKrpc()
-        }.clientRpc {
-            url {
-                host = "localhost"
-                port = 80
-                protocol = io.ktor.http.URLProtocol.WS
-                pathSegments = listOf("rpc")
             }
-            rpcConfig {
-                serialization {
-                    json()
+
+            `when`("registering new user") {
+                then("returns valid response") {
+                    testApplication {
+                        application { configureTestRpc() }
+
+                        val client = createRpcClient()
+                        val authService = client.withService<PublicAuthService>()
+
+                        val response =
+                            authService.register(
+                                RegisterRequest(
+                                    email = "new@example.com",
+                                    password = "password123",
+                                    displayName = "New User",
+                                ),
+                            )
+
+                        response.accessToken.shouldNotBeNull()
+                        response.displayName shouldBe "New User"
+                    }
+                }
+            }
+
+            `when`("refreshing token") {
+                then("returns new tokens with rotation") {
+                    testApplication {
+                        application { configureTestRpc() }
+
+                        val client = createRpcClient()
+                        val authService = client.withService<PublicAuthService>()
+
+                        val response = authService.refresh("some-refresh-token")
+
+                        response.accessToken.shouldNotBeNull()
+                        response.refreshToken.shouldNotBeNull()
+                        response.expiresIn shouldBe 3600
+                    }
                 }
             }
         }
+
+        given("AuthService RPC") {
+            `when`("logging out") {
+                then("completes successfully") {
+                    testApplication {
+                        application { configureTestRpc() }
+
+                        val client = createRpcClient()
+                        val authService = client.withService<AuthService>()
+
+                        val response = authService.logout()
+
+                        response.success.shouldBeTrue()
+                    }
+                }
+            }
+
+            `when`("generating invite code") {
+                then("returns code") {
+                    testApplication {
+                        application { configureTestRpc() }
+
+                        val client = createRpcClient()
+                        val authService = client.withService<AuthService>()
+
+                        val response = authService.generateInviteCode()
+
+                        response.code.shouldNotBeNull()
+                        response.expiresAt.shouldNotBeNull()
+                    }
+                }
+            }
+        }
+
+        given("SyncService RPC") {
+            `when`("pulling changes with zero since") {
+                then("returns SyncResponse") {
+                    testApplication {
+                        application { configureTestRpc() }
+
+                        val client = createRpcClient()
+                        val syncService = client.withService<SyncService>()
+
+                        val response = syncService.pull(since = 0L, entityTypes = emptySet())
+
+                        response.serverVersion shouldBe 1L
+                        response.changes.shouldBeEmpty()
+                        response.conflicts.shouldBeEmpty()
+                    }
+                }
+            }
+
+            `when`("pulling with non-zero since") {
+                then("returns incremented version") {
+                    testApplication {
+                        application { configureTestRpc() }
+
+                        val client = createRpcClient()
+                        val syncService = client.withService<SyncService>()
+
+                        val response = syncService.pull(since = 100L, entityTypes = setOf("Quest", "Note"))
+
+                        response.serverVersion shouldBe 101L
+                    }
+                }
+            }
+
+            `when`("pushing empty changes") {
+                then("acknowledges changes") {
+                    testApplication {
+                        application { configureTestRpc() }
+
+                        val client = createRpcClient()
+                        val syncService = client.withService<SyncService>()
+
+                        val changeSet = ChangeSet(changes = emptyList(), clientTimestamp = System.currentTimeMillis())
+                        val result = syncService.push(changeSet)
+
+                        result.success.shouldBeTrue()
+                        result.serverVersion shouldBeGreaterThan 0L
+                    }
+                }
+            }
+
+            `when`("pushing entity changes") {
+                then("acknowledges entity IDs from changes") {
+                    testApplication {
+                        application { configureTestRpc() }
+
+                        val client = createRpcClient()
+                        val syncService = client.withService<SyncService>()
+
+                        val changes =
+                            ChangeSet(
+                                changes =
+                                    listOf(
+                                        EntityChange(
+                                            entityType = "Quest",
+                                            entityId = "01HWTEST000000000000000001",
+                                            operation = ChangeOperation.CREATE,
+                                            version = 1L,
+                                            data = JsonPrimitive("test"),
+                                            timestamp = System.currentTimeMillis(),
+                                        ),
+                                        EntityChange(
+                                            entityType = "Note",
+                                            entityId = "01HWTEST000000000000000002",
+                                            operation = ChangeOperation.UPDATE,
+                                            version = 2L,
+                                            data = null,
+                                            timestamp = System.currentTimeMillis(),
+                                        ),
+                                    ),
+                                clientTimestamp = System.currentTimeMillis(),
+                            )
+
+                        val result = syncService.push(changes)
+
+                        result.success.shouldBeTrue()
+                        result.acknowledged shouldHaveSize 2
+                        result.acknowledged shouldContain "01HWTEST000000000000000001"
+                        result.acknowledged shouldContain "01HWTEST000000000000000002"
+                    }
+                }
+            }
+
+            `when`("streaming changes") {
+                then("can be started and cancelled") {
+                    testApplication {
+                        application { configureTestRpc() }
+
+                        val client = createRpcClient()
+                        val syncService = client.withService<SyncService>()
+
+                        val scope = CoroutineScope(Dispatchers.Default)
+                        val job =
+                            scope.launch {
+                                syncService.streamChanges(setOf("Quest")).collect { /* no-op */ }
+                            }
+
+                        // Let it establish connection
+                        delay(100)
+                        job.isActive.shouldBeTrue()
+
+                        // Verify cancellation works
+                        job.cancel()
+                        job.join()
+                        job.isCancelled.shouldBeTrue()
+                    }
+                }
+            }
+        }
+
+        given("AiService RPC") {
+            `when`("embedding texts") {
+                then("returns embeddings") {
+                    testApplication {
+                        application { configureTestRpc() }
+
+                        val client = createRpcClient()
+                        val aiService = client.withService<AiService>()
+
+                        val embeddings = aiService.embed(listOf("Hello", "World"))
+
+                        embeddings shouldHaveSize 2
+                        embeddings[0].isNotEmpty().shouldBeTrue()
+                        embeddings[1].isNotEmpty().shouldBeTrue()
+                    }
+                }
+
+                then("handles empty list") {
+                    testApplication {
+                        application { configureTestRpc() }
+
+                        val client = createRpcClient()
+                        val aiService = client.withService<AiService>()
+
+                        val embeddings = aiService.embed(emptyList())
+
+                        embeddings.shouldBeEmpty()
+                    }
+                }
+            }
+
+            `when`("transcribing audio") {
+                then("returns placeholder text") {
+                    testApplication {
+                        application { configureTestRpc() }
+
+                        val client = createRpcClient()
+                        val aiService = client.withService<AiService>()
+
+                        val result = aiService.transcribe(byteArrayOf(1, 2, 3), "wav")
+
+                        result shouldContain "Transcription placeholder"
+                        result shouldContain "3 bytes"
+                        result shouldContain "wav"
+                    }
+                }
+            }
+
+            `when`("completing with minimal request") {
+                then("streams tokens") {
+                    testApplication {
+                        application { configureTestRpc() }
+
+                        val client = createRpcClient()
+                        val aiService = client.withService<AiService>()
+
+                        val request = CompletionRequest(prompt = "Test prompt")
+                        val tokens = aiService.complete(request).toList()
+
+                        tokens.isNotEmpty().shouldBeTrue()
+                        val fullResponse = tokens.joinToString("")
+                        fullResponse shouldContain "stub response"
+                    }
+                }
+            }
+
+            `when`("completing with all optional parameters") {
+                then("handles request") {
+                    testApplication {
+                        application { configureTestRpc() }
+
+                        val client = createRpcClient()
+                        val aiService = client.withService<AiService>()
+
+                        val request =
+                            CompletionRequest(
+                                prompt = "Test",
+                                systemPrompt = "You are helpful",
+                                maxTokens = 512,
+                                temperature = 0.5f,
+                                context = listOf(ContextMessage(role = MessageRole.USER, content = "Hello")),
+                            )
+
+                        val tokens = aiService.complete(request).toList()
+                        tokens.isNotEmpty().shouldBeTrue()
+                    }
+                }
+            }
+        }
+    }) {
+    companion object {
+        private fun io.ktor.server.testing.ApplicationTestBuilder.createRpcClient() =
+            createClient {
+                install(WebSockets)
+                installKrpc()
+            }.clientRpc {
+                url {
+                    host = "localhost"
+                    port = 80
+                    protocol = io.ktor.http.URLProtocol.WS
+                    pathSegments = listOf("rpc")
+                }
+                rpcConfig {
+                    serialization {
+                        json()
+                    }
+                }
+            }
+    }
 }

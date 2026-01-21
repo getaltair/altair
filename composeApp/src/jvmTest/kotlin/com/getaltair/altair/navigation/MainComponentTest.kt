@@ -3,80 +3,91 @@ package com.getaltair.altair.navigation
 import com.arkivanov.decompose.DefaultComponentContext
 import com.arkivanov.essenty.lifecycle.LifecycleRegistry
 import com.arkivanov.essenty.lifecycle.resume
-import kotlin.test.Test
-import kotlin.test.assertEquals
+import io.kotest.core.spec.style.BehaviorSpec
+import io.kotest.matchers.shouldBe
 
 /**
  * Tests for MainComponent navigation state management.
+ *
+ * Verifies:
+ * - Initial destination defaults to Home
+ * - Initial destination can be customized
+ * - Navigation updates current destination correctly
+ * - Idempotent navigation to same destination
  */
-class MainComponentTest {
-    private fun createTestComponentContext(): DefaultComponentContext {
-        val lifecycle = LifecycleRegistry()
-        lifecycle.resume()
-        return DefaultComponentContext(lifecycle = lifecycle)
-    }
-
-    @Test
-    fun `initial destination is Home by default`() {
-        val component = MainComponent(componentContext = createTestComponentContext())
-        assertEquals(MainDestination.Home, component.currentDestination.value)
-    }
-
-    @Test
-    fun `initial destination can be customized`() {
-        val component =
-            MainComponent(
-                componentContext = createTestComponentContext(),
-                initialDestination = MainDestination.Settings,
-            )
-        assertEquals(MainDestination.Settings, component.currentDestination.value)
-    }
-
-    @Test
-    fun `navigateTo updates current destination`() {
-        val component = MainComponent(componentContext = createTestComponentContext())
-
-        component.navigateTo(MainDestination.Guidance)
-        assertEquals(MainDestination.Guidance, component.currentDestination.value)
-
-        component.navigateTo(MainDestination.Knowledge)
-        assertEquals(MainDestination.Knowledge, component.currentDestination.value)
-
-        component.navigateTo(MainDestination.Tracking)
-        assertEquals(MainDestination.Tracking, component.currentDestination.value)
-
-        component.navigateTo(MainDestination.Settings)
-        assertEquals(MainDestination.Settings, component.currentDestination.value)
-
-        component.navigateTo(MainDestination.Home)
-        assertEquals(MainDestination.Home, component.currentDestination.value)
-    }
-
-    @Test
-    fun `navigating to all destinations updates state correctly`() {
-        val component = MainComponent(componentContext = createTestComponentContext())
-
-        // Verify we can navigate through all destinations
-        MainDestination.entries.forEach { destination ->
-            component.navigateTo(destination)
-            assertEquals(
-                destination,
-                component.currentDestination.value,
-                "Should navigate to $destination",
-            )
+class MainComponentTest :
+    BehaviorSpec({
+        fun createTestComponentContext(): DefaultComponentContext {
+            val lifecycle = LifecycleRegistry()
+            lifecycle.resume()
+            return DefaultComponentContext(lifecycle = lifecycle)
         }
-    }
 
-    @Test
-    fun `navigating to same destination is idempotent`() {
-        val component = MainComponent(componentContext = createTestComponentContext())
+        given("MainComponent initialization") {
+            `when`("created with default settings") {
+                then("initial destination is Home") {
+                    val component = MainComponent(componentContext = createTestComponentContext())
+                    component.currentDestination.value shouldBe MainDestination.Home
+                }
+            }
 
-        // Navigate to Guidance
-        component.navigateTo(MainDestination.Guidance)
-        assertEquals(MainDestination.Guidance, component.currentDestination.value)
+            `when`("created with custom initial destination") {
+                then("initial destination is customized") {
+                    val component =
+                        MainComponent(
+                            componentContext = createTestComponentContext(),
+                            initialDestination = MainDestination.Settings,
+                        )
+                    component.currentDestination.value shouldBe MainDestination.Settings
+                }
+            }
+        }
 
-        // Navigate again to same destination
-        component.navigateTo(MainDestination.Guidance)
-        assertEquals(MainDestination.Guidance, component.currentDestination.value)
-    }
-}
+        given("navigation") {
+            `when`("navigating to different destinations") {
+                then("updates current destination") {
+                    val component = MainComponent(componentContext = createTestComponentContext())
+
+                    component.navigateTo(MainDestination.Guidance)
+                    component.currentDestination.value shouldBe MainDestination.Guidance
+
+                    component.navigateTo(MainDestination.Knowledge)
+                    component.currentDestination.value shouldBe MainDestination.Knowledge
+
+                    component.navigateTo(MainDestination.Tracking)
+                    component.currentDestination.value shouldBe MainDestination.Tracking
+
+                    component.navigateTo(MainDestination.Settings)
+                    component.currentDestination.value shouldBe MainDestination.Settings
+
+                    component.navigateTo(MainDestination.Home)
+                    component.currentDestination.value shouldBe MainDestination.Home
+                }
+            }
+
+            `when`("navigating through all destinations") {
+                then("updates state correctly for each") {
+                    val component = MainComponent(componentContext = createTestComponentContext())
+
+                    MainDestination.entries.forEach { destination ->
+                        component.navigateTo(destination)
+                        component.currentDestination.value shouldBe destination
+                    }
+                }
+            }
+
+            `when`("navigating to same destination twice") {
+                then("is idempotent") {
+                    val component = MainComponent(componentContext = createTestComponentContext())
+
+                    // Navigate to Guidance
+                    component.navigateTo(MainDestination.Guidance)
+                    component.currentDestination.value shouldBe MainDestination.Guidance
+
+                    // Navigate again to same destination
+                    component.navigateTo(MainDestination.Guidance)
+                    component.currentDestination.value shouldBe MainDestination.Guidance
+                }
+            }
+        }
+    })

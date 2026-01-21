@@ -1,39 +1,27 @@
 package com.getaltair.altair.db
 
-import kotlinx.coroutines.runBlocking
-import org.junit.jupiter.api.AfterAll
-import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestInstance
-import org.testcontainers.junit.jupiter.Container
-import org.testcontainers.junit.jupiter.Testcontainers
-import kotlin.test.assertEquals
-import kotlin.test.assertTrue
+import io.kotest.assertions.arrow.core.shouldBeRight
+import io.kotest.core.spec.style.BehaviorSpec
+import io.kotest.matchers.ints.shouldBeGreaterThanOrEqual
+import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldContain
 
-@Testcontainers
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class MigrationRunnerTest {
-    private lateinit var dbClient: SurrealDbClient
-    private lateinit var migrationRunner: MigrationRunner
+/**
+ * Tests for MigrationRunner using Testcontainers.
+ *
+ * Verifies:
+ * - Migration execution and tracking
+ * - Idempotency (running migrations multiple times)
+ * - Migration order enforcement
+ * - Schema table creation
+ */
+class MigrationRunnerTest :
+    BehaviorSpec({
+        lateinit var dbClient: SurrealDbClient
+        lateinit var migrationRunner: MigrationRunner
 
-    @BeforeAll
-    fun setupContainer() {
-        container.start()
-    }
-
-    @AfterAll
-    fun tearDown() {
-        runBlocking {
-            dbClient.close()
-        }
-        container.stop()
-    }
-
-    @BeforeEach
-    fun setup() {
-        runBlocking {
-            val config = container.createNetworkConfig()
+        beforeEach {
+            val config = SurrealDbContainerExtension.createNetworkConfig()
             dbClient = SurrealDbClient(config)
             dbClient.connect().getOrNull()
 
@@ -52,151 +40,141 @@ class MigrationRunnerTest {
 
             migrationRunner = MigrationRunner(dbClient)
         }
-    }
 
-    @Test
-    fun `runMigrations applies pending migrations`(): Unit =
-        runBlocking {
-            val result = migrationRunner.runMigrations()
+        afterEach {
+            dbClient.close()
+        }
 
-            assertTrue(result.isRight())
-            result.onRight { count ->
-                // Should apply at least one migration (V1)
-                assertTrue(count >= 1, "Should have applied at least 1 migration, but got $count")
+        given("migration execution") {
+            `when`("runMigrations is called on fresh database") {
+                then("applies pending migrations") {
+                    val result = migrationRunner.runMigrations()
+
+                    result.shouldBeRight()
+                    (result.getOrNull() ?: 0) shouldBeGreaterThanOrEqual 1
+                }
+            }
+
+            `when`("migrations have already been applied") {
+                then("is idempotent and applies nothing new on second run") {
+                    // First run
+                    val firstResult = migrationRunner.runMigrations()
+                    firstResult.shouldBeRight()
+                    (firstResult.getOrNull() ?: 0) shouldBeGreaterThanOrEqual 1
+
+                    // Second run
+                    val secondResult = migrationRunner.runMigrations()
+                    secondResult.shouldBeRight()
+                    (secondResult.getOrNull() ?: -1) shouldBe 0
+                }
+            }
+
+            `when`("all migrations are manually pre-applied") {
+                then("skips already applied migrations") {
+                    // Manually insert migration records for all known migrations
+                    dbClient.execute(
+                        """
+                        DEFINE TABLE IF NOT EXISTS _migrations SCHEMAFULL;
+                        DEFINE FIELD version ON _migrations TYPE int;
+                        DEFINE FIELD description ON _migrations TYPE string;
+                        DEFINE FIELD applied_at ON _migrations TYPE datetime DEFAULT time::now();
+                        DEFINE INDEX idx_migrations_version ON _migrations FIELDS version UNIQUE;
+                        """.trimIndent(),
+                    )
+                    dbClient.execute(
+                        """
+                        CREATE _migrations CONTENT {
+                            version: 1,
+                            description: 'initial schema'
+                        };
+                        """.trimIndent(),
+                    )
+                    dbClient.execute(
+                        """
+                        CREATE _migrations CONTENT {
+                            version: 2,
+                            description: 'authentication tables'
+                        };
+                        """.trimIndent(),
+                    )
+                    dbClient.execute(
+                        """
+                        CREATE _migrations CONTENT {
+                            version: 3,
+                            description: 'fix user status values'
+                        };
+                        """.trimIndent(),
+                    )
+
+                    // Run migrations - should skip all since they're already recorded
+                    val result = migrationRunner.runMigrations()
+
+                    result.shouldBeRight()
+                    (result.getOrNull() ?: -1) shouldBe 0
+                }
             }
         }
 
-    @Test
-    fun `runMigrations is idempotent - running twice applies nothing new`(): Unit =
-        runBlocking {
-            // First run
-            val firstResult = migrationRunner.runMigrations()
-            assertTrue(firstResult.isRight())
-            val firstCount = firstResult.getOrNull() ?: 0
+        given("migration tracking") {
+            `when`("migrations are run") {
+                then("creates migrations tracking table") {
+                    migrationRunner.runMigrations()
 
-            // Second run
-            val secondResult = migrationRunner.runMigrations()
-            assertTrue(secondResult.isRight())
-            secondResult.onRight { count ->
-                assertEquals(0, count, "Second run should apply 0 migrations")
+                    // Query the migrations table
+                    val result = dbClient.query<Any>("SELECT * FROM _migrations")
+
+                    result.shouldBeRight()
+                    val json = result.getOrNull()!!
+                    json.shouldContain("version")
+                }
             }
 
-            // Verify first run applied at least one migration
-            assertTrue(firstCount >= 1, "First run should have applied at least 1 migration")
-        }
+            `when`("migrations are applied") {
+                then("records version numbers") {
+                    migrationRunner.runMigrations()
 
-    @Test
-    fun `runMigrations creates migrations tracking table`(): Unit =
-        runBlocking {
-            migrationRunner.runMigrations()
+                    // Query the migrations table for version 1
+                    val result = dbClient.query<Any>("SELECT * FROM _migrations WHERE version = 1")
 
-            // Query the migrations table
-            val result = dbClient.query<Any>("SELECT * FROM _migrations")
-
-            assertTrue(result.isRight())
-            result.onRight { json ->
-                // Should have migration records
-                assertTrue(json.contains("version"), "Migrations table should have version field")
+                    result.shouldBeRight()
+                    val json = result.getOrNull()!!
+                    // Should find V1 migration
+                    json.shouldContain("version")
+                }
             }
-        }
 
-    @Test
-    fun `runMigrations records version numbers`(): Unit =
-        runBlocking {
-            migrationRunner.runMigrations()
+            `when`("migrations are applied") {
+                then("applies migrations in order") {
+                    migrationRunner.runMigrations()
 
-            // Query the migrations table for version 1
-            val result = dbClient.query<Any>("SELECT * FROM _migrations WHERE version = 1")
+                    // Query migrations ordered by applied_at
+                    val result = dbClient.query<Any>("SELECT version FROM _migrations ORDER BY version ASC")
 
-            assertTrue(result.isRight())
-            result.onRight { json ->
-                // Should find V1 migration
-                assertTrue(json.contains("\"version\"") || json.contains("version"), "Should have version 1 recorded")
+                    result.shouldBeRight()
+                    val json = result.getOrNull()!!
+                    // With only V1 migration, this should succeed
+                    // When more migrations are added, this test will verify ordering
+                    json.shouldContain("1")
+                }
             }
         }
 
-    @Test
-    fun `runMigrations creates schema tables`(): Unit =
-        runBlocking {
-            migrationRunner.runMigrations()
+        given("schema creation") {
+            `when`("migrations are run") {
+                then("creates all schema tables") {
+                    migrationRunner.runMigrations()
 
-            // Verify core tables exist by querying them
-            val userResult = dbClient.query<Any>("INFO FOR TABLE user")
-            val initiativeResult = dbClient.query<Any>("INFO FOR TABLE initiative")
-            val questResult = dbClient.query<Any>("INFO FOR TABLE quest")
-            val noteResult = dbClient.query<Any>("INFO FOR TABLE note")
+                    // Verify core tables exist by querying them
+                    val userResult = dbClient.query<Any>("INFO FOR TABLE user")
+                    val initiativeResult = dbClient.query<Any>("INFO FOR TABLE initiative")
+                    val questResult = dbClient.query<Any>("INFO FOR TABLE quest")
+                    val noteResult = dbClient.query<Any>("INFO FOR TABLE note")
 
-            assertTrue(userResult.isRight(), "user table should exist")
-            assertTrue(initiativeResult.isRight(), "initiative table should exist")
-            assertTrue(questResult.isRight(), "quest table should exist")
-            assertTrue(noteResult.isRight(), "note table should exist")
-        }
-
-    @Test
-    fun `runMigrations applies migrations in order`(): Unit =
-        runBlocking {
-            migrationRunner.runMigrations()
-
-            // Query migrations ordered by applied_at
-            val result = dbClient.query<Any>("SELECT version FROM _migrations ORDER BY version ASC")
-
-            assertTrue(result.isRight())
-            result.onRight { json ->
-                // With only V1 migration, this should succeed
-                // When more migrations are added, this test will verify ordering
-                assertTrue(json.contains("1"), "V1 should be applied")
+                    userResult.shouldBeRight()
+                    initiativeResult.shouldBeRight()
+                    questResult.shouldBeRight()
+                    noteResult.shouldBeRight()
+                }
             }
         }
-
-    @Test
-    fun `runMigrations skips already applied migrations`(): Unit =
-        runBlocking {
-            // Manually insert migration records for all known migrations
-            dbClient.execute(
-                """
-                DEFINE TABLE IF NOT EXISTS _migrations SCHEMAFULL;
-                DEFINE FIELD version ON _migrations TYPE int;
-                DEFINE FIELD description ON _migrations TYPE string;
-                DEFINE FIELD applied_at ON _migrations TYPE datetime DEFAULT time::now();
-                DEFINE INDEX idx_migrations_version ON _migrations FIELDS version UNIQUE;
-                """.trimIndent(),
-            )
-            dbClient.execute(
-                """
-                CREATE _migrations CONTENT {
-                    version: 1,
-                    description: 'initial schema'
-                };
-                """.trimIndent(),
-            )
-            dbClient.execute(
-                """
-                CREATE _migrations CONTENT {
-                    version: 2,
-                    description: 'authentication tables'
-                };
-                """.trimIndent(),
-            )
-            dbClient.execute(
-                """
-                CREATE _migrations CONTENT {
-                    version: 3,
-                    description: 'fix user status values'
-                };
-                """.trimIndent(),
-            )
-
-            // Run migrations - should skip all since they're already recorded
-            val result = migrationRunner.runMigrations()
-
-            assertTrue(result.isRight())
-            result.onRight { count ->
-                assertEquals(0, count, "Should skip already applied migrations")
-            }
-        }
-
-    companion object {
-        @Container
-        val container = SurrealDbTestContainer()
-    }
-}
+    })

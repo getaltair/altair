@@ -82,16 +82,22 @@ kotlin {
             implementation(libs.surrealdb)
         }
         commonTest.dependencies {
-            implementation(libs.kotlin.test)
             implementation(libs.koin.test)
             implementation(libs.turbine)
             implementation(libs.kotlinx.coroutines.test)
+            // Kotest - Property-based testing
+            implementation(libs.kotest.framework.engine)
+            implementation(libs.kotest.framework.datatest)
+            implementation(libs.kotest.assertions.core)
+            implementation(libs.kotest.property)
+            implementation(libs.kotest.assertions.arrow)
             @OptIn(org.jetbrains.compose.ExperimentalComposeLibrary::class)
             implementation(compose.uiTest)
         }
         val jvmTest by getting {
             dependencies {
                 implementation(compose.desktop.currentOs)
+                implementation(libs.kotest.runner.junit5)
             }
         }
     }
@@ -99,8 +105,10 @@ kotlin {
 
 // Android instrumented test dependencies
 dependencies {
+    androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.testExt.junit)
-    androidTestImplementation(libs.kotlin.test)
+    // Kotest assertions for Android instrumented tests (spec styles not supported)
+    androidTestImplementation(libs.kotest.assertions.core)
 }
 
 android {
@@ -154,4 +162,9 @@ compose.desktop {
             packageVersion = "1.0.0"
         }
     }
+}
+
+// Configure JUnit Platform for Kotest
+tasks.named<Test>("jvmTest") {
+    useJUnitPlatform()
 }

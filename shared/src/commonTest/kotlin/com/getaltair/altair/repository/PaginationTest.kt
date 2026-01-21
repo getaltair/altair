@@ -2,227 +2,259 @@ package com.getaltair.altair.repository
 
 import arrow.core.Either
 import com.getaltair.altair.domain.DomainError
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
-import kotlin.test.assertIs
-import kotlin.test.assertTrue
+import io.kotest.assertions.throwables.shouldThrow
+import io.kotest.core.spec.style.BehaviorSpec
+import io.kotest.matchers.collections.shouldBeEmpty
+import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldContain
+import io.kotest.matchers.types.shouldBeInstanceOf
 
 /**
  * Tests for pagination types: [PageRequest] and [PageResult].
  */
-class PaginationTest {
-    // PageRequest validation tests
+class PaginationTest :
+    BehaviorSpec({
+        given("PageRequest with valid parameters") {
+            `when`("created with custom limit and offset") {
+                then("returns Right with correct values") {
+                    val result = PageRequest(limit = 50, offset = 0)
+                    result.shouldBeInstanceOf<Either.Right<PageRequest>>()
+                    result.value.limit shouldBe 50
+                    result.value.offset shouldBe 0
+                }
+            }
 
-    @Test
-    fun `PageRequest with valid parameters returns Right`() {
-        val result = PageRequest(limit = 50, offset = 0)
-        assertIs<Either.Right<PageRequest>>(result)
-        assertEquals(50, result.value.limit)
-        assertEquals(0, result.value.offset)
-    }
+            `when`("created with default parameters") {
+                then("returns Right with defaults") {
+                    val result = PageRequest()
+                    result.shouldBeInstanceOf<Either.Right<PageRequest>>()
+                    result.value.limit shouldBe PageRequest.DEFAULT_PAGE_SIZE
+                    result.value.offset shouldBe 0
+                }
+            }
 
-    @Test
-    fun `PageRequest with default parameters returns Right`() {
-        val result = PageRequest()
-        assertIs<Either.Right<PageRequest>>(result)
-        assertEquals(PageRequest.DEFAULT_PAGE_SIZE, result.value.limit)
-        assertEquals(0, result.value.offset)
-    }
+            `when`("created with minimum valid limit") {
+                then("returns Right") {
+                    val result = PageRequest(limit = 1)
+                    result.shouldBeInstanceOf<Either.Right<PageRequest>>()
+                    result.value.limit shouldBe 1
+                }
+            }
 
-    @Test
-    fun `PageRequest with minimum valid limit returns Right`() {
-        val result = PageRequest(limit = 1)
-        assertIs<Either.Right<PageRequest>>(result)
-        assertEquals(1, result.value.limit)
-    }
+            `when`("created with maximum valid limit") {
+                then("returns Right") {
+                    val result = PageRequest(limit = PageRequest.MAX_PAGE_SIZE)
+                    result.shouldBeInstanceOf<Either.Right<PageRequest>>()
+                    result.value.limit shouldBe PageRequest.MAX_PAGE_SIZE
+                }
+            }
 
-    @Test
-    fun `PageRequest with maximum valid limit returns Right`() {
-        val result = PageRequest(limit = PageRequest.MAX_PAGE_SIZE)
-        assertIs<Either.Right<PageRequest>>(result)
-        assertEquals(PageRequest.MAX_PAGE_SIZE, result.value.limit)
-    }
-
-    @Test
-    fun `PageRequest with valid offset returns Right`() {
-        val result = PageRequest(offset = 100)
-        assertIs<Either.Right<PageRequest>>(result)
-        assertEquals(100, result.value.offset)
-    }
-
-    @Test
-    fun `PageRequest with zero limit returns Left with validation error`() {
-        val result = PageRequest(limit = 0)
-        assertIs<Either.Left<DomainError.ValidationError>>(result)
-        assertEquals("limit", result.value.field)
-        assertTrue(result.value.message.contains("1"))
-        assertTrue(result.value.message.contains("${PageRequest.MAX_PAGE_SIZE}"))
-    }
-
-    @Test
-    fun `PageRequest with negative limit returns Left with validation error`() {
-        val result = PageRequest(limit = -1)
-        assertIs<Either.Left<DomainError.ValidationError>>(result)
-        assertEquals("limit", result.value.field)
-    }
-
-    @Test
-    fun `PageRequest with limit exceeding maximum returns Left with validation error`() {
-        val result = PageRequest(limit = PageRequest.MAX_PAGE_SIZE + 1)
-        assertIs<Either.Left<DomainError.ValidationError>>(result)
-        assertEquals("limit", result.value.field)
-    }
-
-    @Test
-    fun `PageRequest with negative offset returns Left with validation error`() {
-        val result = PageRequest(limit = 50, offset = -1)
-        assertIs<Either.Left<DomainError.ValidationError>>(result)
-        assertEquals("offset", result.value.field)
-        assertTrue(result.value.message.contains("non-negative"))
-    }
-
-    @Test
-    fun `PageRequest validates limit before offset`() {
-        // Both limit and offset are invalid, but limit should be validated first
-        val result = PageRequest(limit = 0, offset = -1)
-        assertIs<Either.Left<DomainError.ValidationError>>(result)
-        assertEquals("limit", result.value.field)
-    }
-
-    // PageRequest.unsafeCreate tests
-
-    @Test
-    fun `unsafeCreate with valid parameters succeeds`() {
-        val request = PageRequest.unsafeCreate(limit = 25, offset = 50)
-        assertEquals(25, request.limit)
-        assertEquals(50, request.offset)
-    }
-
-    @Test
-    fun `unsafeCreate with default parameters succeeds`() {
-        val request = PageRequest.unsafeCreate()
-        assertEquals(PageRequest.DEFAULT_PAGE_SIZE, request.limit)
-        assertEquals(0, request.offset)
-    }
-
-    @Test
-    fun `unsafeCreate with zero limit throws IllegalArgumentException`() {
-        assertFailsWith<IllegalArgumentException> {
-            PageRequest.unsafeCreate(limit = 0)
+            `when`("created with valid offset") {
+                then("returns Right") {
+                    val result = PageRequest(offset = 100)
+                    result.shouldBeInstanceOf<Either.Right<PageRequest>>()
+                    result.value.offset shouldBe 100
+                }
+            }
         }
-    }
 
-    @Test
-    fun `unsafeCreate with negative limit throws IllegalArgumentException`() {
-        assertFailsWith<IllegalArgumentException> {
-            PageRequest.unsafeCreate(limit = -1)
+        given("PageRequest with invalid parameters") {
+            `when`("limit is zero") {
+                then("returns Left with validation error") {
+                    val result = PageRequest(limit = 0)
+                    result.shouldBeInstanceOf<Either.Left<DomainError.ValidationError>>()
+                    result.value.field shouldBe "limit"
+                    result.value.message shouldContain "1"
+                    result.value.message shouldContain "${PageRequest.MAX_PAGE_SIZE}"
+                }
+            }
+
+            `when`("limit is negative") {
+                then("returns Left with validation error") {
+                    val result = PageRequest(limit = -1)
+                    result.shouldBeInstanceOf<Either.Left<DomainError.ValidationError>>()
+                    result.value.field shouldBe "limit"
+                }
+            }
+
+            `when`("limit exceeds maximum") {
+                then("returns Left with validation error") {
+                    val result = PageRequest(limit = PageRequest.MAX_PAGE_SIZE + 1)
+                    result.shouldBeInstanceOf<Either.Left<DomainError.ValidationError>>()
+                    result.value.field shouldBe "limit"
+                }
+            }
+
+            `when`("offset is negative") {
+                then("returns Left with validation error") {
+                    val result = PageRequest(limit = 50, offset = -1)
+                    result.shouldBeInstanceOf<Either.Left<DomainError.ValidationError>>()
+                    result.value.field shouldBe "offset"
+                    result.value.message shouldContain "non-negative"
+                }
+            }
+
+            `when`("both limit and offset are invalid") {
+                then("validates limit first") {
+                    val result = PageRequest(limit = 0, offset = -1)
+                    result.shouldBeInstanceOf<Either.Left<DomainError.ValidationError>>()
+                    result.value.field shouldBe "limit"
+                }
+            }
         }
-    }
 
-    @Test
-    fun `unsafeCreate with limit exceeding maximum throws IllegalArgumentException`() {
-        assertFailsWith<IllegalArgumentException> {
-            PageRequest.unsafeCreate(limit = PageRequest.MAX_PAGE_SIZE + 1)
+        given("PageRequest.unsafeCreate") {
+            `when`("called with valid parameters") {
+                then("succeeds") {
+                    val request = PageRequest.unsafeCreate(limit = 25, offset = 50)
+                    request.limit shouldBe 25
+                    request.offset shouldBe 50
+                }
+            }
+
+            `when`("called with default parameters") {
+                then("uses defaults") {
+                    val request = PageRequest.unsafeCreate()
+                    request.limit shouldBe PageRequest.DEFAULT_PAGE_SIZE
+                    request.offset shouldBe 0
+                }
+            }
+
+            `when`("called with zero limit") {
+                then("throws IllegalArgumentException") {
+                    shouldThrow<IllegalArgumentException> {
+                        PageRequest.unsafeCreate(limit = 0)
+                    }
+                }
+            }
+
+            `when`("called with negative limit") {
+                then("throws IllegalArgumentException") {
+                    shouldThrow<IllegalArgumentException> {
+                        PageRequest.unsafeCreate(limit = -1)
+                    }
+                }
+            }
+
+            `when`("called with limit exceeding maximum") {
+                then("throws IllegalArgumentException") {
+                    shouldThrow<IllegalArgumentException> {
+                        PageRequest.unsafeCreate(limit = PageRequest.MAX_PAGE_SIZE + 1)
+                    }
+                }
+            }
+
+            `when`("called with negative offset") {
+                then("throws IllegalArgumentException") {
+                    shouldThrow<IllegalArgumentException> {
+                        PageRequest.unsafeCreate(offset = -1)
+                    }
+                }
+            }
         }
-    }
 
-    @Test
-    fun `unsafeCreate with negative offset throws IllegalArgumentException`() {
-        assertFailsWith<IllegalArgumentException> {
-            PageRequest.unsafeCreate(offset = -1)
+        given("PageRequest constants") {
+            `when`("checking DEFAULT_PAGE_SIZE") {
+                then("it is 50") {
+                    PageRequest.DEFAULT_PAGE_SIZE shouldBe 50
+                }
+            }
+
+            `when`("checking MAX_PAGE_SIZE") {
+                then("it is 100") {
+                    PageRequest.MAX_PAGE_SIZE shouldBe 100
+                }
+            }
         }
-    }
 
-    // PageRequest constants tests
+        given("PageResult construction") {
+            `when`("created with items and metadata") {
+                then("stores all values correctly") {
+                    val items = listOf("a", "b", "c")
+                    val result = PageResult(items = items, totalCount = 10, hasMore = true)
 
-    @Test
-    fun `DEFAULT_PAGE_SIZE is 50`() {
-        assertEquals(50, PageRequest.DEFAULT_PAGE_SIZE)
-    }
+                    result.items shouldBe items
+                    result.totalCount shouldBe 10
+                    result.hasMore shouldBe true
+                }
+            }
 
-    @Test
-    fun `MAX_PAGE_SIZE is 100`() {
-        assertEquals(100, PageRequest.MAX_PAGE_SIZE)
-    }
+            `when`("created with empty items list") {
+                then("succeeds") {
+                    val result = PageResult(items = emptyList<String>(), totalCount = 0, hasMore = false)
 
-    // PageResult tests
+                    result.items.shouldBeEmpty()
+                    result.totalCount shouldBe 0
+                }
+            }
 
-    @Test
-    fun `PageResult stores items and metadata correctly`() {
-        val items = listOf("a", "b", "c")
-        val result = PageResult(items = items, totalCount = 10, hasMore = true)
-
-        assertEquals(items, result.items)
-        assertEquals(10, result.totalCount)
-        assertTrue(result.hasMore)
-    }
-
-    @Test
-    fun `PageResult with empty items list`() {
-        val result = PageResult(items = emptyList<String>(), totalCount = 0, hasMore = false)
-
-        assertTrue(result.items.isEmpty())
-        assertEquals(0, result.totalCount)
-    }
-
-    @Test
-    fun `PageResult hasMore is false when no more items`() {
-        val result = PageResult(items = listOf(1, 2, 3), totalCount = 3, hasMore = false)
-
-        assertEquals(false, result.hasMore)
-    }
-
-    @Test
-    fun `PageResult data class equality works`() {
-        val result1 = PageResult(items = listOf(1, 2), totalCount = 5, hasMore = true)
-        val result2 = PageResult(items = listOf(1, 2), totalCount = 5, hasMore = true)
-
-        assertEquals(result1, result2)
-    }
-
-    @Test
-    fun `PageResult copy works correctly`() {
-        val original = PageResult(items = listOf("a"), totalCount = 100, hasMore = true)
-        val copied = original.copy(hasMore = false)
-
-        assertEquals(listOf("a"), copied.items)
-        assertEquals(100, copied.totalCount)
-        assertEquals(false, copied.hasMore)
-    }
-
-    // PageResult validation tests
-
-    @Test
-    fun `PageResult with negative totalCount throws IllegalArgumentException`() {
-        assertFailsWith<IllegalArgumentException> {
-            PageResult(items = listOf(1, 2, 3), totalCount = -1, hasMore = false)
+            `when`("hasMore is false") {
+                then("stores hasMore correctly") {
+                    val result = PageResult(items = listOf(1, 2, 3), totalCount = 3, hasMore = false)
+                    result.hasMore shouldBe false
+                }
+            }
         }
-    }
 
-    @Test
-    fun `PageResult with totalCount less than items size throws IllegalArgumentException`() {
-        assertFailsWith<IllegalArgumentException> {
-            PageResult(items = listOf(1, 2, 3), totalCount = 2, hasMore = false)
+        given("PageResult data class features") {
+            `when`("comparing two instances with same values") {
+                then("they are equal") {
+                    val result1 = PageResult(items = listOf(1, 2), totalCount = 5, hasMore = true)
+                    val result2 = PageResult(items = listOf(1, 2), totalCount = 5, hasMore = true)
+
+                    result1 shouldBe result2
+                }
+            }
+
+            `when`("copying with modifications") {
+                then("copy preserves unchanged fields") {
+                    val original = PageResult(items = listOf("a"), totalCount = 100, hasMore = true)
+                    val copied = original.copy(hasMore = false)
+
+                    copied.items shouldBe listOf("a")
+                    copied.totalCount shouldBe 100
+                    copied.hasMore shouldBe false
+                }
+            }
         }
-    }
 
-    @Test
-    fun `PageResult with totalCount equal to items size succeeds`() {
-        val result = PageResult(items = listOf(1, 2, 3), totalCount = 3, hasMore = false)
-        assertEquals(3, result.totalCount)
-    }
+        given("PageResult validation") {
+            `when`("totalCount is negative") {
+                then("throws IllegalArgumentException") {
+                    shouldThrow<IllegalArgumentException> {
+                        PageResult(items = listOf(1, 2, 3), totalCount = -1, hasMore = false)
+                    }
+                }
+            }
 
-    @Test
-    fun `PageResult with totalCount greater than items size succeeds`() {
-        val result = PageResult(items = listOf(1, 2, 3), totalCount = 100, hasMore = true)
-        assertEquals(100, result.totalCount)
-    }
+            `when`("totalCount is less than items size") {
+                then("throws IllegalArgumentException") {
+                    shouldThrow<IllegalArgumentException> {
+                        PageResult(items = listOf(1, 2, 3), totalCount = 2, hasMore = false)
+                    }
+                }
+            }
 
-    @Test
-    fun `PageResult with zero totalCount and empty items succeeds`() {
-        val result = PageResult(items = emptyList<Int>(), totalCount = 0, hasMore = false)
-        assertEquals(0, result.totalCount)
-        assertTrue(result.items.isEmpty())
-    }
-}
+            `when`("totalCount equals items size") {
+                then("succeeds") {
+                    val result = PageResult(items = listOf(1, 2, 3), totalCount = 3, hasMore = false)
+                    result.totalCount shouldBe 3
+                }
+            }
+
+            `when`("totalCount is greater than items size") {
+                then("succeeds") {
+                    val result = PageResult(items = listOf(1, 2, 3), totalCount = 100, hasMore = true)
+                    result.totalCount shouldBe 100
+                }
+            }
+
+            `when`("totalCount is zero with empty items") {
+                then("succeeds") {
+                    val result = PageResult(items = emptyList<Int>(), totalCount = 0, hasMore = false)
+                    result.totalCount shouldBe 0
+                    result.items.shouldBeEmpty()
+                }
+            }
+        }
+    })

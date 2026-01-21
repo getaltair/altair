@@ -58,9 +58,12 @@ dependencies {
     implementation("de.mkammerer:argon2-jvm:2.11")
 
     testImplementation(libs.ktor.server.test.host)
-    testImplementation("org.jetbrains.kotlin:kotlin-test-junit5:$kotlinVersion")
-    testImplementation("org.junit.jupiter:junit-jupiter-api:5.11.4")
-    testImplementation("org.junit.jupiter:junit-jupiter-engine:5.11.4")
+    // Kotest - BDD testing framework
+    testImplementation(libs.kotest.runner.junit5)
+    testImplementation(libs.kotest.assertions.core)
+    testImplementation(libs.kotest.assertions.arrow)
+    testImplementation(libs.kotest.property)
+    testImplementation(libs.kotest.extensions.testcontainers)
     // kotlinx-rpc client for testing
     testImplementation(libs.kotlinx.rpc.krpc.client)
     testImplementation(libs.kotlinx.rpc.krpc.ktor.client)
@@ -68,7 +71,7 @@ dependencies {
     testImplementation(libs.ktor.client.websockets)
     // Testcontainers for integration tests
     testImplementation(libs.testcontainers)
-    testImplementation(libs.testcontainers.junit5)
+    testImplementation(libs.kotlinx.coroutines.test)
 }
 
 tasks.withType<Test> {

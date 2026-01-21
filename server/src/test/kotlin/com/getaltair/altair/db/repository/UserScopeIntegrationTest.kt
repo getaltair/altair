@@ -2,24 +2,19 @@ package com.getaltair.altair.db.repository
 
 import com.getaltair.altair.db.MigrationRunner
 import com.getaltair.altair.db.SurrealDbClient
-import com.getaltair.altair.db.SurrealDbTestContainer
+import com.getaltair.altair.db.SurrealDbContainerExtension
 import com.getaltair.altair.domain.model.knowledge.Note
 import com.getaltair.altair.domain.model.system.User
 import com.getaltair.altair.domain.types.Ulid
 import com.getaltair.altair.domain.types.enums.UserRole
 import com.getaltair.altair.domain.types.enums.UserStatus
+import io.kotest.assertions.arrow.core.shouldBeLeft
+import io.kotest.assertions.arrow.core.shouldBeRight
+import io.kotest.core.spec.style.BehaviorSpec
+import io.kotest.matchers.collections.shouldHaveSize
+import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldContain
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
-import org.junit.jupiter.api.AfterAll
-import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestInstance
-import org.testcontainers.junit.jupiter.Container
-import org.testcontainers.junit.jupiter.Testcontainers
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
 import kotlin.time.Clock
 
 /**
@@ -30,21 +25,15 @@ import kotlin.time.Clock
  * - 4.3.2: Users cannot access other users' data
  * - 4.3.3: RPC services respect user scope boundaries
  */
-@Testcontainers
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class UserScopeIntegrationTest {
-    private lateinit var dbClient: SurrealDbClient
-    private lateinit var userRepository: SurrealUserRepository
+class UserScopeIntegrationTest :
+    BehaviorSpec({
+        lateinit var dbClient: SurrealDbClient
+        lateinit var userRepository: SurrealUserRepository
+        var user1Id: Ulid? = null
+        var user2Id: Ulid? = null
 
-    // Users for testing - using var with nullable type since Ulid is an inline class
-    private var user1Id: Ulid = Ulid.generate()
-    private var user2Id: Ulid = Ulid.generate()
-
-    @BeforeAll
-    fun setupContainer() {
-        container.start()
-        runBlocking {
-            val config = container.createNetworkConfig()
+        beforeSpec {
+            val config = SurrealDbContainerExtension.createNetworkConfig()
             dbClient = SurrealDbClient(config)
             dbClient.connect().getOrNull()
 
@@ -54,19 +43,12 @@ class UserScopeIntegrationTest {
 
             userRepository = SurrealUserRepository(dbClient)
         }
-    }
 
-    @AfterAll
-    fun tearDown() {
-        runBlocking {
+        afterSpec {
             dbClient.close()
         }
-        container.stop()
-    }
 
-    @BeforeEach
-    fun setup() {
-        runBlocking {
+        beforeEach {
             // Clean up tables
             dbClient.execute("DELETE user;")
             dbClient.execute("DELETE note;")
@@ -82,7 +64,7 @@ class UserScopeIntegrationTest {
 
             userRepository.create(
                 User(
-                    id = user1Id,
+                    id = user1Id!!,
                     email = "user1@test.com",
                     displayName = "User One",
                     role = UserRole.MEMBER,
@@ -96,7 +78,7 @@ class UserScopeIntegrationTest {
 
             userRepository.create(
                 User(
-                    id = user2Id,
+                    id = user2Id!!,
                     email = "user2@test.com",
                     displayName = "User Two",
                     role = UserRole.MEMBER,
@@ -108,229 +90,232 @@ class UserScopeIntegrationTest {
                 ),
             )
         }
-    }
 
-    // ===== 4.3.1: Verify user-scoped repositories receive AuthContext =====
+        // ===== 4.3.1: Verify user-scoped repositories receive AuthContext =====
 
-    @Test
-    fun `user-scoped repository filters queries by user_id`() =
-        runBlocking {
-            val noteRepo1 = SurrealNoteRepository(dbClient, user1Id)
-            val noteRepo2 = SurrealNoteRepository(dbClient, user2Id)
+        given("user-scoped repository filtering") {
+            `when`("multiple users create notes") {
+                then("each repository only sees its own user's data") {
+                    val noteRepo1 = SurrealNoteRepository(dbClient, user1Id!!)
+                    val noteRepo2 = SurrealNoteRepository(dbClient, user2Id!!)
 
-            // User 1 creates a note
-            val note1 = createNote(user1Id, "User 1 Note")
-            noteRepo1.save(note1)
+                    // User 1 creates a note
+                    val note1 = createNote(user1Id!!, "User 1 Note")
+                    noteRepo1.save(note1)
 
-            // User 2 creates a note
-            val note2 = createNote(user2Id, "User 2 Note")
-            noteRepo2.save(note2)
+                    // User 2 creates a note
+                    val note2 = createNote(user2Id!!, "User 2 Note")
+                    noteRepo2.save(note2)
 
-            // User 1's repository should only see their own note
-            val user1Notes = noteRepo1.findAll().first()
-            assertEquals(1, user1Notes.size)
-            assertEquals("User 1 Note", user1Notes.first().title)
+                    // User 1's repository should only see their own note
+                    val user1Notes = noteRepo1.findAll().first()
+                    user1Notes shouldHaveSize 1
+                    user1Notes.first().title shouldBe "User 1 Note"
 
-            // User 2's repository should only see their own note
-            val user2Notes = noteRepo2.findAll().first()
-            assertEquals(1, user2Notes.size)
-            assertEquals("User 2 Note", user2Notes.first().title)
+                    // User 2's repository should only see their own note
+                    val user2Notes = noteRepo2.findAll().first()
+                    user2Notes shouldHaveSize 1
+                    user2Notes.first().title shouldBe "User 2 Note"
+                }
+            }
         }
 
-    // ===== 4.3.2: Add integration test for cross-user data isolation =====
+        // ===== 4.3.2: Add integration test for cross-user data isolation =====
 
-    @Test
-    fun `user cannot access notes created by another user`() =
-        runBlocking {
-            val noteRepo1 = SurrealNoteRepository(dbClient, user1Id)
-            val noteRepo2 = SurrealNoteRepository(dbClient, user2Id)
+        given("cross-user data access prevention") {
+            `when`("user tries to access another user's note by ID") {
+                then("returns NotFound error") {
+                    val noteRepo1 = SurrealNoteRepository(dbClient, user1Id!!)
+                    val noteRepo2 = SurrealNoteRepository(dbClient, user2Id!!)
 
-            // User 1 creates a note
-            val note1 = createNote(user1Id, "Secret Note")
-            noteRepo1.save(note1)
+                    // User 1 creates a note
+                    val note1 = createNote(user1Id!!, "Secret Note")
+                    noteRepo1.save(note1)
 
-            // User 2 tries to find user 1's note by ID
-            val result = noteRepo2.findById(note1.id)
+                    // User 2 tries to find user 1's note by ID
+                    val result = noteRepo2.findById(note1.id)
 
-            // Should NOT find the note
-            assertTrue(result.isLeft())
-        }
-
-    @Test
-    fun `user cannot delete notes created by another user`() =
-        runBlocking {
-            val noteRepo1 = SurrealNoteRepository(dbClient, user1Id)
-            val noteRepo2 = SurrealNoteRepository(dbClient, user2Id)
-
-            // User 1 creates a note
-            val note1 = createNote(user1Id, "Protected Note")
-            noteRepo1.save(note1)
-
-            // User 2 tries to delete user 1's note
-            val deleteResult = noteRepo2.delete(note1.id)
-
-            // Should fail - note not found for user 2
-            assertTrue(deleteResult.isLeft())
-
-            // Verify note still exists for user 1
-            val note = noteRepo1.findById(note1.id)
-            assertTrue(note.isRight())
-        }
-
-    @Test
-    fun `user cannot update notes created by another user`() =
-        runBlocking {
-            val noteRepo1 = SurrealNoteRepository(dbClient, user1Id)
-            val noteRepo2 = SurrealNoteRepository(dbClient, user2Id)
-
-            // User 1 creates a note
-            val note1 = createNote(user1Id, "Original Title")
-            noteRepo1.save(note1)
-
-            // User 2 tries to update user 1's note
-            val maliciousUpdate = note1.copy(title = "Hacked Title")
-            noteRepo2.save(maliciousUpdate) // Result intentionally ignored - save cannot access other user's note
-
-            // The update should fail because user 2 can't find the note
-            // (save checks findById first)
-            val originalNote = noteRepo1.findById(note1.id).getOrNull()
-            assertEquals("Original Title", originalNote?.title)
-        }
-
-    @Test
-    fun `search only returns notes belonging to the user`() =
-        runBlocking {
-            val noteRepo1 = SurrealNoteRepository(dbClient, user1Id)
-            val noteRepo2 = SurrealNoteRepository(dbClient, user2Id)
-
-            // Both users create notes with "secret" in the title
-            noteRepo1.save(createNote(user1Id, "User 1 Secret Document"))
-            noteRepo2.save(createNote(user2Id, "User 2 Secret Document"))
-
-            // User 1 searches for "secret"
-            val user1Results = noteRepo1.search("secret").getOrNull() ?: emptyList()
-            assertEquals(1, user1Results.size)
-            assertTrue(user1Results.first().title.contains("User 1"))
-
-            // User 2 searches for "secret"
-            val user2Results = noteRepo2.search("secret").getOrNull() ?: emptyList()
-            assertEquals(1, user2Results.size)
-            assertTrue(user2Results.first().title.contains("User 2"))
-        }
-
-    @Test
-    fun `pinned notes only returns notes belonging to the user`() =
-        runBlocking {
-            val noteRepo1 = SurrealNoteRepository(dbClient, user1Id)
-            val noteRepo2 = SurrealNoteRepository(dbClient, user2Id)
-
-            // User 1 creates and pins a note
-            val note1 = createNote(user1Id, "User 1 Pinned").copy(isPinned = true)
-            noteRepo1.save(note1)
-
-            // User 2 creates and pins a note
-            val note2 = createNote(user2Id, "User 2 Pinned").copy(isPinned = true)
-            noteRepo2.save(note2)
-
-            // Each user should only see their own pinned notes
-            val user1Pinned = noteRepo1.findPinned().first()
-            assertEquals(1, user1Pinned.size)
-            assertEquals("User 1 Pinned", user1Pinned.first().title)
-
-            val user2Pinned = noteRepo2.findPinned().first()
-            assertEquals(1, user2Pinned.size)
-            assertEquals("User 2 Pinned", user2Pinned.first().title)
-        }
-
-    // ===== 4.3.3: Ensure RPC services use authenticated user context =====
-
-    @Test
-    fun `total notes count is isolated per user`() =
-        runBlocking {
-            val noteRepo1 = SurrealNoteRepository(dbClient, user1Id)
-            val noteRepo2 = SurrealNoteRepository(dbClient, user2Id)
-
-            // User 1 creates 3 notes
-            repeat(3) { i ->
-                noteRepo1.save(createNote(user1Id, "User 1 Note $i"))
+                    // Should NOT find the note
+                    result.shouldBeLeft()
+                }
             }
 
-            // User 2 creates 5 notes
-            repeat(5) { i ->
-                noteRepo2.save(createNote(user2Id, "User 2 Note $i"))
+            `when`("user tries to delete another user's note") {
+                then("delete fails and original note remains") {
+                    val noteRepo1 = SurrealNoteRepository(dbClient, user1Id!!)
+                    val noteRepo2 = SurrealNoteRepository(dbClient, user2Id!!)
+
+                    // User 1 creates a note
+                    val note1 = createNote(user1Id!!, "Protected Note")
+                    noteRepo1.save(note1)
+
+                    // User 2 tries to delete user 1's note
+                    val deleteResult = noteRepo2.delete(note1.id)
+
+                    // Should fail - note not found for user 2
+                    deleteResult.shouldBeLeft()
+
+                    // Verify note still exists for user 1
+                    val note = noteRepo1.findById(note1.id)
+                    note.shouldBeRight()
+                }
             }
 
-            // Each user should see only their own notes
-            val user1Notes = noteRepo1.findAll().first()
-            assertEquals(3, user1Notes.size)
+            `when`("user tries to update another user's note") {
+                then("update fails and original note remains unchanged") {
+                    val noteRepo1 = SurrealNoteRepository(dbClient, user1Id!!)
+                    val noteRepo2 = SurrealNoteRepository(dbClient, user2Id!!)
 
-            val user2Notes = noteRepo2.findAll().first()
-            assertEquals(5, user2Notes.size)
+                    // User 1 creates a note
+                    val note1 = createNote(user1Id!!, "Original Title")
+                    noteRepo1.save(note1)
+
+                    // User 2 tries to update user 1's note
+                    val maliciousUpdate = note1.copy(title = "Hacked Title")
+                    // Result intentionally ignored - save cannot access other user's note
+                    noteRepo2.save(maliciousUpdate)
+
+                    // The update should fail because user 2 can't find the note
+                    // (save checks findById first)
+                    val originalNote = noteRepo1.findById(note1.id).getOrNull()
+                    originalNote?.title shouldBe "Original Title"
+                }
+            }
+
+            `when`("user tries to toggle pin on another user's note") {
+                then("toggle fails") {
+                    val noteRepo1 = SurrealNoteRepository(dbClient, user1Id!!)
+                    val noteRepo2 = SurrealNoteRepository(dbClient, user2Id!!)
+
+                    // User 1 creates a note
+                    val note1 = createNote(user1Id!!, "User 1 Note")
+                    noteRepo1.save(note1)
+                    note1.isPinned shouldBe false
+
+                    // User 2 tries to toggle user 1's note
+                    val toggleResult = noteRepo2.togglePinned(note1.id)
+
+                    // Should fail
+                    toggleResult.shouldBeLeft()
+
+                    // User 1's note should still be unpinned
+                    val originalNote = noteRepo1.findById(note1.id).getOrNull()
+                    originalNote?.isPinned shouldBe false
+                }
+            }
+
+            `when`("user tries to move another user's note to a folder") {
+                then("move fails") {
+                    val noteRepo1 = SurrealNoteRepository(dbClient, user1Id!!)
+                    val noteRepo2 = SurrealNoteRepository(dbClient, user2Id!!)
+
+                    // User 1 creates a note
+                    val note1 = createNote(user1Id!!, "User 1 Note")
+                    noteRepo1.save(note1)
+
+                    // User 2 tries to move user 1's note
+                    val fakeFolder = Ulid.generate()
+                    val moveResult = noteRepo2.moveToFolder(note1.id, fakeFolder)
+
+                    // Should fail
+                    moveResult.shouldBeLeft()
+                }
+            }
         }
 
-    @Test
-    fun `toggle pinned only affects notes belonging to the user`() =
-        runBlocking {
-            val noteRepo1 = SurrealNoteRepository(dbClient, user1Id)
-            val noteRepo2 = SurrealNoteRepository(dbClient, user2Id)
+        given("user-scoped search and filtering") {
+            `when`("multiple users have notes with same search term") {
+                then("search only returns notes belonging to the user") {
+                    val noteRepo1 = SurrealNoteRepository(dbClient, user1Id!!)
+                    val noteRepo2 = SurrealNoteRepository(dbClient, user2Id!!)
 
-            // User 1 creates a note
-            val note1 = createNote(user1Id, "User 1 Note")
-            noteRepo1.save(note1)
-            assertFalse(note1.isPinned)
+                    // Both users create notes with "secret" in the title
+                    noteRepo1.save(createNote(user1Id!!, "User 1 Secret Document"))
+                    noteRepo2.save(createNote(user2Id!!, "User 2 Secret Document"))
 
-            // User 2 tries to toggle user 1's note
-            val toggleResult = noteRepo2.togglePinned(note1.id)
+                    // User 1 searches for "secret"
+                    val user1Results = noteRepo1.search("secret").getOrNull() ?: emptyList()
+                    user1Results shouldHaveSize 1
+                    user1Results.first().title shouldContain "User 1"
 
-            // Should fail
-            assertTrue(toggleResult.isLeft())
+                    // User 2 searches for "secret"
+                    val user2Results = noteRepo2.search("secret").getOrNull() ?: emptyList()
+                    user2Results shouldHaveSize 1
+                    user2Results.first().title shouldContain "User 2"
+                }
+            }
 
-            // User 1's note should still be unpinned
-            val originalNote = noteRepo1.findById(note1.id).getOrNull()
-            assertFalse(originalNote?.isPinned ?: true)
+            `when`("multiple users have pinned notes") {
+                then("pinned notes query only returns user's own notes") {
+                    val noteRepo1 = SurrealNoteRepository(dbClient, user1Id!!)
+                    val noteRepo2 = SurrealNoteRepository(dbClient, user2Id!!)
+
+                    // User 1 creates and pins a note
+                    val note1 = createNote(user1Id!!, "User 1 Pinned").copy(isPinned = true)
+                    noteRepo1.save(note1)
+
+                    // User 2 creates and pins a note
+                    val note2 = createNote(user2Id!!, "User 2 Pinned").copy(isPinned = true)
+                    noteRepo2.save(note2)
+
+                    // Each user should only see their own pinned notes
+                    val user1Pinned = noteRepo1.findPinned().first()
+                    user1Pinned shouldHaveSize 1
+                    user1Pinned.first().title shouldBe "User 1 Pinned"
+
+                    val user2Pinned = noteRepo2.findPinned().first()
+                    user2Pinned shouldHaveSize 1
+                    user2Pinned.first().title shouldBe "User 2 Pinned"
+                }
+            }
         }
 
-    @Test
-    fun `move to folder only affects notes belonging to the user`() =
-        runBlocking {
-            val noteRepo1 = SurrealNoteRepository(dbClient, user1Id)
-            val noteRepo2 = SurrealNoteRepository(dbClient, user2Id)
+        // ===== 4.3.3: Ensure RPC services use authenticated user context =====
 
-            // User 1 creates a note
-            val note1 = createNote(user1Id, "User 1 Note")
-            noteRepo1.save(note1)
+        given("user-scoped note counts") {
+            `when`("multiple users create different numbers of notes") {
+                then("each user's count is isolated") {
+                    val noteRepo1 = SurrealNoteRepository(dbClient, user1Id!!)
+                    val noteRepo2 = SurrealNoteRepository(dbClient, user2Id!!)
 
-            // User 2 tries to move user 1's note
-            val fakeFolder = Ulid.generate()
-            val moveResult = noteRepo2.moveToFolder(note1.id, fakeFolder)
+                    // User 1 creates 3 notes
+                    repeat(3) { i ->
+                        noteRepo1.save(createNote(user1Id!!, "User 1 Note $i"))
+                    }
 
-            // Should fail
-            assertTrue(moveResult.isLeft())
+                    // User 2 creates 5 notes
+                    repeat(5) { i ->
+                        noteRepo2.save(createNote(user2Id!!, "User 2 Note $i"))
+                    }
+
+                    // Each user should see only their own notes
+                    val user1Notes = noteRepo1.findAll().first()
+                    user1Notes shouldHaveSize 3
+
+                    val user2Notes = noteRepo2.findAll().first()
+                    user2Notes shouldHaveSize 5
+                }
+            }
         }
-
-    // ===== Helper methods =====
-
-    private fun createNote(
-        userId: Ulid,
-        title: String,
-    ): Note {
-        val now = kotlinx.datetime.Instant.fromEpochMilliseconds(Clock.System.now().toEpochMilliseconds())
-        return Note(
-            id = Ulid.generate(),
-            userId = userId,
-            title = title,
-            content = "Content for $title",
-            folderId = null,
-            initiativeId = null,
-            isPinned = false,
-            createdAt = now,
-            updatedAt = now,
-            deletedAt = null,
-        )
-    }
-
+    }) {
     companion object {
-        @Container
-        val container = SurrealDbTestContainer()
+        private fun createNote(
+            userId: Ulid,
+            title: String,
+        ): Note {
+            val now = kotlinx.datetime.Instant.fromEpochMilliseconds(Clock.System.now().toEpochMilliseconds())
+            return Note(
+                id = Ulid.generate(),
+                userId = userId,
+                title = title,
+                content = "Content for $title",
+                folderId = null,
+                initiativeId = null,
+                isPinned = false,
+                createdAt = now,
+                updatedAt = now,
+                deletedAt = null,
+            )
+        }
     }
 }

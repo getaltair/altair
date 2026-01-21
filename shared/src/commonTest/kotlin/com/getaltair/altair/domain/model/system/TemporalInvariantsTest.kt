@@ -1,11 +1,11 @@
 package com.getaltair.altair.domain.model.system
 
 import com.getaltair.altair.domain.types.Ulid
+import io.kotest.assertions.throwables.shouldThrow
+import io.kotest.core.spec.style.BehaviorSpec
+import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldContain
 import kotlinx.datetime.Instant
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
-import kotlin.test.assertTrue
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
@@ -13,341 +13,359 @@ import kotlin.time.Duration.Companion.minutes
 
 /**
  * Tests for temporal invariants on InviteCode and RefreshToken.
+ *
+ * Validates that temporal ordering constraints are enforced correctly.
  */
-@Suppress("TooManyFunctions")
-class TemporalInvariantsTest {
-    private val now: Instant = Clock.System.now()
-    private val userId = Ulid.generate()
+class TemporalInvariantsTest :
+    BehaviorSpec({
+        val now: Instant = Clock.System.now()
+        val userId = Ulid.generate()
 
-    // ===== InviteCode Temporal Invariant Tests =====
+        given("an InviteCode") {
+            `when`("expiresAt is before createdAt") {
+                then("construction fails with IllegalArgumentException") {
+                    val createdAt = now
+                    val expiresAt = now - 1.hours
 
-    @Test
-    fun `InviteCode rejects expiresAt before createdAt`() {
-        val createdAt = now
-        val expiresAt = now - 1.hours
+                    val exception =
+                        shouldThrow<IllegalArgumentException> {
+                            InviteCode(
+                                id = Ulid.generate(),
+                                code = "TESTCODE123",
+                                createdBy = userId,
+                                expiresAt = expiresAt,
+                                createdAt = createdAt,
+                            )
+                        }
+                    exception.message shouldContain "expiresAt must be after createdAt"
+                }
+            }
 
-        assertFailsWith<IllegalArgumentException> {
-            InviteCode(
-                id = Ulid.generate(),
-                code = "TESTCODE123",
-                createdBy = userId,
-                expiresAt = expiresAt,
-                createdAt = createdAt,
-            )
-        }.also { exception ->
-            assertTrue(exception.message?.contains("expiresAt must be after createdAt") == true)
+            `when`("expiresAt equals createdAt") {
+                then("construction fails with IllegalArgumentException") {
+                    val sameTime = now
+
+                    val exception =
+                        shouldThrow<IllegalArgumentException> {
+                            InviteCode(
+                                id = Ulid.generate(),
+                                code = "TESTCODE123",
+                                createdBy = userId,
+                                expiresAt = sameTime,
+                                createdAt = sameTime,
+                            )
+                        }
+                    exception.message shouldContain "expiresAt must be after createdAt"
+                }
+            }
+
+            `when`("createdAt is far in the future") {
+                then("construction fails with IllegalArgumentException") {
+                    val farFutureCreatedAt = now + 1.hours
+                    val expiresAt = farFutureCreatedAt + 1.days
+
+                    val exception =
+                        shouldThrow<IllegalArgumentException> {
+                            InviteCode(
+                                id = Ulid.generate(),
+                                code = "TESTCODE123",
+                                createdBy = userId,
+                                expiresAt = expiresAt,
+                                createdAt = farFutureCreatedAt,
+                            )
+                        }
+                    exception.message shouldContain "createdAt must not be in the far future"
+                }
+            }
+
+            `when`("createdAt is within clock skew tolerance") {
+                then("construction succeeds") {
+                    val nearFutureCreatedAt = now + 2.minutes
+                    val expiresAt = nearFutureCreatedAt + 1.days
+
+                    val inviteCode =
+                        InviteCode(
+                            id = Ulid.generate(),
+                            code = "TESTCODE123",
+                            createdBy = userId,
+                            expiresAt = expiresAt,
+                            createdAt = nearFutureCreatedAt,
+                        )
+
+                    inviteCode.createdAt shouldBe nearFutureCreatedAt
+                }
+            }
+
+            `when`("expiresAt is too far from createdAt") {
+                then("construction fails with IllegalArgumentException") {
+                    val createdAt = now
+                    val expiresAt = createdAt + 100.days // Exceeds MAX_EXPIRY_DURATION (90 days)
+
+                    val exception =
+                        shouldThrow<IllegalArgumentException> {
+                            InviteCode(
+                                id = Ulid.generate(),
+                                code = "TESTCODE123",
+                                createdBy = userId,
+                                expiresAt = expiresAt,
+                                createdAt = createdAt,
+                            )
+                        }
+                    exception.message shouldContain "expiresAt must be within"
+                }
+            }
+
+            `when`("expiresAt is at max expiry duration") {
+                then("construction succeeds") {
+                    val createdAt = now
+                    val expiresAt = createdAt + InviteCode.MAX_EXPIRY_DURATION
+
+                    val inviteCode =
+                        InviteCode(
+                            id = Ulid.generate(),
+                            code = "TESTCODE123",
+                            createdBy = userId,
+                            expiresAt = expiresAt,
+                            createdAt = createdAt,
+                        )
+
+                    inviteCode.expiresAt shouldBe expiresAt
+                }
+            }
+
+            `when`("valid temporal values are provided") {
+                then("construction succeeds with correct timestamps") {
+                    val createdAt = now
+                    val expiresAt = createdAt + 7.days
+
+                    val inviteCode =
+                        InviteCode(
+                            id = Ulid.generate(),
+                            code = "TESTCODE123",
+                            createdBy = userId,
+                            expiresAt = expiresAt,
+                            createdAt = createdAt,
+                        )
+
+                    inviteCode.createdAt shouldBe createdAt
+                    inviteCode.expiresAt shouldBe expiresAt
+                }
+            }
         }
-    }
 
-    @Test
-    fun `InviteCode rejects expiresAt equal to createdAt`() {
-        val sameTime = now
+        given("InviteCode factory method") {
+            `when`("creating with default expiry duration") {
+                then("uses DEFAULT_EXPIRY_DURATION") {
+                    val fakeClock = FakeClock(now)
+                    val inviteCode =
+                        InviteCode.create(
+                            id = Ulid.generate(),
+                            code = "TESTCODE123",
+                            createdBy = userId,
+                            clock = fakeClock,
+                        )
 
-        assertFailsWith<IllegalArgumentException> {
-            InviteCode(
-                id = Ulid.generate(),
-                code = "TESTCODE123",
-                createdBy = userId,
-                expiresAt = sameTime,
-                createdAt = sameTime,
-            )
-        }.also { exception ->
-            assertTrue(exception.message?.contains("expiresAt must be after createdAt") == true)
+                    inviteCode.createdAt shouldBe now
+                    inviteCode.expiresAt shouldBe now + InviteCode.DEFAULT_EXPIRY_DURATION
+                }
+            }
+
+            `when`("creating with custom expiry duration") {
+                then("uses the custom duration") {
+                    val fakeClock = FakeClock(now)
+                    val customExpiry = 14.days
+                    val inviteCode =
+                        InviteCode.create(
+                            id = Ulid.generate(),
+                            code = "TESTCODE123",
+                            createdBy = userId,
+                            expiresIn = customExpiry,
+                            clock = fakeClock,
+                        )
+
+                    inviteCode.createdAt shouldBe now
+                    inviteCode.expiresAt shouldBe now + customExpiry
+                }
+            }
         }
-    }
 
-    @Test
-    fun `InviteCode rejects createdAt far in the future`() {
-        val farFutureCreatedAt = now + 1.hours
-        val expiresAt = farFutureCreatedAt + 1.days
+        given("a RefreshToken") {
+            `when`("expiresAt is before createdAt") {
+                then("construction fails with IllegalArgumentException") {
+                    val createdAt = now
+                    val expiresAt = now - 1.hours
 
-        assertFailsWith<IllegalArgumentException> {
-            InviteCode(
-                id = Ulid.generate(),
-                code = "TESTCODE123",
-                createdBy = userId,
-                expiresAt = expiresAt,
-                createdAt = farFutureCreatedAt,
-            )
-        }.also { exception ->
-            assertTrue(exception.message?.contains("createdAt must not be in the far future") == true)
+                    val exception =
+                        shouldThrow<IllegalArgumentException> {
+                            RefreshToken(
+                                id = Ulid.generate(),
+                                userId = userId,
+                                tokenHash = "abc123hash",
+                                deviceName = null,
+                                expiresAt = expiresAt,
+                                createdAt = createdAt,
+                            )
+                        }
+                    exception.message shouldContain "expiresAt must be after createdAt"
+                }
+            }
+
+            `when`("expiresAt equals createdAt") {
+                then("construction fails with IllegalArgumentException") {
+                    val sameTime = now
+
+                    val exception =
+                        shouldThrow<IllegalArgumentException> {
+                            RefreshToken(
+                                id = Ulid.generate(),
+                                userId = userId,
+                                tokenHash = "abc123hash",
+                                deviceName = null,
+                                expiresAt = sameTime,
+                                createdAt = sameTime,
+                            )
+                        }
+                    exception.message shouldContain "expiresAt must be after createdAt"
+                }
+            }
+
+            `when`("createdAt is far in the future") {
+                then("construction fails with IllegalArgumentException") {
+                    val farFutureCreatedAt = now + 1.hours
+                    val expiresAt = farFutureCreatedAt + 1.days
+
+                    val exception =
+                        shouldThrow<IllegalArgumentException> {
+                            RefreshToken(
+                                id = Ulid.generate(),
+                                userId = userId,
+                                tokenHash = "abc123hash",
+                                deviceName = null,
+                                expiresAt = expiresAt,
+                                createdAt = farFutureCreatedAt,
+                            )
+                        }
+                    exception.message shouldContain "createdAt must not be in the far future"
+                }
+            }
+
+            `when`("createdAt is within clock skew tolerance") {
+                then("construction succeeds") {
+                    val nearFutureCreatedAt = now + 2.minutes
+                    val expiresAt = nearFutureCreatedAt + 1.days
+
+                    val token =
+                        RefreshToken(
+                            id = Ulid.generate(),
+                            userId = userId,
+                            tokenHash = "abc123hash",
+                            deviceName = null,
+                            expiresAt = expiresAt,
+                            createdAt = nearFutureCreatedAt,
+                        )
+
+                    token.createdAt shouldBe nearFutureCreatedAt
+                }
+            }
+
+            `when`("expiresAt is too far from createdAt") {
+                then("construction fails with IllegalArgumentException") {
+                    val createdAt = now
+                    val expiresAt = createdAt + 100.days // Exceeds MAX_EXPIRY_DURATION (90 days)
+
+                    val exception =
+                        shouldThrow<IllegalArgumentException> {
+                            RefreshToken(
+                                id = Ulid.generate(),
+                                userId = userId,
+                                tokenHash = "abc123hash",
+                                deviceName = null,
+                                expiresAt = expiresAt,
+                                createdAt = createdAt,
+                            )
+                        }
+                    exception.message shouldContain "expiresAt must be within"
+                }
+            }
+
+            `when`("expiresAt is at max expiry duration") {
+                then("construction succeeds") {
+                    val createdAt = now
+                    val expiresAt = createdAt + RefreshToken.MAX_EXPIRY_DURATION
+
+                    val token =
+                        RefreshToken(
+                            id = Ulid.generate(),
+                            userId = userId,
+                            tokenHash = "abc123hash",
+                            deviceName = null,
+                            expiresAt = expiresAt,
+                            createdAt = createdAt,
+                        )
+
+                    token.expiresAt shouldBe expiresAt
+                }
+            }
+
+            `when`("valid temporal values are provided") {
+                then("construction succeeds with correct timestamps") {
+                    val createdAt = now
+                    val expiresAt = createdAt + 30.days
+
+                    val token =
+                        RefreshToken(
+                            id = Ulid.generate(),
+                            userId = userId,
+                            tokenHash = "abc123hash",
+                            deviceName = "Test Device",
+                            expiresAt = expiresAt,
+                            createdAt = createdAt,
+                        )
+
+                    token.createdAt shouldBe createdAt
+                    token.expiresAt shouldBe expiresAt
+                }
+            }
         }
-    }
 
-    @Test
-    fun `InviteCode accepts createdAt within clock skew tolerance`() {
-        val nearFutureCreatedAt = now + 2.minutes
-        val expiresAt = nearFutureCreatedAt + 1.days
+        given("RefreshToken factory method") {
+            `when`("creating with default expiry duration") {
+                then("uses DEFAULT_EXPIRY_DURATION") {
+                    val fakeClock = FakeClock(now)
+                    val token =
+                        RefreshToken.create(
+                            id = Ulid.generate(),
+                            userId = userId,
+                            tokenHash = "abc123hash",
+                            clock = fakeClock,
+                        )
 
-        val inviteCode =
-            InviteCode(
-                id = Ulid.generate(),
-                code = "TESTCODE123",
-                createdBy = userId,
-                expiresAt = expiresAt,
-                createdAt = nearFutureCreatedAt,
-            )
+                    token.createdAt shouldBe now
+                    token.expiresAt shouldBe now + RefreshToken.DEFAULT_EXPIRY_DURATION
+                }
+            }
 
-        assertEquals(nearFutureCreatedAt, inviteCode.createdAt)
-    }
+            `when`("creating with custom expiry duration") {
+                then("uses the custom duration and device name") {
+                    val fakeClock = FakeClock(now)
+                    val customExpiry = 14.days
+                    val token =
+                        RefreshToken.create(
+                            id = Ulid.generate(),
+                            userId = userId,
+                            tokenHash = "abc123hash",
+                            deviceName = "Test Device",
+                            expiresIn = customExpiry,
+                            clock = fakeClock,
+                        )
 
-    @Test
-    fun `InviteCode rejects expiresAt too far from createdAt`() {
-        val createdAt = now
-        val expiresAt = createdAt + 100.days // Exceeds MAX_EXPIRY_DURATION (90 days)
-
-        assertFailsWith<IllegalArgumentException> {
-            InviteCode(
-                id = Ulid.generate(),
-                code = "TESTCODE123",
-                createdBy = userId,
-                expiresAt = expiresAt,
-                createdAt = createdAt,
-            )
-        }.also { exception ->
-            assertTrue(exception.message?.contains("expiresAt must be within") == true)
+                    token.createdAt shouldBe now
+                    token.expiresAt shouldBe now + customExpiry
+                    token.deviceName shouldBe "Test Device"
+                }
+            }
         }
-    }
-
-    @Test
-    fun `InviteCode accepts expiresAt at max expiry duration`() {
-        val createdAt = now
-        val expiresAt = createdAt + InviteCode.MAX_EXPIRY_DURATION
-
-        val inviteCode =
-            InviteCode(
-                id = Ulid.generate(),
-                code = "TESTCODE123",
-                createdBy = userId,
-                expiresAt = expiresAt,
-                createdAt = createdAt,
-            )
-
-        assertEquals(expiresAt, inviteCode.expiresAt)
-    }
-
-    @Test
-    fun `InviteCode accepts valid temporal values`() {
-        val createdAt = now
-        val expiresAt = createdAt + 7.days
-
-        val inviteCode =
-            InviteCode(
-                id = Ulid.generate(),
-                code = "TESTCODE123",
-                createdBy = userId,
-                expiresAt = expiresAt,
-                createdAt = createdAt,
-            )
-
-        assertEquals(createdAt, inviteCode.createdAt)
-        assertEquals(expiresAt, inviteCode.expiresAt)
-    }
-
-    // ===== InviteCode Factory Method Tests =====
-
-    @Test
-    fun `InviteCode create factory uses default expiry duration`() {
-        val fakeClock = FakeClock(now)
-        val inviteCode =
-            InviteCode.create(
-                id = Ulid.generate(),
-                code = "TESTCODE123",
-                createdBy = userId,
-                clock = fakeClock,
-            )
-
-        assertEquals(now, inviteCode.createdAt)
-        assertEquals(now + InviteCode.DEFAULT_EXPIRY_DURATION, inviteCode.expiresAt)
-    }
-
-    @Test
-    fun `InviteCode create factory accepts custom expiry duration`() {
-        val fakeClock = FakeClock(now)
-        val customExpiry = 14.days
-        val inviteCode =
-            InviteCode.create(
-                id = Ulid.generate(),
-                code = "TESTCODE123",
-                createdBy = userId,
-                expiresIn = customExpiry,
-                clock = fakeClock,
-            )
-
-        assertEquals(now, inviteCode.createdAt)
-        assertEquals(now + customExpiry, inviteCode.expiresAt)
-    }
-
-    // ===== RefreshToken Temporal Invariant Tests =====
-
-    @Test
-    fun `RefreshToken rejects expiresAt before createdAt`() {
-        val createdAt = now
-        val expiresAt = now - 1.hours
-
-        assertFailsWith<IllegalArgumentException> {
-            RefreshToken(
-                id = Ulid.generate(),
-                userId = userId,
-                tokenHash = "abc123hash",
-                deviceName = null,
-                expiresAt = expiresAt,
-                createdAt = createdAt,
-            )
-        }.also { exception ->
-            assertTrue(exception.message?.contains("expiresAt must be after createdAt") == true)
-        }
-    }
-
-    @Test
-    fun `RefreshToken rejects expiresAt equal to createdAt`() {
-        val sameTime = now
-
-        assertFailsWith<IllegalArgumentException> {
-            RefreshToken(
-                id = Ulid.generate(),
-                userId = userId,
-                tokenHash = "abc123hash",
-                deviceName = null,
-                expiresAt = sameTime,
-                createdAt = sameTime,
-            )
-        }.also { exception ->
-            assertTrue(exception.message?.contains("expiresAt must be after createdAt") == true)
-        }
-    }
-
-    @Test
-    fun `RefreshToken rejects createdAt far in the future`() {
-        val farFutureCreatedAt = now + 1.hours
-        val expiresAt = farFutureCreatedAt + 1.days
-
-        assertFailsWith<IllegalArgumentException> {
-            RefreshToken(
-                id = Ulid.generate(),
-                userId = userId,
-                tokenHash = "abc123hash",
-                deviceName = null,
-                expiresAt = expiresAt,
-                createdAt = farFutureCreatedAt,
-            )
-        }.also { exception ->
-            assertTrue(exception.message?.contains("createdAt must not be in the far future") == true)
-        }
-    }
-
-    @Test
-    fun `RefreshToken accepts createdAt within clock skew tolerance`() {
-        val nearFutureCreatedAt = now + 2.minutes
-        val expiresAt = nearFutureCreatedAt + 1.days
-
-        val token =
-            RefreshToken(
-                id = Ulid.generate(),
-                userId = userId,
-                tokenHash = "abc123hash",
-                deviceName = null,
-                expiresAt = expiresAt,
-                createdAt = nearFutureCreatedAt,
-            )
-
-        assertEquals(nearFutureCreatedAt, token.createdAt)
-    }
-
-    @Test
-    fun `RefreshToken rejects expiresAt too far from createdAt`() {
-        val createdAt = now
-        val expiresAt = createdAt + 100.days // Exceeds MAX_EXPIRY_DURATION (90 days)
-
-        assertFailsWith<IllegalArgumentException> {
-            RefreshToken(
-                id = Ulid.generate(),
-                userId = userId,
-                tokenHash = "abc123hash",
-                deviceName = null,
-                expiresAt = expiresAt,
-                createdAt = createdAt,
-            )
-        }.also { exception ->
-            assertTrue(exception.message?.contains("expiresAt must be within") == true)
-        }
-    }
-
-    @Test
-    fun `RefreshToken accepts expiresAt at max expiry duration`() {
-        val createdAt = now
-        val expiresAt = createdAt + RefreshToken.MAX_EXPIRY_DURATION
-
-        val token =
-            RefreshToken(
-                id = Ulid.generate(),
-                userId = userId,
-                tokenHash = "abc123hash",
-                deviceName = null,
-                expiresAt = expiresAt,
-                createdAt = createdAt,
-            )
-
-        assertEquals(expiresAt, token.expiresAt)
-    }
-
-    @Test
-    fun `RefreshToken accepts valid temporal values`() {
-        val createdAt = now
-        val expiresAt = createdAt + 30.days
-
-        val token =
-            RefreshToken(
-                id = Ulid.generate(),
-                userId = userId,
-                tokenHash = "abc123hash",
-                deviceName = "Test Device",
-                expiresAt = expiresAt,
-                createdAt = createdAt,
-            )
-
-        assertEquals(createdAt, token.createdAt)
-        assertEquals(expiresAt, token.expiresAt)
-    }
-
-    // ===== RefreshToken Factory Method Tests =====
-
-    @Test
-    fun `RefreshToken create factory uses default expiry duration`() {
-        val fakeClock = FakeClock(now)
-        val token =
-            RefreshToken.create(
-                id = Ulid.generate(),
-                userId = userId,
-                tokenHash = "abc123hash",
-                clock = fakeClock,
-            )
-
-        assertEquals(now, token.createdAt)
-        assertEquals(now + RefreshToken.DEFAULT_EXPIRY_DURATION, token.expiresAt)
-    }
-
-    @Test
-    fun `RefreshToken create factory accepts custom expiry duration`() {
-        val fakeClock = FakeClock(now)
-        val customExpiry = 14.days
-        val token =
-            RefreshToken.create(
-                id = Ulid.generate(),
-                userId = userId,
-                tokenHash = "abc123hash",
-                deviceName = "Test Device",
-                expiresIn = customExpiry,
-                clock = fakeClock,
-            )
-
-        assertEquals(now, token.createdAt)
-        assertEquals(now + customExpiry, token.expiresAt)
-        assertEquals("Test Device", token.deviceName)
-    }
-
-    // ===== Helper Classes =====
-
+    }) {
     /**
      * Fake clock for testing that returns a fixed instant.
      */

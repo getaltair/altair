@@ -9,17 +9,16 @@ import com.getaltair.altair.dto.auth.AuthResponse
 import com.getaltair.altair.service.auth.AuthManager
 import com.getaltair.altair.service.auth.FakePublicAuthService
 import com.getaltair.altair.service.auth.FakeSecureTokenStorage
+import io.kotest.assertions.timing.eventually
+import io.kotest.core.spec.style.BehaviorSpec
+import io.kotest.matchers.booleans.shouldBeFalse
+import io.kotest.matchers.booleans.shouldBeTrue
+import io.kotest.matchers.nulls.shouldBeNull
+import io.kotest.matchers.nulls.shouldNotBeNull
+import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.runBlocking
-import kotlin.test.BeforeTest
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertNotNull
-import kotlin.test.assertNull
-import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * Tests for LoginComponent.
@@ -30,210 +29,217 @@ import kotlin.test.assertTrue
  * - Navigation callbacks
  * - State management
  */
-@Suppress("TooManyFunctions")
-class LoginComponentTest {
-    private lateinit var tokenStorage: FakeSecureTokenStorage
-    private lateinit var authService: FakePublicAuthService
-    private lateinit var authManager: AuthManager
-    private lateinit var scope: CoroutineScope
+class LoginComponentTest :
+    BehaviorSpec({
+        lateinit var tokenStorage: FakeSecureTokenStorage
+        lateinit var authService: FakePublicAuthService
+        lateinit var authManager: AuthManager
+        lateinit var scope: CoroutineScope
 
-    private var loginSuccessCalled = false
-    private var navigateToRegisterCalled = false
+        var loginSuccessCalled = false
+        var navigateToRegisterCalled = false
 
-    @BeforeTest
-    fun setup() {
-        tokenStorage = FakeSecureTokenStorage()
-        authService = FakePublicAuthService()
-        scope = CoroutineScope(Dispatchers.Default)
-        authManager = AuthManager(tokenStorage, authService, scope)
-        loginSuccessCalled = false
-        navigateToRegisterCalled = false
-    }
-
-    private fun createTestComponentContext(): DefaultComponentContext {
-        val lifecycle = LifecycleRegistry()
-        lifecycle.resume()
-        return DefaultComponentContext(lifecycle = lifecycle)
-    }
-
-    private fun createComponent(): LoginComponent =
-        LoginComponent(
-            componentContext = createTestComponentContext(),
-            authManager = authManager,
-            onLoginSuccess = { loginSuccessCalled = true },
-            onNavigateToRegister = { navigateToRegisterCalled = true },
-        )
-
-    // ===== Form Validation Tests =====
-
-    @Test
-    fun `email validation shows error for blank email`() {
-        val component = createComponent()
-
-        component.onEmailChanged("")
-        component.onPasswordChanged("password123")
-        component.onLoginClicked()
-
-        assertEquals("Email is required", component.state.value.emailError)
-        assertNull(component.state.value.passwordError)
-    }
-
-    @Test
-    fun `email validation shows error for invalid email format`() {
-        val component = createComponent()
-
-        component.onEmailChanged("invalid-email")
-        component.onPasswordChanged("password123")
-        component.onLoginClicked()
-
-        assertEquals("Enter a valid email address", component.state.value.emailError)
-    }
-
-    @Test
-    fun `password validation shows error for blank password`() {
-        val component = createComponent()
-
-        component.onEmailChanged("test@example.com")
-        component.onPasswordChanged("")
-        component.onLoginClicked()
-
-        assertEquals("Password is required", component.state.value.passwordError)
-        assertNull(component.state.value.emailError)
-    }
-
-    @Test
-    fun `valid input clears previous errors`() {
-        val component = createComponent()
-
-        // First trigger validation errors
-        component.onLoginClicked()
-        assertNotNull(component.state.value.emailError)
-        assertNotNull(component.state.value.passwordError)
-
-        // Now enter valid values - errors should clear
-        component.onEmailChanged("test@example.com")
-        assertNull(component.state.value.emailError)
-
-        component.onPasswordChanged("password123")
-        assertNull(component.state.value.passwordError)
-    }
-
-    // ===== Login Flow Tests =====
-
-    @Test
-    fun `successful login calls onLoginSuccess`() {
-        runBlocking {
-            val component = createComponent()
-            authService.loginResponse = createAuthResponse()
-
-            component.onEmailChanged("test@example.com")
-            component.onPasswordChanged("password123")
-            component.onLoginClicked()
-
-            // Wait for async operation to complete
-            waitForCondition { !component.state.value.isLoading }
-
-            assertTrue(loginSuccessCalled)
-            assertFalse(component.state.value.isLoading)
-            assertNull(component.state.value.error)
+        beforeEach {
+            tokenStorage = FakeSecureTokenStorage()
+            authService = FakePublicAuthService()
+            scope = CoroutineScope(Dispatchers.Default)
+            authManager = AuthManager(tokenStorage, authService, scope)
+            loginSuccessCalled = false
+            navigateToRegisterCalled = false
         }
-    }
 
-    @Test
-    fun `failed login shows error message`() {
-        runBlocking {
-            val component = createComponent()
-            authService.loginError = IllegalArgumentException("Invalid credentials")
-
-            component.onEmailChanged("test@example.com")
-            component.onPasswordChanged("wrong-password")
-            component.onLoginClicked()
-
-            // Wait for async operation to complete
-            waitForCondition { !component.state.value.isLoading }
-
-            assertFalse(loginSuccessCalled)
-            assertFalse(component.state.value.isLoading)
-            assertNotNull(component.state.value.error)
+        fun createTestComponentContext(): DefaultComponentContext {
+            val lifecycle = LifecycleRegistry()
+            lifecycle.resume()
+            return DefaultComponentContext(lifecycle = lifecycle)
         }
-    }
 
-    @Test
-    fun `login shows loading state while authenticating`() {
-        val component = createComponent()
-        authService.loginResponse = createAuthResponse()
+        fun createComponent(): LoginComponent =
+            LoginComponent(
+                componentContext = createTestComponentContext(),
+                authManager = authManager,
+                onLoginSuccess = { loginSuccessCalled = true },
+                onNavigateToRegister = { navigateToRegisterCalled = true },
+            )
 
-        component.onEmailChanged("test@example.com")
-        component.onPasswordChanged("password123")
-        component.onLoginClicked()
+        fun createAuthResponse() =
+            AuthResponse(
+                accessToken = "access-token",
+                refreshToken = "refresh-token",
+                expiresIn = 900,
+                userId = Ulid("01ARZ3NDEKTSV4RRFFQ69G5FAV"),
+                displayName = "Test User",
+                role = UserRole.MEMBER,
+            )
 
-        // Check loading state before coroutine completes
-        assertTrue(component.state.value.isLoading)
-    }
+        given("form validation") {
+            `when`("email is blank") {
+                then("shows email required error") {
+                    val component = createComponent()
 
-    private suspend fun waitForCondition(
-        timeoutMs: Long = 1000,
-        condition: () -> Boolean,
-    ) {
-        val start = System.currentTimeMillis()
-        while (!condition() && System.currentTimeMillis() - start < timeoutMs) {
-            delay(10)
+                    component.onEmailChanged("")
+                    component.onPasswordChanged("password123")
+                    component.onLoginClicked()
+
+                    component.state.value.emailError shouldBe "Email is required"
+                    component.state.value.passwordError
+                        .shouldBeNull()
+                }
+            }
+
+            `when`("email has invalid format") {
+                then("shows invalid email error") {
+                    val component = createComponent()
+
+                    component.onEmailChanged("invalid-email")
+                    component.onPasswordChanged("password123")
+                    component.onLoginClicked()
+
+                    component.state.value.emailError shouldBe "Enter a valid email address"
+                }
+            }
+
+            `when`("password is blank") {
+                then("shows password required error") {
+                    val component = createComponent()
+
+                    component.onEmailChanged("test@example.com")
+                    component.onPasswordChanged("")
+                    component.onLoginClicked()
+
+                    component.state.value.passwordError shouldBe "Password is required"
+                    component.state.value.emailError
+                        .shouldBeNull()
+                }
+            }
+
+            `when`("entering valid input after errors") {
+                then("clears previous errors") {
+                    val component = createComponent()
+
+                    // First trigger validation errors
+                    component.onLoginClicked()
+                    component.state.value.emailError
+                        .shouldNotBeNull()
+                    component.state.value.passwordError
+                        .shouldNotBeNull()
+
+                    // Now enter valid values - errors should clear
+                    component.onEmailChanged("test@example.com")
+                    component.state.value.emailError
+                        .shouldBeNull()
+
+                    component.onPasswordChanged("password123")
+                    component.state.value.passwordError
+                        .shouldBeNull()
+                }
+            }
         }
-    }
 
-    // ===== State Management Tests =====
+        given("login flow") {
+            `when`("login succeeds") {
+                then("calls onLoginSuccess callback") {
+                    val component = createComponent()
+                    authService.loginResponse = createAuthResponse()
 
-    @Test
-    fun `onEmailChanged updates email in state`() {
-        val component = createComponent()
+                    component.onEmailChanged("test@example.com")
+                    component.onPasswordChanged("password123")
+                    component.onLoginClicked()
 
-        component.onEmailChanged("user@example.com")
+                    // Wait for async operation to complete
+                    eventually(1.seconds) {
+                        component.state.value.isLoading
+                            .shouldBeFalse()
+                    }
 
-        assertEquals("user@example.com", component.state.value.email)
-    }
+                    loginSuccessCalled.shouldBeTrue()
+                    component.state.value.error
+                        .shouldBeNull()
+                }
+            }
 
-    @Test
-    fun `onPasswordChanged updates password in state`() {
-        val component = createComponent()
+            `when`("login fails") {
+                then("shows error message") {
+                    val component = createComponent()
+                    authService.loginError = IllegalArgumentException("Invalid credentials")
 
-        component.onPasswordChanged("secret123")
+                    component.onEmailChanged("test@example.com")
+                    component.onPasswordChanged("wrong-password")
+                    component.onLoginClicked()
 
-        assertEquals("secret123", component.state.value.password)
-    }
+                    // Wait for async operation to complete
+                    eventually(1.seconds) {
+                        component.state.value.isLoading
+                            .shouldBeFalse()
+                    }
 
-    @Test
-    fun `initial state has empty fields and no errors`() {
-        val component = createComponent()
-        val state = component.state.value
+                    loginSuccessCalled.shouldBeFalse()
+                    component.state.value.error
+                        .shouldNotBeNull()
+                }
+            }
 
-        assertEquals("", state.email)
-        assertEquals("", state.password)
-        assertNull(state.emailError)
-        assertNull(state.passwordError)
-        assertNull(state.error)
-        assertFalse(state.isLoading)
-    }
+            `when`("login is in progress") {
+                then("shows loading state") {
+                    val component = createComponent()
+                    authService.loginResponse = createAuthResponse()
 
-    // ===== Navigation Tests =====
+                    component.onEmailChanged("test@example.com")
+                    component.onPasswordChanged("password123")
+                    component.onLoginClicked()
 
-    @Test
-    fun `onRegisterClicked calls navigation callback`() {
-        val component = createComponent()
+                    // Check loading state before coroutine completes
+                    component.state.value.isLoading
+                        .shouldBeTrue()
+                }
+            }
+        }
 
-        component.onRegisterClicked()
+        given("state management") {
+            `when`("email is changed") {
+                then("updates email in state") {
+                    val component = createComponent()
 
-        assertTrue(navigateToRegisterCalled)
-    }
+                    component.onEmailChanged("user@example.com")
 
-    // ===== Helper Methods =====
+                    component.state.value.email shouldBe "user@example.com"
+                }
+            }
 
-    private fun createAuthResponse() =
-        AuthResponse(
-            accessToken = "access-token",
-            refreshToken = "refresh-token",
-            expiresIn = 900,
-            userId = Ulid("01ARZ3NDEKTSV4RRFFQ69G5FAV"),
-            displayName = "Test User",
-            role = UserRole.MEMBER,
-        )
-}
+            `when`("password is changed") {
+                then("updates password in state") {
+                    val component = createComponent()
+
+                    component.onPasswordChanged("secret123")
+
+                    component.state.value.password shouldBe "secret123"
+                }
+            }
+
+            `when`("component is initialized") {
+                then("has empty fields and no errors") {
+                    val component = createComponent()
+                    val state = component.state.value
+
+                    state.email shouldBe ""
+                    state.password shouldBe ""
+                    state.emailError.shouldBeNull()
+                    state.passwordError.shouldBeNull()
+                    state.error.shouldBeNull()
+                    state.isLoading.shouldBeFalse()
+                }
+            }
+        }
+
+        given("navigation") {
+            `when`("register is clicked") {
+                then("calls navigation callback") {
+                    val component = createComponent()
+
+                    component.onRegisterClicked()
+
+                    navigateToRegisterCalled.shouldBeTrue()
+                }
+            }
+        }
+    })

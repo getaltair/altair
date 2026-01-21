@@ -2,63 +2,61 @@ package com.getaltair.rpc
 
 import com.getaltair.altair.db.MigrationRunner
 import com.getaltair.altair.db.SurrealDbClient
-import com.getaltair.altair.db.SurrealDbTestContainer
+import com.getaltair.altair.db.SurrealDbContainerExtension
 import com.getaltair.altair.db.repository.SurrealInviteCodeRepository
 import com.getaltair.altair.db.repository.SurrealRefreshTokenRepository
 import com.getaltair.altair.db.repository.SurrealUserRepository
 import com.getaltair.altair.domain.model.system.InviteCode
 import com.getaltair.altair.domain.types.Ulid
-import com.getaltair.altair.domain.types.enums.UserRole
 import com.getaltair.altair.dto.auth.AuthRequest
 import com.getaltair.altair.dto.auth.RegisterRequest
 import com.getaltair.auth.Argon2PasswordService
 import com.getaltair.auth.JwtConfig
 import com.getaltair.auth.JwtTokenServiceImpl
-import kotlinx.coroutines.runBlocking
-import org.junit.jupiter.api.AfterAll
-import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestInstance
-import org.junit.jupiter.api.assertThrows
-import org.testcontainers.junit.jupiter.Container
-import org.testcontainers.junit.jupiter.Testcontainers
-import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
+import io.kotest.assertions.arrow.core.shouldBeRight
+import io.kotest.assertions.throwables.shouldThrow
+import io.kotest.core.spec.style.BehaviorSpec
+import io.kotest.matchers.booleans.shouldBeTrue
+import io.kotest.matchers.nulls.shouldNotBeNull
+import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
+import io.kotest.matchers.string.shouldContain
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.minutes
+import com.getaltair.altair.domain.types.enums.UserRole as DomainUserRole
 
 /**
- * Integration tests for authentication flows.
+ * Integration tests for authentication flows using Testcontainers.
  *
  * Tests the full authentication lifecycle with real dependencies:
  * - SurrealDB test container
  * - Real password hashing (Argon2)
  * - Real JWT token generation/validation
  *
- * Covers tasks 3.3.1 through 3.3.7 from the implementation plan.
+ * Verifies:
+ * - Registration (first user, with/without invite codes, validation)
+ * - Login (valid/invalid credentials, JWT validation)
+ * - Token refresh (valid/invalid, token rotation)
+ * - Logout and session invalidation
+ * - Account status handling
+ * - Expired tokens
+ * - Input validation
  */
-@Testcontainers
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
-@Suppress("TooManyFunctions") // Test class with comprehensive coverage
-class AuthIntegrationTest {
-    private lateinit var dbClient: SurrealDbClient
-    private lateinit var userRepository: SurrealUserRepository
-    private lateinit var refreshTokenRepository: SurrealRefreshTokenRepository
-    private lateinit var inviteCodeRepository: SurrealInviteCodeRepository
-    private lateinit var passwordService: Argon2PasswordService
-    private lateinit var jwtTokenService: JwtTokenServiceImpl
-    private lateinit var jwtConfig: JwtConfig
-    private lateinit var publicAuthService: PublicAuthServiceImpl
-    private lateinit var authService: AuthServiceImpl
+class AuthIntegrationTest :
+    BehaviorSpec({
+        lateinit var dbClient: SurrealDbClient
+        lateinit var userRepository: SurrealUserRepository
+        lateinit var refreshTokenRepository: SurrealRefreshTokenRepository
+        lateinit var inviteCodeRepository: SurrealInviteCodeRepository
+        lateinit var passwordService: Argon2PasswordService
+        lateinit var jwtTokenService: JwtTokenServiceImpl
+        lateinit var jwtConfig: JwtConfig
+        lateinit var publicAuthService: PublicAuthServiceImpl
+        lateinit var authService: AuthServiceImpl
 
-    @BeforeAll
-    fun setupContainer() {
-        container.start()
-        runBlocking {
-            val config = container.createNetworkConfig()
+        beforeSpec {
+            val config = SurrealDbContainerExtension.createNetworkConfig()
             dbClient = SurrealDbClient(config)
             dbClient.connect().getOrNull()
 
@@ -99,643 +97,539 @@ class AuthIntegrationTest {
                     jwtConfig = jwtConfig,
                 )
         }
-    }
 
-    @AfterAll
-    fun tearDown() {
-        runBlocking {
+        afterSpec {
             dbClient.close()
         }
-        container.stop()
-    }
 
-    @BeforeEach
-    fun cleanup() {
-        runBlocking {
+        beforeEach {
             // Clean up all auth-related tables
             dbClient.execute("DELETE user;")
             dbClient.execute("DELETE refresh_token;")
             dbClient.execute("DELETE invite_code;")
         }
-    }
 
-    // ===== 3.3.4 Test registration without invite (first user) =====
-
-    @Test
-    fun `registration without invite code succeeds for first user`() =
-        runBlocking {
-            val response =
-                publicAuthService.register(
-                    RegisterRequest(
-                        email = "admin@test.com",
-                        password = "SecurePassword123!",
-                        displayName = "Admin User",
-                        inviteCode = null,
-                    ),
-                )
-
-            assertNotNull(response.accessToken)
-            assertNotNull(response.refreshToken)
-            assertEquals(UserRole.ADMIN, response.role) // First user is admin
-            assertEquals("Admin User", response.displayName)
-            assertTrue(response.expiresIn > 0)
-        }
-
-    @Test
-    fun `first user becomes admin role`() =
-        runBlocking {
-            val response =
-                publicAuthService.register(
-                    RegisterRequest(
-                        email = "first@test.com",
-                        password = "SecurePassword123!",
-                        displayName = "First User",
-                        inviteCode = null,
-                    ),
-                )
-
-            assertEquals(UserRole.ADMIN, response.role)
-
-            // Verify in database
-            val user = userRepository.findByEmail("first@test.com").getOrNull()
-            assertNotNull(user)
-            assertEquals(com.getaltair.altair.domain.types.enums.UserRole.ADMIN, user.role)
-        }
-
-    // ===== 3.3.1 Test login with valid credentials =====
-
-    @Test
-    fun `login with valid credentials returns tokens`() =
-        runBlocking {
-            // First register a user
-            publicAuthService.register(
-                RegisterRequest(
-                    email = "user@test.com",
-                    password = "SecurePassword123!",
-                    displayName = "Test User",
-                ),
-            )
-
-            // Login with same credentials
-            val response =
-                publicAuthService.login(
-                    AuthRequest(
-                        email = "user@test.com",
-                        password = "SecurePassword123!",
-                    ),
-                )
-
-            assertNotNull(response.accessToken)
-            assertNotNull(response.refreshToken)
-            assertEquals("Test User", response.displayName)
-            assertTrue(response.expiresIn > 0)
-        }
-
-    @Test
-    fun `login returns valid JWT token`(): Unit =
-        runBlocking {
-            publicAuthService.register(
-                RegisterRequest(
-                    email = "jwt@test.com",
-                    password = "SecurePassword123!",
-                    displayName = "JWT User",
-                ),
-            )
-
-            val response =
-                publicAuthService.login(
-                    AuthRequest(
-                        email = "jwt@test.com",
-                        password = "SecurePassword123!",
-                    ),
-                )
-
-            // Validate the access token
-            val claims = jwtTokenService.validateAccessToken(response.accessToken)
-            assertTrue(claims.isRight())
-            claims.onRight { tokenClaims ->
-                assertEquals("jwt@test.com", tokenClaims.email)
-                assertEquals(response.userId.value, tokenClaims.userId.value)
-            }
-        }
-
-    // ===== 3.3.2 Test login with invalid credentials =====
-
-    @Test
-    fun `login with wrong password throws exception`() =
-        runBlocking {
-            publicAuthService.register(
-                RegisterRequest(
-                    email = "wrongpass@test.com",
-                    password = "CorrectPassword123!",
-                    displayName = "Test User",
-                ),
-            )
-
-            val exception =
-                assertThrows<IllegalArgumentException> {
-                    runBlocking {
-                        publicAuthService.login(
-                            AuthRequest(
-                                email = "wrongpass@test.com",
-                                password = "WrongPassword123!",
-                            ),
-                        )
-                    }
-                }
-
-            assertEquals("Invalid email or password", exception.message)
-        }
-
-    @Test
-    fun `login with non-existent email throws exception`() =
-        runBlocking {
-            val exception =
-                assertThrows<IllegalArgumentException> {
-                    runBlocking {
-                        publicAuthService.login(
-                            AuthRequest(
-                                email = "nonexistent@test.com",
-                                password = "Password123!",
-                            ),
-                        )
-                    }
-                }
-
-            assertEquals("Invalid email or password", exception.message)
-        }
-
-    // ===== 3.3.3 Test registration with valid invite code =====
-
-    @Test
-    fun `registration with valid invite code succeeds`() =
-        runBlocking {
-            // First create an admin user
-            publicAuthService.register(
-                RegisterRequest(
-                    email = "admin@test.com",
-                    password = "AdminPassword123!",
-                    displayName = "Admin User",
-                ),
-            )
-
-            // Create an invite code
-            val adminUser = userRepository.findByEmail("admin@test.com").getOrNull()!!
-            val inviteCode = createInviteCode(adminUser.id)
-
-            // Register with invite code
-            val response =
-                publicAuthService.register(
-                    RegisterRequest(
-                        email = "invited@test.com",
-                        password = "InvitedPassword123!",
-                        displayName = "Invited User",
-                        inviteCode = inviteCode.code,
-                    ),
-                )
-
-            assertNotNull(response.accessToken)
-            assertEquals(UserRole.MEMBER, response.role) // Invited user is member
-            assertEquals("Invited User", response.displayName)
-        }
-
-    @Test
-    fun `invited user becomes member role`() =
-        runBlocking {
-            // Create admin first
-            publicAuthService.register(
-                RegisterRequest(
-                    email = "admin2@test.com",
-                    password = "AdminPassword123!",
-                    displayName = "Admin",
-                ),
-            )
-
-            val adminUser = userRepository.findByEmail("admin2@test.com").getOrNull()!!
-            val inviteCode = createInviteCode(adminUser.id)
-
-            publicAuthService.register(
-                RegisterRequest(
-                    email = "member@test.com",
-                    password = "MemberPassword123!",
-                    displayName = "Member",
-                    inviteCode = inviteCode.code,
-                ),
-            )
-
-            val user = userRepository.findByEmail("member@test.com").getOrNull()
-            assertNotNull(user)
-            assertEquals(com.getaltair.altair.domain.types.enums.UserRole.MEMBER, user.role)
-        }
-
-    // ===== 3.3.5 Test registration with invalid/expired invite =====
-
-    @Test
-    fun `registration without invite code fails for non-first user`() =
-        runBlocking {
-            // First create an initial user
-            publicAuthService.register(
-                RegisterRequest(
-                    email = "first@test.com",
-                    password = "FirstPassword123!",
-                    displayName = "First User",
-                ),
-            )
-
-            // Attempt to register without invite code
-            val exception =
-                assertThrows<IllegalArgumentException> {
-                    runBlocking {
+        given("user registration") {
+            `when`("first user registers without invite code") {
+                then("succeeds and becomes admin") {
+                    val response =
                         publicAuthService.register(
                             RegisterRequest(
-                                email = "noinvite@test.com",
-                                password = "NoInvitePassword123!",
-                                displayName = "No Invite User",
+                                email = "admin@test.com",
+                                password = "SecurePassword123!",
+                                displayName = "Admin User",
                                 inviteCode = null,
                             ),
                         )
-                    }
+
+                    response.accessToken.shouldNotBeNull()
+                    response.refreshToken.shouldNotBeNull()
+                    response.role shouldBe com.getaltair.altair.domain.types.enums.UserRole.ADMIN
+                    response.displayName shouldBe "Admin User"
+                    response.expiresIn shouldBe 900 // 15 minutes in seconds
+
+                    // Verify in database
+                    val user = userRepository.findByEmail("admin@test.com").getOrNull()
+                    user.shouldNotBeNull()
+                    user.role shouldBe DomainUserRole.ADMIN
                 }
+            }
 
-            assertEquals("Invite code is required", exception.message)
-        }
+            `when`("registering with valid invite code") {
+                then("succeeds and becomes member") {
+                    // First create an admin user
+                    publicAuthService.register(
+                        RegisterRequest(
+                            email = "admin@test.com",
+                            password = "AdminPassword123!",
+                            displayName = "Admin User",
+                        ),
+                    )
 
-    @Test
-    fun `registration with invalid invite code fails`() =
-        runBlocking {
-            // First create an initial user
-            publicAuthService.register(
-                RegisterRequest(
-                    email = "first@test.com",
-                    password = "FirstPassword123!",
-                    displayName = "First User",
-                ),
-            )
+                    // Create an invite code
+                    val adminUser = userRepository.findByEmail("admin@test.com").getOrNull()!!
+                    val inviteCode = createInviteCode(inviteCodeRepository, adminUser.id)
 
-            val exception =
-                assertThrows<IllegalArgumentException> {
-                    runBlocking {
+                    // Register with invite code
+                    val response =
                         publicAuthService.register(
                             RegisterRequest(
-                                email = "invalid@test.com",
-                                password = "InvalidPassword123!",
-                                displayName = "Invalid Invite User",
-                                inviteCode = "INVALID123",
-                            ),
-                        )
-                    }
-                }
-
-            assertEquals("Invalid or expired invite code", exception.message)
-        }
-
-    @Test
-    fun `registration with expired invite code fails`() =
-        runBlocking {
-            // First create an admin user
-            publicAuthService.register(
-                RegisterRequest(
-                    email = "admin@test.com",
-                    password = "AdminPassword123!",
-                    displayName = "Admin User",
-                ),
-            )
-
-            val adminUser = userRepository.findByEmail("admin@test.com").getOrNull()!!
-
-            // Create an expired invite code
-            val expiredInvite = createExpiredInviteCode(adminUser.id)
-
-            val exception =
-                assertThrows<IllegalArgumentException> {
-                    runBlocking {
-                        publicAuthService.register(
-                            RegisterRequest(
-                                email = "expired@test.com",
-                                password = "ExpiredPassword123!",
-                                displayName = "Expired Invite User",
-                                inviteCode = expiredInvite.code,
-                            ),
-                        )
-                    }
-                }
-
-            assertEquals("Invalid or expired invite code", exception.message)
-        }
-
-    @Test
-    fun `registration with already used invite code fails`() =
-        runBlocking {
-            // First create an admin user
-            publicAuthService.register(
-                RegisterRequest(
-                    email = "admin@test.com",
-                    password = "AdminPassword123!",
-                    displayName = "Admin User",
-                ),
-            )
-
-            val adminUser = userRepository.findByEmail("admin@test.com").getOrNull()!!
-            val inviteCode = createInviteCode(adminUser.id)
-
-            // Use the invite code once
-            publicAuthService.register(
-                RegisterRequest(
-                    email = "first-invitee@test.com",
-                    password = "FirstInviteePassword123!",
-                    displayName = "First Invitee",
-                    inviteCode = inviteCode.code,
-                ),
-            )
-
-            // Try to use the same invite code again
-            val exception =
-                assertThrows<IllegalArgumentException> {
-                    runBlocking {
-                        publicAuthService.register(
-                            RegisterRequest(
-                                email = "second-invitee@test.com",
-                                password = "SecondInviteePassword123!",
-                                displayName = "Second Invitee",
+                                email = "invited@test.com",
+                                password = "InvitedPassword123!",
+                                displayName = "Invited User",
                                 inviteCode = inviteCode.code,
                             ),
                         )
-                    }
+
+                    response.accessToken.shouldNotBeNull()
+                    response.role shouldBe com.getaltair.altair.domain.types.enums.UserRole.MEMBER
+                    response.displayName shouldBe "Invited User"
+
+                    // Verify in database
+                    val user = userRepository.findByEmail("invited@test.com").getOrNull()
+                    user.shouldNotBeNull()
+                    user.role shouldBe DomainUserRole.MEMBER
                 }
-
-            assertEquals("Invalid or expired invite code", exception.message)
-        }
-
-    // ===== 3.3.6 Test token refresh flow =====
-
-    @Test
-    fun `token refresh returns new access token`() =
-        runBlocking {
-            val registerResponse =
-                publicAuthService.register(
-                    RegisterRequest(
-                        email = "refresh@test.com",
-                        password = "RefreshPassword123!",
-                        displayName = "Refresh User",
-                    ),
-                )
-
-            val refreshResponse = publicAuthService.refresh(registerResponse.refreshToken)
-
-            assertNotNull(refreshResponse.accessToken)
-            assertTrue(refreshResponse.expiresIn > 0)
-            // New token should be different from original
-            assertTrue(refreshResponse.accessToken != registerResponse.accessToken)
-        }
-
-    @Test
-    fun `refreshed access token is valid`(): Unit =
-        runBlocking {
-            val registerResponse =
-                publicAuthService.register(
-                    RegisterRequest(
-                        email = "validrefresh@test.com",
-                        password = "ValidRefreshPassword123!",
-                        displayName = "Valid Refresh User",
-                    ),
-                )
-
-            val refreshResponse = publicAuthService.refresh(registerResponse.refreshToken)
-
-            // Validate the new access token
-            val claims = jwtTokenService.validateAccessToken(refreshResponse.accessToken)
-            assertTrue(claims.isRight())
-            claims.onRight { tokenClaims ->
-                assertEquals("validrefresh@test.com", tokenClaims.email)
             }
-        }
 
-    @Test
-    fun `invalid refresh token fails`() =
-        runBlocking {
-            val exception =
-                assertThrows<IllegalArgumentException> {
-                    runBlocking {
-                        publicAuthService.refresh("invalid-refresh-token")
-                    }
+            `when`("non-first user attempts registration without invite code") {
+                then("fails") {
+                    // First create an initial user
+                    publicAuthService.register(
+                        RegisterRequest(
+                            email = "first@test.com",
+                            password = "FirstPassword123!",
+                            displayName = "First User",
+                        ),
+                    )
+
+                    // Attempt to register without invite code
+                    val exception =
+                        shouldThrow<IllegalArgumentException> {
+                            publicAuthService.register(
+                                RegisterRequest(
+                                    email = "noinvite@test.com",
+                                    password = "NoInvitePassword123!",
+                                    displayName = "No Invite User",
+                                    inviteCode = null,
+                                ),
+                            )
+                        }
+
+                    exception.message shouldBe "Invite code is required"
                 }
+            }
 
-            assertEquals("Invalid refresh token", exception.message)
-        }
+            `when`("registering with invalid invite code") {
+                then("fails") {
+                    // First create an initial user
+                    publicAuthService.register(
+                        RegisterRequest(
+                            email = "first@test.com",
+                            password = "FirstPassword123!",
+                            displayName = "First User",
+                        ),
+                    )
 
-    @Test
-    fun `refresh token can only be used once - rotation`() =
-        runBlocking {
-            val registerResponse =
-                publicAuthService.register(
-                    RegisterRequest(
-                        email = "rotation@test.com",
-                        password = "RotationPassword123!",
-                        displayName = "Rotation User",
-                    ),
-                )
+                    val exception =
+                        shouldThrow<IllegalArgumentException> {
+                            publicAuthService.register(
+                                RegisterRequest(
+                                    email = "invalid@test.com",
+                                    password = "InvalidPassword123!",
+                                    displayName = "Invalid Invite User",
+                                    inviteCode = "INVALID123",
+                                ),
+                            )
+                        }
 
-            // First refresh should succeed
-            publicAuthService.refresh(registerResponse.refreshToken)
-
-            // Second refresh with same token should fail (token rotation)
-            val exception =
-                assertThrows<IllegalArgumentException> {
-                    runBlocking {
-                        publicAuthService.refresh(registerResponse.refreshToken)
-                    }
+                    exception.message shouldBe "Invalid or expired invite code"
                 }
+            }
 
-            assertTrue(
-                exception.message?.contains("expired or revoked") == true ||
-                    exception.message?.contains("Invalid") == true,
-            )
-        }
+            `when`("registering with expired invite code") {
+                then("fails") {
+                    // First create an admin user
+                    publicAuthService.register(
+                        RegisterRequest(
+                            email = "admin@test.com",
+                            password = "AdminPassword123!",
+                            displayName = "Admin User",
+                        ),
+                    )
 
-    // ===== 3.3.7 Test logout and session invalidation =====
+                    val adminUser = userRepository.findByEmail("admin@test.com").getOrNull()!!
 
-    @Test
-    fun `logout returns success response`(): Unit =
-        runBlocking {
-            // Note: Due to kotlinx-rpc limitations, logout doesn't have access to auth context
-            // It returns a success response instructing client to discard tokens
-            val response = authService.logout()
+                    // Create an expired invite code
+                    val expiredInvite = createExpiredInviteCode(inviteCodeRepository, adminUser.id)
 
-            assertTrue(response.success)
-            assertNotNull(response.message)
-        }
+                    val exception =
+                        shouldThrow<IllegalArgumentException> {
+                            publicAuthService.register(
+                                RegisterRequest(
+                                    email = "expired@test.com",
+                                    password = "ExpiredPassword123!",
+                                    displayName = "Expired Invite User",
+                                    inviteCode = expiredInvite.code,
+                                ),
+                            )
+                        }
 
-    // ===== Account status tests =====
-    // Note: Full account status tests require fixes to SurrealUserRepository.update()
-    // See GitHub issue for tracking. These tests verify the status check exists in the login flow.
-
-    @Test
-    fun `login status check rejects non-active status`(): Unit =
-        runBlocking {
-            // This test verifies that PublicAuthServiceImpl.login() checks user status
-            // The actual status check is at line 63: if (userWithCredentials.status != UserStatus.ACTIVE)
-            // Full integration test requires SurrealDB UPDATE to work correctly
-
-            // Register a user - they start as ACTIVE
-            val response =
-                publicAuthService.register(
-                    RegisterRequest(
-                        email = "statuscheck@test.com",
-                        password = "StatusCheckPassword123!",
-                        displayName = "Status Check User",
-                    ),
-                )
-
-            // Login should succeed with ACTIVE status
-            val loginResponse =
-                publicAuthService.login(
-                    AuthRequest(
-                        email = "statuscheck@test.com",
-                        password = "StatusCheckPassword123!",
-                    ),
-                )
-
-            assertNotNull(loginResponse.accessToken)
-            // The status check code path is verified to exist in PublicAuthServiceImpl
-        }
-
-    // ===== Expired refresh token tests =====
-
-    @Test
-    fun `refresh with expired refresh token fails`() =
-        runBlocking {
-            // Register a user
-            val registerResponse =
-                publicAuthService.register(
-                    RegisterRequest(
-                        email = "expired-refresh@test.com",
-                        password = "ExpiredRefreshPassword123!",
-                        displayName = "Expired Refresh User",
-                    ),
-                )
-
-            // Manually expire the refresh token in the database
-            // Set both created_at (2 days ago) and expires_at (1 day ago) to satisfy temporal invariants
-            // while still making the token expired
-            dbClient.execute(
-                """
-                UPDATE refresh_token SET
-                    created_at = d"1970-01-01T00:00:00Z",
-                    expires_at = d"1970-01-02T00:00:00Z"
-                WHERE user_id = user:${registerResponse.userId};
-                """.trimIndent(),
-            )
-
-            // Attempt to refresh with the now-expired token
-            val exception =
-                assertThrows<IllegalArgumentException> {
-                    runBlocking {
-                        publicAuthService.refresh(registerResponse.refreshToken)
-                    }
+                    exception.message shouldBe "Invalid or expired invite code"
                 }
+            }
 
-            assertTrue(
-                exception.message?.contains("expired") == true ||
-                    exception.message?.contains("revoked") == true,
-            )
-        }
+            `when`("registering with already used invite code") {
+                then("fails") {
+                    // First create an admin user
+                    publicAuthService.register(
+                        RegisterRequest(
+                            email = "admin@test.com",
+                            password = "AdminPassword123!",
+                            displayName = "Admin User",
+                        ),
+                    )
 
-    // ===== Additional validation tests =====
+                    val adminUser = userRepository.findByEmail("admin@test.com").getOrNull()!!
+                    val inviteCode = createInviteCode(inviteCodeRepository, adminUser.id)
 
-    @Test
-    fun `registration with short password fails`() =
-        runBlocking {
-            val exception =
-                assertThrows<IllegalArgumentException> {
-                    runBlocking {
-                        publicAuthService.register(
-                            RegisterRequest(
-                                email = "short@test.com",
-                                password = "short", // Less than 8 characters
-                                displayName = "Short Password User",
-                            ),
-                        )
-                    }
+                    // Use the invite code once
+                    publicAuthService.register(
+                        RegisterRequest(
+                            email = "first-invitee@test.com",
+                            password = "FirstInviteePassword123!",
+                            displayName = "First Invitee",
+                            inviteCode = inviteCode.code,
+                        ),
+                    )
+
+                    // Try to use the same invite code again
+                    val exception =
+                        shouldThrow<IllegalArgumentException> {
+                            publicAuthService.register(
+                                RegisterRequest(
+                                    email = "second-invitee@test.com",
+                                    password = "SecondInviteePassword123!",
+                                    displayName = "Second Invitee",
+                                    inviteCode = inviteCode.code,
+                                ),
+                            )
+                        }
+
+                    exception.message shouldBe "Invalid or expired invite code"
                 }
+            }
 
-            assertTrue(exception.message?.contains("at least") == true)
-        }
-
-    @Test
-    fun `registration with duplicate email fails`() =
-        runBlocking {
-            // First user registers as admin (no invite code needed)
-            val firstUserResponse =
-                publicAuthService.register(
-                    RegisterRequest(
-                        email = "duplicate@test.com",
-                        password = "DuplicatePassword123!",
-                        displayName = "First User",
-                    ),
-                )
-
-            // Create an invite code for the second registration attempt
-            val inviteCode = createInviteCode(firstUserResponse.userId)
-
-            // Try to register with the same email but valid invite code
-            val exception =
-                assertThrows<IllegalArgumentException> {
-                    runBlocking {
+            `when`("registering with duplicate email") {
+                then("fails") {
+                    // First user registers as admin
+                    val firstUserResponse =
                         publicAuthService.register(
                             RegisterRequest(
                                 email = "duplicate@test.com",
-                                password = "AnotherPassword123!",
-                                displayName = "Second User",
-                                inviteCode = inviteCode.code,
+                                password = "DuplicatePassword123!",
+                                displayName = "First User",
                             ),
                         )
-                    }
-                }
 
-            assertEquals("Email is already registered", exception.message)
+                    // Create an invite code for the second registration attempt
+                    val inviteCode = createInviteCode(inviteCodeRepository, firstUserResponse.userId)
+
+                    // Try to register with the same email but valid invite code
+                    val exception =
+                        shouldThrow<IllegalArgumentException> {
+                            publicAuthService.register(
+                                RegisterRequest(
+                                    email = "duplicate@test.com",
+                                    password = "AnotherPassword123!",
+                                    displayName = "Second User",
+                                    inviteCode = inviteCode.code,
+                                ),
+                            )
+                        }
+
+                    exception.message shouldBe "Email is already registered"
+                }
+            }
+
+            `when`("registering with short password") {
+                then("fails") {
+                    val exception =
+                        shouldThrow<IllegalArgumentException> {
+                            publicAuthService.register(
+                                RegisterRequest(
+                                    email = "short@test.com",
+                                    password = "short",
+                                    displayName = "Short Password User",
+                                ),
+                            )
+                        }
+
+                    exception.message shouldContain "at least"
+                }
+            }
         }
 
-    // ===== Helper methods =====
+        given("user login") {
+            `when`("logging in with valid credentials") {
+                then("returns tokens") {
+                    // First register a user
+                    publicAuthService.register(
+                        RegisterRequest(
+                            email = "user@test.com",
+                            password = "SecurePassword123!",
+                            displayName = "Test User",
+                        ),
+                    )
 
-    private suspend fun createInviteCode(createdBy: Ulid): InviteCode {
-        // Use the factory method for correct and convenient construction
-        val inviteCode =
-            InviteCode.create(
-                id = Ulid.generate(),
-                code = generateCode(),
-                createdBy = createdBy,
-                expiresIn = 7.days,
-            )
-        inviteCodeRepository.create(inviteCode)
-        return inviteCode
-    }
+                    // Login with same credentials
+                    val response =
+                        publicAuthService.login(
+                            AuthRequest(
+                                email = "user@test.com",
+                                password = "SecurePassword123!",
+                            ),
+                        )
 
-    private suspend fun createExpiredInviteCode(createdBy: Ulid): InviteCode {
-        // Create an invite code that was created 2 days ago and expired 1 day ago
-        // Both timestamps are in the past, but expiresAt > createdAt to satisfy invariants
-        val now = Clock.System.now()
-        val createdAt = now - 2.days
-        val expiresAt = now - 1.days
+                    response.accessToken.shouldNotBeNull()
+                    response.refreshToken.shouldNotBeNull()
+                    response.displayName shouldBe "Test User"
+                    response.expiresIn shouldBe 900
+                }
 
-        val inviteCode =
-            InviteCode(
-                id = Ulid.generate(),
-                code = generateCode(),
-                createdBy = createdBy,
-                expiresAt = expiresAt,
-                createdAt = createdAt,
-            )
-        inviteCodeRepository.create(inviteCode)
-        return inviteCode
-    }
+                then("returns valid JWT token") {
+                    publicAuthService.register(
+                        RegisterRequest(
+                            email = "jwt@test.com",
+                            password = "SecurePassword123!",
+                            displayName = "JWT User",
+                        ),
+                    )
 
-    private fun generateCode(): String {
-        val chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
-        return (1..8).map { chars.random() }.joinToString("")
-    }
+                    val response =
+                        publicAuthService.login(
+                            AuthRequest(
+                                email = "jwt@test.com",
+                                password = "SecurePassword123!",
+                            ),
+                        )
 
+                    // Validate the access token
+                    val claims = jwtTokenService.validateAccessToken(response.accessToken)
+                    claims.shouldBeRight()
+                    val tokenClaims = claims.getOrNull()
+                    tokenClaims?.email shouldBe "jwt@test.com"
+                    tokenClaims?.userId?.value shouldBe response.userId.value
+                }
+            }
+
+            `when`("logging in with wrong password") {
+                then("fails") {
+                    publicAuthService.register(
+                        RegisterRequest(
+                            email = "wrongpass@test.com",
+                            password = "CorrectPassword123!",
+                            displayName = "Test User",
+                        ),
+                    )
+
+                    val exception =
+                        shouldThrow<IllegalArgumentException> {
+                            publicAuthService.login(
+                                AuthRequest(
+                                    email = "wrongpass@test.com",
+                                    password = "WrongPassword123!",
+                                ),
+                            )
+                        }
+
+                    exception.message shouldBe "Invalid email or password"
+                }
+            }
+
+            `when`("logging in with non-existent email") {
+                then("fails") {
+                    val exception =
+                        shouldThrow<IllegalArgumentException> {
+                            publicAuthService.login(
+                                AuthRequest(
+                                    email = "nonexistent@test.com",
+                                    password = "Password123!",
+                                ),
+                            )
+                        }
+
+                    exception.message shouldBe "Invalid email or password"
+                }
+            }
+
+            `when`("logging in with active status") {
+                then("succeeds") {
+                    // Register a user - they start as ACTIVE
+                    publicAuthService.register(
+                        RegisterRequest(
+                            email = "statuscheck@test.com",
+                            password = "StatusCheckPassword123!",
+                            displayName = "Status Check User",
+                        ),
+                    )
+
+                    // Login should succeed with ACTIVE status
+                    val loginResponse =
+                        publicAuthService.login(
+                            AuthRequest(
+                                email = "statuscheck@test.com",
+                                password = "StatusCheckPassword123!",
+                            ),
+                        )
+
+                    loginResponse.accessToken.shouldNotBeNull()
+                }
+            }
+        }
+
+        given("token refresh") {
+            `when`("refreshing with valid token") {
+                then("returns new access token") {
+                    val registerResponse =
+                        publicAuthService.register(
+                            RegisterRequest(
+                                email = "refresh@test.com",
+                                password = "RefreshPassword123!",
+                                displayName = "Refresh User",
+                            ),
+                        )
+
+                    val refreshResponse = publicAuthService.refresh(registerResponse.refreshToken)
+
+                    refreshResponse.accessToken.shouldNotBeNull()
+                    refreshResponse.expiresIn shouldBe 900
+                    // New token should be different from original
+                    refreshResponse.accessToken shouldNotBe registerResponse.accessToken
+                }
+
+                then("new access token is valid") {
+                    val registerResponse =
+                        publicAuthService.register(
+                            RegisterRequest(
+                                email = "validrefresh@test.com",
+                                password = "ValidRefreshPassword123!",
+                                displayName = "Valid Refresh User",
+                            ),
+                        )
+
+                    val refreshResponse = publicAuthService.refresh(registerResponse.refreshToken)
+
+                    // Validate the new access token
+                    val claims = jwtTokenService.validateAccessToken(refreshResponse.accessToken)
+                    claims.shouldBeRight()
+                    val tokenClaims = claims.getOrNull()
+                    tokenClaims?.email shouldBe "validrefresh@test.com"
+                }
+            }
+
+            `when`("refreshing with invalid token") {
+                then("fails") {
+                    val exception =
+                        shouldThrow<IllegalArgumentException> {
+                            publicAuthService.refresh("invalid-refresh-token")
+                        }
+
+                    exception.message shouldBe "Invalid refresh token"
+                }
+            }
+
+            `when`("attempting token reuse") {
+                then("fails due to token rotation") {
+                    val registerResponse =
+                        publicAuthService.register(
+                            RegisterRequest(
+                                email = "rotation@test.com",
+                                password = "RotationPassword123!",
+                                displayName = "Rotation User",
+                            ),
+                        )
+
+                    // First refresh should succeed
+                    publicAuthService.refresh(registerResponse.refreshToken)
+
+                    // Second refresh with same token should fail (token rotation)
+                    val exception =
+                        shouldThrow<IllegalArgumentException> {
+                            publicAuthService.refresh(registerResponse.refreshToken)
+                        }
+
+                    val message = exception.message.shouldNotBeNull()
+                    (message.contains("expired") || message.contains("Invalid")).shouldBeTrue()
+                }
+            }
+
+            `when`("refreshing with expired token") {
+                then("fails") {
+                    // Register a user
+                    val registerResponse =
+                        publicAuthService.register(
+                            RegisterRequest(
+                                email = "expired-refresh@test.com",
+                                password = "ExpiredRefreshPassword123!",
+                                displayName = "Expired Refresh User",
+                            ),
+                        )
+
+                    // Manually expire the refresh token in the database
+                    dbClient.execute(
+                        """
+                        UPDATE refresh_token SET
+                            created_at = d"1970-01-01T00:00:00Z",
+                            expires_at = d"1970-01-02T00:00:00Z"
+                        WHERE user_id = user:${registerResponse.userId};
+                        """.trimIndent(),
+                    )
+
+                    // Attempt to refresh with the now-expired token
+                    val exception =
+                        shouldThrow<IllegalArgumentException> {
+                            publicAuthService.refresh(registerResponse.refreshToken)
+                        }
+
+                    val message = exception.message.shouldNotBeNull()
+                    (message.contains("expired") || message.contains("revoked")).shouldBeTrue()
+                }
+            }
+        }
+
+        given("logout") {
+            `when`("logging out") {
+                then("returns success response") {
+                    // Note: Due to kotlinx-rpc limitations, logout doesn't have access to auth context
+                    // It returns a success response instructing client to discard tokens
+                    val response = authService.logout()
+
+                    response.success.shouldBeTrue()
+                    response.message.shouldNotBeNull()
+                }
+            }
+        }
+    }) {
     companion object {
-        @Container
-        val container = SurrealDbTestContainer()
+        private suspend fun createInviteCode(
+            repository: SurrealInviteCodeRepository,
+            createdBy: Ulid,
+        ): InviteCode {
+            val inviteCode =
+                InviteCode.create(
+                    id = Ulid.generate(),
+                    code = generateCode(),
+                    createdBy = createdBy,
+                    expiresIn = 7.days,
+                )
+            repository.create(inviteCode)
+            return inviteCode
+        }
+
+        private suspend fun createExpiredInviteCode(
+            repository: SurrealInviteCodeRepository,
+            createdBy: Ulid,
+        ): InviteCode {
+            val now = Clock.System.now()
+            val createdAt = now - 2.days
+            val expiresAt = now - 1.days
+
+            val inviteCode =
+                InviteCode(
+                    id = Ulid.generate(),
+                    code = generateCode(),
+                    createdBy = createdBy,
+                    expiresAt = expiresAt,
+                    createdAt = createdAt,
+                )
+            repository.create(inviteCode)
+            return inviteCode
+        }
+
+        private fun generateCode(): String {
+            val chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+            return (1..8).map { chars.random() }.joinToString("")
+        }
     }
 }

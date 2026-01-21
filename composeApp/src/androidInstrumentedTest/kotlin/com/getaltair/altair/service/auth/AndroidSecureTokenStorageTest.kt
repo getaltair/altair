@@ -3,15 +3,15 @@ package com.getaltair.altair.service.auth
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.getaltair.altair.domain.types.Ulid
+import io.kotest.matchers.booleans.shouldBeFalse
+import io.kotest.matchers.booleans.shouldBeTrue
+import io.kotest.matchers.nulls.shouldBeNull
+import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertNull
-import kotlin.test.assertTrue
 
 /**
  * Instrumented tests for AndroidSecureTokenStorage.
@@ -41,67 +41,67 @@ class AndroidSecureTokenStorageTest {
     }
 
     @Test
-    fun accessTokenStorageRoundTripsCorrectly() =
+    fun accessTokenStorageRoundTripsCorrectly(): Unit =
         runBlocking {
             val token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.test-access-token"
 
             storage.saveAccessToken(token)
             val retrieved = storage.getAccessToken()
 
-            assertEquals(token, retrieved)
+            retrieved shouldBe token
         }
 
     @Test
-    fun refreshTokenStorageRoundTripsCorrectly() =
+    fun refreshTokenStorageRoundTripsCorrectly(): Unit =
         runBlocking {
             val token = "refresh-token-abc123-xyz789"
 
             storage.saveRefreshToken(token)
             val retrieved = storage.getRefreshToken()
 
-            assertEquals(token, retrieved)
+            retrieved shouldBe token
         }
 
     @Test
-    fun tokenExpirationStorageRoundTripsCorrectly() =
+    fun tokenExpirationStorageRoundTripsCorrectly(): Unit =
         runBlocking {
             val expiration = TEST_EXPIRATION_TIMESTAMP
 
             storage.saveTokenExpiration(expiration)
             val retrieved = storage.getTokenExpiration()
 
-            assertEquals(expiration, retrieved)
+            retrieved shouldBe expiration
         }
 
     @Test
-    fun userIdStorageRoundTripsCorrectly() =
+    fun userIdStorageRoundTripsCorrectly(): Unit =
         runBlocking {
             val userId = Ulid("01ARZ3NDEKTSV4RRFFQ69G5FAV")
 
             storage.saveUserId(userId)
             val retrieved = storage.getUserId()
 
-            assertEquals(userId, retrieved)
+            retrieved shouldBe userId
         }
 
     @Test
-    fun getAccessTokenReturnsNullWhenNoTokenStored() =
+    fun getAccessTokenReturnsNullWhenNoTokenStored(): Unit =
         runBlocking {
             val retrieved = storage.getAccessToken()
 
-            assertNull(retrieved)
+            retrieved.shouldBeNull()
         }
 
     @Test
-    fun getRefreshTokenReturnsNullWhenNoTokenStored() =
+    fun getRefreshTokenReturnsNullWhenNoTokenStored(): Unit =
         runBlocking {
             val retrieved = storage.getRefreshToken()
 
-            assertNull(retrieved)
+            retrieved.shouldBeNull()
         }
 
     @Test
-    fun clearRemovesAllStoredData() =
+    fun clearRemovesAllStoredData(): Unit =
         runBlocking {
             storage.saveAccessToken("access-token")
             storage.saveRefreshToken("refresh-token")
@@ -110,79 +110,79 @@ class AndroidSecureTokenStorageTest {
 
             storage.clear()
 
-            assertNull(storage.getAccessToken())
-            assertNull(storage.getRefreshToken())
-            assertNull(storage.getTokenExpiration())
-            assertNull(storage.getUserId())
+            storage.getAccessToken().shouldBeNull()
+            storage.getRefreshToken().shouldBeNull()
+            storage.getTokenExpiration().shouldBeNull()
+            storage.getUserId().shouldBeNull()
         }
 
     @Test
-    fun hasStoredCredentialsReturnsTrueWhenRefreshTokenExists() =
+    fun hasStoredCredentialsReturnsTrueWhenRefreshTokenExists(): Unit =
         runBlocking {
             storage.saveRefreshToken("refresh-token")
 
-            assertTrue(storage.hasStoredCredentials())
+            storage.hasStoredCredentials().shouldBeTrue()
         }
 
     @Test
-    fun hasStoredCredentialsReturnsFalseWhenNoRefreshToken() =
+    fun hasStoredCredentialsReturnsFalseWhenNoRefreshToken(): Unit =
         runBlocking {
             storage.saveAccessToken("access-token")
 
-            assertFalse(storage.hasStoredCredentials())
+            storage.hasStoredCredentials().shouldBeFalse()
         }
 
     @Test
-    fun hasStoredCredentialsReturnsFalseAfterClear() =
+    fun hasStoredCredentialsReturnsFalseAfterClear(): Unit =
         runBlocking {
             storage.saveRefreshToken("refresh-token")
             storage.clear()
 
-            assertFalse(storage.hasStoredCredentials())
+            storage.hasStoredCredentials().shouldBeFalse()
         }
 
     @Test
-    fun overwritingTokenReplacesPreviousValue() =
+    fun overwritingTokenReplacesPreviousValue(): Unit =
         runBlocking {
             storage.saveAccessToken("original-token")
             storage.saveAccessToken("updated-token")
 
-            assertEquals("updated-token", storage.getAccessToken())
+            storage.getAccessToken() shouldBe "updated-token"
         }
 
     @Test
-    fun tokensWithSpecialCharactersAreStoredCorrectly() =
+    fun tokensWithSpecialCharactersAreStoredCorrectly(): Unit =
         runBlocking {
             val tokenWithSpecialChars = "token-with-special-chars!@#\$%^&*()_+-=[]{}|;':\",./<>?"
 
             storage.saveAccessToken(tokenWithSpecialChars)
             val retrieved = storage.getAccessToken()
 
-            assertEquals(tokenWithSpecialChars, retrieved)
+            retrieved shouldBe tokenWithSpecialChars
         }
 
     @Test
-    fun longTokensAreStoredCorrectly() =
+    fun longTokensAreStoredCorrectly(): Unit =
         runBlocking {
             val longToken = "a".repeat(LONG_TOKEN_LENGTH)
 
             storage.saveAccessToken(longToken)
             val retrieved = storage.getAccessToken()
 
-            assertEquals(longToken, retrieved)
+            retrieved shouldBe longToken
         }
 
     @Test
-    fun differentUserIdsAreStoredCorrectly() =
+    fun differentUserIdsAreStoredCorrectly(): Unit =
         runBlocking {
             val userId1 = Ulid("01ARZ3NDEKTSV4RRFFQ69G5FAV")
             val userId2 = Ulid("01BRCD4EFGHTSV5SSGHR8H6GBX")
 
             storage.saveUserId(userId1)
-            assertEquals(userId1, storage.getUserId())
+            storage.getUserId() shouldBe userId1
 
             storage.saveUserId(userId2)
-            assertEquals(userId2, storage.getUserId())
+            storage.getUserId() shouldBe userId2
         }
 
     companion object {

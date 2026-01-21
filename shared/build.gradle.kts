@@ -43,13 +43,19 @@ kotlin {
         }
 
         commonTest.dependencies {
-            implementation(libs.kotlin.test)
             implementation(libs.turbine)
             implementation(libs.kotlinx.coroutines.test)
             // Kotest - Property-based testing
             implementation(libs.kotest.framework.engine)
             implementation(libs.kotest.assertions.core)
             implementation(libs.kotest.property)
+            implementation(libs.kotest.assertions.arrow)
+        }
+
+        val jvmTest by getting {
+            dependencies {
+                implementation(libs.kotest.runner.junit5)
+            }
         }
 
         jvmMain.dependencies {
@@ -114,4 +120,9 @@ sqldelight {
             generateAsync.set(true)
         }
     }
+}
+
+// Configure JUnit Platform for Kotest
+tasks.named<Test>("jvmTest") {
+    useJUnitPlatform()
 }
