@@ -9,7 +9,7 @@ import com.getaltair.altair.domain.AuthError
 import com.getaltair.altair.domain.model.system.InviteCode
 import com.getaltair.altair.domain.types.Ulid
 import com.getaltair.altair.repository.InviteCodeRepository
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject

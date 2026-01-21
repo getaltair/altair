@@ -1,6 +1,6 @@
 package com.getaltair.altair.domain.common
 
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 /**
  * Interface for entities that support soft deletion.

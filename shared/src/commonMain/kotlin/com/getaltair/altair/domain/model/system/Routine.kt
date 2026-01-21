@@ -4,7 +4,7 @@ import com.getaltair.altair.domain.common.SoftDeletable
 import com.getaltair.altair.domain.common.Timestamped
 import com.getaltair.altair.domain.types.Schedule
 import com.getaltair.altair.domain.types.Ulid
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlinx.datetime.LocalTime
 import kotlinx.serialization.Serializable
 

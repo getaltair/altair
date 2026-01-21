@@ -5,7 +5,7 @@ import com.getaltair.altair.domain.common.SoftDeletable
 import com.getaltair.altair.domain.common.Timestamped
 import com.getaltair.altair.domain.types.Ulid
 import com.getaltair.altair.domain.types.enums.AnchorType
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlinx.serialization.Serializable
 
 /**

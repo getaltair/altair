@@ -12,7 +12,7 @@ import com.getaltair.altair.domain.types.Ulid
 import com.getaltair.altair.domain.types.enums.QuestStatus
 import com.getaltair.altair.repository.QuestRepository
 import kotlinx.coroutines.flow.Flow
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlinx.datetime.LocalDate
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray

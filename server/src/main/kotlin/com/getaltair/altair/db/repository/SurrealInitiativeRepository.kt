@@ -11,7 +11,7 @@ import com.getaltair.altair.domain.types.Ulid
 import com.getaltair.altair.domain.types.enums.InitiativeStatus
 import com.getaltair.altair.repository.InitiativeRepository
 import kotlinx.coroutines.flow.Flow
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive

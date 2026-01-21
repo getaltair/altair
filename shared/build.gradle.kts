@@ -9,6 +9,12 @@ plugins {
 }
 
 kotlin {
+    // Enable consistent copy visibility for data classes with non-public constructors
+    // This makes copy() have the same visibility as the primary constructor
+    compilerOptions {
+        freeCompilerArgs.add("-Xconsistent-data-class-copy-visibility")
+    }
+
     // Android target
     androidTarget {
         compilerOptions {

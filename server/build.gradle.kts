@@ -11,6 +11,13 @@ plugins {
 group = "com.getaltair"
 version = "0.0.1"
 
+// Enable consistent copy visibility for data classes with non-public constructors
+kotlin {
+    compilerOptions {
+        freeCompilerArgs.add("-Xconsistent-data-class-copy-visibility")
+    }
+}
+
 application {
     mainClass = "io.ktor.server.netty.EngineMain"
 }

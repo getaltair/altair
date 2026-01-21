@@ -5,7 +5,7 @@ import com.getaltair.altair.domain.DomainError
 import com.getaltair.altair.domain.model.system.Routine
 import com.getaltair.altair.domain.types.Ulid
 import kotlinx.coroutines.flow.Flow
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlinx.datetime.LocalDate
 
 /**

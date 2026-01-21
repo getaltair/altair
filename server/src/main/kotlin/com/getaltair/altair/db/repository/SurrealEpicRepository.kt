@@ -13,7 +13,7 @@ import com.getaltair.altair.repository.EpicProgress
 import com.getaltair.altair.repository.EpicRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlinx.datetime.LocalDate
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray

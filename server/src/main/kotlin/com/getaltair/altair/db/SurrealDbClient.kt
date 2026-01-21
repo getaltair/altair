@@ -162,7 +162,7 @@ class SurrealDbClient(
             }
             is Boolean -> value.toString()
             is Number -> value.toString()
-            is kotlinx.datetime.Instant -> "'$value'"
+            is kotlin.time.Instant -> "'$value'"
             else -> "'${escapeSurrealString(value.toString())}'"
         }
 

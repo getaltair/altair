@@ -5,7 +5,7 @@ import com.getaltair.altair.domain.common.Timestamped
 import com.getaltair.altair.domain.types.Ulid
 import com.getaltair.altair.domain.types.enums.ExtractionStatus
 import com.getaltair.altair.domain.types.enums.SourceType
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlinx.serialization.Serializable
 
 /**

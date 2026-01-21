@@ -13,7 +13,7 @@ import com.getaltair.altair.domain.types.enums.SourceType
 import com.getaltair.altair.repository.SourceDocumentRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject

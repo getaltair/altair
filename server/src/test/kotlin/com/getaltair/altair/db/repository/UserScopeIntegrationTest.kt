@@ -57,7 +57,7 @@ class UserScopeIntegrationTest :
 
             // Create two test users
             val now = Clock.System.now().toEpochMilliseconds()
-            val instant = kotlinx.datetime.Instant.fromEpochMilliseconds(now)
+            val instant = kotlin.time.Instant.fromEpochMilliseconds(now)
 
             user1Id = Ulid.generate()
             user2Id = Ulid.generate()
@@ -303,7 +303,7 @@ class UserScopeIntegrationTest :
             userId: Ulid,
             title: String,
         ): Note {
-            val now = kotlinx.datetime.Instant.fromEpochMilliseconds(Clock.System.now().toEpochMilliseconds())
+            val now = kotlin.time.Instant.fromEpochMilliseconds(Clock.System.now().toEpochMilliseconds())
             return Note(
                 id = Ulid.generate(),
                 userId = userId,
