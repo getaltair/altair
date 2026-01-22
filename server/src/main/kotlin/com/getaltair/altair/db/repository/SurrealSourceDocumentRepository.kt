@@ -13,11 +13,13 @@ import com.getaltair.altair.domain.types.enums.SourceType
 import com.getaltair.altair.repository.SourceDocumentRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import kotlinx.datetime.Instant
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import org.slf4j.LoggerFactory
+import kotlin.time.Instant
 
 class SurrealSourceDocumentRepository(
     private val db: SurrealDbClient,
@@ -129,7 +131,28 @@ class SurrealSourceDocumentRepository(
                     "SELECT * FROM source_document WHERE user_id = user:\$userId AND deleted_at IS NONE ORDER BY created_at DESC",
                     mapOf("userId" to userId.value),
                 )
-            emit(result.fold({ emptyList() }, { parseSourceDocuments(it) }))
+            emit(
+                result.fold(
+                    ifLeft = { error ->
+
+                        when (error) {
+                            is DomainError.NetworkError -> logger.warn("Database error in findAll: ${error.message}")
+
+                            is DomainError.UnexpectedError -> logger.warn("Database error in findAll: ${error.message}")
+
+                            is DomainError.NotFoundError -> logger.warn("Database error in findAll: ${error.resource} ${error.id}")
+
+                            is DomainError.ValidationError -> logger.warn("Database error in findAll: ${error.field} - ${error.message}")
+
+                            is DomainError.UnauthorizedError -> logger.warn("Database error in findAll: ${error.message}")
+
+                            else -> logger.warn("Database error in findAll: $error")
+                        }
+                        emptyList()
+                    },
+                    ifRight = { parseSourceDocuments(it) },
+                ),
+            )
         }
 
     override fun findByExtractionStatus(status: ExtractionStatus): Flow<List<SourceDocument>> =
@@ -139,7 +162,28 @@ class SurrealSourceDocumentRepository(
                     "SELECT * FROM source_document WHERE user_id = user:\$userId AND extraction_status = \$status AND deleted_at IS NONE",
                     mapOf("userId" to userId.value, "status" to status.name.lowercase()),
                 )
-            emit(result.fold({ emptyList() }, { parseSourceDocuments(it) }))
+            emit(
+                result.fold(
+                    ifLeft = { error ->
+
+                        when (error) {
+                            is DomainError.NetworkError -> logger.warn("Database error in findByExtractionStatus: ${error.message}")
+
+                            is DomainError.UnexpectedError -> logger.warn("Database error in findByExtractionStatus: ${error.message}")
+
+                            is DomainError.NotFoundError -> logger.warn("Database error in findByExtractionStatus: ${error.resource} ${error.id}")
+
+                            is DomainError.ValidationError -> logger.warn("Database error in findByExtractionStatus: ${error.field} - ${error.message}")
+
+                            is DomainError.UnauthorizedError -> logger.warn("Database error in findByExtractionStatus: ${error.message}")
+
+                            else -> logger.warn("Database error in findByExtractionStatus: $error")
+                        }
+                        emptyList()
+                    },
+                    ifRight = { parseSourceDocuments(it) },
+                ),
+            )
         }
 
     override fun findBySourceType(sourceType: SourceType): Flow<List<SourceDocument>> =
@@ -149,7 +193,28 @@ class SurrealSourceDocumentRepository(
                     "SELECT * FROM source_document WHERE user_id = user:\$userId AND source_type = \$sourceType AND deleted_at IS NONE",
                     mapOf("userId" to userId.value, "sourceType" to sourceType.name.lowercase()),
                 )
-            emit(result.fold({ emptyList() }, { parseSourceDocuments(it) }))
+            emit(
+                result.fold(
+                    ifLeft = { error ->
+
+                        when (error) {
+                            is DomainError.NetworkError -> logger.warn("Database error in findBySourceType: ${error.message}")
+
+                            is DomainError.UnexpectedError -> logger.warn("Database error in findBySourceType: ${error.message}")
+
+                            is DomainError.NotFoundError -> logger.warn("Database error in findBySourceType: ${error.resource} ${error.id}")
+
+                            is DomainError.ValidationError -> logger.warn("Database error in findBySourceType: ${error.field} - ${error.message}")
+
+                            is DomainError.UnauthorizedError -> logger.warn("Database error in findBySourceType: ${error.message}")
+
+                            else -> logger.warn("Database error in findBySourceType: $error")
+                        }
+                        emptyList()
+                    },
+                    ifRight = { parseSourceDocuments(it) },
+                ),
+            )
         }
 
     override fun findByWatchedFolder(watchedFolderId: Ulid): Flow<List<SourceDocument>> =
@@ -159,7 +224,28 @@ class SurrealSourceDocumentRepository(
                     "SELECT * FROM source_document WHERE user_id = user:\$userId AND watched_folder_id = \$watchedFolderId AND deleted_at IS NONE",
                     mapOf("userId" to userId.value, "watchedFolderId" to watchedFolderId.value),
                 )
-            emit(result.fold({ emptyList() }, { parseSourceDocuments(it) }))
+            emit(
+                result.fold(
+                    ifLeft = { error ->
+
+                        when (error) {
+                            is DomainError.NetworkError -> logger.warn("Database error in findByWatchedFolder: ${error.message}")
+
+                            is DomainError.UnexpectedError -> logger.warn("Database error in findByWatchedFolder: ${error.message}")
+
+                            is DomainError.NotFoundError -> logger.warn("Database error in findByWatchedFolder: ${error.resource} ${error.id}")
+
+                            is DomainError.ValidationError -> logger.warn("Database error in findByWatchedFolder: ${error.field} - ${error.message}")
+
+                            is DomainError.UnauthorizedError -> logger.warn("Database error in findByWatchedFolder: ${error.message}")
+
+                            else -> logger.warn("Database error in findByWatchedFolder: $error")
+                        }
+                        emptyList()
+                    },
+                    ifRight = { parseSourceDocuments(it) },
+                ),
+            )
         }
 
     override fun findByInitiative(initiativeId: Ulid): Flow<List<SourceDocument>> =
@@ -169,7 +255,28 @@ class SurrealSourceDocumentRepository(
                     "SELECT * FROM source_document WHERE user_id = user:\$userId AND initiative_id = initiative:\$initiativeId AND deleted_at IS NONE",
                     mapOf("userId" to userId.value, "initiativeId" to initiativeId.value),
                 )
-            emit(result.fold({ emptyList() }, { parseSourceDocuments(it) }))
+            emit(
+                result.fold(
+                    ifLeft = { error ->
+
+                        when (error) {
+                            is DomainError.NetworkError -> logger.warn("Database error in findByInitiative: ${error.message}")
+
+                            is DomainError.UnexpectedError -> logger.warn("Database error in findByInitiative: ${error.message}")
+
+                            is DomainError.NotFoundError -> logger.warn("Database error in findByInitiative: ${error.resource} ${error.id}")
+
+                            is DomainError.ValidationError -> logger.warn("Database error in findByInitiative: ${error.field} - ${error.message}")
+
+                            is DomainError.UnauthorizedError -> logger.warn("Database error in findByInitiative: ${error.message}")
+
+                            else -> logger.warn("Database error in findByInitiative: $error")
+                        }
+                        emptyList()
+                    },
+                    ifRight = { parseSourceDocuments(it) },
+                ),
+            )
         }
 
     override suspend fun search(query: String): Either<DomainError, List<SourceDocument>> =
@@ -232,7 +339,14 @@ class SurrealSourceDocumentRepository(
                 .firstOrNull()
                 ?.jsonObject
                 ?.let { mapToSourceDocument(it) }
-        } catch (e: Exception) {
+        } catch (e: SerializationException) {
+            logger.warn("Failed to parse source document: ${e.message}", e)
+            null
+        } catch (e: IllegalStateException) {
+            logger.warn("Failed to parse source document: ${e.message}", e)
+            null
+        } catch (e: IllegalArgumentException) {
+            logger.warn("Failed to parse source document: ${e.message}", e)
             null
         }
 
@@ -241,11 +355,25 @@ class SurrealSourceDocumentRepository(
             json.parseToJsonElement(result).jsonArray.mapNotNull {
                 try {
                     mapToSourceDocument(it.jsonObject)
-                } catch (e: Exception) {
+                } catch (e: SerializationException) {
+                    logger.warn("Failed to parse source document element: ${e.message}", e)
+                    null
+                } catch (e: IllegalStateException) {
+                    logger.warn("Failed to parse source document element: ${e.message}", e)
+                    null
+                } catch (e: IllegalArgumentException) {
+                    logger.warn("Failed to parse source document element: ${e.message}", e)
                     null
                 }
             }
-        } catch (e: Exception) {
+        } catch (e: SerializationException) {
+            logger.warn("Failed to parse source documents array: ${e.message}", e)
+            emptyList()
+        } catch (e: IllegalStateException) {
+            logger.warn("Failed to parse source documents array: ${e.message}", e)
+            emptyList()
+        } catch (e: IllegalArgumentException) {
+            logger.warn("Failed to parse source documents array: ${e.message}", e)
             emptyList()
         }
 
@@ -283,8 +411,19 @@ class SurrealSourceDocumentRepository(
         value?.let {
             try {
                 Instant.parse(it)
-            } catch (e: Exception) {
+            } catch (e: SerializationException) {
+                logger.warn("Failed to parse instant '$value': ${e.message}")
+                Instant.DISTANT_PAST
+            } catch (e: IllegalStateException) {
+                logger.warn("Failed to parse instant '$value': ${e.message}")
+                Instant.DISTANT_PAST
+            } catch (e: IllegalArgumentException) {
+                logger.warn("Failed to parse instant '$value': ${e.message}")
                 Instant.DISTANT_PAST
             }
         } ?: Instant.DISTANT_PAST
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(SurrealSourceDocumentRepository::class.java)
+    }
 }

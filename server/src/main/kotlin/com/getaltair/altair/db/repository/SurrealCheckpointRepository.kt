@@ -11,12 +11,14 @@ import com.getaltair.altair.domain.types.Ulid
 import com.getaltair.altair.repository.CheckpointRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import kotlinx.datetime.Instant
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import org.slf4j.LoggerFactory
 import kotlin.time.Clock
+import kotlin.time.Instant
 
 class SurrealCheckpointRepository(
     private val db: SurrealDbClient,
@@ -106,7 +108,28 @@ class SurrealCheckpointRepository(
                     "SELECT * FROM checkpoint WHERE user_id = user:\$userId ORDER BY sort_order",
                     mapOf("userId" to userId.value),
                 )
-            emit(result.fold({ emptyList() }, { parseCheckpoints(it) }))
+            emit(
+                result.fold(
+                    ifLeft = { error ->
+
+                        when (error) {
+                            is DomainError.NetworkError -> logger.warn("Database error in findAll: ${error.message}")
+
+                            is DomainError.UnexpectedError -> logger.warn("Database error in findAll: ${error.message}")
+
+                            is DomainError.NotFoundError -> logger.warn("Database error in findAll: ${error.resource} ${error.id}")
+
+                            is DomainError.ValidationError -> logger.warn("Database error in findAll: ${error.field} - ${error.message}")
+
+                            is DomainError.UnauthorizedError -> logger.warn("Database error in findAll: ${error.message}")
+
+                            else -> logger.warn("Database error in findAll: $error")
+                        }
+                        emptyList()
+                    },
+                    ifRight = { parseCheckpoints(it) },
+                ),
+            )
         }
 
     override fun findByQuest(questId: Ulid): Flow<List<Checkpoint>> =
@@ -116,7 +139,28 @@ class SurrealCheckpointRepository(
                     "SELECT * FROM checkpoint WHERE user_id = user:\$userId AND quest_id = quest:\$questId ORDER BY sort_order",
                     mapOf("userId" to userId.value, "questId" to questId.value),
                 )
-            emit(result.fold({ emptyList() }, { parseCheckpoints(it) }))
+            emit(
+                result.fold(
+                    ifLeft = { error ->
+
+                        when (error) {
+                            is DomainError.NetworkError -> logger.warn("Database error in findByQuest: ${error.message}")
+
+                            is DomainError.UnexpectedError -> logger.warn("Database error in findByQuest: ${error.message}")
+
+                            is DomainError.NotFoundError -> logger.warn("Database error in findByQuest: ${error.resource} ${error.id}")
+
+                            is DomainError.ValidationError -> logger.warn("Database error in findByQuest: ${error.field} - ${error.message}")
+
+                            is DomainError.UnauthorizedError -> logger.warn("Database error in findByQuest: ${error.message}")
+
+                            else -> logger.warn("Database error in findByQuest: $error")
+                        }
+                        emptyList()
+                    },
+                    ifRight = { parseCheckpoints(it) },
+                ),
+            )
         }
 
     override suspend fun toggleComplete(id: Ulid): Either<DomainError, Checkpoint> =
@@ -187,7 +231,14 @@ class SurrealCheckpointRepository(
                 .firstOrNull()
                 ?.jsonObject
                 ?.let { mapToCheckpoint(it) }
-        } catch (e: Exception) {
+        } catch (e: SerializationException) {
+            logger.warn("Failed to parse checkpoint: ${e.message}", e)
+            null
+        } catch (e: IllegalStateException) {
+            logger.warn("Failed to parse checkpoint: ${e.message}", e)
+            null
+        } catch (e: IllegalArgumentException) {
+            logger.warn("Failed to parse checkpoint: ${e.message}", e)
             null
         }
 
@@ -196,11 +247,25 @@ class SurrealCheckpointRepository(
             json.parseToJsonElement(result).jsonArray.mapNotNull {
                 try {
                     mapToCheckpoint(it.jsonObject)
-                } catch (e: Exception) {
+                } catch (e: SerializationException) {
+                    logger.warn("Failed to parse checkpoint element: ${e.message}", e)
+                    null
+                } catch (e: IllegalStateException) {
+                    logger.warn("Failed to parse checkpoint element: ${e.message}", e)
+                    null
+                } catch (e: IllegalArgumentException) {
+                    logger.warn("Failed to parse checkpoint element: ${e.message}", e)
                     null
                 }
             }
-        } catch (e: Exception) {
+        } catch (e: SerializationException) {
+            logger.warn("Failed to parse checkpoints array: ${e.message}", e)
+            emptyList()
+        } catch (e: IllegalStateException) {
+            logger.warn("Failed to parse checkpoints array: ${e.message}", e)
+            emptyList()
+        } catch (e: IllegalArgumentException) {
+            logger.warn("Failed to parse checkpoints array: ${e.message}", e)
             emptyList()
         }
 
@@ -225,7 +290,14 @@ class SurrealCheckpointRepository(
         value?.let {
             try {
                 Instant.parse(it)
-            } catch (e: Exception) {
+            } catch (e: SerializationException) {
+                logger.warn("Failed to parse instant '$value': ${e.message}")
+                Instant.DISTANT_PAST
+            } catch (e: IllegalStateException) {
+                logger.warn("Failed to parse instant '$value': ${e.message}")
+                Instant.DISTANT_PAST
+            } catch (e: IllegalArgumentException) {
+                logger.warn("Failed to parse instant '$value': ${e.message}")
                 Instant.DISTANT_PAST
             }
         } ?: Instant.DISTANT_PAST
@@ -243,7 +315,18 @@ class SurrealCheckpointRepository(
                 ?.content
                 ?.toIntOrNull()
                 ?: 0
-        } catch (e: Exception) {
+        } catch (e: SerializationException) {
+            logger.warn("Failed to parse count: ${e.message}", e)
+            0
+        } catch (e: IllegalStateException) {
+            logger.warn("Failed to parse count: ${e.message}", e)
+            0
+        } catch (e: IllegalArgumentException) {
+            logger.warn("Failed to parse count: ${e.message}", e)
             0
         }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(SurrealCheckpointRepository::class.java)
+    }
 }

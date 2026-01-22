@@ -1,12 +1,12 @@
 package com.getaltair.altair.domain.model.system
 
 import com.getaltair.altair.domain.types.Ulid
-import kotlinx.datetime.Instant
 import kotlinx.serialization.Serializable
 import kotlin.time.Clock
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Instant
 
 /**
  * A refresh token for session management.

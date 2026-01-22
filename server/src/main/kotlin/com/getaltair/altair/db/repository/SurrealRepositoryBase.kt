@@ -9,6 +9,7 @@ import com.getaltair.altair.domain.DomainError
 import com.getaltair.altair.domain.types.Ulid
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.jsonArray
@@ -75,7 +76,13 @@ abstract class SurrealRepositoryBase(
     protected fun parseJsonArray(result: String): List<JsonElement> =
         try {
             json.parseToJsonElement(result).jsonArray.toList()
-        } catch (e: Exception) {
+        } catch (e: SerializationException) {
+            logger.warn("Failed to parse JSON array: ${e.message}", e)
+            emptyList()
+        } catch (e: IllegalStateException) {
+            logger.warn("Failed to parse JSON array: ${e.message}", e)
+            emptyList()
+        } catch (e: IllegalArgumentException) {
             logger.warn("Failed to parse JSON array: ${e.message}", e)
             emptyList()
         }
@@ -87,7 +94,13 @@ abstract class SurrealRepositoryBase(
         try {
             val array = json.parseToJsonElement(result).jsonArray
             array.firstOrNull()
-        } catch (e: Exception) {
+        } catch (e: SerializationException) {
+            logger.warn("Failed to parse JSON object: ${e.message}", e)
+            null
+        } catch (e: IllegalStateException) {
+            logger.warn("Failed to parse JSON object: ${e.message}", e)
+            null
+        } catch (e: IllegalArgumentException) {
             logger.warn("Failed to parse JSON object: ${e.message}", e)
             null
         }
@@ -98,7 +111,13 @@ abstract class SurrealRepositoryBase(
     protected fun JsonElement.getString(key: String): String? =
         try {
             jsonObject[key]?.jsonPrimitive?.content
-        } catch (e: Exception) {
+        } catch (e: SerializationException) {
+            logger.debug("Failed to get string field '$key': ${e.message}")
+            null
+        } catch (e: IllegalStateException) {
+            logger.debug("Failed to get string field '$key': ${e.message}")
+            null
+        } catch (e: IllegalArgumentException) {
             logger.debug("Failed to get string field '$key': ${e.message}")
             null
         }
@@ -109,7 +128,13 @@ abstract class SurrealRepositoryBase(
     protected fun JsonElement.getInt(key: String): Int? =
         try {
             jsonObject[key]?.jsonPrimitive?.content?.toIntOrNull()
-        } catch (e: Exception) {
+        } catch (e: SerializationException) {
+            logger.debug("Failed to get int field '$key': ${e.message}")
+            null
+        } catch (e: IllegalStateException) {
+            logger.debug("Failed to get int field '$key': ${e.message}")
+            null
+        } catch (e: IllegalArgumentException) {
             logger.debug("Failed to get int field '$key': ${e.message}")
             null
         }
@@ -120,7 +145,13 @@ abstract class SurrealRepositoryBase(
     protected fun JsonElement.getLong(key: String): Long? =
         try {
             jsonObject[key]?.jsonPrimitive?.content?.toLongOrNull()
-        } catch (e: Exception) {
+        } catch (e: SerializationException) {
+            logger.debug("Failed to get long field '$key': ${e.message}")
+            null
+        } catch (e: IllegalStateException) {
+            logger.debug("Failed to get long field '$key': ${e.message}")
+            null
+        } catch (e: IllegalArgumentException) {
             logger.debug("Failed to get long field '$key': ${e.message}")
             null
         }
@@ -131,7 +162,13 @@ abstract class SurrealRepositoryBase(
     protected fun JsonElement.getBoolean(key: String): Boolean? =
         try {
             jsonObject[key]?.jsonPrimitive?.content?.toBooleanStrictOrNull()
-        } catch (e: Exception) {
+        } catch (e: SerializationException) {
+            logger.debug("Failed to get boolean field '$key': ${e.message}")
+            null
+        } catch (e: IllegalStateException) {
+            logger.debug("Failed to get boolean field '$key': ${e.message}")
+            null
+        } catch (e: IllegalArgumentException) {
             logger.debug("Failed to get boolean field '$key': ${e.message}")
             null
         }

@@ -11,10 +11,11 @@ import com.getaltair.altair.domain.types.Ulid
 import com.getaltair.altair.domain.types.enums.InitiativeStatus
 import com.getaltair.altair.repository.InitiativeRepository
 import kotlinx.coroutines.flow.Flow
-import kotlinx.datetime.Instant
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlin.time.Instant
 
 /**
  * SurrealDB implementation of InitiativeRepository.
@@ -168,7 +169,13 @@ class SurrealInitiativeRepository(
             val array = json.parseToJsonElement(result).jsonArray
             val obj = array.firstOrNull()?.jsonObject ?: return null
             mapToInitiative(obj)
-        } catch (e: Exception) {
+        } catch (e: SerializationException) {
+            logger.warn("Failed to parse Initiative: ${e.message}", e)
+            null
+        } catch (e: IllegalStateException) {
+            logger.warn("Failed to parse Initiative: ${e.message}", e)
+            null
+        } catch (e: IllegalArgumentException) {
             logger.warn("Failed to parse Initiative: ${e.message}", e)
             null
         }
@@ -180,12 +187,24 @@ class SurrealInitiativeRepository(
             array.mapNotNull { element ->
                 try {
                     mapToInitiative(element.jsonObject)
-                } catch (e: Exception) {
+                } catch (e: SerializationException) {
+                    logger.warn("Failed to parse Initiative element: ${e.message}", e)
+                    null
+                } catch (e: IllegalStateException) {
+                    logger.warn("Failed to parse Initiative element: ${e.message}", e)
+                    null
+                } catch (e: IllegalArgumentException) {
                     logger.warn("Failed to parse Initiative element: ${e.message}", e)
                     null
                 }
             }
-        } catch (e: Exception) {
+        } catch (e: SerializationException) {
+            logger.warn("Failed to parse Initiative list: ${e.message}", e)
+            emptyList()
+        } catch (e: IllegalStateException) {
+            logger.warn("Failed to parse Initiative list: ${e.message}", e)
+            emptyList()
+        } catch (e: IllegalArgumentException) {
             logger.warn("Failed to parse Initiative list: ${e.message}", e)
             emptyList()
         }
@@ -213,7 +232,13 @@ class SurrealInitiativeRepository(
         value?.let {
             try {
                 Instant.parse(it)
-            } catch (e: Exception) {
+            } catch (e: SerializationException) {
+                logger.warn("Failed to parse Instant '$it': ${e.message}", e)
+                Instant.DISTANT_PAST
+            } catch (e: IllegalStateException) {
+                logger.warn("Failed to parse Instant '$it': ${e.message}", e)
+                Instant.DISTANT_PAST
+            } catch (e: IllegalArgumentException) {
                 logger.warn("Failed to parse Instant '$it': ${e.message}", e)
                 Instant.DISTANT_PAST
             }
@@ -228,7 +253,13 @@ class SurrealInitiativeRepository(
                 ?.jsonPrimitive
                 ?.content
                 ?.toIntOrNull() ?: 0
-        } catch (e: Exception) {
+        } catch (e: SerializationException) {
+            logger.warn("Failed to parse count: ${e.message}", e)
+            0
+        } catch (e: IllegalStateException) {
+            logger.warn("Failed to parse count: ${e.message}", e)
+            0
+        } catch (e: IllegalArgumentException) {
             logger.warn("Failed to parse count: ${e.message}", e)
             0
         }

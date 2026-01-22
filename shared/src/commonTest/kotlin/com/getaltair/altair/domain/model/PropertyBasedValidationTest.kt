@@ -39,7 +39,7 @@ import io.kotest.property.arbitrary.long
 import io.kotest.property.arbitrary.map
 import io.kotest.property.arbitrary.string
 import io.kotest.property.checkAll
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 /**
  * Property-based tests for domain model validation using Kotest.

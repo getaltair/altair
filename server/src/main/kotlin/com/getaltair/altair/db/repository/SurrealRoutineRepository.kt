@@ -12,13 +12,15 @@ import com.getaltair.altair.domain.types.Ulid
 import com.getaltair.altair.repository.RoutineRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalTime
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import org.slf4j.LoggerFactory
+import kotlin.time.Instant
 
 /**
  * SurrealDB implementation of RoutineRepository.
@@ -131,7 +133,22 @@ class SurrealRoutineRepository(
                     "SELECT * FROM routine WHERE user_id = user:\$userId AND deleted_at IS NONE ORDER BY created_at DESC",
                     mapOf("userId" to userId.value),
                 )
-            emit(result.fold({ emptyList() }, { parseRoutines(it) }))
+            emit(
+                result.fold(
+                    ifLeft = { error ->
+                        when (error) {
+                            is DomainError.NetworkError -> logger.warn("Database network error: ${error.message}")
+                            is DomainError.UnexpectedError -> logger.warn("Database unexpected error: ${error.message}")
+                            is DomainError.NotFoundError -> logger.warn("Database not found error: ${error.resource} ${error.id}")
+                            is DomainError.ValidationError -> logger.warn("Database validation error: ${error.field} - ${error.message}")
+                            is DomainError.UnauthorizedError -> logger.warn("Database unauthorized error: ${error.message}")
+                            else -> logger.warn("Database error: $error")
+                        }
+                        emptyList()
+                    },
+                    ifRight = { parseRoutines(it) },
+                ),
+            )
         }
 
     override fun findActive(): Flow<List<Routine>> =
@@ -141,7 +158,22 @@ class SurrealRoutineRepository(
                     "SELECT * FROM routine WHERE user_id = user:\$userId AND is_active = \$isActive AND deleted_at IS NONE",
                     mapOf("userId" to userId.value, "isActive" to true),
                 )
-            emit(result.fold({ emptyList() }, { parseRoutines(it) }))
+            emit(
+                result.fold(
+                    ifLeft = { error ->
+                        when (error) {
+                            is DomainError.NetworkError -> logger.warn("Database network error: ${error.message}")
+                            is DomainError.UnexpectedError -> logger.warn("Database unexpected error: ${error.message}")
+                            is DomainError.NotFoundError -> logger.warn("Database not found error: ${error.resource} ${error.id}")
+                            is DomainError.ValidationError -> logger.warn("Database validation error: ${error.field} - ${error.message}")
+                            is DomainError.UnauthorizedError -> logger.warn("Database unauthorized error: ${error.message}")
+                            else -> logger.warn("Database error: $error")
+                        }
+                        emptyList()
+                    },
+                    ifRight = { parseRoutines(it) },
+                ),
+            )
         }
 
     override suspend fun findDueForDate(date: LocalDate): Either<DomainError, List<Routine>> =
@@ -163,7 +195,22 @@ class SurrealRoutineRepository(
                     "SELECT * FROM routine WHERE user_id = user:\$userId AND initiative_id = initiative:\$initiativeId AND deleted_at IS NONE",
                     mapOf("userId" to userId.value, "initiativeId" to initiativeId.value),
                 )
-            emit(result.fold({ emptyList() }, { parseRoutines(it) }))
+            emit(
+                result.fold(
+                    ifLeft = { error ->
+                        when (error) {
+                            is DomainError.NetworkError -> logger.warn("Database network error: ${error.message}")
+                            is DomainError.UnexpectedError -> logger.warn("Database unexpected error: ${error.message}")
+                            is DomainError.NotFoundError -> logger.warn("Database not found error: ${error.resource} ${error.id}")
+                            is DomainError.ValidationError -> logger.warn("Database validation error: ${error.field} - ${error.message}")
+                            is DomainError.UnauthorizedError -> logger.warn("Database unauthorized error: ${error.message}")
+                            else -> logger.warn("Database error: $error")
+                        }
+                        emptyList()
+                    },
+                    ifRight = { parseRoutines(it) },
+                ),
+            )
         }
 
     override suspend fun updateLastSpawnedAt(
@@ -184,7 +231,14 @@ class SurrealRoutineRepository(
         try {
             val array = json.parseToJsonElement(result).jsonArray
             array.firstOrNull()?.jsonObject?.let { mapToRoutine(it) }
-        } catch (e: Exception) {
+        } catch (e: SerializationException) {
+            logger.warn("Failed to parse routine: ${e.message}", e)
+            null
+        } catch (e: IllegalStateException) {
+            logger.warn("Failed to parse routine: ${e.message}", e)
+            null
+        } catch (e: IllegalArgumentException) {
+            logger.warn("Failed to parse routine: ${e.message}", e)
             null
         }
 
@@ -193,11 +247,25 @@ class SurrealRoutineRepository(
             json.parseToJsonElement(result).jsonArray.mapNotNull {
                 try {
                     mapToRoutine(it.jsonObject)
-                } catch (e: Exception) {
+                } catch (e: SerializationException) {
+                    logger.warn("Failed to parse routine element: ${e.message}", e)
+                    null
+                } catch (e: IllegalStateException) {
+                    logger.warn("Failed to parse routine element: ${e.message}", e)
+                    null
+                } catch (e: IllegalArgumentException) {
+                    logger.warn("Failed to parse routine element: ${e.message}", e)
                     null
                 }
             }
-        } catch (e: Exception) {
+        } catch (e: SerializationException) {
+            logger.warn("Failed to parse routines array: ${e.message}", e)
+            emptyList()
+        } catch (e: IllegalStateException) {
+            logger.warn("Failed to parse routines array: ${e.message}", e)
+            emptyList()
+        } catch (e: IllegalArgumentException) {
+            logger.warn("Failed to parse routines array: ${e.message}", e)
             emptyList()
         }
 
@@ -209,9 +277,14 @@ class SurrealRoutineRepository(
             if (scheduleObj != null) {
                 try {
                     json.decodeFromJsonElement(Schedule.serializer(), scheduleObj)
-                } catch (
-                    e: Exception,
-                ) {
+                } catch (e: SerializationException) {
+                    logger.warn("Failed to parse routine schedule: ${e.message}", e)
+                    Schedule.Daily
+                } catch (e: IllegalStateException) {
+                    logger.warn("Failed to parse routine schedule: ${e.message}", e)
+                    Schedule.Daily
+                } catch (e: IllegalArgumentException) {
+                    logger.warn("Failed to parse routine schedule: ${e.message}", e)
                     Schedule.Daily
                 }
             } else {
@@ -244,8 +317,13 @@ class SurrealRoutineRepository(
         value?.let {
             try {
                 Instant.parse(it)
-            } catch (e: Exception) {
+            } catch (e: IllegalArgumentException) {
+                logger.warn("Failed to parse instant '$value': ${e.message}")
                 Instant.DISTANT_PAST
             }
         } ?: Instant.DISTANT_PAST
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(SurrealRoutineRepository::class.java)
+    }
 }

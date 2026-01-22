@@ -3,8 +3,8 @@ package com.getaltair.altair.domain.model.system
 import com.getaltair.altair.domain.common.SoftDeletable
 import com.getaltair.altair.domain.common.Timestamped
 import com.getaltair.altair.domain.types.Ulid
-import kotlinx.datetime.Instant
 import kotlinx.serialization.Serializable
+import kotlin.time.Instant
 
 /**
  * A folder being monitored for automatic document import.

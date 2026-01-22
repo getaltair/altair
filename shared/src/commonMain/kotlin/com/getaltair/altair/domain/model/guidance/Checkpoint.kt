@@ -2,8 +2,8 @@ package com.getaltair.altair.domain.model.guidance
 
 import com.getaltair.altair.domain.common.Timestamped
 import com.getaltair.altair.domain.types.Ulid
-import kotlinx.datetime.Instant
 import kotlinx.serialization.Serializable
+import kotlin.time.Instant
 
 /**
  * An optional sub-step within a Quest.

@@ -38,10 +38,10 @@ import com.getaltair.altair.domain.types.enums.UserRole
 import com.getaltair.altair.domain.types.enums.UserStatus
 import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.matchers.shouldBe
-import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDate
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlin.time.Instant
 
 /**
  * Tests for entity serialization round-tripping through JSON.

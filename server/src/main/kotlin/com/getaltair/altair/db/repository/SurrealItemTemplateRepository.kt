@@ -14,12 +14,14 @@ import com.getaltair.altair.repository.ItemTemplateRepository
 import com.getaltair.altair.repository.TemplateWithFields
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import kotlinx.datetime.Instant
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import org.slf4j.LoggerFactory
+import kotlin.time.Instant
 
 class SurrealItemTemplateRepository(
     private val db: SurrealDbClient,
@@ -110,7 +112,28 @@ class SurrealItemTemplateRepository(
                     "SELECT * FROM item_template WHERE user_id = user:${'$'}userId AND deleted_at IS NONE ORDER BY name",
                     mapOf("userId" to userId.value),
                 )
-            emit(result.fold({ emptyList() }, { parseTemplates(it) }))
+            emit(
+                result.fold(
+                    ifLeft = { error ->
+
+                        when (error) {
+                            is DomainError.NetworkError -> logger.warn("Database error in findAll: ${error.message}")
+
+                            is DomainError.UnexpectedError -> logger.warn("Database error in findAll: ${error.message}")
+
+                            is DomainError.NotFoundError -> logger.warn("Database error in findAll: ${error.resource} ${error.id}")
+
+                            is DomainError.ValidationError -> logger.warn("Database error in findAll: ${error.field} - ${error.message}")
+
+                            is DomainError.UnauthorizedError -> logger.warn("Database error in findAll: ${error.message}")
+
+                            else -> logger.warn("Database error in findAll: $error")
+                        }
+                        emptyList()
+                    },
+                    ifRight = { parseTemplates(it) },
+                ),
+            )
         }
 
     override suspend fun searchByName(query: String): Either<DomainError, List<ItemTemplate>> =
@@ -144,7 +167,27 @@ class SurrealItemTemplateRepository(
                     "SELECT * FROM item_template WHERE user_id = user:${'$'}userId AND deleted_at IS NONE ORDER BY name",
                     mapOf("userId" to userId.value),
                 )
-            val templates = templatesResult.fold({ emptyList() }, { parseTemplates(it) })
+            val templates =
+                templatesResult.fold(
+                    ifLeft = { error ->
+
+                        when (error) {
+                            is DomainError.NetworkError -> logger.warn("Database error in findAllWithFields (templates): ${error.message}")
+
+                            is DomainError.UnexpectedError -> logger.warn("Database error in findAllWithFields (templates): ${error.message}")
+
+                            is DomainError.NotFoundError -> logger.warn("Database error in findAllWithFields (templates): ${error.resource} ${error.id}")
+
+                            is DomainError.ValidationError -> logger.warn("Database error in findAllWithFields (templates): ${error.field} - ${error.message}")
+
+                            is DomainError.UnauthorizedError -> logger.warn("Database error in findAllWithFields (templates): ${error.message}")
+
+                            else -> logger.warn("Database error in findAllWithFields (templates): $error")
+                        }
+                        emptyList()
+                    },
+                    ifRight = { parseTemplates(it) },
+                )
 
             val result =
                 templates.map { template ->
@@ -153,7 +196,27 @@ class SurrealItemTemplateRepository(
                             "SELECT * FROM field_definition WHERE user_id = user:${'$'}userId AND template_id = item_template:${'$'}templateId AND deleted_at IS NONE ORDER BY sort_order",
                             mapOf("userId" to userId.value, "templateId" to template.id.value),
                         )
-                    val fields = fieldsResult.fold({ emptyList() }, { parseFieldDefinitions(it) })
+                    val fields =
+                        fieldsResult.fold(
+                            ifLeft = { error ->
+
+                                when (error) {
+                                    is DomainError.NetworkError -> logger.warn("Database error in findAllWithFields (fields for template ${template.id}): ${error.message}")
+
+                                    is DomainError.UnexpectedError -> logger.warn("Database error in findAllWithFields (fields for template ${template.id}): ${error.message}")
+
+                                    is DomainError.NotFoundError -> logger.warn("Database error in findAllWithFields (fields for template ${template.id}): ${error.resource} ${error.id}")
+
+                                    is DomainError.ValidationError -> logger.warn("Database error in findAllWithFields (fields for template ${template.id}): ${error.field} - ${error.message}")
+
+                                    is DomainError.UnauthorizedError -> logger.warn("Database error in findAllWithFields (fields for template ${template.id}): ${error.message}")
+
+                                    else -> logger.warn("Database error in findAllWithFields (fields for template ${template.id}): $error")
+                                }
+                                emptyList()
+                            },
+                            ifRight = { parseFieldDefinitions(it) },
+                        )
                     TemplateWithFields(template, fields)
                 }
             emit(result)
@@ -291,7 +354,14 @@ class SurrealItemTemplateRepository(
                 .firstOrNull()
                 ?.jsonObject
                 ?.let { mapToTemplate(it) }
-        } catch (e: Exception) {
+        } catch (e: SerializationException) {
+            logger.warn("Failed to parse item template: ${e.message}", e)
+            null
+        } catch (e: IllegalStateException) {
+            logger.warn("Failed to parse item template: ${e.message}", e)
+            null
+        } catch (e: IllegalArgumentException) {
+            logger.warn("Failed to parse item template: ${e.message}", e)
             null
         }
 
@@ -300,11 +370,25 @@ class SurrealItemTemplateRepository(
             json.parseToJsonElement(result).jsonArray.mapNotNull {
                 try {
                     mapToTemplate(it.jsonObject)
-                } catch (e: Exception) {
+                } catch (e: SerializationException) {
+                    logger.warn("Failed to parse item template element: ${e.message}", e)
+                    null
+                } catch (e: IllegalStateException) {
+                    logger.warn("Failed to parse item template element: ${e.message}", e)
+                    null
+                } catch (e: IllegalArgumentException) {
+                    logger.warn("Failed to parse item template element: ${e.message}", e)
                     null
                 }
             }
-        } catch (e: Exception) {
+        } catch (e: SerializationException) {
+            logger.warn("Failed to parse item templates array: ${e.message}", e)
+            emptyList()
+        } catch (e: IllegalStateException) {
+            logger.warn("Failed to parse item templates array: ${e.message}", e)
+            emptyList()
+        } catch (e: IllegalArgumentException) {
+            logger.warn("Failed to parse item templates array: ${e.message}", e)
             emptyList()
         }
 
@@ -331,7 +415,14 @@ class SurrealItemTemplateRepository(
                 .firstOrNull()
                 ?.jsonObject
                 ?.let { mapToFieldDefinition(it) }
-        } catch (e: Exception) {
+        } catch (e: SerializationException) {
+            logger.warn("Failed to parse field definition: ${e.message}", e)
+            null
+        } catch (e: IllegalStateException) {
+            logger.warn("Failed to parse field definition: ${e.message}", e)
+            null
+        } catch (e: IllegalArgumentException) {
+            logger.warn("Failed to parse field definition: ${e.message}", e)
             null
         }
 
@@ -340,11 +431,25 @@ class SurrealItemTemplateRepository(
             json.parseToJsonElement(result).jsonArray.mapNotNull {
                 try {
                     mapToFieldDefinition(it.jsonObject)
-                } catch (e: Exception) {
+                } catch (e: SerializationException) {
+                    logger.warn("Failed to parse field definition element: ${e.message}", e)
+                    null
+                } catch (e: IllegalStateException) {
+                    logger.warn("Failed to parse field definition element: ${e.message}", e)
+                    null
+                } catch (e: IllegalArgumentException) {
+                    logger.warn("Failed to parse field definition element: ${e.message}", e)
                     null
                 }
             }
-        } catch (e: Exception) {
+        } catch (e: SerializationException) {
+            logger.warn("Failed to parse field definitions array: ${e.message}", e)
+            emptyList()
+        } catch (e: IllegalStateException) {
+            logger.warn("Failed to parse field definitions array: ${e.message}", e)
+            emptyList()
+        } catch (e: IllegalArgumentException) {
+            logger.warn("Failed to parse field definitions array: ${e.message}", e)
             emptyList()
         }
 
@@ -387,7 +492,14 @@ class SurrealItemTemplateRepository(
                 ?.jsonPrimitive
                 ?.content
                 ?.toIntOrNull() ?: 0
-        } catch (e: Exception) {
+        } catch (e: SerializationException) {
+            logger.warn("Failed to parse count: ${e.message}", e)
+            0
+        } catch (e: IllegalStateException) {
+            logger.warn("Failed to parse count: ${e.message}", e)
+            0
+        } catch (e: IllegalArgumentException) {
+            logger.warn("Failed to parse count: ${e.message}", e)
             0
         }
 
@@ -395,8 +507,19 @@ class SurrealItemTemplateRepository(
         value?.let {
             try {
                 Instant.parse(it)
-            } catch (e: Exception) {
+            } catch (e: SerializationException) {
+                logger.warn("Failed to parse instant '$value': ${e.message}")
+                Instant.DISTANT_PAST
+            } catch (e: IllegalStateException) {
+                logger.warn("Failed to parse instant '$value': ${e.message}")
+                Instant.DISTANT_PAST
+            } catch (e: IllegalArgumentException) {
+                logger.warn("Failed to parse instant '$value': ${e.message}")
                 Instant.DISTANT_PAST
             }
         } ?: Instant.DISTANT_PAST
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(SurrealItemTemplateRepository::class.java)
+    }
 }

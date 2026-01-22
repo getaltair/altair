@@ -6,19 +6,21 @@ import arrow.core.Either
 import arrow.core.raise.either
 import arrow.core.raise.ensure
 import com.getaltair.altair.db.SurrealDbClient
+import com.getaltair.altair.domain.DomainError
 import com.getaltair.altair.domain.QuestError
 import com.getaltair.altair.domain.model.guidance.Quest
 import com.getaltair.altair.domain.types.Ulid
 import com.getaltair.altair.domain.types.enums.QuestStatus
 import com.getaltair.altair.repository.QuestRepository
 import kotlinx.coroutines.flow.Flow
-import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDate
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.slf4j.LoggerFactory
+import kotlin.time.Instant
 
 /**
  * SurrealDB implementation of QuestRepository.
@@ -45,8 +47,10 @@ class SurrealQuestRepository(
                     .queryBind(
                         "SELECT * FROM quest WHERE id = quest:\$id AND user_id = user:\$userId AND deleted_at IS NONE",
                         mapOf("id" to id.value, "userId" to userId.value),
-                    ).mapLeft { QuestError.NotFound(id) }
-                    .bind()
+                    ).mapLeft { error ->
+                        logger.warn("Database error in findById for ${id.value}: $error (converting to NotFound)")
+                        QuestError.NotFound(id)
+                    }.bind()
 
             parseQuest(result) ?: raise(QuestError.NotFound(id))
         }
@@ -84,7 +88,10 @@ class SurrealQuestRepository(
                 WHERE user_id = user:${'$'}userId;
                 """.trimIndent(),
                 buildQuestParams(entity),
-            ).mapLeft { QuestError.NotFound(entity.id) }
+            ).mapLeft { error ->
+                logger.warn("Database error updating ${entity.id.value}: $error (converting to NotFound)")
+                QuestError.NotFound(entity.id)
+            }
 
     private suspend fun insertQuest(entity: Quest): Either<QuestError, Unit> =
         db
@@ -106,7 +113,10 @@ class SurrealQuestRepository(
                 };
                 """.trimIndent(),
                 buildQuestParams(entity),
-            ).mapLeft { QuestError.NotFound(entity.id) }
+            ).mapLeft { error ->
+                logger.warn("Database error inserting ${entity.id.value}: $error (converting to NotFound)")
+                QuestError.NotFound(entity.id)
+            }
 
     private fun buildQuestParams(entity: Quest): Map<String, Any?> =
         mapOf(
@@ -137,8 +147,10 @@ class SurrealQuestRepository(
                     WHERE user_id = user:${'$'}userId;
                     """.trimIndent(),
                     mapOf("id" to id.value, "userId" to userId.value),
-                ).mapLeft { QuestError.NotFound(id) }
-                .bind()
+                ).mapLeft { error ->
+                    logger.warn("Database error in delete for ${id.value}: $error (converting to NotFound)")
+                    QuestError.NotFound(id)
+                }.bind()
         }
 
     override fun findAll(): Flow<List<Quest>> =
@@ -148,7 +160,28 @@ class SurrealQuestRepository(
                     "SELECT * FROM quest WHERE user_id = user:\$userId AND deleted_at IS NONE ORDER BY created_at DESC",
                     mapOf("userId" to userId.value),
                 )
-            emit(result.fold({ emptyList() }, { parseQuests(it) }))
+            emit(
+                result.fold(
+                    ifLeft = { error ->
+
+                        when (error) {
+                            is DomainError.NetworkError -> logger.warn("Database error: ${error.message}")
+
+                            is DomainError.UnexpectedError -> logger.warn("Database error: ${error.message}")
+
+                            is DomainError.NotFoundError -> logger.warn("Database error: ${error.resource} ${error.id}")
+
+                            is DomainError.ValidationError -> logger.warn("Database error: ${error.field} - ${error.message}")
+
+                            is DomainError.UnauthorizedError -> logger.warn("Database error: ${error.message}")
+
+                            else -> logger.warn("Database error: $error")
+                        }
+                        emptyList()
+                    },
+                    ifRight = { parseQuests(it) },
+                ),
+            )
         }
 
     override fun findByStatus(status: QuestStatus): Flow<List<Quest>> =
@@ -158,7 +191,28 @@ class SurrealQuestRepository(
                     "SELECT * FROM quest WHERE user_id = user:\$userId AND status = \$status AND deleted_at IS NONE",
                     mapOf("userId" to userId.value, "status" to status.name.lowercase()),
                 )
-            emit(result.fold({ emptyList() }, { parseQuests(it) }))
+            emit(
+                result.fold(
+                    ifLeft = { error ->
+
+                        when (error) {
+                            is DomainError.NetworkError -> logger.warn("Database error: ${error.message}")
+
+                            is DomainError.UnexpectedError -> logger.warn("Database error: ${error.message}")
+
+                            is DomainError.NotFoundError -> logger.warn("Database error: ${error.resource} ${error.id}")
+
+                            is DomainError.ValidationError -> logger.warn("Database error: ${error.field} - ${error.message}")
+
+                            is DomainError.UnauthorizedError -> logger.warn("Database error: ${error.message}")
+
+                            else -> logger.warn("Database error: $error")
+                        }
+                        emptyList()
+                    },
+                    ifRight = { parseQuests(it) },
+                ),
+            )
         }
 
     override fun findActive(): Flow<List<Quest>> = findByStatus(QuestStatus.ACTIVE)
@@ -170,7 +224,28 @@ class SurrealQuestRepository(
                     "SELECT * FROM quest WHERE user_id = user:\$userId AND scheduled_date = \$date AND deleted_at IS NONE",
                     mapOf("userId" to userId.value, "date" to date.toString()),
                 )
-            emit(result.fold({ emptyList() }, { parseQuests(it) }))
+            emit(
+                result.fold(
+                    ifLeft = { error ->
+
+                        when (error) {
+                            is DomainError.NetworkError -> logger.warn("Database error: ${error.message}")
+
+                            is DomainError.UnexpectedError -> logger.warn("Database error: ${error.message}")
+
+                            is DomainError.NotFoundError -> logger.warn("Database error: ${error.resource} ${error.id}")
+
+                            is DomainError.ValidationError -> logger.warn("Database error: ${error.field} - ${error.message}")
+
+                            is DomainError.UnauthorizedError -> logger.warn("Database error: ${error.message}")
+
+                            else -> logger.warn("Database error: $error")
+                        }
+                        emptyList()
+                    },
+                    ifRight = { parseQuests(it) },
+                ),
+            )
         }
 
     override fun findDueByDate(date: LocalDate): Flow<List<Quest>> =
@@ -180,7 +255,28 @@ class SurrealQuestRepository(
                     "SELECT * FROM quest WHERE user_id = user:\$userId AND due_date <= \$date AND deleted_at IS NONE",
                     mapOf("userId" to userId.value, "date" to date.toString()),
                 )
-            emit(result.fold({ emptyList() }, { parseQuests(it) }))
+            emit(
+                result.fold(
+                    ifLeft = { error ->
+
+                        when (error) {
+                            is DomainError.NetworkError -> logger.warn("Database error: ${error.message}")
+
+                            is DomainError.UnexpectedError -> logger.warn("Database error: ${error.message}")
+
+                            is DomainError.NotFoundError -> logger.warn("Database error: ${error.resource} ${error.id}")
+
+                            is DomainError.ValidationError -> logger.warn("Database error: ${error.field} - ${error.message}")
+
+                            is DomainError.UnauthorizedError -> logger.warn("Database error: ${error.message}")
+
+                            else -> logger.warn("Database error: $error")
+                        }
+                        emptyList()
+                    },
+                    ifRight = { parseQuests(it) },
+                ),
+            )
         }
 
     override fun findByEpic(epicId: Ulid): Flow<List<Quest>> =
@@ -190,7 +286,28 @@ class SurrealQuestRepository(
                     "SELECT * FROM quest WHERE user_id = user:\$userId AND epic_id = epic:\$epicId AND deleted_at IS NONE",
                     mapOf("userId" to userId.value, "epicId" to epicId.value),
                 )
-            emit(result.fold({ emptyList() }, { parseQuests(it) }))
+            emit(
+                result.fold(
+                    ifLeft = { error ->
+
+                        when (error) {
+                            is DomainError.NetworkError -> logger.warn("Database error: ${error.message}")
+
+                            is DomainError.UnexpectedError -> logger.warn("Database error: ${error.message}")
+
+                            is DomainError.NotFoundError -> logger.warn("Database error: ${error.resource} ${error.id}")
+
+                            is DomainError.ValidationError -> logger.warn("Database error: ${error.field} - ${error.message}")
+
+                            is DomainError.UnauthorizedError -> logger.warn("Database error: ${error.message}")
+
+                            else -> logger.warn("Database error: $error")
+                        }
+                        emptyList()
+                    },
+                    ifRight = { parseQuests(it) },
+                ),
+            )
         }
 
     override fun findByRoutine(routineId: Ulid): Flow<List<Quest>> =
@@ -200,7 +317,28 @@ class SurrealQuestRepository(
                     "SELECT * FROM quest WHERE user_id = user:\$userId AND routine_id = routine:\$routineId AND deleted_at IS NONE",
                     mapOf("userId" to userId.value, "routineId" to routineId.value),
                 )
-            emit(result.fold({ emptyList() }, { parseQuests(it) }))
+            emit(
+                result.fold(
+                    ifLeft = { error ->
+
+                        when (error) {
+                            is DomainError.NetworkError -> logger.warn("Database error: ${error.message}")
+
+                            is DomainError.UnexpectedError -> logger.warn("Database error: ${error.message}")
+
+                            is DomainError.NotFoundError -> logger.warn("Database error: ${error.resource} ${error.id}")
+
+                            is DomainError.ValidationError -> logger.warn("Database error: ${error.field} - ${error.message}")
+
+                            is DomainError.UnauthorizedError -> logger.warn("Database error: ${error.message}")
+
+                            else -> logger.warn("Database error: $error")
+                        }
+                        emptyList()
+                    },
+                    ifRight = { parseQuests(it) },
+                ),
+            )
         }
 
     override fun findByInitiative(initiativeId: Ulid): Flow<List<Quest>> =
@@ -210,7 +348,28 @@ class SurrealQuestRepository(
                     "SELECT * FROM quest WHERE user_id = user:\$userId AND initiative_id = initiative:\$initiativeId AND deleted_at IS NONE",
                     mapOf("userId" to userId.value, "initiativeId" to initiativeId.value),
                 )
-            emit(result.fold({ emptyList() }, { parseQuests(it) }))
+            emit(
+                result.fold(
+                    ifLeft = { error ->
+
+                        when (error) {
+                            is DomainError.NetworkError -> logger.warn("Database error: ${error.message}")
+
+                            is DomainError.UnexpectedError -> logger.warn("Database error: ${error.message}")
+
+                            is DomainError.NotFoundError -> logger.warn("Database error: ${error.resource} ${error.id}")
+
+                            is DomainError.ValidationError -> logger.warn("Database error: ${error.field} - ${error.message}")
+
+                            is DomainError.UnauthorizedError -> logger.warn("Database error: ${error.message}")
+
+                            else -> logger.warn("Database error: $error")
+                        }
+                        emptyList()
+                    },
+                    ifRight = { parseQuests(it) },
+                ),
+            )
         }
 
     override suspend fun transitionStatus(
@@ -259,8 +418,10 @@ class SurrealQuestRepository(
                     WHERE user_id = user:${'$'}userId;
                     """.trimIndent(),
                     mapOf("id" to id.value, "status" to newStatus.name.lowercase(), "userId" to userId.value),
-                ).mapLeft { QuestError.NotFound(id) }
-                .bind()
+                ).mapLeft { error ->
+                    logger.warn("Database error in transitionStatus for ${id.value}: $error (converting to NotFound)")
+                    QuestError.NotFound(id)
+                }.bind()
 
             findById(id).bind()
         }
@@ -272,8 +433,10 @@ class SurrealQuestRepository(
                     .queryBind(
                         "SELECT count() FROM quest WHERE user_id = user:\$userId AND status = \$status AND deleted_at IS NONE GROUP ALL",
                         mapOf("userId" to userId.value, "status" to "active"),
-                    ).mapLeft { QuestError.NotFound(Ulid.generate()) }
-                    .bind()
+                    ).mapLeft { error ->
+                        logger.warn("Database error in countActive: $error (converting to NotFound)")
+                        QuestError.NotFound(Ulid.generate())
+                    }.bind()
 
             parseCount(result)
         }
@@ -283,7 +446,13 @@ class SurrealQuestRepository(
             val array = json.parseToJsonElement(result).jsonArray
             val obj = array.firstOrNull()?.jsonObject ?: return null
             mapToQuest(obj)
-        } catch (e: Exception) {
+        } catch (e: SerializationException) {
+            logger.warn("Failed to parse quest: ${e.message}", e)
+            null
+        } catch (e: IllegalStateException) {
+            logger.warn("Failed to parse quest: ${e.message}", e)
+            null
+        } catch (e: IllegalArgumentException) {
             logger.warn("Failed to parse quest: ${e.message}", e)
             null
         }
@@ -295,12 +464,24 @@ class SurrealQuestRepository(
             array.mapNotNull { element ->
                 try {
                     mapToQuest(element.jsonObject)
-                } catch (e: Exception) {
+                } catch (e: SerializationException) {
+                    logger.warn("Failed to parse quest element: ${e.message}", e)
+                    null
+                } catch (e: IllegalStateException) {
+                    logger.warn("Failed to parse quest element: ${e.message}", e)
+                    null
+                } catch (e: IllegalArgumentException) {
                     logger.warn("Failed to parse quest element: ${e.message}", e)
                     null
                 }
             }
-        } catch (e: Exception) {
+        } catch (e: SerializationException) {
+            logger.warn("Failed to parse quests array: ${e.message}", e)
+            emptyList()
+        } catch (e: IllegalStateException) {
+            logger.warn("Failed to parse quests array: ${e.message}", e)
+            emptyList()
+        } catch (e: IllegalArgumentException) {
             logger.warn("Failed to parse quests array: ${e.message}", e)
             emptyList()
         }
@@ -349,7 +530,13 @@ class SurrealQuestRepository(
         value?.let {
             try {
                 Instant.parse(it)
-            } catch (e: Exception) {
+            } catch (e: SerializationException) {
+                logger.warn("Failed to parse instant '$value': ${e.message}")
+                Instant.DISTANT_PAST
+            } catch (e: IllegalStateException) {
+                logger.warn("Failed to parse instant '$value': ${e.message}")
+                Instant.DISTANT_PAST
+            } catch (e: IllegalArgumentException) {
                 logger.warn("Failed to parse instant '$value': ${e.message}")
                 Instant.DISTANT_PAST
             }
@@ -364,7 +551,13 @@ class SurrealQuestRepository(
                 ?.jsonPrimitive
                 ?.content
                 ?.toIntOrNull() ?: 0
-        } catch (e: Exception) {
+        } catch (e: SerializationException) {
+            logger.warn("Failed to parse count: ${e.message}", e)
+            0
+        } catch (e: IllegalStateException) {
+            logger.warn("Failed to parse count: ${e.message}", e)
+            0
+        } catch (e: IllegalArgumentException) {
             logger.warn("Failed to parse count: ${e.message}", e)
             0
         }

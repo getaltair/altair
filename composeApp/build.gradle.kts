@@ -13,6 +13,12 @@ plugins {
 }
 
 kotlin {
+    // Enable consistent copy visibility for data classes with non-public constructors
+    // This makes copy() have the same visibility as the primary constructor
+    compilerOptions {
+        freeCompilerArgs.add("-Xconsistent-data-class-copy-visibility")
+    }
+
     androidTarget {
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_11)
@@ -33,12 +39,21 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
+            // Compose dependencies (deprecated aliases - will be replaced with direct dependencies
+            // when JetBrains provides stable version-aligned artifacts)
+            @Suppress("DEPRECATION")
             implementation(compose.runtime)
+            @Suppress("DEPRECATION")
             implementation(compose.foundation)
+            @Suppress("DEPRECATION")
             implementation(compose.material3)
+            @Suppress("DEPRECATION")
             implementation(compose.materialIconsExtended)
+            @Suppress("DEPRECATION")
             implementation(compose.ui)
+            @Suppress("DEPRECATION")
             implementation(compose.components.resources)
+            @Suppress("DEPRECATION")
             implementation(compose.preview)
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
@@ -66,6 +81,7 @@ kotlin {
             implementation(libs.compose.unstyled)
         }
         androidMain.dependencies {
+            @Suppress("DEPRECATION")
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)
             implementation(libs.koin.android)
@@ -75,6 +91,8 @@ kotlin {
             implementation(libs.ktor.client.darwin)
         }
         jvmMain.dependencies {
+            // Desktop OS-specific Compose (uses deprecated alias - no direct replacement available)
+            @Suppress("DEPRECATION")
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutinesSwing)
             implementation(libs.ktor.client.cio)
@@ -92,10 +110,13 @@ kotlin {
             implementation(libs.kotest.property)
             implementation(libs.kotest.assertions.arrow)
             @OptIn(org.jetbrains.compose.ExperimentalComposeLibrary::class)
+            @Suppress("DEPRECATION")
             implementation(compose.uiTest)
         }
         val jvmTest by getting {
             dependencies {
+                // Desktop OS-specific Compose (uses deprecated alias - no direct replacement available)
+                @Suppress("DEPRECATION")
                 implementation(compose.desktop.currentOs)
                 implementation(libs.kotest.runner.junit5)
             }
@@ -149,6 +170,7 @@ android {
 }
 
 dependencies {
+    @Suppress("DEPRECATION")
     debugImplementation(compose.uiTooling)
 }
 

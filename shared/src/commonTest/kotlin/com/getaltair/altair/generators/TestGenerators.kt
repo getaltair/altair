@@ -14,7 +14,7 @@ import io.kotest.property.arbitrary.enum
 import io.kotest.property.arbitrary.int
 import io.kotest.property.arbitrary.long
 import io.kotest.property.arbitrary.string
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 /**
  * Kotest Arb generators for Altair domain types.

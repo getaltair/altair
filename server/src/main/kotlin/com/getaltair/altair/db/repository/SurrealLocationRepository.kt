@@ -13,11 +13,13 @@ import com.getaltair.altair.repository.LocationNode
 import com.getaltair.altair.repository.LocationRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import kotlinx.datetime.Instant
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import org.slf4j.LoggerFactory
+import kotlin.time.Instant
 
 class SurrealLocationRepository(
     private val db: SurrealDbClient,
@@ -106,7 +108,28 @@ class SurrealLocationRepository(
                     "SELECT * FROM location WHERE user_id = user:${'$'}userId AND deleted_at IS NONE ORDER BY name",
                     mapOf("userId" to userId.value),
                 )
-            emit(result.fold({ emptyList() }, { parseLocations(it) }))
+            emit(
+                result.fold(
+                    ifLeft = { error ->
+
+                        when (error) {
+                            is DomainError.NetworkError -> logger.warn("Database error in findAll: ${error.message}")
+
+                            is DomainError.UnexpectedError -> logger.warn("Database error in findAll: ${error.message}")
+
+                            is DomainError.NotFoundError -> logger.warn("Database error in findAll: ${error.resource} ${error.id}")
+
+                            is DomainError.ValidationError -> logger.warn("Database error in findAll: ${error.field} - ${error.message}")
+
+                            is DomainError.UnauthorizedError -> logger.warn("Database error in findAll: ${error.message}")
+
+                            else -> logger.warn("Database error in findAll: $error")
+                        }
+                        emptyList()
+                    },
+                    ifRight = { parseLocations(it) },
+                ),
+            )
         }
 
     override fun findRoots(): Flow<List<Location>> =
@@ -116,7 +139,28 @@ class SurrealLocationRepository(
                     "SELECT * FROM location WHERE user_id = user:${'$'}userId AND parent_id IS NONE AND deleted_at IS NONE ORDER BY name",
                     mapOf("userId" to userId.value),
                 )
-            emit(result.fold({ emptyList() }, { parseLocations(it) }))
+            emit(
+                result.fold(
+                    ifLeft = { error ->
+
+                        when (error) {
+                            is DomainError.NetworkError -> logger.warn("Database error in findRoots: ${error.message}")
+
+                            is DomainError.UnexpectedError -> logger.warn("Database error in findRoots: ${error.message}")
+
+                            is DomainError.NotFoundError -> logger.warn("Database error in findRoots: ${error.resource} ${error.id}")
+
+                            is DomainError.ValidationError -> logger.warn("Database error in findRoots: ${error.field} - ${error.message}")
+
+                            is DomainError.UnauthorizedError -> logger.warn("Database error in findRoots: ${error.message}")
+
+                            else -> logger.warn("Database error in findRoots: $error")
+                        }
+                        emptyList()
+                    },
+                    ifRight = { parseLocations(it) },
+                ),
+            )
         }
 
     override fun findByParent(parentId: Ulid): Flow<List<Location>> =
@@ -126,7 +170,28 @@ class SurrealLocationRepository(
                     "SELECT * FROM location WHERE user_id = user:${'$'}userId AND parent_id = location:${'$'}parentId AND deleted_at IS NONE ORDER BY name",
                     mapOf("userId" to userId.value, "parentId" to parentId.value),
                 )
-            emit(result.fold({ emptyList() }, { parseLocations(it) }))
+            emit(
+                result.fold(
+                    ifLeft = { error ->
+
+                        when (error) {
+                            is DomainError.NetworkError -> logger.warn("Database error in findByParent: ${error.message}")
+
+                            is DomainError.UnexpectedError -> logger.warn("Database error in findByParent: ${error.message}")
+
+                            is DomainError.NotFoundError -> logger.warn("Database error in findByParent: ${error.resource} ${error.id}")
+
+                            is DomainError.ValidationError -> logger.warn("Database error in findByParent: ${error.field} - ${error.message}")
+
+                            is DomainError.UnauthorizedError -> logger.warn("Database error in findByParent: ${error.message}")
+
+                            else -> logger.warn("Database error in findByParent: $error")
+                        }
+                        emptyList()
+                    },
+                    ifRight = { parseLocations(it) },
+                ),
+            )
         }
 
     override fun findTree(): Flow<List<LocationNode>> =
@@ -136,7 +201,27 @@ class SurrealLocationRepository(
                     "SELECT * FROM location WHERE user_id = user:${'$'}userId AND deleted_at IS NONE ORDER BY name",
                     mapOf("userId" to userId.value),
                 )
-            val locations = result.fold({ emptyList() }, { parseLocations(it) })
+            val locations =
+                result.fold(
+                    ifLeft = { error ->
+
+                        when (error) {
+                            is DomainError.NetworkError -> logger.warn("Database error in findTree: ${error.message}")
+
+                            is DomainError.UnexpectedError -> logger.warn("Database error in findTree: ${error.message}")
+
+                            is DomainError.NotFoundError -> logger.warn("Database error in findTree: ${error.resource} ${error.id}")
+
+                            is DomainError.ValidationError -> logger.warn("Database error in findTree: ${error.field} - ${error.message}")
+
+                            is DomainError.UnauthorizedError -> logger.warn("Database error in findTree: ${error.message}")
+
+                            else -> logger.warn("Database error in findTree: $error")
+                        }
+                        emptyList()
+                    },
+                    ifRight = { parseLocations(it) },
+                )
             emit(buildTree(locations))
         }
 
@@ -223,7 +308,14 @@ class SurrealLocationRepository(
                 .firstOrNull()
                 ?.jsonObject
                 ?.let { mapToLocation(it) }
-        } catch (e: Exception) {
+        } catch (e: SerializationException) {
+            logger.warn("Failed to parse location: ${e.message}", e)
+            null
+        } catch (e: IllegalStateException) {
+            logger.warn("Failed to parse location: ${e.message}", e)
+            null
+        } catch (e: IllegalArgumentException) {
+            logger.warn("Failed to parse location: ${e.message}", e)
             null
         }
 
@@ -232,11 +324,25 @@ class SurrealLocationRepository(
             json.parseToJsonElement(result).jsonArray.mapNotNull {
                 try {
                     mapToLocation(it.jsonObject)
-                } catch (e: Exception) {
+                } catch (e: SerializationException) {
+                    logger.warn("Failed to parse location element: ${e.message}", e)
+                    null
+                } catch (e: IllegalStateException) {
+                    logger.warn("Failed to parse location element: ${e.message}", e)
+                    null
+                } catch (e: IllegalArgumentException) {
+                    logger.warn("Failed to parse location element: ${e.message}", e)
                     null
                 }
             }
-        } catch (e: Exception) {
+        } catch (e: SerializationException) {
+            logger.warn("Failed to parse locations array: ${e.message}", e)
+            emptyList()
+        } catch (e: IllegalStateException) {
+            logger.warn("Failed to parse locations array: ${e.message}", e)
+            emptyList()
+        } catch (e: IllegalArgumentException) {
+            logger.warn("Failed to parse locations array: ${e.message}", e)
             emptyList()
         }
 
@@ -274,7 +380,14 @@ class SurrealLocationRepository(
                 ?.content
                 ?.toIntOrNull()
                 ?: 0
-        } catch (e: Exception) {
+        } catch (e: SerializationException) {
+            logger.warn("Failed to parse count: ${e.message}", e)
+            0
+        } catch (e: IllegalStateException) {
+            logger.warn("Failed to parse count: ${e.message}", e)
+            0
+        } catch (e: IllegalArgumentException) {
+            logger.warn("Failed to parse count: ${e.message}", e)
             0
         }
 
@@ -282,8 +395,19 @@ class SurrealLocationRepository(
         value?.let {
             try {
                 Instant.parse(it)
-            } catch (e: Exception) {
+            } catch (e: SerializationException) {
+                logger.warn("Failed to parse instant '$value': ${e.message}")
+                Instant.DISTANT_PAST
+            } catch (e: IllegalStateException) {
+                logger.warn("Failed to parse instant '$value': ${e.message}")
+                Instant.DISTANT_PAST
+            } catch (e: IllegalArgumentException) {
+                logger.warn("Failed to parse instant '$value': ${e.message}")
                 Instant.DISTANT_PAST
             }
         } ?: Instant.DISTANT_PAST
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(SurrealLocationRepository::class.java)
+    }
 }

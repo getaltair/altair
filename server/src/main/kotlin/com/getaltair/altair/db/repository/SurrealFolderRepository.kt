@@ -12,11 +12,13 @@ import com.getaltair.altair.repository.FolderNode
 import com.getaltair.altair.repository.FolderRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import kotlinx.datetime.Instant
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import org.slf4j.LoggerFactory
+import kotlin.time.Instant
 
 class SurrealFolderRepository(
     private val db: SurrealDbClient,
@@ -101,7 +103,22 @@ class SurrealFolderRepository(
                     "SELECT * FROM folder WHERE user_id = user:\$userId AND deleted_at IS NONE ORDER BY sort_order",
                     mapOf("userId" to userId.value),
                 )
-            emit(result.fold({ emptyList() }, { parseFolders(it) }))
+            emit(
+                result.fold(
+                    ifLeft = { error ->
+                        when (error) {
+                            is DomainError.NetworkError -> logger.warn("Database network error: ${error.message}")
+                            is DomainError.UnexpectedError -> logger.warn("Database unexpected error: ${error.message}")
+                            is DomainError.NotFoundError -> logger.warn("Database not found error: ${error.resource} ${error.id}")
+                            is DomainError.ValidationError -> logger.warn("Database validation error: ${error.field} - ${error.message}")
+                            is DomainError.UnauthorizedError -> logger.warn("Database unauthorized error: ${error.message}")
+                            else -> logger.warn("Database error: $error")
+                        }
+                        emptyList()
+                    },
+                    ifRight = { parseFolders(it) },
+                ),
+            )
         }
 
     override fun findRoots(): Flow<List<Folder>> =
@@ -111,7 +128,22 @@ class SurrealFolderRepository(
                     "SELECT * FROM folder WHERE user_id = user:\$userId AND parent_id IS NONE AND deleted_at IS NONE ORDER BY sort_order",
                     mapOf("userId" to userId.value),
                 )
-            emit(result.fold({ emptyList() }, { parseFolders(it) }))
+            emit(
+                result.fold(
+                    ifLeft = { error ->
+                        when (error) {
+                            is DomainError.NetworkError -> logger.warn("Database network error: ${error.message}")
+                            is DomainError.UnexpectedError -> logger.warn("Database unexpected error: ${error.message}")
+                            is DomainError.NotFoundError -> logger.warn("Database not found error: ${error.resource} ${error.id}")
+                            is DomainError.ValidationError -> logger.warn("Database validation error: ${error.field} - ${error.message}")
+                            is DomainError.UnauthorizedError -> logger.warn("Database unauthorized error: ${error.message}")
+                            else -> logger.warn("Database error: $error")
+                        }
+                        emptyList()
+                    },
+                    ifRight = { parseFolders(it) },
+                ),
+            )
         }
 
     override fun findByParent(parentId: Ulid): Flow<List<Folder>> =
@@ -121,7 +153,22 @@ class SurrealFolderRepository(
                     "SELECT * FROM folder WHERE user_id = user:\$userId AND parent_id = folder:\$parentId AND deleted_at IS NONE ORDER BY sort_order",
                     mapOf("userId" to userId.value, "parentId" to parentId.value),
                 )
-            emit(result.fold({ emptyList() }, { parseFolders(it) }))
+            emit(
+                result.fold(
+                    ifLeft = { error ->
+                        when (error) {
+                            is DomainError.NetworkError -> logger.warn("Database network error: ${error.message}")
+                            is DomainError.UnexpectedError -> logger.warn("Database unexpected error: ${error.message}")
+                            is DomainError.NotFoundError -> logger.warn("Database not found error: ${error.resource} ${error.id}")
+                            is DomainError.ValidationError -> logger.warn("Database validation error: ${error.field} - ${error.message}")
+                            is DomainError.UnauthorizedError -> logger.warn("Database unauthorized error: ${error.message}")
+                            else -> logger.warn("Database error: $error")
+                        }
+                        emptyList()
+                    },
+                    ifRight = { parseFolders(it) },
+                ),
+            )
         }
 
     override fun findTree(): Flow<List<FolderNode>> =
@@ -131,7 +178,21 @@ class SurrealFolderRepository(
                     "SELECT * FROM folder WHERE user_id = user:\$userId AND deleted_at IS NONE ORDER BY sort_order",
                     mapOf("userId" to userId.value),
                 )
-            val folders = result.fold({ emptyList() }, { parseFolders(it) })
+            val folders =
+                result.fold(
+                    ifLeft = { error ->
+                        when (error) {
+                            is DomainError.NetworkError -> logger.warn("Database network error in findTree: ${error.message}")
+                            is DomainError.UnexpectedError -> logger.warn("Database unexpected error in findTree: ${error.message}")
+                            is DomainError.NotFoundError -> logger.warn("Database not found error in findTree: ${error.resource} ${error.id}")
+                            is DomainError.ValidationError -> logger.warn("Database validation error in findTree: ${error.field} - ${error.message}")
+                            is DomainError.UnauthorizedError -> logger.warn("Database unauthorized error in findTree: ${error.message}")
+                            else -> logger.warn("Database error: $error")
+                        }
+                        emptyList()
+                    },
+                    ifRight = { parseFolders(it) },
+                )
             emit(buildTree(folders))
         }
 
@@ -192,7 +253,14 @@ class SurrealFolderRepository(
                 .firstOrNull()
                 ?.jsonObject
                 ?.let { mapToFolder(it) }
-        } catch (e: Exception) {
+        } catch (e: SerializationException) {
+            logger.warn("Failed to parse folder: ${e.message}", e)
+            null
+        } catch (e: IllegalStateException) {
+            logger.warn("Failed to parse folder: ${e.message}", e)
+            null
+        } catch (e: IllegalArgumentException) {
+            logger.warn("Failed to parse folder: ${e.message}", e)
             null
         }
 
@@ -201,11 +269,25 @@ class SurrealFolderRepository(
             json.parseToJsonElement(result).jsonArray.mapNotNull {
                 try {
                     mapToFolder(it.jsonObject)
-                } catch (e: Exception) {
+                } catch (e: SerializationException) {
+                    logger.warn("Failed to parse folder element: ${e.message}", e)
+                    null
+                } catch (e: IllegalStateException) {
+                    logger.warn("Failed to parse folder element: ${e.message}", e)
+                    null
+                } catch (e: IllegalArgumentException) {
+                    logger.warn("Failed to parse folder element: ${e.message}", e)
                     null
                 }
             }
-        } catch (e: Exception) {
+        } catch (e: SerializationException) {
+            logger.warn("Failed to parse folders array: ${e.message}", e)
+            emptyList()
+        } catch (e: IllegalStateException) {
+            logger.warn("Failed to parse folders array: ${e.message}", e)
+            emptyList()
+        } catch (e: IllegalArgumentException) {
+            logger.warn("Failed to parse folders array: ${e.message}", e)
             emptyList()
         }
 
@@ -233,8 +315,13 @@ class SurrealFolderRepository(
         value?.let {
             try {
                 Instant.parse(it)
-            } catch (e: Exception) {
+            } catch (e: IllegalArgumentException) {
+                logger.warn("Failed to parse instant '$value': ${e.message}")
                 Instant.DISTANT_PAST
             }
         } ?: Instant.DISTANT_PAST
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(SurrealFolderRepository::class.java)
+    }
 }

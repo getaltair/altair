@@ -4,8 +4,8 @@ import com.getaltair.altair.domain.common.SoftDeletable
 import com.getaltair.altair.domain.common.Timestamped
 import com.getaltair.altair.domain.types.Ulid
 import com.getaltair.altair.domain.types.enums.FieldType
-import kotlinx.datetime.Instant
 import kotlinx.serialization.Serializable
+import kotlin.time.Instant
 
 /**
  * A field specification within an ItemTemplate.

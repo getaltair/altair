@@ -9,12 +9,13 @@ import com.getaltair.altair.domain.AuthError
 import com.getaltair.altair.domain.model.system.RefreshToken
 import com.getaltair.altair.domain.types.Ulid
 import com.getaltair.altair.repository.RefreshTokenRepository
-import kotlinx.datetime.Instant
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.slf4j.LoggerFactory
+import kotlin.time.Instant
 
 /**
  * SurrealDB implementation of RefreshTokenRepository.
@@ -47,8 +48,10 @@ class SurrealRefreshTokenRepository(
                         "tokenHash" to token.tokenHash,
                         "deviceName" to token.deviceName,
                     ),
-                ).mapLeft { AuthError.TokenInvalid("Failed to create refresh token") }
-                .bind()
+                ).mapLeft { error ->
+                    logger.warn("Database error creating refresh token: $error (converting to TokenInvalid)")
+                    AuthError.TokenInvalid("Failed to create refresh token")
+                }.bind()
 
             token
         }
@@ -60,8 +63,10 @@ class SurrealRefreshTokenRepository(
                     .queryBind(
                         "SELECT * FROM refresh_token WHERE token_hash = ${'$'}tokenHash AND revoked_at IS NONE",
                         mapOf("tokenHash" to tokenHash),
-                    ).mapLeft { AuthError.TokenInvalid("Failed to query refresh token") }
-                    .bind()
+                    ).mapLeft { error ->
+                        logger.warn("Database error querying refresh token: $error (converting to TokenInvalid)")
+                        AuthError.TokenInvalid("Failed to query refresh token")
+                    }.bind()
 
             parseRefreshToken(result) ?: raise(AuthError.TokenInvalid("Refresh token not found"))
         }
@@ -79,8 +84,10 @@ class SurrealRefreshTokenRepository(
                     WHERE user_id = user:${'$'}userId;
                     """.trimIndent(),
                     mapOf("userId" to userId.value),
-                ).mapLeft { AuthError.TokenInvalid("Failed to revoke refresh token") }
-                .bind()
+                ).mapLeft { error ->
+                    logger.warn("Database error revoking refresh token: $error (converting to TokenInvalid)")
+                    AuthError.TokenInvalid("Failed to revoke refresh token")
+                }.bind()
         }
 
     override suspend fun revokeAllForUser(userId: Ulid): Either<AuthError, Int> =

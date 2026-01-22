@@ -5,18 +5,20 @@ package com.getaltair.altair.db.repository
 import arrow.core.Either
 import arrow.core.raise.either
 import com.getaltair.altair.db.SurrealDbClient
+import com.getaltair.altair.domain.DomainError
 import com.getaltair.altair.domain.ItemError
 import com.getaltair.altair.domain.model.tracking.Container
 import com.getaltair.altair.domain.types.Ulid
 import com.getaltair.altair.repository.ContainerRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import kotlinx.datetime.Instant
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.slf4j.LoggerFactory
+import kotlin.time.Instant
 
 class SurrealContainerRepository(
     private val db: SurrealDbClient,
@@ -36,8 +38,10 @@ class SurrealContainerRepository(
                     .queryBind(
                         "SELECT * FROM container:${'$'}id WHERE user_id = user:${'$'}userId AND deleted_at IS NONE",
                         mapOf("id" to id.value, "userId" to userId.value),
-                    ).mapLeft { ItemError.NotFound(id) }
-                    .bind()
+                    ).mapLeft { error ->
+                        logger.warn("Database error for ${id.value}: $error (converting to NotFound)")
+                        ItemError.NotFound(id)
+                    }.bind()
             parseContainer(result) ?: raise(ItemError.NotFound(id))
         }
 
@@ -66,8 +70,10 @@ class SurrealContainerRepository(
                             put("label", entity.label)
                             put("userId", userId.value)
                         },
-                    ).mapLeft { ItemError.NotFound(entity.id) }
-                    .bind()
+                    ).mapLeft { error ->
+                        logger.warn("Database error for ${entity.id.value}: $error (converting to NotFound)")
+                        ItemError.NotFound(entity.id)
+                    }.bind()
             } else {
                 db
                     .executeBind(
@@ -90,8 +96,10 @@ class SurrealContainerRepository(
                             entity.parentContainerId?.let { put("parentContainerId", it.value) }
                             put("label", entity.label)
                         },
-                    ).mapLeft { ItemError.NotFound(entity.id) }
-                    .bind()
+                    ).mapLeft { error ->
+                        logger.warn("Database error for ${entity.id.value}: $error (converting to NotFound)")
+                        ItemError.NotFound(entity.id)
+                    }.bind()
             }
             findById(entity.id).bind()
         }
@@ -103,8 +111,10 @@ class SurrealContainerRepository(
                 .executeBind(
                     "UPDATE container:${'$'}id SET deleted_at = time::now(), updated_at = time::now() WHERE user_id = user:${'$'}userId",
                     mapOf("id" to id.value, "userId" to userId.value),
-                ).mapLeft { ItemError.NotFound(id) }
-                .bind()
+                ).mapLeft { error ->
+                    logger.warn("Database error for ${id.value}: $error (converting to NotFound)")
+                    ItemError.NotFound(id)
+                }.bind()
         }
 
     override fun findAll(): Flow<List<Container>> =
@@ -114,7 +124,28 @@ class SurrealContainerRepository(
                     "SELECT * FROM container WHERE user_id = user:${'$'}userId AND deleted_at IS NONE ORDER BY name",
                     mapOf("userId" to userId.value),
                 )
-            emit(result.fold({ emptyList() }, { parseContainers(it) }))
+            emit(
+                result.fold(
+                    ifLeft = { error ->
+
+                        when (error) {
+                            is DomainError.NetworkError -> logger.warn("Database error in findAll: $error")
+
+                            is DomainError.UnexpectedError -> logger.warn("Database error in findAll: $error")
+
+                            is DomainError.NotFoundError -> logger.warn("Database error in findAll: ${error.resource} ${error.id}")
+
+                            is DomainError.ValidationError -> logger.warn("Database error in findAll: ${error.field} - $error")
+
+                            is DomainError.UnauthorizedError -> logger.warn("Database error in findAll: $error")
+
+                            else -> logger.warn("Database error in findAll: $error")
+                        }
+                        emptyList()
+                    },
+                    ifRight = { parseContainers(it) },
+                ),
+            )
         }
 
     override fun findByLocation(locationId: Ulid): Flow<List<Container>> =
@@ -124,7 +155,28 @@ class SurrealContainerRepository(
                     "SELECT * FROM container WHERE user_id = user:${'$'}userId AND location_id = location:${'$'}locationId AND deleted_at IS NONE",
                     mapOf("userId" to userId.value, "locationId" to locationId.value),
                 )
-            emit(result.fold({ emptyList() }, { parseContainers(it) }))
+            emit(
+                result.fold(
+                    ifLeft = { error ->
+
+                        when (error) {
+                            is DomainError.NetworkError -> logger.warn("Database error in findByLocation: $error")
+
+                            is DomainError.UnexpectedError -> logger.warn("Database error in findByLocation: $error")
+
+                            is DomainError.NotFoundError -> logger.warn("Database error in findByLocation: ${error.resource} ${error.id}")
+
+                            is DomainError.ValidationError -> logger.warn("Database error in findByLocation: ${error.field} - $error")
+
+                            is DomainError.UnauthorizedError -> logger.warn("Database error in findByLocation: $error")
+
+                            else -> logger.warn("Database error in findByLocation: $error")
+                        }
+                        emptyList()
+                    },
+                    ifRight = { parseContainers(it) },
+                ),
+            )
         }
 
     override fun findByParentContainer(parentContainerId: Ulid): Flow<List<Container>> =
@@ -134,7 +186,28 @@ class SurrealContainerRepository(
                     "SELECT * FROM container WHERE user_id = user:${'$'}userId AND parent_container_id = container:${'$'}parentContainerId AND deleted_at IS NONE",
                     mapOf("userId" to userId.value, "parentContainerId" to parentContainerId.value),
                 )
-            emit(result.fold({ emptyList() }, { parseContainers(it) }))
+            emit(
+                result.fold(
+                    ifLeft = { error ->
+
+                        when (error) {
+                            is DomainError.NetworkError -> logger.warn("Database error in findByParentContainer: $error")
+
+                            is DomainError.UnexpectedError -> logger.warn("Database error in findByParentContainer: $error")
+
+                            is DomainError.NotFoundError -> logger.warn("Database error in findByParentContainer: ${error.resource} ${error.id}")
+
+                            is DomainError.ValidationError -> logger.warn("Database error in findByParentContainer: ${error.field} - $error")
+
+                            is DomainError.UnauthorizedError -> logger.warn("Database error in findByParentContainer: $error")
+
+                            else -> logger.warn("Database error in findByParentContainer: $error")
+                        }
+                        emptyList()
+                    },
+                    ifRight = { parseContainers(it) },
+                ),
+            )
         }
 
     override fun findRoots(): Flow<List<Container>> =
@@ -144,7 +217,28 @@ class SurrealContainerRepository(
                     "SELECT * FROM container WHERE user_id = user:${'$'}userId AND parent_container_id IS NONE AND deleted_at IS NONE ORDER BY name",
                     mapOf("userId" to userId.value),
                 )
-            emit(result.fold({ emptyList() }, { parseContainers(it) }))
+            emit(
+                result.fold(
+                    ifLeft = { error ->
+
+                        when (error) {
+                            is DomainError.NetworkError -> logger.warn("Database error in findRoots: $error")
+
+                            is DomainError.UnexpectedError -> logger.warn("Database error in findRoots: $error")
+
+                            is DomainError.NotFoundError -> logger.warn("Database error in findRoots: ${error.resource} ${error.id}")
+
+                            is DomainError.ValidationError -> logger.warn("Database error in findRoots: ${error.field} - $error")
+
+                            is DomainError.UnauthorizedError -> logger.warn("Database error in findRoots: $error")
+
+                            else -> logger.warn("Database error in findRoots: $error")
+                        }
+                        emptyList()
+                    },
+                    ifRight = { parseContainers(it) },
+                ),
+            )
         }
 
     override suspend fun moveToLocation(
@@ -161,8 +255,10 @@ class SurrealContainerRepository(
                         locationId?.let { put("locationId", it.value) }
                         put("userId", userId.value)
                     },
-                ).mapLeft { ItemError.NotFound(id) }
-                .bind()
+                ).mapLeft { error ->
+                    logger.warn("Database error for ${id.value}: $error (converting to NotFound)")
+                    ItemError.NotFound(id)
+                }.bind()
             findById(id).bind()
         }
 
@@ -176,8 +272,10 @@ class SurrealContainerRepository(
                 .executeBind(
                     "UPDATE container:${'$'}id SET parent_container_id = container:${'$'}parentContainerId, updated_at = time::now() WHERE user_id = user:${'$'}userId",
                     mapOf("id" to id.value, "parentContainerId" to parentContainerId.value, "userId" to userId.value),
-                ).mapLeft { ItemError.NotFound(id) }
-                .bind()
+                ).mapLeft { error ->
+                    logger.warn("Database error for ${id.value}: $error (converting to NotFound)")
+                    ItemError.NotFound(id)
+                }.bind()
             findById(id).bind()
         }
 
@@ -188,8 +286,10 @@ class SurrealContainerRepository(
                 .executeBind(
                     "UPDATE container:${'$'}id SET parent_container_id = NONE, updated_at = time::now() WHERE user_id = user:${'$'}userId",
                     mapOf("id" to id.value, "userId" to userId.value),
-                ).mapLeft { ItemError.NotFound(id) }
-                .bind()
+                ).mapLeft { error ->
+                    logger.warn("Database error for ${id.value}: $error (converting to NotFound)")
+                    ItemError.NotFound(id)
+                }.bind()
             findById(id).bind()
         }
 
@@ -204,8 +304,10 @@ class SurrealContainerRepository(
                              OR string::lowercase(label) CONTAINS string::lowercase(${'$'}query))
                         """.trimIndent(),
                         mapOf("userId" to userId.value, "query" to query),
-                    ).mapLeft { ItemError.NotFound(Ulid.generate()) }
-                    .bind()
+                    ).mapLeft { error ->
+                        logger.warn("Database error in search: $error (converting to NotFound)")
+                        ItemError.NotFound(Ulid.generate())
+                    }.bind()
             parseContainers(result)
         }
 
@@ -217,8 +319,10 @@ class SurrealContainerRepository(
                     .queryBind(
                         "SELECT count() FROM item WHERE user_id = user:${'$'}userId AND container_id = container:${'$'}containerId AND deleted_at IS NONE GROUP ALL",
                         mapOf("userId" to userId.value, "containerId" to id.value),
-                    ).mapLeft { ItemError.NotFound(id) }
-                    .bind()
+                    ).mapLeft { error ->
+                        logger.warn("Database error for ${id.value}: $error (converting to NotFound)")
+                        ItemError.NotFound(id)
+                    }.bind()
             parseCount(result)
         }
 
@@ -241,7 +345,13 @@ class SurrealContainerRepository(
                 .firstOrNull()
                 ?.jsonObject
                 ?.let { mapToContainer(it) }
-        } catch (e: Exception) {
+        } catch (e: SerializationException) {
+            logger.warn("Failed to parse Container: ${e.message}", e)
+            null
+        } catch (e: IllegalStateException) {
+            logger.warn("Failed to parse Container: ${e.message}", e)
+            null
+        } catch (e: IllegalArgumentException) {
             logger.warn("Failed to parse Container: ${e.message}", e)
             null
         }
@@ -251,12 +361,24 @@ class SurrealContainerRepository(
             json.parseToJsonElement(result).jsonArray.mapNotNull {
                 try {
                     mapToContainer(it.jsonObject)
-                } catch (e: Exception) {
+                } catch (e: SerializationException) {
+                    logger.warn("Failed to parse Container element: ${e.message}", e)
+                    null
+                } catch (e: IllegalStateException) {
+                    logger.warn("Failed to parse Container element: ${e.message}", e)
+                    null
+                } catch (e: IllegalArgumentException) {
                     logger.warn("Failed to parse Container element: ${e.message}", e)
                     null
                 }
             }
-        } catch (e: Exception) {
+        } catch (e: SerializationException) {
+            logger.warn("Failed to parse Container list: ${e.message}", e)
+            emptyList()
+        } catch (e: IllegalStateException) {
+            logger.warn("Failed to parse Container list: ${e.message}", e)
+            emptyList()
+        } catch (e: IllegalArgumentException) {
             logger.warn("Failed to parse Container list: ${e.message}", e)
             emptyList()
         }
@@ -302,7 +424,13 @@ class SurrealContainerRepository(
                 ?.content
                 ?.toIntOrNull()
                 ?: 0
-        } catch (e: Exception) {
+        } catch (e: SerializationException) {
+            logger.warn("Failed to parse count: ${e.message}", e)
+            0
+        } catch (e: IllegalStateException) {
+            logger.warn("Failed to parse count: ${e.message}", e)
+            0
+        } catch (e: IllegalArgumentException) {
             logger.warn("Failed to parse count: ${e.message}", e)
             0
         }
@@ -311,7 +439,13 @@ class SurrealContainerRepository(
         value?.let {
             try {
                 Instant.parse(it)
-            } catch (e: Exception) {
+            } catch (e: SerializationException) {
+                logger.warn("Failed to parse Instant '$it': ${e.message}", e)
+                Instant.DISTANT_PAST
+            } catch (e: IllegalStateException) {
+                logger.warn("Failed to parse Instant '$it': ${e.message}", e)
+                Instant.DISTANT_PAST
+            } catch (e: IllegalArgumentException) {
                 logger.warn("Failed to parse Instant '$it': ${e.message}", e)
                 Instant.DISTANT_PAST
             }
