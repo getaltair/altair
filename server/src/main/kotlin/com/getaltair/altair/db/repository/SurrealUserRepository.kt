@@ -47,7 +47,7 @@ class SurrealUserRepository(
                         "SELECT * FROM user WHERE id = user:${'$'}id AND deleted_at IS NONE",
                         mapOf("id" to id.value),
                     ).mapLeft { error ->
-                        logger.warn("Database error in findById for ${id.value}: ERROR_PLACEHOLDER (converting to NotFound)")
+                        logger.warn("Database error in findById for ${id.value}: $error (converting to NotFound)")
                         UserError.NotFound(id)
                     }.bind()
 
@@ -62,7 +62,7 @@ class SurrealUserRepository(
                         "SELECT * FROM user WHERE email = ${'$'}email AND deleted_at IS NONE",
                         mapOf("email" to email),
                     ).mapLeft { error ->
-                        logger.warn("Database error in findByEmail for $email: ERROR_PLACEHOLDER (converting to EmailNotFound)")
+                        logger.warn("Database error in findByEmail for $email: $error (converting to EmailNotFound)")
                         UserError.EmailNotFound
                     }.bind()
 
@@ -77,7 +77,7 @@ class SurrealUserRepository(
                         "SELECT * FROM user WHERE email = ${'$'}email AND deleted_at IS NONE",
                         mapOf("email" to email),
                     ).mapLeft { error ->
-                        logger.warn("Database error in findByEmailWithCredentials for $email: ERROR_PLACEHOLDER (converting to EmailNotFound)")
+                        logger.warn("Database error in findByEmailWithCredentials for $email: $error (converting to EmailNotFound)")
                         UserError.EmailNotFound
                     }.bind()
 
@@ -92,7 +92,7 @@ class SurrealUserRepository(
                         "SELECT * FROM user WHERE id = user:${'$'}id AND deleted_at IS NONE",
                         mapOf("id" to id.value),
                     ).mapLeft { error ->
-                        logger.warn("Database error in findByIdWithCredentials for ${id.value}: ERROR_PLACEHOLDER (converting to NotFound)")
+                        logger.warn("Database error in findByIdWithCredentials for ${id.value}: $error (converting to NotFound)")
                         UserError.NotFound(id)
                     }.bind()
 
@@ -128,7 +128,7 @@ class SurrealUserRepository(
                         "storageQuota" to user.storageQuotaBytes,
                     ),
                 ).mapLeft { error ->
-                    logger.warn("Database error creating user ${user.id.value}: ERROR_PLACEHOLDER (converting to NotFound)")
+                    logger.warn("Database error creating user ${user.id.value}: $error (converting to NotFound)")
                     UserError.NotFound(user.id)
                 }.bind()
 
@@ -169,7 +169,7 @@ class SurrealUserRepository(
                         "passwordHash" to passwordHash,
                     ),
                 ).mapLeft { error ->
-                    logger.warn("Database error creating user with password ${user.id.value}: ERROR_PLACEHOLDER (converting to NotFound)")
+                    logger.warn("Database error creating user with password ${user.id.value}: $error (converting to NotFound)")
                     UserError.NotFound(user.id)
                 }.bind()
 
@@ -192,7 +192,7 @@ class SurrealUserRepository(
                     """.trimIndent(),
                     mapOf("passwordHash" to passwordHash),
                 ).mapLeft { error ->
-                    logger.warn("Database error in updatePassword for ${id.value}: ERROR_PLACEHOLDER (converting to NotFound)")
+                    logger.warn("Database error in updatePassword for ${id.value}: $error (converting to NotFound)")
                     UserError.NotFound(id)
                 }.bind()
         }
@@ -225,7 +225,7 @@ class SurrealUserRepository(
                             "storageQuota" to user.storageQuotaBytes,
                         ),
                     ).mapLeft { error ->
-                        logger.warn("Database error updating user ${user.id.value}: ERROR_PLACEHOLDER (converting to NotFound)")
+                        logger.warn("Database error updating user ${user.id.value}: $error (converting to NotFound)")
                         UserError.NotFound(user.id)
                     }.bind()
 
@@ -245,7 +245,7 @@ class SurrealUserRepository(
                     """.trimIndent(),
                     emptyMap(),
                 ).mapLeft { error ->
-                    logger.warn("Database error in delete for ${id.value}: ERROR_PLACEHOLDER (converting to NotFound)")
+                    logger.warn("Database error in delete for ${id.value}: $error (converting to NotFound)")
                     UserError.NotFound(id)
                 }.bind()
         }
@@ -261,15 +261,15 @@ class SurrealUserRepository(
                     ifLeft = { error ->
 
                         when (error) {
-                            is DomainError.NetworkError -> logger.warn("Database error: ERROR_PLACEHOLDER")
+                            is DomainError.NetworkError -> logger.warn("Database error: $error")
 
-                            is DomainError.UnexpectedError -> logger.warn("Database error: ERROR_PLACEHOLDER")
+                            is DomainError.UnexpectedError -> logger.warn("Database error: $error")
 
                             is DomainError.NotFoundError -> logger.warn("Database error: ${error.resource} ${error.id}")
 
-                            is DomainError.ValidationError -> logger.warn("Database error: ${error.field} - ERROR_PLACEHOLDER")
+                            is DomainError.ValidationError -> logger.warn("Database error: ${error.field} - $error")
 
-                            is DomainError.UnauthorizedError -> logger.warn("Database error: ERROR_PLACEHOLDER")
+                            is DomainError.UnauthorizedError -> logger.warn("Database error: $error")
 
                             else -> logger.warn("Database error: $error")
                         }
@@ -292,15 +292,15 @@ class SurrealUserRepository(
                     ifLeft = { error ->
 
                         when (error) {
-                            is DomainError.NetworkError -> logger.warn("Database error: ERROR_PLACEHOLDER")
+                            is DomainError.NetworkError -> logger.warn("Database error: $error")
 
-                            is DomainError.UnexpectedError -> logger.warn("Database error: ERROR_PLACEHOLDER")
+                            is DomainError.UnexpectedError -> logger.warn("Database error: $error")
 
                             is DomainError.NotFoundError -> logger.warn("Database error: ${error.resource} ${error.id}")
 
-                            is DomainError.ValidationError -> logger.warn("Database error: ${error.field} - ERROR_PLACEHOLDER")
+                            is DomainError.ValidationError -> logger.warn("Database error: ${error.field} - $error")
 
-                            is DomainError.UnauthorizedError -> logger.warn("Database error: ERROR_PLACEHOLDER")
+                            is DomainError.UnauthorizedError -> logger.warn("Database error: $error")
 
                             else -> logger.warn("Database error: $error")
                         }
@@ -323,15 +323,15 @@ class SurrealUserRepository(
                     ifLeft = { error ->
 
                         when (error) {
-                            is DomainError.NetworkError -> logger.warn("Database error: ERROR_PLACEHOLDER")
+                            is DomainError.NetworkError -> logger.warn("Database error: $error")
 
-                            is DomainError.UnexpectedError -> logger.warn("Database error: ERROR_PLACEHOLDER")
+                            is DomainError.UnexpectedError -> logger.warn("Database error: $error")
 
                             is DomainError.NotFoundError -> logger.warn("Database error: ${error.resource} ${error.id}")
 
-                            is DomainError.ValidationError -> logger.warn("Database error: ${error.field} - ERROR_PLACEHOLDER")
+                            is DomainError.ValidationError -> logger.warn("Database error: ${error.field} - $error")
 
-                            is DomainError.UnauthorizedError -> logger.warn("Database error: ERROR_PLACEHOLDER")
+                            is DomainError.UnauthorizedError -> logger.warn("Database error: $error")
 
                             else -> logger.warn("Database error: $error")
                         }
@@ -364,7 +364,7 @@ class SurrealUserRepository(
                         """.trimIndent(),
                         mapOf("bytesUsed" to bytesUsed),
                     ).mapLeft { error ->
-                        logger.warn("Database error in updateStorageUsed for ${id.value}: ERROR_PLACEHOLDER (converting to NotFound)")
+                        logger.warn("Database error in updateStorageUsed for ${id.value}: $error (converting to NotFound)")
                         UserError.NotFound(id)
                     }.bind()
 
@@ -386,7 +386,7 @@ class SurrealUserRepository(
                     .query<Any>(
                         "SELECT count() FROM user WHERE status = 'active' AND deleted_at IS NONE GROUP ALL",
                     ).mapLeft { error ->
-                        logger.warn("Database error in countActive: ERROR_PLACEHOLDER (converting to NotFound)")
+                        logger.warn("Database error in countActive: $error (converting to NotFound)")
                         UserError.NotFound(Ulid.generate())
                     }.bind()
 

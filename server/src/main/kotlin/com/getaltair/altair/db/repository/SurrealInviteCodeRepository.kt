@@ -49,7 +49,7 @@ class SurrealInviteCodeRepository(
                         "createdBy" to inviteCode.createdBy.value,
                     ),
                 ).mapLeft { error ->
-                    logger.warn("Database error: ERROR_MSG (converting to InvalidInviteCode)")
+                    logger.warn("Database error: $error (converting to InvalidInviteCode)")
                     AuthError.InvalidInviteCode
                 }.bind()
 
@@ -65,7 +65,7 @@ class SurrealInviteCodeRepository(
                             "AND used_by IS NONE AND expires_at > time::now()",
                         mapOf("code" to code),
                     ).mapLeft { error ->
-                        logger.warn("Database error: ERROR_MSG (converting to InvalidInviteCode)")
+                        logger.warn("Database error: $error (converting to InvalidInviteCode)")
                         AuthError.InvalidInviteCode
                     }.bind()
 
@@ -86,7 +86,7 @@ class SurrealInviteCodeRepository(
                     """.trimIndent(),
                     mapOf("usedBy" to usedBy.value),
                 ).mapLeft { error ->
-                    logger.warn("Database error: ERROR_MSG (converting to InvalidInviteCode)")
+                    logger.warn("Database error: $error (converting to InvalidInviteCode)")
                     AuthError.InvalidInviteCode
                 }.bind()
         }

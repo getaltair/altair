@@ -113,15 +113,15 @@ class SurrealLocationRepository(
                     ifLeft = { error ->
 
                         when (error) {
-                            is DomainError.NetworkError -> logger.warn("Database error in findAll: ERROR_MSG")
+                            is DomainError.NetworkError -> logger.warn("Database error in findAll: ${error.message}")
 
-                            is DomainError.UnexpectedError -> logger.warn("Database error in findAll: ERROR_MSG")
+                            is DomainError.UnexpectedError -> logger.warn("Database error in findAll: ${error.message}")
 
                             is DomainError.NotFoundError -> logger.warn("Database error in findAll: ${error.resource} ${error.id}")
 
-                            is DomainError.ValidationError -> logger.warn("Database error in findAll: ${error.field} - ERROR_MSG")
+                            is DomainError.ValidationError -> logger.warn("Database error in findAll: ${error.field} - ${error.message}")
 
-                            is DomainError.UnauthorizedError -> logger.warn("Database error in findAll: ERROR_MSG")
+                            is DomainError.UnauthorizedError -> logger.warn("Database error in findAll: ${error.message}")
 
                             else -> logger.warn("Database error in findAll: $error")
                         }
@@ -144,15 +144,15 @@ class SurrealLocationRepository(
                     ifLeft = { error ->
 
                         when (error) {
-                            is DomainError.NetworkError -> logger.warn("Database error in findRoots: ERROR_MSG")
+                            is DomainError.NetworkError -> logger.warn("Database error in findRoots: ${error.message}")
 
-                            is DomainError.UnexpectedError -> logger.warn("Database error in findRoots: ERROR_MSG")
+                            is DomainError.UnexpectedError -> logger.warn("Database error in findRoots: ${error.message}")
 
                             is DomainError.NotFoundError -> logger.warn("Database error in findRoots: ${error.resource} ${error.id}")
 
-                            is DomainError.ValidationError -> logger.warn("Database error in findRoots: ${error.field} - ERROR_MSG")
+                            is DomainError.ValidationError -> logger.warn("Database error in findRoots: ${error.field} - ${error.message}")
 
-                            is DomainError.UnauthorizedError -> logger.warn("Database error in findRoots: ERROR_MSG")
+                            is DomainError.UnauthorizedError -> logger.warn("Database error in findRoots: ${error.message}")
 
                             else -> logger.warn("Database error in findRoots: $error")
                         }
@@ -175,15 +175,15 @@ class SurrealLocationRepository(
                     ifLeft = { error ->
 
                         when (error) {
-                            is DomainError.NetworkError -> logger.warn("Database error in findByParent: ERROR_MSG")
+                            is DomainError.NetworkError -> logger.warn("Database error in findByParent: ${error.message}")
 
-                            is DomainError.UnexpectedError -> logger.warn("Database error in findByParent: ERROR_MSG")
+                            is DomainError.UnexpectedError -> logger.warn("Database error in findByParent: ${error.message}")
 
                             is DomainError.NotFoundError -> logger.warn("Database error in findByParent: ${error.resource} ${error.id}")
 
-                            is DomainError.ValidationError -> logger.warn("Database error in findByParent: ${error.field} - ERROR_MSG")
+                            is DomainError.ValidationError -> logger.warn("Database error in findByParent: ${error.field} - ${error.message}")
 
-                            is DomainError.UnauthorizedError -> logger.warn("Database error in findByParent: ERROR_MSG")
+                            is DomainError.UnauthorizedError -> logger.warn("Database error in findByParent: ${error.message}")
 
                             else -> logger.warn("Database error in findByParent: $error")
                         }
@@ -206,15 +206,15 @@ class SurrealLocationRepository(
                     ifLeft = { error ->
 
                         when (error) {
-                            is DomainError.NetworkError -> logger.warn("Database error in findTree: ERROR_MSG")
+                            is DomainError.NetworkError -> logger.warn("Database error in findTree: ${error.message}")
 
-                            is DomainError.UnexpectedError -> logger.warn("Database error in findTree: ERROR_MSG")
+                            is DomainError.UnexpectedError -> logger.warn("Database error in findTree: ${error.message}")
 
                             is DomainError.NotFoundError -> logger.warn("Database error in findTree: ${error.resource} ${error.id}")
 
-                            is DomainError.ValidationError -> logger.warn("Database error in findTree: ${error.field} - ERROR_MSG")
+                            is DomainError.ValidationError -> logger.warn("Database error in findTree: ${error.field} - ${error.message}")
 
-                            is DomainError.UnauthorizedError -> logger.warn("Database error in findTree: ERROR_MSG")
+                            is DomainError.UnauthorizedError -> logger.warn("Database error in findTree: ${error.message}")
 
                             else -> logger.warn("Database error in findTree: $error")
                         }

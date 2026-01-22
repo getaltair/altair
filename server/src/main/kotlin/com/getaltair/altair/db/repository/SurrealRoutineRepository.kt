@@ -137,11 +137,11 @@ class SurrealRoutineRepository(
                 result.fold(
                     ifLeft = { error ->
                         when (error) {
-                            is DomainError.NetworkError -> logger.warn("Database network error: ERROR_MSG")
-                            is DomainError.UnexpectedError -> logger.warn("Database unexpected error: ERROR_MSG")
+                            is DomainError.NetworkError -> logger.warn("Database network error: ${error.message}")
+                            is DomainError.UnexpectedError -> logger.warn("Database unexpected error: ${error.message}")
                             is DomainError.NotFoundError -> logger.warn("Database not found error: ${error.resource} ${error.id}")
-                            is DomainError.ValidationError -> logger.warn("Database validation error: ${error.field} - ERROR_MSG")
-                            is DomainError.UnauthorizedError -> logger.warn("Database unauthorized error: ERROR_MSG")
+                            is DomainError.ValidationError -> logger.warn("Database validation error: ${error.field} - ${error.message}")
+                            is DomainError.UnauthorizedError -> logger.warn("Database unauthorized error: ${error.message}")
                             else -> logger.warn("Database error: $error")
                         }
                         emptyList()
@@ -162,11 +162,11 @@ class SurrealRoutineRepository(
                 result.fold(
                     ifLeft = { error ->
                         when (error) {
-                            is DomainError.NetworkError -> logger.warn("Database network error: ERROR_MSG")
-                            is DomainError.UnexpectedError -> logger.warn("Database unexpected error: ERROR_MSG")
+                            is DomainError.NetworkError -> logger.warn("Database network error: ${error.message}")
+                            is DomainError.UnexpectedError -> logger.warn("Database unexpected error: ${error.message}")
                             is DomainError.NotFoundError -> logger.warn("Database not found error: ${error.resource} ${error.id}")
-                            is DomainError.ValidationError -> logger.warn("Database validation error: ${error.field} - ERROR_MSG")
-                            is DomainError.UnauthorizedError -> logger.warn("Database unauthorized error: ERROR_MSG")
+                            is DomainError.ValidationError -> logger.warn("Database validation error: ${error.field} - ${error.message}")
+                            is DomainError.UnauthorizedError -> logger.warn("Database unauthorized error: ${error.message}")
                             else -> logger.warn("Database error: $error")
                         }
                         emptyList()
@@ -199,11 +199,11 @@ class SurrealRoutineRepository(
                 result.fold(
                     ifLeft = { error ->
                         when (error) {
-                            is DomainError.NetworkError -> logger.warn("Database network error: ERROR_MSG")
-                            is DomainError.UnexpectedError -> logger.warn("Database unexpected error: ERROR_MSG")
+                            is DomainError.NetworkError -> logger.warn("Database network error: ${error.message}")
+                            is DomainError.UnexpectedError -> logger.warn("Database unexpected error: ${error.message}")
                             is DomainError.NotFoundError -> logger.warn("Database not found error: ${error.resource} ${error.id}")
-                            is DomainError.ValidationError -> logger.warn("Database validation error: ${error.field} - ERROR_MSG")
-                            is DomainError.UnauthorizedError -> logger.warn("Database unauthorized error: ERROR_MSG")
+                            is DomainError.ValidationError -> logger.warn("Database validation error: ${error.field} - ${error.message}")
+                            is DomainError.UnauthorizedError -> logger.warn("Database unauthorized error: ${error.message}")
                             else -> logger.warn("Database error: $error")
                         }
                         emptyList()

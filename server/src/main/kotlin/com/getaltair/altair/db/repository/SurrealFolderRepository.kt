@@ -107,11 +107,11 @@ class SurrealFolderRepository(
                 result.fold(
                     ifLeft = { error ->
                         when (error) {
-                            is DomainError.NetworkError -> logger.warn("Database network error: ERROR_MSG")
-                            is DomainError.UnexpectedError -> logger.warn("Database unexpected error: ERROR_MSG")
+                            is DomainError.NetworkError -> logger.warn("Database network error: ${error.message}")
+                            is DomainError.UnexpectedError -> logger.warn("Database unexpected error: ${error.message}")
                             is DomainError.NotFoundError -> logger.warn("Database not found error: ${error.resource} ${error.id}")
-                            is DomainError.ValidationError -> logger.warn("Database validation error: ${error.field} - ERROR_MSG")
-                            is DomainError.UnauthorizedError -> logger.warn("Database unauthorized error: ERROR_MSG")
+                            is DomainError.ValidationError -> logger.warn("Database validation error: ${error.field} - ${error.message}")
+                            is DomainError.UnauthorizedError -> logger.warn("Database unauthorized error: ${error.message}")
                             else -> logger.warn("Database error: $error")
                         }
                         emptyList()
@@ -132,11 +132,11 @@ class SurrealFolderRepository(
                 result.fold(
                     ifLeft = { error ->
                         when (error) {
-                            is DomainError.NetworkError -> logger.warn("Database network error: ERROR_MSG")
-                            is DomainError.UnexpectedError -> logger.warn("Database unexpected error: ERROR_MSG")
+                            is DomainError.NetworkError -> logger.warn("Database network error: ${error.message}")
+                            is DomainError.UnexpectedError -> logger.warn("Database unexpected error: ${error.message}")
                             is DomainError.NotFoundError -> logger.warn("Database not found error: ${error.resource} ${error.id}")
-                            is DomainError.ValidationError -> logger.warn("Database validation error: ${error.field} - ERROR_MSG")
-                            is DomainError.UnauthorizedError -> logger.warn("Database unauthorized error: ERROR_MSG")
+                            is DomainError.ValidationError -> logger.warn("Database validation error: ${error.field} - ${error.message}")
+                            is DomainError.UnauthorizedError -> logger.warn("Database unauthorized error: ${error.message}")
                             else -> logger.warn("Database error: $error")
                         }
                         emptyList()
@@ -157,11 +157,11 @@ class SurrealFolderRepository(
                 result.fold(
                     ifLeft = { error ->
                         when (error) {
-                            is DomainError.NetworkError -> logger.warn("Database network error: ERROR_MSG")
-                            is DomainError.UnexpectedError -> logger.warn("Database unexpected error: ERROR_MSG")
+                            is DomainError.NetworkError -> logger.warn("Database network error: ${error.message}")
+                            is DomainError.UnexpectedError -> logger.warn("Database unexpected error: ${error.message}")
                             is DomainError.NotFoundError -> logger.warn("Database not found error: ${error.resource} ${error.id}")
-                            is DomainError.ValidationError -> logger.warn("Database validation error: ${error.field} - ERROR_MSG")
-                            is DomainError.UnauthorizedError -> logger.warn("Database unauthorized error: ERROR_MSG")
+                            is DomainError.ValidationError -> logger.warn("Database validation error: ${error.field} - ${error.message}")
+                            is DomainError.UnauthorizedError -> logger.warn("Database unauthorized error: ${error.message}")
                             else -> logger.warn("Database error: $error")
                         }
                         emptyList()
@@ -182,11 +182,11 @@ class SurrealFolderRepository(
                 result.fold(
                     ifLeft = { error ->
                         when (error) {
-                            is DomainError.NetworkError -> logger.warn("Database network error in findTree: ERROR_MSG")
-                            is DomainError.UnexpectedError -> logger.warn("Database unexpected error in findTree: ERROR_MSG")
+                            is DomainError.NetworkError -> logger.warn("Database network error in findTree: ${error.message}")
+                            is DomainError.UnexpectedError -> logger.warn("Database unexpected error in findTree: ${error.message}")
                             is DomainError.NotFoundError -> logger.warn("Database not found error in findTree: ${error.resource} ${error.id}")
-                            is DomainError.ValidationError -> logger.warn("Database validation error in findTree: ${error.field} - ERROR_MSG")
-                            is DomainError.UnauthorizedError -> logger.warn("Database unauthorized error in findTree: ERROR_MSG")
+                            is DomainError.ValidationError -> logger.warn("Database validation error in findTree: ${error.field} - ${error.message}")
+                            is DomainError.UnauthorizedError -> logger.warn("Database unauthorized error in findTree: ${error.message}")
                             else -> logger.warn("Database error: $error")
                         }
                         emptyList()

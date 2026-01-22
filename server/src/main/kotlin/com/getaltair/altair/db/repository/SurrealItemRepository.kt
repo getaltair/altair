@@ -40,7 +40,7 @@ class SurrealItemRepository(
                         "SELECT * FROM item:${'$'}id WHERE user_id = user:${'$'}userId AND deleted_at IS NONE",
                         mapOf("id" to id.value, "userId" to userId.value),
                     ).mapLeft { error ->
-                        logger.warn("Database error for ${id.value}: ERROR_MSG (converting to NotFound)")
+                        logger.warn("Database error for ${id.value}: $error (converting to NotFound)")
                         ItemError.NotFound(id)
                     }.bind()
             parseItem(result) ?: raise(ItemError.NotFound(id))
@@ -75,7 +75,7 @@ class SurrealItemRepository(
                 """.trimIndent(),
                 buildItemParams(entity),
             ).mapLeft { error ->
-                logger.warn("Database error for ${entity.id.value}: ERROR_MSG (converting to NotFound)")
+                logger.warn("Database error for ${entity.id.value}: $error (converting to NotFound)")
                 ItemError.NotFound(entity.id)
             }
 
@@ -97,7 +97,7 @@ class SurrealItemRepository(
                 """.trimIndent(),
                 buildItemParams(entity),
             ).mapLeft { error ->
-                logger.warn("Database error for ${entity.id.value}: ERROR_MSG (converting to NotFound)")
+                logger.warn("Database error for ${entity.id.value}: $error (converting to NotFound)")
                 ItemError.NotFound(entity.id)
             }
 
@@ -123,7 +123,7 @@ class SurrealItemRepository(
                     "UPDATE item:${'$'}id SET deleted_at = time::now(), updated_at = time::now() WHERE user_id = user:${'$'}userId",
                     mapOf("id" to id.value, "userId" to userId.value),
                 ).mapLeft { error ->
-                    logger.warn("Database error for ${id.value}: ERROR_MSG (converting to NotFound)")
+                    logger.warn("Database error for ${id.value}: $error (converting to NotFound)")
                     ItemError.NotFound(id)
                 }.bind()
         }
@@ -140,15 +140,15 @@ class SurrealItemRepository(
                     ifLeft = { error ->
 
                         when (error) {
-                            is DomainError.NetworkError -> logger.warn("Database error in findAll: ERROR_MSG")
+                            is DomainError.NetworkError -> logger.warn("Database error in findAll: ${error.message}")
 
-                            is DomainError.UnexpectedError -> logger.warn("Database error in findAll: ERROR_MSG")
+                            is DomainError.UnexpectedError -> logger.warn("Database error in findAll: ${error.message}")
 
                             is DomainError.NotFoundError -> logger.warn("Database error in findAll: ${error.resource} ${error.id}")
 
-                            is DomainError.ValidationError -> logger.warn("Database error in findAll: ${error.field} - ERROR_MSG")
+                            is DomainError.ValidationError -> logger.warn("Database error in findAll: ${error.field} - ${error.message}")
 
-                            is DomainError.UnauthorizedError -> logger.warn("Database error in findAll: ERROR_MSG")
+                            is DomainError.UnauthorizedError -> logger.warn("Database error in findAll: ${error.message}")
 
                             else -> logger.warn("Database error in findAll: $error")
                         }
@@ -171,15 +171,15 @@ class SurrealItemRepository(
                     ifLeft = { error ->
 
                         when (error) {
-                            is DomainError.NetworkError -> logger.warn("Database error in findByLocation: ERROR_MSG")
+                            is DomainError.NetworkError -> logger.warn("Database error in findByLocation: ${error.message}")
 
-                            is DomainError.UnexpectedError -> logger.warn("Database error in findByLocation: ERROR_MSG")
+                            is DomainError.UnexpectedError -> logger.warn("Database error in findByLocation: ${error.message}")
 
                             is DomainError.NotFoundError -> logger.warn("Database error in findByLocation: ${error.resource} ${error.id}")
 
-                            is DomainError.ValidationError -> logger.warn("Database error in findByLocation: ${error.field} - ERROR_MSG")
+                            is DomainError.ValidationError -> logger.warn("Database error in findByLocation: ${error.field} - ${error.message}")
 
-                            is DomainError.UnauthorizedError -> logger.warn("Database error in findByLocation: ERROR_MSG")
+                            is DomainError.UnauthorizedError -> logger.warn("Database error in findByLocation: ${error.message}")
 
                             else -> logger.warn("Database error in findByLocation: $error")
                         }
@@ -202,15 +202,15 @@ class SurrealItemRepository(
                     ifLeft = { error ->
 
                         when (error) {
-                            is DomainError.NetworkError -> logger.warn("Database error in findByContainer: ERROR_MSG")
+                            is DomainError.NetworkError -> logger.warn("Database error in findByContainer: ${error.message}")
 
-                            is DomainError.UnexpectedError -> logger.warn("Database error in findByContainer: ERROR_MSG")
+                            is DomainError.UnexpectedError -> logger.warn("Database error in findByContainer: ${error.message}")
 
                             is DomainError.NotFoundError -> logger.warn("Database error in findByContainer: ${error.resource} ${error.id}")
 
-                            is DomainError.ValidationError -> logger.warn("Database error in findByContainer: ${error.field} - ERROR_MSG")
+                            is DomainError.ValidationError -> logger.warn("Database error in findByContainer: ${error.field} - ${error.message}")
 
-                            is DomainError.UnauthorizedError -> logger.warn("Database error in findByContainer: ERROR_MSG")
+                            is DomainError.UnauthorizedError -> logger.warn("Database error in findByContainer: ${error.message}")
 
                             else -> logger.warn("Database error in findByContainer: $error")
                         }
@@ -233,15 +233,15 @@ class SurrealItemRepository(
                     ifLeft = { error ->
 
                         when (error) {
-                            is DomainError.NetworkError -> logger.warn("Database error in findByTemplate: ERROR_MSG")
+                            is DomainError.NetworkError -> logger.warn("Database error in findByTemplate: ${error.message}")
 
-                            is DomainError.UnexpectedError -> logger.warn("Database error in findByTemplate: ERROR_MSG")
+                            is DomainError.UnexpectedError -> logger.warn("Database error in findByTemplate: ${error.message}")
 
                             is DomainError.NotFoundError -> logger.warn("Database error in findByTemplate: ${error.resource} ${error.id}")
 
-                            is DomainError.ValidationError -> logger.warn("Database error in findByTemplate: ${error.field} - ERROR_MSG")
+                            is DomainError.ValidationError -> logger.warn("Database error in findByTemplate: ${error.field} - ${error.message}")
 
-                            is DomainError.UnauthorizedError -> logger.warn("Database error in findByTemplate: ERROR_MSG")
+                            is DomainError.UnauthorizedError -> logger.warn("Database error in findByTemplate: ${error.message}")
 
                             else -> logger.warn("Database error in findByTemplate: $error")
                         }
@@ -264,15 +264,15 @@ class SurrealItemRepository(
                     ifLeft = { error ->
 
                         when (error) {
-                            is DomainError.NetworkError -> logger.warn("Database error in findByInitiative: ERROR_MSG")
+                            is DomainError.NetworkError -> logger.warn("Database error in findByInitiative: ${error.message}")
 
-                            is DomainError.UnexpectedError -> logger.warn("Database error in findByInitiative: ERROR_MSG")
+                            is DomainError.UnexpectedError -> logger.warn("Database error in findByInitiative: ${error.message}")
 
                             is DomainError.NotFoundError -> logger.warn("Database error in findByInitiative: ${error.resource} ${error.id}")
 
-                            is DomainError.ValidationError -> logger.warn("Database error in findByInitiative: ${error.field} - ERROR_MSG")
+                            is DomainError.ValidationError -> logger.warn("Database error in findByInitiative: ${error.field} - ${error.message}")
 
-                            is DomainError.UnauthorizedError -> logger.warn("Database error in findByInitiative: ERROR_MSG")
+                            is DomainError.UnauthorizedError -> logger.warn("Database error in findByInitiative: ${error.message}")
 
                             else -> logger.warn("Database error in findByInitiative: $error")
                         }
@@ -291,7 +291,7 @@ class SurrealItemRepository(
                         "SELECT * FROM item WHERE user_id = user:${'$'}userId AND string::lowercase(name) CONTAINS string::lowercase(${'$'}query) AND deleted_at IS NONE",
                         mapOf("userId" to userId.value, "query" to query),
                     ).mapLeft { error ->
-                        logger.warn("Database error in search: ERROR_MSG (converting to NotFound)")
+                        logger.warn("Database error in search: $error (converting to NotFound)")
                         ItemError.NotFound(Ulid.generate())
                     }.bind()
             parseItems(result)
@@ -318,7 +318,7 @@ class SurrealItemRepository(
                     "UPDATE item:${'$'}id SET location_id = location:${'$'}locationId, container_id = NONE, updated_at = time::now() WHERE user_id = user:${'$'}userId",
                     mapOf("id" to id.value, "locationId" to locationId.value, "userId" to userId.value),
                 ).mapLeft { error ->
-                    logger.warn("Database error for ${id.value}: ERROR_MSG (converting to NotFound)")
+                    logger.warn("Database error for ${id.value}: $error (converting to NotFound)")
                     ItemError.NotFound(id)
                 }.bind()
             findById(id).bind()
@@ -335,7 +335,7 @@ class SurrealItemRepository(
                     "UPDATE item:${'$'}id SET container_id = container:${'$'}containerId, updated_at = time::now() WHERE user_id = user:${'$'}userId",
                     mapOf("id" to id.value, "containerId" to containerId.value, "userId" to userId.value),
                 ).mapLeft { error ->
-                    logger.warn("Database error for ${id.value}: ERROR_MSG (converting to NotFound)")
+                    logger.warn("Database error for ${id.value}: $error (converting to NotFound)")
                     ItemError.NotFound(id)
                 }.bind()
             findById(id).bind()
@@ -352,7 +352,7 @@ class SurrealItemRepository(
                     "UPDATE item:${'$'}id SET quantity = ${'$'}quantity, updated_at = time::now() WHERE user_id = user:${'$'}userId",
                     mapOf("id" to id.value, "quantity" to quantity, "userId" to userId.value),
                 ).mapLeft { error ->
-                    logger.warn("Database error for ${id.value}: ERROR_MSG (converting to NotFound)")
+                    logger.warn("Database error for ${id.value}: $error (converting to NotFound)")
                     ItemError.NotFound(id)
                 }.bind()
             findById(id).bind()
@@ -370,15 +370,15 @@ class SurrealItemRepository(
                     ifLeft = { error ->
 
                         when (error) {
-                            is DomainError.NetworkError -> logger.warn("Database error in findUnplaced: ERROR_MSG")
+                            is DomainError.NetworkError -> logger.warn("Database error in findUnplaced: ${error.message}")
 
-                            is DomainError.UnexpectedError -> logger.warn("Database error in findUnplaced: ERROR_MSG")
+                            is DomainError.UnexpectedError -> logger.warn("Database error in findUnplaced: ${error.message}")
 
                             is DomainError.NotFoundError -> logger.warn("Database error in findUnplaced: ${error.resource} ${error.id}")
 
-                            is DomainError.ValidationError -> logger.warn("Database error in findUnplaced: ${error.field} - ERROR_MSG")
+                            is DomainError.ValidationError -> logger.warn("Database error in findUnplaced: ${error.field} - ${error.message}")
 
-                            is DomainError.UnauthorizedError -> logger.warn("Database error in findUnplaced: ERROR_MSG")
+                            is DomainError.UnauthorizedError -> logger.warn("Database error in findUnplaced: ${error.message}")
 
                             else -> logger.warn("Database error in findUnplaced: $error")
                         }

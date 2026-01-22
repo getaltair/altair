@@ -48,7 +48,7 @@ class SurrealQuestRepository(
                         "SELECT * FROM quest WHERE id = quest:\$id AND user_id = user:\$userId AND deleted_at IS NONE",
                         mapOf("id" to id.value, "userId" to userId.value),
                     ).mapLeft { error ->
-                        logger.warn("Database error in findById for ${id.value}: ERROR_MSG (converting to NotFound)")
+                        logger.warn("Database error in findById for ${id.value}: $error (converting to NotFound)")
                         QuestError.NotFound(id)
                     }.bind()
 
@@ -89,7 +89,7 @@ class SurrealQuestRepository(
                 """.trimIndent(),
                 buildQuestParams(entity),
             ).mapLeft { error ->
-                logger.warn("Database error updating ${entity.id.value}: ERROR_MSG (converting to NotFound)")
+                logger.warn("Database error updating ${entity.id.value}: $error (converting to NotFound)")
                 QuestError.NotFound(entity.id)
             }
 
@@ -114,7 +114,7 @@ class SurrealQuestRepository(
                 """.trimIndent(),
                 buildQuestParams(entity),
             ).mapLeft { error ->
-                logger.warn("Database error inserting ${entity.id.value}: ERROR_MSG (converting to NotFound)")
+                logger.warn("Database error inserting ${entity.id.value}: $error (converting to NotFound)")
                 QuestError.NotFound(entity.id)
             }
 
@@ -148,7 +148,7 @@ class SurrealQuestRepository(
                     """.trimIndent(),
                     mapOf("id" to id.value, "userId" to userId.value),
                 ).mapLeft { error ->
-                    logger.warn("Database error in delete for ${id.value}: ERROR_MSG (converting to NotFound)")
+                    logger.warn("Database error in delete for ${id.value}: $error (converting to NotFound)")
                     QuestError.NotFound(id)
                 }.bind()
         }
@@ -165,15 +165,15 @@ class SurrealQuestRepository(
                     ifLeft = { error ->
 
                         when (error) {
-                            is DomainError.NetworkError -> logger.warn("Database error: ERROR_MSG")
+                            is DomainError.NetworkError -> logger.warn("Database error: ${error.message}")
 
-                            is DomainError.UnexpectedError -> logger.warn("Database error: ERROR_MSG")
+                            is DomainError.UnexpectedError -> logger.warn("Database error: ${error.message}")
 
                             is DomainError.NotFoundError -> logger.warn("Database error: ${error.resource} ${error.id}")
 
-                            is DomainError.ValidationError -> logger.warn("Database error: ${error.field} - ERROR_MSG")
+                            is DomainError.ValidationError -> logger.warn("Database error: ${error.field} - ${error.message}")
 
-                            is DomainError.UnauthorizedError -> logger.warn("Database error: ERROR_MSG")
+                            is DomainError.UnauthorizedError -> logger.warn("Database error: ${error.message}")
 
                             else -> logger.warn("Database error: $error")
                         }
@@ -196,15 +196,15 @@ class SurrealQuestRepository(
                     ifLeft = { error ->
 
                         when (error) {
-                            is DomainError.NetworkError -> logger.warn("Database error: ERROR_MSG")
+                            is DomainError.NetworkError -> logger.warn("Database error: ${error.message}")
 
-                            is DomainError.UnexpectedError -> logger.warn("Database error: ERROR_MSG")
+                            is DomainError.UnexpectedError -> logger.warn("Database error: ${error.message}")
 
                             is DomainError.NotFoundError -> logger.warn("Database error: ${error.resource} ${error.id}")
 
-                            is DomainError.ValidationError -> logger.warn("Database error: ${error.field} - ERROR_MSG")
+                            is DomainError.ValidationError -> logger.warn("Database error: ${error.field} - ${error.message}")
 
-                            is DomainError.UnauthorizedError -> logger.warn("Database error: ERROR_MSG")
+                            is DomainError.UnauthorizedError -> logger.warn("Database error: ${error.message}")
 
                             else -> logger.warn("Database error: $error")
                         }
@@ -229,15 +229,15 @@ class SurrealQuestRepository(
                     ifLeft = { error ->
 
                         when (error) {
-                            is DomainError.NetworkError -> logger.warn("Database error: ERROR_MSG")
+                            is DomainError.NetworkError -> logger.warn("Database error: ${error.message}")
 
-                            is DomainError.UnexpectedError -> logger.warn("Database error: ERROR_MSG")
+                            is DomainError.UnexpectedError -> logger.warn("Database error: ${error.message}")
 
                             is DomainError.NotFoundError -> logger.warn("Database error: ${error.resource} ${error.id}")
 
-                            is DomainError.ValidationError -> logger.warn("Database error: ${error.field} - ERROR_MSG")
+                            is DomainError.ValidationError -> logger.warn("Database error: ${error.field} - ${error.message}")
 
-                            is DomainError.UnauthorizedError -> logger.warn("Database error: ERROR_MSG")
+                            is DomainError.UnauthorizedError -> logger.warn("Database error: ${error.message}")
 
                             else -> logger.warn("Database error: $error")
                         }
@@ -260,15 +260,15 @@ class SurrealQuestRepository(
                     ifLeft = { error ->
 
                         when (error) {
-                            is DomainError.NetworkError -> logger.warn("Database error: ERROR_MSG")
+                            is DomainError.NetworkError -> logger.warn("Database error: ${error.message}")
 
-                            is DomainError.UnexpectedError -> logger.warn("Database error: ERROR_MSG")
+                            is DomainError.UnexpectedError -> logger.warn("Database error: ${error.message}")
 
                             is DomainError.NotFoundError -> logger.warn("Database error: ${error.resource} ${error.id}")
 
-                            is DomainError.ValidationError -> logger.warn("Database error: ${error.field} - ERROR_MSG")
+                            is DomainError.ValidationError -> logger.warn("Database error: ${error.field} - ${error.message}")
 
-                            is DomainError.UnauthorizedError -> logger.warn("Database error: ERROR_MSG")
+                            is DomainError.UnauthorizedError -> logger.warn("Database error: ${error.message}")
 
                             else -> logger.warn("Database error: $error")
                         }
@@ -291,15 +291,15 @@ class SurrealQuestRepository(
                     ifLeft = { error ->
 
                         when (error) {
-                            is DomainError.NetworkError -> logger.warn("Database error: ERROR_MSG")
+                            is DomainError.NetworkError -> logger.warn("Database error: ${error.message}")
 
-                            is DomainError.UnexpectedError -> logger.warn("Database error: ERROR_MSG")
+                            is DomainError.UnexpectedError -> logger.warn("Database error: ${error.message}")
 
                             is DomainError.NotFoundError -> logger.warn("Database error: ${error.resource} ${error.id}")
 
-                            is DomainError.ValidationError -> logger.warn("Database error: ${error.field} - ERROR_MSG")
+                            is DomainError.ValidationError -> logger.warn("Database error: ${error.field} - ${error.message}")
 
-                            is DomainError.UnauthorizedError -> logger.warn("Database error: ERROR_MSG")
+                            is DomainError.UnauthorizedError -> logger.warn("Database error: ${error.message}")
 
                             else -> logger.warn("Database error: $error")
                         }
@@ -322,15 +322,15 @@ class SurrealQuestRepository(
                     ifLeft = { error ->
 
                         when (error) {
-                            is DomainError.NetworkError -> logger.warn("Database error: ERROR_MSG")
+                            is DomainError.NetworkError -> logger.warn("Database error: ${error.message}")
 
-                            is DomainError.UnexpectedError -> logger.warn("Database error: ERROR_MSG")
+                            is DomainError.UnexpectedError -> logger.warn("Database error: ${error.message}")
 
                             is DomainError.NotFoundError -> logger.warn("Database error: ${error.resource} ${error.id}")
 
-                            is DomainError.ValidationError -> logger.warn("Database error: ${error.field} - ERROR_MSG")
+                            is DomainError.ValidationError -> logger.warn("Database error: ${error.field} - ${error.message}")
 
-                            is DomainError.UnauthorizedError -> logger.warn("Database error: ERROR_MSG")
+                            is DomainError.UnauthorizedError -> logger.warn("Database error: ${error.message}")
 
                             else -> logger.warn("Database error: $error")
                         }
@@ -353,15 +353,15 @@ class SurrealQuestRepository(
                     ifLeft = { error ->
 
                         when (error) {
-                            is DomainError.NetworkError -> logger.warn("Database error: ERROR_MSG")
+                            is DomainError.NetworkError -> logger.warn("Database error: ${error.message}")
 
-                            is DomainError.UnexpectedError -> logger.warn("Database error: ERROR_MSG")
+                            is DomainError.UnexpectedError -> logger.warn("Database error: ${error.message}")
 
                             is DomainError.NotFoundError -> logger.warn("Database error: ${error.resource} ${error.id}")
 
-                            is DomainError.ValidationError -> logger.warn("Database error: ${error.field} - ERROR_MSG")
+                            is DomainError.ValidationError -> logger.warn("Database error: ${error.field} - ${error.message}")
 
-                            is DomainError.UnauthorizedError -> logger.warn("Database error: ERROR_MSG")
+                            is DomainError.UnauthorizedError -> logger.warn("Database error: ${error.message}")
 
                             else -> logger.warn("Database error: $error")
                         }
@@ -419,7 +419,7 @@ class SurrealQuestRepository(
                     """.trimIndent(),
                     mapOf("id" to id.value, "status" to newStatus.name.lowercase(), "userId" to userId.value),
                 ).mapLeft { error ->
-                    logger.warn("Database error in transitionStatus for ${id.value}: ERROR_MSG (converting to NotFound)")
+                    logger.warn("Database error in transitionStatus for ${id.value}: $error (converting to NotFound)")
                     QuestError.NotFound(id)
                 }.bind()
 
@@ -434,7 +434,7 @@ class SurrealQuestRepository(
                         "SELECT count() FROM quest WHERE user_id = user:\$userId AND status = \$status AND deleted_at IS NONE GROUP ALL",
                         mapOf("userId" to userId.value, "status" to "active"),
                     ).mapLeft { error ->
-                        logger.warn("Database error in countActive: ERROR_MSG (converting to NotFound)")
+                        logger.warn("Database error in countActive: $error (converting to NotFound)")
                         QuestError.NotFound(Ulid.generate())
                     }.bind()
 

@@ -39,7 +39,7 @@ class SurrealContainerRepository(
                         "SELECT * FROM container:${'$'}id WHERE user_id = user:${'$'}userId AND deleted_at IS NONE",
                         mapOf("id" to id.value, "userId" to userId.value),
                     ).mapLeft { error ->
-                        logger.warn("Database error for ${id.value}: ERROR_MSG_PH (converting to NotFound)")
+                        logger.warn("Database error for ${id.value}: $error (converting to NotFound)")
                         ItemError.NotFound(id)
                     }.bind()
             parseContainer(result) ?: raise(ItemError.NotFound(id))
@@ -71,7 +71,7 @@ class SurrealContainerRepository(
                             put("userId", userId.value)
                         },
                     ).mapLeft { error ->
-                        logger.warn("Database error for ${entity.id.value}: ERROR_MSG_PH (converting to NotFound)")
+                        logger.warn("Database error for ${entity.id.value}: $error (converting to NotFound)")
                         ItemError.NotFound(entity.id)
                     }.bind()
             } else {
@@ -97,7 +97,7 @@ class SurrealContainerRepository(
                             put("label", entity.label)
                         },
                     ).mapLeft { error ->
-                        logger.warn("Database error for ${entity.id.value}: ERROR_MSG_PH (converting to NotFound)")
+                        logger.warn("Database error for ${entity.id.value}: $error (converting to NotFound)")
                         ItemError.NotFound(entity.id)
                     }.bind()
             }
@@ -112,7 +112,7 @@ class SurrealContainerRepository(
                     "UPDATE container:${'$'}id SET deleted_at = time::now(), updated_at = time::now() WHERE user_id = user:${'$'}userId",
                     mapOf("id" to id.value, "userId" to userId.value),
                 ).mapLeft { error ->
-                    logger.warn("Database error for ${id.value}: ERROR_MSG_PH (converting to NotFound)")
+                    logger.warn("Database error for ${id.value}: $error (converting to NotFound)")
                     ItemError.NotFound(id)
                 }.bind()
         }
@@ -129,15 +129,15 @@ class SurrealContainerRepository(
                     ifLeft = { error ->
 
                         when (error) {
-                            is DomainError.NetworkError -> logger.warn("Database error in findAll: ERROR_MSG_PH")
+                            is DomainError.NetworkError -> logger.warn("Database error in findAll: $error")
 
-                            is DomainError.UnexpectedError -> logger.warn("Database error in findAll: ERROR_MSG_PH")
+                            is DomainError.UnexpectedError -> logger.warn("Database error in findAll: $error")
 
                             is DomainError.NotFoundError -> logger.warn("Database error in findAll: ${error.resource} ${error.id}")
 
-                            is DomainError.ValidationError -> logger.warn("Database error in findAll: ${error.field} - ERROR_MSG_PH")
+                            is DomainError.ValidationError -> logger.warn("Database error in findAll: ${error.field} - $error")
 
-                            is DomainError.UnauthorizedError -> logger.warn("Database error in findAll: ERROR_MSG_PH")
+                            is DomainError.UnauthorizedError -> logger.warn("Database error in findAll: $error")
 
                             else -> logger.warn("Database error in findAll: $error")
                         }
@@ -160,15 +160,15 @@ class SurrealContainerRepository(
                     ifLeft = { error ->
 
                         when (error) {
-                            is DomainError.NetworkError -> logger.warn("Database error in findByLocation: ERROR_MSG_PH")
+                            is DomainError.NetworkError -> logger.warn("Database error in findByLocation: $error")
 
-                            is DomainError.UnexpectedError -> logger.warn("Database error in findByLocation: ERROR_MSG_PH")
+                            is DomainError.UnexpectedError -> logger.warn("Database error in findByLocation: $error")
 
                             is DomainError.NotFoundError -> logger.warn("Database error in findByLocation: ${error.resource} ${error.id}")
 
-                            is DomainError.ValidationError -> logger.warn("Database error in findByLocation: ${error.field} - ERROR_MSG_PH")
+                            is DomainError.ValidationError -> logger.warn("Database error in findByLocation: ${error.field} - $error")
 
-                            is DomainError.UnauthorizedError -> logger.warn("Database error in findByLocation: ERROR_MSG_PH")
+                            is DomainError.UnauthorizedError -> logger.warn("Database error in findByLocation: $error")
 
                             else -> logger.warn("Database error in findByLocation: $error")
                         }
@@ -191,15 +191,15 @@ class SurrealContainerRepository(
                     ifLeft = { error ->
 
                         when (error) {
-                            is DomainError.NetworkError -> logger.warn("Database error in findByParentContainer: ERROR_MSG_PH")
+                            is DomainError.NetworkError -> logger.warn("Database error in findByParentContainer: $error")
 
-                            is DomainError.UnexpectedError -> logger.warn("Database error in findByParentContainer: ERROR_MSG_PH")
+                            is DomainError.UnexpectedError -> logger.warn("Database error in findByParentContainer: $error")
 
                             is DomainError.NotFoundError -> logger.warn("Database error in findByParentContainer: ${error.resource} ${error.id}")
 
-                            is DomainError.ValidationError -> logger.warn("Database error in findByParentContainer: ${error.field} - ERROR_MSG_PH")
+                            is DomainError.ValidationError -> logger.warn("Database error in findByParentContainer: ${error.field} - $error")
 
-                            is DomainError.UnauthorizedError -> logger.warn("Database error in findByParentContainer: ERROR_MSG_PH")
+                            is DomainError.UnauthorizedError -> logger.warn("Database error in findByParentContainer: $error")
 
                             else -> logger.warn("Database error in findByParentContainer: $error")
                         }
@@ -222,15 +222,15 @@ class SurrealContainerRepository(
                     ifLeft = { error ->
 
                         when (error) {
-                            is DomainError.NetworkError -> logger.warn("Database error in findRoots: ERROR_MSG_PH")
+                            is DomainError.NetworkError -> logger.warn("Database error in findRoots: $error")
 
-                            is DomainError.UnexpectedError -> logger.warn("Database error in findRoots: ERROR_MSG_PH")
+                            is DomainError.UnexpectedError -> logger.warn("Database error in findRoots: $error")
 
                             is DomainError.NotFoundError -> logger.warn("Database error in findRoots: ${error.resource} ${error.id}")
 
-                            is DomainError.ValidationError -> logger.warn("Database error in findRoots: ${error.field} - ERROR_MSG_PH")
+                            is DomainError.ValidationError -> logger.warn("Database error in findRoots: ${error.field} - $error")
 
-                            is DomainError.UnauthorizedError -> logger.warn("Database error in findRoots: ERROR_MSG_PH")
+                            is DomainError.UnauthorizedError -> logger.warn("Database error in findRoots: $error")
 
                             else -> logger.warn("Database error in findRoots: $error")
                         }
@@ -256,7 +256,7 @@ class SurrealContainerRepository(
                         put("userId", userId.value)
                     },
                 ).mapLeft { error ->
-                    logger.warn("Database error for ${id.value}: ERROR_MSG_PH (converting to NotFound)")
+                    logger.warn("Database error for ${id.value}: $error (converting to NotFound)")
                     ItemError.NotFound(id)
                 }.bind()
             findById(id).bind()
@@ -273,7 +273,7 @@ class SurrealContainerRepository(
                     "UPDATE container:${'$'}id SET parent_container_id = container:${'$'}parentContainerId, updated_at = time::now() WHERE user_id = user:${'$'}userId",
                     mapOf("id" to id.value, "parentContainerId" to parentContainerId.value, "userId" to userId.value),
                 ).mapLeft { error ->
-                    logger.warn("Database error for ${id.value}: ERROR_MSG_PH (converting to NotFound)")
+                    logger.warn("Database error for ${id.value}: $error (converting to NotFound)")
                     ItemError.NotFound(id)
                 }.bind()
             findById(id).bind()
@@ -287,7 +287,7 @@ class SurrealContainerRepository(
                     "UPDATE container:${'$'}id SET parent_container_id = NONE, updated_at = time::now() WHERE user_id = user:${'$'}userId",
                     mapOf("id" to id.value, "userId" to userId.value),
                 ).mapLeft { error ->
-                    logger.warn("Database error for ${id.value}: ERROR_MSG_PH (converting to NotFound)")
+                    logger.warn("Database error for ${id.value}: $error (converting to NotFound)")
                     ItemError.NotFound(id)
                 }.bind()
             findById(id).bind()
@@ -305,7 +305,7 @@ class SurrealContainerRepository(
                         """.trimIndent(),
                         mapOf("userId" to userId.value, "query" to query),
                     ).mapLeft { error ->
-                        logger.warn("Database error in search: ERROR_MSG_PH (converting to NotFound)")
+                        logger.warn("Database error in search: $error (converting to NotFound)")
                         ItemError.NotFound(Ulid.generate())
                     }.bind()
             parseContainers(result)
@@ -320,7 +320,7 @@ class SurrealContainerRepository(
                         "SELECT count() FROM item WHERE user_id = user:${'$'}userId AND container_id = container:${'$'}containerId AND deleted_at IS NONE GROUP ALL",
                         mapOf("userId" to userId.value, "containerId" to id.value),
                     ).mapLeft { error ->
-                        logger.warn("Database error for ${id.value}: ERROR_MSG_PH (converting to NotFound)")
+                        logger.warn("Database error for ${id.value}: $error (converting to NotFound)")
                         ItemError.NotFound(id)
                     }.bind()
             parseCount(result)

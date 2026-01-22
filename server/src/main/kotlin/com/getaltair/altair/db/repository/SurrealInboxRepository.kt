@@ -91,15 +91,15 @@ class SurrealInboxRepository(
                     ifLeft = { error ->
 
                         when (error) {
-                            is DomainError.NetworkError -> logger.warn("Database error in findAll: ERROR_MSG")
+                            is DomainError.NetworkError -> logger.warn("Database error in findAll: ${error.message}")
 
-                            is DomainError.UnexpectedError -> logger.warn("Database error in findAll: ERROR_MSG")
+                            is DomainError.UnexpectedError -> logger.warn("Database error in findAll: ${error.message}")
 
                             is DomainError.NotFoundError -> logger.warn("Database error in findAll: ${error.resource} ${error.id}")
 
-                            is DomainError.ValidationError -> logger.warn("Database error in findAll: ${error.field} - ERROR_MSG")
+                            is DomainError.ValidationError -> logger.warn("Database error in findAll: ${error.field} - ${error.message}")
 
-                            is DomainError.UnauthorizedError -> logger.warn("Database error in findAll: ERROR_MSG")
+                            is DomainError.UnauthorizedError -> logger.warn("Database error in findAll: ${error.message}")
 
                             else -> logger.warn("Database error in findAll: $error")
                         }
@@ -155,15 +155,15 @@ class SurrealInboxRepository(
                     ifLeft = { error ->
 
                         when (error) {
-                            is DomainError.NetworkError -> logger.warn("Database error in findBySource: ERROR_MSG")
+                            is DomainError.NetworkError -> logger.warn("Database error in findBySource: ${error.message}")
 
-                            is DomainError.UnexpectedError -> logger.warn("Database error in findBySource: ERROR_MSG")
+                            is DomainError.UnexpectedError -> logger.warn("Database error in findBySource: ${error.message}")
 
                             is DomainError.NotFoundError -> logger.warn("Database error in findBySource: ${error.resource} ${error.id}")
 
-                            is DomainError.ValidationError -> logger.warn("Database error in findBySource: ${error.field} - ERROR_MSG")
+                            is DomainError.ValidationError -> logger.warn("Database error in findBySource: ${error.field} - ${error.message}")
 
-                            is DomainError.UnauthorizedError -> logger.warn("Database error in findBySource: ERROR_MSG")
+                            is DomainError.UnauthorizedError -> logger.warn("Database error in findBySource: ${error.message}")
 
                             else -> logger.warn("Database error in findBySource: $error")
                         }

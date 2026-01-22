@@ -105,15 +105,15 @@ class SurrealTagRepository(
                     ifLeft = { error ->
 
                         when (error) {
-                            is DomainError.NetworkError -> logger.warn("Database error in findAll: ERROR_MSG")
+                            is DomainError.NetworkError -> logger.warn("Database error in findAll: ${error.message}")
 
-                            is DomainError.UnexpectedError -> logger.warn("Database error in findAll: ERROR_MSG")
+                            is DomainError.UnexpectedError -> logger.warn("Database error in findAll: ${error.message}")
 
                             is DomainError.NotFoundError -> logger.warn("Database error in findAll: ${error.resource} ${error.id}")
 
-                            is DomainError.ValidationError -> logger.warn("Database error in findAll: ${error.field} - ERROR_MSG")
+                            is DomainError.ValidationError -> logger.warn("Database error in findAll: ${error.field} - ${error.message}")
 
-                            is DomainError.UnauthorizedError -> logger.warn("Database error in findAll: ERROR_MSG")
+                            is DomainError.UnauthorizedError -> logger.warn("Database error in findAll: ${error.message}")
 
                             else -> logger.warn("Database error in findAll: $error")
                         }
@@ -177,15 +177,15 @@ class SurrealTagRepository(
                     ifLeft = { error ->
 
                         when (error) {
-                            is DomainError.NetworkError -> logger.warn("Database error in findByNote: ERROR_MSG")
+                            is DomainError.NetworkError -> logger.warn("Database error in findByNote: ${error.message}")
 
-                            is DomainError.UnexpectedError -> logger.warn("Database error in findByNote: ERROR_MSG")
+                            is DomainError.UnexpectedError -> logger.warn("Database error in findByNote: ${error.message}")
 
                             is DomainError.NotFoundError -> logger.warn("Database error in findByNote: ${error.resource} ${error.id}")
 
-                            is DomainError.ValidationError -> logger.warn("Database error in findByNote: ${error.field} - ERROR_MSG")
+                            is DomainError.ValidationError -> logger.warn("Database error in findByNote: ${error.field} - ${error.message}")
 
-                            is DomainError.UnauthorizedError -> logger.warn("Database error in findByNote: ERROR_MSG")
+                            is DomainError.UnauthorizedError -> logger.warn("Database error in findByNote: ${error.message}")
 
                             else -> logger.warn("Database error in findByNote: $error")
                         }
@@ -245,15 +245,15 @@ class SurrealTagRepository(
                     ifLeft = { error ->
 
                         when (error) {
-                            is DomainError.NetworkError -> logger.warn("Database error in findMostUsed: ERROR_MSG")
+                            is DomainError.NetworkError -> logger.warn("Database error in findMostUsed: ${error.message}")
 
-                            is DomainError.UnexpectedError -> logger.warn("Database error in findMostUsed: ERROR_MSG")
+                            is DomainError.UnexpectedError -> logger.warn("Database error in findMostUsed: ${error.message}")
 
                             is DomainError.NotFoundError -> logger.warn("Database error in findMostUsed: ${error.resource} ${error.id}")
 
-                            is DomainError.ValidationError -> logger.warn("Database error in findMostUsed: ${error.field} - ERROR_MSG")
+                            is DomainError.ValidationError -> logger.warn("Database error in findMostUsed: ${error.field} - ${error.message}")
 
-                            is DomainError.UnauthorizedError -> logger.warn("Database error in findMostUsed: ERROR_MSG")
+                            is DomainError.UnauthorizedError -> logger.warn("Database error in findMostUsed: ${error.message}")
 
                             else -> logger.warn("Database error in findMostUsed: $error")
                         }

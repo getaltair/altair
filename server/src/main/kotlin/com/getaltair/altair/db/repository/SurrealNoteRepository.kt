@@ -40,7 +40,7 @@ class SurrealNoteRepository(
                         "SELECT * FROM note WHERE id = note:\$id AND user_id = user:\$userId AND deleted_at IS NONE",
                         mapOf("id" to id.value, "userId" to userId.value),
                     ).mapLeft { error ->
-                        logger.warn("Database error in findById for ${id.value}: ERROR_MSG (converting to NotFound)")
+                        logger.warn("Database error in findById for ${id.value}: $error (converting to NotFound)")
                         NoteError.NotFound(id)
                     }.bind()
             parseNote(result) ?: raise(NoteError.NotFound(id))
@@ -72,7 +72,7 @@ class SurrealNoteRepository(
                             put("userId", userId.value)
                         },
                     ).mapLeft { error ->
-                        logger.warn("Database error updating ${entity.id.value}: ERROR_MSG (converting to NotFound)")
+                        logger.warn("Database error updating ${entity.id.value}: $error (converting to NotFound)")
                         NoteError.NotFound(entity.id)
                     }.bind()
             } else {
@@ -98,7 +98,7 @@ class SurrealNoteRepository(
                             put("isPinned", entity.isPinned)
                         },
                     ).mapLeft { error ->
-                        logger.warn("Database error inserting ${entity.id.value}: ERROR_MSG (converting to NotFound)")
+                        logger.warn("Database error inserting ${entity.id.value}: $error (converting to NotFound)")
                         NoteError.NotFound(entity.id)
                     }.bind()
             }
@@ -113,7 +113,7 @@ class SurrealNoteRepository(
                     "UPDATE note:\$id SET deleted_at = time::now(), updated_at = time::now() WHERE user_id = user:\$userId;",
                     mapOf("id" to id.value, "userId" to userId.value),
                 ).mapLeft { error ->
-                    logger.warn("Database error in delete for ${id.value}: ERROR_MSG (converting to NotFound)")
+                    logger.warn("Database error in delete for ${id.value}: $error (converting to NotFound)")
                     NoteError.NotFound(id)
                 }.bind()
         }
@@ -130,15 +130,15 @@ class SurrealNoteRepository(
                     ifLeft = { error ->
 
                         when (error) {
-                            is DomainError.NetworkError -> logger.warn("Database error: ERROR_MSG")
+                            is DomainError.NetworkError -> logger.warn("Database error: ${error.message}")
 
-                            is DomainError.UnexpectedError -> logger.warn("Database error: ERROR_MSG")
+                            is DomainError.UnexpectedError -> logger.warn("Database error: ${error.message}")
 
                             is DomainError.NotFoundError -> logger.warn("Database error: ${error.resource} ${error.id}")
 
-                            is DomainError.ValidationError -> logger.warn("Database error: ${error.field} - ERROR_MSG")
+                            is DomainError.ValidationError -> logger.warn("Database error: ${error.field} - ${error.message}")
 
-                            is DomainError.UnauthorizedError -> logger.warn("Database error: ERROR_MSG")
+                            is DomainError.UnauthorizedError -> logger.warn("Database error: ${error.message}")
 
                             else -> logger.warn("Database error: $error")
                         }
@@ -168,15 +168,15 @@ class SurrealNoteRepository(
                     ifLeft = { error ->
 
                         when (error) {
-                            is DomainError.NetworkError -> logger.warn("Database error: ERROR_MSG")
+                            is DomainError.NetworkError -> logger.warn("Database error: ${error.message}")
 
-                            is DomainError.UnexpectedError -> logger.warn("Database error: ERROR_MSG")
+                            is DomainError.UnexpectedError -> logger.warn("Database error: ${error.message}")
 
                             is DomainError.NotFoundError -> logger.warn("Database error: ${error.resource} ${error.id}")
 
-                            is DomainError.ValidationError -> logger.warn("Database error: ${error.field} - ERROR_MSG")
+                            is DomainError.ValidationError -> logger.warn("Database error: ${error.field} - ${error.message}")
 
-                            is DomainError.UnauthorizedError -> logger.warn("Database error: ERROR_MSG")
+                            is DomainError.UnauthorizedError -> logger.warn("Database error: ${error.message}")
 
                             else -> logger.warn("Database error: $error")
                         }
@@ -199,15 +199,15 @@ class SurrealNoteRepository(
                     ifLeft = { error ->
 
                         when (error) {
-                            is DomainError.NetworkError -> logger.warn("Database error: ERROR_MSG")
+                            is DomainError.NetworkError -> logger.warn("Database error: ${error.message}")
 
-                            is DomainError.UnexpectedError -> logger.warn("Database error: ERROR_MSG")
+                            is DomainError.UnexpectedError -> logger.warn("Database error: ${error.message}")
 
                             is DomainError.NotFoundError -> logger.warn("Database error: ${error.resource} ${error.id}")
 
-                            is DomainError.ValidationError -> logger.warn("Database error: ${error.field} - ERROR_MSG")
+                            is DomainError.ValidationError -> logger.warn("Database error: ${error.field} - ${error.message}")
 
-                            is DomainError.UnauthorizedError -> logger.warn("Database error: ERROR_MSG")
+                            is DomainError.UnauthorizedError -> logger.warn("Database error: ${error.message}")
 
                             else -> logger.warn("Database error: $error")
                         }
@@ -230,15 +230,15 @@ class SurrealNoteRepository(
                     ifLeft = { error ->
 
                         when (error) {
-                            is DomainError.NetworkError -> logger.warn("Database error: ERROR_MSG")
+                            is DomainError.NetworkError -> logger.warn("Database error: ${error.message}")
 
-                            is DomainError.UnexpectedError -> logger.warn("Database error: ERROR_MSG")
+                            is DomainError.UnexpectedError -> logger.warn("Database error: ${error.message}")
 
                             is DomainError.NotFoundError -> logger.warn("Database error: ${error.resource} ${error.id}")
 
-                            is DomainError.ValidationError -> logger.warn("Database error: ${error.field} - ERROR_MSG")
+                            is DomainError.ValidationError -> logger.warn("Database error: ${error.field} - ${error.message}")
 
-                            is DomainError.UnauthorizedError -> logger.warn("Database error: ERROR_MSG")
+                            is DomainError.UnauthorizedError -> logger.warn("Database error: ${error.message}")
 
                             else -> logger.warn("Database error: $error")
                         }
@@ -262,7 +262,7 @@ class SurrealNoteRepository(
                         """.trimIndent(),
                         mapOf("userId" to userId.value, "query" to query),
                     ).mapLeft { error ->
-                        logger.warn("Database error in search: ERROR_MSG (converting to NotFound)")
+                        logger.warn("Database error in search: $error (converting to NotFound)")
                         NoteError.NotFound(Ulid.generate())
                     }.bind()
             parseNotes(result)
@@ -299,15 +299,15 @@ class SurrealNoteRepository(
                     ifLeft = { error ->
 
                         when (error) {
-                            is DomainError.NetworkError -> logger.warn("Database error: ERROR_MSG")
+                            is DomainError.NetworkError -> logger.warn("Database error: ${error.message}")
 
-                            is DomainError.UnexpectedError -> logger.warn("Database error: ERROR_MSG")
+                            is DomainError.UnexpectedError -> logger.warn("Database error: ${error.message}")
 
                             is DomainError.NotFoundError -> logger.warn("Database error: ${error.resource} ${error.id}")
 
-                            is DomainError.ValidationError -> logger.warn("Database error: ${error.field} - ERROR_MSG")
+                            is DomainError.ValidationError -> logger.warn("Database error: ${error.field} - ${error.message}")
 
-                            is DomainError.UnauthorizedError -> logger.warn("Database error: ERROR_MSG")
+                            is DomainError.UnauthorizedError -> logger.warn("Database error: ${error.message}")
 
                             else -> logger.warn("Database error: $error")
                         }
@@ -335,15 +335,15 @@ class SurrealNoteRepository(
                     ifLeft = { error ->
 
                         when (error) {
-                            is DomainError.NetworkError -> logger.warn("Database error: ERROR_MSG")
+                            is DomainError.NetworkError -> logger.warn("Database error: ${error.message}")
 
-                            is DomainError.UnexpectedError -> logger.warn("Database error: ERROR_MSG")
+                            is DomainError.UnexpectedError -> logger.warn("Database error: ${error.message}")
 
                             is DomainError.NotFoundError -> logger.warn("Database error: ${error.resource} ${error.id}")
 
-                            is DomainError.ValidationError -> logger.warn("Database error: ${error.field} - ERROR_MSG")
+                            is DomainError.ValidationError -> logger.warn("Database error: ${error.field} - ${error.message}")
 
-                            is DomainError.UnauthorizedError -> logger.warn("Database error: ERROR_MSG")
+                            is DomainError.UnauthorizedError -> logger.warn("Database error: ${error.message}")
 
                             else -> logger.warn("Database error: $error")
                         }
@@ -362,7 +362,7 @@ class SurrealNoteRepository(
                     "UPDATE note:\$id SET is_pinned = \$isPinned, updated_at = time::now() WHERE user_id = user:\$userId;",
                     mapOf("id" to id.value, "isPinned" to !note.isPinned, "userId" to userId.value),
                 ).mapLeft { error ->
-                    logger.warn("Database error in togglePinned for ${id.value}: ERROR_MSG (converting to NotFound)")
+                    logger.warn("Database error in togglePinned for ${id.value}: $error (converting to NotFound)")
                     NoteError.NotFound(id)
                 }.bind()
             findById(id).bind()
@@ -383,7 +383,7 @@ class SurrealNoteRepository(
                         put("userId", userId.value)
                     },
                 ).mapLeft { error ->
-                    logger.warn("Database error in moveToFolder for ${id.value}: ERROR_MSG (converting to NotFound)")
+                    logger.warn("Database error in moveToFolder for ${id.value}: $error (converting to NotFound)")
                     NoteError.NotFound(id)
                 }.bind()
             findById(id).bind()

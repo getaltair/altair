@@ -136,15 +136,15 @@ class SurrealSourceDocumentRepository(
                     ifLeft = { error ->
 
                         when (error) {
-                            is DomainError.NetworkError -> logger.warn("Database error in findAll: ERROR_MSG")
+                            is DomainError.NetworkError -> logger.warn("Database error in findAll: ${error.message}")
 
-                            is DomainError.UnexpectedError -> logger.warn("Database error in findAll: ERROR_MSG")
+                            is DomainError.UnexpectedError -> logger.warn("Database error in findAll: ${error.message}")
 
                             is DomainError.NotFoundError -> logger.warn("Database error in findAll: ${error.resource} ${error.id}")
 
-                            is DomainError.ValidationError -> logger.warn("Database error in findAll: ${error.field} - ERROR_MSG")
+                            is DomainError.ValidationError -> logger.warn("Database error in findAll: ${error.field} - ${error.message}")
 
-                            is DomainError.UnauthorizedError -> logger.warn("Database error in findAll: ERROR_MSG")
+                            is DomainError.UnauthorizedError -> logger.warn("Database error in findAll: ${error.message}")
 
                             else -> logger.warn("Database error in findAll: $error")
                         }
@@ -167,15 +167,15 @@ class SurrealSourceDocumentRepository(
                     ifLeft = { error ->
 
                         when (error) {
-                            is DomainError.NetworkError -> logger.warn("Database error in findByExtractionStatus: ERROR_MSG")
+                            is DomainError.NetworkError -> logger.warn("Database error in findByExtractionStatus: ${error.message}")
 
-                            is DomainError.UnexpectedError -> logger.warn("Database error in findByExtractionStatus: ERROR_MSG")
+                            is DomainError.UnexpectedError -> logger.warn("Database error in findByExtractionStatus: ${error.message}")
 
                             is DomainError.NotFoundError -> logger.warn("Database error in findByExtractionStatus: ${error.resource} ${error.id}")
 
-                            is DomainError.ValidationError -> logger.warn("Database error in findByExtractionStatus: ${error.field} - ERROR_MSG")
+                            is DomainError.ValidationError -> logger.warn("Database error in findByExtractionStatus: ${error.field} - ${error.message}")
 
-                            is DomainError.UnauthorizedError -> logger.warn("Database error in findByExtractionStatus: ERROR_MSG")
+                            is DomainError.UnauthorizedError -> logger.warn("Database error in findByExtractionStatus: ${error.message}")
 
                             else -> logger.warn("Database error in findByExtractionStatus: $error")
                         }
@@ -198,15 +198,15 @@ class SurrealSourceDocumentRepository(
                     ifLeft = { error ->
 
                         when (error) {
-                            is DomainError.NetworkError -> logger.warn("Database error in findBySourceType: ERROR_MSG")
+                            is DomainError.NetworkError -> logger.warn("Database error in findBySourceType: ${error.message}")
 
-                            is DomainError.UnexpectedError -> logger.warn("Database error in findBySourceType: ERROR_MSG")
+                            is DomainError.UnexpectedError -> logger.warn("Database error in findBySourceType: ${error.message}")
 
                             is DomainError.NotFoundError -> logger.warn("Database error in findBySourceType: ${error.resource} ${error.id}")
 
-                            is DomainError.ValidationError -> logger.warn("Database error in findBySourceType: ${error.field} - ERROR_MSG")
+                            is DomainError.ValidationError -> logger.warn("Database error in findBySourceType: ${error.field} - ${error.message}")
 
-                            is DomainError.UnauthorizedError -> logger.warn("Database error in findBySourceType: ERROR_MSG")
+                            is DomainError.UnauthorizedError -> logger.warn("Database error in findBySourceType: ${error.message}")
 
                             else -> logger.warn("Database error in findBySourceType: $error")
                         }
@@ -229,15 +229,15 @@ class SurrealSourceDocumentRepository(
                     ifLeft = { error ->
 
                         when (error) {
-                            is DomainError.NetworkError -> logger.warn("Database error in findByWatchedFolder: ERROR_MSG")
+                            is DomainError.NetworkError -> logger.warn("Database error in findByWatchedFolder: ${error.message}")
 
-                            is DomainError.UnexpectedError -> logger.warn("Database error in findByWatchedFolder: ERROR_MSG")
+                            is DomainError.UnexpectedError -> logger.warn("Database error in findByWatchedFolder: ${error.message}")
 
                             is DomainError.NotFoundError -> logger.warn("Database error in findByWatchedFolder: ${error.resource} ${error.id}")
 
-                            is DomainError.ValidationError -> logger.warn("Database error in findByWatchedFolder: ${error.field} - ERROR_MSG")
+                            is DomainError.ValidationError -> logger.warn("Database error in findByWatchedFolder: ${error.field} - ${error.message}")
 
-                            is DomainError.UnauthorizedError -> logger.warn("Database error in findByWatchedFolder: ERROR_MSG")
+                            is DomainError.UnauthorizedError -> logger.warn("Database error in findByWatchedFolder: ${error.message}")
 
                             else -> logger.warn("Database error in findByWatchedFolder: $error")
                         }
@@ -260,15 +260,15 @@ class SurrealSourceDocumentRepository(
                     ifLeft = { error ->
 
                         when (error) {
-                            is DomainError.NetworkError -> logger.warn("Database error in findByInitiative: ERROR_MSG")
+                            is DomainError.NetworkError -> logger.warn("Database error in findByInitiative: ${error.message}")
 
-                            is DomainError.UnexpectedError -> logger.warn("Database error in findByInitiative: ERROR_MSG")
+                            is DomainError.UnexpectedError -> logger.warn("Database error in findByInitiative: ${error.message}")
 
                             is DomainError.NotFoundError -> logger.warn("Database error in findByInitiative: ${error.resource} ${error.id}")
 
-                            is DomainError.ValidationError -> logger.warn("Database error in findByInitiative: ${error.field} - ERROR_MSG")
+                            is DomainError.ValidationError -> logger.warn("Database error in findByInitiative: ${error.field} - ${error.message}")
 
-                            is DomainError.UnauthorizedError -> logger.warn("Database error in findByInitiative: ERROR_MSG")
+                            is DomainError.UnauthorizedError -> logger.warn("Database error in findByInitiative: ${error.message}")
 
                             else -> logger.warn("Database error in findByInitiative: $error")
                         }

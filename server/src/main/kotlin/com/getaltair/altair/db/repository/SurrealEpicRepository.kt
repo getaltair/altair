@@ -41,7 +41,7 @@ class SurrealEpicRepository(
                         "SELECT * FROM epic WHERE id = epic:\$id AND user_id = user:\$userId AND deleted_at IS NONE",
                         mapOf("id" to id.value, "userId" to userId.value),
                     ).mapLeft { error ->
-                        logger.warn("Database error in findById for ${id.value}: ERROR_MSG_PH (converting to NotFound)")
+                        logger.warn("Database error in findById for ${id.value}: $error (converting to NotFound)")
                         EpicError.NotFound(id)
                     }.bind()
             parseEpic(result) ?: raise(EpicError.NotFound(id))
@@ -83,7 +83,7 @@ class SurrealEpicRepository(
                     "userId" to userId.value,
                 ),
             ).mapLeft { error ->
-                logger.warn("Database error updating ${entity.id.value}: ERROR_MSG_PH (converting to NotFound)")
+                logger.warn("Database error updating ${entity.id.value}: $error (converting to NotFound)")
                 EpicError.NotFound(entity.id)
             }
 
@@ -111,7 +111,7 @@ class SurrealEpicRepository(
                     "targetDate" to entity.targetDate?.toString(),
                 ),
             ).mapLeft { error ->
-                logger.warn("Database error inserting ${entity.id.value}: ERROR_MSG_PH (converting to NotFound)")
+                logger.warn("Database error inserting ${entity.id.value}: $error (converting to NotFound)")
                 EpicError.NotFound(entity.id)
             }
 
@@ -123,7 +123,7 @@ class SurrealEpicRepository(
                     "UPDATE epic:${'$'}id SET deleted_at = time::now(), updated_at = time::now() WHERE user_id = user:${'$'}userId;",
                     mapOf("id" to id.value, "userId" to userId.value),
                 ).mapLeft { error ->
-                    logger.warn("Database error in delete for ${id.value}: ERROR_MSG_PH (converting to NotFound)")
+                    logger.warn("Database error in delete for ${id.value}: $error (converting to NotFound)")
                     EpicError.NotFound(id)
                 }.bind()
         }
@@ -140,15 +140,15 @@ class SurrealEpicRepository(
                     ifLeft = { error ->
 
                         when (error) {
-                            is DomainError.NetworkError -> logger.warn("Database error: ERROR_MSG_PH")
+                            is DomainError.NetworkError -> logger.warn("Database error: $error")
 
-                            is DomainError.UnexpectedError -> logger.warn("Database error: ERROR_MSG_PH")
+                            is DomainError.UnexpectedError -> logger.warn("Database error: $error")
 
                             is DomainError.NotFoundError -> logger.warn("Database error: ${error.resource} ${error.id}")
 
-                            is DomainError.ValidationError -> logger.warn("Database error: ${error.field} - ERROR_MSG_PH")
+                            is DomainError.ValidationError -> logger.warn("Database error: ${error.field} - $error")
 
-                            is DomainError.UnauthorizedError -> logger.warn("Database error: ERROR_MSG_PH")
+                            is DomainError.UnauthorizedError -> logger.warn("Database error: $error")
 
                             else -> logger.warn("Database error: $error")
                         }
@@ -171,15 +171,15 @@ class SurrealEpicRepository(
                     ifLeft = { error ->
 
                         when (error) {
-                            is DomainError.NetworkError -> logger.warn("Database error: ERROR_MSG_PH")
+                            is DomainError.NetworkError -> logger.warn("Database error: $error")
 
-                            is DomainError.UnexpectedError -> logger.warn("Database error: ERROR_MSG_PH")
+                            is DomainError.UnexpectedError -> logger.warn("Database error: $error")
 
                             is DomainError.NotFoundError -> logger.warn("Database error: ${error.resource} ${error.id}")
 
-                            is DomainError.ValidationError -> logger.warn("Database error: ${error.field} - ERROR_MSG_PH")
+                            is DomainError.ValidationError -> logger.warn("Database error: ${error.field} - $error")
 
-                            is DomainError.UnauthorizedError -> logger.warn("Database error: ERROR_MSG_PH")
+                            is DomainError.UnauthorizedError -> logger.warn("Database error: $error")
 
                             else -> logger.warn("Database error: $error")
                         }
@@ -202,15 +202,15 @@ class SurrealEpicRepository(
                     ifLeft = { error ->
 
                         when (error) {
-                            is DomainError.NetworkError -> logger.warn("Database error: ERROR_MSG_PH")
+                            is DomainError.NetworkError -> logger.warn("Database error: $error")
 
-                            is DomainError.UnexpectedError -> logger.warn("Database error: ERROR_MSG_PH")
+                            is DomainError.UnexpectedError -> logger.warn("Database error: $error")
 
                             is DomainError.NotFoundError -> logger.warn("Database error: ${error.resource} ${error.id}")
 
-                            is DomainError.ValidationError -> logger.warn("Database error: ${error.field} - ERROR_MSG_PH")
+                            is DomainError.ValidationError -> logger.warn("Database error: ${error.field} - $error")
 
-                            is DomainError.UnauthorizedError -> logger.warn("Database error: ERROR_MSG_PH")
+                            is DomainError.UnauthorizedError -> logger.warn("Database error: $error")
 
                             else -> logger.warn("Database error: $error")
                         }
@@ -239,7 +239,7 @@ class SurrealEpicRepository(
                         """.trimIndent(),
                         mapOf("id" to id.value),
                     ).mapLeft { error ->
-                        logger.warn("Database error in getProgress for ${id.value}: ERROR_MSG_PH (converting to NotFound)")
+                        logger.warn("Database error in getProgress for ${id.value}: $error (converting to NotFound)")
                         EpicError.NotFound(id)
                     }.bind()
             parseProgress(result)
@@ -257,15 +257,15 @@ class SurrealEpicRepository(
                     ifLeft = { error ->
 
                         when (error) {
-                            is DomainError.NetworkError -> logger.warn("Database error in findAllWithProgress: ERROR_MSG_PH")
+                            is DomainError.NetworkError -> logger.warn("Database error in findAllWithProgress: $error")
 
-                            is DomainError.UnexpectedError -> logger.warn("Database error in findAllWithProgress: ERROR_MSG_PH")
+                            is DomainError.UnexpectedError -> logger.warn("Database error in findAllWithProgress: $error")
 
                             is DomainError.NotFoundError -> logger.warn("Database error in findAllWithProgress: ${error.resource} ${error.id}")
 
-                            is DomainError.ValidationError -> logger.warn("Database error in findAllWithProgress: ${error.field} - ERROR_MSG_PH")
+                            is DomainError.ValidationError -> logger.warn("Database error in findAllWithProgress: ${error.field} - $error")
 
-                            is DomainError.UnauthorizedError -> logger.warn("Database error in findAllWithProgress: ERROR_MSG_PH")
+                            is DomainError.UnauthorizedError -> logger.warn("Database error in findAllWithProgress: $error")
 
                             else -> logger.warn("Database error in findAllWithProgress: $error")
                         }

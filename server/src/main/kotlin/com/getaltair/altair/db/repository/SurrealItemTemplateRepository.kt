@@ -117,15 +117,15 @@ class SurrealItemTemplateRepository(
                     ifLeft = { error ->
 
                         when (error) {
-                            is DomainError.NetworkError -> logger.warn("Database error in findAll: ERROR_MSG")
+                            is DomainError.NetworkError -> logger.warn("Database error in findAll: ${error.message}")
 
-                            is DomainError.UnexpectedError -> logger.warn("Database error in findAll: ERROR_MSG")
+                            is DomainError.UnexpectedError -> logger.warn("Database error in findAll: ${error.message}")
 
                             is DomainError.NotFoundError -> logger.warn("Database error in findAll: ${error.resource} ${error.id}")
 
-                            is DomainError.ValidationError -> logger.warn("Database error in findAll: ${error.field} - ERROR_MSG")
+                            is DomainError.ValidationError -> logger.warn("Database error in findAll: ${error.field} - ${error.message}")
 
-                            is DomainError.UnauthorizedError -> logger.warn("Database error in findAll: ERROR_MSG")
+                            is DomainError.UnauthorizedError -> logger.warn("Database error in findAll: ${error.message}")
 
                             else -> logger.warn("Database error in findAll: $error")
                         }
@@ -172,15 +172,15 @@ class SurrealItemTemplateRepository(
                     ifLeft = { error ->
 
                         when (error) {
-                            is DomainError.NetworkError -> logger.warn("Database error in findAllWithFields (templates): ERROR_MSG")
+                            is DomainError.NetworkError -> logger.warn("Database error in findAllWithFields (templates): ${error.message}")
 
-                            is DomainError.UnexpectedError -> logger.warn("Database error in findAllWithFields (templates): ERROR_MSG")
+                            is DomainError.UnexpectedError -> logger.warn("Database error in findAllWithFields (templates): ${error.message}")
 
                             is DomainError.NotFoundError -> logger.warn("Database error in findAllWithFields (templates): ${error.resource} ${error.id}")
 
-                            is DomainError.ValidationError -> logger.warn("Database error in findAllWithFields (templates): ${error.field} - ERROR_MSG")
+                            is DomainError.ValidationError -> logger.warn("Database error in findAllWithFields (templates): ${error.field} - ${error.message}")
 
-                            is DomainError.UnauthorizedError -> logger.warn("Database error in findAllWithFields (templates): ERROR_MSG")
+                            is DomainError.UnauthorizedError -> logger.warn("Database error in findAllWithFields (templates): ${error.message}")
 
                             else -> logger.warn("Database error in findAllWithFields (templates): $error")
                         }
@@ -201,15 +201,15 @@ class SurrealItemTemplateRepository(
                             ifLeft = { error ->
 
                                 when (error) {
-                                    is DomainError.NetworkError -> logger.warn("Database error in findAllWithFields (fields for template ${template.id}): ERROR_MSG")
+                                    is DomainError.NetworkError -> logger.warn("Database error in findAllWithFields (fields for template ${template.id}): ${error.message}")
 
-                                    is DomainError.UnexpectedError -> logger.warn("Database error in findAllWithFields (fields for template ${template.id}): ERROR_MSG")
+                                    is DomainError.UnexpectedError -> logger.warn("Database error in findAllWithFields (fields for template ${template.id}): ${error.message}")
 
                                     is DomainError.NotFoundError -> logger.warn("Database error in findAllWithFields (fields for template ${template.id}): ${error.resource} ${error.id}")
 
-                                    is DomainError.ValidationError -> logger.warn("Database error in findAllWithFields (fields for template ${template.id}): ${error.field} - ERROR_MSG")
+                                    is DomainError.ValidationError -> logger.warn("Database error in findAllWithFields (fields for template ${template.id}): ${error.field} - ${error.message}")
 
-                                    is DomainError.UnauthorizedError -> logger.warn("Database error in findAllWithFields (fields for template ${template.id}): ERROR_MSG")
+                                    is DomainError.UnauthorizedError -> logger.warn("Database error in findAllWithFields (fields for template ${template.id}): ${error.message}")
 
                                     else -> logger.warn("Database error in findAllWithFields (fields for template ${template.id}): $error")
                                 }

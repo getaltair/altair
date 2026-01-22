@@ -49,7 +49,7 @@ class SurrealRefreshTokenRepository(
                         "deviceName" to token.deviceName,
                     ),
                 ).mapLeft { error ->
-                    logger.warn("Database error creating refresh token: ERROR_MSG (converting to TokenInvalid)")
+                    logger.warn("Database error creating refresh token: $error (converting to TokenInvalid)")
                     AuthError.TokenInvalid("Failed to create refresh token")
                 }.bind()
 
@@ -64,7 +64,7 @@ class SurrealRefreshTokenRepository(
                         "SELECT * FROM refresh_token WHERE token_hash = ${'$'}tokenHash AND revoked_at IS NONE",
                         mapOf("tokenHash" to tokenHash),
                     ).mapLeft { error ->
-                        logger.warn("Database error querying refresh token: ERROR_MSG (converting to TokenInvalid)")
+                        logger.warn("Database error querying refresh token: $error (converting to TokenInvalid)")
                         AuthError.TokenInvalid("Failed to query refresh token")
                     }.bind()
 
@@ -85,7 +85,7 @@ class SurrealRefreshTokenRepository(
                     """.trimIndent(),
                     mapOf("userId" to userId.value),
                 ).mapLeft { error ->
-                    logger.warn("Database error revoking refresh token: ERROR_MSG (converting to TokenInvalid)")
+                    logger.warn("Database error revoking refresh token: $error (converting to TokenInvalid)")
                     AuthError.TokenInvalid("Failed to revoke refresh token")
                 }.bind()
         }

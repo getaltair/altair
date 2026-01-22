@@ -40,11 +40,11 @@ class SurrealNoteLinkRepository(
                         mapOf("id" to id.value, "userId" to userId.value),
                     ).mapLeft { error ->
                         when (error) {
-                            is DomainError.NetworkError -> logger.warn("Database network error in findById for ${id.value}: ERROR_MSG (converting to NotFound)")
-                            is DomainError.UnexpectedError -> logger.warn("Database unexpected error in findById for ${id.value}: ERROR_MSG (converting to NotFound)")
+                            is DomainError.NetworkError -> logger.warn("Database network error in findById for ${id.value}: $error (converting to NotFound)")
+                            is DomainError.UnexpectedError -> logger.warn("Database unexpected error in findById for ${id.value}: $error (converting to NotFound)")
                             is DomainError.NotFoundError -> logger.warn("Database not found error in findById for ${id.value}: ${error.resource} ${error.id} (converting to NotFound)")
-                            is DomainError.ValidationError -> logger.warn("Database validation error in findById for ${id.value}: ${error.field} - ERROR_MSG (converting to NotFound)")
-                            is DomainError.UnauthorizedError -> logger.warn("Database unauthorized error in findById for ${id.value}: ERROR_MSG (converting to NotFound)")
+                            is DomainError.ValidationError -> logger.warn("Database validation error in findById for ${id.value}: ${error.field} - $error (converting to NotFound)")
+                            is DomainError.UnauthorizedError -> logger.warn("Database unauthorized error in findById for ${id.value}: $error (converting to NotFound)")
                             else -> logger.warn("Database error in findById for ${id.value}: $error (converting to NotFound)")
                         }
                         NoteError.NotFound(id)
@@ -73,11 +73,11 @@ class SurrealNoteLinkRepository(
                     ),
                 ).mapLeft { error ->
                     when (error) {
-                        is DomainError.NetworkError -> logger.warn("Database network error saving note link ${entity.id.value}: ERROR_MSG (converting to NotFound)")
-                        is DomainError.UnexpectedError -> logger.warn("Database unexpected error saving note link ${entity.id.value}: ERROR_MSG (converting to NotFound)")
+                        is DomainError.NetworkError -> logger.warn("Database network error saving note link ${entity.id.value}: $error (converting to NotFound)")
+                        is DomainError.UnexpectedError -> logger.warn("Database unexpected error saving note link ${entity.id.value}: $error (converting to NotFound)")
                         is DomainError.NotFoundError -> logger.warn("Database not found error saving note link ${entity.id.value}: ${error.resource} ${error.id} (converting to NotFound)")
-                        is DomainError.ValidationError -> logger.warn("Database validation error saving note link ${entity.id.value}: ${error.field} - ERROR_MSG (converting to NotFound)")
-                        is DomainError.UnauthorizedError -> logger.warn("Database unauthorized error saving note link ${entity.id.value}: ERROR_MSG (converting to NotFound)")
+                        is DomainError.ValidationError -> logger.warn("Database validation error saving note link ${entity.id.value}: ${error.field} - $error (converting to NotFound)")
+                        is DomainError.UnauthorizedError -> logger.warn("Database unauthorized error saving note link ${entity.id.value}: $error (converting to NotFound)")
                         else -> logger.warn("Database error: $error")
                     }
                     NoteError.NotFound(entity.id)
@@ -93,11 +93,11 @@ class SurrealNoteLinkRepository(
                     mapOf("id" to id.value, "userId" to userId.value),
                 ).mapLeft { error ->
                     when (error) {
-                        is DomainError.NetworkError -> logger.warn("Database network error in delete for ${id.value}: ERROR_MSG (converting to NotFound)")
-                        is DomainError.UnexpectedError -> logger.warn("Database unexpected error in delete for ${id.value}: ERROR_MSG (converting to NotFound)")
+                        is DomainError.NetworkError -> logger.warn("Database network error in delete for ${id.value}: $error (converting to NotFound)")
+                        is DomainError.UnexpectedError -> logger.warn("Database unexpected error in delete for ${id.value}: $error (converting to NotFound)")
                         is DomainError.NotFoundError -> logger.warn("Database not found error in delete for ${id.value}: ${error.resource} ${error.id} (converting to NotFound)")
-                        is DomainError.ValidationError -> logger.warn("Database validation error in delete for ${id.value}: ${error.field} - ERROR_MSG (converting to NotFound)")
-                        is DomainError.UnauthorizedError -> logger.warn("Database unauthorized error in delete for ${id.value}: ERROR_MSG (converting to NotFound)")
+                        is DomainError.ValidationError -> logger.warn("Database validation error in delete for ${id.value}: ${error.field} - $error (converting to NotFound)")
+                        is DomainError.UnauthorizedError -> logger.warn("Database unauthorized error in delete for ${id.value}: $error (converting to NotFound)")
                         else -> logger.warn("Database error: $error")
                     }
                     NoteError.NotFound(id)
@@ -115,11 +115,11 @@ class SurrealNoteLinkRepository(
                 result.fold(
                     ifLeft = { error ->
                         when (error) {
-                            is DomainError.NetworkError -> logger.warn("Database network error: ERROR_MSG")
-                            is DomainError.UnexpectedError -> logger.warn("Database unexpected error: ERROR_MSG")
+                            is DomainError.NetworkError -> logger.warn("Database network error: ${error.message}")
+                            is DomainError.UnexpectedError -> logger.warn("Database unexpected error: ${error.message}")
                             is DomainError.NotFoundError -> logger.warn("Database not found error: ${error.resource} ${error.id}")
-                            is DomainError.ValidationError -> logger.warn("Database validation error: ${error.field} - ERROR_MSG")
-                            is DomainError.UnauthorizedError -> logger.warn("Database unauthorized error: ERROR_MSG")
+                            is DomainError.ValidationError -> logger.warn("Database validation error: ${error.field} - ${error.message}")
+                            is DomainError.UnauthorizedError -> logger.warn("Database unauthorized error: ${error.message}")
                             else -> logger.warn("Database error: $error")
                         }
                         emptyList()
@@ -140,11 +140,11 @@ class SurrealNoteLinkRepository(
                 result.fold(
                     ifLeft = { error ->
                         when (error) {
-                            is DomainError.NetworkError -> logger.warn("Database network error: ERROR_MSG")
-                            is DomainError.UnexpectedError -> logger.warn("Database unexpected error: ERROR_MSG")
+                            is DomainError.NetworkError -> logger.warn("Database network error: ${error.message}")
+                            is DomainError.UnexpectedError -> logger.warn("Database unexpected error: ${error.message}")
                             is DomainError.NotFoundError -> logger.warn("Database not found error: ${error.resource} ${error.id}")
-                            is DomainError.ValidationError -> logger.warn("Database validation error: ${error.field} - ERROR_MSG")
-                            is DomainError.UnauthorizedError -> logger.warn("Database unauthorized error: ERROR_MSG")
+                            is DomainError.ValidationError -> logger.warn("Database validation error: ${error.field} - ${error.message}")
+                            is DomainError.UnauthorizedError -> logger.warn("Database unauthorized error: ${error.message}")
                             else -> logger.warn("Database error: $error")
                         }
                         emptyList()
@@ -165,11 +165,11 @@ class SurrealNoteLinkRepository(
                 result.fold(
                     ifLeft = { error ->
                         when (error) {
-                            is DomainError.NetworkError -> logger.warn("Database network error: ERROR_MSG")
-                            is DomainError.UnexpectedError -> logger.warn("Database unexpected error: ERROR_MSG")
+                            is DomainError.NetworkError -> logger.warn("Database network error: ${error.message}")
+                            is DomainError.UnexpectedError -> logger.warn("Database unexpected error: ${error.message}")
                             is DomainError.NotFoundError -> logger.warn("Database not found error: ${error.resource} ${error.id}")
-                            is DomainError.ValidationError -> logger.warn("Database validation error: ${error.field} - ERROR_MSG")
-                            is DomainError.UnauthorizedError -> logger.warn("Database unauthorized error: ERROR_MSG")
+                            is DomainError.ValidationError -> logger.warn("Database validation error: ${error.field} - ${error.message}")
+                            is DomainError.UnauthorizedError -> logger.warn("Database unauthorized error: ${error.message}")
                             else -> logger.warn("Database error: $error")
                         }
                         emptyList()
@@ -191,11 +191,11 @@ class SurrealNoteLinkRepository(
                         mapOf("userId" to userId.value, "sourceNoteId" to sourceNoteId.value, "targetNoteId" to targetNoteId.value),
                     ).mapLeft { error ->
                         when (error) {
-                            is DomainError.NetworkError -> logger.warn("Database network error in findBySourceAndTarget: ERROR_MSG (converting to LinkNotFound)")
-                            is DomainError.UnexpectedError -> logger.warn("Database unexpected error in findBySourceAndTarget: ERROR_MSG (converting to LinkNotFound)")
+                            is DomainError.NetworkError -> logger.warn("Database network error in findBySourceAndTarget: $error (converting to LinkNotFound)")
+                            is DomainError.UnexpectedError -> logger.warn("Database unexpected error in findBySourceAndTarget: $error (converting to LinkNotFound)")
                             is DomainError.NotFoundError -> logger.warn("Database not found error in findBySourceAndTarget: ${error.resource} ${error.id} (converting to LinkNotFound)")
-                            is DomainError.ValidationError -> logger.warn("Database validation error in findBySourceAndTarget: ${error.field} - ERROR_MSG (converting to LinkNotFound)")
-                            is DomainError.UnauthorizedError -> logger.warn("Database unauthorized error in findBySourceAndTarget: ERROR_MSG (converting to LinkNotFound)")
+                            is DomainError.ValidationError -> logger.warn("Database validation error in findBySourceAndTarget: ${error.field} - $error (converting to LinkNotFound)")
+                            is DomainError.UnauthorizedError -> logger.warn("Database unauthorized error in findBySourceAndTarget: $error (converting to LinkNotFound)")
                             else -> logger.warn("Database error: $error")
                         }
                         NoteError.LinkNotFound(sourceNoteId, targetNoteId)
@@ -218,11 +218,11 @@ class SurrealNoteLinkRepository(
                         mapOf("id" to link.id.value, "context" to context, "userId" to userId.value),
                     ).mapLeft { error ->
                         when (error) {
-                            is DomainError.NetworkError -> logger.warn("Database network error updating note link context: ERROR_MSG (converting to LinkNotFound)")
-                            is DomainError.UnexpectedError -> logger.warn("Database unexpected error updating note link context: ERROR_MSG (converting to LinkNotFound)")
+                            is DomainError.NetworkError -> logger.warn("Database network error updating note link context: $error (converting to LinkNotFound)")
+                            is DomainError.UnexpectedError -> logger.warn("Database unexpected error updating note link context: $error (converting to LinkNotFound)")
                             is DomainError.NotFoundError -> logger.warn("Database not found error updating note link context: ${error.resource} ${error.id} (converting to LinkNotFound)")
-                            is DomainError.ValidationError -> logger.warn("Database validation error updating note link context: ${error.field} - ERROR_MSG (converting to LinkNotFound)")
-                            is DomainError.UnauthorizedError -> logger.warn("Database unauthorized error updating note link context: ERROR_MSG (converting to LinkNotFound)")
+                            is DomainError.ValidationError -> logger.warn("Database validation error updating note link context: ${error.field} - $error (converting to LinkNotFound)")
+                            is DomainError.UnauthorizedError -> logger.warn("Database unauthorized error updating note link context: $error (converting to LinkNotFound)")
                             else -> logger.warn("Database error: $error")
                         }
                         NoteError.LinkNotFound(sourceNoteId, targetNoteId)
@@ -264,11 +264,11 @@ class SurrealNoteLinkRepository(
                         mapOf("userId" to userId.value, "noteId" to noteId.value),
                     ).mapLeft { error ->
                         when (error) {
-                            is DomainError.NetworkError -> logger.warn("Database network error in syncLinksFromContent for ${noteId.value}: ERROR_MSG (converting to NotFound)")
-                            is DomainError.UnexpectedError -> logger.warn("Database unexpected error in syncLinksFromContent for ${noteId.value}: ERROR_MSG (converting to NotFound)")
+                            is DomainError.NetworkError -> logger.warn("Database network error in syncLinksFromContent for ${noteId.value}: $error (converting to NotFound)")
+                            is DomainError.UnexpectedError -> logger.warn("Database unexpected error in syncLinksFromContent for ${noteId.value}: $error (converting to NotFound)")
                             is DomainError.NotFoundError -> logger.warn("Database not found error in syncLinksFromContent for ${noteId.value}: ${error.resource} ${error.id} (converting to NotFound)")
-                            is DomainError.ValidationError -> logger.warn("Database validation error in syncLinksFromContent for ${noteId.value}: ${error.field} - ERROR_MSG (converting to NotFound)")
-                            is DomainError.UnauthorizedError -> logger.warn("Database unauthorized error in syncLinksFromContent for ${noteId.value}: ERROR_MSG (converting to NotFound)")
+                            is DomainError.ValidationError -> logger.warn("Database validation error in syncLinksFromContent for ${noteId.value}: ${error.field} - $error (converting to NotFound)")
+                            is DomainError.UnauthorizedError -> logger.warn("Database unauthorized error in syncLinksFromContent for ${noteId.value}: $error (converting to NotFound)")
                             else -> logger.warn("Database error: $error")
                         }
                         NoteError.NotFound(noteId)
