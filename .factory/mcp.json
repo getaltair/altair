@@ -1,0 +1,36 @@
+{
+	"mcpServers": {
+		"chrome-devtools": {
+			"type": "stdio",
+			"command": "npx",
+			"args": ["-y", "chrome-devtools-mcp@latest"],
+			"disabled": false
+		},
+		"playwright": {
+			"type": "stdio",
+			"command": "npx",
+			"args": ["-y", "@playwright/mcp@latest"],
+			"disabled": false
+		},
+		"surreal": {
+			"type": "stdio",
+			"command": "docker",
+			"args": ["run", "--rm", "-i", "surrealdb/surrealmcp:latest", "start"],
+			"env": {
+				"SURREALDB_URL": "ws://localhost:8000/rpc",
+				"SURREALDB_NS": "myapp",
+				"SURREALDB_DB": "dev"
+			},
+			"disabled": false
+		},
+		"gradle": {
+			"type": "stdio",
+			"command": "java",
+			"args": [
+				"-jar",
+				"/home/rghamilton3/mcp-servers/gradle-mcp-server/gradle-mcp-server-all.jar"
+			],
+			"disabled": false
+		}
+	}
+}
