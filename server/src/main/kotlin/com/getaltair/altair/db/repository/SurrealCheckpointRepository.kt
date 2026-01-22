@@ -30,10 +30,6 @@ class SurrealCheckpointRepository(
             isLenient = true
         }
 
-    companion object {
-        private val logger = LoggerFactory.getLogger(SurrealCheckpointRepository::class.java)
-    }
-
     override suspend fun findById(id: Ulid): Either<DomainError, Checkpoint> =
         either {
             val result =
@@ -329,4 +325,8 @@ class SurrealCheckpointRepository(
             logger.warn("Failed to parse count: ${e.message}", e)
             0
         }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(SurrealCheckpointRepository::class.java)
+    }
 }

@@ -33,10 +33,6 @@ class SurrealEpicRepository(
             isLenient = true
         }
 
-    companion object {
-        private val logger = LoggerFactory.getLogger(SurrealEpicRepository::class.java)
-    }
-
     override suspend fun findById(id: Ulid): Either<EpicError, Epic> =
         either {
             val result =
@@ -55,63 +51,69 @@ class SurrealEpicRepository(
         either {
             val existing = findById(entity.id)
             if (existing.isRight()) {
-                db
-                    .executeBind(
-                        """
-                        UPDATE epic:${'$'}id SET
-                            title = ${'$'}title,
-                            description = ${'$'}description,
-                            status = ${'$'}status,
-                            initiative_id = ${'$'}initiativeId,
-                            target_date = ${'$'}targetDate,
-                            completed_at = ${'$'}completedAt,
-                            updated_at = time::now()
-                        WHERE user_id = user:${'$'}userId;
-                        """.trimIndent(),
-                        mapOf(
-                            "id" to entity.id.value,
-                            "title" to entity.title,
-                            "description" to entity.description,
-                            "status" to entity.status.name.lowercase(),
-                            "initiativeId" to entity.initiativeId?.let { "initiative:${it.value}" },
-                            "targetDate" to entity.targetDate?.toString(),
-                            "completedAt" to entity.completedAt?.toString(),
-                            "userId" to userId.value,
-                        ),
-                    ).mapLeft { error ->
-                        logger.warn("Database error updating ${entity.id.value}: ERROR_MSG_PH (converting to NotFound)")
-                        EpicError.NotFound(entity.id)
-                    }.bind()
+                updateEpic(entity).bind()
             } else {
-                db
-                    .executeBind(
-                        """
-                        CREATE epic:${'$'}id CONTENT {
-                            user_id: user:${'$'}userId,
-                            title: ${'$'}title,
-                            description: ${'$'}description,
-                            status: ${'$'}status,
-                            initiative_id: ${'$'}initiativeId,
-                            target_date: ${'$'}targetDate,
-                            completed_at: NONE
-                        };
-                        """.trimIndent(),
-                        mapOf(
-                            "id" to entity.id.value,
-                            "userId" to userId.value,
-                            "title" to entity.title,
-                            "description" to entity.description,
-                            "status" to entity.status.name.lowercase(),
-                            "initiativeId" to entity.initiativeId?.let { "initiative:${it.value}" },
-                            "targetDate" to entity.targetDate?.toString(),
-                        ),
-                    ).mapLeft { error ->
-                        logger.warn("Database error inserting ${entity.id.value}: ERROR_MSG_PH (converting to NotFound)")
-                        EpicError.NotFound(entity.id)
-                    }.bind()
+                insertEpic(entity).bind()
             }
             findById(entity.id).bind()
         }
+
+    private suspend fun updateEpic(entity: Epic): Either<EpicError, Unit> =
+        db
+            .executeBind(
+                """
+                UPDATE epic:${'$'}id SET
+                    title = ${'$'}title,
+                    description = ${'$'}description,
+                    status = ${'$'}status,
+                    initiative_id = ${'$'}initiativeId,
+                    target_date = ${'$'}targetDate,
+                    completed_at = ${'$'}completedAt,
+                    updated_at = time::now()
+                WHERE user_id = user:${'$'}userId;
+                """.trimIndent(),
+                mapOf(
+                    "id" to entity.id.value,
+                    "title" to entity.title,
+                    "description" to entity.description,
+                    "status" to entity.status.name.lowercase(),
+                    "initiativeId" to entity.initiativeId?.let { "initiative:${it.value}" },
+                    "targetDate" to entity.targetDate?.toString(),
+                    "completedAt" to entity.completedAt?.toString(),
+                    "userId" to userId.value,
+                ),
+            ).mapLeft { error ->
+                logger.warn("Database error updating ${entity.id.value}: ERROR_MSG_PH (converting to NotFound)")
+                EpicError.NotFound(entity.id)
+            }
+
+    private suspend fun insertEpic(entity: Epic): Either<EpicError, Unit> =
+        db
+            .executeBind(
+                """
+                CREATE epic:${'$'}id CONTENT {
+                    user_id: user:${'$'}userId,
+                    title: ${'$'}title,
+                    description: ${'$'}description,
+                    status: ${'$'}status,
+                    initiative_id: ${'$'}initiativeId,
+                    target_date: ${'$'}targetDate,
+                    completed_at: NONE
+                };
+                """.trimIndent(),
+                mapOf(
+                    "id" to entity.id.value,
+                    "userId" to userId.value,
+                    "title" to entity.title,
+                    "description" to entity.description,
+                    "status" to entity.status.name.lowercase(),
+                    "initiativeId" to entity.initiativeId?.let { "initiative:${it.value}" },
+                    "targetDate" to entity.targetDate?.toString(),
+                ),
+            ).mapLeft { error ->
+                logger.warn("Database error inserting ${entity.id.value}: ERROR_MSG_PH (converting to NotFound)")
+                EpicError.NotFound(entity.id)
+            }
 
     override suspend fun delete(id: Ulid): Either<EpicError, Unit> =
         either {
@@ -412,4 +414,8 @@ class SurrealEpicRepository(
                 Instant.DISTANT_PAST
             }
         } ?: Instant.DISTANT_PAST
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(SurrealEpicRepository::class.java)
+    }
 }

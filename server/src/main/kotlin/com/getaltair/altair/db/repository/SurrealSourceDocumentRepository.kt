@@ -31,10 +31,6 @@ class SurrealSourceDocumentRepository(
             isLenient = true
         }
 
-    companion object {
-        private val logger = LoggerFactory.getLogger(SurrealSourceDocumentRepository::class.java)
-    }
-
     override suspend fun findById(id: Ulid): Either<DomainError, SourceDocument> =
         either {
             val result =
@@ -426,4 +422,8 @@ class SurrealSourceDocumentRepository(
                 Instant.DISTANT_PAST
             }
         } ?: Instant.DISTANT_PAST
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(SurrealSourceDocumentRepository::class.java)
+    }
 }

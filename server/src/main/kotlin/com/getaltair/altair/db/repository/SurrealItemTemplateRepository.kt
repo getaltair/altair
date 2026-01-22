@@ -33,10 +33,6 @@ class SurrealItemTemplateRepository(
             isLenient = true
         }
 
-    companion object {
-        private val logger = LoggerFactory.getLogger(SurrealItemTemplateRepository::class.java)
-    }
-
     override suspend fun findById(id: Ulid): Either<DomainError, ItemTemplate> =
         either {
             val result =
@@ -522,4 +518,8 @@ class SurrealItemTemplateRepository(
                 Instant.DISTANT_PAST
             }
         } ?: Instant.DISTANT_PAST
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(SurrealItemTemplateRepository::class.java)
+    }
 }

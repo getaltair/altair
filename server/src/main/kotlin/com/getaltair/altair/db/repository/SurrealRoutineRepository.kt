@@ -35,10 +35,6 @@ class SurrealRoutineRepository(
             isLenient = true
         }
 
-    companion object {
-        private val logger = LoggerFactory.getLogger(SurrealRoutineRepository::class.java)
-    }
-
     override suspend fun findById(id: Ulid): Either<DomainError, Routine> =
         either {
             val result =
@@ -326,4 +322,8 @@ class SurrealRoutineRepository(
                 Instant.DISTANT_PAST
             }
         } ?: Instant.DISTANT_PAST
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(SurrealRoutineRepository::class.java)
+    }
 }

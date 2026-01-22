@@ -32,10 +32,6 @@ class SurrealItemRepository(
             isLenient = true
         }
 
-    companion object {
-        private val logger = LoggerFactory.getLogger(SurrealItemRepository::class.java)
-    }
-
     override suspend fun findById(id: Ulid): Either<ItemError, Item> =
         either {
             val result =
@@ -493,4 +489,8 @@ class SurrealItemRepository(
                 Instant.DISTANT_PAST
             }
         } ?: Instant.DISTANT_PAST
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(SurrealItemRepository::class.java)
+    }
 }
