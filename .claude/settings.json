@@ -1,27 +1,54 @@
 {
-	"hooks": {
-		"PostToolUse": [
-			{
-				"matcher": "Write(*.kt)",
-				"hooks": [
-					{
-						"type": "command",
-						"command": "./gradlew ktlintCheck --daemon -q",
-						"timeout": 30
-					}
-				]
-			}
-		],
-		"PreToolUse": [
-			{
-				"matcher": "Bash(git push*)",
-				"hooks": [
-					{
-						"type": "command",
-						"command": "git diff --staged --name-only | xargs grep -l 'TODO\\|FIXME' && echo 'Warning: Pushing code with TODOs'"
-					}
-				]
-			}
-		]
-	}
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write(*.kt)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "./gradlew spotlessApply --daemon -q",
+            "timeout": 30
+          }
+        ]
+      },
+      {
+        "matcher": "Edit(*.kt)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "./gradlew spotlessApply --daemon -q",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash(git push*)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "git diff --staged --name-only | xargs grep -l 'TODO\\|FIXME' && echo 'Warning: Pushing code with TODOs'"
+          }
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "allow": [
+      "Bash(./gradlew test*)",
+      "Bash(./gradlew build*)",
+      "Bash(./gradlew spotlessApply*)",
+      "Bash(./gradlew detekt*)",
+      "Bash(./gradlew ktlint*)",
+      "Bash(./gradlew assemble*)",
+      "Bash(./gradlew clean*)",
+      "Bash(./gradlew allTests*)",
+      "Bash(./gradlew check*)",
+      "Bash(./gradlew lint*)"
+    ]
+  },
+  "enabledPlugins": {
+    "claude-mem@thedotmack": true
+  }
 }
