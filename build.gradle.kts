@@ -10,10 +10,14 @@ plugins {
     alias(libs.plugins.kotlinJvm) apply false
     alias(libs.plugins.ktor) apply false
     alias(libs.plugins.kotlinxSerialization) apply false
+    alias(libs.plugins.ksp) apply false
+    alias(libs.plugins.mokkery) apply false
 }
 
-tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask<*>>().configureEach {
     compilerOptions {
-        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
+        if (this is org.jetbrains.kotlin.gradle.dsl.KotlinJvmCompilerOptions) {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
+        }
     }
 }

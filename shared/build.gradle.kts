@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidLibrary)
     alias(libs.plugins.kotlinxSerialization)
+    alias(libs.plugins.ksp)
 }
 
 kotlin {
@@ -21,14 +22,20 @@ kotlin {
     jvm()
 
     sourceSets {
-        commonMain.dependencies {
-            implementation(libs.kotlinx.serialization.json)
-            implementation(libs.kotlinx.coroutines.core)
-            implementation(libs.kotlinx.datetime)
+        commonMain {
+            dependencies {
+                implementation(libs.kotlinx.serialization.json)
+                implementation(libs.kotlinx.coroutines.core)
+                implementation(libs.kotlinx.datetime)
+                implementation(libs.arrow.core)
+                implementation(libs.arrow.optics)
+            }
+            kotlin.srcDir("build/generated/ksp/metadata/commonMain/kotlin")
         }
 
         commonTest.dependencies {
             implementation(libs.kotlin.test)
+            implementation(libs.turbine)
         }
 
         jvmMain.dependencies {
@@ -56,5 +63,19 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
+    }
+}
+
+dependencies {
+    // Only add KSP for commonMain to avoid duplicate generation
+    add("kspCommonMainMetadata", libs.arrow.optics.ksp)
+}
+
+// Ensure all Kotlin compilation tasks depend on KSP metadata generation
+kotlin.targets.configureEach {
+    compilations.configureEach {
+        compileTaskProvider.configure {
+            dependsOn("kspCommonMainKotlinMetadata")
+        }
     }
 }

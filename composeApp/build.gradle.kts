@@ -7,6 +7,8 @@ plugins {
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.composeHotReload)
+    // Mokkery disabled - incompatible with Kotlin 2.3.0, will re-enable when updated
+    // alias(libs.plugins.mokkery)
 }
 
 kotlin {
@@ -32,6 +34,7 @@ kotlin {
         androidMain.dependencies {
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.androidx.activity.compose)
+            implementation(libs.koin.android)
         }
         commonMain.dependencies {
             implementation(libs.compose.runtime)
@@ -43,9 +46,20 @@ kotlin {
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
             implementation(projects.shared)
+            // Koin
+            implementation(libs.koin.core)
+            implementation(libs.koin.compose)
+            implementation(libs.koin.compose.viewmodel)
+            // Decompose
+            implementation(libs.decompose)
+            implementation(libs.decompose.compose)
+            // Essenty (for LifecycleRegistry)
+            implementation(libs.essenty.lifecycle)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
+            implementation(libs.koin.test)
+            implementation(libs.turbine)
         }
         jvmMain.dependencies {
             implementation(compose.desktop.currentOs)

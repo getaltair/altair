@@ -34,5 +34,7 @@ android {
 dependencies {
     implementation(projects.composeApp)
     implementation(libs.androidx.activity.compose)
+    implementation(libs.decompose)
+    implementation(libs.essenty.lifecycle) // Required for preview ComponentContext
     debugImplementation(libs.compose.uiTooling)
 }
