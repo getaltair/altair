@@ -8,13 +8,15 @@ Phased roadmap for implementing Altair. Follow phases sequentially — each phas
 
 ## Package Structure
 
-| Module | Source Path | Base Package |
-|--------|-------------|--------------|
-| shared | `src/commonMain/kotlin/` | `com.getaltair.altair.shared` |
-| composeApp | `src/commonMain/kotlin/` | `com.getaltair.altair` |
-| server | `src/main/kotlin/` | `com.getaltair.server` |
+| Module     | Source Path              | Base Package                  |
+| ---------- | ------------------------ | ----------------------------- |
+| shared     | `src/commonMain/kotlin/` | `com.getaltair.altair.shared` |
+| composeApp | `src/commonMain/kotlin/` | `com.getaltair.altair`        |
+| server     | `src/main/kotlin/`       | `com.getaltair.server`        |
 
-> **Note:** The `shared` module must use KMP structure (`commonMain/`, `androidMain/`, etc.), not JVM structure (`main/`). See migration guide if needed.
+> **Note:** The `shared` module must use KMP structure
+> (`commonMain/`, `androidMain/`, etc.), not JVM structure (`main/`).
+> See migration guide if needed.
 
 ---
 
@@ -78,6 +80,7 @@ Define `sealed interface AltairError` with: NetworkError, AuthError, ValidationE
 Location: `shared/.../repository/`
 
 Define interfaces returning `Either<AltairError, T>`:
+
 - InitiativeRepository, InboxRepository, RoutineRepository
 - QuestRepository, NoteRepository, ItemRepository
 
@@ -379,6 +382,7 @@ Two-tab layout: Inbox tab + Today tab
 ### Iterative Feature Development
 
 For phases 7-11, repeat this cycle:
+
 1. Implement server repositories
 2. Add API routes
 3. Create ViewModels
