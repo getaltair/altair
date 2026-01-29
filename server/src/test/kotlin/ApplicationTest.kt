@@ -1,6 +1,6 @@
 package com.getaltair.altair
 
-import com.getaltair.altair.com.getaltair.altair.server.module
+import com.getaltair.server.module
 import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.server.testing.*

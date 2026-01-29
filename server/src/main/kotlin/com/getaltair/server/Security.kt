@@ -1,4 +1,4 @@
-package com.getaltair.altair.com.getaltair.altair.server
+package com.getaltair.server
 
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm

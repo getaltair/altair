@@ -1,0 +1,22 @@
+# Note: 'version' field is deprecated in Compose V2 and omitted intentionally
+
+services:
+  surrealdb:
+    image: surrealdb/surrealdb:v2.1
+    container_name: altair-surrealdb
+    restart: unless-stopped
+    command: start --log info --user root --pass root file:/data/altair.db
+    ports:
+      - "8000:8000"
+    volumes:
+      - surrealdb-data:/data
+    environment:
+      - SURREAL_PATH=/data/altair.db
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  surrealdb-data:

@@ -1,4 +1,4 @@
-package com.getaltair.altair.com.getaltair.altair.server
+package com.getaltair.server
 
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*

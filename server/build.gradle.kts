@@ -33,6 +33,19 @@ dependencies {
 
     implementation(projects.shared)
 
+    // SurrealDB
+    implementation(libs.surrealdb)
+    implementation(libs.kotlinx.coroutines.core)
+    implementation(libs.koin.core)
+
+    // Arrow for functional error handling
+    implementation(libs.arrow.core)
+
+    // kotlinx-datetime for timestamps
+    implementation(libs.kotlinx.datetime)
+
     testImplementation("io.ktor:ktor-server-test-host")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version")
+    testImplementation(libs.koin.test)
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
 }
