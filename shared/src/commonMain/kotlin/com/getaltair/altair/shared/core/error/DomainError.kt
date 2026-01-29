@@ -5,8 +5,10 @@ import arrow.core.left
 import arrow.core.right
 
 /**
- * Base sealed interface for all domain errors in Altair.
- * Provides typed error handling via Arrow Either.
+ * Base interface for domain errors.
+ *
+ * @see com.getaltair.altair.shared.domain.error.AltairError for the comprehensive error hierarchy.
+ * This interface is kept for backward compatibility with Phase 1 code.
  */
 sealed interface DomainError {
     val message: String

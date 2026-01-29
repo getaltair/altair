@@ -23,8 +23,9 @@ class AppStateTest {
     fun guidanceStateDefaultsAreCorrect() {
         val state = GuidanceState()
 
-        assertNull(state.activeQuestId)
+        assertNull(state.activeQuest)
         assertEquals(0, state.wipCount)
+        assertNull(state.todayBudget)
     }
 
     @Test
