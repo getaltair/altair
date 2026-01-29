@@ -36,6 +36,7 @@ kotlin {
         commonTest.dependencies {
             implementation(libs.kotlin.test)
             implementation(libs.turbine)
+            implementation(libs.kotlinx.datetime)
         }
 
         jvmMain.dependencies {
