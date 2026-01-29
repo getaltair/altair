@@ -16,6 +16,17 @@ application {
 
 kotlin {
     jvmToolchain(21)
+
+    compilerOptions {
+        freeCompilerArgs.addAll(
+            "-Xsuppress-version-warnings",
+            "-Xno-call-assertions",
+            "-Xno-param-assertions",
+            "-Xno-receiver-assertions"
+        )
+        // Don't treat deprecation warnings as errors
+        allWarningsAsErrors.set(false)
+    }
 }
 
 dependencies {
@@ -37,6 +48,7 @@ dependencies {
     implementation(libs.surrealdb)
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.koin.core)
+    implementation(libs.koin.ktor)
 
     // Arrow for functional error handling
     implementation(libs.arrow.core)

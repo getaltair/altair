@@ -1,11 +1,33 @@
 package com.getaltair.altair.di
 
+import com.getaltair.altair.api.TokenPair
+import com.getaltair.altair.api.TokenProvider
 import org.koin.core.context.stopKoin
 import org.koin.dsl.koinApplication
+import org.koin.dsl.module
 import org.koin.test.KoinTest
 import org.koin.test.check.checkModules
 import kotlin.test.AfterTest
 import kotlin.test.Test
+
+/**
+ * Test implementation of TokenProvider for Koin verification.
+ */
+class TestTokenProvider : TokenProvider {
+    override val serverUrl: String = "http://localhost:8080"
+
+    override suspend fun getTokens(): TokenPair? = null
+    override suspend fun refresh(): TokenPair? = null
+    override suspend fun storeTokens(tokens: TokenPair) {}
+    override suspend fun clearTokens() {}
+}
+
+/**
+ * Test module providing TokenProvider for API module.
+ */
+private val testModule = module {
+    single<TokenProvider> { TestTokenProvider() }
+}
 
 /**
  * Verifies Koin module configuration is valid.
@@ -21,8 +43,9 @@ class KoinModuleTest : KoinTest {
     @Test
     fun verifyKoinConfiguration() {
         // Koin 4.x pattern: use koinApplication block with checkModules inside
+        // Include testModule to provide TokenProvider required by apiModule
         koinApplication {
-            modules(allModules)
+            modules(testModule + allModules)
             checkModules()
         }
     }

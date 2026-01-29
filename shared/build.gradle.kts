@@ -27,8 +27,8 @@ kotlin {
                 implementation(libs.kotlinx.serialization.json)
                 implementation(libs.kotlinx.coroutines.core)
                 implementation(libs.kotlinx.datetime)
-                implementation(libs.arrow.core)
-                implementation(libs.arrow.optics)
+                api(libs.arrow.core)
+                api(libs.arrow.optics)
             }
             kotlin.srcDir("build/generated/ksp/metadata/commonMain/kotlin")
         }

@@ -20,5 +20,6 @@ val appModule: Module = module {
  * All modules to be loaded by Koin.
  */
 val allModules: List<Module> = listOf(
-    appModule
+    appModule,
+    apiModule
 )
