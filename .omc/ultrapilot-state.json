@@ -1,0 +1,14 @@
+{
+  "active": false,
+  "mode": null,
+  "task": null,
+  "startedAt": null,
+  "completedAt": null,
+  "phase": null,
+  "workers": [],
+  "sharedFiles": [],
+  "integrationComplete": false,
+  "buildVerified": false,
+  "architectVerified": false,
+  "result": null
+}

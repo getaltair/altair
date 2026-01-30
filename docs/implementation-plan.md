@@ -168,7 +168,7 @@ Create ApiModule providing HttpClient and all API class instances.
 
 ---
 
-## Phase 6: UI Foundation
+## Phase 6: UI Foundation ✅ COMPLETE
 
 **Goal:** Design system and navigation structure.  
 **Ref:** [ADR-008](./adr/008-compose-unstyled-altair-theme.md)
@@ -193,7 +193,7 @@ Create basic screens: HomeScreen, GuidanceScreen, KnowledgeScreen, TrackingScree
 
 ---
 
-## Phase 7: Inbox + Guidance MVP
+## Phase 7: Inbox + Guidance MVP ✅ COMPLETE
 
 **Goal:** First usable feature end-to-end.  
 **Ref:** [ADR-010](./adr/010-universal-inbox-architecture.md), [PRD Guidance](./requirements/altair-prd-guidance.md)

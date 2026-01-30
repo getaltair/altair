@@ -1,0 +1,12 @@
+{
+  "active": false,
+  "goal_type": null,
+  "goal_description": null,
+  "cycle": 0,
+  "max_cycles": 5,
+  "failures": [],
+  "started_at": null,
+  "completed_at": null,
+  "session_id": null,
+  "result": null
+}
