@@ -11,16 +11,17 @@ import io.ktor.server.response.*
 
 /**
  * Extension to extract user ID from JWT principal.
- * Throws if no valid JWT or userId claim present.
+ * Extracts from the standard JWT subject (sub) claim.
+ * Throws if no valid JWT or subject present.
  */
 val ApplicationCall.userId: Ulid
     get() {
         val principal = principal<JWTPrincipal>()
             ?: throw IllegalStateException("No JWT principal found")
-        val userIdClaim = principal.payload.getClaim("userId").asString()
-            ?: throw IllegalStateException("No userId claim in JWT")
-        return Ulid.parse(userIdClaim)
-            ?: throw IllegalStateException("Invalid userId format in JWT: $userIdClaim")
+        val subject = principal.payload.subject
+            ?: throw IllegalStateException("No subject in JWT")
+        return Ulid.parse(subject)
+            ?: throw IllegalStateException("Invalid userId format in JWT subject: $subject")
     }
 
 /**

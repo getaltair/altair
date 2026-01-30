@@ -53,6 +53,9 @@ dependencies {
     // Arrow for functional error handling
     implementation(libs.arrow.core)
 
+    // Authentication - Argon2 password hashing
+    implementation(libs.argon2.jvm)
+
     // kotlinx-datetime for timestamps
     implementation(libs.kotlinx.datetime)
 

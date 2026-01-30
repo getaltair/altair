@@ -1,17 +1,37 @@
 package com.getaltair.server.routes
 
+import com.getaltair.server.auth.AuthService
 import com.getaltair.altair.shared.dto.auth.*
 import io.ktor.http.*
 import io.ktor.server.auth.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import org.koin.ktor.ext.inject
 
 /**
  * Authentication routes for user management and JWT token operations.
- * Phase 4: Routes defined but return NotImplemented - actual auth logic in Phase 5.
+ *
+ * Provides endpoints for:
+ * - User registration and login
+ * - JWT token refresh
+ * - Logout (refresh token revocation)
+ * - Password change
+ * - User profile retrieval
+ *
+ * ## Public Routes (no authentication)
+ * - POST /api/auth/login
+ * - POST /api/auth/register
+ * - POST /api/auth/refresh
+ *
+ * ## Protected Routes (JWT required)
+ * - POST /api/auth/logout
+ * - POST /api/auth/change-password
+ * - GET /api/auth/me
  */
 fun Route.authRoutes() {
+    val authService by inject<AuthService>()
+
     route("/api/auth") {
         // Public routes (no authentication required)
 
@@ -22,12 +42,14 @@ fun Route.authRoutes() {
          */
         post("/login") {
             val request = call.receive<LoginRequest>()
-            call.respond(
-                HttpStatusCode.NotImplemented,
-                ErrorResponse(
-                    code = "AUTH_NOT_IMPLEMENTED",
-                    message = "Authentication will be implemented in Phase 5"
-                )
+            authService.login(request).fold(
+                ifLeft = { error ->
+                    val (status, response) = error.toHttpResponse()
+                    call.respond(status, response)
+                },
+                ifRight = { token ->
+                    call.respond(HttpStatusCode.OK, token)
+                }
             )
         }
 
@@ -38,12 +60,14 @@ fun Route.authRoutes() {
          */
         post("/register") {
             val request = call.receive<RegisterRequest>()
-            call.respond(
-                HttpStatusCode.NotImplemented,
-                ErrorResponse(
-                    code = "AUTH_NOT_IMPLEMENTED",
-                    message = "Registration will be implemented in Phase 5"
-                )
+            authService.register(request).fold(
+                ifLeft = { error ->
+                    val (status, response) = error.toHttpResponse()
+                    call.respond(status, response)
+                },
+                ifRight = { token ->
+                    call.respond(HttpStatusCode.Created, token)
+                }
             )
         }
 
@@ -54,12 +78,14 @@ fun Route.authRoutes() {
          */
         post("/refresh") {
             val request = call.receive<RefreshTokenRequest>()
-            call.respond(
-                HttpStatusCode.NotImplemented,
-                ErrorResponse(
-                    code = "AUTH_NOT_IMPLEMENTED",
-                    message = "Token refresh will be implemented in Phase 5"
-                )
+            authService.refresh(request).fold(
+                ifLeft = { error ->
+                    val (status, response) = error.toHttpResponse()
+                    call.respond(status, response)
+                },
+                ifRight = { token ->
+                    call.respond(HttpStatusCode.OK, token)
+                }
             )
         }
 
@@ -68,14 +94,30 @@ fun Route.authRoutes() {
             /**
              * POST /api/auth/logout
              * Invalidate current session and refresh token.
+             * Requires X-Refresh-Token header.
              */
             post("/logout") {
-                call.respond(
-                    HttpStatusCode.NotImplemented,
-                    ErrorResponse(
-                        code = "AUTH_NOT_IMPLEMENTED",
-                        message = "Logout will be implemented in Phase 5"
+                val userId = call.userId
+                val refreshToken = call.request.header("X-Refresh-Token")
+                if (refreshToken == null) {
+                    call.respond(
+                        HttpStatusCode.BadRequest,
+                        ErrorResponse(
+                            code = "MISSING_TOKEN",
+                            message = "Refresh token required in X-Refresh-Token header"
+                        )
                     )
+                    return@post
+                }
+
+                authService.logout(userId.toString(), refreshToken).fold(
+                    ifLeft = { error ->
+                        val (status, response) = error.toHttpResponse()
+                        call.respond(status, response)
+                    },
+                    ifRight = {
+                        call.respond(HttpStatusCode.NoContent)
+                    }
                 )
             }
 
@@ -83,15 +125,19 @@ fun Route.authRoutes() {
              * POST /api/auth/change-password
              * Change authenticated user's password.
              * Requires current password for verification.
+             * Revokes all refresh tokens on success.
              */
             post("/change-password") {
+                val userId = call.userId
                 val request = call.receive<ChangePasswordRequest>()
-                call.respond(
-                    HttpStatusCode.NotImplemented,
-                    ErrorResponse(
-                        code = "AUTH_NOT_IMPLEMENTED",
-                        message = "Password change will be implemented in Phase 5"
-                    )
+                authService.changePassword(userId.toString(), request).fold(
+                    ifLeft = { error ->
+                        val (status, response) = error.toHttpResponse()
+                        call.respond(status, response)
+                    },
+                    ifRight = {
+                        call.respond(HttpStatusCode.NoContent)
+                    }
                 )
             }
 
@@ -101,12 +147,15 @@ fun Route.authRoutes() {
              * Extracts user ID from JWT token.
              */
             get("/me") {
-                call.respond(
-                    HttpStatusCode.NotImplemented,
-                    ErrorResponse(
-                        code = "AUTH_NOT_IMPLEMENTED",
-                        message = "User info will be implemented in Phase 5"
-                    )
+                val userId = call.userId
+                authService.getUser(userId.toString()).fold(
+                    ifLeft = { error ->
+                        val (status, response) = error.toHttpResponse()
+                        call.respond(status, response)
+                    },
+                    ifRight = { user ->
+                        call.respond(HttpStatusCode.OK, user)
+                    }
                 )
             }
         }
