@@ -25,7 +25,10 @@ arrow = "2.1.0"
 mokkery = "3.0.0"
 turbine = "1.2.0"
 ksp = "2.3.0"
+compose-unstyled = "1.49.0"
 surrealdb = "1.0.0-beta.1"
+argon2 = "2.11"
+androidx-security-crypto = "1.1.0-alpha06"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -74,8 +77,15 @@ arrow-optics-ksp = { module = "io.arrow-kt:arrow-optics-ksp-plugin", version.ref
 mokkery-gradle = { module = "dev.mokkery:mokkery-gradle", version.ref = "mokkery" }
 turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
 
+# Compose Unstyled (headless UI components)
+compose-unstyled = { module = "com.composables:core", version.ref = "compose-unstyled" }
+
 # SurrealDB
 surrealdb = { module = "com.surrealdb:surrealdb", version.ref = "surrealdb" }
+
+# Authentication
+argon2-jvm = { module = "de.mkammerer:argon2-jvm", version.ref = "argon2" }
+androidx-security-crypto = { module = "androidx.security:security-crypto", version.ref = "androidx-security-crypto" }
 
 # Ktor Client (for composeApp API layer)
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }

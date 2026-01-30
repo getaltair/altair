@@ -18,8 +18,10 @@ val appModule: Module = module {
 
 /**
  * All modules to be loaded by Koin.
+ * Platform module provides TokenProvider, which apiModule depends on.
  */
 val allModules: List<Module> = listOf(
+    platformModule,  // Must come first - provides TokenProvider
     appModule,
     apiModule
 )

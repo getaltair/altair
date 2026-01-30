@@ -32,6 +32,9 @@ class RootComponent(
         when (config) {
             is Config.Home -> Child.Home(HomeComponent(componentContext, ::onHomeOutput))
             is Config.Settings -> Child.Settings(SettingsComponent(componentContext, ::onSettingsOutput))
+            is Config.Guidance -> Child.Guidance(GuidanceComponent(componentContext, ::onGuidanceOutput))
+            is Config.Knowledge -> Child.Knowledge(KnowledgeComponent(componentContext, ::onKnowledgeOutput))
+            is Config.Tracking -> Child.Tracking(TrackingComponent(componentContext, ::onTrackingOutput))
         }
 
     @OptIn(DelicateDecomposeApi::class)
@@ -48,6 +51,28 @@ class RootComponent(
         }
     }
 
+    private fun onGuidanceOutput(output: GuidanceComponent.Output) {
+        // Handle when needed
+    }
+
+    private fun onKnowledgeOutput(output: KnowledgeComponent.Output) {
+        // Handle when needed
+    }
+
+    private fun onTrackingOutput(output: TrackingComponent.Output) {
+        // Handle when needed
+    }
+
+    /**
+     * Navigate to a specific destination.
+     * Used by bottom navigation bar to switch between main sections.
+     * Note: Currently uses stack navigation. Will migrate to TabNavigation in future phase.
+     */
+    @OptIn(DelicateDecomposeApi::class)
+    fun navigateTo(config: Config) {
+        navigation.push(config)
+    }
+
     /**
      * Navigation configuration - defines all possible destinations.
      * Serializable for state restoration.
@@ -59,6 +84,15 @@ class RootComponent(
 
         @Serializable
         data object Settings : Config
+
+        @Serializable
+        data object Guidance : Config
+
+        @Serializable
+        data object Knowledge : Config
+
+        @Serializable
+        data object Tracking : Config
     }
 
     /**
@@ -67,5 +101,8 @@ class RootComponent(
     sealed interface Child {
         data class Home(val component: HomeComponent) : Child
         data class Settings(val component: SettingsComponent) : Child
+        data class Guidance(val component: GuidanceComponent) : Child
+        data class Knowledge(val component: KnowledgeComponent) : Child
+        data class Tracking(val component: TrackingComponent) : Child
     }
 }
