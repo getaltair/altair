@@ -1,0 +1,64 @@
+-- User account schema
+CREATE TABLE user (
+    id TEXT NOT NULL PRIMARY KEY,
+    username TEXT NOT NULL UNIQUE,
+    email TEXT,
+    password_hash TEXT NOT NULL,
+    role TEXT NOT NULL,
+    status TEXT NOT NULL,
+    storage_used INTEGER NOT NULL DEFAULT 0,
+    storage_quota INTEGER,
+    created_at INTEGER NOT NULL,
+    last_login_at INTEGER,
+    deleted_at INTEGER
+);
+
+-- Indexes
+CREATE INDEX user_username_idx ON user(username);
+CREATE INDEX user_email_idx ON user(email);
+CREATE INDEX user_status_idx ON user(status);
+CREATE INDEX user_deleted_at_idx ON user(deleted_at);
+
+-- Queries
+selectAll:
+SELECT * FROM user WHERE deleted_at IS NULL ORDER BY created_at DESC;
+
+selectById:
+SELECT * FROM user WHERE id = ?;
+
+selectByUsername:
+SELECT * FROM user WHERE username = ? AND deleted_at IS NULL;
+
+selectByEmail:
+SELECT * FROM user WHERE email = ? AND deleted_at IS NULL;
+
+selectActive:
+SELECT * FROM user WHERE status = 'ACTIVE' AND deleted_at IS NULL ORDER BY created_at DESC;
+
+insert:
+INSERT INTO user (id, username, email, password_hash, role, status, storage_used, storage_quota, created_at, last_login_at, deleted_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+update:
+UPDATE user SET
+    username = ?,
+    email = ?,
+    password_hash = ?,
+    role = ?,
+    status = ?,
+    storage_used = ?,
+    storage_quota = ?,
+    last_login_at = ?
+WHERE id = ?;
+
+updateStorageUsed:
+UPDATE user SET storage_used = ? WHERE id = ?;
+
+updateLastLogin:
+UPDATE user SET last_login_at = ? WHERE id = ?;
+
+softDelete:
+UPDATE user SET deleted_at = ? WHERE id = ?;
+
+delete:
+DELETE FROM user WHERE id = ?;

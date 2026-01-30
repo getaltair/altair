@@ -1,0 +1,100 @@
+-- Item.sq
+-- Represents physical items in inventory tracking
+
+CREATE TABLE item (
+    id TEXT PRIMARY KEY NOT NULL,
+    user_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    description TEXT,
+    quantity INTEGER NOT NULL,
+    template_id TEXT,
+    location_id TEXT,
+    container_id TEXT,
+    initiative_id TEXT,
+    image_key TEXT,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    deleted_at INTEGER,
+    FOREIGN KEY (template_id) REFERENCES item_template(id),
+    FOREIGN KEY (location_id) REFERENCES location(id),
+    FOREIGN KEY (container_id) REFERENCES container(id),
+    CHECK (quantity >= 0),
+    CHECK (NOT (location_id IS NOT NULL AND container_id IS NOT NULL))
+);
+
+CREATE INDEX item_user_id_idx ON item(user_id);
+CREATE INDEX item_template_id_idx ON item(template_id);
+CREATE INDEX item_location_id_idx ON item(location_id);
+CREATE INDEX item_container_id_idx ON item(container_id);
+CREATE INDEX item_initiative_id_idx ON item(initiative_id);
+CREATE INDEX item_deleted_at_idx ON item(deleted_at);
+
+-- CRUD Operations
+selectAll:
+SELECT * FROM item;
+
+selectById:
+SELECT * FROM item WHERE id = ?;
+
+selectByUserId:
+SELECT * FROM item WHERE user_id = ? AND deleted_at IS NULL;
+
+selectByLocation:
+SELECT * FROM item WHERE location_id = ? AND deleted_at IS NULL;
+
+selectByContainer:
+SELECT * FROM item WHERE container_id = ? AND deleted_at IS NULL;
+
+selectByTemplate:
+SELECT * FROM item WHERE template_id = ? AND deleted_at IS NULL;
+
+selectByInitiative:
+SELECT * FROM item WHERE initiative_id = ? AND deleted_at IS NULL;
+
+selectOutOfStock:
+SELECT * FROM item WHERE user_id = ? AND quantity = 0 AND deleted_at IS NULL;
+
+selectDeleted:
+SELECT * FROM item WHERE user_id = ? AND deleted_at IS NOT NULL;
+
+insert:
+INSERT INTO item (
+    id, user_id, name, description, quantity,
+    template_id, location_id, container_id, initiative_id,
+    image_key, created_at, updated_at, deleted_at
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+update:
+UPDATE item
+SET name = ?, description = ?, quantity = ?,
+    location_id = ?, container_id = ?, initiative_id = ?,
+    image_key = ?, updated_at = ?
+WHERE id = ?;
+
+softDelete:
+UPDATE item
+SET deleted_at = ?, updated_at = ?
+WHERE id = ?;
+
+delete:
+DELETE FROM item WHERE id = ?;
+
+updateQuantity:
+UPDATE item
+SET quantity = ?, updated_at = ?
+WHERE id = ?;
+
+moveToLocation:
+UPDATE item
+SET location_id = ?, container_id = NULL, updated_at = ?
+WHERE id = ?;
+
+moveToContainer:
+UPDATE item
+SET container_id = ?, location_id = NULL, updated_at = ?
+WHERE id = ?;
+
+removeLocation:
+UPDATE item
+SET location_id = NULL, container_id = NULL, updated_at = ?
+WHERE id = ?;

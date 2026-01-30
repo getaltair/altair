@@ -1,0 +1,81 @@
+-- Initiative (Project/Area) schema
+CREATE TABLE initiative (
+    id TEXT NOT NULL PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    description TEXT,
+    parent_id TEXT,
+    ongoing INTEGER NOT NULL,
+    target_date TEXT,
+    status TEXT NOT NULL,
+    focused INTEGER NOT NULL DEFAULT 0,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    deleted_at INTEGER,
+    FOREIGN KEY (user_id) REFERENCES user(id) ON DELETE CASCADE,
+    FOREIGN KEY (parent_id) REFERENCES initiative(id) ON DELETE SET NULL
+);
+
+-- Indexes
+CREATE INDEX initiative_user_id_idx ON initiative(user_id);
+CREATE INDEX initiative_parent_id_idx ON initiative(parent_id);
+CREATE INDEX initiative_status_idx ON initiative(status);
+CREATE INDEX initiative_focused_idx ON initiative(focused);
+CREATE INDEX initiative_deleted_at_idx ON initiative(deleted_at);
+CREATE INDEX initiative_ongoing_idx ON initiative(ongoing);
+
+-- Queries
+selectAll:
+SELECT * FROM initiative WHERE deleted_at IS NULL ORDER BY created_at DESC;
+
+selectById:
+SELECT * FROM initiative WHERE id = ?;
+
+selectByUserId:
+SELECT * FROM initiative WHERE user_id = ? AND deleted_at IS NULL ORDER BY created_at DESC;
+
+selectByParentId:
+SELECT * FROM initiative WHERE parent_id = ? AND deleted_at IS NULL ORDER BY created_at DESC;
+
+selectTopLevel:
+SELECT * FROM initiative WHERE user_id = ? AND parent_id IS NULL AND deleted_at IS NULL ORDER BY created_at DESC;
+
+selectFocused:
+SELECT * FROM initiative WHERE user_id = ? AND focused = 1 AND deleted_at IS NULL;
+
+selectProjects:
+SELECT * FROM initiative WHERE user_id = ? AND ongoing = 0 AND deleted_at IS NULL ORDER BY created_at DESC;
+
+selectAreas:
+SELECT * FROM initiative WHERE user_id = ? AND ongoing = 1 AND deleted_at IS NULL ORDER BY created_at DESC;
+
+selectByStatus:
+SELECT * FROM initiative WHERE user_id = ? AND status = ? AND deleted_at IS NULL ORDER BY created_at DESC;
+
+insert:
+INSERT INTO initiative (id, user_id, name, description, parent_id, ongoing, target_date, status, focused, created_at, updated_at, deleted_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+update:
+UPDATE initiative SET
+    name = ?,
+    description = ?,
+    parent_id = ?,
+    ongoing = ?,
+    target_date = ?,
+    status = ?,
+    focused = ?,
+    updated_at = ?
+WHERE id = ?;
+
+updateFocus:
+UPDATE initiative SET focused = ?, updated_at = ? WHERE id = ?;
+
+clearFocus:
+UPDATE initiative SET focused = 0, updated_at = ? WHERE user_id = ?;
+
+softDelete:
+UPDATE initiative SET deleted_at = ?, updated_at = ? WHERE id = ?;
+
+delete:
+DELETE FROM initiative WHERE id = ?;

@@ -1,0 +1,67 @@
+-- Note table for Knowledge domain PKM system
+-- Stores markdown notes with optional folder organization and embeddings
+
+CREATE TABLE note (
+    id TEXT NOT NULL PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    title TEXT NOT NULL,
+    content TEXT NOT NULL,
+    folder_id TEXT,
+    initiative_id TEXT,
+    embedding TEXT,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    deleted_at INTEGER,
+    FOREIGN KEY (folder_id) REFERENCES folder(id) ON DELETE SET NULL
+);
+
+CREATE INDEX note_user_id ON note(user_id);
+CREATE INDEX note_folder_id ON note(folder_id);
+CREATE INDEX note_initiative_id ON note(initiative_id);
+CREATE INDEX note_deleted_at ON note(deleted_at);
+
+-- CRUD queries
+selectAll:
+SELECT * FROM note;
+
+selectById:
+SELECT * FROM note WHERE id = ?;
+
+selectByUserId:
+SELECT * FROM note WHERE user_id = ? AND deleted_at IS NULL;
+
+selectByFolder:
+SELECT * FROM note WHERE folder_id = ? AND deleted_at IS NULL;
+
+selectByInitiative:
+SELECT * FROM note WHERE initiative_id = ? AND deleted_at IS NULL;
+
+selectActive:
+SELECT * FROM note WHERE deleted_at IS NULL;
+
+selectDeleted:
+SELECT * FROM note WHERE deleted_at IS NOT NULL;
+
+searchByTitle:
+SELECT * FROM note WHERE title LIKE '%' || ? || '%' AND deleted_at IS NULL;
+
+insert:
+INSERT INTO note (id, user_id, title, content, folder_id, initiative_id, embedding, created_at, updated_at, deleted_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+update:
+UPDATE note
+SET title = ?, content = ?, folder_id = ?, initiative_id = ?, embedding = ?, updated_at = ?
+WHERE id = ?;
+
+softDelete:
+UPDATE note SET deleted_at = ?, updated_at = ? WHERE id = ?;
+
+restore:
+UPDATE note SET deleted_at = NULL, updated_at = ? WHERE id = ?;
+
+delete:
+DELETE FROM note WHERE id = ?;
+
+deleteByUserId:
+DELETE FROM note WHERE user_id = ?;

@@ -1,0 +1,65 @@
+-- WatchedFolder schema
+CREATE TABLE watched_folder (
+    id TEXT NOT NULL PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    path TEXT NOT NULL,
+    include_patterns TEXT NOT NULL,
+    exclude_patterns TEXT NOT NULL,
+    initiative_id TEXT,
+    scan_interval INTEGER NOT NULL,
+    status TEXT NOT NULL,
+    last_scanned_at INTEGER,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES user(id) ON DELETE CASCADE,
+    FOREIGN KEY (initiative_id) REFERENCES initiative(id) ON DELETE SET NULL
+);
+
+-- Indexes
+CREATE INDEX watched_folder_user_id_idx ON watched_folder(user_id);
+CREATE INDEX watched_folder_status_idx ON watched_folder(status);
+CREATE INDEX watched_folder_initiative_id_idx ON watched_folder(initiative_id);
+CREATE INDEX watched_folder_last_scanned_at_idx ON watched_folder(last_scanned_at);
+
+-- Queries
+selectAll:
+SELECT * FROM watched_folder ORDER BY created_at DESC;
+
+selectById:
+SELECT * FROM watched_folder WHERE id = ?;
+
+selectByUserId:
+SELECT * FROM watched_folder WHERE user_id = ? ORDER BY created_at DESC;
+
+selectActive:
+SELECT * FROM watched_folder WHERE user_id = ? AND status = 'ACTIVE' ORDER BY created_at DESC;
+
+selectDueForScan:
+SELECT * FROM watched_folder WHERE status = 'ACTIVE' AND (last_scanned_at IS NULL OR last_scanned_at < ?) ORDER BY last_scanned_at ASC;
+
+selectByInitiative:
+SELECT * FROM watched_folder WHERE initiative_id = ? ORDER BY created_at DESC;
+
+insert:
+INSERT INTO watched_folder (id, user_id, path, include_patterns, exclude_patterns, initiative_id, scan_interval, status, last_scanned_at, created_at, updated_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+update:
+UPDATE watched_folder SET
+    path = ?,
+    include_patterns = ?,
+    exclude_patterns = ?,
+    initiative_id = ?,
+    scan_interval = ?,
+    status = ?,
+    updated_at = ?
+WHERE id = ?;
+
+updateStatus:
+UPDATE watched_folder SET status = ?, updated_at = ? WHERE id = ?;
+
+updateLastScanned:
+UPDATE watched_folder SET last_scanned_at = ?, updated_at = ? WHERE id = ?;
+
+delete:
+DELETE FROM watched_folder WHERE id = ?;

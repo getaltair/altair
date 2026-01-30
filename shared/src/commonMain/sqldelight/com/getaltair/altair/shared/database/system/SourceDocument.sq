@@ -1,0 +1,96 @@
+-- SourceDocument schema
+CREATE TABLE source_document (
+    id TEXT NOT NULL PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    title TEXT NOT NULL,
+    source_type TEXT NOT NULL,
+    source_path TEXT NOT NULL,
+    mime_type TEXT NOT NULL,
+    content_hash TEXT NOT NULL,
+    extracted_text TEXT,
+    embedding TEXT,
+    status TEXT NOT NULL,
+    error_message TEXT,
+    initiative_id TEXT,
+    watched_folder_id TEXT,
+    last_synced_at INTEGER,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    deleted_at INTEGER,
+    FOREIGN KEY (user_id) REFERENCES user(id) ON DELETE CASCADE,
+    FOREIGN KEY (initiative_id) REFERENCES initiative(id) ON DELETE SET NULL,
+    FOREIGN KEY (watched_folder_id) REFERENCES watched_folder(id) ON DELETE SET NULL
+);
+
+-- Indexes
+CREATE INDEX source_document_user_id_idx ON source_document(user_id);
+CREATE INDEX source_document_status_idx ON source_document(status);
+CREATE INDEX source_document_initiative_id_idx ON source_document(initiative_id);
+CREATE INDEX source_document_watched_folder_id_idx ON source_document(watched_folder_id);
+CREATE INDEX source_document_source_type_idx ON source_document(source_type);
+CREATE INDEX source_document_deleted_at_idx ON source_document(deleted_at);
+CREATE INDEX source_document_content_hash_idx ON source_document(content_hash);
+
+-- Queries
+selectAll:
+SELECT * FROM source_document WHERE deleted_at IS NULL ORDER BY created_at DESC;
+
+selectById:
+SELECT * FROM source_document WHERE id = ?;
+
+selectByUserId:
+SELECT * FROM source_document WHERE user_id = ? AND deleted_at IS NULL ORDER BY created_at DESC;
+
+selectByStatus:
+SELECT * FROM source_document WHERE user_id = ? AND status = ? AND deleted_at IS NULL ORDER BY created_at DESC;
+
+selectByInitiative:
+SELECT * FROM source_document WHERE initiative_id = ? AND deleted_at IS NULL ORDER BY created_at DESC;
+
+selectByWatchedFolder:
+SELECT * FROM source_document WHERE watched_folder_id = ? AND deleted_at IS NULL ORDER BY created_at DESC;
+
+selectBySourcePath:
+SELECT * FROM source_document WHERE user_id = ? AND source_path = ? AND deleted_at IS NULL;
+
+selectNeedsReprocessing:
+SELECT * FROM source_document WHERE user_id = ? AND status = 'STALE' AND deleted_at IS NULL ORDER BY created_at ASC;
+
+selectProcessed:
+SELECT * FROM source_document WHERE user_id = ? AND status = 'PROCESSED' AND deleted_at IS NULL ORDER BY created_at DESC;
+
+insert:
+INSERT INTO source_document (id, user_id, title, source_type, source_path, mime_type, content_hash, extracted_text, embedding, status, error_message, initiative_id, watched_folder_id, last_synced_at, created_at, updated_at, deleted_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+update:
+UPDATE source_document SET
+    title = ?,
+    source_type = ?,
+    source_path = ?,
+    mime_type = ?,
+    content_hash = ?,
+    extracted_text = ?,
+    embedding = ?,
+    status = ?,
+    error_message = ?,
+    initiative_id = ?,
+    watched_folder_id = ?,
+    last_synced_at = ?,
+    updated_at = ?
+WHERE id = ?;
+
+updateStatus:
+UPDATE source_document SET status = ?, error_message = ?, updated_at = ? WHERE id = ?;
+
+updateExtraction:
+UPDATE source_document SET extracted_text = ?, embedding = ?, status = ?, updated_at = ? WHERE id = ?;
+
+updateLastSynced:
+UPDATE source_document SET last_synced_at = ?, updated_at = ? WHERE id = ?;
+
+softDelete:
+UPDATE source_document SET deleted_at = ?, updated_at = ? WHERE id = ?;
+
+delete:
+DELETE FROM source_document WHERE id = ?;

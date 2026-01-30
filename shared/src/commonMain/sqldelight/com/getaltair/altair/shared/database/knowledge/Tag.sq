@@ -1,0 +1,78 @@
+-- Tag table for lightweight categorization
+-- Many-to-many relationship with notes via separate note_tag join table
+
+CREATE TABLE tag (
+    id TEXT NOT NULL PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    color TEXT
+);
+
+CREATE INDEX tag_user_id ON tag(user_id);
+CREATE UNIQUE INDEX tag_user_name ON tag(user_id, name);
+
+-- Note-Tag join table for many-to-many relationship
+CREATE TABLE note_tag (
+    note_id TEXT NOT NULL,
+    tag_id TEXT NOT NULL,
+    PRIMARY KEY (note_id, tag_id),
+    FOREIGN KEY (note_id) REFERENCES note(id) ON DELETE CASCADE,
+    FOREIGN KEY (tag_id) REFERENCES tag(id) ON DELETE CASCADE
+);
+
+CREATE INDEX note_tag_note_id ON note_tag(note_id);
+CREATE INDEX note_tag_tag_id ON note_tag(tag_id);
+
+-- CRUD queries for Tag
+selectAll:
+SELECT * FROM tag;
+
+selectById:
+SELECT * FROM tag WHERE id = ?;
+
+selectByUserId:
+SELECT * FROM tag WHERE user_id = ? ORDER BY name;
+
+selectByName:
+SELECT * FROM tag WHERE user_id = ? AND name = ?;
+
+insert:
+INSERT INTO tag (id, user_id, name, color)
+VALUES (?, ?, ?, ?);
+
+updateColor:
+UPDATE tag SET color = ? WHERE id = ?;
+
+delete:
+DELETE FROM tag WHERE id = ?;
+
+deleteByUserId:
+DELETE FROM tag WHERE user_id = ?;
+
+-- Queries for note-tag relationships
+selectTagsForNote:
+SELECT tag.* FROM tag
+JOIN note_tag ON tag.id = note_tag.tag_id
+WHERE note_tag.note_id = ?
+ORDER BY tag.name;
+
+selectNotesForTag:
+SELECT note.* FROM note
+JOIN note_tag ON note.id = note_tag.note_id
+WHERE note_tag.tag_id = ? AND note.deleted_at IS NULL
+ORDER BY note.updated_at DESC;
+
+addTagToNote:
+INSERT OR IGNORE INTO note_tag (note_id, tag_id)
+VALUES (?, ?);
+
+removeTagFromNote:
+DELETE FROM note_tag WHERE note_id = ? AND tag_id = ?;
+
+removeAllTagsFromNote:
+DELETE FROM note_tag WHERE note_id = ?;
+
+countNotesWithTag:
+SELECT COUNT(*) FROM note_tag
+JOIN note ON note.id = note_tag.note_id
+WHERE note_tag.tag_id = ? AND note.deleted_at IS NULL;

@@ -1,0 +1,56 @@
+-- NoteLink table for bidirectional wiki-style links between notes
+
+CREATE TABLE note_link (
+    id TEXT NOT NULL PRIMARY KEY,
+    source_id TEXT NOT NULL,
+    target_id TEXT NOT NULL,
+    context TEXT,
+    created_at INTEGER NOT NULL,
+    FOREIGN KEY (source_id) REFERENCES note(id) ON DELETE CASCADE,
+    FOREIGN KEY (target_id) REFERENCES note(id) ON DELETE CASCADE
+);
+
+CREATE INDEX note_link_source_id ON note_link(source_id);
+CREATE INDEX note_link_target_id ON note_link(target_id);
+CREATE UNIQUE INDEX note_link_unique ON note_link(source_id, target_id);
+
+-- CRUD queries
+selectAll:
+SELECT * FROM note_link;
+
+selectById:
+SELECT * FROM note_link WHERE id = ?;
+
+selectBySourceNote:
+SELECT * FROM note_link WHERE source_id = ?;
+
+selectByTargetNote:
+SELECT * FROM note_link WHERE target_id = ?;
+
+selectBacklinks:
+SELECT * FROM note_link WHERE target_id = ?;
+
+selectOutgoingLinks:
+SELECT * FROM note_link WHERE source_id = ?;
+
+selectBetweenNotes:
+SELECT * FROM note_link WHERE source_id = ? AND target_id = ?;
+
+insert:
+INSERT INTO note_link (id, source_id, target_id, context, created_at)
+VALUES (?, ?, ?, ?, ?);
+
+updateContext:
+UPDATE note_link SET context = ? WHERE id = ?;
+
+delete:
+DELETE FROM note_link WHERE id = ?;
+
+deleteBySourceNote:
+DELETE FROM note_link WHERE source_id = ?;
+
+deleteByTargetNote:
+DELETE FROM note_link WHERE target_id = ?;
+
+deleteBetweenNotes:
+DELETE FROM note_link WHERE source_id = ? AND target_id = ?;

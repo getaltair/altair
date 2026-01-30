@@ -1,0 +1,169 @@
+-- Quest: Actionable task with energy cost tracking for ADHD-aware planning
+-- Domain: com.getaltair.altair.shared.domain.guidance.Quest
+
+CREATE TABLE quest (
+    id TEXT NOT NULL PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    title TEXT NOT NULL,
+    description TEXT,
+    energy_cost INTEGER NOT NULL,
+    status TEXT NOT NULL,
+    epic_id TEXT,
+    routine_id TEXT,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    started_at INTEGER,
+    completed_at INTEGER,
+    deleted_at INTEGER,
+    FOREIGN KEY (epic_id) REFERENCES epic(id) ON DELETE SET NULL
+);
+
+-- Indexes for common queries
+CREATE INDEX quest_user_id_idx ON quest(user_id);
+CREATE INDEX quest_status_idx ON quest(status);
+CREATE INDEX quest_epic_id_idx ON quest(epic_id);
+CREATE INDEX quest_routine_id_idx ON quest(routine_id);
+CREATE INDEX quest_deleted_at_idx ON quest(deleted_at);
+
+-- ==================== CRUD Queries ====================
+
+selectAll:
+SELECT * FROM quest
+WHERE deleted_at IS NULL
+ORDER BY created_at DESC;
+
+selectById:
+SELECT * FROM quest
+WHERE id = ? AND deleted_at IS NULL;
+
+insert:
+INSERT INTO quest (
+    id, user_id, title, description, energy_cost, status,
+    epic_id, routine_id, created_at, updated_at,
+    started_at, completed_at, deleted_at
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+update:
+UPDATE quest
+SET
+    title = ?,
+    description = ?,
+    energy_cost = ?,
+    status = ?,
+    epic_id = ?,
+    routine_id = ?,
+    updated_at = ?,
+    started_at = ?,
+    completed_at = ?
+WHERE id = ?;
+
+delete:
+UPDATE quest
+SET deleted_at = ?, updated_at = ?
+WHERE id = ?;
+
+hardDelete:
+DELETE FROM quest WHERE id = ?;
+
+-- ==================== User Queries ====================
+
+selectByUserId:
+SELECT * FROM quest
+WHERE user_id = ? AND deleted_at IS NULL
+ORDER BY created_at DESC;
+
+selectActiveByUserId:
+SELECT * FROM quest
+WHERE user_id = ? AND status = 'ACTIVE' AND deleted_at IS NULL
+ORDER BY started_at DESC;
+
+selectByUserIdAndStatus:
+SELECT * FROM quest
+WHERE user_id = ? AND status = ? AND deleted_at IS NULL
+ORDER BY created_at DESC;
+
+-- ==================== Epic Queries ====================
+
+selectByEpicId:
+SELECT * FROM quest
+WHERE epic_id = ? AND deleted_at IS NULL
+ORDER BY created_at ASC;
+
+selectByEpicIdAndStatus:
+SELECT * FROM quest
+WHERE epic_id = ? AND status = ? AND deleted_at IS NULL
+ORDER BY created_at ASC;
+
+-- ==================== Routine Queries ====================
+
+selectByRoutineId:
+SELECT * FROM quest
+WHERE routine_id = ? AND deleted_at IS NULL
+ORDER BY created_at DESC;
+
+-- ==================== Status Queries ====================
+
+selectByStatus:
+SELECT * FROM quest
+WHERE status = ? AND deleted_at IS NULL
+ORDER BY created_at DESC;
+
+selectBacklog:
+SELECT * FROM quest
+WHERE status = 'BACKLOG' AND deleted_at IS NULL
+ORDER BY created_at DESC;
+
+selectCompleted:
+SELECT * FROM quest
+WHERE status = 'COMPLETED' AND deleted_at IS NULL
+ORDER BY completed_at DESC;
+
+-- ==================== Energy Queries ====================
+
+selectByEnergyCost:
+SELECT * FROM quest
+WHERE energy_cost = ? AND deleted_at IS NULL
+ORDER BY created_at DESC;
+
+selectByEnergyCostRange:
+SELECT * FROM quest
+WHERE energy_cost BETWEEN ? AND ? AND deleted_at IS NULL
+ORDER BY energy_cost ASC, created_at DESC;
+
+-- ==================== Date Range Queries ====================
+
+selectCompletedBetween:
+SELECT * FROM quest
+WHERE status = 'COMPLETED'
+  AND completed_at IS NOT NULL
+  AND completed_at BETWEEN ? AND ?
+  AND deleted_at IS NULL
+ORDER BY completed_at DESC;
+
+selectCreatedBetween:
+SELECT * FROM quest
+WHERE created_at BETWEEN ? AND ?
+  AND deleted_at IS NULL
+ORDER BY created_at DESC;
+
+-- ==================== Count Queries ====================
+
+countByUserId:
+SELECT COUNT(*) FROM quest
+WHERE user_id = ? AND deleted_at IS NULL;
+
+countByStatus:
+SELECT COUNT(*) FROM quest
+WHERE status = ? AND deleted_at IS NULL;
+
+countActiveByUserId:
+SELECT COUNT(*) FROM quest
+WHERE user_id = ? AND status = 'ACTIVE' AND deleted_at IS NULL;
+
+-- ==================== WIP=1 Enforcement ====================
+
+-- Query to check if user already has an active quest (for WIP=1 enforcement)
+selectActiveQuestByUserId:
+SELECT * FROM quest
+WHERE user_id = ? AND status = 'ACTIVE' AND deleted_at IS NULL
+LIMIT 1;
