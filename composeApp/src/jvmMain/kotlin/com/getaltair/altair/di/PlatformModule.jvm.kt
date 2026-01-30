@@ -10,6 +10,8 @@ import org.koin.dsl.module
  * Provides platform-specific implementations.
  */
 actual val platformModule: Module = module {
+    includes(desktopPersistenceModule)
+
     // TokenProvider using file-based storage in config directory
     single<TokenProvider> {
         DesktopTokenProvider(

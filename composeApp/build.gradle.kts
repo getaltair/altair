@@ -77,7 +77,10 @@ kotlin {
         jvmMain.dependencies {
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutinesSwing)
+            implementation(libs.kotlinx.datetime)
             implementation(libs.ktor.client.cio)
+            implementation(libs.surrealdb)
+            implementation(libs.arrow.core)
         }
     }
 }
