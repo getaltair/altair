@@ -51,7 +51,7 @@ builds on the previous.
 
 ---
 
-## Phase 2: Domain Models & Interfaces
+## Phase 2: Domain Models & Interfaces ✅ COMPLETE
 
 **Goal:** Define all data structures, error types, and repository contracts.  
 **Ref:** [Domain Model](./architecture/domain-model.md)
@@ -93,7 +93,7 @@ Organize by domain: auth/, sync/, guidance/, knowledge/, tracking/, ai/
 
 ---
 
-## Phase 3: Server Database
+## Phase 3: Server Database ✅ COMPLETE
 
 **Goal:** Server can persist and query data.  
 **Ref:** [ADR-002](./adr/002-surrealdb-embedded.md), [Persistence](./architecture/persistence.md)
@@ -114,7 +114,7 @@ Organize by domain: auth/, sync/, guidance/, knowledge/, tracking/, ai/
 
 ---
 
-## Phase 4: REST API Layer
+## Phase 4: REST API Layer ✅ COMPLETE
 
 **Goal:** Client-server communication via HTTP/JSON.  
 **Ref:** [ADR-016](./adr/016-ktor-rest-api.md)
@@ -143,7 +143,7 @@ Create ApiModule providing HttpClient and all API class instances.
 
 ---
 
-## Phase 5: Authentication
+## Phase 5: Authentication ✅ COMPLETE
 
 **Goal:** Multi-user support with proper data isolation.  
 **Ref:** [ADR-012](./adr/012-multi-user-data-isolation.md)

@@ -24,10 +24,17 @@ class TestTokenProvider : TokenProvider {
 
 /**
  * Test module providing TokenProvider for API module.
+ * Replaces platform-specific TokenProvider implementations for testing.
  */
 private val testModule = module {
     single<TokenProvider> { TestTokenProvider() }
 }
+
+/**
+ * Modules to test - excludes platformModule which requires platform context.
+ * The testModule provides TokenProvider instead.
+ */
+private val testableModules = listOf(testModule, appModule, apiModule)
 
 /**
  * Verifies Koin module configuration is valid.
@@ -43,9 +50,10 @@ class KoinModuleTest : KoinTest {
     @Test
     fun verifyKoinConfiguration() {
         // Koin 4.x pattern: use koinApplication block with checkModules inside
-        // Include testModule to provide TokenProvider required by apiModule
+        // Use testableModules (excludes platformModule which requires Android Context)
+        // testModule provides TokenProvider needed by apiModule
         koinApplication {
-            modules(testModule + allModules)
+            modules(testableModules)
             checkModules()
         }
     }
