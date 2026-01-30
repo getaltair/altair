@@ -1,5 +1,13 @@
 package com.getaltair.altair.di
 
+import com.getaltair.altair.api.GuidanceApi
+import com.getaltair.altair.api.InboxApi
+import com.getaltair.altair.viewmodel.GuidanceViewModel
+import com.getaltair.altair.viewmodel.InboxViewModel
+import com.getaltair.altair.viewmodel.TodayViewModel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import org.koin.core.module.Module
 import org.koin.dsl.module
 
@@ -8,12 +16,13 @@ import org.koin.dsl.module
  * Contains all shared dependencies used across platforms.
  */
 val appModule: Module = module {
-    // Placeholder for repositories (Phase 2+)
-    // singleOf(::QuestRepository)
-    // singleOf(::NoteRepository)
+    // Application-scoped coroutine scope for ViewModels
+    single<CoroutineScope> { CoroutineScope(SupervisorJob() + Dispatchers.Main) }
 
-    // Placeholder for ViewModels (Phase 3+)
-    // viewModelOf(::GuidanceViewModel)
+    // ViewModels for Phase 7: Inbox + Guidance MVP
+    single<InboxViewModel> { InboxViewModel(get<InboxApi>(), get()) }
+    single<GuidanceViewModel> { GuidanceViewModel(get<GuidanceApi>(), get()) }
+    single<TodayViewModel> { TodayViewModel(get<GuidanceApi>(), get()) }
 }
 
 /**

@@ -8,15 +8,27 @@ import com.arkivanov.decompose.router.stack.childStack
 import com.arkivanov.decompose.router.stack.pop
 import com.arkivanov.decompose.router.stack.push
 import com.arkivanov.decompose.value.Value
+import com.getaltair.altair.viewmodel.GuidanceViewModel
+import com.getaltair.altair.viewmodel.InboxViewModel
+import com.getaltair.altair.viewmodel.TodayViewModel
 import kotlinx.serialization.Serializable
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
 
 /**
  * Root navigation component for Altair.
  * Manages the main navigation stack across all platforms.
+ *
+ * Injects ViewModels from Koin and passes them to child components.
  */
 class RootComponent(
     componentContext: ComponentContext
-) : ComponentContext by componentContext {
+) : ComponentContext by componentContext, KoinComponent {
+
+    // Inject ViewModels from Koin
+    private val inboxViewModel: InboxViewModel by inject()
+    private val guidanceViewModel: GuidanceViewModel by inject()
+    private val todayViewModel: TodayViewModel by inject()
 
     private val navigation = StackNavigation<Config>()
 
@@ -30,9 +42,22 @@ class RootComponent(
 
     private fun createChild(config: Config, componentContext: ComponentContext): Child =
         when (config) {
-            is Config.Home -> Child.Home(HomeComponent(componentContext, ::onHomeOutput))
+            is Config.Home -> Child.Home(
+                HomeComponent(
+                    componentContext = componentContext,
+                    inboxViewModel = inboxViewModel,
+                    todayViewModel = todayViewModel,
+                    onOutput = ::onHomeOutput
+                )
+            )
             is Config.Settings -> Child.Settings(SettingsComponent(componentContext, ::onSettingsOutput))
-            is Config.Guidance -> Child.Guidance(GuidanceComponent(componentContext, ::onGuidanceOutput))
+            is Config.Guidance -> Child.Guidance(
+                GuidanceComponent(
+                    componentContext = componentContext,
+                    guidanceViewModel = guidanceViewModel,
+                    onOutput = ::onGuidanceOutput
+                )
+            )
             is Config.Knowledge -> Child.Knowledge(KnowledgeComponent(componentContext, ::onKnowledgeOutput))
             is Config.Tracking -> Child.Tracking(TrackingComponent(componentContext, ::onTrackingOutput))
         }
@@ -41,6 +66,7 @@ class RootComponent(
     private fun onHomeOutput(output: HomeComponent.Output) {
         when (output) {
             HomeComponent.Output.NavigateToSettings -> navigation.push(Config.Settings)
+            is HomeComponent.Output.NavigateToQuestDetail -> navigation.push(Config.Guidance)
         }
     }
 
