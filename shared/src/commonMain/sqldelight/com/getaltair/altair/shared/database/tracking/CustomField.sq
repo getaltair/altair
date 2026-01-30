@@ -1,0 +1,57 @@
+-- CustomField.sq
+-- Represents custom metadata fields attached to items
+
+CREATE TABLE custom_field (
+    id TEXT PRIMARY KEY NOT NULL,
+    item_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    field_type TEXT NOT NULL,
+    value TEXT,
+    definition_id TEXT,
+    FOREIGN KEY (item_id) REFERENCES item(id) ON DELETE CASCADE,
+    FOREIGN KEY (definition_id) REFERENCES field_definition(id)
+);
+
+CREATE INDEX custom_field_item_id_idx ON custom_field(item_id);
+CREATE INDEX custom_field_definition_id_idx ON custom_field(definition_id);
+
+-- CRUD Operations
+selectAll:
+SELECT * FROM custom_field;
+
+selectById:
+SELECT * FROM custom_field WHERE id = ?;
+
+selectByItem:
+SELECT * FROM custom_field WHERE item_id = ?;
+
+selectByDefinition:
+SELECT * FROM custom_field WHERE definition_id = ?;
+
+selectTemplateFields:
+SELECT * FROM custom_field WHERE item_id = ? AND definition_id IS NOT NULL;
+
+selectAdHocFields:
+SELECT * FROM custom_field WHERE item_id = ? AND definition_id IS NULL;
+
+insert:
+INSERT INTO custom_field (
+    id, item_id, name, field_type,
+    value, definition_id
+) VALUES (?, ?, ?, ?, ?, ?);
+
+update:
+UPDATE custom_field
+SET name = ?, field_type = ?, value = ?
+WHERE id = ?;
+
+updateValue:
+UPDATE custom_field
+SET value = ?
+WHERE id = ?;
+
+delete:
+DELETE FROM custom_field WHERE id = ?;
+
+deleteByItem:
+DELETE FROM custom_field WHERE item_id = ?;

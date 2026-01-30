@@ -1,0 +1,50 @@
+-- InboxItem schema
+CREATE TABLE inbox_item (
+    id TEXT NOT NULL PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    content TEXT NOT NULL,
+    source TEXT NOT NULL,
+    attachment_ids TEXT NOT NULL,
+    created_at INTEGER NOT NULL,
+    deleted_at INTEGER,
+    FOREIGN KEY (user_id) REFERENCES user(id) ON DELETE CASCADE
+);
+
+-- Indexes
+CREATE INDEX inbox_item_user_id_idx ON inbox_item(user_id);
+CREATE INDEX inbox_item_created_at_idx ON inbox_item(created_at);
+CREATE INDEX inbox_item_deleted_at_idx ON inbox_item(deleted_at);
+CREATE INDEX inbox_item_source_idx ON inbox_item(source);
+
+-- Queries
+selectAll:
+SELECT * FROM inbox_item WHERE deleted_at IS NULL ORDER BY created_at DESC;
+
+selectById:
+SELECT * FROM inbox_item WHERE id = ?;
+
+selectByUserId:
+SELECT * FROM inbox_item WHERE user_id = ? AND deleted_at IS NULL ORDER BY created_at DESC;
+
+selectBySource:
+SELECT * FROM inbox_item WHERE user_id = ? AND source = ? AND deleted_at IS NULL ORDER BY created_at DESC;
+
+selectRecent:
+SELECT * FROM inbox_item WHERE user_id = ? AND deleted_at IS NULL ORDER BY created_at DESC LIMIT ?;
+
+insert:
+INSERT INTO inbox_item (id, user_id, content, source, attachment_ids, created_at, deleted_at)
+VALUES (?, ?, ?, ?, ?, ?, ?);
+
+update:
+UPDATE inbox_item SET
+    content = ?,
+    source = ?,
+    attachment_ids = ?
+WHERE id = ?;
+
+softDelete:
+UPDATE inbox_item SET deleted_at = ? WHERE id = ?;
+
+delete:
+DELETE FROM inbox_item WHERE id = ?;

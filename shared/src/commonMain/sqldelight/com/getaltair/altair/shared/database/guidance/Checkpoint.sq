@@ -1,0 +1,124 @@
+-- Checkpoint: Discrete sub-step within a Quest for progress tracking
+-- Domain: com.getaltair.altair.shared.domain.guidance.Checkpoint
+
+CREATE TABLE checkpoint (
+    id TEXT NOT NULL PRIMARY KEY,
+    quest_id TEXT NOT NULL,
+    title TEXT NOT NULL,
+    completed INTEGER NOT NULL DEFAULT 0,
+    "order" INTEGER NOT NULL,
+    completed_at INTEGER,
+    FOREIGN KEY (quest_id) REFERENCES quest(id) ON DELETE CASCADE
+);
+
+-- Indexes for common queries
+CREATE INDEX checkpoint_quest_id_idx ON checkpoint(quest_id);
+CREATE INDEX checkpoint_order_idx ON checkpoint("order");
+CREATE INDEX checkpoint_completed_idx ON checkpoint(completed);
+
+-- ==================== CRUD Queries ====================
+
+selectAll:
+SELECT * FROM checkpoint
+ORDER BY "order" ASC;
+
+selectById:
+SELECT * FROM checkpoint
+WHERE id = ?;
+
+insert:
+INSERT INTO checkpoint (
+    id, quest_id, title, completed, "order", completed_at
+) VALUES (?, ?, ?, ?, ?, ?);
+
+update:
+UPDATE checkpoint
+SET
+    title = ?,
+    completed = ?,
+    "order" = ?,
+    completed_at = ?
+WHERE id = ?;
+
+delete:
+DELETE FROM checkpoint WHERE id = ?;
+
+-- ==================== Quest Queries ====================
+
+selectByQuestId:
+SELECT * FROM checkpoint
+WHERE quest_id = ?
+ORDER BY "order" ASC;
+
+selectByQuestIdAndCompleted:
+SELECT * FROM checkpoint
+WHERE quest_id = ? AND completed = ?
+ORDER BY "order" ASC;
+
+-- ==================== Completion Queries ====================
+
+selectCompleted:
+SELECT * FROM checkpoint
+WHERE completed = 1
+ORDER BY completed_at DESC;
+
+selectIncomplete:
+SELECT * FROM checkpoint
+WHERE completed = 0
+ORDER BY "order" ASC;
+
+-- ==================== Count Queries ====================
+
+countByQuestId:
+SELECT COUNT(*) FROM checkpoint
+WHERE quest_id = ?;
+
+countCompletedByQuestId:
+SELECT COUNT(*) FROM checkpoint
+WHERE quest_id = ? AND completed = 1;
+
+countIncompleteByQuestId:
+SELECT COUNT(*) FROM checkpoint
+WHERE quest_id = ? AND completed = 0;
+
+-- ==================== Progress Queries ====================
+
+-- Get completion percentage for a quest
+selectProgressByQuestId:
+SELECT
+    COUNT(*) as total,
+    SUM(CASE WHEN completed = 1 THEN 1 ELSE 0 END) as completed_count
+FROM checkpoint
+WHERE quest_id = ?;
+
+-- ==================== Ordering Queries ====================
+
+-- Get the maximum order value for a quest (useful for appending new checkpoints)
+selectMaxOrderByQuestId:
+SELECT COALESCE(MAX("order"), 0) as max_order
+FROM checkpoint
+WHERE quest_id = ?;
+
+-- ==================== Batch Operations ====================
+
+-- Mark a checkpoint as completed
+markCompleted:
+UPDATE checkpoint
+SET completed = 1, completed_at = ?
+WHERE id = ?;
+
+-- Mark a checkpoint as incomplete
+markIncomplete:
+UPDATE checkpoint
+SET completed = 0, completed_at = NULL
+WHERE id = ?;
+
+-- Reorder a checkpoint
+updateOrder:
+UPDATE checkpoint
+SET "order" = ?
+WHERE id = ?;
+
+-- Delete all checkpoints for a quest (cascade should handle this, but explicit for clarity)
+deleteByQuestId:
+DELETE FROM checkpoint WHERE quest_id = ?;

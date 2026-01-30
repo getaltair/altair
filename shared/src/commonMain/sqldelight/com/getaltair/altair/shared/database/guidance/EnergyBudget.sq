@@ -1,0 +1,150 @@
+-- EnergyBudget: Daily capacity tracking for ADHD-aware task planning
+-- Domain: com.getaltair.altair.shared.domain.guidance.EnergyBudget
+
+CREATE TABLE energy_budget (
+    user_id TEXT NOT NULL,
+    date TEXT NOT NULL,
+    budget INTEGER NOT NULL,
+    spent INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (user_id, date)
+);
+
+-- Indexes for common queries
+CREATE INDEX energy_budget_user_id_idx ON energy_budget(user_id);
+CREATE INDEX energy_budget_date_idx ON energy_budget(date);
+
+-- ==================== CRUD Queries ====================
+
+selectAll:
+SELECT * FROM energy_budget
+ORDER BY date DESC;
+
+selectByUserIdAndDate:
+SELECT * FROM energy_budget
+WHERE user_id = ? AND date = ?;
+
+insert:
+INSERT INTO energy_budget (user_id, date, budget, spent)
+VALUES (?, ?, ?, ?);
+
+update:
+UPDATE energy_budget
+SET budget = ?, spent = ?
+WHERE user_id = ? AND date = ?;
+
+delete:
+DELETE FROM energy_budget
+WHERE user_id = ? AND date = ?;
+
+-- ==================== User Queries ====================
+
+selectByUserId:
+SELECT * FROM energy_budget
+WHERE user_id = ?
+ORDER BY date DESC;
+
+selectByUserIdBetween:
+SELECT * FROM energy_budget
+WHERE user_id = ? AND date BETWEEN ? AND ?
+ORDER BY date ASC;
+
+-- ==================== Budget Tracking ====================
+
+-- Get today's budget for a user
+selectTodayByUserId:
+SELECT * FROM energy_budget
+WHERE user_id = ? AND date = ?
+LIMIT 1;
+
+-- Get recent budgets (last N days)
+selectRecentByUserId:
+SELECT * FROM energy_budget
+WHERE user_id = ? AND date >= ?
+ORDER BY date DESC
+LIMIT ?;
+
+-- ==================== Capacity Analysis ====================
+
+-- Find over-budget days
+selectOverBudgetByUserId:
+SELECT * FROM energy_budget
+WHERE user_id = ? AND spent > budget
+ORDER BY date DESC;
+
+-- Find under-utilized days (spent significantly less than budget)
+selectUnderUtilizedByUserId:
+SELECT * FROM energy_budget
+WHERE user_id = ? AND spent < (budget * 0.5)
+ORDER BY date DESC;
+
+-- ==================== Budget Updates ====================
+
+-- Update just the budget amount
+updateBudget:
+UPDATE energy_budget
+SET budget = ?
+WHERE user_id = ? AND date = ?;
+
+-- Update just the spent amount
+updateSpent:
+UPDATE energy_budget
+SET spent = ?
+WHERE user_id = ? AND date = ?;
+
+-- Increment spent energy
+incrementSpent:
+UPDATE energy_budget
+SET spent = spent + ?
+WHERE user_id = ? AND date = ?;
+
+-- Decrement spent energy (when quest is un-completed)
+decrementSpent:
+UPDATE energy_budget
+SET spent = MAX(0, spent - ?)
+WHERE user_id = ? AND date = ?;
+
+-- ==================== Statistics Queries ====================
+
+-- Calculate average daily budget for a user
+selectAverageBudgetByUserId:
+SELECT AVG(budget) as avg_budget
+FROM energy_budget
+WHERE user_id = ?;
+
+-- Calculate average daily spent for a user
+selectAverageSpentByUserId:
+SELECT AVG(spent) as avg_spent
+FROM energy_budget
+WHERE user_id = ?;
+
+-- Get total spent energy over a date range
+selectTotalSpentBetween:
+SELECT SUM(spent) as total_spent
+FROM energy_budget
+WHERE user_id = ? AND date BETWEEN ? AND ?;
+
+-- ==================== Count Queries ====================
+
+countByUserId:
+SELECT COUNT(*) FROM energy_budget
+WHERE user_id = ?;
+
+countOverBudgetByUserId:
+SELECT COUNT(*) FROM energy_budget
+WHERE user_id = ? AND spent > budget;
+
+-- ==================== Upsert Operation ====================
+
+-- Insert or update (for ensuring a budget exists for a date)
+upsert:
+INSERT INTO energy_budget (user_id, date, budget, spent)
+VALUES (?, ?, ?, ?)
+ON CONFLICT (user_id, date)
+DO UPDATE SET budget = excluded.budget, spent = excluded.spent;
+
+-- Upsert with budget only (preserve spent if exists)
+upsertBudget:
+INSERT INTO energy_budget (user_id, date, budget, spent)
+VALUES (?, ?, ?, 0)
+ON CONFLICT (user_id, date)
+DO UPDATE SET budget = excluded.budget;

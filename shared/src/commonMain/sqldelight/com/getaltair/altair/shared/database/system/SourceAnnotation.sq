@@ -1,0 +1,56 @@
+-- SourceAnnotation schema
+CREATE TABLE source_annotation (
+    id TEXT NOT NULL PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    source_document_id TEXT NOT NULL,
+    anchor_type TEXT NOT NULL,
+    anchor_value TEXT,
+    anchor_fingerprint TEXT,
+    content TEXT NOT NULL,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    deleted_at INTEGER,
+    FOREIGN KEY (user_id) REFERENCES user(id) ON DELETE CASCADE,
+    FOREIGN KEY (source_document_id) REFERENCES source_document(id) ON DELETE CASCADE
+);
+
+-- Indexes
+CREATE INDEX source_annotation_user_id_idx ON source_annotation(user_id);
+CREATE INDEX source_annotation_source_document_id_idx ON source_annotation(source_document_id);
+CREATE INDEX source_annotation_anchor_type_idx ON source_annotation(anchor_type);
+CREATE INDEX source_annotation_deleted_at_idx ON source_annotation(deleted_at);
+
+-- Queries
+selectAll:
+SELECT * FROM source_annotation WHERE deleted_at IS NULL ORDER BY created_at DESC;
+
+selectById:
+SELECT * FROM source_annotation WHERE id = ?;
+
+selectByUserId:
+SELECT * FROM source_annotation WHERE user_id = ? AND deleted_at IS NULL ORDER BY created_at DESC;
+
+selectBySourceDocument:
+SELECT * FROM source_annotation WHERE source_document_id = ? AND deleted_at IS NULL ORDER BY created_at ASC;
+
+selectByAnchorType:
+SELECT * FROM source_annotation WHERE source_document_id = ? AND anchor_type = ? AND deleted_at IS NULL ORDER BY created_at ASC;
+
+insert:
+INSERT INTO source_annotation (id, user_id, source_document_id, anchor_type, anchor_value, anchor_fingerprint, content, created_at, updated_at, deleted_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+update:
+UPDATE source_annotation SET
+    anchor_type = ?,
+    anchor_value = ?,
+    anchor_fingerprint = ?,
+    content = ?,
+    updated_at = ?
+WHERE id = ?;
+
+softDelete:
+UPDATE source_annotation SET deleted_at = ?, updated_at = ? WHERE id = ?;
+
+delete:
+DELETE FROM source_annotation WHERE id = ?;

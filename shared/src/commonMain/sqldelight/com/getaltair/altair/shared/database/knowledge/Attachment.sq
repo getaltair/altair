@@ -1,0 +1,62 @@
+-- Attachment table for file attachments on notes and inbox items
+
+CREATE TABLE attachment (
+    id TEXT NOT NULL PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    note_id TEXT,
+    inbox_id TEXT,
+    filename TEXT NOT NULL,
+    mime_type TEXT NOT NULL,
+    size_bytes INTEGER NOT NULL,
+    storage_key TEXT NOT NULL,
+    hash TEXT NOT NULL,
+    created_at INTEGER NOT NULL,
+    FOREIGN KEY (note_id) REFERENCES note(id) ON DELETE CASCADE,
+    FOREIGN KEY (inbox_id) REFERENCES inbox_item(id) ON DELETE CASCADE
+);
+
+CREATE INDEX attachment_user_id ON attachment(user_id);
+CREATE INDEX attachment_note_id ON attachment(note_id);
+CREATE INDEX attachment_inbox_id ON attachment(inbox_id);
+CREATE INDEX attachment_hash ON attachment(hash);
+
+-- CRUD queries
+selectAll:
+SELECT * FROM attachment;
+
+selectById:
+SELECT * FROM attachment WHERE id = ?;
+
+selectByUserId:
+SELECT * FROM attachment WHERE user_id = ? ORDER BY created_at DESC;
+
+selectByNote:
+SELECT * FROM attachment WHERE note_id = ? ORDER BY created_at;
+
+selectByInboxItem:
+SELECT * FROM attachment WHERE inbox_id = ? ORDER BY created_at;
+
+selectOrphaned:
+SELECT * FROM attachment WHERE note_id IS NULL AND inbox_id IS NULL;
+
+selectByHash:
+SELECT * FROM attachment WHERE hash = ? LIMIT 1;
+
+insert:
+INSERT INTO attachment (id, user_id, note_id, inbox_id, filename, mime_type, size_bytes, storage_key, hash, created_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+updateNoteId:
+UPDATE attachment SET note_id = ? WHERE id = ?;
+
+updateInboxId:
+UPDATE attachment SET inbox_id = ? WHERE id = ?;
+
+delete:
+DELETE FROM attachment WHERE id = ?;
+
+deleteByUserId:
+DELETE FROM attachment WHERE user_id = ?;
+
+deleteOrphaned:
+DELETE FROM attachment WHERE note_id IS NULL AND inbox_id IS NULL AND created_at < ?;

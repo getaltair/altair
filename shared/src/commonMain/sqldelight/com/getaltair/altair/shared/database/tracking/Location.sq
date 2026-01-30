@@ -1,0 +1,58 @@
+-- Location.sq
+-- Represents physical locations where items can be stored
+
+CREATE TABLE location (
+    id TEXT PRIMARY KEY NOT NULL,
+    user_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    description TEXT,
+    parent_id TEXT,
+    created_at INTEGER NOT NULL,
+    FOREIGN KEY (parent_id) REFERENCES location(id)
+);
+
+CREATE INDEX location_user_id_idx ON location(user_id);
+CREATE INDEX location_parent_id_idx ON location(parent_id);
+
+-- CRUD Operations
+selectAll:
+SELECT * FROM location;
+
+selectById:
+SELECT * FROM location WHERE id = ?;
+
+selectByUserId:
+SELECT * FROM location WHERE user_id = ?;
+
+selectByParent:
+SELECT * FROM location WHERE parent_id = ?;
+
+selectRootLocations:
+SELECT * FROM location WHERE user_id = ? AND parent_id IS NULL;
+
+selectChildLocations:
+SELECT * FROM location WHERE parent_id = ?;
+
+insert:
+INSERT INTO location (
+    id, user_id, name, description,
+    parent_id, created_at
+) VALUES (?, ?, ?, ?, ?, ?);
+
+update:
+UPDATE location
+SET name = ?, description = ?, parent_id = ?
+WHERE id = ?;
+
+delete:
+DELETE FROM location WHERE id = ?;
+
+moveToParent:
+UPDATE location
+SET parent_id = ?
+WHERE id = ?;
+
+makeRoot:
+UPDATE location
+SET parent_id = NULL
+WHERE id = ?;

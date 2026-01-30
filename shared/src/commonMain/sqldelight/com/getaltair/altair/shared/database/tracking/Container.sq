@@ -1,0 +1,69 @@
+-- Container.sq
+-- Represents containers that can hold items
+
+CREATE TABLE container (
+    id TEXT PRIMARY KEY NOT NULL,
+    user_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    description TEXT,
+    location_id TEXT,
+    parent_id TEXT,
+    created_at INTEGER NOT NULL,
+    FOREIGN KEY (location_id) REFERENCES location(id),
+    FOREIGN KEY (parent_id) REFERENCES container(id)
+);
+
+CREATE INDEX container_user_id_idx ON container(user_id);
+CREATE INDEX container_location_id_idx ON container(location_id);
+CREATE INDEX container_parent_id_idx ON container(parent_id);
+
+-- CRUD Operations
+selectAll:
+SELECT * FROM container;
+
+selectById:
+SELECT * FROM container WHERE id = ?;
+
+selectByUserId:
+SELECT * FROM container WHERE user_id = ?;
+
+selectByLocation:
+SELECT * FROM container WHERE location_id = ?;
+
+selectByParent:
+SELECT * FROM container WHERE parent_id = ?;
+
+selectRootContainers:
+SELECT * FROM container WHERE user_id = ? AND parent_id IS NULL;
+
+selectNestedContainers:
+SELECT * FROM container WHERE user_id = ? AND parent_id IS NOT NULL;
+
+insert:
+INSERT INTO container (
+    id, user_id, name, description,
+    location_id, parent_id, created_at
+) VALUES (?, ?, ?, ?, ?, ?, ?);
+
+update:
+UPDATE container
+SET name = ?, description = ?, location_id = ?, parent_id = ?
+WHERE id = ?;
+
+delete:
+DELETE FROM container WHERE id = ?;
+
+moveToLocation:
+UPDATE container
+SET location_id = ?
+WHERE id = ?;
+
+nestInContainer:
+UPDATE container
+SET parent_id = ?
+WHERE id = ?;
+
+removeNesting:
+UPDATE container
+SET parent_id = NULL
+WHERE id = ?;

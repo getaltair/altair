@@ -3,13 +3,16 @@ plugins {
     alias(libs.plugins.androidLibrary)
     alias(libs.plugins.kotlinxSerialization)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.sqldelight)
 }
 
 kotlin {
     // Android target
     androidTarget {
-        compilerOptions {
-            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
+        compilations.all {
+            kotlinOptions {
+                jvmTarget = "11"
+            }
         }
     }
 
@@ -29,6 +32,8 @@ kotlin {
                 implementation(libs.kotlinx.datetime)
                 api(libs.arrow.core)
                 api(libs.arrow.optics)
+                implementation(libs.sqldelight.runtime)
+                implementation(libs.sqldelight.coroutines.extensions)
             }
             kotlin.srcDir("build/generated/ksp/metadata/commonMain/kotlin")
         }
@@ -45,10 +50,12 @@ kotlin {
 
         androidMain.dependencies {
             // Android-specific dependencies
+            implementation(libs.sqldelight.android.driver)
         }
 
         iosMain.dependencies {
             // iOS-specific dependencies
+            implementation(libs.sqldelight.native.driver)
         }
     }
 }
@@ -77,6 +84,15 @@ kotlin.targets.configureEach {
     compilations.configureEach {
         compileTaskProvider.configure {
             dependsOn("kspCommonMainKotlinMetadata")
+        }
+    }
+}
+
+sqldelight {
+    databases {
+        create("AltairDatabase") {
+            packageName.set("com.getaltair.altair.shared.database")
+            generateAsync.set(true)
         }
     }
 }

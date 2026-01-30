@@ -1,0 +1,37 @@
+-- ItemTemplate.sq
+-- Represents templates for creating consistent items
+
+CREATE TABLE item_template (
+    id TEXT PRIMARY KEY NOT NULL,
+    user_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    description TEXT,
+    icon TEXT,
+    created_at INTEGER NOT NULL
+);
+
+CREATE INDEX item_template_user_id_idx ON item_template(user_id);
+
+-- CRUD Operations
+selectAll:
+SELECT * FROM item_template;
+
+selectById:
+SELECT * FROM item_template WHERE id = ?;
+
+selectByUserId:
+SELECT * FROM item_template WHERE user_id = ?;
+
+insert:
+INSERT INTO item_template (
+    id, user_id, name, description,
+    icon, created_at
+) VALUES (?, ?, ?, ?, ?, ?);
+
+update:
+UPDATE item_template
+SET name = ?, description = ?, icon = ?
+WHERE id = ?;
+
+delete:
+DELETE FROM item_template WHERE id = ?;

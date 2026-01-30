@@ -1,0 +1,134 @@
+-- Epic: Grouping of related Quests representing larger body of work
+-- Domain: com.getaltair.altair.shared.domain.guidance.Epic
+
+CREATE TABLE epic (
+    id TEXT NOT NULL PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    title TEXT NOT NULL,
+    description TEXT,
+    status TEXT NOT NULL,
+    initiative_id TEXT,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    completed_at INTEGER,
+    deleted_at INTEGER
+);
+
+-- Indexes for common queries
+CREATE INDEX epic_user_id_idx ON epic(user_id);
+CREATE INDEX epic_status_idx ON epic(status);
+CREATE INDEX epic_initiative_id_idx ON epic(initiative_id);
+CREATE INDEX epic_deleted_at_idx ON epic(deleted_at);
+
+-- ==================== CRUD Queries ====================
+
+selectAll:
+SELECT * FROM epic
+WHERE deleted_at IS NULL
+ORDER BY created_at DESC;
+
+selectById:
+SELECT * FROM epic
+WHERE id = ? AND deleted_at IS NULL;
+
+insert:
+INSERT INTO epic (
+    id, user_id, title, description, status,
+    initiative_id, created_at, updated_at,
+    completed_at, deleted_at
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+update:
+UPDATE epic
+SET
+    title = ?,
+    description = ?,
+    status = ?,
+    initiative_id = ?,
+    updated_at = ?,
+    completed_at = ?
+WHERE id = ?;
+
+delete:
+UPDATE epic
+SET deleted_at = ?, updated_at = ?
+WHERE id = ?;
+
+hardDelete:
+DELETE FROM epic WHERE id = ?;
+
+-- ==================== User Queries ====================
+
+selectByUserId:
+SELECT * FROM epic
+WHERE user_id = ? AND deleted_at IS NULL
+ORDER BY created_at DESC;
+
+selectByUserIdAndStatus:
+SELECT * FROM epic
+WHERE user_id = ? AND status = ? AND deleted_at IS NULL
+ORDER BY created_at DESC;
+
+-- ==================== Initiative Queries ====================
+
+selectByInitiativeId:
+SELECT * FROM epic
+WHERE initiative_id = ? AND deleted_at IS NULL
+ORDER BY created_at DESC;
+
+selectByInitiativeIdAndStatus:
+SELECT * FROM epic
+WHERE initiative_id = ? AND status = ? AND deleted_at IS NULL
+ORDER BY created_at DESC;
+
+-- ==================== Status Queries ====================
+
+selectByStatus:
+SELECT * FROM epic
+WHERE status = ? AND deleted_at IS NULL
+ORDER BY created_at DESC;
+
+selectActive:
+SELECT * FROM epic
+WHERE status = 'ACTIVE' AND deleted_at IS NULL
+ORDER BY created_at DESC;
+
+selectCompleted:
+SELECT * FROM epic
+WHERE status = 'COMPLETED' AND deleted_at IS NULL
+ORDER BY completed_at DESC;
+
+selectArchived:
+SELECT * FROM epic
+WHERE status = 'ARCHIVED' AND deleted_at IS NULL
+ORDER BY updated_at DESC;
+
+-- ==================== Date Range Queries ====================
+
+selectCompletedBetween:
+SELECT * FROM epic
+WHERE status = 'COMPLETED'
+  AND completed_at IS NOT NULL
+  AND completed_at BETWEEN ? AND ?
+  AND deleted_at IS NULL
+ORDER BY completed_at DESC;
+
+selectCreatedBetween:
+SELECT * FROM epic
+WHERE created_at BETWEEN ? AND ?
+  AND deleted_at IS NULL
+ORDER BY created_at DESC;
+
+-- ==================== Count Queries ====================
+
+countByUserId:
+SELECT COUNT(*) FROM epic
+WHERE user_id = ? AND deleted_at IS NULL;
+
+countByStatus:
+SELECT COUNT(*) FROM epic
+WHERE status = ? AND deleted_at IS NULL;
+
+countActiveByUserId:
+SELECT COUNT(*) FROM epic
+WHERE user_id = ? AND status = 'ACTIVE' AND deleted_at IS NULL;

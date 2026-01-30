@@ -1,0 +1,55 @@
+-- FieldDefinition.sq
+-- Defines custom field structure within item templates
+
+CREATE TABLE field_definition (
+    id TEXT PRIMARY KEY NOT NULL,
+    template_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    field_type TEXT NOT NULL,
+    required INTEGER NOT NULL,
+    default_value TEXT,
+    enum_options TEXT,
+    order_index INTEGER NOT NULL,
+    FOREIGN KEY (template_id) REFERENCES item_template(id) ON DELETE CASCADE,
+    CHECK (required IN (0, 1)),
+    CHECK (order_index >= 0)
+);
+
+CREATE INDEX field_definition_template_id_idx ON field_definition(template_id);
+CREATE INDEX field_definition_order_idx ON field_definition(template_id, order_index);
+
+-- CRUD Operations
+selectAll:
+SELECT * FROM field_definition;
+
+selectById:
+SELECT * FROM field_definition WHERE id = ?;
+
+selectByTemplate:
+SELECT * FROM field_definition WHERE template_id = ? ORDER BY order_index ASC;
+
+selectRequiredFields:
+SELECT * FROM field_definition WHERE template_id = ? AND required = 1 ORDER BY order_index ASC;
+
+insert:
+INSERT INTO field_definition (
+    id, template_id, name, field_type,
+    required, default_value, enum_options, order_index
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+
+update:
+UPDATE field_definition
+SET name = ?, field_type = ?, required = ?,
+    default_value = ?, enum_options = ?, order_index = ?
+WHERE id = ?;
+
+delete:
+DELETE FROM field_definition WHERE id = ?;
+
+deleteByTemplate:
+DELETE FROM field_definition WHERE template_id = ?;
+
+reorderFields:
+UPDATE field_definition
+SET order_index = ?
+WHERE id = ?;

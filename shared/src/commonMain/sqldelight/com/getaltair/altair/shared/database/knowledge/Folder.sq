@@ -1,0 +1,50 @@
+-- Folder table for hierarchical note organization
+
+CREATE TABLE folder (
+    id TEXT NOT NULL PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    parent_id TEXT,
+    `order` INTEGER NOT NULL,
+    created_at INTEGER NOT NULL,
+    FOREIGN KEY (parent_id) REFERENCES folder(id) ON DELETE CASCADE
+);
+
+CREATE INDEX folder_user_id ON folder(user_id);
+CREATE INDEX folder_parent_id ON folder(parent_id);
+CREATE INDEX folder_order ON folder(`order`);
+
+-- CRUD queries
+selectAll:
+SELECT * FROM folder;
+
+selectById:
+SELECT * FROM folder WHERE id = ?;
+
+selectByUserId:
+SELECT * FROM folder WHERE user_id = ? ORDER BY `order`;
+
+selectRootFolders:
+SELECT * FROM folder WHERE user_id = ? AND parent_id IS NULL ORDER BY `order`;
+
+selectChildren:
+SELECT * FROM folder WHERE parent_id = ? ORDER BY `order`;
+
+selectByParent:
+SELECT * FROM folder WHERE parent_id = ? ORDER BY `order`;
+
+insert:
+INSERT INTO folder (id, user_id, name, parent_id, `order`, created_at)
+VALUES (?, ?, ?, ?, ?, ?);
+
+update:
+UPDATE folder SET name = ?, parent_id = ?, `order` = ? WHERE id = ?;
+
+updateOrder:
+UPDATE folder SET `order` = ? WHERE id = ?;
+
+delete:
+DELETE FROM folder WHERE id = ?;
+
+deleteByUserId:
+DELETE FROM folder WHERE user_id = ?;
