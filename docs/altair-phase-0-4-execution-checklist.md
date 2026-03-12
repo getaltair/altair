@@ -351,9 +351,9 @@ Prevent string drift and identifier chaos before backend and clients proliferate
 
 ### Checklist
 
-- [ ] Update backend placeholders/docs to reference canonical entity types
-- [ ] Update PowerSync spec docs to reference canonical stream names
-- [ ] Update future client scaffolds to import generated constants
+- [x] Update backend placeholders/docs to reference canonical entity types
+- [x] Update PowerSync spec docs to reference canonical stream names
+- [x] Update future client scaffolds to import generated constants
 
 ### Acceptance Criteria
 
@@ -363,7 +363,7 @@ Prevent string drift and identifier chaos before backend and clients proliferate
 
 ## Phase 1 Review Gate
 
-- [ ] Registry files approved
+- [x] Registry files approved
 - [x] Generated bindings checked in
 - [x] Validation tests green
 - [x] CI enforcement green
@@ -990,7 +990,7 @@ Validate baseline Postgres → SQLite sync for personal and household data.
 - [ ] P1-004
 - [ ] P1-005
 - [ ] P1-006
-- [ ] P1-007
+- [x] P1-007
 
 ## Week/Block 3
 

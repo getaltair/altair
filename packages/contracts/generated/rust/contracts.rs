@@ -61,6 +61,17 @@ pub enum RelationStatusType {
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq, Eq, Hash)]
 #[serde(rename_all = "snake_case")]
+pub enum AttachmentProcessingState {
+	Pending,
+	Uploaded,
+	Processing,
+	Ready,
+	Failed,
+	Deleted,
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq, Eq, Hash)]
+#[serde(rename_all = "snake_case")]
 pub enum SyncStream {
 	MyProfile,
 	MyMemberships,

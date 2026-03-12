@@ -47,34 +47,48 @@ def to_rust_enum_name(value: str) -> str:
     return "".join(part.capitalize() for part in value.split("_"))
 
 
-def generate_typescript(entity_types: list[str], relation_data: dict, stream_data: dict) -> str:
+def generate_typescript(
+    entity_types: list[str], relation_data: dict, stream_data: dict
+) -> str:
     relation_types = relation_data["relationTypes"]
     source_types = relation_data["sourceTypes"]
     status_types = relation_data["statusTypes"]
+    attachment_processing_states = relation_data["attachmentProcessingStates"]
     streams = stream_data["autoSubscribed"] + stream_data["onDemand"]
 
     def block(name: str, values: list[str]) -> str:
-        lines = [f'export const {name} = {{']
+        lines = [f"export const {name} = {{"]
         for v in values:
             lines.append(f'  {to_ts_const_name(v)}: "{v}",')
         lines.append("} as const;")
-        lines.append(f"export type {''.join(w.capitalize() for w in name.lower().split('_'))}Value = typeof {name}[keyof typeof {name}];")
+        lines.append(
+            f"export type {''.join(w.capitalize() for w in name.lower().split('_'))}Value = typeof {name}[keyof typeof {name}];"
+        )
         return "\n".join(lines)
 
-    return "\n\n".join([
-        "// Generated from registry JSON. Do not edit by hand.",
-        block("ENTITY_TYPES", entity_types),
-        block("RELATION_TYPES", relation_types),
-        block("RELATION_SOURCE_TYPES", source_types),
-        block("RELATION_STATUS_TYPES", status_types),
-        block("SYNC_STREAMS", streams),
-    ]) + "\n"
+    return (
+        "\n\n".join(
+            [
+                "// Generated from registry JSON. Do not edit by hand.",
+                block("ENTITY_TYPES", entity_types),
+                block("RELATION_TYPES", relation_types),
+                block("RELATION_SOURCE_TYPES", source_types),
+                block("RELATION_STATUS_TYPES", status_types),
+                block("ATTACHMENT_PROCESSING_STATES", attachment_processing_states),
+                block("SYNC_STREAMS", streams),
+            ]
+        )
+        + "\n"
+    )
 
 
-def generate_kotlin(entity_types: list[str], relation_data: dict, stream_data: dict) -> str:
+def generate_kotlin(
+    entity_types: list[str], relation_data: dict, stream_data: dict
+) -> str:
     relation_types = relation_data["relationTypes"]
     source_types = relation_data["sourceTypes"]
     status_types = relation_data["statusTypes"]
+    attachment_processing_states = relation_data["attachmentProcessingStates"]
     streams = stream_data["autoSubscribed"] + stream_data["onDemand"]
 
     def enum_block(name: str, values: list[str]) -> str:
@@ -89,21 +103,30 @@ def generate_kotlin(entity_types: list[str], relation_data: dict, stream_data: d
     }}
 }}"""
 
-    return "\n\n".join([
-        "// Generated from registry JSON. Do not edit by hand.",
-        "package com.altair.contracts",
-        enum_block("EntityType", entity_types),
-        enum_block("RelationType", relation_types),
-        enum_block("RelationSourceType", source_types),
-        enum_block("RelationStatusType", status_types),
-        enum_block("SyncStream", streams),
-    ]) + "\n"
+    return (
+        "\n\n".join(
+            [
+                "// Generated from registry JSON. Do not edit by hand.",
+                "package com.altair.contracts",
+                enum_block("EntityType", entity_types),
+                enum_block("RelationType", relation_types),
+                enum_block("RelationSourceType", source_types),
+                enum_block("RelationStatusType", status_types),
+                enum_block("AttachmentProcessingState", attachment_processing_states),
+                enum_block("SyncStream", streams),
+            ]
+        )
+        + "\n"
+    )
 
 
-def generate_rust(entity_types: list[str], relation_data: dict, stream_data: dict) -> str:
+def generate_rust(
+    entity_types: list[str], relation_data: dict, stream_data: dict
+) -> str:
     relation_types = relation_data["relationTypes"]
     source_types = relation_data["sourceTypes"]
     status_types = relation_data["statusTypes"]
+    attachment_processing_states = relation_data["attachmentProcessingStates"]
     streams = stream_data["autoSubscribed"] + stream_data["onDemand"]
 
     def enum_block(name: str, values: list[str]) -> str:
@@ -114,15 +137,21 @@ pub enum {name} {{
     {body},
 }}"""
 
-    return "\n\n".join([
-        "// Generated from registry JSON. Do not edit by hand.",
-        "use serde::{Deserialize, Serialize};",
-        enum_block("EntityType", entity_types),
-        enum_block("RelationType", relation_types),
-        enum_block("RelationSourceType", source_types),
-        enum_block("RelationStatusType", status_types),
-        enum_block("SyncStream", streams),
-    ]) + "\n"
+    return (
+        "\n\n".join(
+            [
+                "// Generated from registry JSON. Do not edit by hand.",
+                "use serde::{Deserialize, Serialize};",
+                enum_block("EntityType", entity_types),
+                enum_block("RelationType", relation_types),
+                enum_block("RelationSourceType", source_types),
+                enum_block("RelationStatusType", status_types),
+                enum_block("AttachmentProcessingState", attachment_processing_states),
+                enum_block("SyncStream", streams),
+            ]
+        )
+        + "\n"
+    )
 
 
 def main() -> None:

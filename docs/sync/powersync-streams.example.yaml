@@ -1,3 +1,17 @@
+# PowerSync Stream Configuration Example
+#
+# Stream names defined here must match the canonical identifiers in:
+#   packages/contracts/registry/sync-streams.json
+#
+# Entity types used in WHERE clauses must match:
+#   packages/contracts/registry/entity-types.json
+#
+# Run: python scripts/generate_contracts.py --root packages/contracts
+# to regenerate bindings after modifying registry files.
+#
+# Auto-subscribed streams sync immediately when the client connects.
+# On-demand streams are subscribed when the user navigates into a deeper context.
+
 config:
   edition: 3
   timestamp_max_precision: milliseconds

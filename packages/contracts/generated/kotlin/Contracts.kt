@@ -75,6 +75,21 @@ enum class RelationStatusType(val wire: String) {
     }
 }
 
+enum class AttachmentProcessingState(val wire: String) {
+    PENDING("pending"),
+    UPLOADED("uploaded"),
+    PROCESSING("processing"),
+    READY("ready"),
+    FAILED("failed"),
+    DELETED("deleted");
+
+    companion object {
+        fun fromWire(value: String): AttachmentProcessingState =
+            entries.firstOrNull { it.wire == value }
+                ?: error("Unknown AttachmentProcessingState: $value")
+    }
+}
+
 enum class SyncStream(val wire: String) {
     MY_PROFILE("my_profile"),
     MY_MEMBERSHIPS("my_memberships"),

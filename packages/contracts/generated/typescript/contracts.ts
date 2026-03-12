@@ -53,6 +53,16 @@ export const RELATION_STATUS_TYPES = {
 } as const;
 export type RelationStatusTypesValue = typeof RELATION_STATUS_TYPES[keyof typeof RELATION_STATUS_TYPES];
 
+export const ATTACHMENT_PROCESSING_STATES = {
+  PENDING: "pending",
+  UPLOADED: "uploaded",
+  PROCESSING: "processing",
+  READY: "ready",
+  FAILED: "failed",
+  DELETED: "deleted",
+} as const;
+export type AttachmentProcessingStatesValue = typeof ATTACHMENT_PROCESSING_STATES[keyof typeof ATTACHMENT_PROCESSING_STATES];
+
 export const SYNC_STREAMS = {
   MY_PROFILE: "my_profile",
   MY_MEMBERSHIPS: "my_memberships",

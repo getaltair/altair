@@ -1,13 +1,29 @@
 # Altair Entity Type Registry
 
-Use these exact identifiers in:
+> **Source of truth:** `packages/contracts/registry/`
+> **Generated bindings:** `packages/contracts/generated/`
 
+Use these exact identifiers in:
 - `entity_relations.from_entity_type`
 - `entity_relations.to_entity_type`
 - search documents
 - AI enrichment outputs
 - automation rules
 - analytics/event annotations
+
+**Import from contracts package, never hardcode:**
+
+```typescript
+// CORRECT
+import { ENTITY_TYPES } from '@altair/contracts';
+
+const type = ENTITY_TYPES.KNOWLEDGE_NOTE;
+
+// WRONG
+const entityType = 'knowledge_note';  // Hardcoded string
+```
+
+---
 
 ## Core
 - `user`
@@ -35,6 +51,8 @@ Use these exact identifiers in:
 - `tracking_shopping_list`
 - `tracking_shopping_list_item`
 
+---
+
 ## Relationship types (starter set)
 - `references`
 - `supports`
@@ -45,6 +63,8 @@ Use these exact identifiers in:
 - `similar_to`
 - `generated_from`
 
+---
+
 ## Source types
 - `user`
 - `ai`
@@ -53,6 +73,8 @@ Use these exact identifiers in:
 - `migration`
 - `system`
 
+---
+
 ## Status values
 - `accepted`
 - `suggested`
@@ -60,8 +82,20 @@ Use these exact identifiers in:
 - `rejected`
 - `expired`
 
+---
+
+## Attachment processing states
+- `pending`
+- `uploaded`
+- `processing`
+- `ready`
+- `failed`
+- `deleted`
+
+---
+
 ## Rules
 1. Never invent ad hoc entity type strings in app code.
 2. Never use UI labels as entity types.
-3. Add new values only through one shared source of truth.
+3. Add new values only through `packages/contracts`.
 4. Keep old values stable for backward compatibility.

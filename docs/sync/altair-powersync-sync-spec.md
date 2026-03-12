@@ -202,9 +202,18 @@ These tables can grow quickly or be too context-specific to auto-sync broadly.
 
 `entity_relations` depends on a stable registry of entity type names.
 
-Use canonical lowercase identifiers and never improvise them ad hoc in app code.
+**Source of truth:** `packages/contracts/registry/entity-types.json`
+
+**Generated bindings:**
+- TypeScript: `packages/contracts/generated/typescript/contracts.ts`
+- Kotlin: `packages/contracts/generated/kotlin/Contracts.kt`
+- Rust: `packages/contracts/generated/rust/contracts.rs`
+
+Use canonical lowercase identifiers from the contracts package. Never improvise them ad hoc in app code.
 
 ## 6.1 Initial entity type registry
+
+> See `packages/contracts/registry/entity-types.json` for the canonical list.
 
 ### Core
 - `user`
@@ -234,20 +243,17 @@ Use canonical lowercase identifiers and never improvise them ad hoc in app code.
 
 ## 6.2 Guardrails
 
-- store registry constants in one shared contract package
-- use the same values in:
+- Import constants from `packages/contracts` - never hardcode entity types
+- Use the same values in:
   - backend
   - Android
   - web/desktop
   - search/index pipelines
   - AI enrichment jobs
+- Do not encode UI labels as entity types
+- Do not let AI invent new entity types at write time
 
-- do not encode UI labels as entity types
-- do not let AI invent new entity types at write time
-
----
-
-# 7. Authorization and Shape Rules
+---# 7. Authorization# 7. Authorization and Shape Rules
 
 Every stream query must be filtered by real access boundaries.
 
