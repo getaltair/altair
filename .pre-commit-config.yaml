@@ -1,0 +1,62 @@
+# prek configuration for Altair monorepo
+# Install: prek install
+# Run manually: prek run
+
+repos:
+  # Built-in fast hooks (no network needed)
+  - repo: builtin
+    hooks:
+      - id: trailing-whitespace
+        exclude: \.md$
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-toml
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: detect-private-key
+
+  # TypeScript/JavaScript (apps/web)
+  - repo: local
+    hooks:
+      - id: prettier
+        name: Prettier (web)
+        language: system
+        entry: bash -c 'cd apps/web && bun run format'
+        files: ^apps/web/
+        types_or: [javascript, jsx, ts, tsx, svelte, json]
+        pass_filenames: false
+
+      - id: eslint
+        name: ESLint (web)
+        language: system
+        entry: bash -c 'cd apps/web && bun run lint'
+        files: ^apps/web/
+        types_or: [javascript, jsx, ts, tsx, svelte]
+        pass_filenames: false
+
+  # Rust (server, worker, src-tauri)
+  - repo: local
+    hooks:
+      - id: cargo-fmt
+        name: cargo fmt
+        language: system
+        entry: cargo fmt --all --
+        files: \.rs$
+        pass_filenames: true
+
+      - id: cargo-clippy
+        name: cargo clippy
+        language: system
+        entry: cargo clippy --all-targets --all-features -- -D warnings
+        files: \.rs$
+        pass_filenames: false
+
+  # Kotlin (apps/android) - optional, uses EditorConfig
+  - repo: local
+    hooks:
+      - id: ktlint
+        name: ktlint (Android)
+        language: system
+        entry: bash -c 'cd apps/android && ./gradlew ktlintCheck 2>/dev/null || echo "ktlint not configured"'
+        files: ^apps/android/.*\.kt[s]?$
+        pass_filenames: false

@@ -1,0 +1,5 @@
+[tools]
+bun = "latest"
+java = "21"
+prek = "latest"
+rust = "latest"

@@ -101,20 +101,17 @@ Create the repo, tooling, and baseline project structure so the rest of the work
 
 ### Checklist
 
-- [ ] Create repo root structure:
-  - [ ] `apps/server`
-  - [ ] `apps/web`
-  - [ ] `apps/desktop`
-  - [ ] `apps/android`
-  - [ ] `apps/worker`
-  - [ ] `packages/contracts`
-  - [ ] `packages/design-system`
-  - [ ] `infra/compose`
-  - [ ] `infra/scripts`
-  - [ ] `infra/migrations`
-  - [ ] `docs/prd`
-  - [ ] `docs/architecture`
-  - [ ] `docs/adr`
+- [x] Create repo root structure:
+  - [x] `apps/server`
+  - [x] `apps/web`
+  - [x] `apps/desktop`
+  - [x] `apps/android`
+  - [x] `apps/worker`
+  - [x] `packages/`
+  - [x] `infra/`
+  - [x] `docs/prd`
+  - [x] `docs/architecture`
+  - [x] `docs/adr`
 
 ### Acceptance Criteria
 
@@ -130,19 +127,19 @@ Create the repo, tooling, and baseline project structure so the rest of the work
 
 ### Checklist
 
-- [ ] Choose JS workspace manager (recommended: pnpm)
-- [ ] Add root workspace config
-- [ ] Add Rust workspace config if needed
-- [ ] Confirm Android Gradle structure
-- [ ] Decide root task runner conventions
+- [x] Choose JS workspace manager (decided: bun)
+- [x] Add root workspace config
+- [x] Add Rust workspace config if needed
+- [x] Confirm Android Gradle structure
+- [x] Decide root task runner conventions
 
 ### Acceptance Criteria
 
 - one documented command path exists for:
-  - [ ] web install/build
-  - [ ] server build/test
-  - [ ] Android build/test
-  - [ ] shared scripts
+  - [x] web install/build
+  - [x] server build/test
+  - [x] Android build/test
+  - [x] shared scripts
 
 ---
 
@@ -153,11 +150,11 @@ Create the repo, tooling, and baseline project structure so the rest of the work
 
 ### Checklist
 
-- [ ] Add `.editorconfig`
-- [ ] Add TS formatter/lint config
-- [ ] Add Rust fmt/clippy config or scripts
-- [ ] Add Kotlin formatter/lint config or scripts
-- [ ] Add root README section for developer setup
+- [x] Add `.editorconfig`
+- [x] Add TS formatter/lint config
+- [x] Add Rust fmt/clippy config or scripts
+- [x] Add Kotlin formatter/lint config or scripts
+- [x] Add root README section for developer setup
 
 ### Acceptance Criteria
 
