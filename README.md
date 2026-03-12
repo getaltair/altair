@@ -108,6 +108,24 @@ cargo clippy             # Run Clippy linter
 cargo fmt                # Format Rust code
 ```
 
+### Contract Generation
+
+When the canonical type registries in `packages/contracts/registry/` are modified,
+run the generator to update bindings for all platforms:
+
+```bash
+python scripts/generate_contracts.py --root packages/contracts
+```
+
+This regenerates:
+- `generated/typescript/contracts.ts` — SvelteKit web app
+- `generated/kotlin/Contracts.kt` — Android mobile app
+- `generated/rust/contracts.rs` — Rust backend/worker
+
+**When to run:** After editing any `entity-types.json`, `relation-types.json`, or `sync-streams.json`
+in the registry directory.
+
+
 ## Developer Setup
 
 ### Prerequisites
