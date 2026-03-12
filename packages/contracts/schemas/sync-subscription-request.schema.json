@@ -1,0 +1,76 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"$id": "https://altair.dev/contracts/sync-subscription-request.schema.json",
+	"title": "SyncSubscriptionRequest",
+	"description": "Client request describing which sync streams and filters should be subscribed to.",
+	"type": "object",
+	"required": [
+		"streams"
+	],
+	"properties": {
+		"client_id": {
+			"type": "string",
+			"description": "Unique identifier for the syncing client instance."
+		},
+		"user_id": {
+			"type": "string",
+			"description": "Authenticated user requesting the subscription."
+		},
+		"household_id": {
+			"type": [
+				"string",
+				"null"
+			],
+			"description": "Optional household scope for shared data."
+		},
+		"streams": {
+			"type": "array",
+			"description": "List of sync streams requested by the client.",
+			"items": {
+				"type": "string"
+			},
+			"minItems": 1
+		},
+		"filters": {
+			"type": "object",
+			"description": "Optional filters narrowing the subscription scope.",
+			"properties": {
+				"entity_types": {
+					"type": "array",
+					"items": {
+						"type": "string"
+					}
+				},
+				"relation_types": {
+					"type": "array",
+					"items": {
+						"type": "string"
+					}
+				},
+				"updated_after": {
+					"type": "string",
+					"format": "date-time",
+					"description": "Optional cursor timestamp for incremental sync."
+				}
+			},
+			"additionalProperties": false
+		},
+		"capabilities": {
+			"type": "object",
+			"description": "Client capability hints for sync optimization.",
+			"properties": {
+				"attachments": {
+					"type": "boolean"
+				},
+				"relations": {
+					"type": "boolean"
+				},
+				"delta_sync": {
+					"type": "boolean"
+				}
+			},
+			"additionalProperties": false
+		}
+	},
+	"additionalProperties": false
+}

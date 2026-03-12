@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "RelationRecord",
+  "type": "object",
+  "required": [
+    "id",
+    "from",
+    "to",
+    "relationType",
+    "sourceType",
+    "status",
+    "createdAt",
+    "updatedAt"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "from": {
+      "type": "object",
+      "required": [
+        "entityType",
+        "entityId"
+      ],
+      "properties": {
+        "entityType": {
+          "type": "string"
+        },
+        "entityId": {
+          "type": "string",
+          "format": "uuid"
+        }
+      }
+    },
+    "to": {
+      "type": "object",
+      "required": [
+        "entityType",
+        "entityId"
+      ],
+      "properties": {
+        "entityType": {
+          "type": "string"
+        },
+        "entityId": {
+          "type": "string",
+          "format": "uuid"
+        }
+      }
+    },
+    "relationType": {
+      "type": "string"
+    },
+    "sourceType": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string"
+    },
+    "confidence": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "evidence": {
+      "type": "object"
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updatedAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}
