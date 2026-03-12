@@ -1,12 +1,15 @@
 {
-  "name": "altair",
-  "version": "0.1.0",
-  "workspaces": [
-    "packages/*",
-    "apps/*"
-  ],
-  "dependencies": {
-    "@sveltejs/adapter-node": "^5.5.4",
-    "@sveltejs/adapter-static": "^3.0.10"
-  }
+	"name": "altair",
+	"version": "0.1.0",
+	"workspaces": [
+		"packages/*",
+		"apps/*"
+	],
+	"dependencies": {
+		"@sveltejs/adapter-node": "^5.5.4",
+		"@sveltejs/adapter-static": "^3.0.10"
+	},
+	"scripts": {
+		"codegen": "python scripts/generate_contracts.py --root packages/contracts && pytest tests/"
+	}
 }
