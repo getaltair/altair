@@ -170,12 +170,12 @@ Create the repo, tooling, and baseline project structure so the rest of the work
 
 ### Checklist
 
-- [ ] Add GitHub Actions workflow for:
-  - [ ] TypeScript install/build placeholder
-  - [ ] Rust build/test placeholder
-  - [ ] Kotlin/Gradle build placeholder
-  - [ ] contract validation placeholder
-- [ ] Ensure CI runs on PRs
+- [x] Add GitHub Actions workflow for:
+  - [x] TypeScript install/build placeholder
+  - [x] Rust build/test placeholder
+  - [x] Kotlin/Gradle build placeholder
+  - [x] contract validation placeholder
+- [x] Ensure CI runs on PRs
 
 ### Acceptance Criteria
 
@@ -209,7 +209,7 @@ Create the repo, tooling, and baseline project structure so the rest of the work
 
 - [x] Repo structure approved
 - [x] Tooling conventions approved
-- [ ] CI skeleton green
+- [x] CI skeleton green
 - [x] Current architecture docs committed
 
 ---
@@ -256,10 +256,10 @@ Prevent string drift and identifier chaos before backend and clients proliferate
 
 ### Checklist
 
-- [ ] Add `RelationRecord` JSON schema
-- [ ] Add `AttachmentRecord` JSON schema
-- [ ] Add `EntityRef` JSON schema
-- [ ] Add optional starter `SyncSubscriptionRequest` schema
+- [X] Add `RelationRecord` JSON schema
+- [X] Add `AttachmentRecord` JSON schema
+- [X] Add `EntityRef` JSON schema
+- [x] Add optional starter `SyncSubscriptionRequest` schema
 
 ### Acceptance Criteria
 
@@ -274,13 +274,13 @@ Prevent string drift and identifier chaos before backend and clients proliferate
 
 ### Checklist
 
-- [ ] Add generator script under `scripts/`
-- [ ] Generator reads registry JSON
-- [ ] Generator emits:
-  - [ ] TypeScript bindings
-  - [ ] Kotlin bindings
-  - [ ] Rust bindings
-- [ ] Document generator usage
+- [x] Add generator script under `scripts/`
+- [x] Generator reads registry JSON
+- [x] Generator emits:
+  - [x] TypeScript bindings
+  - [x] Kotlin bindings
+  - [x] Rust bindings
+- [x] Document generator usage
 
 ### Acceptance Criteria
 
@@ -295,9 +295,9 @@ Prevent string drift and identifier chaos before backend and clients proliferate
 
 ### Checklist
 
-- [ ] Add generated TS constants
-- [ ] Add generated Kotlin enums/data classes
-- [ ] Add generated Rust enums/structs
+- [x] Add generated TS constants
+- [x] Add generated Kotlin enums/data classes
+- [x] Add generated Rust enums/structs
 
 ### Acceptance Criteria
 
@@ -313,11 +313,11 @@ Prevent string drift and identifier chaos before backend and clients proliferate
 
 ### Checklist
 
-- [ ] Add registry shape tests
-- [ ] Add duplicate-value tests
-- [ ] Add generated TS value tests
-- [ ] Add generated Kotlin value tests
-- [ ] Add generated Rust value tests
+- [x] Add registry shape tests
+- [x] Add duplicate-value tests
+- [x] Add generated TS value tests
+- [x] Add generated Kotlin value tests
+- [x] Add generated Rust value tests
 
 ### Acceptance Criteria
 
@@ -332,10 +332,10 @@ Prevent string drift and identifier chaos before backend and clients proliferate
 
 ### Checklist
 
-- [ ] Add contracts generation workflow
-- [ ] Run generator in CI
-- [ ] Fail if `git diff --exit-code` finds changes
-- [ ] Run contract validation tests in CI
+- [x] Add contracts generation workflow
+- [x] Run generator in CI
+- [x] Fail if `git diff --exit-code` finds changes
+- [x] Run contract validation tests in CI
 
 ### Acceptance Criteria
 
@@ -364,9 +364,9 @@ Prevent string drift and identifier chaos before backend and clients proliferate
 ## Phase 1 Review Gate
 
 - [ ] Registry files approved
-- [ ] Generated bindings checked in
-- [ ] Validation tests green
-- [ ] CI enforcement green
+- [x] Generated bindings checked in
+- [x] Validation tests green
+- [x] CI enforcement green
 
 ---
 

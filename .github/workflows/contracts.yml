@@ -1,9 +1,16 @@
 name: Contracts
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'packages/contracts/**'
+      - 'scripts/generate_contracts.py'
+      - '.github/workflows/contracts.yml'
   pull_request:
     paths:
       - 'packages/contracts/**'
+      - 'scripts/generate_contracts.py'
       - '.github/workflows/contracts.yml'
   workflow_dispatch:
 
@@ -15,22 +22,25 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Contracts validation placeholder
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install pytest
+        run: pip install pytest
+
+      - name: Run generator
+        run: python scripts/generate_contracts.py --root packages/contracts
+
+      - name: Check for stale artifacts
         run: |
-          echo "========================================"
-          echo "Contracts Package Validation"
-          echo "========================================"
-          echo ""
-          echo "This workflow is a placeholder that will be implemented in Phase 1 (P1-006)."
-          echo ""
-          echo "Future implementation will include:"
-          echo "  ✓ Registry JSON validation"
-          echo "  ✓ Code generation for TypeScript, Kotlin, and Rust"
-          echo "  ✓ Generated artifact validation"
-          echo "  ✓ Contract tests"
-          echo "  ✓ CI enforcement (fail if generated artifacts are stale)"
-          echo ""
-          echo "For now, this workflow passes as the contracts package doesn't exist yet."
-          echo ""
-          echo "See: docs/altair-phase-0-4-execution-checklist.md (P1-006)"
-          echo "========================================"
+          if ! git diff --exit-code --quiet packages/contracts/generated; then
+            echo '::error::Generated artifacts are stale. Run: python scripts/generate_contracts.py --root packages/contracts'
+            echo 'Changed files:'
+            git diff --name-only packages/contracts/generated
+            exit 1
+          fi
+
+      - name: Run contract validation tests
+        run: pytest tests/ -v
