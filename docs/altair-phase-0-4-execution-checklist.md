@@ -236,11 +236,11 @@ Prevent string drift and identifier chaos before backend and clients proliferate
 
 ### Checklist
 
-- [ ] Create `packages/contracts/registry/entity-types.json`
-- [ ] Create `packages/contracts/registry/relation-types.json`
-- [ ] Create `packages/contracts/registry/sync-streams.json`
-- [ ] Populate with current canonical values
-- [ ] Add README explaining source-of-truth policy
+- [x] Create `packages/contracts/registry/entity-types.json`
+- [x] Create `packages/contracts/registry/relation-types.json`
+- [x] Create `packages/contracts/registry/sync-streams.json`
+- [x] Populate with current canonical values
+- [x] Add README explaining source-of-truth policy
 
 ### Acceptance Criteria
 

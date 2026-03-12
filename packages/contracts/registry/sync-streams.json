@@ -1,0 +1,17 @@
+{
+  "version": "1.0",
+  "autoSubscribed": [
+    "my_profile",
+    "my_memberships",
+    "my_personal_data",
+    "my_household_data",
+    "my_relations",
+    "my_attachment_metadata"
+  ],
+  "onDemand": [
+    "initiative_detail",
+    "note_detail",
+    "item_history",
+    "quest_detail"
+  ]
+}
