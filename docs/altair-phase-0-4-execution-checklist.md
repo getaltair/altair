@@ -191,13 +191,13 @@ Create the repo, tooling, and baseline project structure so the rest of the work
 
 ### Checklist
 
-- [ ] Add PRDs to `docs/prd`
-- [ ] Add architecture spec to `docs/architecture`
-- [ ] Add ADRs to `docs/adr`
-- [ ] Add schema design spec
-- [ ] Add PowerSync sync spec
-- [ ] Add shared contracts spec
-- [ ] Add implementation plan
+- [X] Add PRDs to `docs/prd`
+- [X] Add architecture spec to `docs/architecture`
+- [X] Add ADRs to `docs/adr`
+- [X] Add schema design spec
+- [X] Add PowerSync sync spec
+- [X] Add shared contracts spec
+- [X] Add implementation plan
 
 ### Acceptance Criteria
 
@@ -207,10 +207,10 @@ Create the repo, tooling, and baseline project structure so the rest of the work
 
 ## Phase 0 Review Gate
 
-- [ ] Repo structure approved
-- [ ] Tooling conventions approved
+- [x] Repo structure approved
+- [x] Tooling conventions approved
 - [ ] CI skeleton green
-- [ ] Current architecture docs committed
+- [x] Current architecture docs committed
 
 ---
 
