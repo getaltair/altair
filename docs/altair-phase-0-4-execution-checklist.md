@@ -158,8 +158,8 @@ Create the repo, tooling, and baseline project structure so the rest of the work
 
 ### Acceptance Criteria
 
-- formatting can be run locally
-- lint commands exist for each active language
+- [x] formatting can be run locally
+- [x] lint commands exist for each active language
 
 ---
 
