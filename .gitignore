@@ -1,0 +1,142 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+out/
+build/
+*.tgz
+
+# Rust / Cargo
+target/
+**/*.rs.bk
+*.pdb
+
+# Note: bun.lock and Cargo.lock should be committed for reproducible builds
+# Only ignore Cargo.lock for library crates if needed
+
+# SvelteKit
+.svelte-kit/
+.vercel/
+
+# Vite
+.vite/
+
+# Environment variables
+.env
+.env.*
+!.env.example
+!.env.template
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+bun-debug.log*
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+# Testing
+coverage/
+*.lcov
+.nyc_output/
+playwright-report/
+test-results/
+.vitest/
+
+# IDE / Editors
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+*.sublime-*
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# Caches
+.eslintcache
+.cache/
+.parcel-cache/
+.webpack-cache/
+.npm/
+*.tsbuildinfo
+
+# TypeScript
+*.tsbuildinfo
+
+# Database
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# Drizzle
+drizzle/meta/
+
+# Android
+apps/android/.gradle/
+apps/android/build/
+apps/android/app/build/
+apps/android/.idea/
+apps/android/*.iml
+apps/android/local.properties
+apps/android/.cxx/
+apps/android/.externalNativeBuild/
+apps/android/captures/
+apps/android/gradle.properties
+*.apk
+*.aab
+*.ap_
+*.dex
+*.class
+*.keystore
+*.jks
+
+# Tauri
+apps/web/src-tauri/target/
+apps/web/src-tauri/gen/
+apps/web/src-tauri/WixTools/
+apps/web/src-tauri/Cargo.lock
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+
+# Secrets (never commit these)
+*.pem
+*.key
+*.crt
+secrets/
+.secrets/
+
+# Documentation builds
+docs/_build/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Misc
+*.bak
+*.backup
+*.orig
