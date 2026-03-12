@@ -40,10 +40,11 @@ jobs:
         run: cargo fmt --all -- --check
 
       - name: Clippy
-        run: cargo clippy -- -D warnings
+        run: cargo clippy -p server -p worker -- -D warnings
+        # Note: Excludes src-tauri which requires platform-specific dependencies
 
       - name: Build
-        run: cargo build
+        run: cargo build -p server -p worker
 
       - name: Test
-        run: cargo test
+        run: cargo test -p server -p worker
