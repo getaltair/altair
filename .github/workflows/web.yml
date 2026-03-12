@@ -53,6 +53,10 @@ jobs:
         working-directory: apps/web
         run: bun run build
 
+      - name: Install Playwright browsers
+        working-directory: apps/web
+        run: bunx playwright install --with-deps chromium
+
       - name: Test
         working-directory: apps/web
         run: bun run test:unit -- --run
