@@ -630,12 +630,12 @@ Stand up Axum server with auth, config, core APIs, and reusable authorization bo
 
 ### Checklist
 
-- [ ] Create Rust app under `apps/server`
-- [ ] Add config loader
-- [ ] Add DB pool
-- [ ] Add health endpoint
-- [ ] Add structured logging
-- [ ] Add error handling baseline
+- [x] Create Rust app under `apps/server`
+- [x] Add config loader
+- [x] Add DB pool
+- [x] Add health endpoint
+- [x] Add structured logging
+- [x] Add error handling baseline
 
 ### Acceptance Criteria
 
@@ -676,11 +676,11 @@ Stand up Axum server with auth, config, core APIs, and reusable authorization bo
 
 ### Checklist
 
-- [ ] Add password hashing
-- [ ] Add login endpoint
-- [ ] Add session/token model
-- [ ] Add current-user extractor
-- [ ] Add auth middleware
+- [x] Add password hashing
+- [x] Add login endpoint
+- [x] Add session/token model
+- [x] Add current-user extractor
+- [x] Add auth middleware
 
 ### Acceptance Criteria
 
@@ -783,8 +783,8 @@ Stand up Axum server with auth, config, core APIs, and reusable authorization bo
 
 ## Phase 3 Review Gate
 
-- [ ] Server boots locally
-- [ ] Auth works
+- [x] Server boots locally
+- [x] Auth works
 - [ ] Core APIs work on seeded DB
 - [ ] Authorization helpers exist
 - [ ] Integration tests are green
@@ -1012,7 +1012,7 @@ Validate baseline Postgres → SQLite sync for personal and household data.
 
 - [x] P3-001
 - [x] P3-002
-- [ ] P3-003
+- [x] P3-003
 - [ ] P3-004
 - [ ] P3-005
 - [ ] P3-006
