@@ -13,7 +13,6 @@ use axum::{
 };
 use serde::{Deserialize, Serialize};
 use sqlx::{Error as SqlxError, postgres::PgPool};
-use std::str::FromStr;
 use thiserror::Error;
 use uuid::Uuid;
 
@@ -58,26 +57,14 @@ impl std::str::FromStr for HouseholdRole {
 	}
 }
 
-impl From<&str> for HouseholdRole {
-	fn from(s: &str) -> Self {
-		HouseholdRole::from_str(s).expect("Invalid household role string")
-	}
-}
-
-impl From<String> for HouseholdRole {
-	fn from(s: String) -> Self {
-		HouseholdRole::from_str(&s).expect("Invalid household role string")
-	}
-}
-
 #[cfg(test)]
 mod tests {
 	use super::*;
+	use std::str::FromStr;
 
 	#[test]
 	fn owner_is_greater_than_admin() {
 		assert!(HouseholdRole::Owner > HouseholdRole::Admin);
-		assert!(HouseholdRole::Owner >= HouseholdRole::Admin);
 		assert!(HouseholdRole::Owner >= HouseholdRole::Admin);
 	}
 
@@ -85,19 +72,16 @@ mod tests {
 	fn admin_is_greater_than_member() {
 		assert!(HouseholdRole::Admin > HouseholdRole::Member);
 		assert!(HouseholdRole::Admin >= HouseholdRole::Member);
-		assert!(HouseholdRole::Admin >= HouseholdRole::Member);
 	}
 
 	#[test]
 	fn member_is_greater_than_viewer() {
 		assert!(HouseholdRole::Member > HouseholdRole::Viewer);
 		assert!(HouseholdRole::Member >= HouseholdRole::Viewer);
-		assert!(HouseholdRole::Member >= HouseholdRole::Viewer);
 	}
 
 	#[test]
 	fn viewer_is_not_greater_than_admin() {
-		assert!(HouseholdRole::Viewer < HouseholdRole::Admin);
 		assert!(HouseholdRole::Viewer < HouseholdRole::Admin);
 	}
 
@@ -192,19 +176,6 @@ mod tests {
 	}
 
 	#[test]
-	fn from_str_ref_owner() {
-		assert_eq!(HouseholdRole::from("owner"), HouseholdRole::Owner);
-	}
-
-	#[test]
-	fn from_string_admin() {
-		assert_eq!(
-			HouseholdRole::from("admin".to_string()),
-			HouseholdRole::Admin
-		);
-	}
-
-	#[test]
 	fn role_copy() {
 		let original = HouseholdRole::Admin;
 		let copied = original;
@@ -256,6 +227,13 @@ pub enum AuthorizationError {
 	/// The authenticated user is not a member of the requested household.
 	#[error("Not authorized: you are not a member of this household")]
 	NotHouseholdMember,
+
+	/// The authenticated user lacks access to the requested resource.
+	///
+	/// This is a generic authorization failure when the specific reason
+	/// (ownership, membership, etc.) is not semantically meaningful.
+	#[error("Not authorized: access denied")]
+	Unauthorized,
 
 	/// The authenticated user lacks sufficient role permissions.
 	///
@@ -317,7 +295,6 @@ impl IntoResponse for AuthorizationError {
 				StatusCode::FORBIDDEN,
 				"FORBIDDEN".to_string(),
 				"Insufficient permissions: your role does not meet the required level".to_string(),
-				// Note: We don't leak role details in the message for security
 			),
 			AuthorizationError::NotFound => (
 				StatusCode::NOT_FOUND,
@@ -336,6 +313,11 @@ impl IntoResponse for AuthorizationError {
 				StatusCode::INTERNAL_SERVER_ERROR,
 				"INTERNAL_ERROR".to_string(),
 				"Unable to determine access permissions".to_string(),
+			),
+			AuthorizationError::Unauthorized => (
+				StatusCode::FORBIDDEN,
+				"FORBIDDEN".to_string(),
+				"Access denied".to_string(),
 			),
 		};
 
@@ -738,7 +720,7 @@ pub async fn can_access_initiative(
 /// # Returns
 ///
 /// * `Ok(())` - User can access the initiative (owner or household member)
-/// * `Err(AuthorizationError::NotHouseholdMember)` - User cannot access the initiative
+/// * `Err(AuthorizationError::Unauthorized)` - User cannot access the initiative
 /// * `Err(AuthorizationError::NotFound)` - The initiative doesn't exist
 /// * `Err(AuthorizationError::DatabaseError)` - A database error occurred
 ///
@@ -762,7 +744,7 @@ pub async fn require_initiative_access(
 	if can_access {
 		Ok(())
 	} else {
-		Err(AuthorizationError::NotHouseholdMember)
+		Err(AuthorizationError::Unauthorized)
 	}
 }
 
@@ -873,7 +855,7 @@ pub async fn can_access_attachment(
 /// # Returns
 ///
 /// * `Ok(())` - User can access the attachment
-/// * `Err(AuthorizationError::NotOwner)` - User cannot access the attachment
+/// * `Err(AuthorizationError::Unauthorized)` - User cannot access the attachment
 /// * `Err(AuthorizationError::NotFound)` - The attachment doesn't exist
 /// * `Err(AuthorizationError::AmbiguousOwnership)` - Related entity has ambiguous ownership
 /// * `Err(AuthorizationError::DatabaseError)` - A database error occurred
@@ -886,7 +868,7 @@ pub async fn require_attachment_access(
 	if can_access {
 		Ok(())
 	} else {
-		Err(AuthorizationError::NotOwner)
+		Err(AuthorizationError::Unauthorized)
 	}
 }
 
@@ -936,6 +918,12 @@ fn authorization_error_database_error_display() {
 }
 
 #[test]
+fn authorization_error_unauthorized_display() {
+	let err = AuthorizationError::Unauthorized;
+	assert_eq!(format!("{err}"), "Not authorized: access denied");
+}
+
+#[test]
 fn authorization_error_debug_impl() {
 	let err = AuthorizationError::NotOwner;
 	assert!(format!("{err:?}").contains("NotOwner"));
@@ -945,6 +933,9 @@ fn authorization_error_debug_impl() {
 
 	let err = AuthorizationError::NotFound;
 	assert!(format!("{err:?}").contains("NotFound"));
+
+	let err = AuthorizationError::Unauthorized;
+	assert!(format!("{err:?}").contains("Unauthorized"));
 }
 
 // ========================================
@@ -987,6 +978,13 @@ fn authorization_error_database_error_into_response() {
 	let err = AuthorizationError::DatabaseError(SqlxError::RowNotFound);
 	let response: Response = err.into_response();
 	assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
+}
+
+#[test]
+fn authorization_error_unauthorized_into_response() {
+	let err = AuthorizationError::Unauthorized;
+	let response: Response = err.into_response();
+	assert_eq!(response.status(), StatusCode::FORBIDDEN);
 }
 
 #[test]
