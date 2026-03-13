@@ -5,7 +5,10 @@
 //! Initiatives represent long-term goals, projects, or objectives
 //! that can be tracked and completed over time.
 
-use crate::auth::{AuthenticatedUser, UserOwnableTable, can_access_initiative, require_user_owned};
+use crate::auth::{
+	AuthenticatedUser, UserOwnableTable, can_access_household, can_access_initiative,
+	require_user_owned,
+};
 use crate::error::AppError;
 use axum::{
 	Router,
@@ -16,7 +19,7 @@ use axum::{
 };
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use sqlx::{PgPool, Transaction};
+use sqlx::PgPool;
 use uuid::Uuid;
 
 /// Initiative model representing the `initiatives` table.
@@ -126,13 +129,23 @@ pub async fn get_initiative(
 /// Create a new initiative.
 ///
 /// Creates a single initiative record with the authenticated user as owner.
+/// If a household_id is provided, validates that the user is an active member.
 #[axum::debug_handler]
 pub async fn create(
 	State(pool): State<PgPool>,
 	user: AuthenticatedUser,
 	Json(req): Json<CreateInitiativeRequest>,
 ) -> Result<(StatusCode, Json<Initiative>), AppError> {
-	let mut tx: Transaction<'_, sqlx::Postgres> = pool.begin().await?;
+	if let Some(household_id) = req.household_id {
+		let can_access = can_access_household(&pool, user.0.id, household_id)
+			.await
+			.map_err(|e| AppError::Internal(format!("Household access check failed: {}", e)))?;
+		if !can_access {
+			return Err(AppError::BadRequest(
+				"Not a member of the specified household".to_string(),
+			));
+		}
+	}
 
 	let status = req.status.unwrap_or_else(|| "planned".to_string());
 
@@ -151,10 +164,8 @@ pub async fn create(
 	.bind(&status)
 	.bind(req.start_date)
 	.bind(req.target_date)
-	.fetch_one(&mut *tx)
+	.fetch_one(&pool)
 	.await?;
-
-	tx.commit().await?;
 
 	Ok((StatusCode::CREATED, Json(initiative)))
 }
@@ -175,25 +186,31 @@ pub async fn update(
 		.map_err(|_| AppError::Forbidden)?;
 
 	let mut query_parts = Vec::new();
-	let param_index = 2;
+	let mut param_index = 2;
 
 	if req.title.is_some() {
 		query_parts.push(format!("title = ${}", param_index));
+		param_index += 1;
 	}
 	if req.slug.is_some() {
 		query_parts.push(format!("slug = ${}", param_index));
+		param_index += 1;
 	}
 	if req.description.is_some() {
 		query_parts.push(format!("description = ${}", param_index));
+		param_index += 1;
 	}
 	if req.status.is_some() {
 		query_parts.push(format!("status = ${}", param_index));
+		param_index += 1;
 	}
 	if req.start_date.is_some() {
 		query_parts.push(format!("start_date = ${}", param_index));
+		param_index += 1;
 	}
 	if req.target_date.is_some() {
 		query_parts.push(format!("target_date = ${}", param_index));
+		param_index += 1;
 	}
 	if req.household_id.is_some() {
 		query_parts.push(format!("household_id = ${}", param_index));
@@ -277,9 +294,9 @@ pub fn routes() -> Router<PgPool> {
 	Router::new()
 		.route("/", get(list))
 		.route("/", post(create))
-		.route("/:id", get(get_initiative))
-		.route("/:id", patch(update))
-		.route("/:id", delete(delete_initiative))
+		.route("/{id}", get(get_initiative))
+		.route("/{id}", patch(update))
+		.route("/{id}", delete(delete_initiative))
 }
 
 #[cfg(test)]

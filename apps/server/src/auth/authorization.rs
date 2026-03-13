@@ -691,7 +691,7 @@ pub async fn can_access_initiative(
 				hm.household_id = i.household_id AND
 				hm.user_id = $1 AND
 				hm.is_active = true
-			WHERE i.id = $2 AND (
+			WHERE i.id = $2 AND i.deleted_at IS NULL AND (
 				i.owner_user_id = $1 OR
 				hm.id IS NOT NULL
 			)

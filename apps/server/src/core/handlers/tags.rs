@@ -5,7 +5,9 @@
 //! Tags provide flexible categorization for initiatives, tasks,
 //! and other domain entities for better organization and filtering.
 
-use crate::auth::{AuthenticatedUser, UserOwnableTable, can_access_tag, require_user_owned};
+use crate::auth::{
+	AuthenticatedUser, UserOwnableTable, can_access_household, can_access_tag, require_user_owned,
+};
 use crate::error::AppError;
 use axum::{
 	Router,
@@ -16,7 +18,7 @@ use axum::{
 };
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use sqlx::{PgPool, Transaction};
+use sqlx::PgPool;
 use uuid::Uuid;
 
 /// Tag model representing the `tags` table.
@@ -118,13 +120,23 @@ pub async fn get_tag(
 /// Create a new tag.
 ///
 /// Creates a single tag record with the authenticated user as owner.
+/// If a household_id is provided, validates that the user is an active member.
 #[axum::debug_handler]
 pub async fn create(
 	State(pool): State<PgPool>,
 	user: AuthenticatedUser,
 	Json(req): Json<CreateTagRequest>,
 ) -> Result<(StatusCode, Json<Tag>), AppError> {
-	let mut tx: Transaction<'_, sqlx::Postgres> = pool.begin().await?;
+	if let Some(household_id) = req.household_id {
+		let can_access = can_access_household(&pool, user.0.id, household_id)
+			.await
+			.map_err(|e| AppError::Internal(format!("Household access check failed: {}", e)))?;
+		if !can_access {
+			return Err(AppError::BadRequest(
+				"Not a member of the specified household".to_string(),
+			));
+		}
+	}
 
 	let tag = sqlx::query_as::<_, Tag>(
 		r#"
@@ -139,10 +151,8 @@ pub async fn create(
 	.bind(&req.slug)
 	.bind(&req.description)
 	.bind(&req.color)
-	.fetch_one(&mut *tx)
+	.fetch_one(&pool)
 	.await?;
-
-	tx.commit().await?;
 
 	Ok((StatusCode::CREATED, Json(tag)))
 }
@@ -163,19 +173,23 @@ pub async fn update(
 		.map_err(|_| AppError::Forbidden)?;
 
 	let mut query_parts = Vec::new();
-	let param_index = 2;
+	let mut param_index = 2;
 
 	if req.name.is_some() {
 		query_parts.push(format!("name = ${}", param_index));
+		param_index += 1;
 	}
 	if req.slug.is_some() {
 		query_parts.push(format!("slug = ${}", param_index));
+		param_index += 1;
 	}
 	if req.description.is_some() {
 		query_parts.push(format!("description = ${}", param_index));
+		param_index += 1;
 	}
 	if req.color.is_some() {
 		query_parts.push(format!("color = ${}", param_index));
+		param_index += 1;
 	}
 	if req.household_id.is_some() {
 		query_parts.push(format!("household_id = ${}", param_index));
@@ -252,9 +266,9 @@ pub fn routes() -> Router<PgPool> {
 	Router::new()
 		.route("/", get(list))
 		.route("/", post(create))
-		.route("/:id", get(get_tag))
-		.route("/:id", patch(update))
-		.route("/:id", delete(delete_tag))
+		.route("/{id}", get(get_tag))
+		.route("/{id}", patch(update))
+		.route("/{id}", delete(delete_tag))
 }
 
 #[cfg(test)]

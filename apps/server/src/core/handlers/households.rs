@@ -198,13 +198,15 @@ pub async fn update(
 		.map_err(|_| AppError::Forbidden)?;
 
 	let mut query_parts = Vec::new();
-	let param_index = 2;
+	let mut param_index = 2;
 
 	if req.name.is_some() {
 		query_parts.push(format!("name = ${}", param_index));
+		param_index += 1;
 	}
 	if req.slug.is_some() {
 		query_parts.push(format!("slug = ${}", param_index));
+		param_index += 1;
 	}
 	if req.description.is_some() {
 		query_parts.push(format!("description = ${}", param_index));
@@ -334,10 +336,10 @@ pub fn routes() -> Router<PgPool> {
 	Router::new()
 		.route("/", get(list))
 		.route("/", post(create))
-		.route("/:id", get(get_household))
-		.route("/:id", patch(update))
-		.route("/:id", delete(delete_household))
-		.route("/:id/memberships", get(list_memberships))
+		.route("/{id}", get(get_household))
+		.route("/{id}", patch(update))
+		.route("/{id}", delete(delete_household))
+		.route("/{id}/memberships", get(list_memberships))
 }
 
 #[cfg(test)]
