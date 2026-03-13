@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 axum = { version = "0.8", features = ["macros"] }
+axum-extra = { version = "0.10", features = ["cookie"] }
 tokio = { version = "1", features = ["full"] }
 tower = "0.5"
 tower-http = { version = "0.6", features = ["trace"] }
@@ -15,4 +16,5 @@ anyhow = "1.0"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["json", "env-filter"] }
 chrono = { version = "0.4", features = ["serde"] }
-sqlx = { version = "0.8.6", features = ["postgres", "sqlite", "runtime-tokio", "tls-native-tls"] }
+sqlx = { version = "0.8.6", features = ["postgres", "sqlite", "runtime-tokio", "tls-native-tls", "uuid", "chrono"] }
+uuid = { version = "1", features = ["v4", "serde"] }

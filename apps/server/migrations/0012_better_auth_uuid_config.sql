@@ -1,0 +1,43 @@
+-- Migration: 0012_better_auth_uuid_config
+-- Description: Document Better-Auth UUID ID configuration decision
+--
+-- This migration records the architectural decision that Better-Auth will be
+-- configured to use UUID primary keys for its authentication tables (user, session,
+-- account), rather than the default TEXT type.
+--
+-- RATIONALE:
+--
+-- 1. Foreign Key Consistency:
+--    - All domain tables (households, initiatives, quests, etc.) use UUID foreign
+--      keys referencing users(id)
+--    - Better-Auth user table will replace the existing users table
+--    - Using UUID types maintains referential integrity across all tables
+--
+-- 2. Performance:
+--    - UUID indexes are more efficient than TEXT indexes for user lookups
+--    - B-tree indexing on UUID is native to PostgreSQL
+--    - Reduced storage overhead compared to TEXT (36 vs 40+ chars)
+--
+-- 3. Security:
+--    - UUIDs provide no predictable sequential patterns
+--    - Eliminates enumeration attacks on user IDs
+--    - Better-Auth's UUID support is production-tested
+--
+-- 4. Data Migration Path:
+--    - Existing users table uses UUID primary keys (gen_random_uuid())
+--    - Transition to Better-Auth schema preserves UUID compatibility
+--    - No type conversion needed for FK references in domain tables
+--
+-- DECISION:
+--
+-- Better-Auth will be configured via its TypeScript adapter to:
+-- - Generate UUID primary keys for user.id, session.id, account.id
+-- - Use UUID types for all user-related foreign keys
+-- - Align with existing server domain table conventions
+--
+-- This is a DECISION RECORD migration only. No actual schema changes are made here.
+-- Better-Auth web application will manage the creation of its own tables during
+-- initialization.
+--
+-- Related planning session: UUID vs TEXT type resolution for authentication system
+-- See: docs/prd/altair-core-prd.md (Authentication section)
