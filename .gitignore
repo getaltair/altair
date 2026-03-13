@@ -89,6 +89,10 @@ Desktop.ini
 # Drizzle
 drizzle/meta/
 
+# Sisyphus agent artifacts
+.sisyphus/*
+!.sisyphus/rules/
+
 # Android
 apps/android/.gradle/
 apps/android/build/
