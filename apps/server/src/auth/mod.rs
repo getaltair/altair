@@ -3,6 +3,7 @@
 //! Handles authentication, identity, sessions, and authorization.
 
 mod extractor;
+mod handlers;
 mod models;
 mod session;
 
@@ -20,7 +21,7 @@ use sqlx::PgPool;
 ///
 /// Routes are mounted at `/auth/*` in the main router.
 pub fn router() -> Router<PgPool> {
-	Router::new()
+	handlers::router()
 	// Future routes will be added here:
 	// .route("/login", post(login))
 	// .route("/logout", post(logout))

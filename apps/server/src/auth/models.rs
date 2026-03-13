@@ -4,6 +4,7 @@
 //! Field names use snake_case to match database column names exactly.
 
 use chrono::{DateTime, Utc};
+use serde::Serialize;
 use uuid::Uuid;
 
 /// User model representing the `user` table from Better-Auth.
@@ -16,7 +17,7 @@ use uuid::Uuid;
 /// - image: Profile image URL (optional)
 /// - created_at: Account creation timestamp
 /// - updated_at: Last update timestamp
-#[derive(Debug, Clone, sqlx::FromRow)]
+#[derive(Debug, Clone, sqlx::FromRow, Serialize)]
 #[allow(dead_code)]
 pub struct User {
 	pub id: Uuid,
