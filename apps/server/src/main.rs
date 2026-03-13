@@ -1,7 +1,15 @@
+mod attachments;
+mod auth;
 mod config;
+mod core;
 mod db;
 mod error;
+mod guidance;
 mod handlers;
+mod knowledge;
+mod search;
+mod sync;
+mod tracking;
 
 use std::net::SocketAddr;
 
@@ -30,6 +38,14 @@ async fn main() -> Result<()> {
 
 	let app = Router::new()
 		.route("/health", get(handlers::health::health_check))
+		.nest("/auth", auth::router())
+		.nest("/core", core::router())
+		.nest("/guidance", guidance::router())
+		.nest("/knowledge", knowledge::router())
+		.nest("/tracking", tracking::router())
+		.nest("/attachments", attachments::router())
+		.nest("/sync", sync::router())
+		.nest("/search", search::router())
 		.layer(TraceLayer::new_for_http())
 		.with_state(pool);
 
