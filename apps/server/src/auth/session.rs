@@ -9,7 +9,7 @@ use thiserror::Error;
 
 /// Errors that can occur during session validation.
 #[derive(Debug, Error)]
-#[allow(dead_code)]
+#[allow(dead_code)] // TODO(P3-004): Remove when authorization helpers use these variants
 pub enum AuthError {
 	/// The provided session token does not exist in the database.
 	#[error("Invalid session token")]
@@ -51,7 +51,7 @@ pub enum AuthError {
 /// - `AuthError::ExpiredToken` - Session exists but expires_at <= NOW()
 /// - `AuthError::UserNotFound` - Session exists but associated user not found
 /// - `AuthError::DatabaseError` - SQL query failed
-#[allow(dead_code)]
+#[allow(dead_code)] // TODO(P3-004): Remove when sync module uses session validation
 pub async fn validate_session_token(
 	pool: &PgPool,
 	token: &str,

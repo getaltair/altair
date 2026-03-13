@@ -340,54 +340,60 @@ mod tests {
 	// ========================================
 
 	/// Validates a real session token against the database.
-	/// This test requires a running PostgreSQL database with Better-Auth schema.
+	///
+	/// **Database setup required:**
+	/// - PostgreSQL with Better-Auth schema migrated
+	/// - Test user inserted via Better-Auth or directly
+	/// - Valid session token in `session` table
 	///
 	/// Run with: `cargo test -p server -- --ignored`
+	///
+	/// TODO: Implement in P3-007 when we add test database infrastructure
 	#[test]
-	#[ignore = "requires running database with Better-Auth schema"]
+	#[ignore = "requires running database with Better-Auth schema - see P3-007"]
 	fn valid_session_returns_user() {
-		// Placeholder - actual implementation would:
-		// 1. Set up test database connection
-		// 2. Insert test user and session
-		// 3. Call validate_session_token
-		// 4. Assert user is returned
-		todo!("Implement with test database")
+		// See P3-007 for test database infrastructure
+		unimplemented!("Requires test database - see P3-007")
 	}
 
 	/// Validates that an invalid session token returns InvalidToken error.
-	/// This test requires a running PostgreSQL database.
+	///
+	/// **Database setup required:**
+	/// - PostgreSQL with Better-Auth schema
+	///
+	/// TODO: Implement in P3-007 when we add test database infrastructure
 	#[test]
-	#[ignore = "requires running database"]
+	#[ignore = "requires running database - see P3-007"]
 	fn invalid_session_returns_error() {
-		// Placeholder - actual implementation would:
-		// 1. Set up test database connection
-		// 2. Call validate_session_token with non-existent token
-		// 3. Assert AuthError::InvalidToken is returned
-		todo!("Implement with test database")
+		// See P3-007 for test database infrastructure
+		unimplemented!("Requires test database - see P3-007")
 	}
 
 	/// Validates that a missing cookie returns appropriate error.
-	/// This test requires an HTTP request context.
+	///
+	/// **Database setup required:**
+	/// - PostgreSQL with Better-Auth schema
+	/// - HTTP client or tower::Service for request mocking
+	///
+	/// TODO: Implement in P3-007 when we add test database infrastructure
 	#[test]
-	#[ignore = "requires running database and HTTP context"]
+	#[ignore = "requires running database and HTTP context - see P3-007"]
 	fn missing_cookie_returns_error() {
-		// Placeholder - actual implementation would:
-		// 1. Create mock HTTP request without session cookie
-		// 2. Call AuthenticatedUser extractor
-		// 3. Assert UNAUTHORIZED response
-		todo!("Implement with test database and request mocking")
+		// See P3-007 for test database infrastructure
+		unimplemented!("Requires test database and HTTP mocking - see P3-007")
 	}
 
 	/// Validates that an expired session returns ExpiredToken error.
-	/// This test requires a running PostgreSQL database.
+	///
+	/// **Database setup required:**
+	/// - PostgreSQL with Better-Auth schema
+	/// - Test user and session with `expires_at < NOW()`
+	///
+	/// TODO: Implement in P3-007 when we add test database infrastructure
 	#[test]
-	#[ignore = "requires running database"]
+	#[ignore = "requires running database - see P3-007"]
 	fn expired_session_returns_error() {
-		// Placeholder - actual implementation would:
-		// 1. Set up test database connection
-		// 2. Insert test user and expired session
-		// 3. Call validate_session_token
-		// 4. Assert AuthError::ExpiredToken is returned
-		todo!("Implement with test database")
+		// See P3-007 for test database infrastructure
+		unimplemented!("Requires test database - see P3-007")
 	}
 }

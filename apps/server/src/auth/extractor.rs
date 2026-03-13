@@ -33,7 +33,7 @@ use sqlx::PgPool;
 ///
 /// let app = Router::new().route("/protected", get(protected_route));
 /// ```
-#[allow(dead_code)]
+#[allow(dead_code)] // TODO(P3-004): Remove when protected routes use this extractor
 #[derive(Debug, Clone)]
 pub struct AuthenticatedUser(pub User);
 

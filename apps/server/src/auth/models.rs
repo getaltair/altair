@@ -18,7 +18,7 @@ use uuid::Uuid;
 /// - created_at: Account creation timestamp
 /// - updated_at: Last update timestamp
 #[derive(Debug, Clone, sqlx::FromRow, Serialize)]
-#[allow(dead_code)]
+#[allow(dead_code)] // TODO(P3-004): Remove when household membership uses this
 pub struct User {
 	pub id: Uuid,
 	pub name: String,
@@ -41,7 +41,7 @@ pub struct User {
 /// - user_agent: Client user agent string (optional)
 /// - user_id: Foreign key to user table
 #[derive(Debug, Clone, sqlx::FromRow)]
-#[allow(dead_code)]
+#[allow(dead_code)] // TODO(P3-004): Remove when sync module uses session metadata
 pub struct Session {
 	pub id: Uuid,
 	pub expires_at: DateTime<Utc>,
