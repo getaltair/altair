@@ -2,11 +2,18 @@
 //!
 //! Handles authentication, identity, sessions, and authorization.
 
+mod authorization;
 mod extractor;
 mod handlers;
 mod models;
 mod session;
 
+#[allow(unused_imports)]
+pub use authorization::{
+	AuthorizationError, HouseholdRole, UserOwnableTable, can_access_attachment,
+	can_access_household, can_access_initiative, can_access_user_owned, require_attachment_access,
+	require_household_role, require_initiative_access, require_user_owned,
+};
 #[allow(unused_imports)]
 pub use extractor::AuthenticatedUser;
 #[allow(unused_imports)]
