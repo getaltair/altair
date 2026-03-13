@@ -392,10 +392,10 @@ Stand up Postgres schema and migration flow consistent with contracts and sync n
 
 ### Checklist
 
-- [ ] Choose migration tool for Rust/Postgres stack
-- [ ] Add migrations folder structure
-- [ ] Add local migration commands
-- [ ] Document migration workflow
+- [x] Choose migration tool for Rust/Postgres stack
+- [x] Add migrations folder structure
+- [x] Add local migration commands
+- [x] Document migration workflow
 
 ### Acceptance Criteria
 
@@ -410,10 +410,10 @@ Stand up Postgres schema and migration flow consistent with contracts and sync n
 
 ### Checklist
 
-- [ ] Add Postgres service to local compose
-- [ ] Add persistent volume
-- [ ] Add env/config for local credentials
-- [ ] Document startup command
+- [x] Add Postgres service to local compose
+- [x] Add persistent volume
+- [x] Add env/config for local credentials
+- [x] Document startup command
 
 ### Acceptance Criteria
 
@@ -428,17 +428,17 @@ Stand up Postgres schema and migration flow consistent with contracts and sync n
 
 ### Checklist
 
-- [ ] Add migrations for:
-  - [ ] `users`
-  - [ ] `households`
-  - [ ] `household_memberships`
-  - [ ] `initiatives`
-  - [ ] `tags`
-  - [ ] `attachments`
-  - [ ] `entity_relations`
-- [ ] Add timestamps / soft delete fields
-- [ ] Add ownership/scope columns
-- [ ] Add baseline constraints
+- [x] Add migrations for:
+  - [x] `users`
+  - [x] `households`
+  - [x] `household_memberships`
+  - [x] `initiatives`
+  - [x] `tags`
+  - [x] `attachments`
+  - [x] `entity_relations`
+- [x] Add timestamps / soft delete fields
+- [x] Add ownership/scope columns
+- [x] Add baseline constraints
 
 ### Acceptance Criteria
 
@@ -453,14 +453,14 @@ Stand up Postgres schema and migration flow consistent with contracts and sync n
 
 ### Checklist
 
-- [ ] Add migrations for:
-  - [ ] `guidance_epics`
-  - [ ] `guidance_quests`
-  - [ ] `guidance_routines`
-  - [ ] `guidance_focus_sessions`
-  - [ ] `guidance_daily_checkins`
-- [ ] Add relevant indexes
-- [ ] Add status/priority/energy check constraints
+- [x] Add migrations for:
+  - [x] `guidance_epics`
+  - [x] `guidance_quests`
+  - [x] `guidance_routines`
+  - [x] `guidance_focus_sessions`
+  - [x] `guidance_daily_checkins`
+- [x] Add relevant indexes
+- [x] Add status/priority/energy check constraints
 
 ### Acceptance Criteria
 
@@ -475,12 +475,12 @@ Stand up Postgres schema and migration flow consistent with contracts and sync n
 
 ### Checklist
 
-- [ ] Add migrations for:
-  - [ ] `knowledge_notes`
-  - [ ] `knowledge_note_snapshots`
-- [ ] Add note hierarchy FK
-- [ ] Add slug uniqueness rules
-- [ ] Add text fields needed for future search
+- [x] Add migrations for:
+  - [x] `knowledge_notes`
+  - [x] `knowledge_note_snapshots`
+- [x] Add note hierarchy FK
+- [x] Add slug uniqueness rules
+- [x] Add text fields needed for future search
 
 ### Acceptance Criteria
 
@@ -495,15 +495,15 @@ Stand up Postgres schema and migration flow consistent with contracts and sync n
 
 ### Checklist
 
-- [ ] Add migrations for:
-  - [ ] `tracking_locations`
-  - [ ] `tracking_categories`
-  - [ ] `tracking_items`
-  - [ ] `tracking_item_events`
-  - [ ] `tracking_shopping_lists`
-  - [ ] `tracking_shopping_list_items`
-- [ ] Add barcode/indexing basics
-- [ ] Add quantity constraints where appropriate
+- [x] Add migrations for:
+  - [x] `tracking_locations`
+  - [x] `tracking_categories`
+  - [x] `tracking_items`
+  - [x] `tracking_item_events`
+  - [x] `tracking_shopping_lists`
+  - [x] `tracking_shopping_list_items`
+- [x] Add barcode/indexing basics
+- [x] Add quantity constraints where appropriate
 
 ### Acceptance Criteria
 
@@ -518,13 +518,13 @@ Stand up Postgres schema and migration flow consistent with contracts and sync n
 
 ### Checklist
 
-- [ ] Add `initiative_tags`
-- [ ] Add `quest_tags`
-- [ ] Add `note_tags`
-- [ ] Add `item_tags`
-- [ ] Add `quest_attachments`
-- [ ] Add `note_attachments`
-- [ ] Add `item_attachments`
+- [x] Add `initiative_tags`
+- [x] Add `quest_tags`
+- [x] Add `note_tags`
+- [x] Add `item_tags`
+- [x] Add `quest_attachments`
+- [x] Add `note_attachments`
+- [x] Add `item_attachments`
 
 ### Acceptance Criteria
 
@@ -539,9 +539,9 @@ Stand up Postgres schema and migration flow consistent with contracts and sync n
 
 ### Checklist
 
-- [ ] Add `set_updated_at()` function
-- [ ] Apply triggers to mutable tables
-- [ ] Confirm inserts/updates behave as expected
+- [x] Add `set_updated_at()` function
+- [x] Apply triggers to mutable tables
+- [x] Confirm inserts/updates behave as expected
 
 ### Acceptance Criteria
 
@@ -556,19 +556,19 @@ Stand up Postgres schema and migration flow consistent with contracts and sync n
 
 ### Checklist
 
-- [ ] Add deterministic seed SQL or seeding tool
-- [ ] Seed:
-  - [ ] one primary user
-  - [ ] one secondary household member
-  - [ ] one household
-  - [ ] one personal initiative
-  - [ ] one household initiative
-  - [ ] shared chores
-  - [ ] inventory items
-  - [ ] notes
-  - [ ] relation records
-  - [ ] shopping list
-- [ ] Validate seed idempotence or documented reset flow
+- [x] Add deterministic seed SQL or seeding tool
+- [x] Seed:
+  - [x] one primary user
+  - [x] one secondary household member
+  - [x] one household
+  - [x] one personal initiative
+  - [x] one household initiative
+  - [x] shared chores
+  - [x] inventory items
+  - [x] notes
+  - [x] relation records
+  - [x] shopping list
+- [x] Validate seed idempotence or documented reset flow
 
 ### Acceptance Criteria
 
@@ -584,13 +584,13 @@ Stand up Postgres schema and migration flow consistent with contracts and sync n
 
 ### Checklist
 
-- [ ] Review each table for:
-  - [ ] user ownership
-  - [ ] household scope
-  - [ ] initiative scope
-  - [ ] whether auto-sync vs on-demand vs server-only
-- [ ] Mark high-volume tables
-- [ ] Identify tables needing selective replication
+- [x] Review each table for:
+  - [x] user ownership
+  - [x] household scope
+  - [x] initiative scope
+  - [x] whether auto-sync vs on-demand vs server-only
+- [x] Mark high-volume tables
+- [x] Identify tables needing selective replication
 
 ### Acceptance Criteria
 
@@ -600,10 +600,10 @@ Stand up Postgres schema and migration flow consistent with contracts and sync n
 
 ## Phase 2 Review Gate
 
-- [ ] Migrations apply from scratch
-- [ ] Seed dataset loads
-- [ ] Core scopes are present in schema
-- [ ] Sync review completed
+- [x] Migrations apply from scratch
+- [x] Seed dataset loads
+- [x] Core scopes are present in schema
+- [x] Sync review completed
 
 ---
 
@@ -994,16 +994,16 @@ Validate baseline Postgres → SQLite sync for personal and household data.
 
 ## Week/Block 3
 
-- [ ] P2-001
-- [ ] P2-002
-- [ ] P2-003
-- [ ] P2-004
-- [ ] P2-005
-- [ ] P2-006
-- [ ] P2-007
-- [ ] P2-008
-- [ ] P2-009
-- [ ] P2-010
+- [x] P2-001
+- [x] P2-002
+- [x] P2-003
+- [x] P2-004
+- [x] P2-005
+- [x] P2-006
+- [x] P2-007
+- [x] P2-008
+- [x] P2-009
+- [x] P2-010
 
 ## Week/Block 4
 
@@ -1077,9 +1077,9 @@ Only after auth/authorization foundation exists.
 
 ## By end of Phase 2
 
-- [ ] schema migration set exists
-- [ ] seed dataset exists
-- [ ] sync review notes exist
+- [x] schema migration set exists
+- [x] seed dataset exists
+- [x] sync review notes exist
 
 ## By end of Phase 3
 

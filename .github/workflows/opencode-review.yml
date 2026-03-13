@@ -1,0 +1,80 @@
+name: opencode-review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+jobs:
+  review:
+    # Don't run on draft PRs
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: write
+      issues: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: anomalyco/opencode/github@latest
+        env:
+          ZHIPU_API_KEY: ${{ secrets.ZHIPU_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          model: zai-coding-plan/glm-5
+          use_github_token: true
+          prompt: |
+            ## ANALYZE MODE — PR Review for Altair
+
+            You are reviewing a pull request for the Altair project. Follow this structured analysis workflow:
+
+            ### Phase 0: Context Gathering (Parallel)
+
+            1. **Explore the changes**: Identify which modules are affected
+               - Check `apps/web/` for SvelteKit/TypeScript changes
+               - Check `apps/server/` or `apps/worker/` for Rust backend changes
+               - Check `apps/android/` for Kotlin changes
+               - Check `packages/` for shared package changes
+
+            2. **Identify dependencies**: If external libraries are involved, gather context from docs
+
+            ### Phase 1: Project-Specific Analysis
+
+            **TypeScript/Svelte (apps/web/):**
+            - Verify Svelte 5 runes usage (`$state`, `$derived`, `$effect`, `$props`)
+            - Check for `{@render children()}` instead of slots
+            - Ensure `$lib` alias usage (no relative paths beyond immediate parent)
+            - Verify imports grouped: framework → external → local
+            - Check formatting: tabs, no semicolons, single quotes, trailing commas
+
+            **Rust (apps/server/, apps/worker/, src-tauri/):**
+            - Edition 2024 conventions (server/worker), Edition 2021 (Tauri)
+            - Hard tabs, 100 char width
+            - Proper error handling (no empty catch blocks)
+
+            ### Phase 2: Quality Checks
+
+            - **Type Safety**: Flag any `as any`, `@ts-ignore`, `@ts-expect-error`
+            - **Error Handling**: No empty catch blocks
+            - **Tests**: Are tests included for new functionality?
+            - **Breaking Changes**: Any API or schema changes that need migration?
+
+            ### Phase 3: Report
+
+            Provide a concise review comment with:
+            1. **Summary**: What this PR changes
+            2. **Issues Found**: Categorized by severity (blocking, warning, suggestion)
+            3. **Recommendations**: Specific improvements with code examples if helpful
+            4. **Blocking Issues**: Clearly state if PR should not merge
+
+            ### Project Context
+
+            - **Tech Stack**: SvelteKit 2, Svelte 5, Tauri 2, Rust (Axum), PostgreSQL, Better-Auth, Drizzle ORM
+            - **Testing**: Vitest (unit), Playwright (e2e)
+            - **Pre-commit**: Uses `prek` for linting (Prettier, ESLint, cargo fmt, cargo clippy)
+
+            If the PR introduces complex architecture changes or you encounter difficult problems after 2+ analysis attempts, note this in your review and recommend further discussion.
