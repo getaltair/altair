@@ -2,9 +2,12 @@
 //!
 //! Handles authentication, identity, sessions, and authorization.
 
+mod extractor;
 mod models;
 mod session;
 
+#[allow(unused_imports)]
+pub use extractor::AuthenticatedUser;
 #[allow(unused_imports)]
 pub use models::{Session, User};
 #[allow(unused_imports)]
