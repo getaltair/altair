@@ -38,8 +38,9 @@ async fn main() -> Result<()> {
 
 	let app = Router::new()
 		.route("/health", get(handlers::health::health_check))
+		.route("/users/me", get(handlers::users::me))
 		.nest("/auth", auth::router())
-		.nest("/core", core::router())
+		.nest("/core", core::handlers::router())
 		.nest("/guidance", guidance::router())
 		.nest("/knowledge", knowledge::router())
 		.nest("/tracking", tracking::router())

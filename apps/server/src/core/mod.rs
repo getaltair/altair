@@ -2,7 +2,7 @@
 //!
 //! Handles users, households, initiatives, tags, and relations.
 
-mod handlers;
+pub mod handlers;
 
 use axum::Router;
 use sqlx::PgPool;
@@ -10,6 +10,7 @@ use sqlx::PgPool;
 /// Create the router for this module.
 ///
 /// Routes are mounted at `/core/*` in the main router.
+#[allow(dead_code)]
 pub fn router() -> Router<PgPool> {
 	Router::new()
 	// Future routes will be added here:
