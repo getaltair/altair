@@ -14,8 +14,17 @@ pub enum AppError {
 	#[error("Configuration error: {0}")]
 	Config(String),
 
+	#[error("Forbidden")]
+	Forbidden,
+
+	#[error("Not found: {0}")]
+	NotFound(String),
+
 	#[error("Internal server error")]
 	Internal(String),
+
+	#[error("Bad request: {0}")]
+	BadRequest(String),
 }
 
 impl IntoResponse for AppError {
@@ -35,10 +44,13 @@ impl IntoResponse for AppError {
 				StatusCode::INTERNAL_SERVER_ERROR,
 				"Configuration error".to_string(),
 			),
+			AppError::Forbidden => (StatusCode::FORBIDDEN, "Forbidden".to_string()),
+			AppError::NotFound(msg) => (StatusCode::NOT_FOUND, msg),
 			AppError::Internal(_) => (
 				StatusCode::INTERNAL_SERVER_ERROR,
 				"Internal server error".to_string(),
 			),
+			AppError::BadRequest(msg) => (StatusCode::BAD_REQUEST, msg),
 		};
 
 		let body = json!({ "error": error_message });

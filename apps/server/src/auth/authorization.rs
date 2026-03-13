@@ -691,7 +691,7 @@ pub async fn can_access_initiative(
 				hm.household_id = i.household_id AND
 				hm.user_id = $1 AND
 				hm.is_active = true
-			WHERE i.id = $2 AND (
+			WHERE i.id = $2 AND i.deleted_at IS NULL AND (
 				i.owner_user_id = $1 OR
 				hm.id IS NOT NULL
 			)
@@ -699,6 +699,64 @@ pub async fn can_access_initiative(
 	)
 	.bind(user_id)
 	.bind(initiative_id)
+	.fetch_one(pool)
+	.await?;
+
+	Ok(can_access)
+}
+
+/// Checks if a user can access a tag via dual-path authorization.
+///
+/// A tag is accessible if the user is either:
+/// - The owner of the tag (`tags.owner_user_id = user_id`)
+/// - A member of the tag's household (via `household_memberships` with `is_active = true`)
+///
+/// This function performs an atomic check using a single LEFT JOIN query to evaluate
+/// both access paths efficiently, preventing TOCTOU (time-of-check to time-of-use) races.
+///
+/// # Arguments
+///
+/// * `pool` - The PostgreSQL connection pool
+/// * `user_id` - The UUID of the user to check access for
+/// * `tag_id` - The UUID of the tag to check
+///
+/// # Returns
+///
+/// * `Ok(true)` - User can access the tag (owner or household member)
+/// * `Ok(false)` - User cannot access the tag (neither owner nor member)
+/// * `Err(AuthorizationError::NotFound)` - The tag doesn't exist
+/// * `Err(AuthorizationError::DatabaseError)` - A database error occurred
+///
+/// # Example
+///
+/// ```no_run
+/// use uuid::Uuid;
+///
+/// # async fn example(pool: &PgPool, user_id: Uuid, tag_id: Uuid) -> Result<bool, AuthorizationError> {
+/// let can_access = can_access_tag(pool, user_id, tag_id).await?;
+/// # Ok(can_access)
+/// # }
+/// ```
+pub async fn can_access_tag(
+	pool: &PgPool,
+	user_id: Uuid,
+	tag_id: Uuid,
+) -> Result<bool, AuthorizationError> {
+	let can_access = sqlx::query_scalar::<_, bool>(
+		"SELECT EXISTS(
+			SELECT 1 FROM tags t
+			LEFT JOIN household_memberships hm ON
+				hm.household_id = t.household_id AND
+				hm.user_id = $1 AND
+				hm.is_active = true
+			WHERE t.id = $2 AND t.deleted_at IS NULL AND (
+				t.owner_user_id = $1 OR
+				hm.id IS NOT NULL
+			)
+		)",
+	)
+	.bind(user_id)
+	.bind(tag_id)
 	.fetch_one(pool)
 	.await?;
 
