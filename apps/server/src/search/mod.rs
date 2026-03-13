@@ -11,6 +11,9 @@ use sqlx::PgPool;
 /// Routes are mounted at `/search/*` in the main router.
 pub fn router() -> Router<PgPool> {
 	Router::new()
+	// Future routes will be added here:
+	// .route("/", get(search))
+	// .route("/index", post(index_document))
 }
 
 #[cfg(test)]
