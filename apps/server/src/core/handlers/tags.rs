@@ -98,19 +98,19 @@ pub async fn get_tag(
 	user: AuthenticatedUser,
 	Path(id): Path<Uuid>,
 ) -> Result<Json<Tag>, AppError> {
-	let can_access: Result<bool, _> = can_access_tag(&pool, user.0.id, id).await;
-	let can_access =
-		can_access.map_err(|e| AppError::Internal(format!("Authorization check failed: {}", e)))?;
+	let can_access = can_access_tag(&pool, user.0.id, id)
+		.await
+		.map_err(|e| AppError::Internal(format!("Authorization check failed: {}", e)))?;
 
 	if !can_access {
-		return Err(AppError::Internal("Not authorized".to_string()));
+		return Err(AppError::Forbidden);
 	}
 
 	let tag = sqlx::query_as::<_, Tag>("SELECT * FROM tags WHERE id = $1 AND deleted_at IS NULL")
 		.bind(id)
 		.fetch_optional(&pool)
 		.await?
-		.ok_or_else(|| AppError::Internal("Tag not found".to_string()))?;
+		.ok_or_else(|| AppError::NotFound("Tag not found".to_string()))?;
 
 	Ok(Json(tag))
 }
@@ -158,9 +158,9 @@ pub async fn update(
 	Path(id): Path<Uuid>,
 	Json(req): Json<UpdateTagRequest>,
 ) -> Result<Json<Tag>, AppError> {
-	let result: Result<(), _> =
-		require_user_owned(&pool, user.0.id, UserOwnableTable::Tag, id).await;
-	result.map_err(|e| AppError::Internal(format!("Not authorized: {}", e)))?;
+	require_user_owned(&pool, user.0.id, UserOwnableTable::Tag, id)
+		.await
+		.map_err(|_| AppError::Forbidden)?;
 
 	let mut query_parts = Vec::new();
 	let param_index = 2;
@@ -232,9 +232,9 @@ pub async fn delete_tag(
 	user: AuthenticatedUser,
 	Path(id): Path<Uuid>,
 ) -> Result<StatusCode, AppError> {
-	let result: Result<(), _> =
-		require_user_owned(&pool, user.0.id, UserOwnableTable::Tag, id).await;
-	result.map_err(|e| AppError::Internal(format!("Not authorized: {}", e)))?;
+	require_user_owned(&pool, user.0.id, UserOwnableTable::Tag, id)
+		.await
+		.map_err(|_| AppError::Forbidden)?;
 
 	sqlx::query("UPDATE tags SET deleted_at = NOW() WHERE id = $1 AND deleted_at IS NULL")
 		.bind(id)

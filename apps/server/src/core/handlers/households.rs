@@ -118,17 +118,12 @@ pub async fn get_household(
 	user: AuthenticatedUser,
 	Path(id): Path<Uuid>,
 ) -> Result<Json<Household>, AppError> {
-	let can_access: Result<bool, _> = can_access_household(&pool, user.0.id, id).await;
-	let can_access =
-		can_access.map_err(|e| AppError::Internal(format!("Authorization check failed: {}", e)))?;
+	let can_access = can_access_household(&pool, user.0.id, id)
+		.await
+		.map_err(|e| AppError::Internal(format!("Authorization check failed: {}", e)))?;
 
 	if !can_access {
-		let is_owner: Result<(), _> =
-			require_user_owned(&pool, user.0.id, UserOwnableTable::Household, id).await;
-
-		if is_owner.is_err() {
-			return Err(AppError::Internal("Not authorized".to_string()));
-		}
+		return Err(AppError::Forbidden);
 	}
 
 	let household = sqlx::query_as::<_, Household>(
@@ -137,7 +132,7 @@ pub async fn get_household(
 	.bind(id)
 	.fetch_optional(&pool)
 	.await?
-	.ok_or_else(|| AppError::Internal("Household not found".to_string()))?;
+	.ok_or_else(|| AppError::NotFound("Household not found".to_string()))?;
 
 	Ok(Json(household))
 }
@@ -198,9 +193,9 @@ pub async fn update(
 	Path(id): Path<Uuid>,
 	Json(req): Json<UpdateHouseholdRequest>,
 ) -> Result<Json<Household>, AppError> {
-	let result: Result<(), _> =
-		require_user_owned(&pool, user.0.id, UserOwnableTable::Household, id).await;
-	result.map_err(|e| AppError::Internal(format!("Not authorized: {}", e)))?;
+	require_user_owned(&pool, user.0.id, UserOwnableTable::Household, id)
+		.await
+		.map_err(|_| AppError::Forbidden)?;
 
 	let mut query_parts = Vec::new();
 	let param_index = 2;
@@ -261,9 +256,9 @@ pub async fn delete_household(
 	user: AuthenticatedUser,
 	Path(id): Path<Uuid>,
 ) -> Result<StatusCode, AppError> {
-	let result: Result<(), _> =
-		require_user_owned(&pool, user.0.id, UserOwnableTable::Household, id).await;
-	result.map_err(|e| AppError::Internal(format!("Not authorized: {}", e)))?;
+	require_user_owned(&pool, user.0.id, UserOwnableTable::Household, id)
+		.await
+		.map_err(|_| AppError::Forbidden)?;
 
 	sqlx::query("UPDATE households SET deleted_at = NOW() WHERE id = $1 AND deleted_at IS NULL")
 		.bind(id)
@@ -285,17 +280,12 @@ pub async fn list_memberships(
 	user: AuthenticatedUser,
 	Path(id): Path<Uuid>,
 ) -> Result<Json<Vec<HouseholdMember>>, AppError> {
-	let can_access: Result<bool, _> = can_access_household(&pool, user.0.id, id).await;
-	let can_access =
-		can_access.map_err(|e| AppError::Internal(format!("Authorization check failed: {}", e)))?;
+	let can_access = can_access_household(&pool, user.0.id, id)
+		.await
+		.map_err(|e| AppError::Internal(format!("Authorization check failed: {}", e)))?;
 
 	if !can_access {
-		let is_owner: Result<(), _> =
-			require_user_owned(&pool, user.0.id, UserOwnableTable::Household, id).await;
-
-		if is_owner.is_err() {
-			return Err(AppError::Internal("Not authorized".to_string()));
-		}
+		return Err(AppError::Forbidden);
 	}
 
 	let rows = sqlx::query(

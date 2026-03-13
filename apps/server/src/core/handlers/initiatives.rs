@@ -104,12 +104,12 @@ pub async fn get_initiative(
 	user: AuthenticatedUser,
 	Path(id): Path<Uuid>,
 ) -> Result<Json<Initiative>, AppError> {
-	let can_access: Result<bool, _> = can_access_initiative(&pool, user.0.id, id).await;
-	let can_access =
-		can_access.map_err(|e| AppError::Internal(format!("Authorization check failed: {}", e)))?;
+	let can_access = can_access_initiative(&pool, user.0.id, id)
+		.await
+		.map_err(|e| AppError::Internal(format!("Authorization check failed: {}", e)))?;
 
 	if !can_access {
-		return Err(AppError::Internal("Not authorized".to_string()));
+		return Err(AppError::Forbidden);
 	}
 
 	let initiative = sqlx::query_as::<_, Initiative>(
@@ -118,7 +118,7 @@ pub async fn get_initiative(
 	.bind(id)
 	.fetch_optional(&pool)
 	.await?
-	.ok_or_else(|| AppError::Internal("Initiative not found".to_string()))?;
+	.ok_or_else(|| AppError::NotFound("Initiative not found".to_string()))?;
 
 	Ok(Json(initiative))
 }
@@ -170,9 +170,9 @@ pub async fn update(
 	Path(id): Path<Uuid>,
 	Json(req): Json<UpdateInitiativeRequest>,
 ) -> Result<Json<Initiative>, AppError> {
-	let result: Result<(), _> =
-		require_user_owned(&pool, user.0.id, UserOwnableTable::Initiative, id).await;
-	result.map_err(|e| AppError::Internal(format!("Not authorized: {}", e)))?;
+	require_user_owned(&pool, user.0.id, UserOwnableTable::Initiative, id)
+		.await
+		.map_err(|_| AppError::Forbidden)?;
 
 	let mut query_parts = Vec::new();
 	let param_index = 2;
@@ -257,9 +257,9 @@ pub async fn delete_initiative(
 	user: AuthenticatedUser,
 	Path(id): Path<Uuid>,
 ) -> Result<StatusCode, AppError> {
-	let result: Result<(), _> =
-		require_user_owned(&pool, user.0.id, UserOwnableTable::Initiative, id).await;
-	result.map_err(|e| AppError::Internal(format!("Not authorized: {}", e)))?;
+	require_user_owned(&pool, user.0.id, UserOwnableTable::Initiative, id)
+		.await
+		.map_err(|_| AppError::Forbidden)?;
 
 	sqlx::query("UPDATE initiatives SET deleted_at = NOW() WHERE id = $1 AND deleted_at IS NULL")
 		.bind(id)
