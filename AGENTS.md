@@ -161,3 +161,22 @@ The interface should evoke a sense of quiet competence—never overwhelming the 
 2. **Fluid & Responsive**: Interactions, state changes, and navigations must feel instantaneous and polished (Linear-like performance).
 3. **Native-Quality Feel**: Since it runs as a Tauri desktop app, interactions should feel at home on the OS, avoiding "webby" jank. Use smooth transitions and mindful micro-interactions.
 4. **Calm by Default**: Avoid aggressive colors or excessive alerts. Use subtle visual cues to guide rather than demand attention, maintaining a low-stress environment.
+## DESIGN CONTEXT
+
+### Users
+Power users and individuals seeking a fast, offline-first "Personal OS" for managing knowledge, goals, and resources across mobile and desktop. They need a system that gets out of their way, prioritizing focus and rapid input.
+
+### Brand Personality
+Minimal, Calm, Polished, Fluid.
+The interface should evoke a sense of quiet competence—never overwhelming the user, but feeling highly responsive and smooth to interact with.
+
+### Aesthetic Direction
+- **Themes**: Full support for both Light and Dark mode with seamless switching.
+- **Vibe**: A blend of Notion (clean, document-focused, simple, content-first) and Linear (high-performance, refined dark mode, productivity-focused, fluid micro-interactions).
+- **Typography & Layout**: High legibility utilizing Tailwind Typography, purposeful whitespace, and uncluttered layouts.
+
+### Design Principles
+1. **Content Over Chrome**: The interface should recede, making the user's knowledge and goals the focal point (Notion-like minimalism).
+2. **Fluid & Responsive**: Interactions, state changes, and navigations must feel instantaneous and polished (Linear-like performance).
+3. **Native-Quality Feel**: Since it runs as a Tauri desktop app, interactions should feel at home on the OS, avoiding "webby" jank. Use smooth transitions and mindful micro-interactions.
+4. **Calm by Default**: Avoid aggressive colors or excessive alerts. Use subtle visual cues to guide rather than demand attention, maintaining a low-stress environment.
