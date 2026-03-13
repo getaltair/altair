@@ -3,8 +3,12 @@
 //! Handles authentication, identity, sessions, and authorization.
 
 mod models;
+mod session;
+
 #[allow(unused_imports)]
 pub use models::{Session, User};
+#[allow(unused_imports)]
+pub use session::{AuthError, validate_session_token};
 
 use axum::Router;
 use sqlx::PgPool;
