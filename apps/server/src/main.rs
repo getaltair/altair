@@ -3,7 +3,7 @@ mod db;
 mod error;
 mod handlers;
 
-use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+use std::net::SocketAddr;
 
 use anyhow::{Context, Result};
 use axum::{Router, routing::get};
@@ -13,15 +13,15 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[tokio::main]
 async fn main() -> Result<()> {
+	let config = config::Config::from_env();
+
 	tracing_subscriber::registry()
 		.with(tracing_subscriber::fmt::layer().json())
-		.with(tracing_subscriber::EnvFilter::from_default_env())
+		.with(tracing_subscriber::EnvFilter::new(&config.log_level))
 		.init();
 
 	tracing::info!("Starting Altair server");
-
-	let config = config::Config::from_env();
-	tracing::info!(port = %config.port, log_level = %config.log_level, "Configuration loaded");
+	tracing::info!(host = %config.host, port = %config.port, log_level = %config.log_level, "Configuration loaded");
 
 	let pool = db::create_pool(&config.database_url)
 		.await
@@ -33,7 +33,12 @@ async fn main() -> Result<()> {
 		.layer(TraceLayer::new_for_http())
 		.with_state(pool);
 
-	let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), config.port);
+	let addr: SocketAddr = format!("{}:{}", config.host, config.port)
+		.parse()
+		.context(format!(
+			"Invalid host:port combination: {}:{}",
+			config.host, config.port
+		))?;
 	let listener = tokio::net::TcpListener::bind(addr)
 		.await
 		.context(format!("Failed to bind to port {}", config.port))?;
