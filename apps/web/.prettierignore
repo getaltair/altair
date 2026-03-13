@@ -1,3 +1,6 @@
+# Agent documentation
+AGENTS.md
+
 # Package Managers
 package-lock.json
 pnpm-lock.yaml
@@ -11,3 +14,4 @@ bun.lockb
 
 # Generated files
 /project.inlang/
+/src-tauri/gen/
