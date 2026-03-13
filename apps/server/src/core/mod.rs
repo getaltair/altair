@@ -2,6 +2,8 @@
 //!
 //! Handles users, households, initiatives, tags, and relations.
 
+mod handlers;
+
 use axum::Router;
 use sqlx::PgPool;
 
