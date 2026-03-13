@@ -650,19 +650,22 @@ Stand up Axum server with auth, config, core APIs, and reusable authorization bo
 
 ### Checklist
 
-- [ ] Add modules for:
-  - [ ] auth
-  - [ ] core
-  - [ ] guidance
-  - [ ] knowledge
-  - [ ] tracking
-  - [ ] relations
-  - [ ] attachments
-- [ ] Add shared API/router conventions
+- [x] Add modules for:
+  - [x] auth
+  - [x] core
+  - [x] guidance
+  - [x] knowledge
+  - [x] tracking
+  - [x] attachments
+  - [x] sync
+  - [x] search
+- [x] Add shared API/router conventions
 
 ### Acceptance Criteria
 
 - module layout mirrors architecture spec
+
+> **Note:** The `relations` module was omitted as the architecture spec does not define a `/relations/*` API path. Relations are handled internally via `entity_relations` table and exposed through domain endpoints. The `/admin` domain is deferred to a later phase.
 
 ---
 
@@ -974,25 +977,25 @@ Validate baseline Postgres → SQLite sync for personal and household data.
 
 # 10. Suggested Execution Order (Strict)
 
-## Week/Block 1
+## Block 1
 
-- [ ] P0-001
-- [ ] P0-002
-- [ ] P0-003
-- [ ] P0-005
-- [ ] P0-004
+- [x] P0-001
+- [x] P0-002
+- [x] P0-003
+- [x] P0-005
+- [x] P0-004
 
-## Week/Block 2
+## Block 2
 
-- [ ] P1-001
-- [ ] P1-002
-- [ ] P1-003
-- [ ] P1-004
-- [ ] P1-005
-- [ ] P1-006
+- [x] P1-001
+- [x] P1-002
+- [x] P1-003
+- [x] P1-004
+- [x] P1-005
+- [x] P1-006
 - [x] P1-007
 
-## Week/Block 3
+## Block 3
 
 - [x] P2-001
 - [x] P2-002
@@ -1005,10 +1008,10 @@ Validate baseline Postgres → SQLite sync for personal and household data.
 - [x] P2-009
 - [x] P2-010
 
-## Week/Block 4
+## Block 4
 
-- [ ] P3-001
-- [ ] P3-002
+- [x] P3-001
+- [x] P3-002
 - [ ] P3-003
 - [ ] P3-004
 - [ ] P3-005
@@ -1016,7 +1019,7 @@ Validate baseline Postgres → SQLite sync for personal and household data.
 - [ ] P3-007
 - [ ] P3-008
 
-## Week/Block 5
+## Block 5
 
 - [ ] P4-001
 - [ ] P4-002
@@ -1065,15 +1068,15 @@ Only after auth/authorization foundation exists.
 
 ## By end of Phase 0
 
-- [ ] monorepo exists
-- [ ] CI exists
-- [ ] docs committed
+- [x] monorepo exists
+- [x] CI exists
+- [x] docs committed
 
 ## By end of Phase 1
 
-- [ ] contracts package enforced
-- [ ] generated bindings checked in
-- [ ] contract CI green
+- [x] contracts package enforced
+- [x] generated bindings checked in
+- [x] contract CI green
 
 ## By end of Phase 2
 
