@@ -187,6 +187,7 @@ pub async fn create(
 /// Only the household owner can update the household.
 /// Soft-deleted households cannot be updated.
 #[axum::debug_handler]
+#[allow(unused_assignments)]
 pub async fn update(
 	State(pool): State<PgPool>,
 	user: AuthenticatedUser,
@@ -210,6 +211,7 @@ pub async fn update(
 	}
 	if req.description.is_some() {
 		query_parts.push(format!("description = ${}", param_index));
+		param_index += 1;
 	}
 
 	if query_parts.is_empty() {

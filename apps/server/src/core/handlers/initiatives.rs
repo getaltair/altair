@@ -175,6 +175,7 @@ pub async fn create(
 /// Only the initiative owner can update the initiative.
 /// Soft-deleted initiatives cannot be updated.
 #[axum::debug_handler]
+#[allow(unused_assignments)]
 pub async fn update(
 	State(pool): State<PgPool>,
 	user: AuthenticatedUser,
@@ -214,6 +215,7 @@ pub async fn update(
 	}
 	if req.household_id.is_some() {
 		query_parts.push(format!("household_id = ${}", param_index));
+		param_index += 1;
 	}
 
 	if query_parts.is_empty() {

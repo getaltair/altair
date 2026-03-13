@@ -18,6 +18,7 @@ use axum::{
 };
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use slug::slugify;
 use sqlx::PgPool;
 use uuid::Uuid;
 
@@ -121,6 +122,7 @@ pub async fn get_tag(
 ///
 /// Creates a single tag record with the authenticated user as owner.
 /// If a household_id is provided, validates that the user is an active member.
+/// If slug is not provided, generates one from the name.
 #[axum::debug_handler]
 pub async fn create(
 	State(pool): State<PgPool>,
@@ -138,6 +140,8 @@ pub async fn create(
 		}
 	}
 
+	let slug = req.slug.unwrap_or_else(|| slugify(&req.name));
+
 	let tag = sqlx::query_as::<_, Tag>(
 		r#"
 		INSERT INTO tags (owner_user_id, household_id, name, slug, description, color)
@@ -148,7 +152,7 @@ pub async fn create(
 	.bind(user.0.id)
 	.bind(req.household_id)
 	.bind(&req.name)
-	.bind(&req.slug)
+	.bind(&slug)
 	.bind(&req.description)
 	.bind(&req.color)
 	.fetch_one(&pool)
@@ -162,6 +166,7 @@ pub async fn create(
 /// Only the tag owner can update the tag.
 /// Soft-deleted tags cannot be updated.
 #[axum::debug_handler]
+#[allow(unused_assignments)]
 pub async fn update(
 	State(pool): State<PgPool>,
 	user: AuthenticatedUser,
@@ -193,6 +198,7 @@ pub async fn update(
 	}
 	if req.household_id.is_some() {
 		query_parts.push(format!("household_id = ${}", param_index));
+		param_index += 1;
 	}
 
 	if query_parts.is_empty() {
