@@ -20,10 +20,11 @@ use axum::{
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
+use utoipa::ToSchema;
 use uuid::Uuid;
 
 /// Initiative model representing the `initiatives` table.
-#[derive(Debug, Clone, sqlx::FromRow, Serialize)]
+#[derive(Debug, Clone, sqlx::FromRow, Serialize, ToSchema)]
 pub struct Initiative {
 	pub id: Uuid,
 	pub owner_user_id: Uuid,
@@ -40,7 +41,7 @@ pub struct Initiative {
 }
 
 /// Request body for creating a new initiative.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct CreateInitiativeRequest {
 	pub title: String,
 	pub slug: Option<String>,
@@ -52,7 +53,7 @@ pub struct CreateInitiativeRequest {
 }
 
 /// Request body for updating an initiative.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct UpdateInitiativeRequest {
 	pub title: Option<String>,
 	pub slug: Option<String>,

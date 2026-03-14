@@ -19,3 +19,11 @@ chrono = { version = "0.4", features = ["serde"] }
 sqlx = { version = "0.8.6", features = ["postgres", "sqlite", "runtime-tokio", "tls-native-tls", "uuid", "chrono"] }
 uuid = { version = "1", features = ["v4", "serde"] }
 slug = "0.1"
+utoipa = { version = "5.4", features = ["axum_extras", "openapi_extensions", "uuid", "chrono"] }
+utoipa-axum = "0.2"
+utoipa-swagger-ui = { version = "9", features = ["axum"] }
+utoipa-scalar = { version = "0.3", optional = true }
+
+[features]
+default = []
+scalar-ui = ["utoipa-scalar"]

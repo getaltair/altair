@@ -3,17 +3,35 @@
 //! Handles mutation ingestion, conflict detection, and device checkpoints.
 //! Placeholder for Phase 4 PowerSync integration.
 
-use axum::Router;
+use axum::{Router, routing::get};
 use sqlx::PgPool;
 
 /// Create the router for this module.
 ///
 /// Routes are mounted at `/sync/*` in the main router.
 pub fn router() -> Router<PgPool> {
-	Router::new()
-	// Future routes will be added here for Phase 4:
-	// .route("/mutations", post(submit_mutation))
-	// .route("/checkpoint", get(get_checkpoint))
+	Router::new().route("/checkpoint", get(get_checkpoint))
+}
+
+/// Placeholder: Get sync checkpoint.
+///
+/// **NOT IMPLEMENTED** - This is a placeholder endpoint for future implementation.
+///
+/// Planned routes for sync module (Phase 4 PowerSync integration):
+/// - GET /sync/checkpoint - Get sync checkpoint (placeholder)
+/// - POST /sync/mutations - Submit mutations
+/// - GET /sync/changes - Get changes since checkpoint
+#[utoipa::path(
+	get,
+	path = "/sync/checkpoint",
+	tag = "Not Implemented",
+	responses(
+		(status = 501, description = "Not Implemented - This endpoint is a placeholder for future implementation")
+	),
+	description = "Placeholder endpoint - not yet implemented. This will return PowerSync checkpoint data in the future."
+)]
+pub async fn get_checkpoint() -> &'static str {
+	"Not Implemented"
 }
 
 #[cfg(test)]

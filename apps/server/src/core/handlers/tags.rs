@@ -20,10 +20,11 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use slug::slugify;
 use sqlx::PgPool;
+use utoipa::ToSchema;
 use uuid::Uuid;
 
 /// Tag model representing the `tags` table.
-#[derive(Debug, Clone, sqlx::FromRow, Serialize)]
+#[derive(Debug, Clone, sqlx::FromRow, Serialize, ToSchema)]
 pub struct Tag {
 	pub id: Uuid,
 	pub owner_user_id: Uuid,
@@ -38,7 +39,7 @@ pub struct Tag {
 }
 
 /// Request body for creating a new tag.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct CreateTagRequest {
 	pub name: String,
 	pub slug: Option<String>,
@@ -48,7 +49,7 @@ pub struct CreateTagRequest {
 }
 
 /// Request body for updating a tag.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct UpdateTagRequest {
 	pub name: Option<String>,
 	pub slug: Option<String>,
