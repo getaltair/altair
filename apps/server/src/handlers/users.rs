@@ -4,7 +4,7 @@
 
 use axum::{extract::State, response::Json};
 use chrono::{DateTime, Utc};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use sqlx::{PgPool, Row};
 use uuid::Uuid;
 
@@ -20,7 +20,7 @@ use crate::auth::AuthenticatedUser;
 /// - is_active: Whether the user account is active
 /// - created_at: Account creation timestamp
 /// - updated_at: Last update timestamp
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppUser {
 	pub id: Uuid,
 	pub email: String,
