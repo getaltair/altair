@@ -24,7 +24,7 @@ contracts = { path = "../../packages/contracts" }
 utoipa = { version = "5.4", features = ["axum_extras", "openapi_extensions", "uuid", "chrono"] }
 utoipa-axum = "0.2"
 utoipa-swagger-ui = { version = "9", features = ["axum"] }
-utoipa-scalar = { version = "0.3", optional = true }
+utoipa-scalar = { version = "0.3", features = ["axum"], optional = true }
 
 [dev-dependencies]
 tower = { version = "0.5", features = ["util"] }

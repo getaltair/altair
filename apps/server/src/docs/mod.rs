@@ -121,13 +121,11 @@ pub fn router<S>() -> Router<S>
 where
 	S: Clone + Send + Sync + 'static,
 {
-	let router: Router<S> = SwaggerUi::new("/docs/swagger")
-		.url("/docs/openapi.json", ApiDoc::openapi())
-		.into();
+	let router: Router<S> = SwaggerUi::new("/docs/swagger").into();
 
 	#[cfg(feature = "scalar-ui")]
 	let router: Router<S> = {
-		use utoipa_scalar::Scalar;
+		use utoipa_scalar::{Scalar, Servable};
 		let scalar_router: Router<S> = Scalar::with_url("/docs/scalar", ApiDoc::openapi()).into();
 		router.merge(scalar_router)
 	};
