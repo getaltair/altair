@@ -46,14 +46,7 @@ pub fn swagger() -> Router {
 /// Serves Scalar UI at `/docs/scalar` using the OpenAPI spec from `ApiDoc`.
 #[cfg(feature = "scalar-ui")]
 pub fn scalar() -> Router {
-	#[cfg(feature = "scalar-ui")]
-	{
-		use utoipa_scalar::Scalar;
-		Scalar::with_url("/docs/scalar", ApiDoc::openapi()).into()
-	}
-
-	#[cfg(not(feature = "scalar-ui"))]
-	{
-		Router::new()
-	}
+	use utoipa_scalar::Scalar;
+	use utoipa_scalar::Servable;
+	Scalar::with_url("/docs/scalar", ApiDoc::openapi()).into()
 }
