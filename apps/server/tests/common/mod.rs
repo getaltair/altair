@@ -74,10 +74,10 @@ pub async fn verify_tables_exist(pool: &PgPool) -> Result<Vec<String>, sqlx::Err
 /// Returns a vector of missing enum names, empty if all enums exist.
 pub async fn verify_enums_exist(pool: &PgPool) -> Result<Vec<String>, sqlx::Error> {
 	let required_enums = [
-		"entity_type",
-		"relation_type",
-		"source_type",
-		"relation_status",
+		"entity_type_v2",
+		"relation_type_v2",
+		"source_type_v2",
+		"relation_status_v2",
 		"initiative_status",
 		"quest_status",
 		"routine_recurrence",
@@ -442,9 +442,9 @@ pub async fn create_test_initiative(
 /// Create a test relation in the `entity_relations` table.
 ///
 /// Creates a relation between two entities with default values:
-/// - `relation_type`: "relates_to"
-/// - `source_type`: "manual"
-/// - `status`: "active"
+/// - `relation_type`: "related_to"
+/// - `source_type`: "user"
+/// - `status`: "accepted"
 ///
 /// # Arguments
 ///

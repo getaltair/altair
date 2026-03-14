@@ -318,7 +318,7 @@ pub async fn create(
 			relation_type, source_type, status, confidence, evidence,
 			owner_user_id, household_id, notes
 		)
-		VALUES ($1::entity_type, $2, $3::entity_type, $4, $5::relation_type, $6::source_type, $7::relation_status, $8, $9, $10, $11, $12)
+		VALUES ($1::entity_type_v2, $2, $3::entity_type_v2, $4, $5::relation_type_v2, $6::source_type_v2, $7::relation_status_v2, $8, $9, $10, $11, $12)
 		RETURNING
 			id, from_entity_type::text, from_entity_id, to_entity_type::text, to_entity_id,
 			relation_type::text, source_type::text, status::text, confidence, evidence,
@@ -402,7 +402,7 @@ pub async fn update_status(
 	let relation = sqlx::query_as::<_, EntityRelation>(
 		r#"
 		UPDATE entity_relations
-		SET status = $1::relation_status, updated_at = NOW()
+		SET status = $1::relation_status_v2, updated_at = NOW()
 		WHERE id = $2 AND deleted_at IS NULL
 		RETURNING
 			id, from_entity_type::text, from_entity_id, to_entity_type::text, to_entity_id,
