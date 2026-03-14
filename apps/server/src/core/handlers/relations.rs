@@ -1,6 +1,6 @@
 //! Entity relation handler module.
 //!
-//! Handles CRUD operations for cross-entity relationships.
+//! Handles CRUD operations for cross-domain entity relationships.
 //!
 //! Entity relations connect different domain entities (initiatives, notes, tags, etc.)
 //! with typed relationships like "references", "supports", "requires", etc.
@@ -19,10 +19,11 @@ use contracts::{EntityType, RelationSourceType, RelationStatusType, RelationType
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
+use utoipa::ToSchema;
 use uuid::Uuid;
 
 /// Entity relation model representing the `entity_relations` table.
-#[derive(Debug, Clone, sqlx::FromRow, Serialize)]
+#[derive(Debug, Clone, sqlx::FromRow, Serialize, ToSchema)]
 pub struct EntityRelation {
 	pub id: Uuid,
 	pub from_entity_type: String,
@@ -42,56 +43,75 @@ pub struct EntityRelation {
 	pub deleted_at: Option<DateTime<Utc>>,
 }
 
+/// Query parameters for listing relations.
+#[derive(Debug, Deserialize, ToSchema, utoipa::IntoParams)]
+pub struct ListRelationsQuery {
+	/// Filter by source entity ID
+	#[param(example = "550e8400-e29b-41d4-a716-446655440000")]
+	pub from_entity_id: Option<Uuid>,
+	/// Filter by target entity ID
+	#[param(example = "550e8400-e29b-41d4-a716-446655440001")]
+	pub to_entity_id: Option<Uuid>,
+}
+
 /// Request body for creating a new entity relation.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
 pub struct CreateRelationRequest {
+	/// Type of source entity (user, household, initiative, tag, attachment, epic, quest, routine, focus_session, note, location, category, item)
 	pub from_entity_type: String,
+	/// ID of source entity
 	pub from_entity_id: Uuid,
+	/// Type of target entity (user, household, initiative, tag, attachment, epic, quest, routine, focus_session, note, location, category, item)
 	pub to_entity_type: String,
+	/// ID of target entity
 	pub to_entity_id: Uuid,
+	/// Type of relationship (parent_of, child_of, relates_to, depends_on, blocks, blocked_by, duplicates, similar_to, references, contains, owned_by, assigned_to, part_of, precedes, succeeds)
 	pub relation_type: String,
+	/// How this relation was established (manual, inferred, imported, system)
 	pub source_type: Option<String>,
+	/// Optional confidence score for inferred relations (0.0 to 1.0)
+	#[serde(skip_serializing_if = "Option::is_none")]
 	pub confidence: Option<f64>,
+	/// Optional evidence JSON for inferred relations
+	#[serde(skip_serializing_if = "Option::is_none")]
 	pub evidence: Option<serde_json::Value>,
+	/// Optional household ID for shared relations
+	#[serde(skip_serializing_if = "Option::is_none")]
 	pub household_id: Option<Uuid>,
+	/// Optional notes describing this relation
+	#[serde(skip_serializing_if = "Option::is_none")]
 	pub notes: Option<String>,
 }
 
 /// Request body for updating relation status.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
 pub struct UpdateStatusRequest {
+	/// New status for the relation (accepted, dismissed, rejected, expired)
 	pub status: String,
 }
 
-/// Query parameters for listing relations.
-#[derive(Debug, Deserialize)]
-pub struct ListRelationsQuery {
-	pub from_entity_id: Option<Uuid>,
-	pub to_entity_id: Option<Uuid>,
-}
-
-/// Validates an entity type string against the contracts enum.
+/// Validates an entity type string against contracts enum.
 fn validate_entity_type(value: &str) -> Result<(), AppError> {
 	serde_json::from_value::<EntityType>(serde_json::Value::String(value.to_string()))
 		.map_err(|_| AppError::BadRequest(format!("Invalid entity_type: {}", value)))?;
 	Ok(())
 }
 
-/// Validates a relation type string against the contracts enum.
+/// Validates a relation type string against contracts enum.
 fn validate_relation_type(value: &str) -> Result<(), AppError> {
 	serde_json::from_value::<RelationType>(serde_json::Value::String(value.to_string()))
 		.map_err(|_| AppError::BadRequest(format!("Invalid relation_type: {}", value)))?;
 	Ok(())
 }
 
-/// Validates a source type string against the contracts enum.
+/// Validates a source type string against contracts enum.
 fn validate_source_type(value: &str) -> Result<(), AppError> {
 	serde_json::from_value::<RelationSourceType>(serde_json::Value::String(value.to_string()))
 		.map_err(|_| AppError::BadRequest(format!("Invalid source_type: {}", value)))?;
 	Ok(())
 }
 
-/// Validates a status string against the contracts enum.
+/// Validates a status string against contracts enum.
 fn validate_status(value: &str) -> Result<(), AppError> {
 	serde_json::from_value::<RelationStatusType>(serde_json::Value::String(value.to_string()))
 		.map_err(|_| AppError::BadRequest(format!("Invalid status: {}", value)))?;
@@ -140,20 +160,31 @@ async fn can_access_relation(
 ///
 /// Query params: `from_entity_id` OR `to_entity_id` (one required)
 /// Soft-deleted relations (`deleted_at IS NOT NULL`) are excluded.
+#[utoipa::path(
+	get,
+	path = "/core/relations",
+	tag = "Relations",
+	responses(
+		(status = 200, description = "List of accessible relations", body = Vec<EntityRelation>),
+		(status = 401, description = "Unauthorized - invalid session token", body = crate::auth::ErrorResponse)
+	),
+	params(ListRelationsQuery),
+	security(
+		("better_auth_session" = [])
+	)
+)]
 #[axum::debug_handler]
 pub async fn list(
 	State(pool): State<PgPool>,
 	user: AuthenticatedUser,
 	Query(query): Query<ListRelationsQuery>,
 ) -> Result<Json<Vec<EntityRelation>>, AppError> {
-	// Require at least one filter parameter
 	if query.from_entity_id.is_none() && query.to_entity_id.is_none() {
 		return Err(AppError::BadRequest(
 			"Either from_entity_id or to_entity_id is required".to_string(),
 		));
 	}
 
-	// Build dynamic query based on provided filters
 	let relations = match (query.from_entity_id, query.to_entity_id) {
 		(Some(from_id), Some(to_id)) => {
 			sqlx::query_as::<_, EntityRelation>(
@@ -227,7 +258,6 @@ pub async fn list(
 			.await?
 		}
 		(None, None) => {
-			// This case is handled by the early return above, but Rust needs exhaustive matching
 			return Err(AppError::BadRequest(
 				"Either from_entity_id or to_entity_id is required".to_string(),
 			));
@@ -243,6 +273,22 @@ pub async fn list(
 /// - Relation doesn't exist
 /// - Relation is soft-deleted
 /// - User is neither owner nor active household member
+#[utoipa::path(
+	get,
+	path = "/core/relations/{id}",
+	tag = "Relations",
+	responses(
+		(status = 200, description = "Relation found", body = EntityRelation),
+		(status = 404, description = "Relation not found", body = crate::auth::ErrorResponse),
+		(status = 401, description = "Unauthorized - invalid session token", body = crate::auth::ErrorResponse)
+	),
+	params(
+		("id" = Uuid, Path, description = "Relation ID")
+	),
+	security(
+		("better_auth_session" = [])
+	)
+)]
 #[axum::debug_handler]
 pub async fn get_single(
 	State(pool): State<PgPool>,
@@ -276,20 +322,32 @@ pub async fn get_single(
 /// Sets `status` = "suggested" (or "accepted" if source_type="user").
 /// Returns 201 Created.
 /// Returns 409 Conflict if duplicate relation exists.
+#[utoipa::path(
+	post,
+	path = "/core/relations",
+	tag = "Relations",
+	request_body = CreateRelationRequest,
+	responses(
+		(status = 201, description = "Relation created successfully", body = EntityRelation),
+		(status = 409, description = "Duplicate relation exists", body = crate::auth::ErrorResponse),
+		(status = 400, description = "Invalid request parameters", body = crate::auth::ErrorResponse),
+		(status = 401, description = "Unauthorized - invalid session token", body = crate::auth::ErrorResponse)
+	),
+	security(
+		("better_auth_session" = [])
+	)
+)]
 #[axum::debug_handler]
 pub async fn create(
 	State(pool): State<PgPool>,
 	user: AuthenticatedUser,
 	Json(req): Json<CreateRelationRequest>,
 ) -> Result<(StatusCode, Json<EntityRelation>), AppError> {
-	// Validate entity types
 	validate_entity_type(&req.from_entity_type)?;
 	validate_entity_type(&req.to_entity_type)?;
 
-	// Validate relation type
 	validate_relation_type(&req.relation_type)?;
 
-	// Determine source type and status
 	let source_type = req.source_type.unwrap_or_else(|| "user".to_string());
 	validate_source_type(&source_type)?;
 
@@ -356,9 +414,26 @@ pub async fn create(
 
 /// Soft delete a relation.
 ///
-/// Only the relation owner can delete the relation.
-/// Sets `deleted_at = NOW()` instead of removing the record.
+/// Only relation owner can delete relation.
+/// Sets `deleted_at = NOW()` instead of removing record.
 /// Returns 204 No Content.
+#[utoipa::path(
+	delete,
+	path = "/core/relations/{id}",
+	tag = "Relations",
+	responses(
+		(status = 204, description = "Relation deleted successfully"),
+		(status = 404, description = "Relation not found", body = crate::auth::ErrorResponse),
+		(status = 403, description = "Forbidden - not relation owner", body = crate::auth::ErrorResponse),
+		(status = 401, description = "Unauthorized - invalid session token", body = crate::auth::ErrorResponse)
+	),
+	params(
+		("id" = Uuid, Path, description = "Relation ID")
+	),
+	security(
+		("better_auth_session" = [])
+	)
+)]
 #[axum::debug_handler]
 pub async fn delete_relation(
 	State(pool): State<PgPool>,
@@ -381,10 +456,28 @@ pub async fn delete_relation(
 
 /// Update a relation's status.
 ///
-/// Only the relation owner can update the status.
+/// Only relation owner can update status.
 /// Validates status: "accepted" | "dismissed" | "rejected" | "expired".
 /// No state machine validation (any transition allowed).
 /// Returns 200 with updated relation.
+#[utoipa::path(
+	patch,
+	path = "/core/relations/{id}/status",
+	tag = "Relations",
+	request_body = UpdateStatusRequest,
+	responses(
+		(status = 200, description = "Status updated successfully", body = EntityRelation),
+		(status = 404, description = "Relation not found", body = crate::auth::ErrorResponse),
+		(status = 403, description = "Forbidden - not relation owner", body = crate::auth::ErrorResponse),
+		(status = 401, description = "Unauthorized - invalid session token", body = crate::auth::ErrorResponse)
+	),
+	params(
+		("id" = Uuid, Path, description = "Relation ID")
+	),
+	security(
+		("better_auth_session" = [])
+	)
+)]
 #[axum::debug_handler]
 pub async fn update_status(
 	State(pool): State<PgPool>,
@@ -396,7 +489,6 @@ pub async fn update_status(
 		.await
 		.map_err(|_| AppError::Forbidden)?;
 
-	// Validate status
 	validate_status(&req.status)?;
 
 	let relation = sqlx::query_as::<_, EntityRelation>(

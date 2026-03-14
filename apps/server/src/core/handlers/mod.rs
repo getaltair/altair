@@ -4,7 +4,7 @@
 //! - households: Household management
 //! - initiatives: Initiative and goal tracking
 //! - tags: Tag categorization
-//! - relations: Cross-entity relationships
+//! - relations: Cross-domain entity relationships
 
 pub mod households;
 pub mod initiatives;

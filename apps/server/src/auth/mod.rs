@@ -18,6 +18,8 @@ pub use authorization::{
 #[allow(unused_imports)]
 pub use extractor::AuthenticatedUser;
 #[allow(unused_imports)]
+pub use handlers::ErrorResponse;
+#[allow(unused_imports)]
 pub use models::{Session, User};
 #[allow(unused_imports)]
 pub use session::{AuthError, validate_session_token};

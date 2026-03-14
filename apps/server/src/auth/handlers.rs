@@ -6,6 +6,17 @@ use super::extractor::AuthenticatedUser;
 use super::models::User;
 use axum::{Json, Router, extract::State, routing::get};
 use sqlx::PgPool;
+use utoipa::ToSchema;
+
+/// Error response format for authentication failures.
+#[derive(ToSchema)]
+#[allow(dead_code)]
+pub struct ErrorResponse {
+	/// Error type code
+	error: String,
+	/// Human-readable error message
+	message: String,
+}
 
 /// Get the currently authenticated user.
 ///
@@ -31,6 +42,18 @@ use sqlx::PgPool;
 /// - Session has expired
 ///
 /// These errors are handled automatically by the `AuthenticatedUser` extractor.
+#[utoipa::path(
+	get,
+	path = "/auth/me",
+	responses(
+		(status = 200, description = "Current user profile", body = User),
+		(status = 401, description = "Unauthorized - missing or invalid session", body = ErrorResponse)
+	),
+	security(
+		("better_auth_session" = [])
+	),
+	tag = "Auth"
+)]
 #[axum::debug_handler]
 pub async fn me(State(_pool): State<PgPool>, user: AuthenticatedUser) -> Json<User> {
 	Json(user.0)

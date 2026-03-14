@@ -82,6 +82,15 @@ pub struct UpdateHouseholdRequest {
 /// - An active member (via `household_memberships`)
 ///
 /// Soft-deleted households (`deleted_at IS NOT NULL`) are excluded.
+#[utoipa::path(
+	get,
+	path = "/core/households",
+	responses(
+		(status = 200, description = "Households retrieved successfully", body = Vec<Household>)
+	),
+	security(("better_auth_session" = [])),
+	tag = "households"
+)]
 #[axum::debug_handler]
 pub async fn list(
 	State(pool): State<PgPool>,
@@ -113,6 +122,19 @@ pub async fn list(
 /// - Household doesn't exist
 /// - Household is soft-deleted
 /// - User is neither owner nor active member
+#[utoipa::path(
+	get,
+	path = "/core/households/{id}",
+	params(
+		("id" = Uuid, Path, description = "Household ID")
+	),
+	responses(
+		(status = 200, description = "Household retrieved successfully", body = Household),
+		(status = 404, description = "Household not found or access denied")
+	),
+	security(("better_auth_session" = [])),
+	tag = "households"
+)]
 #[axum::debug_handler]
 pub async fn get_household(
 	State(pool): State<PgPool>,
@@ -145,6 +167,16 @@ pub async fn get_household(
 /// 2. A household_memberships record with role='owner', is_active=true
 ///
 /// Uses a database transaction to ensure atomicity.
+#[utoipa::path(
+	post,
+	path = "/core/households",
+	request_body = CreateHouseholdRequest,
+	responses(
+		(status = 201, description = "Household created successfully", body = Household)
+	),
+	security(("better_auth_session" = [])),
+	tag = "households"
+)]
 #[axum::debug_handler]
 pub async fn create(
 	State(pool): State<PgPool>,
@@ -187,6 +219,20 @@ pub async fn create(
 ///
 /// Only the household owner can update the household.
 /// Soft-deleted households cannot be updated.
+#[utoipa::path(
+	patch,
+	path = "/core/households/{id}",
+	params(
+		("id" = Uuid, Path, description = "Household ID")
+	),
+	request_body = UpdateHouseholdRequest,
+	responses(
+		(status = 200, description = "Household updated successfully", body = Household),
+		(status = 403, description = "User is not the household owner")
+	),
+	security(("better_auth_session" = [])),
+	tag = "households"
+)]
 #[axum::debug_handler]
 #[allow(unused_assignments)]
 pub async fn update(
@@ -255,6 +301,19 @@ pub async fn update(
 ///
 /// Only the household owner can delete the household.
 /// Sets `deleted_at = NOW()` instead of removing the record.
+#[utoipa::path(
+	delete,
+	path = "/core/households/{id}",
+	params(
+		("id" = Uuid, Path, description = "Household ID")
+	),
+	responses(
+		(status = 204, description = "Household deleted successfully"),
+		(status = 403, description = "User is not the household owner")
+	),
+	security(("better_auth_session" = [])),
+	tag = "households"
+)]
 #[axum::debug_handler]
 pub async fn delete_household(
 	State(pool): State<PgPool>,
@@ -279,6 +338,19 @@ pub async fn delete_household(
 /// - Household doesn't exist
 /// - Household is soft-deleted
 /// - User is neither owner nor active member
+#[utoipa::path(
+	get,
+	path = "/core/households/{id}/memberships",
+	params(
+		("id" = Uuid, Path, description = "Household ID")
+	),
+	responses(
+		(status = 200, description = "Household memberships retrieved successfully", body = Vec<HouseholdMember>),
+		(status = 403, description = "User is not a member of the household")
+	),
+	security(("better_auth_session" = [])),
+	tag = "households"
+)]
 #[axum::debug_handler]
 pub async fn list_memberships(
 	State(pool): State<PgPool>,

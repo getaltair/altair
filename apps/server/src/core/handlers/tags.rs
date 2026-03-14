@@ -6,7 +6,8 @@
 //! and other domain entities for better organization and filtering.
 
 use crate::auth::{
-	AuthenticatedUser, UserOwnableTable, can_access_household, can_access_tag, require_user_owned,
+	AuthenticatedUser, ErrorResponse, UserOwnableTable, can_access_household, can_access_tag,
+	require_user_owned,
 };
 use crate::error::AppError;
 use axum::{
@@ -65,6 +66,17 @@ pub struct UpdateTagRequest {
 /// - An active member of the tag's household (via `household_memberships`)
 ///
 /// Soft-deleted tags (`deleted_at IS NOT NULL`) are excluded.
+#[utoipa::path(
+	get,
+	path = "/core/tags",
+	tag = "Tags",
+	responses(
+		(status = 200, description = "List of accessible tags", body = Vec<Tag>),
+		(status = 401, description = "Unauthorized - missing or invalid session", body = ErrorResponse)
+	),
+	security(("better_auth_session" = [])),
+	description = "List all tags accessible to the authenticated user. Returns tags where the user is the owner or an active member of the tag's household."
+)]
 #[axum::debug_handler]
 pub async fn list(
 	State(pool): State<PgPool>,
@@ -96,6 +108,22 @@ pub async fn list(
 /// - Tag doesn't exist
 /// - Tag is soft-deleted
 /// - User is neither owner nor active household member
+#[utoipa::path(
+	get,
+	path = "/core/tags/{id}",
+	tag = "Tags",
+	responses(
+		(status = 200, description = "Tag found", body = Tag),
+		(status = 401, description = "Unauthorized - missing or invalid session", body = ErrorResponse),
+		(status = 403, description = "Forbidden - user cannot access this tag", body = ErrorResponse),
+		(status = 404, description = "Tag not found or soft-deleted", body = ErrorResponse)
+	),
+	params(
+		("id" = Uuid, Path, description = "Tag UUID")
+	),
+	security(("better_auth_session" = [])),
+	description = "Get a single tag by ID. User must be the owner or an active member of the tag's household. Returns 404 for soft-deleted tags."
+)]
 #[axum::debug_handler]
 pub async fn get_tag(
 	State(pool): State<PgPool>,
@@ -124,6 +152,19 @@ pub async fn get_tag(
 /// Creates a single tag record with the authenticated user as owner.
 /// If a household_id is provided, validates that the user is an active member.
 /// If slug is not provided, generates one from the name.
+#[utoipa::path(
+	post,
+	path = "/core/tags",
+	tag = "Tags",
+	responses(
+		(status = 201, description = "Tag created successfully", body = Tag),
+		(status = 400, description = "Bad request - invalid input or not a household member", body = ErrorResponse),
+		(status = 401, description = "Unauthorized - missing or invalid session", body = ErrorResponse)
+	),
+	request_body = CreateTagRequest,
+	security(("better_auth_session" = [])),
+	description = "Create a new tag with the authenticated user as owner. If a household_id is provided, validates that the user is an active member. If slug is not provided, generates one from the name."
+)]
 #[axum::debug_handler]
 pub async fn create(
 	State(pool): State<PgPool>,
@@ -166,6 +207,23 @@ pub async fn create(
 ///
 /// Only the tag owner can update the tag.
 /// Soft-deleted tags cannot be updated.
+#[utoipa::path(
+	patch,
+	path = "/core/tags/{id}",
+	tag = "Tags",
+	responses(
+		(status = 200, description = "Tag updated successfully", body = Tag),
+		(status = 401, description = "Unauthorized - missing or invalid session", body = ErrorResponse),
+		(status = 403, description = "Forbidden - only tag owner can update", body = ErrorResponse),
+		(status = 404, description = "Tag not found or soft-deleted", body = ErrorResponse)
+	),
+	params(
+		("id" = Uuid, Path, description = "Tag UUID")
+	),
+	request_body = UpdateTagRequest,
+	security(("better_auth_session" = [])),
+	description = "Update a tag. Only the tag owner can update the tag. Soft-deleted tags cannot be updated."
+)]
 #[axum::debug_handler]
 #[allow(unused_assignments)]
 pub async fn update(
@@ -247,6 +305,22 @@ pub async fn update(
 ///
 /// Only the tag owner can delete the tag.
 /// Sets `deleted_at = NOW()` instead of removing the record.
+#[utoipa::path(
+	delete,
+	path = "/core/tags/{id}",
+	tag = "Tags",
+	responses(
+		(status = 204, description = "Tag soft-deleted successfully"),
+		(status = 401, description = "Unauthorized - missing or invalid session", body = ErrorResponse),
+		(status = 403, description = "Forbidden - only tag owner can delete", body = ErrorResponse),
+		(status = 404, description = "Tag not found or already soft-deleted", body = ErrorResponse)
+	),
+	params(
+		("id" = Uuid, Path, description = "Tag UUID")
+	),
+	security(("better_auth_session" = [])),
+	description = "Soft delete a tag. Only the tag owner can delete the tag. Sets deleted_at = NOW() instead of removing the record."
+)]
 #[axum::debug_handler]
 pub async fn delete_tag(
 	State(pool): State<PgPool>,
