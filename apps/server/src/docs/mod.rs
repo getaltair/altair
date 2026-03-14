@@ -8,12 +8,12 @@ pub mod ui;
 use axum::Router;
 use utoipa::openapi::security::{ApiKey, ApiKeyValue, SecurityScheme};
 use utoipa::{Modify, OpenApi};
+use utoipa_swagger_ui::SwaggerUi;
 
 /// Modifier struct to add authentication security scheme to OpenAPI spec.
 ///
 /// This implements the `Modify` trait to customize the OpenAPI components
 /// by adding a cookie-based API key security scheme for Better-Auth session tokens.
-#[allow(dead_code)]
 struct AuthSecurityAddon;
 
 impl Modify for AuthSecurityAddon {
@@ -35,7 +35,6 @@ impl Modify for AuthSecurityAddon {
 /// complete API documentation including paths, schemas, and metadata.
 /// The paths and schemas sections will be populated by handlers
 /// annotated with `#[utoipa::path]` and `#[utoipa::ToSchema]`.
-#[allow(dead_code)]
 #[derive(OpenApi)]
 #[openapi(
 	info(
@@ -78,26 +77,24 @@ impl Modify for AuthSecurityAddon {
 		crate::search::search,
 	),
 		components(schemas(
-		crate::handlers::health::HealthResponse,
 		crate::handlers::users::AppUser,
 		crate::auth::ErrorResponse,
-		crate::auth::models::User,
-		crate::core::handlers::households::{Household, HouseholdMember},
+		crate::auth::User,
+		crate::core::handlers::households::Household,
+		crate::core::handlers::households::HouseholdMember,
 		crate::core::handlers::households::CreateHouseholdRequest,
 		crate::core::handlers::households::UpdateHouseholdRequest,
-		crate::core::handlers::households::Household,
-		crate::core::handlers::households::DeleteHouseholdRequest,
 		crate::core::handlers::households::HouseholdMembership,
-		crate::core::handlers::initiatives::{Initiative},
+		crate::core::handlers::initiatives::Initiative,
 		crate::core::handlers::initiatives::CreateInitiativeRequest,
 		crate::core::handlers::initiatives::UpdateInitiativeRequest,
-		crate::core::handlers::tags::{Tag},
+		crate::core::handlers::tags::Tag,
 		crate::core::handlers::tags::CreateTagRequest,
 		crate::core::handlers::tags::UpdateTagRequest,
-		crate::core::handlers::relations::{EntityRelation},
-		crate::core::handlers::relations::{CreateRelationRequest, UpdateStatusRequest},
+		crate::core::handlers::relations::EntityRelation,
+		crate::core::handlers::relations::CreateRelationRequest,
+		crate::core::handlers::relations::UpdateStatusRequest,
 		crate::core::handlers::relations::ListRelationsQuery,
-		crate::core::handlers::relations::ErrorResponse,
 	),
 	),
 		tags(
@@ -120,12 +117,20 @@ pub struct ApiDoc;
 /// - Swagger UI at `/docs/swagger` (interactive API documentation)
 /// - Scalar UI at `/docs/scalar` (alternative API documentation, when `scalar-ui` feature enabled)
 /// - OpenAPI JSON spec at `/docs/openapi.json` (machine-readable spec)
-#[allow(dead_code)]
-pub fn router() -> Router {
-	let router = ui::swagger();
+pub fn router<S>() -> Router<S>
+where
+	S: Clone + Send + Sync + 'static,
+{
+	let router: Router<S> = SwaggerUi::new("/docs/swagger")
+		.url("/docs/openapi.json", ApiDoc::openapi())
+		.into();
 
 	#[cfg(feature = "scalar-ui")]
-	let router = router.merge(ui::scalar());
+	let router: Router<S> = {
+		use utoipa_scalar::Scalar;
+		let scalar_router: Router<S> = Scalar::with_url("/docs/scalar", ApiDoc::openapi()).into();
+		router.merge(scalar_router)
+	};
 
 	router
 }

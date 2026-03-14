@@ -3,6 +3,7 @@ mod auth;
 mod config;
 mod core;
 mod db;
+mod docs;
 mod error;
 mod guidance;
 mod handlers;
@@ -37,6 +38,7 @@ async fn main() -> Result<()> {
 	tracing::info!("Database connection pool created");
 
 	let app = Router::new()
+		.merge(docs::router())
 		.route("/health", get(handlers::health::health_check))
 		.route("/users/me", get(handlers::users::me))
 		.nest("/auth", auth::router())
