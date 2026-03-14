@@ -2,14 +2,12 @@
 //!
 //! This module defines the OpenAPI specification for the Altair API,
 //! which is auto-generated using the utoipa crate and its axum integration.
-//!
-//! Note: The docs router is temporarily disabled due to type compatibility issues
-//! between utoipa-swagger-ui's Router type and the main application's Router type.
+
+pub mod ui;
 
 use axum::Router;
 use utoipa::openapi::security::{ApiKey, ApiKeyValue, SecurityScheme};
 use utoipa::{Modify, OpenApi};
-use utoipa_swagger_ui::SwaggerUi;
 
 /// Modifier struct to add authentication security scheme to OpenAPI spec.
 ///
@@ -116,26 +114,18 @@ impl Modify for AuthSecurityAddon {
 	)]
 pub struct ApiDoc;
 
-/// Creates a router that serves Swagger UI and OpenAPI documentation.
+/// Creates a router that serves API documentation UIs.
 ///
 /// This function returns an Axum router that provides:
 /// - Swagger UI at `/docs/swagger` (interactive API documentation)
+/// - Scalar UI at `/docs/scalar` (alternative API documentation, when `scalar-ui` feature enabled)
 /// - OpenAPI JSON spec at `/docs/openapi.json` (machine-readable spec)
-///
-/// Note: Currently disabled due to type compatibility issues
-/// between utoipa-swagger-ui's Router type and the main application's Router type.
 #[allow(dead_code)]
 pub fn router() -> Router {
-	let router: Router = SwaggerUi::new("/docs/swagger")
-		.url("/docs/openapi.json", ApiDoc::openapi())
-		.into();
+	let router = ui::swagger();
 
-	// TODO: utoipa-scalar doesn't implement From<Scalar<OpenApi>> for Router
-	// Re-enable when utoipa-scalar adds proper Axum Router support
-	// #[cfg(feature = "scalar-ui")]
-	// {
-	// 	router = Scalar::with_url("/docs/scalar", ApiDoc::openapi()).into();
-	// }
+	#[cfg(feature = "scalar-ui")]
+	let router = router.merge(ui::scalar());
 
 	router
 }
