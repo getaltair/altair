@@ -80,6 +80,11 @@ CREATE TYPE relation_status_v2 AS enum (
 	'expired'
 );
 
+-- Drop indexes that reference old enum values BEFORE altering column types
+DROP INDEX IF EXISTS entity_relations_status_idx;
+DROP INDEX IF EXISTS entity_relations_source_type_idx;
+DROP INDEX IF EXISTS entity_relations_confidence_idx;
+
 -- Alter entity_relations table to use new v2 enum types
 -- Only proceed if table exists
 DO $$
@@ -89,42 +94,44 @@ BEGIN
 		WHERE table_schema = 'public'
 		AND table_name = 'entity_relations'
 	) THEN
+		-- Drop existing defaults before altering column types
+		ALTER TABLE entity_relations ALTER COLUMN from_entity_type DROP DEFAULT;
+		ALTER TABLE entity_relations ALTER COLUMN to_entity_type DROP DEFAULT;
+		ALTER TABLE entity_relations ALTER COLUMN relation_type DROP DEFAULT;
+		ALTER TABLE entity_relations ALTER COLUMN source_type DROP DEFAULT;
+		ALTER TABLE entity_relations ALTER COLUMN status DROP DEFAULT;
+
 		-- Alter columns to use new v2 enum types
 		ALTER TABLE entity_relations
 		ALTER COLUMN from_entity_type TYPE entity_type_v2
 		USING from_entity_type::text::entity_type_v2;
-		
+
 		ALTER TABLE entity_relations
 		ALTER COLUMN to_entity_type TYPE entity_type_v2
 		USING to_entity_type::text::entity_type_v2;
-		
+
 		ALTER TABLE entity_relations
 		ALTER COLUMN relation_type TYPE relation_type_v2
 		USING relation_type::text::relation_type_v2;
-		
+
 		ALTER TABLE entity_relations
 		ALTER COLUMN source_type TYPE source_type_v2
 		USING source_type::text::source_type_v2;
-		
+
 		ALTER TABLE entity_relations
 		ALTER COLUMN status TYPE relation_status_v2
 		USING status::text::relation_status_v2;
-	
-	-- Update column defaults to new v2 enum values
+
+		-- Update column defaults to new v2 enum values
 		ALTER TABLE entity_relations
-		ALTER COLUMN source_type SET DEFAULT 'user';
-	
+		ALTER COLUMN source_type SET DEFAULT 'user'::source_type_v2;
+
 		ALTER TABLE entity_relations
-		ALTER COLUMN status SET DEFAULT 'suggested';
+		ALTER COLUMN status SET DEFAULT 'suggested'::relation_status_v2;
 	END IF;
 END $$;
 
--- Recreate indexes that referenced old enum values
-DROP INDEX IF EXISTS entity_relations_status_idx;
-DROP INDEX IF EXISTS entity_relations_source_type_idx;
-DROP INDEX IF EXISTS entity_relations_confidence_idx;
-
--- Recreate with new v2 enum values
+-- Recreate indexes with new v2 enum values
 CREATE INDEX entity_relations_status_idx_v2 ON entity_relations (status) WHERE status = 'suggested';
 CREATE INDEX entity_relations_source_type_idx_v2 ON entity_relations (source_type) WHERE source_type = 'user';
 CREATE INDEX entity_relations_confidence_idx_v2 ON entity_relations (confidence) WHERE source_type = 'ai';

@@ -67,15 +67,15 @@ pub async fn validate_session_token(
 			session.ip_address,
 			session.user_agent,
 			session.user_id as session_user_id,
-			"user".id as user_id,
-			"user".name as user_name,
-			"user".email as user_email,
-			"user".email_verified as user_email_verified,
-			"user".image as user_image,
-			"user".created_at as user_created_at,
-			"user".updated_at as user_updated_at
+			users.id as user_id,
+			users.display_name as user_name,
+			users.email as user_email,
+			false as user_email_verified,
+			NULL as user_image,
+			users.created_at as user_created_at,
+			users.updated_at as user_updated_at
 		FROM session
-		JOIN "user" ON session.user_id = "user".id
+		JOIN users ON session.user_id = users.id
 		WHERE session.token = $1
 		"#,
 	)
