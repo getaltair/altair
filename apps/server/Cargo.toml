@@ -21,3 +21,7 @@ uuid = { version = "1", features = ["v4", "serde"] }
 slug = "0.1"
 rust_decimal = "1.36"
 contracts = { path = "../../packages/contracts" }
+
+[dev-dependencies]
+tower = { version = "0.5", features = ["util"] }
+http-body-util = "0.1"
