@@ -21,8 +21,16 @@ uuid = { version = "1", features = ["v4", "serde"] }
 slug = "0.1"
 rust_decimal = "1.36"
 contracts = { path = "../../packages/contracts" }
+utoipa = { version = "5.4", features = ["axum_extras", "openapi_extensions", "uuid", "chrono"] }
+utoipa-axum = "0.2"
+utoipa-swagger-ui = { version = "9", features = ["axum"] }
+utoipa-scalar = { version = "0.3", features = ["axum"], optional = true }
 
 [dev-dependencies]
 tower = { version = "0.5", features = ["util"] }
 http-body-util = "0.1"
 bytes = "1"
+
+[features]
+default = []
+scalar-ui = ["utoipa-scalar"]

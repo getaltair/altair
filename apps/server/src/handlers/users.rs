@@ -6,9 +6,10 @@ use axum::{extract::State, response::Json};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::{PgPool, Row};
+use utoipa::ToSchema;
 use uuid::Uuid;
 
-use crate::auth::AuthenticatedUser;
+use crate::auth::{AuthenticatedUser, ErrorResponse};
 
 /// User model representing the custom `users` table.
 ///
@@ -20,7 +21,7 @@ use crate::auth::AuthenticatedUser;
 /// - is_active: Whether the user account is active
 /// - created_at: Account creation timestamp
 /// - updated_at: Last update timestamp
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct AppUser {
 	pub id: Uuid,
 	pub email: String,
@@ -59,6 +60,16 @@ pub struct AppUser {
 ///
 /// These errors are handled automatically by the `AuthenticatedUser` extractor
 /// and database query.
+#[utoipa::path(
+	get,
+	path = "/users/me",
+	responses(
+		(status = 200, description = "User profile", body = AppUser),
+		(status = 401, description = "Unauthorized", body = ErrorResponse),
+		(status = 404, description = "User not found", body = ErrorResponse)
+	),
+	security(("better_auth_session" = []))
+)]
 #[allow(dead_code)] // Wired in Task 20
 #[axum::debug_handler]
 pub async fn me(

@@ -381,14 +381,14 @@ impl UserOwnableTable {
 ///
 /// # Example
 ///
-/// ```no_run
-/// use server::auth::authorization::{can_access_user_owned, UserOwnableTable};
+/// ```ignore
+/// use server::auth::{can_access_user_owned, UserOwnableTable};
 /// use sqlx::PgPool;
 ///
-/// # async fn example(pool: &PgPool, user_id: uuid::Uuid, initiative_id: uuid::Uuid) -> Result<bool, AuthorizationError> {
-/// let can_access = can_access_user_owned(pool, user_id, UserOwnableTable::Initiative, initiative_id).await?;
-/// # Ok(can_access)
-/// # }
+/// async fn example(pool: &PgPool, user_id: uuid::Uuid, initiative_id: uuid::Uuid) -> Result<bool, AuthorizationError> {
+///     let can_access = can_access_user_owned(pool, user_id, UserOwnableTable::Initiative, initiative_id).await?;
+///     Ok(can_access)
+/// }
 /// ```
 pub async fn can_access_user_owned(
 	pool: &PgPool,
@@ -504,15 +504,14 @@ pub async fn can_access_user_owned(
 ///
 /// # Example
 ///
-/// ```no_run
-/// use server::auth::authorization::{require_user_owned, UserOwnableTable};
+/// ```ignore
+/// use server::auth::{require_user_owned, UserOwnableTable};
 /// use sqlx::PgPool;
 ///
-/// # async fn example(pool: &PgPool, user_id: uuid::Uuid, initiative_id: uuid::Uuid) -> Result<(), AuthorizationError> {
-/// require_user_owned(pool, user_id, UserOwnableTable::Initiative, initiative_id).await?;
-/// // User is the owner, continue with the authorized operation
-/// # Ok(())
-/// # }
+/// async fn example(pool: &PgPool, user_id: uuid::Uuid, initiative_id: uuid::Uuid) -> Result<(), AuthorizationError> {
+///     require_user_owned(pool, user_id, UserOwnableTable::Initiative, initiative_id).await?;
+///     Ok(())
+/// }
 /// ```
 pub async fn require_user_owned(
 	pool: &PgPool,
@@ -547,16 +546,19 @@ pub async fn require_user_owned(
 ///
 /// # Example
 ///
-/// ```no_run
+/// ```ignore
 /// use uuid::Uuid;
+/// use sqlx::PgPool;
 ///
-/// let user_id = Uuid::new_v4();
-/// let household_id = Uuid::new_v4();
+/// async fn example(pool: &PgPool) {
+///     let user_id = Uuid::new_v4();
+///     let household_id = Uuid::new_v4();
 ///
-/// match can_access_household(&pool, user_id, household_id).await {
-///     Ok(true) => println!("User can access household"),
-///     Ok(false) => println!("User cannot access household"),
-///     Err(e) => eprintln!("Database error: {}", e),
+///     match can_access_household(pool, user_id, household_id).await {
+///         Ok(true) => println!("User can access household"),
+///         Ok(false) => println!("User cannot access household"),
+///         Err(e) => eprintln!("Database error: {}", e),
+///     }
 /// }
 /// ```
 pub async fn can_access_household(
@@ -601,20 +603,24 @@ pub async fn can_access_household(
 ///
 /// # Example
 ///
-/// ```no_run
+/// ```ignore
 /// use uuid::Uuid;
+/// use sqlx::PgPool;
+/// use server::auth::{HouseholdRole, require_household_role, AuthorizationError};
 ///
-/// let user_id = Uuid::new_v4();
-/// let household_id = Uuid::new_v4();
-/// let min_role = HouseholdRole::Admin;
+/// async fn example(pool: &PgPool) {
+///     let user_id = Uuid::new_v4();
+///     let household_id = Uuid::new_v4();
+///     let min_role = HouseholdRole::Admin;
 ///
-/// match require_household_role(&pool, user_id, household_id, min_role).await {
-///     Ok(actual_role) => println!("User has access with role: {}", actual_role),
-///     Err(AuthorizationError::NotHouseholdMember) => println!("Not a member"),
-///     Err(AuthorizationError::InsufficientRole { required, actual }) => {
-///         println!("Insufficient role: required {:?}, have {:?}", required, actual)
+///     match require_household_role(pool, user_id, household_id, min_role).await {
+///         Ok(actual_role) => println!("User has access with role: {}", actual_role),
+///         Err(AuthorizationError::NotHouseholdMember) => println!("Not a member"),
+///         Err(AuthorizationError::InsufficientRole { required, actual }) => {
+///             println!("Insufficient role: required {:?}, have {:?}", required, actual)
+///         }
+///         Err(e) => eprintln!("Error: {}", e),
 ///     }
-///     Err(e) => eprintln!("Error: {}", e),
 /// }
 /// ```
 pub async fn require_household_role(
@@ -671,13 +677,15 @@ pub async fn require_household_role(
 ///
 /// # Example
 ///
-/// ```no_run
+/// ```ignore
 /// use uuid::Uuid;
+/// use sqlx::PgPool;
+/// use server::auth::AuthorizationError;
 ///
-/// # async fn example(pool: &PgPool, user_id: Uuid, initiative_id: Uuid) -> Result<bool, AuthorizationError> {
-/// let can_access = can_access_initiative(pool, user_id, initiative_id).await?;
-/// # Ok(can_access)
-/// # }
+/// async fn example(pool: &PgPool, user_id: Uuid, initiative_id: Uuid) -> Result<bool, AuthorizationError> {
+///     let can_access = can_access_initiative(pool, user_id, initiative_id).await?;
+///     Ok(can_access)
+/// }
 /// ```
 pub async fn can_access_initiative(
 	pool: &PgPool,
@@ -729,13 +737,15 @@ pub async fn can_access_initiative(
 ///
 /// # Example
 ///
-/// ```no_run
+/// ```ignore
 /// use uuid::Uuid;
+/// use sqlx::PgPool;
+/// use server::auth::AuthorizationError;
 ///
-/// # async fn example(pool: &PgPool, user_id: Uuid, tag_id: Uuid) -> Result<bool, AuthorizationError> {
-/// let can_access = can_access_tag(pool, user_id, tag_id).await?;
-/// # Ok(can_access)
-/// # }
+/// async fn example(pool: &PgPool, user_id: Uuid, tag_id: Uuid) -> Result<bool, AuthorizationError> {
+///     let can_access = can_access_tag(pool, user_id, tag_id).await?;
+///     Ok(can_access)
+/// }
 /// ```
 pub async fn can_access_tag(
 	pool: &PgPool,
@@ -784,14 +794,15 @@ pub async fn can_access_tag(
 ///
 /// # Example
 ///
-/// ```no_run
+/// ```ignore
 /// use uuid::Uuid;
+/// use sqlx::PgPool;
+/// use server::auth::AuthorizationError;
 ///
-/// # async fn example(pool: &PgPool, user_id: Uuid, initiative_id: Uuid) -> Result<(), AuthorizationError> {
-/// require_initiative_access(pool, user_id, initiative_id).await?;
-/// // User can access the initiative, continue with the authorized operation
-/// # Ok(())
-/// # }
+/// async fn example(pool: &PgPool, user_id: Uuid, initiative_id: Uuid) -> Result<(), AuthorizationError> {
+///     require_initiative_access(pool, user_id, initiative_id).await?;
+///     Ok(())
+/// }
 /// ```
 pub async fn require_initiative_access(
 	pool: &PgPool,
