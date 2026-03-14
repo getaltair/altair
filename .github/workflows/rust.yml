@@ -46,8 +46,8 @@ jobs:
       - name: Build
         run: cargo build -p server -p worker
 
-      - name: Test
-        run: cargo test -p server -p worker
+      - name: Test (unit tests only)
+        run: cargo test -p server -p worker --lib
 
   integration_tests:
     runs-on: ubuntu-latest
@@ -90,4 +90,4 @@ jobs:
 
       - name: Test integration
         working-directory: ./apps/server
-        run: cargo test --test '*_integration'
+        run: cargo test --tests
