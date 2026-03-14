@@ -9,6 +9,7 @@ use utoipa::ToSchema;
 use crate::error::AppError;
 
 #[derive(Serialize, ToSchema)]
+#[allow(dead_code)]
 pub struct HealthResponse {
 	status: String,
 	database: String,

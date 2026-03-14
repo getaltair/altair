@@ -8,10 +8,7 @@ use utoipa::openapi::security::{ApiKey, ApiKeyValue, SecurityScheme};
 use utoipa::{Modify, OpenApi};
 use utoipa_swagger_ui::SwaggerUi;
 
-/// Modifier struct to add authentication security scheme to OpenAPI spec.
-///
-/// This implements the `Modify` trait to customize the OpenAPI components
-/// by adding a cookie-based API key security scheme for Better-Auth session tokens.
+#[allow(dead_code)]
 struct AuthSecurityAddon;
 
 impl Modify for AuthSecurityAddon {
@@ -107,6 +104,7 @@ impl Modify for AuthSecurityAddon {
 		),
 		modifiers(&AuthSecurityAddon)
 	)]
+#[allow(dead_code)]
 pub struct ApiDoc;
 
 /// Creates a router that serves API documentation UIs.
