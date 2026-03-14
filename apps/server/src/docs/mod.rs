@@ -82,6 +82,8 @@ impl Modify for AuthSecurityAddon {
 		components(schemas(
 		crate::handlers::health::HealthResponse,
 		crate::handlers::users::AppUser,
+		crate::auth::ErrorResponse,
+		crate::auth::models::User,
 		crate::core::handlers::households::{Household, HouseholdMember},
 		crate::core::handlers::households::CreateHouseholdRequest,
 		crate::core::handlers::households::UpdateHouseholdRequest,

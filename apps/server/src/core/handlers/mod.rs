@@ -4,9 +4,11 @@
 //! - households: Household management
 //! - initiatives: Initiative and goal tracking
 //! - tags: Tag categorization
+//! - relations: Cross-domain entity relationships
 
 pub mod households;
 pub mod initiatives;
+pub mod relations;
 pub mod tags;
 
 /// Combine all core domain handlers into a single router.
@@ -19,4 +21,5 @@ pub fn router() -> axum::Router<sqlx::PgPool> {
 		.nest("/households", households::routes())
 		.nest("/initiatives", initiatives::routes())
 		.nest("/tags", tags::routes())
+		.nest("/relations", relations::routes())
 }

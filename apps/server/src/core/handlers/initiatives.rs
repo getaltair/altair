@@ -71,6 +71,17 @@ pub struct UpdateInitiativeRequest {
 /// - An active member of the initiative's household (via `household_memberships`)
 ///
 /// Soft-deleted initiatives (`deleted_at IS NOT NULL`) are excluded.
+#[utoipa::path(
+	get,
+	path = "/core/initiatives",
+	tag = "initiatives",
+	responses(
+		(status = 200, description = "List of initiatives accessible to the authenticated user", body = Vec<Initiative>),
+		(status = 401, description = "Unauthorized - authentication required")
+	),
+	security(("better_auth_session" = [])),
+	tag = "initiatives"
+)]
 #[axum::debug_handler]
 pub async fn list(
 	State(pool): State<PgPool>,
@@ -102,6 +113,22 @@ pub async fn list(
 /// - Initiative doesn't exist
 /// - Initiative is soft-deleted
 /// - User is neither owner nor active household member
+#[utoipa::path(
+	get,
+	path = "/core/initiatives/{id}",
+	tag = "initiatives",
+	params(
+		("id" = Uuid, Path, description = "Initiative ID")
+	),
+	responses(
+		(status = 200, description = "Initiative found successfully", body = Initiative),
+		(status = 401, description = "Unauthorized - authentication required"),
+		(status = 403, description = "Forbidden - user does not have access to this initiative"),
+		(status = 404, description = "Initiative not found or access denied")
+	),
+	security(("better_auth_session" = [])),
+	tag = "initiatives"
+)]
 #[axum::debug_handler]
 pub async fn get_initiative(
 	State(pool): State<PgPool>,
@@ -131,6 +158,19 @@ pub async fn get_initiative(
 ///
 /// Creates a single initiative record with the authenticated user as owner.
 /// If a household_id is provided, validates that the user is an active member.
+#[utoipa::path(
+	post,
+	path = "/core/initiatives",
+	tag = "initiatives",
+	request_body = CreateInitiativeRequest,
+	responses(
+		(status = 201, description = "Initiative created successfully", body = Initiative),
+		(status = 400, description = "Bad request - invalid household or data"),
+		(status = 401, description = "Unauthorized - authentication required")
+	),
+	security(("better_auth_session" = [])),
+	tag = "initiatives"
+)]
 #[axum::debug_handler]
 pub async fn create(
 	State(pool): State<PgPool>,
@@ -175,6 +215,23 @@ pub async fn create(
 ///
 /// Only the initiative owner can update the initiative.
 /// Soft-deleted initiatives cannot be updated.
+#[utoipa::path(
+	patch,
+	path = "/core/initiatives/{id}",
+	tag = "initiatives",
+	params(
+		("id" = Uuid, Path, description = "Initiative ID")
+	),
+	request_body = UpdateInitiativeRequest,
+	responses(
+		(status = 200, description = "Initiative updated successfully", body = Initiative),
+		(status = 401, description = "Unauthorized - authentication required"),
+		(status = 403, description = "Forbidden - only initiative owner can update"),
+		(status = 404, description = "Initiative not found")
+	),
+	security(("better_auth_session" = [])),
+	tag = "initiatives"
+)]
 #[axum::debug_handler]
 #[allow(unused_assignments)]
 pub async fn update(
@@ -271,6 +328,22 @@ pub async fn update(
 ///
 /// Only the initiative owner can delete the initiative.
 /// Sets `deleted_at = NOW()` instead of removing the record.
+#[utoipa::path(
+	delete,
+	path = "/core/initiatives/{id}",
+	tag = "initiatives",
+	params(
+		("id" = Uuid, Path, description = "Initiative ID")
+	),
+	responses(
+		(status = 204, description = "Initiative deleted successfully (soft delete)"),
+		(status = 401, description = "Unauthorized - authentication required"),
+		(status = 403, description = "Forbidden - only initiative owner can delete"),
+		(status = 404, description = "Initiative not found")
+	),
+	security(("better_auth_session" = [])),
+	tag = "initiatives"
+)]
 #[axum::debug_handler]
 pub async fn delete_initiative(
 	State(pool): State<PgPool>,
