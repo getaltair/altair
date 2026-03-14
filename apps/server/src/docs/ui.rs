@@ -28,6 +28,7 @@ use super::ApiDoc;
 ///
 /// let app = Router::new().merge(swagger());
 /// ```
+#[allow(dead_code)]
 pub fn swagger() -> Router {
 	SwaggerUi::new("/docs/swagger")
 		.url("/docs/openapi.json", ApiDoc::openapi())
@@ -45,6 +46,7 @@ pub fn swagger() -> Router {
 /// # Route
 /// Serves Scalar UI at `/docs/scalar` using the OpenAPI spec from `ApiDoc`.
 #[cfg(feature = "scalar-ui")]
+#[allow(dead_code)]
 pub fn scalar() -> Router {
 	use utoipa_scalar::Scalar;
 	use utoipa_scalar::Servable;

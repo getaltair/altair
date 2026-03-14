@@ -91,7 +91,6 @@ impl Modify for AuthSecurityAddon {
 		crate::core::handlers::tags::Tag,
 		crate::core::handlers::tags::CreateTagRequest,
 		crate::core::handlers::tags::UpdateTagRequest,
-		crate::core::handlers::relations::EntityRelation,
 		crate::core::handlers::relations::CreateRelationRequest,
 		crate::core::handlers::relations::UpdateStatusRequest,
 		crate::core::handlers::relations::ListRelationsQuery,

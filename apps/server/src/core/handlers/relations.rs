@@ -23,7 +23,7 @@ use utoipa::ToSchema;
 use uuid::Uuid;
 
 /// Entity relation model representing the `entity_relations` table.
-#[derive(Debug, Clone, sqlx::FromRow, Serialize, ToSchema)]
+#[derive(Debug, Clone, sqlx::FromRow, Serialize)]
 pub struct EntityRelation {
 	pub id: Uuid,
 	pub from_entity_type: String,
@@ -165,7 +165,7 @@ async fn can_access_relation(
 	path = "/core/relations",
 	tag = "Relations",
 	responses(
-		(status = 200, description = "List of accessible relations", body = Vec<EntityRelation>),
+		(status = 200, description = "List of accessible relations"),
 		(status = 401, description = "Unauthorized - invalid session token", body = crate::auth::ErrorResponse)
 	),
 	params(ListRelationsQuery),
@@ -278,7 +278,7 @@ pub async fn list(
 	path = "/core/relations/{id}",
 	tag = "Relations",
 	responses(
-		(status = 200, description = "Relation found", body = EntityRelation),
+		(status = 200, description = "Relation found"),
 		(status = 404, description = "Relation not found", body = crate::auth::ErrorResponse),
 		(status = 401, description = "Unauthorized - invalid session token", body = crate::auth::ErrorResponse)
 	),
@@ -328,7 +328,7 @@ pub async fn get_single(
 	tag = "Relations",
 	request_body = CreateRelationRequest,
 	responses(
-		(status = 201, description = "Relation created successfully", body = EntityRelation),
+		(status = 201, description = "Relation created successfully"),
 		(status = 409, description = "Duplicate relation exists", body = crate::auth::ErrorResponse),
 		(status = 400, description = "Invalid request parameters", body = crate::auth::ErrorResponse),
 		(status = 401, description = "Unauthorized - invalid session token", body = crate::auth::ErrorResponse)
@@ -466,7 +466,7 @@ pub async fn delete_relation(
 	tag = "Relations",
 	request_body = UpdateStatusRequest,
 	responses(
-		(status = 200, description = "Status updated successfully", body = EntityRelation),
+		(status = 200, description = "Status updated successfully"),
 		(status = 404, description = "Relation not found", body = crate::auth::ErrorResponse),
 		(status = 403, description = "Forbidden - not relation owner", body = crate::auth::ErrorResponse),
 		(status = 401, description = "Unauthorized - invalid session token", body = crate::auth::ErrorResponse)
