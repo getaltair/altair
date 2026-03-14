@@ -130,11 +130,11 @@ def generate_rust(
     streams = stream_data["autoSubscribed"] + stream_data["onDemand"]
 
     def enum_block(name: str, values: list[str]) -> str:
-        body = ",\n    ".join(to_rust_enum_name(v) for v in values)
-        return f"""#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq, Eq, Hash)]
+        body = ",\n\t".join(to_rust_enum_name(v) for v in values)
+        return f"""#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 #[serde(rename_all = "snake_case")]
 pub enum {name} {{
-    {body},
+\t{body},
 }}"""
 
     return (

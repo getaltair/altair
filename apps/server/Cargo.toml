@@ -16,6 +16,8 @@ anyhow = "1.0"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["json", "env-filter"] }
 chrono = { version = "0.4", features = ["serde"] }
-sqlx = { version = "0.8.6", features = ["postgres", "sqlite", "runtime-tokio", "tls-native-tls", "uuid", "chrono"] }
+sqlx = { version = "0.8.6", features = ["postgres", "sqlite", "runtime-tokio", "tls-native-tls", "uuid", "chrono", "rust_decimal"] }
 uuid = { version = "1", features = ["v4", "serde"] }
 slug = "0.1"
+rust_decimal = "1.36"
+contracts = { path = "../../packages/contracts" }

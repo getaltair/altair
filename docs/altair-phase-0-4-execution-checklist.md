@@ -695,14 +695,21 @@ Stand up Axum server with auth, config, core APIs, and reusable authorization bo
 
 ### Checklist
 
-- [ ] Add helper for user-owned records
-- [ ] Add helper for household membership checks
-- [ ] Add helper for initiative visibility
-- [ ] Add helper for attachment ownership/scope
+- [x] Add helper for user-owned records
+- [x] Add helper for household membership checks
+- [x] Add helper for initiative visibility
+- [x] Add helper for attachment ownership/scope
 
 ### Acceptance Criteria
 
 - reusable authorization checks exist and are not duplicated in every handler
+
+> **Implemented in:** `apps/server/src/auth/authorization.rs`
+> - `can_access_user_owned()` / `require_user_owned()` — generic ownership checks for 9 table types
+> - `can_access_household()` / `require_household_role()` — household membership with role hierarchy
+> - `can_access_initiative()` / `require_initiative_access()` — dual-path (owner OR member)
+> - `can_access_attachment()` / `require_attachment_access()` — multi-path with entity_relations support
+> - Plus `can_access_tag()` for tag visibility
 
 ---
 
@@ -713,15 +720,23 @@ Stand up Axum server with auth, config, core APIs, and reusable authorization bo
 
 ### Checklist
 
-- [ ] `GET /users/me`
-- [ ] household list/detail endpoints
-- [ ] household membership list endpoints
-- [ ] initiatives CRUD (starter)
-- [ ] tags CRUD (starter)
+- [x] `GET /users/me`
+- [x] household list/detail endpoints
+- [x] household membership list endpoints
+- [x] initiatives CRUD (starter)
+- [x] tags CRUD (starter)
 
 ### Acceptance Criteria
 
 - authenticated user can fetch personal/household core data from seed DB
+
+> **Implemented:** 17 endpoints total
+> - Users: `GET /users/me`
+> - Households: `GET/POST/PATCH/DELETE /core/households` + `GET /core/households/:id/memberships`
+> - Initiatives: Full CRUD at `/core/initiatives`
+> - Tags: Full CRUD at `/core/tags`
+>
+> All routes wired in `main.rs`, handlers in `core/handlers/`
 
 ---
 
@@ -785,8 +800,8 @@ Stand up Axum server with auth, config, core APIs, and reusable authorization bo
 
 - [x] Server boots locally
 - [x] Auth works
-- [ ] Core APIs work on seeded DB
-- [ ] Authorization helpers exist
+- [x] Core APIs work on seeded DB
+- [x] Authorization helpers exist
 - [ ] Integration tests are green
 
 ---
@@ -1013,8 +1028,8 @@ Validate baseline Postgres → SQLite sync for personal and household data.
 - [x] P3-001
 - [x] P3-002
 - [x] P3-003
-- [ ] P3-004
-- [ ] P3-005
+- [x] P3-004
+- [x] P3-005
 - [ ] P3-006
 - [ ] P3-007
 - [ ] P3-008
@@ -1086,7 +1101,7 @@ Only after auth/authorization foundation exists.
 
 ## By end of Phase 3
 
-- [ ] auth + core server works
+- [x] auth + core server works
 - [ ] authorization boundaries tested
 - [ ] relation APIs work
 
