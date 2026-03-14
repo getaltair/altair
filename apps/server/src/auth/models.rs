@@ -5,6 +5,7 @@
 
 use chrono::{DateTime, Utc};
 use serde::Serialize;
+use utoipa::ToSchema;
 use uuid::Uuid;
 
 /// User model representing the `user` table from Better-Auth.
@@ -17,7 +18,7 @@ use uuid::Uuid;
 /// - image: Profile image URL (optional)
 /// - created_at: Account creation timestamp
 /// - updated_at: Last update timestamp
-#[derive(Debug, Clone, sqlx::FromRow, Serialize)]
+#[derive(Debug, Clone, sqlx::FromRow, Serialize, ToSchema)]
 #[allow(dead_code)] // TODO(P3-004): Remove when household membership uses this
 pub struct User {
 	pub id: Uuid,

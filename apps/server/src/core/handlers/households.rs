@@ -17,10 +17,11 @@ use axum::{
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::{PgPool, Row, Transaction};
+use utoipa::ToSchema;
 use uuid::Uuid;
 
 /// Household model representing the `households` table.
-#[derive(Debug, Clone, sqlx::FromRow, Serialize)]
+#[derive(Debug, Clone, sqlx::FromRow, Serialize, ToSchema)]
 pub struct Household {
 	pub id: Uuid,
 	pub owner_user_id: Uuid,
@@ -34,7 +35,7 @@ pub struct Household {
 
 /// Household membership model representing the `household_memberships` table.
 #[allow(dead_code)]
-#[derive(Debug, Clone, sqlx::FromRow, Serialize)]
+#[derive(Debug, Clone, sqlx::FromRow, Serialize, ToSchema)]
 pub struct HouseholdMembership {
 	pub id: Uuid,
 	pub household_id: Uuid,
@@ -46,7 +47,7 @@ pub struct HouseholdMembership {
 }
 
 /// Household member with user details for membership listing.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, ToSchema)]
 pub struct HouseholdMember {
 	pub id: Uuid,
 	pub user_id: Uuid,
@@ -59,7 +60,7 @@ pub struct HouseholdMember {
 }
 
 /// Request body for creating a new household.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct CreateHouseholdRequest {
 	pub name: String,
 	pub slug: Option<String>,
@@ -67,7 +68,7 @@ pub struct CreateHouseholdRequest {
 }
 
 /// Request body for updating a household.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct UpdateHouseholdRequest {
 	pub name: Option<String>,
 	pub slug: Option<String>,

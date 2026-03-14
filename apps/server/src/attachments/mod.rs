@@ -2,17 +2,37 @@
 //!
 //! Handles file metadata, upload handling, and attachment references.
 
-use axum::Router;
+use axum::{Router, routing::get};
 use sqlx::PgPool;
 
 /// Create the router for this module.
 ///
 /// Routes are mounted at `/attachments/*` in the main router.
 pub fn router() -> Router<PgPool> {
-	Router::new()
-	// Future routes will be added here:
-	// .route("/", post(upload_attachment))
-	// .route("/:id", get(get_attachment))
+	Router::new().route("/", get(list_attachments))
+}
+
+/// Placeholder: List all attachments.
+///
+/// **NOT IMPLEMENTED** - This is a placeholder endpoint for future implementation.
+///
+/// Planned routes for attachments module:
+/// - GET /attachments - List attachments (placeholder)
+/// - POST /attachments - Upload attachment
+/// - GET /attachments/:id - Get attachment metadata
+/// - GET /attachments/:id/download - Download attachment file
+/// - DELETE /attachments/:id - Delete attachment
+#[utoipa::path(
+	get,
+	path = "/attachments",
+	tag = "Not Implemented",
+	responses(
+		(status = 501, description = "Not Implemented - This endpoint is a placeholder for future implementation")
+	),
+	description = "Placeholder endpoint - not yet implemented. This will list all attachments in the future."
+)]
+pub async fn list_attachments() -> &'static str {
+	"Not Implemented"
 }
 
 #[cfg(test)]
