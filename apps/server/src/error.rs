@@ -25,6 +25,9 @@ pub enum AppError {
 
 	#[error("Bad request: {0}")]
 	BadRequest(String),
+
+	#[error("Conflict: {0}")]
+	Conflict(String),
 }
 
 impl IntoResponse for AppError {
@@ -51,6 +54,7 @@ impl IntoResponse for AppError {
 				"Internal server error".to_string(),
 			),
 			AppError::BadRequest(msg) => (StatusCode::BAD_REQUEST, msg),
+			AppError::Conflict(msg) => (StatusCode::CONFLICT, msg),
 		};
 
 		let body = json!({ "error": error_message });

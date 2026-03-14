@@ -1,3 +1,3 @@
 [workspace]
 resolver = "3"
-members = ["apps/server", "apps/worker", "apps/web/src-tauri"]
+members = ["apps/server", "apps/worker", "apps/web/src-tauri", "packages/contracts"]
