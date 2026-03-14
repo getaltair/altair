@@ -67,7 +67,7 @@ mod tests {
 							"to_entity_type": "initiative",
 							"to_entity_id": initiative2,
 							"relation_type": "references",
-							"source_type": "manual"
+							"source_type": "ai"
 						})
 						.to_string()
 						.into_bytes()
@@ -87,8 +87,8 @@ mod tests {
 
 		// Verify relation_type
 		assert_eq!(relation["relation_type"], "references");
-		// source_type "manual" means status should be "suggested" (not "user")
-		assert_eq!(relation["source_type"], "manual");
+		// source_type "ai" means status should be "suggested" (not "user")
+		assert_eq!(relation["source_type"], "ai");
 		assert_eq!(relation["status"], "suggested");
 		assert_eq!(relation["from_entity_id"], initiative1.to_string());
 		assert_eq!(relation["to_entity_id"], initiative2.to_string());
@@ -254,7 +254,7 @@ mod tests {
 							"from_entity_id": initiative1,
 							"to_entity_type": "initiative",
 							"to_entity_id": initiative2,
-							"relation_type": "relates_to"  // Same as create_test_relation uses
+							"relation_type": "related_to"
 						})
 						.to_string()
 						.into_bytes()

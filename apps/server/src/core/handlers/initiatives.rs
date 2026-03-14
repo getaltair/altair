@@ -17,7 +17,7 @@ use axum::{
 	response::Json,
 	routing::{delete, get, patch, post},
 };
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, NaiveDate, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;
@@ -32,8 +32,8 @@ pub struct Initiative {
 	pub slug: Option<String>,
 	pub description: Option<String>,
 	pub status: String,
-	pub start_date: Option<DateTime<Utc>>,
-	pub target_date: Option<DateTime<Utc>>,
+	pub start_date: Option<NaiveDate>,
+	pub target_date: Option<NaiveDate>,
 	pub created_at: DateTime<Utc>,
 	pub updated_at: DateTime<Utc>,
 	pub deleted_at: Option<DateTime<Utc>>,
@@ -46,8 +46,8 @@ pub struct CreateInitiativeRequest {
 	pub slug: Option<String>,
 	pub description: Option<String>,
 	pub status: Option<String>,
-	pub start_date: Option<DateTime<Utc>>,
-	pub target_date: Option<DateTime<Utc>>,
+	pub start_date: Option<NaiveDate>,
+	pub target_date: Option<NaiveDate>,
 	pub household_id: Option<Uuid>,
 }
 
@@ -58,8 +58,8 @@ pub struct UpdateInitiativeRequest {
 	pub slug: Option<String>,
 	pub description: Option<String>,
 	pub status: Option<String>,
-	pub start_date: Option<DateTime<Utc>>,
-	pub target_date: Option<DateTime<Utc>>,
+	pub start_date: Option<NaiveDate>,
+	pub target_date: Option<NaiveDate>,
 	pub household_id: Option<Uuid>,
 }
 
@@ -78,7 +78,7 @@ pub async fn list(
 	let initiatives = sqlx::query_as::<_, Initiative>(
 		r#"
 		SELECT DISTINCT i.id, i.owner_user_id, i.household_id, i.title, i.slug, i.description,
-		       i.status, i.start_date, i.target_date, i.created_at, i.updated_at, i.deleted_at
+		       i.status::text as status, i.start_date, i.target_date, i.created_at, i.updated_at, i.deleted_at
 		FROM initiatives i
 		LEFT JOIN household_memberships hm ON
 			hm.household_id = i.household_id AND
@@ -116,7 +116,11 @@ pub async fn get_initiative(
 	}
 
 	let initiative = sqlx::query_as::<_, Initiative>(
-		"SELECT * FROM initiatives WHERE id = $1 AND deleted_at IS NULL",
+		r#"
+		SELECT id, owner_user_id, household_id, title, slug, description,
+		       status::text as status, start_date, target_date, created_at, updated_at, deleted_at
+		FROM initiatives WHERE id = $1 AND deleted_at IS NULL
+		"#,
 	)
 	.bind(id)
 	.fetch_optional(&pool)
