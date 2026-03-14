@@ -23,7 +23,7 @@ use utoipa::ToSchema;
 use uuid::Uuid;
 
 /// Entity relation model representing the `entity_relations` table.
-#[derive(Debug, Clone, sqlx::FromRow, Serialize)]
+#[derive(Debug, Clone, sqlx::FromRow, Serialize, ToSchema)]
 pub struct EntityRelation {
 	pub id: Uuid,
 	pub from_entity_type: String,
@@ -33,7 +33,11 @@ pub struct EntityRelation {
 	pub relation_type: String,
 	pub source_type: String,
 	pub status: String,
+	/// Confidence score for inferred relations (0.0 to 1.0)
+	#[schema(value_type = Option<f64>)]
 	pub confidence: Option<Decimal>,
+	/// JSON evidence for inferred relations (uses serde_json::Value for OpenAPI schema)
+	#[schema(value_type = Option<serde_json::Value>)]
 	pub evidence: Option<sqlx::types::Json<serde_json::Value>>,
 	pub owner_user_id: Uuid,
 	pub household_id: Option<Uuid>,

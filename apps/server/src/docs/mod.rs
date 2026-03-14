@@ -3,8 +3,6 @@
 //! This module defines the OpenAPI specification for the Altair API,
 //! which is auto-generated using the utoipa crate and its axum integration.
 
-pub mod ui;
-
 use axum::Router;
 use utoipa::openapi::security::{ApiKey, ApiKeyValue, SecurityScheme};
 use utoipa::{Modify, OpenApi};
@@ -91,6 +89,7 @@ impl Modify for AuthSecurityAddon {
 		crate::core::handlers::tags::Tag,
 		crate::core::handlers::tags::CreateTagRequest,
 		crate::core::handlers::tags::UpdateTagRequest,
+		crate::core::handlers::relations::EntityRelation,
 		crate::core::handlers::relations::CreateRelationRequest,
 		crate::core::handlers::relations::UpdateStatusRequest,
 		crate::core::handlers::relations::ListRelationsQuery,
