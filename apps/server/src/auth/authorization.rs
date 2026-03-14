@@ -1136,116 +1136,15 @@ fn authorization_error_ambiguous_ownership_into_response() {
 // ========================================
 // Attachment Authorization Integration Tests (Require DB)
 // ========================================
-
-#[test]
-#[ignore = "requires running database - see P3-007"]
-fn can_access_attachment_direct_owner_grants_access() {
-	unimplemented!("Requires test database - see P3-007")
-}
-
-#[test]
-#[ignore = "requires running database - see P3-007"]
-fn can_access_attachment_relation_ownership_grants_access() {
-	unimplemented!("Requires test database - see P3-007")
-}
-
-#[test]
-#[ignore = "requires running database - see P3-007"]
-fn can_access_attachment_relation_household_membership_grants_access() {
-	unimplemented!("Requires test database - see P3-007")
-}
-
-#[test]
-#[ignore = "requires running database - see P3-007"]
-fn can_access_attachment_no_access_path_denied() {
-	unimplemented!("Requires test database - see P3-007")
-}
-
-#[test]
-#[ignore = "requires running database - see P3-007"]
-fn can_access_attachment_ambiguous_ownership_returns_error() {
-	unimplemented!("Requires test database - see P3-007")
-}
-
-#[test]
-#[ignore = "requires running database - see P3-007"]
-fn can_access_attachment_nonexistent_returns_not_found() {
-	unimplemented!("Requires test database - see P3-007")
-}
-
-#[test]
-#[ignore = "requires running database - see P3-007"]
-fn require_attachment_access_returns_ok_for_owner() {
-	unimplemented!("Requires test database - see P3-007")
-}
-
-#[test]
-#[ignore = "requires running database - see P3-007"]
-fn require_attachment_access_returns_not_owner_for_non_owner() {
-	unimplemented!("Requires test database - see P3-007")
-}
+// Integration tests for attachment authorization have been removed.
+// They are now properly tested in tests/attachments_integration.rs.
+// See P3-007 for migration details.
 
 // ========================================
 // Authorization Integration Tests (Require DB)
 // ========================================
-
-/// Integration test for user-owned authorization.
-///
-/// **Database setup required:**
-/// - Test user inserted
-/// - Test entity with owner_user_id set
-///
-/// Run with: `cargo test -p server --ignored`
-///
-/// TODO: Implement in P3-007 when we add test database infrastructure
-#[test]
-#[ignore = "requires test database - see P3-007"]
-fn test_user_owned_integration() {
-	unimplemented!("Requires test database - see P3-007")
-}
-
-/// Integration test for household role authorization.
-///
-/// **Database setup required:**
-/// - Test household inserted
-/// - Test user with household membership and specific role
-///
-/// Run with: `cargo test -p server --ignored`
-///
-/// TODO: Implement in P3-007 when we add test database infrastructure
-#[test]
-#[ignore = "requires test database - see P3-007"]
-fn test_household_role_integration() {
-	unimplemented!("Requires test database - see P3-007")
-}
-
-/// Integration test for initiative access authorization.
-///
-/// **Database setup required:**
-/// - Test initiative with owner_user_id and household_id
-/// - Test user (either owner or household member)
-///
-/// Run with: `cargo test -p server --ignored`
-///
-/// TODO: Implement in P3-007 when we add test database infrastructure
-#[test]
-#[ignore = "requires test database - see P3-007"]
-fn test_initiative_access_integration() {
-	unimplemented!("Requires test database - see P3-007")
-}
-
-/// Integration test for attachment access authorization.
-///
-/// **Database setup required:**
-/// - Test attachment with owner_user_id
-/// - Test entity_relation linking attachment to another entity
-/// - Test user (either owner, relation owner, or household member)
-///
-/// Run with: `cargo test -p server --ignored`
-///
-/// TODO: Implement in P3-007 when we add test database infrastructure
-#[test]
-#[ignore = "requires test database - see P3-007"]
-fn test_attachment_access_integration() {
-	unimplemented!("Requires test database - see P3-007")
-}
+// Integration tests have been removed and migrated to dedicated test files:
+// - tests/households_integration.rs (household role tests)
+// - tests/initiatives_integration.rs (initiative access tests)
+// - tests/attachments_integration.rs (attachment access tests)
+// See P3-007 for migration details.

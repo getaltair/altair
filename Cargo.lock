@@ -3816,6 +3816,7 @@ dependencies = [
  "anyhow",
  "axum",
  "axum-extra",
+ "bytes",
  "chrono",
  "contracts",
  "http-body-util",
