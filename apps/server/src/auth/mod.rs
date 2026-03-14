@@ -4,7 +4,7 @@
 
 mod authorization;
 mod extractor;
-mod handlers;
+pub mod handlers;
 mod models;
 mod session;
 
@@ -18,7 +18,7 @@ pub use authorization::{
 #[allow(unused_imports)]
 pub use extractor::AuthenticatedUser;
 #[allow(unused_imports)]
-pub use handlers::ErrorResponse;
+pub use handlers::{ErrorResponse, me};
 #[allow(unused_imports)]
 pub use models::{Session, User};
 #[allow(unused_imports)]
