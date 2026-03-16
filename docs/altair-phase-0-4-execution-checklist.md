@@ -705,6 +705,7 @@ Stand up Axum server with auth, config, core APIs, and reusable authorization bo
 - reusable authorization checks exist and are not duplicated in every handler
 
 > **Implemented in:** `apps/server/src/auth/authorization.rs`
+>
 > - `can_access_user_owned()` / `require_user_owned()` — generic ownership checks for 9 table types
 > - `can_access_household()` / `require_household_role()` — household membership with role hierarchy
 > - `can_access_initiative()` / `require_initiative_access()` — dual-path (owner OR member)
@@ -731,6 +732,7 @@ Stand up Axum server with auth, config, core APIs, and reusable authorization bo
 - authenticated user can fetch personal/household core data from seed DB
 
 > **Implemented:** 17 endpoints total
+>
 > - Users: `GET /users/me`
 > - Households: `GET/POST/PATCH/DELETE /core/households` + `GET /core/households/:id/memberships`
 > - Initiatives: Full CRUD at `/core/initiatives`
@@ -747,11 +749,11 @@ Stand up Axum server with auth, config, core APIs, and reusable authorization bo
 
 ### Checklist
 
-- [ ] create relation endpoint
-- [ ] list relations by entity endpoint
-- [ ] accept relation endpoint
-- [ ] dismiss/reject relation endpoint
-- [ ] validate entity type/relation type inputs against contracts
+- [x] create relation endpoint
+- [x] list relations by entity endpoint
+- [x] accept relation endpoint
+- [x] dismiss/reject relation endpoint
+- [x] validate entity type/relation type inputs against contracts
 
 ### Acceptance Criteria
 
@@ -766,11 +768,11 @@ Stand up Axum server with auth, config, core APIs, and reusable authorization bo
 
 ### Checklist
 
-- [ ] auth success/failure tests
-- [ ] users/me access test
-- [ ] household membership boundary test
-- [ ] initiative visibility test
-- [ ] relation create/list authorization tests
+- [x] auth success/failure tests
+- [x] users/me access test
+- [x] household membership boundary test
+- [x] initiative visibility test
+- [x] relation create/list authorization tests
 
 ### Acceptance Criteria
 
@@ -785,10 +787,10 @@ Stand up Axum server with auth, config, core APIs, and reusable authorization bo
 
 ### Checklist
 
-- [ ] document auth endpoints
-- [ ] document core entity payloads
-- [ ] document relation payloads
-- [ ] note which APIs are provisional
+- [x] document auth endpoints
+- [x] document core entity payloads
+- [x] document relation payloads
+- [x] note which APIs are provisional
 
 ### Acceptance Criteria
 
@@ -1030,9 +1032,9 @@ Validate baseline Postgres → SQLite sync for personal and household data.
 - [x] P3-003
 - [x] P3-004
 - [x] P3-005
-- [ ] P3-006
-- [ ] P3-007
-- [ ] P3-008
+- [x] P3-006
+- [x] P3-007
+- [x] P3-008
 
 ## Block 5
 
@@ -1102,8 +1104,8 @@ Only after auth/authorization foundation exists.
 ## By end of Phase 3
 
 - [x] auth + core server works
-- [ ] authorization boundaries tested
-- [ ] relation APIs work
+- [x] authorization boundaries tested
+- [x] relation APIs work
 
 ## By end of Phase 4
 
