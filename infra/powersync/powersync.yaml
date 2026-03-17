@@ -13,11 +13,11 @@
 # See: docs/sync/altair-powersync-sync-spec.md
 # See: docs/sync/powersync-streams.example.yaml
 
-# Service configuration
-service:
-  port: 8080
-  # PowerSync Docker image version: journeyapps/powersync-service:0.2.0
-  # (pinned version for Task 3 compose.yaml — do NOT use :latest)
+# Service port
+port: 8080
+
+# PowerSync Docker image version: journeyapps/powersync-service:0.2.0
+# (pinned version for Task 3 compose.yaml — do NOT use :latest)
 
 # Replication: Source database (PostgreSQL with logical replication)
 replication:
