@@ -1,3 +1,6 @@
+# DEPRECATED: This compose file is superseded by the root compose.yaml
+# Use `docker compose -f ../../compose.yaml up -d` from the project root
+# or `bun run db:start` from this directory (which now references root compose)
 services:
   db:
     image: postgres
