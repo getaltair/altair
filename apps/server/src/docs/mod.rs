@@ -117,7 +117,9 @@ pub fn router<S>() -> Router<S>
 where
 	S: Clone + Send + Sync + 'static,
 {
-	let router: Router<S> = SwaggerUi::new("/docs/swagger").into();
+	let router: Router<S> = SwaggerUi::new("/docs/swagger")
+		.url("/docs/openapi.json", ApiDoc::openapi())
+		.into();
 
 	#[cfg(feature = "scalar-ui")]
 	let router: Router<S> = {
