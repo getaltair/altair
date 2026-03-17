@@ -1,0 +1,60 @@
+# PowerSync Service Configuration
+#
+# This configuration connects PowerSync to:
+# - Source database: PostgreSQL (local) for replication
+# - Storage database: PostgreSQL (powersync_storage) for sync state
+# - Sync rules: Edition 3 format with 10 streams (6 auto, 4 on-demand)
+#
+# Environment variables (required):
+#   PS_DATABASE_URI      - Source database connection string
+#   PS_STORAGE_URI       - Storage database connection string
+#   PS_ADMIN_TOKEN       - Dev admin token for diagnostics API
+#
+# See: docs/sync/altair-powersync-sync-spec.md
+# See: docs/sync/powersync-streams.example.yaml
+
+# Service configuration
+service:
+  port: 8080
+  # PowerSync Docker image version: journeyapps/powersync-service:0.2.0
+  # (pinned version for Task 3 compose.yaml — do NOT use :latest)
+
+# Replication: Source database (PostgreSQL with logical replication)
+replication:
+  connections:
+    - type: postgresql
+      uri: ${PS_DATABASE_URI}
+      sslmode: disable
+      # Expected format: postgresql://root:mysecretpassword@postgres:5432/local
+      # (set in compose.yaml environment)
+
+# Storage: PowerSync state database (PostgreSQL)
+storage:
+  type: postgresql
+  uri: ${PS_STORAGE_URI}
+  sslmode: disable
+  # Expected format: postgresql://root:mysecretpassword@postgres:5432/powersync_storage
+  # (set in compose.yaml environment)
+
+# Sync rules: Edition 3 format with 10 streams
+sync_rules:
+  path: /config/sync-rules.yaml
+  # Container path — mounted from infra/powersync/sync-rules.yaml
+
+# Client authentication
+client_auth:
+  # PLACEHOLDER: JWT/JWKS not yet implemented — see P4-003
+  # Current Altair backend uses session-based auth (Better-Auth cookies)
+  # This will be replaced with proper JWT validation in P4-003
+  jwks_uri: http://server:3000/api/auth/keys
+
+# API access
+api:
+  # Dev admin token for diagnostics and admin operations
+  # Used by: POST /api/admin/v1/diagnostics
+  tokens:
+    - ${PS_ADMIN_TOKEN}
+
+# Database migrations
+migrations:
+  disable_auto_migration: false
