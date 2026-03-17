@@ -1,0 +1,40 @@
+services:
+  postgres:
+    image: postgres:16
+    command: ['postgres', '-c', 'wal_level=logical']
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - '5432:5432'
+    volumes:
+      - ./infra/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  powersync:
+    image: journeyapps/powersync-service:0.2.0
+    command: ['start', '-r', 'unified']
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      POWERSYNC_CONFIG_PATH: /config/powersync.yaml
+      PS_DATABASE_URI: ${PS_DATABASE_URI}
+      PS_STORAGE_URI: ${PS_STORAGE_URI}
+      PS_ADMIN_TOKEN: ${PS_ADMIN_TOKEN}
+    ports:
+      - '8080:8080'
+    volumes:
+      - ./infra/powersync/powersync.yaml:/config/powersync.yaml:ro
+      - ./infra/powersync/sync-rules.yaml:/config/sync-rules.yaml:ro
+    restart: unless-stopped
+
+volumes:
+  pgdata:
