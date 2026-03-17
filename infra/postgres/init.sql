@@ -8,6 +8,7 @@ WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'powersync_storage')
 \gexec
 
 -- 2. Create powersync user with REPLICATION role
+-- Dev-only password. Override via POSTGRES_POWERSYNC_PASSWORD env var in production.
 DO $$ BEGIN
   CREATE USER powersync WITH PASSWORD 'powersync_password';
 EXCEPTION WHEN duplicate_object THEN NULL;
