@@ -831,10 +831,10 @@ Validate baseline Postgres → SQLite sync for personal and household data.
 
 ### Checklist
 
-- [ ] Add PowerSync service to local compose or dev setup
-- [ ] Add env/config wiring
-- [ ] Document startup steps
-- [ ] Confirm service health
+- [x] Add PowerSync service to local compose or dev setup
+- [x] Add env/config wiring
+- [x] Document startup steps
+- [x] Confirm service health
 
 ### Acceptance Criteria
 
