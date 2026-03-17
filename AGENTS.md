@@ -32,6 +32,15 @@ altair/
 | Build configs | `apps/web/svelte.config.js`, `vite.config.ts` |
 | Rust workspace | `Cargo.toml` (root) |
 
+## Code Exploration Policy
+
+Always use jCodemunch-MCP tools — never fall back to Read, Grep, Glob, or Bash for code exploration.
+
+- Before reading a file: use get_file_outline or get_file_content
+- Before searching: use search_symbols or search_text
+- Before exploring structure: use get_file_tree or get_repo_outline
+- Call list_repos first; if the project is not indexed, call index_folder with the current directory.
+
 ## COMMANDS
 
 ### Web App (run from `apps/web/`)
@@ -129,6 +138,7 @@ export const handle = sequence(handleParaglide, handleBetterAuth);
 ## PRE-COMMIT
 
 Uses [prek](https://prek.j178.dev/) (not standard pre-commit):
+
 - Trailing whitespace (except markdown)
 - Prettier (TS/Svelte)
 - ESLint
@@ -145,18 +155,22 @@ Uses [prek](https://prek.j178.dev/) (not standard pre-commit):
 ## DESIGN CONTEXT
 
 ### Users
+
 Power users and individuals seeking a fast, offline-first "Personal OS" for managing knowledge, goals, and resources across mobile and desktop. They need a system that gets out of their way, prioritizing focus and rapid input.
 
 ### Brand Personality
+
 Minimal, Calm, Polished, Fluid.
 The interface should evoke a sense of quiet competence—never overwhelming the user, but feeling highly responsive and smooth to interact with.
 
 ### Aesthetic Direction
+
 - **Themes**: Full support for both Light and Dark mode with seamless switching.
 - **Vibe**: A blend of Notion (clean, document-focused, simple, content-first) and Linear (high-performance, refined dark mode, productivity-focused, fluid micro-interactions).
 - **Typography & Layout**: High legibility utilizing Tailwind Typography, purposeful whitespace, and uncluttered layouts.
 
 ### Design Principles
+
 1. **Content Over Chrome**: The interface should recede, making the user's knowledge and goals the focal point (Notion-like minimalism).
 2. **Fluid & Responsive**: Interactions, state changes, and navigations must feel instantaneous and polished (Linear-like performance).
 3. **Native-Quality Feel**: Since it runs as a Tauri desktop app, interactions should feel at home on the OS, avoiding "webby" jank. Use smooth transitions and mindful micro-interactions.
