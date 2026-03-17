@@ -19,7 +19,7 @@ services:
     restart: unless-stopped
 
   powersync:
-    image: journeyapps/powersync-service:0.2.0
+    image: journeyapps/powersync-service:1.20.1
     command: ['start', '-r', 'unified']
     depends_on:
       postgres:
