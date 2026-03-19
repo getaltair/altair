@@ -9,6 +9,7 @@ mod guidance;
 mod handlers;
 mod knowledge;
 mod search;
+mod state;
 mod sync;
 mod tracking;
 
@@ -16,6 +17,7 @@ use std::net::SocketAddr;
 
 use anyhow::{Context, Result};
 use axum::{Router, routing::get};
+use state::AppState;
 use tokio::signal;
 use tower_http::trace::TraceLayer;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
@@ -37,6 +39,7 @@ async fn main() -> Result<()> {
 		.context("Failed to create database connection pool")?;
 	tracing::info!("Database connection pool created");
 
+	let state = AppState { pool };
 	let app = Router::new()
 		.merge(docs::router())
 		.route("/health", get(handlers::health::health_check))
@@ -50,7 +53,7 @@ async fn main() -> Result<()> {
 		.nest("/sync", sync::router())
 		.nest("/search", search::router())
 		.layer(TraceLayer::new_for_http())
-		.with_state(pool);
+		.with_state(state);
 
 	let addr: SocketAddr = format!("{}:{}", config.host, config.port)
 		.parse()

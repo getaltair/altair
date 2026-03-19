@@ -1,0 +1,30 @@
+=== ROUTE DEFINITION VERIFICATION ===
+
+1. Checking Swagger UI route in docs/mod.rs:
+/// - OpenAPI JSON spec at `/docs/openapi.json` (machine-readable spec)
+pub fn router<S>() -> Router<S>
+where
+	S: Clone + Send + Sync + 'static,
+{
+	let router: Router<S> = SwaggerUi::new("/docs/swagger")
+		.url("/docs/openapi.json", ApiDoc::openapi())
+		.into();
+
+
+2. Checking Scalar UI route in docs/mod.rs:
+	let router: Router<S> = {
+		use utoipa_scalar::Scalar;
+		let scalar_router: Router<S> = Scalar::with_url("/docs/scalar", ApiDoc::openapi()).into();
+		router.merge(scalar_router)
+	};
+
+	router
+}
+
+3. Checking OpenAPI spec URL:
+		.url("/docs/openapi.json", ApiDoc::openapi())
+
+4. Verifying docs router is merged into main app:
+		.merge(docs::router())
+		.route("/health", get(handlers::health::health_check))
+		.route("/users/me", get(handlers::users::me))

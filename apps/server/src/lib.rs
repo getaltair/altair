@@ -8,6 +8,7 @@ pub mod guidance;
 pub mod handlers;
 pub mod knowledge;
 pub mod search;
+pub mod state;
 pub mod sync;
 pub mod tracking;
 

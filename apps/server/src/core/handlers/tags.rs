@@ -10,6 +10,7 @@ use crate::auth::{
 	require_user_owned,
 };
 use crate::error::AppError;
+use crate::state::AppState;
 use axum::{
 	Router,
 	extract::{Path, State},
@@ -20,7 +21,6 @@ use axum::{
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use slug::slugify;
-use sqlx::PgPool;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
@@ -79,7 +79,7 @@ pub struct UpdateTagRequest {
 )]
 #[axum::debug_handler]
 pub async fn list(
-	State(pool): State<PgPool>,
+	State(state): State<AppState>,
 	user: AuthenticatedUser,
 ) -> Result<Json<Vec<Tag>>, AppError> {
 	let tags = sqlx::query_as::<_, Tag>(
@@ -96,7 +96,7 @@ pub async fn list(
 		"#,
 	)
 	.bind(user.0.id)
-	.fetch_all(&pool)
+	.fetch_all(&state.pool)
 	.await?;
 
 	Ok(Json(tags))
@@ -126,11 +126,11 @@ pub async fn list(
 )]
 #[axum::debug_handler]
 pub async fn get_tag(
-	State(pool): State<PgPool>,
+	State(state): State<AppState>,
 	user: AuthenticatedUser,
 	Path(id): Path<Uuid>,
 ) -> Result<Json<Tag>, AppError> {
-	let can_access = can_access_tag(&pool, user.0.id, id)
+	let can_access = can_access_tag(&state.pool, user.0.id, id)
 		.await
 		.map_err(|e| AppError::Internal(format!("Authorization check failed: {}", e)))?;
 
@@ -140,7 +140,7 @@ pub async fn get_tag(
 
 	let tag = sqlx::query_as::<_, Tag>("SELECT * FROM tags WHERE id = $1 AND deleted_at IS NULL")
 		.bind(id)
-		.fetch_optional(&pool)
+		.fetch_optional(&state.pool)
 		.await?
 		.ok_or_else(|| AppError::NotFound("Tag not found".to_string()))?;
 
@@ -167,12 +167,12 @@ pub async fn get_tag(
 )]
 #[axum::debug_handler]
 pub async fn create(
-	State(pool): State<PgPool>,
+	State(state): State<AppState>,
 	user: AuthenticatedUser,
 	Json(req): Json<CreateTagRequest>,
 ) -> Result<(StatusCode, Json<Tag>), AppError> {
 	if let Some(household_id) = req.household_id {
-		let can_access = can_access_household(&pool, user.0.id, household_id)
+		let can_access = can_access_household(&state.pool, user.0.id, household_id)
 			.await
 			.map_err(|e| AppError::Internal(format!("Household access check failed: {}", e)))?;
 		if !can_access {
@@ -197,7 +197,7 @@ pub async fn create(
 	.bind(&slug)
 	.bind(&req.description)
 	.bind(&req.color)
-	.fetch_one(&pool)
+	.fetch_one(&state.pool)
 	.await?;
 
 	Ok((StatusCode::CREATED, Json(tag)))
@@ -227,12 +227,12 @@ pub async fn create(
 #[axum::debug_handler]
 #[allow(unused_assignments)]
 pub async fn update(
-	State(pool): State<PgPool>,
+	State(state): State<AppState>,
 	user: AuthenticatedUser,
 	Path(id): Path<Uuid>,
 	Json(req): Json<UpdateTagRequest>,
 ) -> Result<Json<Tag>, AppError> {
-	require_user_owned(&pool, user.0.id, UserOwnableTable::Tag, id)
+	require_user_owned(&state.pool, user.0.id, UserOwnableTable::Tag, id)
 		.await
 		.map_err(|_| AppError::Forbidden)?;
 
@@ -264,7 +264,7 @@ pub async fn update(
 		let tag =
 			sqlx::query_as::<_, Tag>("SELECT * FROM tags WHERE id = $1 AND deleted_at IS NULL")
 				.bind(id)
-				.fetch_one(&pool)
+				.fetch_one(&state.pool)
 				.await?;
 		return Ok(Json(tag));
 	}
@@ -296,7 +296,7 @@ pub async fn update(
 		query = query.bind(household_id);
 	}
 
-	let tag = query.fetch_one(&pool).await?;
+	let tag = query.fetch_one(&state.pool).await?;
 
 	Ok(Json(tag))
 }
@@ -323,17 +323,17 @@ pub async fn update(
 )]
 #[axum::debug_handler]
 pub async fn delete_tag(
-	State(pool): State<PgPool>,
+	State(state): State<AppState>,
 	user: AuthenticatedUser,
 	Path(id): Path<Uuid>,
 ) -> Result<StatusCode, AppError> {
-	require_user_owned(&pool, user.0.id, UserOwnableTable::Tag, id)
+	require_user_owned(&state.pool, user.0.id, UserOwnableTable::Tag, id)
 		.await
 		.map_err(|_| AppError::Forbidden)?;
 
 	sqlx::query("UPDATE tags SET deleted_at = NOW() WHERE id = $1 AND deleted_at IS NULL")
 		.bind(id)
-		.execute(&pool)
+		.execute(&state.pool)
 		.await?;
 
 	Ok(StatusCode::NO_CONTENT)
@@ -343,7 +343,7 @@ pub async fn delete_tag(
 ///
 /// Returns a router with all tag endpoints.
 #[allow(dead_code)] // Wired in Task 20
-pub fn routes() -> Router<PgPool> {
+pub fn routes() -> Router<AppState> {
 	Router::new()
 		.route("/", get(list))
 		.route("/", post(create))
@@ -358,6 +358,6 @@ mod tests {
 
 	#[test]
 	fn routes_is_mountable() {
-		let _router: Router<PgPool> = routes();
+		let _router: Router<AppState> = routes();
 	}
 }

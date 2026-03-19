@@ -7,6 +7,7 @@
 
 use crate::auth::{AuthenticatedUser, UserOwnableTable, can_access_household, require_user_owned};
 use crate::error::AppError;
+use crate::state::AppState;
 use axum::{
 	Router,
 	extract::{Path, State},
@@ -16,7 +17,7 @@ use axum::{
 };
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use sqlx::{PgPool, Row, Transaction};
+use sqlx::{Row, Transaction};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
@@ -93,7 +94,7 @@ pub struct UpdateHouseholdRequest {
 )]
 #[axum::debug_handler]
 pub async fn list(
-	State(pool): State<PgPool>,
+	State(state): State<AppState>,
 	user: AuthenticatedUser,
 ) -> Result<Json<Vec<Household>>, AppError> {
 	let households = sqlx::query_as::<_, Household>(
@@ -110,7 +111,7 @@ pub async fn list(
 		"#,
 	)
 	.bind(user.0.id)
-	.fetch_all(&pool)
+	.fetch_all(&state.pool)
 	.await?;
 
 	Ok(Json(households))
@@ -137,11 +138,11 @@ pub async fn list(
 )]
 #[axum::debug_handler]
 pub async fn get_household(
-	State(pool): State<PgPool>,
+	State(state): State<AppState>,
 	user: AuthenticatedUser,
 	Path(id): Path<Uuid>,
 ) -> Result<Json<Household>, AppError> {
-	let can_access = can_access_household(&pool, user.0.id, id)
+	let can_access = can_access_household(&state.pool, user.0.id, id)
 		.await
 		.map_err(|e| AppError::Internal(format!("Authorization check failed: {}", e)))?;
 
@@ -153,7 +154,7 @@ pub async fn get_household(
 		"SELECT * FROM households WHERE id = $1 AND deleted_at IS NULL",
 	)
 	.bind(id)
-	.fetch_optional(&pool)
+	.fetch_optional(&state.pool)
 	.await?
 	.ok_or_else(|| AppError::NotFound("Household not found".to_string()))?;
 
@@ -179,11 +180,11 @@ pub async fn get_household(
 )]
 #[axum::debug_handler]
 pub async fn create(
-	State(pool): State<PgPool>,
+	State(state): State<AppState>,
 	user: AuthenticatedUser,
 	Json(req): Json<CreateHouseholdRequest>,
 ) -> Result<(StatusCode, Json<Household>), AppError> {
-	let mut tx: Transaction<'_, sqlx::Postgres> = pool.begin().await?;
+	let mut tx: Transaction<'_, sqlx::Postgres> = state.pool.begin().await?;
 
 	let household = sqlx::query_as::<_, Household>(
 		r#"
@@ -236,12 +237,12 @@ pub async fn create(
 #[axum::debug_handler]
 #[allow(unused_assignments)]
 pub async fn update(
-	State(pool): State<PgPool>,
+	State(state): State<AppState>,
 	user: AuthenticatedUser,
 	Path(id): Path<Uuid>,
 	Json(req): Json<UpdateHouseholdRequest>,
 ) -> Result<Json<Household>, AppError> {
-	require_user_owned(&pool, user.0.id, UserOwnableTable::Household, id)
+	require_user_owned(&state.pool, user.0.id, UserOwnableTable::Household, id)
 		.await
 		.map_err(|_| AppError::Forbidden)?;
 
@@ -266,7 +267,7 @@ pub async fn update(
 			"SELECT * FROM households WHERE id = $1 AND deleted_at IS NULL",
 		)
 		.bind(id)
-		.fetch_one(&pool)
+		.fetch_one(&state.pool)
 		.await?;
 		return Ok(Json(household));
 	}
@@ -292,7 +293,7 @@ pub async fn update(
 		query = query.bind(description);
 	}
 
-	let household = query.fetch_one(&pool).await?;
+	let household = query.fetch_one(&state.pool).await?;
 
 	Ok(Json(household))
 }
@@ -316,17 +317,17 @@ pub async fn update(
 )]
 #[axum::debug_handler]
 pub async fn delete_household(
-	State(pool): State<PgPool>,
+	State(state): State<AppState>,
 	user: AuthenticatedUser,
 	Path(id): Path<Uuid>,
 ) -> Result<StatusCode, AppError> {
-	require_user_owned(&pool, user.0.id, UserOwnableTable::Household, id)
+	require_user_owned(&state.pool, user.0.id, UserOwnableTable::Household, id)
 		.await
 		.map_err(|_| AppError::Forbidden)?;
 
 	sqlx::query("UPDATE households SET deleted_at = NOW() WHERE id = $1 AND deleted_at IS NULL")
 		.bind(id)
-		.execute(&pool)
+		.execute(&state.pool)
 		.await?;
 
 	Ok(StatusCode::NO_CONTENT)
@@ -353,11 +354,11 @@ pub async fn delete_household(
 )]
 #[axum::debug_handler]
 pub async fn list_memberships(
-	State(pool): State<PgPool>,
+	State(state): State<AppState>,
 	user: AuthenticatedUser,
 	Path(id): Path<Uuid>,
 ) -> Result<Json<Vec<HouseholdMember>>, AppError> {
-	let can_access = can_access_household(&pool, user.0.id, id)
+	let can_access = can_access_household(&state.pool, user.0.id, id)
 		.await
 		.map_err(|e| AppError::Internal(format!("Authorization check failed: {}", e)))?;
 
@@ -383,7 +384,7 @@ pub async fn list_memberships(
 		"#,
 	)
 	.bind(id)
-	.fetch_all(&pool)
+	.fetch_all(&state.pool)
 	.await?;
 
 	let members: Vec<HouseholdMember> = rows
@@ -407,7 +408,7 @@ pub async fn list_memberships(
 ///
 /// Returns a router with all household endpoints.
 #[allow(dead_code)]
-pub fn routes() -> Router<PgPool> {
+pub fn routes() -> Router<AppState> {
 	Router::new()
 		.route("/", get(list))
 		.route("/", post(create))
@@ -423,6 +424,6 @@ mod tests {
 
 	#[test]
 	fn routes_is_mountable() {
-		let _router: Router<PgPool> = routes();
+		let _router: Router<AppState> = routes();
 	}
 }

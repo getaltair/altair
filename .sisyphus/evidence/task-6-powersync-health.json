@@ -1,0 +1,19 @@
+{
+  "scenario": "Scenario 3: PowerSync health and diagnostics",
+  "token_present": true,
+  "liveness": {
+    "curl_exit_code": 56,
+    "http_status": "000",
+    "body": ""
+  },
+  "startup": {
+    "curl_exit_code": 56,
+    "http_status": "000",
+    "body": ""
+  },
+  "diagnostics": {
+    "curl_exit_code": 56,
+    "http_status": "000",
+    "body": ""
+  }
+}

@@ -1,0 +1,122 @@
+[
+  {
+    "path": "/attachments",
+    "tags": [
+      "Not Implemented"
+    ]
+  },
+  {
+    "path": "/auth/me",
+    "tags": [
+      "Auth"
+    ]
+  },
+  {
+    "path": "/core/households",
+    "tags": [
+      "households"
+    ]
+  },
+  {
+    "path": "/core/households/{id}",
+    "tags": [
+      "households"
+    ]
+  },
+  {
+    "path": "/core/households/{id}/memberships",
+    "tags": [
+      "households"
+    ]
+  },
+  {
+    "path": "/core/initiatives",
+    "tags": [
+      "initiatives"
+    ]
+  },
+  {
+    "path": "/core/initiatives/{id}",
+    "tags": [
+      "initiatives"
+    ]
+  },
+  {
+    "path": "/core/relations",
+    "tags": [
+      "Relations"
+    ]
+  },
+  {
+    "path": "/core/relations/{id}",
+    "tags": [
+      "Relations"
+    ]
+  },
+  {
+    "path": "/core/relations/{id}/status",
+    "tags": [
+      "Relations"
+    ]
+  },
+  {
+    "path": "/core/tags",
+    "tags": [
+      "Tags"
+    ]
+  },
+  {
+    "path": "/core/tags/{id}",
+    "tags": [
+      "Tags"
+    ]
+  },
+  {
+    "path": "/guidance/quests",
+    "tags": [
+      "Not Implemented"
+    ]
+  },
+  {
+    "path": "/guidance/routines",
+    "tags": [
+      "Not Implemented"
+    ]
+  },
+  {
+    "path": "/health",
+    "tags": [
+      "crate::handlers::health"
+    ]
+  },
+  {
+    "path": "/knowledge/notes",
+    "tags": [
+      "Not Implemented"
+    ]
+  },
+  {
+    "path": "/search",
+    "tags": [
+      "Not Implemented"
+    ]
+  },
+  {
+    "path": "/sync/checkpoint",
+    "tags": [
+      "Not Implemented"
+    ]
+  },
+  {
+    "path": "/tracking/items",
+    "tags": [
+      "Not Implemented"
+    ]
+  },
+  {
+    "path": "/users/me",
+    "tags": [
+      "crate::handlers::users"
+    ]
+  }
+]

@@ -1,0 +1,31 @@
+## Evidence: Task 4 — Web Workflow (db:start + db:push)
+Generated: 2026-03-18
+
+### Command: bun run db:start (from apps/web/)
+$ docker compose -f ../../compose.yaml up -d
+Emulate Docker CLI using podman. Create /etc/containers/nodocker to quiet msg.
+>>>> Executing external compose provider "/usr/lib/docker/cli-plugins/docker-compose". Please see podman-compose(1) for how to disable this message. <<<<
+
+ Container altair-postgres-1 Running
+ Container altair-powersync-1 Running
+ Container altair-postgres-1 Waiting
+ Container altair-postgres-1 Healthy
+EXIT CODE: 0
+
+---
+
+### Command: bun run db:push -- --force (from apps/web/)
+$ drizzle-kit push --force
+No config path provided, using default 'drizzle.config.ts'
+Reading config file '/home/rghamilton3/workspace/getaltair/altair/apps/web/drizzle.config.ts'
+Using 'pg' driver for database querying
+[✓] Pulling schema from database...
+[i] No changes detected
+EXIT CODE: 0
+
+---
+
+### Result: PASS
+Both db:start and db:push completed successfully.
+- Docker services (postgres + powersync) confirmed running/healthy
+- Drizzle schema push: no changes detected (schema already applied)

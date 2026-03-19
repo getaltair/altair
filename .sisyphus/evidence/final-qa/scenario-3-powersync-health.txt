@@ -1,0 +1,17 @@
+Timestamp: 2026-03-18T17:22:30-05:00
+
+$ curl -sf -o /dev/null -w "%{http_code}\n" http://localhost:8080/probes/liveness
+200
+
+$ curl -sf -o /dev/null -w "%{http_code}\n" http://localhost:8080/probes/startup
+200
+
+$ curl -sf -X POST http://localhost:8080/api/admin/v1/diagnostics -H "Authorization: Bearer dev-admin-token-change-in-production" | python -c 'import sys,json; data=json.load(sys.stdin)["data"]; conn=data["connections"][0]; rules=data["active_sync_rules"]; rule=rules["connections"][0]; errs=[e for e in rules.get("errors", []) if e.get("level")=="error"]; warns=[e for e in rules.get("errors", []) if e.get("level")=="warning"]; print("connected={}".format(conn["connected"])); print("initial_replication_done={}".format(rule["initial_replication_done"])); print("active_sync_rule_error_count={}".format(len(errs))); print("active_sync_rule_warning_count={}".format(len(warns)))'
+connected=True
+initial_replication_done=True
+active_sync_rule_error_count=0
+active_sync_rule_warning_count=25
+
+Notes:
+- No diagnostics entries reported with level=error.
+- Remaining diagnostics entries are warnings for missing sync-rule tables; per QA guidance these do not fail F3.

@@ -1,0 +1,22 @@
+Timestamp: 2026-03-18T17:05:25-05:00
+
+
+$ SHOW wal_level;
+ wal_level
+-----------
+ logical
+(1 row)
+
+
+$ SELECT pubname FROM pg_publication;
+  pubname
+-----------
+ powersync
+(1 row)
+
+
+$ SELECT datname FROM pg_database WHERE datname = powersync_storage;
+      datname
+-------------------
+ powersync_storage
+(1 row)

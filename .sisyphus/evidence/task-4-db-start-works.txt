@@ -1,0 +1,23 @@
+QA Scenario 1: db:start works via root compose
+================================================
+
+Test: Run `bun run db:start` from apps/web/
+Expected: Services already running (exit 0)
+Actual: ✓ PASS
+
+Command executed:
+  cd /home/rghamilton3/workspace/getaltair/altair/apps/web && bun run db:start
+
+Output:
+  $ docker compose -f ../../compose.yaml up -d
+  Container altair-postgres-1 Running
+  Container altair-powersync-1 Running
+  Container altair-postgres-1 Waiting
+  Container altair-postgres-1 Healthy
+
+Verification:
+  docker compose ps shows:
+  - altair-postgres-1: Up (0.0.0.0:5432->5432/tcp)
+  - altair-powersync-1: Up (0.0.0.0:8080->8080/tcp)
+
+Result: ✓ PASS - db:start correctly references root compose.yaml

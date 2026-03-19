@@ -7,6 +7,7 @@
 
 use crate::auth::{AuthenticatedUser, UserOwnableTable, require_user_owned};
 use crate::error::AppError;
+use crate::state::AppState;
 use axum::{
 	Router,
 	extract::{Path, Query, State},
@@ -179,7 +180,7 @@ async fn can_access_relation(
 )]
 #[axum::debug_handler]
 pub async fn list(
-	State(pool): State<PgPool>,
+	State(state): State<AppState>,
 	user: AuthenticatedUser,
 	Query(query): Query<ListRelationsQuery>,
 ) -> Result<Json<Vec<EntityRelation>>, AppError> {
@@ -212,7 +213,7 @@ pub async fn list(
 			.bind(user.0.id)
 			.bind(from_id)
 			.bind(to_id)
-			.fetch_all(&pool)
+			.fetch_all(&state.pool)
 			.await?
 		}
 		(Some(from_id), None) => {
@@ -235,7 +236,7 @@ pub async fn list(
 			)
 			.bind(user.0.id)
 			.bind(from_id)
-			.fetch_all(&pool)
+			.fetch_all(&state.pool)
 			.await?
 		}
 		(None, Some(to_id)) => {
@@ -258,7 +259,7 @@ pub async fn list(
 			)
 			.bind(user.0.id)
 			.bind(to_id)
-			.fetch_all(&pool)
+			.fetch_all(&state.pool)
 			.await?
 		}
 		(None, None) => {
@@ -295,11 +296,11 @@ pub async fn list(
 )]
 #[axum::debug_handler]
 pub async fn get_single(
-	State(pool): State<PgPool>,
+	State(state): State<AppState>,
 	user: AuthenticatedUser,
 	Path(id): Path<Uuid>,
 ) -> Result<Json<EntityRelation>, AppError> {
-	let can_access = can_access_relation(&pool, user.0.id, id).await?;
+	let can_access = can_access_relation(&state.pool, user.0.id, id).await?;
 
 	if !can_access {
 		return Err(AppError::Forbidden);
@@ -312,7 +313,7 @@ pub async fn get_single(
 		   FROM entity_relations WHERE id = $1 AND deleted_at IS NULL"#,
 	)
 	.bind(id)
-	.fetch_optional(&pool)
+	.fetch_optional(&state.pool)
 	.await?
 	.ok_or_else(|| AppError::NotFound("Relation not found".to_string()))?;
 
@@ -343,7 +344,7 @@ pub async fn get_single(
 )]
 #[axum::debug_handler]
 pub async fn create(
-	State(pool): State<PgPool>,
+	State(state): State<AppState>,
 	user: AuthenticatedUser,
 	Json(req): Json<CreateRelationRequest>,
 ) -> Result<(StatusCode, Json<EntityRelation>), AppError> {
@@ -399,7 +400,7 @@ pub async fn create(
 	.bind(user.0.id)
 	.bind(req.household_id)
 	.bind(&req.notes)
-	.fetch_one(&pool)
+	.fetch_one(&state.pool)
 	.await
 	.map_err(|e| {
 		#[allow(clippy::collapsible_if)]
@@ -440,11 +441,11 @@ pub async fn create(
 )]
 #[axum::debug_handler]
 pub async fn delete_relation(
-	State(pool): State<PgPool>,
+	State(state): State<AppState>,
 	user: AuthenticatedUser,
 	Path(id): Path<Uuid>,
 ) -> Result<StatusCode, AppError> {
-	require_user_owned(&pool, user.0.id, UserOwnableTable::EntityRelation, id)
+	require_user_owned(&state.pool, user.0.id, UserOwnableTable::EntityRelation, id)
 		.await
 		.map_err(|_| AppError::Forbidden)?;
 
@@ -452,7 +453,7 @@ pub async fn delete_relation(
 		"UPDATE entity_relations SET deleted_at = NOW() WHERE id = $1 AND deleted_at IS NULL",
 	)
 	.bind(id)
-	.execute(&pool)
+	.execute(&state.pool)
 	.await?;
 
 	Ok(StatusCode::NO_CONTENT)
@@ -484,12 +485,12 @@ pub async fn delete_relation(
 )]
 #[axum::debug_handler]
 pub async fn update_status(
-	State(pool): State<PgPool>,
+	State(state): State<AppState>,
 	user: AuthenticatedUser,
 	Path(id): Path<Uuid>,
 	Json(req): Json<UpdateStatusRequest>,
 ) -> Result<Json<EntityRelation>, AppError> {
-	require_user_owned(&pool, user.0.id, UserOwnableTable::EntityRelation, id)
+	require_user_owned(&state.pool, user.0.id, UserOwnableTable::EntityRelation, id)
 		.await
 		.map_err(|_| AppError::Forbidden)?;
 
@@ -508,7 +509,7 @@ pub async fn update_status(
 	)
 	.bind(&req.status)
 	.bind(id)
-	.fetch_optional(&pool)
+	.fetch_optional(&state.pool)
 	.await?
 	.ok_or_else(|| AppError::NotFound("Relation not found".to_string()))?;
 
@@ -519,7 +520,7 @@ pub async fn update_status(
 ///
 /// Returns a router with all relation endpoints.
 #[allow(dead_code)] // Wired in Task 20
-pub fn routes() -> Router<PgPool> {
+pub fn routes() -> Router<AppState> {
 	Router::new()
 		.route("/", get(list))
 		.route("/", post(create))
@@ -534,7 +535,7 @@ mod tests {
 
 	#[test]
 	fn routes_is_mountable() {
-		let _router: Router<PgPool> = routes();
+		let _router: Router<AppState> = routes();
 	}
 
 	#[test]

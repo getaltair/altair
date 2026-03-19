@@ -1,0 +1,5 @@
+error: unexpected value 'server' for '--workspace' found; no more were expected
+
+Usage: cargo check --workspace
+
+For more information, try '--help'.

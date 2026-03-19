@@ -1,0 +1,19 @@
+QA SCENARIO 3: PowerSync image version is pinned
+=================================================
+
+Step 1: Check for pinned version in powersync.yaml
+  Command: grep -i "docker image version" infra/powersync/powersync.yaml
+  Result:
+    # PowerSync Docker image version: journeyapps/powersync-service:0.2.0
+
+Step 2: Verify no reference to :latest in actual config
+  Command: grep -v "^[[:space:]]*#" infra/powersync/powersync.yaml | grep -i ":latest"
+  Result:
+    ✓ No :latest tag found in active config (only in comments)
+
+Step 3: Extract pinned version
+  Pinned version: journeyapps/powersync-service:0.2.0
+  Status: ✓ Version is pinned (not :latest)
+  Note: This version is documented for Task 3 (compose.yaml) to reference
+
+OVERALL: ✓ PASSED

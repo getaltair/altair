@@ -1,0 +1,23 @@
+=== DB Verification Queries ===
+Timestamp: 2026-03-13T23:55:00Z
+
+-- Check existing relations:
+                  id                  | from_entity_type | relation_type |  status   |          deleted_at
+--------------------------------------+------------------+---------------+-----------+-------------------------------
+ dae13dcb-8e50-444a-a179-7e84db564add | initiative       | references    | dismissed |
+ afd03264-94a3-44cb-a005-e9edd9e0ef98 | initiative       | supports      | accepted  | 2026-03-13 23:54:08.554345+00
+
+-- Verify soft-delete on deleted relation:
+                  id                  |          deleted_at
+--------------------------------------+-------------------------------
+ afd03264-94a3-44cb-a005-e9edd9e0ef98 | 2026-03-13 23:54:08.554345+00
+
+-- Verify status update on relation:
+                  id                  |  status   |          updated_at
+--------------------------------------+-----------+-------------------------------
+ dae13dcb-8e50-444a-a179-7e84db564add | dismissed | 2026-03-13T23:53:55.099041+00
+
+Result: ALL PASS
+- Created relations exist with correct enum values
+- Soft-delete sets deleted_at timestamp correctly
+- Status update updates both status and updated_at columns

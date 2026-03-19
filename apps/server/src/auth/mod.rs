@@ -5,6 +5,7 @@
 mod authorization;
 mod extractor;
 pub mod handlers;
+pub mod jwt;
 mod models;
 mod session;
 
@@ -24,13 +25,13 @@ pub use models::{Session, User};
 #[allow(unused_imports)]
 pub use session::{AuthError, validate_session_token};
 
+use crate::state::AppState;
 use axum::Router;
-use sqlx::PgPool;
 
 /// Create the router for this module.
 ///
 /// Routes are mounted at `/auth/*` in the main router.
-pub fn router() -> Router<PgPool> {
+pub fn router() -> Router<AppState> {
 	handlers::router()
 	// Future routes will be added here:
 	// .route("/login", post(login))
@@ -51,7 +52,7 @@ mod tests {
 	#[test]
 	fn router_is_mountable() {
 		// Verify the router can be created and has correct type
-		let _router: Router<PgPool> = router();
+		let _router: Router<AppState> = router();
 	}
 
 	// ========================================

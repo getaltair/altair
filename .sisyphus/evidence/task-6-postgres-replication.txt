@@ -1,0 +1,35 @@
+Scenario 2: Postgres replication infrastructure verified
+
+=== SHOW wal_level (exit 0) ===
+Emulate Docker CLI using podman. Create /etc/containers/nodocker to quiet msg.
+[4m>>>> Executing external compose provider "/usr/lib/docker/cli-plugins/docker-compose". Please see podman-compose(1) for how to disable this message. <<<<
+
+[0m wal_level
+-----------
+ logical
+(1 row)
+
+=== SELECT pubname FROM pg_publication (exit 0) ===
+Emulate Docker CLI using podman. Create /etc/containers/nodocker to quiet msg.
+[4m>>>> Executing external compose provider "/usr/lib/docker/cli-plugins/docker-compose". Please see podman-compose(1) for how to disable this message. <<<<
+
+[0m pubname
+---------
+(0 rows)
+
+=== \l (exit 2) ===
+Emulate Docker CLI using podman. Create /etc/containers/nodocker to quiet msg.
+[4m>>>> Executing external compose provider "/usr/lib/docker/cli-plugins/docker-compose". Please see podman-compose(1) for how to disable this message. <<<<
+
+[0mpsql: error: connection to server on socket "/var/run/postgresql/.s.PGSQL.5432" failed: FATAL:  database "root" does not exist
+Error: executing /usr/lib/docker/cli-plugins/docker-compose exec -T postgres psql -U root -c \l: exit status 2
+
+=== replication roles (exit 0) ===
+Emulate Docker CLI using podman. Create /etc/containers/nodocker to quiet msg.
+[4m>>>> Executing external compose provider "/usr/lib/docker/cli-plugins/docker-compose". Please see podman-compose(1) for how to disable this message. <<<<
+
+[0m  rolname  | rolreplication
+-----------+----------------
+ root      | t
+ powersync | t
+(2 rows)

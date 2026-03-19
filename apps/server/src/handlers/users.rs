@@ -5,11 +5,12 @@
 use axum::{extract::State, response::Json};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use sqlx::{PgPool, Row};
+use sqlx::Row;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
 use crate::auth::{AuthenticatedUser, ErrorResponse};
+use crate::state::AppState;
 
 /// User model representing the custom `users` table.
 ///
@@ -73,7 +74,7 @@ pub struct AppUser {
 #[allow(dead_code)] // Wired in Task 20
 #[axum::debug_handler]
 pub async fn me(
-	State(pool): State<PgPool>,
+	State(state): State<AppState>,
 	user: AuthenticatedUser,
 ) -> Result<Json<AppUser>, crate::error::AppError> {
 	let user_id = user.0.id;
@@ -86,7 +87,7 @@ pub async fn me(
 		"#,
 	)
 	.bind(user_id)
-	.fetch_one(&pool)
+	.fetch_one(&state.pool)
 	.await?;
 
 	let app_user = AppUser {

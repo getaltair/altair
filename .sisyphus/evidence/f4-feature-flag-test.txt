@@ -1,0 +1,23 @@
+=== FEATURE FLAG COMPILATION TEST ===
+
+1. Building WITHOUT scalar-ui feature:
+   Command: cd apps/server && cargo build
+   Result: SUCCESS (warnings about unused function, but compiles)
+
+   Checking for utoipa-scalar in dependencies:
+   Command: cargo tree -p server | grep utoipa-scalar
+   Result: NOT FOUND (CORRECT - feature is properly excluded)
+
+2. Building WITH scalar-ui feature:
+   Command: cd apps/server && cargo build --features scalar-ui
+   Result: FAILURE - Compilation error
+
+   Error Details:
+   - Scalar::with_url method does not exist in utoipa-scalar 0.3.0
+   - Error appears in both docs/mod.rs:131 and docs/ui.rs:52
+   - Compiler suggests using Scalar::new instead
+
+VERDICT: Feature flag mechanism is correctly implemented, but Scalar UI code has a bug
+- Feature flag properly excludes utoipa-scalar when disabled
+- Scalar UI implementation uses incorrect API (with_url vs new)
+- Servable trait may need to be imported for with_url to be available

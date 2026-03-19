@@ -1,0 +1,27 @@
+Task 11: Document Relations module (5 endpoints)
+
+Date: 2026-03-14
+Command: cd apps/server && cargo check
+Result: PASSED (exit code 0)
+Build Time: 0.96s
+Errors: None
+
+Endpoints documented:
+1. GET /relations - List accessible relations with optional query params
+2. GET /relations/{id} - Get single relation by ID
+3. POST /relations - Create new relation
+4. DELETE /relations/{id} - Soft delete relation
+5. PATCH /relations/{id}/status - Update relation status
+
+All endpoints documented with:
+- Path parameters (where applicable)
+- Request bodies (POST/PATCH)
+- Response schemas
+- Error responses (401, 403, 404, 500 where applicable)
+- Security requirements (better_auth_session)
+
+DTOs referenced:
+- EntityRelation (response)
+- CreateRelationRequest (request body)
+- UpdateStatusRequest (request body)
+- ListRelationsQuery (query parameters)

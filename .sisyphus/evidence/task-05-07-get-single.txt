@@ -1,0 +1,11 @@
+=== QA Test 7: Get single relation (GET /relations/{id}) - expect 200 ===
+Timestamp: 2026-03-13T23:54:05Z
+
+Request: GET /core/relations/dae13dcb-8e50-444a-a179-7e84db564add
+
+Expected: 200 OK
+Actual: 200 OK
+
+Response: Full relation object with all fields
+
+Result: PASS

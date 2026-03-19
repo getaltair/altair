@@ -1,0 +1,62 @@
+Scenario 2: Services start and reach healthy state
+
+Temporarily stopped conflicting existing container: web-db-1
+
+docker compose up -d output
+Emulate Docker CLI using podman. Create /etc/containers/nodocker to quiet msg.
+[4m>>>> Executing external compose provider "/usr/lib/docker/cli-plugins/docker-compose". Please see podman-compose(1) for how to disable this message. <<<<
+
+[0m Network altair_default Creating
+ Network altair_default Created
+ Volume altair_pgdata Creating
+ Volume altair_pgdata Created
+ Container altair-postgres-1 Creating
+ Container altair-postgres-1 Created
+ Container altair-powersync-1 Creating
+ Container altair-powersync-1 Created
+ Container altair-postgres-1 Starting
+ Container altair-postgres-1 Started
+ Container altair-postgres-1 Waiting
+ Container altair-postgres-1 Healthy
+ Container altair-powersync-1 Starting
+ Container altair-powersync-1 Started
+
+
+Waiting for postgres health...
+Emulate Docker CLI using podman. Create /etc/containers/nodocker to quiet msg.
+[4m>>>> Executing external compose provider "/usr/lib/docker/cli-plugins/docker-compose". Please see podman-compose(1) for how to disable this message. <<<<
+
+[0mpostgres poll 1: {"Command":"\"postgres -c wal_lev…\"","CreatedAt":"2026-03-16 20:34:21 -0500 CDT","ExitCode":0,"Health":"healthy","ID":"575c811b4d9a","Image":"docker.io/library/postgres:16","Labels":"com.docker.compose.project.config_files=/home/rghamilton3/workspace/getaltair/altair/compose.yaml,com.docker.compose.version=5.1.0,com.docker.compose.config-hash=8045989cf9ba6f3b024c929e9959f9973e26b72b4903bc82982941f692bb27bd,com.docker.compose.container-number=1,com.docker.compose.depends_on=,com.docker.compose.image=sha256:49767d69e57428bc8229d8427521605e90b230c908d19542644d92b77dc1984d,com.docker.compose.project.working_dir=/home/rghamilton3/workspace/getaltair/altair,com.docker.compose.service=postgres,com.docker.compose.oneoff=False,com.docker.compose.project=altair","LocalVolumes":"1","Mounts":"altair_pgdata,/home/rghamilt…","Name":"altair-postgres-1","Names":"altair-postgres-1","Networks":"altair_default","Ports":"0.0.0.0:5432-\u003e5432/tcp","Project":"altair","Publishers":[{"URL":"0.0.0.0","TargetPort":5432,"PublishedPort":5432,"Protocol":"tcp"}],"RunningFor":"9 seconds ago","Service":"postgres","Size":"0B","State":"running","Status":"Up 6 seconds"}
+
+Waiting for PowerSync startup probe...
+powersync poll 1: probe not ready
+powersync poll 2: probe not ready
+powersync poll 3: probe not ready
+powersync poll 4: probe not ready
+powersync poll 5: probe not ready
+powersync poll 6: probe not ready
+powersync poll 7: probe not ready
+powersync poll 8: probe not ready
+powersync poll 9: probe not ready
+powersync poll 10: probe not ready
+powersync poll 11: probe not ready
+powersync poll 12: probe not ready
+powersync poll 13: probe not ready
+powersync poll 14: probe not ready
+powersync poll 15: probe not ready
+powersync poll 16: probe not ready
+powersync poll 17: probe not ready
+powersync poll 18: probe not ready
+powersync poll 19: probe not ready
+powersync poll 20: probe not ready
+powersync poll 21: probe not ready
+powersync poll 22: probe not ready
+powersync poll 23: probe not ready
+powersync poll 24: probe not ready
+
+PowerSync failed startup probe in time
+
+Root cause follow-up
+- Existing `web-db-1` container from `apps/web/compose.yaml` was using host port 5432 and had to be stopped temporarily for this QA run.
+- `docker compose logs powersync` shows the pinned `journeyapps/powersync-service:0.2.0` image rejects `storage.type: postgresql` with `TransformError: Expected 'mongodb' but got 'postgresql'`.
+- `docker compose logs postgres` also shows `CREATE PUBLICATION IF NOT EXISTS powersync FOR ALL TABLES;` fails on PostgreSQL 16 with `syntax error at or near "NOT"` during init.

@@ -1,17 +1,8 @@
-# DEPRECATED: This compose file is superseded by the root compose.yaml
-# Use `docker compose -f ../../compose.yaml up -d` from the project root
-# or `bun run db:start` from this directory (which now references root compose)
-services:
-  db:
-    image: postgres
-    restart: always
-    ports:
-      - 5432:5432
-    environment:
-      POSTGRES_USER: root
-      POSTGRES_PASSWORD: mysecretpassword
-      POSTGRES_DB: local
-    volumes:
-      - pgdata:/var/lib/postgresql
-volumes:
-  pgdata:
+# DEPRECATED: This compose file has been superseded by the root compose.yaml.
+# The root compose.yaml defines all development infrastructure (Postgres + PowerSync).
+#
+# To start the database:
+#   From project root: docker compose up -d
+#   From this directory: bun run db:start
+#
+# This file is kept for reference only. Do not add services here.

@@ -1,0 +1,13 @@
+=== QA Test 3: Create duplicate (POST /relations) - expect 409 ===
+Timestamp: 2026-03-13T23:53:40Z
+
+Request: POST /core/relations (duplicate of existing relation)
+Body: Same as Test 1 (initiative -> tag, references)
+
+Expected: 409 Conflict
+Actual: 409 Conflict
+
+Response Body:
+{"error":"A relation with these entities and type already exists"}
+
+Result: PASS

@@ -1,0 +1,13 @@
+=== QA Test 12: Delete as non-owner (DELETE /relations/{id}) - expect 403 ===
+Timestamp: 2026-03-13T23:54:15Z
+
+Request: DELETE /core/relations/dae13dcb-8e50-444a-a179-7e84db564add
+Auth: second-user-token-67890 (non-owner)
+
+Expected: 403 Forbidden
+Actual: 403 Forbidden
+
+Response Body:
+{"error":"Forbidden"}
+
+Result: PASS

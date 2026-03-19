@@ -1,0 +1,49 @@
+QA SCENARIO 1: PowerSync config YAML is valid
+================================================
+
+Test 1: YAML syntax validation
+  Command: python3 -c "import yaml; yaml.safe_load(open('infra/powersync/powersync.yaml'))"
+  Result: ✓ PASSED (no syntax errors)
+
+Test 2: Required sections present
+  Checking for: service, replication, storage, sync_rules, client_auth, api, migrations
+
+  service:
+    ✓ port: 8080
+    ✓ Docker image version comment present (journeyapps/powersync-service:0.2.0)
+
+  replication:
+    ✓ connections[0].type: postgresql
+    ✓ connections[0].uri: ${PS_DATABASE_URI} (env var substitution)
+    ✓ connections[0].sslmode: disable
+
+  storage:
+    ✓ type: postgresql
+    ✓ uri: ${PS_STORAGE_URI} (env var substitution)
+    ✓ sslmode: disable
+
+  sync_rules:
+    ✓ path: /config/sync-rules.yaml
+
+  client_auth:
+    ✓ jwks_uri: http://server:3000/api/auth/keys (placeholder)
+    ✓ P4-003 reference documented
+
+  api:
+    ✓ tokens: ["${PS_ADMIN_TOKEN}"] (env var substitution)
+
+  migrations:
+    ✓ disable_auto_migration: false
+
+Test 3: No hardcoded passwords
+  Command: grep -i "password\|secret" infra/powersync/powersync.yaml
+  Result: ✓ PASSED (no hardcoded credentials found)
+
+Test 4: Environment variable substitution
+  Expected pattern: ${VAR_NAME}
+  Found:
+    ✓ ${PS_DATABASE_URI}
+    ✓ ${PS_STORAGE_URI}
+    ✓ ${PS_ADMIN_TOKEN}
+
+OVERALL: ✓ PASSED

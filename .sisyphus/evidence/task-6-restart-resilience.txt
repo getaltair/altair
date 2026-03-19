@@ -1,0 +1,28 @@
+Scenario 6: Service restart resilience
+
+powersync_restart_exit=0
+powersync_liveness_recovered=0
+postgres_restart_exit=0
+postgres_healthy_after_restart=0
+powersync_reconnected_after_postgres_restart=0
+
+=== docker compose restart powersync ===
+Emulate Docker CLI using podman. Create /etc/containers/nodocker to quiet msg.
+[4m>>>> Executing external compose provider "/usr/lib/docker/cli-plugins/docker-compose". Please see podman-compose(1) for how to disable this message. <<<<
+
+[0m Container altair-powersync-1 Restarting
+ Container altair-powersync-1 Started
+
+
+=== docker compose restart postgres ===
+Emulate Docker CLI using podman. Create /etc/containers/nodocker to quiet msg.
+[4m>>>> Executing external compose provider "/usr/lib/docker/cli-plugins/docker-compose". Please see podman-compose(1) for how to disable this message. <<<<
+
+[0m Container altair-postgres-1 Restarting
+ Container altair-postgres-1 Started
+
+
+=== final docker compose ps ===
+NAME                 IMAGE                                           COMMAND                  SERVICE     CREATED              STATUS                  PORTS
+altair-postgres-1    docker.io/library/postgres:16                   "postgres -c wal_lev…"   postgres    About a minute ago   Up About a minute       0.0.0.0:5432->5432/tcp
+altair-powersync-1   docker.io/journeyapps/powersync-service:0.2.0   "start -r unified"       powersync   About a minute ago   Up Less than a second   0.0.0.0:8080->8080/tcp

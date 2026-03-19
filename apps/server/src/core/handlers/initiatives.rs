@@ -10,6 +10,7 @@ use crate::auth::{
 	require_user_owned,
 };
 use crate::error::AppError;
+use crate::state::AppState;
 use axum::{
 	Router,
 	extract::{Path, State},
@@ -19,7 +20,6 @@ use axum::{
 };
 use chrono::{DateTime, NaiveDate, Utc};
 use serde::{Deserialize, Serialize};
-use sqlx::PgPool;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
@@ -84,7 +84,7 @@ pub struct UpdateInitiativeRequest {
 )]
 #[axum::debug_handler]
 pub async fn list(
-	State(pool): State<PgPool>,
+	State(state): State<AppState>,
 	user: AuthenticatedUser,
 ) -> Result<Json<Vec<Initiative>>, AppError> {
 	let initiatives = sqlx::query_as::<_, Initiative>(
@@ -101,7 +101,7 @@ pub async fn list(
 		"#,
 	)
 	.bind(user.0.id)
-	.fetch_all(&pool)
+	.fetch_all(&state.pool)
 	.await?;
 
 	Ok(Json(initiatives))
@@ -131,11 +131,11 @@ pub async fn list(
 )]
 #[axum::debug_handler]
 pub async fn get_initiative(
-	State(pool): State<PgPool>,
+	State(state): State<AppState>,
 	user: AuthenticatedUser,
 	Path(id): Path<Uuid>,
 ) -> Result<Json<Initiative>, AppError> {
-	let can_access = can_access_initiative(&pool, user.0.id, id)
+	let can_access = can_access_initiative(&state.pool, user.0.id, id)
 		.await
 		.map_err(|e| AppError::Internal(format!("Authorization check failed: {}", e)))?;
 
@@ -151,7 +151,7 @@ pub async fn get_initiative(
 		"#,
 	)
 	.bind(id)
-	.fetch_optional(&pool)
+	.fetch_optional(&state.pool)
 	.await?
 	.ok_or_else(|| AppError::NotFound("Initiative not found".to_string()))?;
 
@@ -177,12 +177,12 @@ pub async fn get_initiative(
 )]
 #[axum::debug_handler]
 pub async fn create(
-	State(pool): State<PgPool>,
+	State(state): State<AppState>,
 	user: AuthenticatedUser,
 	Json(req): Json<CreateInitiativeRequest>,
 ) -> Result<(StatusCode, Json<Initiative>), AppError> {
 	if let Some(household_id) = req.household_id {
-		let can_access = can_access_household(&pool, user.0.id, household_id)
+		let can_access = can_access_household(&state.pool, user.0.id, household_id)
 			.await
 			.map_err(|e| AppError::Internal(format!("Household access check failed: {}", e)))?;
 		if !can_access {
@@ -209,7 +209,7 @@ pub async fn create(
 	.bind(&status)
 	.bind(req.start_date)
 	.bind(req.target_date)
-	.fetch_one(&pool)
+	.fetch_one(&state.pool)
 	.await?;
 
 	Ok((StatusCode::CREATED, Json(initiative)))
@@ -239,12 +239,12 @@ pub async fn create(
 #[axum::debug_handler]
 #[allow(unused_assignments)]
 pub async fn update(
-	State(pool): State<PgPool>,
+	State(state): State<AppState>,
 	user: AuthenticatedUser,
 	Path(id): Path<Uuid>,
 	Json(req): Json<UpdateInitiativeRequest>,
 ) -> Result<Json<Initiative>, AppError> {
-	require_user_owned(&pool, user.0.id, UserOwnableTable::Initiative, id)
+	require_user_owned(&state.pool, user.0.id, UserOwnableTable::Initiative, id)
 		.await
 		.map_err(|_| AppError::Forbidden)?;
 
@@ -285,7 +285,7 @@ pub async fn update(
 			"SELECT * FROM initiatives WHERE id = $1 AND deleted_at IS NULL",
 		)
 		.bind(id)
-		.fetch_one(&pool)
+		.fetch_one(&state.pool)
 		.await?;
 		return Ok(Json(initiative));
 	}
@@ -323,7 +323,7 @@ pub async fn update(
 		query = query.bind(household_id);
 	}
 
-	let initiative = query.fetch_one(&pool).await?;
+	let initiative = query.fetch_one(&state.pool).await?;
 
 	Ok(Json(initiative))
 }
@@ -350,17 +350,17 @@ pub async fn update(
 )]
 #[axum::debug_handler]
 pub async fn delete_initiative(
-	State(pool): State<PgPool>,
+	State(state): State<AppState>,
 	user: AuthenticatedUser,
 	Path(id): Path<Uuid>,
 ) -> Result<StatusCode, AppError> {
-	require_user_owned(&pool, user.0.id, UserOwnableTable::Initiative, id)
+	require_user_owned(&state.pool, user.0.id, UserOwnableTable::Initiative, id)
 		.await
 		.map_err(|_| AppError::Forbidden)?;
 
 	sqlx::query("UPDATE initiatives SET deleted_at = NOW() WHERE id = $1 AND deleted_at IS NULL")
 		.bind(id)
-		.execute(&pool)
+		.execute(&state.pool)
 		.await?;
 
 	Ok(StatusCode::NO_CONTENT)
@@ -370,7 +370,7 @@ pub async fn delete_initiative(
 ///
 /// Returns a router with all initiative endpoints.
 #[allow(dead_code)]
-pub fn routes() -> Router<PgPool> {
+pub fn routes() -> Router<AppState> {
 	Router::new()
 		.route("/", get(list))
 		.route("/", post(create))
@@ -385,6 +385,6 @@ mod tests {
 
 	#[test]
 	fn routes_is_mountable() {
-		let _router: Router<PgPool> = routes();
+		let _router: Router<AppState> = routes();
 	}
 }

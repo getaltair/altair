@@ -1,0 +1,90 @@
+# Task F4: UI Verification - Evidence Log
+# Generated: 2026-03-14
+# Plan: p3-008-api-docs
+
+## Summary
+Verified Swagger UI and Scalar UI documentation interfaces for the Altair API.
+
+## Verification Results
+
+### 1. Server Status
+- Server started successfully with `scalar-ui` feature enabled
+- Server running on http://127.0.0.1:3000
+- Database: PostgreSQL (Docker container)
+
+### 2. Swagger UI Verification
+- **URL**: http://127.0.0.1:3000/docs/swagger/
+- **HTTP Status**: 200 OK
+- **Page Title**: "Swagger UI"
+- **Render Status**: PASSED - UI renders correctly with all API endpoints
+
+#### Verified Elements:
+- Altair API title and version (0.1.0, OAS 3.1)
+- All endpoint categories displayed:
+  - Health (1 endpoint)
+  - Auth (1 endpoint)
+  - Users (1 endpoint)
+  - Households (6 endpoints)
+  - Initiatives (5 endpoints)
+  - Tags (5 endpoints)
+  - Relations (5 endpoints)
+  - Not Implemented (7 placeholder endpoints)
+- Schemas section visible with 19 DTOs:
+  - AppUser, User, ErrorResponse
+  - Household, HouseholdMember, HouseholdMembership
+  - CreateHouseholdRequest, UpdateHouseholdRequest
+  - Initiative, CreateInitiativeRequest, UpdateInitiativeRequest
+  - Tag, CreateTagRequest, UpdateTagRequest
+  - EntityRelation, CreateRelationRequest, UpdateStatusRequest, ListRelationsQuery
+  - HealthResponse
+- Authorization button present (cookie-based auth)
+
+### 3. Scalar UI Verification
+- **URL**: http://127.0.0.1:3000/docs/scalar
+- **HTTP Status**: 200 OK
+- **Page Title**: "Scalar"
+- **Render Status**: PASSED - UI renders correctly with modern interface
+
+#### Verified Elements:
+- Sidebar navigation with all API sections
+- Introduction, Health, Auth, Users, Households, Initiatives, Tags, Relations
+- Not Implemented placeholders visible
+- Models section accessible
+- Developer Tools panel present
+- Dark mode toggle available
+- Search functionality (Ctrl+K)
+
+### 4. OpenAPI Spec Verification
+- **URL**: http://127.0.0.1:3000/docs/openapi.json
+- **HTTP Status**: 200 OK
+- **Format**: Valid JSON
+- **OpenAPI Version**: 3.1
+
+## Screenshots Captured
+1. **Swagger UI**: `.sisyphus/evidence/swagger-ui.png`
+   - Full page screenshot showing all endpoints and schemas
+
+2. **Scalar UI**: `.sisyphus/evidence/scalar-ui.png`
+   - Full page screenshot showing modern documentation interface
+
+## HTTP Response Codes Summary
+| Route | Status Code | Result |
+|-------|-------------|--------|
+| /docs/swagger | 303 (redirect) | PASS |
+| /docs/swagger/ | 200 | PASS |
+| /docs/scalar | 200 | PASS |
+| /docs/scalar/ | 404 | Expected (no trailing slash) |
+| /docs/openapi.json | 200 | PASS |
+
+## Build Configuration Notes
+- Feature flag `scalar-ui` required for Scalar UI
+- Build command: `cargo build -p server --features server/scalar-ui`
+- utoipa-scalar dependency requires `axum` feature
+
+## Conclusion
+**VERDICT: PASS**
+
+Both Swagger UI and Scalar UI are functioning correctly and rendering the OpenAPI specification with all documented endpoints. The Scalar UI feature flag is working as expected.
+
+---
+Evidence collected by Sisyphus-Junior agent

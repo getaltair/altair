@@ -1,0 +1,13 @@
+=== QA Test 4: List by from_entity_id (GET /relations?from_entity_id=...) - expect 200 ===
+Timestamp: 2026-03-13T23:53:50Z
+
+Request: GET /core/relations?from_entity_id=33333333-3333-3333-3333-333333333333
+
+Expected: 200 OK
+Actual: 200 OK
+
+Response: Array of 2 relations containing matching from_entity_id
+- Relation 1: supports (initiative -> tag)
+- Relation 2: references (initiative -> tag)
+
+Result: PASS

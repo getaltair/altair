@@ -1,0 +1,34 @@
+QA SCENARIO 2: Sync rules contain all 10 canonical streams
+===========================================================
+
+Step 1: Extract canonical stream names from packages/contracts/registry/sync-streams.json
+  Auto-subscribed (6):
+    1. my_profile
+    2. my_memberships
+    3. my_personal_data
+    4. my_household_data
+    5. my_relations
+    6. my_attachment_metadata
+
+  On-demand (4):
+    7. initiative_detail
+    8. note_detail
+    9. item_history
+    10. quest_detail
+
+Step 2: Verify each stream appears in infra/powersync/sync-rules.yaml
+  ✓ my_profile
+  ✓ my_memberships
+  ✓ my_personal_data
+  ✓ my_household_data
+  ✓ my_relations
+  ✓ my_attachment_metadata
+  ✓ initiative_detail
+  ✓ note_detail
+  ✓ item_history
+  ✓ quest_detail
+
+Step 3: Verify stream count
+  All 10 canonical streams found: ✓
+
+OVERALL: ✓ PASSED

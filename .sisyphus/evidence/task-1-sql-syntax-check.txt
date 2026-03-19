@@ -1,0 +1,28 @@
+=== QA SCENARIO 1: SQL SYNTAX VALIDATION ===
+
+Checking for required SQL components:
+
+1. CREATE PUBLICATION check:
+48:CREATE PUBLICATION IF NOT EXISTS powersync FOR ALL TABLES;
+
+2. powersync_storage database check:
+6:-- 1. Create powersync_storage database (for PowerSync bucket storage)
+8:SELECT 'CREATE DATABASE powersync_storage'
+9:WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'powersync_storage')
+29:-- Grant CONNECT on powersync_storage database
+30:GRANT CONNECT ON DATABASE powersync_storage TO powersync;
+50:-- Grant permissions on powersync_storage database
+52:\c powersync_storage
+
+3. REPLICATION role check:
+13:-- 2. Create powersync user with REPLICATION role
+20:-- Grant REPLICATION role to powersync user
+21:ALTER USER powersync WITH REPLICATION;
+
+4. Idempotent guards check:
+9:WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'powersync_storage')
+17:EXCEPTION WHEN duplicate_object THEN NULL;
+47:-- Create publication for all tables (idempotent with IF NOT EXISTS)
+48:CREATE PUBLICATION IF NOT EXISTS powersync FOR ALL TABLES;
+
+=== RESULT: All 4 required components present ===

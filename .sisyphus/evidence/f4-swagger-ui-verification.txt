@@ -1,0 +1,17 @@
+=== SWAGGER UI CODE VERIFICATION ===
+
+1. Checking Swagger UI dependency:
+utoipa-swagger-ui = { version = "9", features = ["axum"] }
+
+2. Checking Swagger UI route definition in docs/mod.rs:
+	let router: Router<S> = SwaggerUi::new("/docs/swagger")
+		.url("/docs/openapi.json", ApiDoc::openapi())
+		.into();
+
+
+3. Checking that Swagger UI is NOT feature-flagged:
+	S: Clone + Send + Sync + 'static,
+{
+	let router: Router<S> = SwaggerUi::new("/docs/swagger")
+
+RESULT: Swagger UI is always included (no feature flag)

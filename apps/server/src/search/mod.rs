@@ -3,13 +3,13 @@
 //! Handles keyword indexing, semantic embeddings, and hybrid ranking.
 //! Placeholder for search/indexing functionality.
 
+use crate::state::AppState;
 use axum::{Router, routing::get};
-use sqlx::PgPool;
 
 /// Create the router for this module.
 ///
 /// Routes are mounted at `/search/*` in the main router.
-pub fn router() -> Router<PgPool> {
+pub fn router() -> Router<AppState> {
 	Router::new().route("/", get(search))
 }
 
@@ -40,6 +40,6 @@ mod tests {
 
 	#[test]
 	fn router_is_mountable() {
-		let _router: Router<PgPool> = router();
+		let _router: Router<AppState> = router();
 	}
 }

@@ -4,14 +4,14 @@
 
 pub mod handlers;
 
+use crate::state::AppState;
 use axum::Router;
-use sqlx::PgPool;
 
 /// Create the router for this module.
 ///
 /// Routes are mounted at `/core/*` in the main router.
 #[allow(dead_code)]
-pub fn router() -> Router<PgPool> {
+pub fn router() -> Router<AppState> {
 	Router::new()
 	// Future routes will be added here:
 	// .route("/users/me", get(get_current_user))
@@ -24,6 +24,6 @@ mod tests {
 
 	#[test]
 	fn router_is_mountable() {
-		let _router: Router<PgPool> = router();
+		let _router: Router<AppState> = router();
 	}
 }

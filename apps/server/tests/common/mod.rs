@@ -186,6 +186,7 @@ impl TestApp {
 /// let response = app.oneshot(request).await.unwrap();
 /// ```
 pub fn create_test_app(pool: PgPool) -> TestApp {
+	let state = server::state::AppState { pool };
 	let router = Router::new()
 		.route("/health", get(handlers::health::health_check))
 		.route("/users/me", get(handlers::users::me))
@@ -197,7 +198,7 @@ pub fn create_test_app(pool: PgPool) -> TestApp {
 		.nest("/attachments", attachments::router())
 		.nest("/sync", sync::router())
 		.nest("/search", search::router())
-		.with_state(pool);
+		.with_state(state);
 
 	TestApp::new(router)
 }

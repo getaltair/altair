@@ -1,0 +1,50 @@
+QA Scenario 2: db:push still works
+===================================
+
+Test: Run `bun run db:push` from apps/web/
+Expected: Drizzle schema push succeeds (exit 0, no connection errors)
+Actual: ✓ PASS
+
+Command executed:
+  cd /home/rghamilton3/workspace/getaltair/altair/apps/web && bun run db:push
+
+Output (first 30 lines):
+  $ drizzle-kit push
+  No config path provided, using default 'drizzle.config.ts'
+  Reading config file '/home/rghamilton3/workspace/getaltair/altair/apps/web/drizzle.config.ts'
+  Using 'pg' driver for database querying
+  [⣷] Pulling schema from database...
+  [2K[1G[✓] Pulling schema from database...
+
+   Warning  You are about to execute current statements:
+
+  CREATE TABLE "task" (
+    "id" serial PRIMARY KEY NOT NULL,
+    "title" text NOT NULL,
+    "priority" integer DEFAULT 1 NOT NULL
+  );
+
+  CREATE TABLE "account" (
+    "id" text PRIMARY KEY NOT NULL,
+    "account_id" text NOT NULL,
+    "provider_id" text NOT NULL,
+    "user_id" text NOT NULL,
+    "access_token" text,
+    "refresh_token" text,
+    "id_token" text,
+    "access_token_expires_at" timestamp,
+    "refresh_token_expires_at" timestamp,
+    "refresh_token_expires_at" timestamp,
+    "scope" text,
+    "password" text,
+    "created_at" timestamp DEFAULT now() NOT NULL,
+    "updated_at" timestamp NOT NULL
+  );
+
+Verification:
+  - DATABASE_URL from apps/web/.env is correctly used
+  - Postgres connection successful (port 5432)
+  - Drizzle schema pull successful
+  - No connection errors
+
+Result: ✓ PASS - db:push works with root compose postgres

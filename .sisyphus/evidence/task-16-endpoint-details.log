@@ -1,0 +1,126 @@
+[
+  {
+    "path": "get",
+    "method": "description"
+  },
+  {
+    "path": "get",
+    "method": "description"
+  },
+  {
+    "path": "get",
+    "method": "description"
+  },
+  {
+    "path": "post",
+    "method": "description"
+  },
+  {
+    "path": "get",
+    "method": "description"
+  },
+  {
+    "path": "delete",
+    "method": "description"
+  },
+  {
+    "path": "patch",
+    "method": "description"
+  },
+  {
+    "path": "get",
+    "method": "description"
+  },
+  {
+    "path": "get",
+    "method": "description"
+  },
+  {
+    "path": "post",
+    "method": "description"
+  },
+  {
+    "path": "get",
+    "method": "description"
+  },
+  {
+    "path": "delete",
+    "method": "description"
+  },
+  {
+    "path": "patch",
+    "method": "description"
+  },
+  {
+    "path": "get",
+    "method": "description"
+  },
+  {
+    "path": "post",
+    "method": "description"
+  },
+  {
+    "path": "get",
+    "method": "description"
+  },
+  {
+    "path": "delete",
+    "method": "description"
+  },
+  {
+    "path": "patch",
+    "method": "description"
+  },
+  {
+    "path": "get",
+    "method": "description"
+  },
+  {
+    "path": "post",
+    "method": "description"
+  },
+  {
+    "path": "get",
+    "method": "description"
+  },
+  {
+    "path": "delete",
+    "method": "description"
+  },
+  {
+    "path": "patch",
+    "method": "description"
+  },
+  {
+    "path": "get",
+    "method": "description"
+  },
+  {
+    "path": "get",
+    "method": "description"
+  },
+  {
+    "path": "get",
+    "method": "description"
+  },
+  {
+    "path": "get",
+    "method": "description"
+  },
+  {
+    "path": "get",
+    "method": "description"
+  },
+  {
+    "path": "get",
+    "method": "description"
+  },
+  {
+    "path": "get",
+    "method": "description"
+  },
+  {
+    "path": "get",
+    "method": "description"
+  }
+]

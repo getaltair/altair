@@ -1,0 +1,11 @@
+=== QA Test 5: List by to_entity_id (GET /relations?to_entity_id=...) - expect 200 ===
+Timestamp: 2026-03-13T23:53:55Z
+
+Request: GET /core/relations?to_entity_id=44444444-4444-4444-4444-444444444444
+
+Expected: 200 OK
+Actual: 200 OK
+
+Response: Array of 2 relations containing matching to_entity_id
+
+Result: PASS

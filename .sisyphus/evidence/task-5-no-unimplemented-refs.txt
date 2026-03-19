@@ -1,0 +1,1 @@
+Client authentication (JWT/JWKS) is not yet configured — this is planned for P4-003. The PowerSync service runs, but clients cannot authenticate until P4-003 is complete.

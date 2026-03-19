@@ -5,6 +5,7 @@
 
 use super::models::User;
 use super::session::{AuthError, validate_session_token};
+use crate::state::AppState;
 use axum::{
 	extract::FromRequestParts,
 	http::{StatusCode, request::Parts},
@@ -12,7 +13,6 @@ use axum::{
 };
 use axum_extra::extract::CookieJar;
 use serde::Serialize;
-use sqlx::PgPool;
 
 /// Newtype wrapper for authenticated users.
 ///
@@ -74,12 +74,12 @@ impl IntoResponse for AuthError {
 	}
 }
 
-impl FromRequestParts<PgPool> for AuthenticatedUser {
+impl FromRequestParts<AppState> for AuthenticatedUser {
 	type Rejection = Response;
 
 	async fn from_request_parts(
 		parts: &mut Parts,
-		state: &PgPool,
+		state: &AppState,
 	) -> Result<Self, Self::Rejection> {
 		let jar = CookieJar::from_request_parts(parts, state)
 			.await
@@ -108,7 +108,7 @@ impl FromRequestParts<PgPool> for AuthenticatedUser {
 			})?
 			.value();
 
-		let pool = state;
+		let pool = &state.pool;
 		let (user, _session) = validate_session_token(pool, token)
 			.await
 			.map_err(|err| err.into_response())?;

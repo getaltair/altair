@@ -1,0 +1,25 @@
+## Evidence: Task 4 — Server Still Works
+Generated: 2026-03-18
+
+### Environment Check: apps/server/.env
+File exists: YES
+Contents:
+  # Local development database (matches apps/web/compose.yaml Postgres service)
+  DATABASE_URL=postgres://root:mysecretpassword@localhost:5432/local
+
+DATABASE_URL configured: YES (points to local Postgres on port 5432)
+
+---
+
+### Command: cargo build -p server
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.09s
+EXIT CODE: 0
+
+---
+
+### Result: PASS
+- apps/server/.env exists with DATABASE_URL configured
+- DATABASE_URL: postgres://root:mysecretpassword@localhost:5432/local
+- cargo build -p server: SUCCESS (already compiled, no recompilation needed)
+- Note: Full server startup not attempted (requires runtime env beyond DATABASE_URL).
+  Build success confirms the server crate compiles cleanly against the current codebase.

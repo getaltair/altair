@@ -1,0 +1,21 @@
+=== SCALAR UI CODE VERIFICATION ===
+
+1. Checking Scalar UI dependency (optional):
+utoipa-scalar = { version = "0.3", optional = true }
+scalar-ui = ["utoipa-scalar"]
+
+2. Checking feature flag definition:
+[features]
+default = []
+scalar-ui = ["utoipa-scalar"]
+
+3. Checking Scalar UI route definition (feature-flagged):
+	#[cfg(feature = "scalar-ui")]
+	let router: Router<S> = {
+		use utoipa_scalar::Scalar;
+		let scalar_router: Router<S> = Scalar::with_url("/docs/scalar", ApiDoc::openapi()).into();
+		router.merge(scalar_router)
+	};
+
+
+RESULT: Scalar UI is correctly feature-flagged with 'scalar-ui'

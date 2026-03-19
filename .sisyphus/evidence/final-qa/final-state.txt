@@ -1,0 +1,14 @@
+Timestamp: 2026-03-18T17:22:30-05:00
+
+$ docker compose ps
+NAME                 IMAGE                                            COMMAND                  SERVICE     CREATED          STATUS          PORTS
+altair-postgres-1    docker.io/library/postgres:16                    "postgres -c wal_lev…"   postgres    18 minutes ago   Up 18 minutes   0.0.0.0:5432->5432/tcp
+altair-powersync-1   docker.io/journeyapps/powersync-service:1.20.1   "start -r unified"       powersync   18 minutes ago   Up 18 minutes   0.0.0.0:8080->8080/tcp
+
+$ docker compose logs powersync 2>&1 | grep -i "error\|fatal\|panic\|sync rules\|loaded"
+powersync-1  | {"level":"info","message":"Successfully loaded dynamic modules.","timestamp":"2026-03-18T22:02:55.244Z"}
+powersync-1  | {"level":"info","message":"Loaded sync rules","name":"Replicator:postgresql-local","timestamp":"2026-03-18T22:02:55.464Z"}
+powersync-1  | {"level":"info","message":"Sync rules updated from configuration","timestamp":"2026-03-18T22:02:55.533Z"}
+powersync-1  | {"level":"info","message":"[powersync_1_32fc] Activated new sync rules at 00000000/01DC6D28","timestamp":"2026-03-18T22:02:55.662Z"}
+
+Result: no error, fatal, or panic log lines matched.

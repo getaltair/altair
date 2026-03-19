@@ -1,0 +1,13 @@
+=== QA Test 10: Invalid status (PATCH /relations/{id}/status) - expect 400 ===
+Timestamp: 2026-03-13T23:54:00Z
+
+Request: PATCH /core/relations/{id}/status
+Body: {"status":"invalid_status"}
+
+Expected: 400 Bad Request
+Actual: 400 Bad Request
+
+Response Body:
+{"error":"Invalid status: invalid_status"}
+
+Result: PASS

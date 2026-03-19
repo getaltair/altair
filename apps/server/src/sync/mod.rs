@@ -3,13 +3,13 @@
 //! Handles mutation ingestion, conflict detection, and device checkpoints.
 //! Placeholder for Phase 4 PowerSync integration.
 
+use crate::state::AppState;
 use axum::{Router, routing::get};
-use sqlx::PgPool;
 
 /// Create the router for this module.
 ///
 /// Routes are mounted at `/sync/*` in the main router.
-pub fn router() -> Router<PgPool> {
+pub fn router() -> Router<AppState> {
 	Router::new().route("/checkpoint", get(get_checkpoint))
 }
 
@@ -41,6 +41,6 @@ mod tests {
 	#[test]
 	fn router_is_mountable() {
 		// Verify the router can be created and has correct type
-		let _router: Router<PgPool> = router();
+		let _router: Router<AppState> = router();
 	}
 }

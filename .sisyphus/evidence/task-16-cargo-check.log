@@ -1,0 +1,11 @@
+    Checking server v0.1.0 (/home/rghamilton3/workspace/getaltair/altair/apps/server)
+warning: function `swagger` is never used
+  --> apps/server/src/docs/ui.rs:31:8
+   |
+31 | pub fn swagger() -> Router {
+   |        ^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `server` (bin "server") generated 1 warning
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.87s

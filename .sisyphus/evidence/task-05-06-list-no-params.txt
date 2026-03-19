@@ -1,0 +1,12 @@
+=== QA Test 6: List no params (GET /relations) - expect 400 ===
+Timestamp: 2026-03-13T23:54:00Z
+
+Request: GET /core/relations (no query params)
+
+Expected: 400 Bad Request
+Actual: 400 Bad Request
+
+Response Body:
+{"error":"Either from_entity_id or to_entity_id is required"}
+
+Result: PASS

@@ -4,8 +4,8 @@
 
 use super::extractor::AuthenticatedUser;
 use super::models::User;
+use crate::state::AppState;
 use axum::{Json, Router, extract::State, routing::get};
-use sqlx::PgPool;
 use utoipa::ToSchema;
 
 /// Error response format for authentication failures.
@@ -55,13 +55,13 @@ pub struct ErrorResponse {
 	tag = "Auth"
 )]
 #[axum::debug_handler]
-pub async fn me(State(_pool): State<PgPool>, user: AuthenticatedUser) -> Json<User> {
+pub async fn me(State(_state): State<AppState>, user: AuthenticatedUser) -> Json<User> {
 	Json(user.0)
 }
 
 /// Create the auth handlers router.
 ///
 /// Routes are mounted at `/auth/*` in the main router.
-pub fn router() -> Router<PgPool> {
+pub fn router() -> Router<AppState> {
 	Router::new().route("/me", get(me))
 }

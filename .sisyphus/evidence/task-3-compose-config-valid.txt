@@ -1,0 +1,96 @@
+Scenario 1: Docker Compose config validates
+copied .env.example to .env
+
+Emulate Docker CLI using podman. Create /etc/containers/nodocker to quiet msg.
+[4m>>>> Executing external compose provider "/usr/lib/docker/cli-plugins/docker-compose". Please see podman-compose(1) for how to disable this message. <<<<
+
+[0mname: altair
+services:
+  postgres:
+    command:
+      - postgres
+      - -c
+      - wal_level=logical
+    environment:
+      POSTGRES_DB: local
+      POSTGRES_PASSWORD: mysecretpassword
+      POSTGRES_USER: root
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U root -d local
+      timeout: 5s
+      interval: 5s
+      retries: 5
+    image: postgres:16
+    networks:
+      default: null
+    ports:
+      - mode: ingress
+        target: 5432
+        published: "5432"
+        protocol: tcp
+    restart: unless-stopped
+    volumes:
+      - type: bind
+        source: /home/rghamilton3/workspace/getaltair/altair/infra/postgres/init.sql
+        target: /docker-entrypoint-initdb.d/init.sql
+        read_only: true
+        bind: {}
+      - type: volume
+        source: pgdata
+        target: /var/lib/postgresql/data
+        volume: {}
+  powersync:
+    command:
+      - start
+      - -r
+      - unified
+    depends_on:
+      postgres:
+        condition: service_healthy
+        required: true
+    environment:
+      POWERSYNC_CONFIG_PATH: /config/powersync.yaml
+      PS_ADMIN_TOKEN: dev-admin-token-change-in-production
+      PS_DATABASE_URI: postgresql://root:mysecretpassword@postgres:5432/local
+      PS_STORAGE_URI: postgresql://root:mysecretpassword@postgres:5432/powersync_storage
+    image: journeyapps/powersync-service:0.2.0
+    networks:
+      default: null
+    ports:
+      - mode: ingress
+        target: 8080
+        published: "8080"
+        protocol: tcp
+    restart: unless-stopped
+    volumes:
+      - type: bind
+        source: /home/rghamilton3/workspace/getaltair/altair/infra/powersync/powersync.yaml
+        target: /config/powersync.yaml
+        read_only: true
+        bind: {}
+      - type: bind
+        source: /home/rghamilton3/workspace/getaltair/altair/infra/powersync/sync-rules.yaml
+        target: /config/sync-rules.yaml
+        read_only: true
+        bind: {}
+networks:
+  default:
+    name: altair_default
+volumes:
+  pgdata:
+    name: altair_pgdata
+
+Service checks
+Emulate Docker CLI using podman. Create /etc/containers/nodocker to quiet msg.
+[4m>>>> Executing external compose provider "/usr/lib/docker/cli-plugins/docker-compose". Please see podman-compose(1) for how to disable this message. <<<<
+
+[0mpostgres
+powersync
+
+wal_level logical check
+4:    command: ['postgres', '-c', 'wal_level=logical']
+
+depends_on check
+24:    depends_on:

@@ -1,0 +1,44 @@
+=== QA Test 1: Create valid relation (POST /relations) ===
+Timestamp: 2026-03-13T23:52:19Z
+
+Request: POST /core/relations
+Body: {
+  "from_entity_type": "initiative",
+  "from_entity_id": "33333333-3333-3333-3333-333333333333",
+  "to_entity_type": "tag",
+  "to_entity_id": "44444444-4444-4444-4444-444444444444",
+  "relation_type": "references",
+  "notes": "QA test"
+}
+
+Expected: 201 Created
+Actual: 201 Created
+
+Response Body:
+{
+  "id": "dae13dcb-8e50-444a-a179-7e84db564add",
+  "from_entity_type": "initiative",
+  "from_entity_id": "33333333-3333-3333-3333-333333333333",
+  "to_entity_type": "tag",
+  "to_entity_id": "44444444-4444-4444-4444-444444444444",
+  "relation_type": "references",
+  "source_type": "user",
+  "status": "accepted",
+  "confidence": null,
+  "evidence": null,
+  "owner_user_id": "11111111-1111-1111-1111-111111111111",
+  "household_id": null,
+  "notes": "QA test",
+  "created_at": "2026-03-13T23:52:19.408490Z",
+  "updated_at": "2026-03-13T23:52:19.408490Z",
+  "deleted_at": null
+}
+
+Result: PASS
+Notes:
+- ID generated correctly
+- source_type defaults to "user"
+- status defaults to "accepted" (since source_type is "user")
+- owner_user_id set to authenticated user
+
+Created Relation ID: dae13dcb-8e50-444a-a179-7e84db564add

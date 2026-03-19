@@ -1,0 +1,12 @@
+=== QA Test 11: Delete as owner (DELETE /relations/{id}) - expect 204 ===
+Timestamp: 2026-03-13T23:54:08Z
+
+Request: DELETE /core/relations/afd03264-94a3-44cb-a005-e9edd9e0ef98
+
+Expected: 204 No Content
+Actual: 204 No Content
+
+Response: Empty body
+
+Result: PASS
+DB Verification: deleted_at column set to timestamp

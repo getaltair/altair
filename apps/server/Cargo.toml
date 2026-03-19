@@ -25,6 +25,10 @@ utoipa = { version = "5.4", features = ["axum_extras", "openapi_extensions", "uu
 utoipa-axum = "0.2"
 utoipa-swagger-ui = { version = "9", features = ["axum"] }
 utoipa-scalar = { version = "0.3", features = ["axum"], optional = true }
+jsonwebtoken = "10"
+rsa = { version = "0.9", features = ["pem"] }
+rand = "0.8"
+base64 = "0.22"
 
 [dev-dependencies]
 tower = { version = "0.5", features = ["util"] }

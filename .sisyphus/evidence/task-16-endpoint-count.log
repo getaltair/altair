@@ -1,0 +1,25 @@
+{
+  "path_count": 20,
+  "paths": [
+    "/attachments",
+    "/auth/me",
+    "/core/households",
+    "/core/households/{id}",
+    "/core/households/{id}/memberships",
+    "/core/initiatives",
+    "/core/initiatives/{id}",
+    "/core/relations",
+    "/core/relations/{id}",
+    "/core/relations/{id}/status",
+    "/core/tags",
+    "/core/tags/{id}",
+    "/guidance/quests",
+    "/guidance/routines",
+    "/health",
+    "/knowledge/notes",
+    "/search",
+    "/sync/checkpoint",
+    "/tracking/items",
+    "/users/me"
+  ]
+}

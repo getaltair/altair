@@ -1,0 +1,18 @@
+=== QA SCENARIO 2: NO DESTRUCTIVE OPERATIONS ===
+
+Checking for unguarded destructive SQL:
+
+1. DROP TABLE check:
+✓ No DROP TABLE found
+
+2. DROP DATABASE check:
+✓ No DROP DATABASE found
+
+3. TRUNCATE check:
+✓ No TRUNCATE found
+
+4. DELETE FROM check:
+✓ No DELETE FROM found
+
+=== RESULT: No destructive operations detected ===
+Script is safe for idempotent execution.

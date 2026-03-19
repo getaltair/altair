@@ -1,0 +1,7 @@
+{
+  "better_auth_session": {
+    "type": "apiKey",
+    "in": "cookie",
+    "name": "better-auth.session_token"
+  }
+}

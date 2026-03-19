@@ -2,13 +2,13 @@
 //!
 //! Handles epics, quests, routines, checkpoints, and focus sessions.
 
+use crate::state::AppState;
 use axum::{Router, routing::get};
-use sqlx::PgPool;
 
 /// Create the router for this module.
 ///
 /// Routes are mounted at `/guidance/*` in the main router.
-pub fn router() -> Router<PgPool> {
+pub fn router() -> Router<AppState> {
 	Router::new()
 		.route("/quests", get(list_quests))
 		.route("/routines", get(list_routines))
@@ -77,6 +77,6 @@ mod tests {
 	#[test]
 	fn router_is_mountable() {
 		// Verify the router can be created and has correct type
-		let _router: Router<PgPool> = router();
+		let _router: Router<AppState> = router();
 	}
 }

@@ -1,0 +1,12 @@
+=== QA Test 9: Update status (PATCH /relations/{id}/status) - expect 200 ===
+Timestamp: 2026-03-13T23:53:55Z
+
+Request: PATCH /core/relations/dae13dcb-8e50-444a-a179-7e84db564add/status
+Body: {"status":"dismissed"}
+
+Expected: 200 OK
+Actual: 200 OK
+
+Response: Updated relation with status="dismissed", updated_at changed
+
+Result: PASS

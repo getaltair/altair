@@ -1,0 +1,19 @@
+=== QA Test 2: Create invalid enum (POST /relations) - expect 400 ===
+Timestamp: 2026-03-13T23:53:30Z
+
+Request: POST /core/relations
+Body: {
+  "from_entity_type": "invalid_type",
+  "from_entity_id": "33333333-3333-3333-3333-333333333333",
+  "to_entity_type": "tag",
+  "to_entity_id": "44444444-4444-4444-4444-444444444444",
+  "relation_type": "references"
+}
+
+Expected: 400 Bad Request
+Actual: 400 Bad Request
+
+Response Body:
+{"error":"Invalid entity_type: invalid_type"}
+
+Result: PASS
