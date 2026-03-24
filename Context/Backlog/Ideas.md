@@ -1,9 +1,6 @@
 # Ideas Backlog
 
-Place feature ideas, enhancements, and exploratory concepts here.
+Ideas and enhancements for future consideration. Add entries via backlog-add
+skill. Prioritize via backlog-prioritize skill.
 
-## Template
-- **Summary**: Brief description
-- **Value**: Why it matters
-- **Complexity**: Low/Medium/High
-- **Status**: Idea/Exploring/Ready
+<!-- Add new ideas below this line -->

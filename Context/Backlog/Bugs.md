@@ -1,9 +1,6 @@
 # Bugs Backlog
 
-Track known issues and technical debt items.
+Known bugs not blocking current work. Add entries via backlog-add skill.
+High-priority bugs should be addressed before starting new features.
 
-## Template
-- **Issue**: Description
-- **Impact**: User/business impact
-- **Repro**: Steps to reproduce
-- **Status**: New/Investigating/Blocked/Fixed
+<!-- Add new bugs below this line -->
