@@ -170,12 +170,12 @@ Create the repo, tooling, and baseline project structure so the rest of the work
 
 ### Checklist
 
-- [ ] Add GitHub Actions workflow for:
-  - [ ] TypeScript install/build placeholder
-  - [ ] Rust build/test placeholder
-  - [ ] Kotlin/Gradle build placeholder
-  - [ ] contract validation placeholder
-- [ ] Ensure CI runs on PRs
+- [x] Add GitHub Actions workflow for:
+  - [x] TypeScript install/build placeholder
+  - [x] Rust build/test placeholder
+  - [x] Kotlin/Gradle build placeholder
+  - [x] contract validation placeholder
+- [x] Ensure CI runs on PRs
 
 ### Acceptance Criteria
 
@@ -191,13 +191,13 @@ Create the repo, tooling, and baseline project structure so the rest of the work
 
 ### Checklist
 
-- [ ] Add PRDs to `docs/prd`
-- [ ] Add architecture spec to `docs/architecture`
-- [ ] Add ADRs to `docs/adr`
-- [ ] Add schema design spec
-- [ ] Add PowerSync sync spec
-- [ ] Add shared contracts spec
-- [ ] Add implementation plan
+- [x] Add PRDs to `docs/prd`
+- [x] Add architecture spec to `docs/architecture`
+- [x] Add ADRs to `docs/adr`
+- [x] Add schema design spec
+- [x] Add PowerSync sync spec
+- [x] Add shared contracts spec
+- [x] Add implementation plan
 
 ### Acceptance Criteria
 
@@ -207,10 +207,10 @@ Create the repo, tooling, and baseline project structure so the rest of the work
 
 ## Phase 0 Review Gate
 
-- [ ] Repo structure approved
-- [ ] Tooling conventions approved
-- [ ] CI skeleton green
-- [ ] Current architecture docs committed
+- [x] Repo structure approved
+- [x] Tooling conventions approved
+- [x] CI skeleton green
+- [x] Current architecture docs committed
 
 ---
 

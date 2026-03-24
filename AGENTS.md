@@ -167,7 +167,7 @@ export const task = pgTable('task', {
 
 ### Rust
 
-- Edition 2024 for server/worker, Edition 2021 for Tauri
+- Edition 2024 for all Rust crates
 - Follow standard Rust formatting (`cargo fmt`)
 - Run `cargo clippy` for linting
 
@@ -195,3 +195,36 @@ export const task = pgTable('task', {
 2. Run `bun run check` for type checking
 3. Run `bun run test:unit -- --run` for tests
 4. Run `cargo clippy` and `cargo fmt` for Rust code
+
+---
+
+## Context Engine
+
+This project uses context-engine workflow for structured development.
+
+### Directory Structure
+
+- `Context/Features/` - Active feature specs and planning documents
+- `Context/Decisions/` - Architecture Decision Records (ADRs)
+- `Context/Backlog/` - Ideas and bugs awaiting triage
+
+### Workflow
+
+1. **Plan**: `/plan "description"` - Create structured feature plans
+2. **Quick**: `/quick` - Small tasks and fixes
+3. **QA**: `/qa` - Run quality checks
+
+### Stack-Specific Instructions
+
+#### SvelteKit/TypeScript (`apps/web/`)
+
+- Follow Svelte 5 runes pattern: `$state`, `$derived`, `$effect`, `$props`
+- Use `$lib` and `$app` path aliases
+- Run `bun run check` before commits
+- Test with `bun run test:unit`
+
+#### Rust/Tauri (`apps/server/`, `apps/worker/`, `apps/web/src-tauri/`)
+
+- Follow `cargo fmt` and `cargo clippy` standards
+- Edition 2024 for all Rust crates
+- Test with `cargo test`
