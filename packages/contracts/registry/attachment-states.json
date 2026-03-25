@@ -1,0 +1,11 @@
+{
+  "description": "Attachment processing lifecycle states",
+  "types": [
+    "pending",
+    "uploaded",
+    "processing",
+    "ready",
+    "failed",
+    "deleted"
+  ]
+}

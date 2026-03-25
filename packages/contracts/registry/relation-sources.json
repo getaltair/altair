@@ -1,0 +1,11 @@
+{
+  "description": "How a relation was created",
+  "types": [
+    "user",
+    "ai",
+    "import",
+    "rule",
+    "migration",
+    "system"
+  ]
+}

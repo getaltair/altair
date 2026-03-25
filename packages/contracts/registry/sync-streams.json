@@ -1,0 +1,17 @@
+{
+  "description": "PowerSync sync stream identifiers",
+  "auto_subscribed": [
+    "my_profile",
+    "my_memberships",
+    "my_personal_data",
+    "my_household_data",
+    "my_relations",
+    "my_attachment_metadata"
+  ],
+  "on_demand": [
+    "initiative_detail",
+    "note_detail",
+    "item_history",
+    "quest_detail"
+  ]
+}

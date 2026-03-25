@@ -1,0 +1,13 @@
+{
+  "description": "Canonical relation type identifiers",
+  "types": [
+    "references",
+    "supports",
+    "requires",
+    "related_to",
+    "depends_on",
+    "duplicates",
+    "similar_to",
+    "generated_from"
+  ]
+}

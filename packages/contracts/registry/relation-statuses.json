@@ -1,0 +1,10 @@
+{
+  "description": "Lifecycle state of a relation",
+  "types": [
+    "accepted",
+    "suggested",
+    "dismissed",
+    "rejected",
+    "expired"
+  ]
+}
