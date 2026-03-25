@@ -1,5 +1,5 @@
 [tools]
-bun = "latest"
 java = "21"
-prek = "latest"
-rust = "latest"
+pnpm = "10.33.0"
+prek = "0.3.8"
+rust = "1.94.0"
