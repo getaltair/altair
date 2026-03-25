@@ -12,6 +12,11 @@ export default defineConfig({
 		devtoolsJson(),
 		paraglideVitePlugin({ project: './project.inlang', outdir: './src/lib/paraglide' })
 	],
+	resolve: {
+		alias: {
+			'@altair/contracts': '../packages/contracts/src/typescript/index.ts'
+		}
+	},
 	test: {
 		expect: { requireAssertions: true },
 		projects: [

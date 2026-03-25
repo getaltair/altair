@@ -36,9 +36,10 @@ Altair follows a multi-tier, multi-platform architecture:
 | Rust / Axum | `apps/server/` | Backend API server |
 | Rust | `apps/worker/` | Background worker for async processing |
 | Android / Kotlin / Jetpack Compose | `apps/android/` | Native Android application |
-| PostgreSQL / SQLite / Drizzle ORM | `apps/web/src/lib/server/db/` | Database layer (server: PostgreSQL, client: SQLite) |
-| PowerSync | — | Offline-first synchronization |
-| Better-Auth | `apps/web/src/lib/server/auth.ts` | Authentication |
+| PostgreSQL (server) / SQLite (client) | `apps/web/src/lib/server/db/` | Database layer with Drizzle ORM; migrations via sqlx in `apps/server/migrations/` |
+| PowerSync | — | Offline-first synchronization (Phase 4) |
+| Better-Auth | `apps/web/src/lib/server/auth.ts` | Authentication (Phase 3) |
+| Shared Contracts | `packages/contracts/` | Cross-platform identifiers and schemas (Phase 1) |
 | Paraglide JS | — | Internationalization |
 | Vitest / Playwright | — | Testing (unit and E2E) |
 | prek | — | Pre-commit hooks for code quality |
@@ -122,5 +123,24 @@ cd apps/web && bun run dev
 
 ## Active Work
 
-- **Feature:** —
-- **Status:** Not started
+- **Phase:** Phase 0 (Project Setup) — Complete
+- **Next:** Phase 1 (Shared Contracts Foundation)
+
+### Implementation Status
+
+See `docs/altair-phase-0-4-execution-checklist.md` for detailed task tracking.
+
+| Phase | Status | Description |
+|-------|--------|-------------|
+| Phase 0 | ✅ Complete | Project setup, tooling, CI skeleton |
+| Phase 1 | ❌ Not started | Shared contracts foundation |
+| Phase 2 | ❌ Not started | Database & schema foundation |
+| Phase 3 | ❌ Not started | Backend core foundation |
+| Phase 4 | ❌ Not started | PowerSync foundation |
+
+### Architecture Decisions
+
+See `docs/adr/` for full architecture decision records:
+- **ADR-002:** PostgreSQL as primary database
+- **ADR-003:** PowerSync as sync layer
+- **ADR-004:** Relationship modeling strategy

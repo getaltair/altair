@@ -1,0 +1,32 @@
+{
+  "name": "@altair/contracts",
+  "version": "1.0.0",
+  "description": "Shared contracts layer for Altair - canonical identifiers and schemas across all platforms",
+  "type": "module",
+  "main": "./src/typescript/index.ts",
+  "exports": {
+    ".": "./src/typescript/index.ts"
+  },
+  "files": [
+    "registry",
+    "schemas",
+    "src/typescript",
+    "generated/typescript"
+  ],
+  "scripts": {
+    "codegen": "python scripts/generate_contracts.py"
+  },
+  "keywords": [
+    "contracts",
+    "shared",
+    "canonical",
+    "identifiers",
+    "schemas"
+  ],
+  "author": "Altair Project",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/getaltair/altair.git"
+  }
+}

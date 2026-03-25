@@ -44,6 +44,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "altair-contracts"
+version = "1.0.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "android_log-sys"
 version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"

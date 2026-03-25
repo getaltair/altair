@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "EntityRef",
+  "description": "Reference to an entity by its type and identifier",
+  "type": "object",
+  "required": [
+    "entityType",
+    "entityId"
+  ],
+  "properties": {
+    "entityType": {
+      "type": "string",
+      "description": "Canonical entity type identifier (e.g., 'user', 'household', 'initiative')"
+    },
+    "entityId": {
+      "type": "string",
+      "description": "Unique identifier for the entity within its type"
+    }
+  }
+}

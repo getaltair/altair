@@ -3,9 +3,9 @@
 | Field | Value |
 |---|---|
 | **Document** | Altair Phase 0–4 Execution Checklist |
-| **Version** | 1.0 |
+| **Version** | 1.2 |
 | **Status** | Draft |
-| **Last Updated** | 2026-03-11 |
+| **Last Updated** | 2026-03-24 |
 | **Related Docs** | `altair-implementation-plan.md`, architecture spec, ADR-002/003/004, schema design spec, PowerSync sync spec, shared contracts spec |
 
 ---
@@ -231,21 +231,21 @@ Prevent string drift and identifier chaos before backend and clients proliferate
 
 ## P1-001 — Add Registry JSON Files
 
-**Depends on:** P0-001  
+**Depends on:** P0-001
 **Owner:** contracts/platform
 
 ### Checklist
 
-- [ ] Create `packages/contracts/registry/entity-types.json`
-- [ ] Create `packages/contracts/registry/relation-types.json`
-- [ ] Create `packages/contracts/registry/sync-streams.json`
-- [ ] Populate with current canonical values
-- [ ] Add README explaining source-of-truth policy
+- [x] Create `packages/contracts/registry/entity-types.json`
+- [x] Create `packages/contracts/registry/relation-types.json`
+- [x] Create `packages/contracts/registry/sync-streams.json`
+- [x] Populate with current canonical values
+- [x] Add README explaining source-of-truth policy
 
 ### Acceptance Criteria
 
-- registry files contain all canonical values currently approved
-- no duplicate identifiers exist
+- [x] registry files contain all canonical values currently approved
+- [x] no duplicate identifiers exist
 
 ---
 
@@ -256,9 +256,9 @@ Prevent string drift and identifier chaos before backend and clients proliferate
 
 ### Checklist
 
-- [ ] Add `RelationRecord` JSON schema
-- [ ] Add `AttachmentRecord` JSON schema
-- [ ] Add `EntityRef` JSON schema
+- [x] Add `RelationRecord` JSON schema
+- [x] Add `AttachmentRecord` JSON schema
+- [x] Add `EntityRef` JSON schema
 - [ ] Add optional starter `SyncSubscriptionRequest` schema
 
 ### Acceptance Criteria
@@ -274,13 +274,13 @@ Prevent string drift and identifier chaos before backend and clients proliferate
 
 ### Checklist
 
-- [ ] Add generator script under `scripts/`
-- [ ] Generator reads registry JSON
-- [ ] Generator emits:
-  - [ ] TypeScript bindings
-  - [ ] Kotlin bindings
-  - [ ] Rust bindings
-- [ ] Document generator usage
+- [x] Add generator script under `scripts/`
+- [x] Generator reads registry JSON
+- [x] Generator emits:
+  - [x] TypeScript bindings
+  - [x] Kotlin bindings
+  - [x] Rust bindings
+- [x] Document generator usage
 
 ### Acceptance Criteria
 
@@ -295,9 +295,9 @@ Prevent string drift and identifier chaos before backend and clients proliferate
 
 ### Checklist
 
-- [ ] Add generated TS constants
-- [ ] Add generated Kotlin enums/data classes
-- [ ] Add generated Rust enums/structs
+- [x] Add generated TS constants
+- [x] Add generated Kotlin enums/data classes
+- [x] Add generated Rust enums/structs
 
 ### Acceptance Criteria
 
@@ -313,11 +313,11 @@ Prevent string drift and identifier chaos before backend and clients proliferate
 
 ### Checklist
 
-- [ ] Add registry shape tests
-- [ ] Add duplicate-value tests
-- [ ] Add generated TS value tests
-- [ ] Add generated Kotlin value tests
-- [ ] Add generated Rust value tests
+- [x] Add registry shape tests
+- [x] Add duplicate-value tests
+- [x] Add generated TS value tests
+- [x] Add generated Kotlin value tests
+- [x] Add generated Rust value tests
 
 ### Acceptance Criteria
 
@@ -327,46 +327,50 @@ Prevent string drift and identifier chaos before backend and clients proliferate
 
 ## P1-006 — Wire Contracts CI
 
-**Depends on:** P1-005, P0-004  
+**Depends on:** P1-005, P0-004
 **Owner:** platform/dev setup
 
 ### Checklist
 
-- [ ] Add contracts generation workflow
-- [ ] Run generator in CI
-- [ ] Fail if `git diff --exit-code` finds changes
-- [ ] Run contract validation tests in CI
+- [x] Add contracts generation workflow
+- [x] Run generator in CI
+- [x] Fail if `git diff --exit-code` finds changes
+- [x] Run contract validation tests in CI
 
 ### Acceptance Criteria
 
-- PR fails if generated artifacts are stale
-- PR fails if registry values are invalid
+- [x] Generator creates outputs without manual edits
+- [x] Local contract validation tests pass
+- [x] GitHub Actions workflow for CI enforcement
+- [x] PR fails if generated artifacts are stale
+- [x] PR fails if registry values are invalid
 
 ---
 
 ## P1-007 — Replace Magic Strings in Existing Artifacts
 
-**Depends on:** P1-004  
+**Depends on:** P1-004
 **Owner:** platform/backend/client leads
 
 ### Checklist
 
-- [ ] Update backend placeholders/docs to reference canonical entity types
-- [ ] Update PowerSync spec docs to reference canonical stream names
-- [ ] Update future client scaffolds to import generated constants
+- [x] Update backend placeholders/docs to reference canonical entity types
+- [~] Update PowerSync spec docs to reference canonical stream names
+- [~] Update future client scaffolds to import generated constants
 
 ### Acceptance Criteria
 
-- no new shared identifier is introduced outside contracts package
+- [x] no new shared identifier is introduced outside contracts package
+- [x] EntityRef JSON schema added to complete DTO validation set
 
 ---
 
 ## Phase 1 Review Gate
 
-- [ ] Registry files approved
-- [ ] Generated bindings checked in
-- [ ] Validation tests green
-- [ ] CI enforcement green
+- [x] Registry files approved
+- [x] Generated bindings checked in
+- [x] Validation tests green
+- [x] CI enforcement green
 
 ---
 
@@ -984,13 +988,13 @@ Validate baseline Postgres → SQLite sync for personal and household data.
 
 ## Week/Block 2
 
-- [ ] P1-001
-- [ ] P1-002
-- [ ] P1-003
-- [ ] P1-004
-- [ ] P1-005
-- [ ] P1-006
-- [ ] P1-007
+- [x] P1-001
+- [x] P1-002
+- [x] P1-003
+- [x] P1-004
+- [x] P1-005
+- [x] P1-006
+- [~] P1-007
 
 ## Week/Block 3
 
@@ -1071,9 +1075,9 @@ Only after auth/authorization foundation exists.
 
 ## By end of Phase 1
 
-- [ ] contracts package enforced
-- [ ] generated bindings checked in
-- [ ] contract CI green
+- [x] contracts package enforced
+- [x] generated bindings checked in
+- [x] contract CI green
 
 ## By end of Phase 2
 

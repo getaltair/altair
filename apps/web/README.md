@@ -2,6 +2,56 @@
 
 Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
 
+## Shared Contracts
+
+This application uses canonical identifiers and schemas from the `@altair/contracts` package. The contracts package provides:
+
+- **Entity types** — Canonical identifiers (user, household, initiative, etc.)
+- **Relation types** — Types of relationships (references, supports, requires, etc.)
+- **Sync streams** — PowerSync stream names (my_profile, my_memberships, etc.)
+- **DTOs** — Shared data transfer objects (EntityRef, RelationRecord)
+
+### Importing Contracts
+
+```typescript
+import { ENTITY_TYPES, RELATION_TYPES, SYNC_STREAMS } from '@altair/contracts';
+import type {
+	EntityRef,
+	RelationRecord,
+	EntityTypesValue,
+	RelationTypesValue
+} from '@altair/contracts';
+```
+
+### Using Contracts
+
+```typescript
+// Create an entity reference
+const entityRef: EntityRef = {
+	entityType: ENTITY_TYPES.HOUSEHOLD,
+	entityId: 'household-123'
+};
+
+// Create a relation record
+const relation: RelationRecord = {
+	id: 'relation-abc',
+	from: entityRef,
+	to: {
+		entityType: ENTITY_TYPES.USER,
+		entityId: 'user-456'
+	},
+	relationType: RELATION_TYPES.RELATED_TO,
+	sourceType: RELATION_SOURCE_TYPES.USER,
+	status: RELATION_STATUS_TYPES.ACCEPTED,
+	confidence: 0.9,
+	evidence: {},
+	createdAt: new Date().toISOString(),
+	updatedAt: new Date().toISOString()
+};
+```
+
+For more examples, see `src/lib/examples/contracts-demo.ts`.
+
 ## Creating a project
 
 If you're seeing this, you've probably already done this step. Congrats!

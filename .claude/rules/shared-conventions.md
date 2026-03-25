@@ -10,6 +10,12 @@ These conventions apply to all code regardless of stack.
 - One logical change per commit — don't mix unrelated changes
 - Planning artifacts (Context/) committed separately from source code
 
+## Shared Contracts
+- All platforms use canonical identifiers from `packages/contracts/`
+- See `docs/altair-shared-contracts-spec.md` for full contract strategy
+- Never invent new shared identifiers inline — use generated bindings
+- Registry JSON is the source of truth for entity types, relation types, sync streams
+
 ## Code Organization
 - One responsibility per file — if a file does two unrelated things, split it
 - Public API surface should be minimal — don't export internals

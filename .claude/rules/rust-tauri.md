@@ -43,3 +43,9 @@ paths:
 - Unit tests: `#[cfg(test)]` module in each source file
 - Integration tests: `tests/` directory at crate root
 - Mock external dependencies — don't hit real APIs in tests
+
+## Shared Contracts
+- Use canonical entity types from `packages/contracts/generated/rust/`
+- Use canonical relation types from `packages/contracts/generated/rust/`
+- Never invent new shared identifiers inline
+- See `docs/altair-shared-contracts-spec.md` for contract strategy

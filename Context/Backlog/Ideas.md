@@ -1,6 +1,22 @@
-# Ideas Backlog
+# Backlog: Ideas
 
-Ideas and enhancements for future consideration. Add entries via backlog-add
-skill. Prioritize via backlog-prioritize skill.
+## Format
 
-<!-- Add new ideas below this line -->
+```markdown
+## [Idea Title]
+
+### Description
+Brief description of the idea.
+
+### Value
+What value this would provide to users.
+
+### Notes
+Any additional context or considerations.
+```
+
+---
+
+## Ideas
+
+*No ideas yet. Add them above using the template.*

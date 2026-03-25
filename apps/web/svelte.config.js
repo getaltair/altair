@@ -13,7 +13,12 @@ const adapter =
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
-	kit: { adapter },
+	kit: {
+		adapter,
+		alias: {
+			'@altair/contracts': '../packages/contracts/generated/typescript/contracts.ts'
+		}
+	},
 	vitePlugin: {
 		dynamicCompileOptions: ({ filename }) => ({ runes: !filename.includes('node_modules') })
 	}

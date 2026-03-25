@@ -1,6 +1,25 @@
-# Bugs Backlog
+# Backlog: Bugs
 
-Known bugs not blocking current work. Add entries via backlog-add skill.
-High-priority bugs should be addressed before starting new features.
+## Format
 
-<!-- Add new bugs below this line -->
+```markdown
+## [Bug Title]
+
+### Description
+What the bug is and how it manifests.
+
+### Reproduction
+Steps to reproduce the bug.
+
+### Priority
+Critical | High | Medium | Low
+
+### Notes
+Any additional context or workarounds.
+```
+
+---
+
+## Bugs
+
+*No bugs yet. Add them above using the template.*

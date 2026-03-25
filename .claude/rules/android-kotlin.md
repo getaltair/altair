@@ -10,7 +10,7 @@ paths:
 ## Language
 - Kotlin 2.0+ with K2 compiler
 - Target SDK: latest stable
-- Compose for UI (if using Jetpack Compose)
+- Jetpack Compose for all UI
 - Coroutines for all async operations
 
 ## Code Style
@@ -46,3 +46,9 @@ paths:
 - Never swallow exceptions silently
 - Use `require()` / `check()` for preconditions
 - Log errors with proper context using Timber or Log
+
+## Shared Contracts
+- Use canonical entity types from `packages/contracts/generated/kotlin/`
+- Use canonical relation types from `packages/contracts/generated/kotlin/`
+- Never invent new shared identifiers inline
+- See `docs/altair-shared-contracts-spec.md` for contract strategy

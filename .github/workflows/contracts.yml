@@ -15,22 +15,41 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Contracts validation placeholder
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r packages/contracts/requirements.txt
+
+      - name: Run code generator
+        run: python3 packages/contracts/scripts/generate_contracts.py --root packages/contracts
+
+      - name: Check for stale generated files
+        run: |
+          if git diff --exit-code packages/contracts/generated/; then
+            echo "::error::Generated contracts are out of date. Please run the code generator and commit the changes."
+            echo "Run: python3 packages/contracts/scripts/generate_contracts.py --root packages/contracts"
+            exit 1
+          fi
+          echo "✓ Generated contracts are up to date"
+
+      - name: Run validation tests
+        working-directory: ./packages/contracts
+        run: pytest tests/ -v
+
+      - name: Success
         run: |
           echo "========================================"
-          echo "Contracts Package Validation"
+          echo "✓ Contracts Package Validation Passed"
           echo "========================================"
           echo ""
-          echo "This workflow is a placeholder that will be implemented in Phase 1 (P1-006)."
-          echo ""
-          echo "Future implementation will include:"
-          echo "  ✓ Registry JSON validation"
-          echo "  ✓ Code generation for TypeScript, Kotlin, and Rust"
-          echo "  ✓ Generated artifact validation"
-          echo "  ✓ Contract tests"
-          echo "  ✓ CI enforcement (fail if generated artifacts are stale)"
-          echo ""
-          echo "For now, this workflow passes as the contracts package doesn't exist yet."
+          echo "All checks passed:"
+          echo "  ✓ Registry JSON structure is valid"
+          echo "  ✓ Code generation produced output"
+          echo "  ✓ Generated artifacts are committed"
+          echo "  ✓ All validation tests passed"
           echo ""
           echo "See: docs/altair-phase-0-4-execution-checklist.md (P1-006)"
           echo "========================================"
