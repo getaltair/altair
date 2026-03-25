@@ -1,0 +1,50 @@
+# Altair development infrastructure
+# Usage: docker compose -f infra/compose/docker-compose.yml up -d
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: altair
+      POSTGRES_USER: altair
+      POSTGRES_PASSWORD: altair_dev
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U altair"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  garage:
+    image: dxflrs/garage:v2.2.0
+    ports:
+      - "3900:3900" # S3 API
+      - "3901:3901" # RPC
+      - "3902:3902" # Web
+      - "3903:3903" # Admin
+    volumes:
+      - ./garage.toml:/etc/garage.toml
+      - garage-meta:/var/lib/garage/meta
+      - garage-data:/var/lib/garage/data
+    restart: unless-stopped
+
+  # PowerSync service — uncomment when ready (Step 7)
+  # powersync:
+  #   image: journeyapps/powersync-service:latest
+  #   ports:
+  #     - "8080:8080"
+  #   environment:
+  #     POWERSYNC_CONFIG: /config/powersync.yml
+  #   volumes:
+  #     - ../powersync:/config
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+
+volumes:
+  pgdata:
+  garage-meta:
+  garage-data:

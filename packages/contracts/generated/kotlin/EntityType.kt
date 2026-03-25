@@ -1,9 +1,7 @@
 // AUTO-GENERATED from registry/entity-types.json — do not edit
 package com.altair.contracts
 
-enum class EntityType(
-    val value: String,
-) {
+enum class EntityType(val value: String) {
     USER("user"),
     HOUSEHOLD("household"),
     INITIATIVE("initiative"),
@@ -21,10 +19,10 @@ enum class EntityType(
     TRACKING_ITEM("tracking_item"),
     TRACKING_ITEM_EVENT("tracking_item_event"),
     TRACKING_SHOPPING_LIST("tracking_shopping_list"),
-    TRACKING_SHOPPING_LIST_ITEM("tracking_shopping_list_item"),
-    ;
+    TRACKING_SHOPPING_LIST_ITEM("tracking_shopping_list_item");
 
     companion object {
-        fun fromValue(value: String): EntityType = entries.first { it.value == value }
+        fun fromValue(value: String): EntityType =
+            entries.first { it.value == value }
     }
 }
