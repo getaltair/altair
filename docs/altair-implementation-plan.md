@@ -1,1360 +1,1499 @@
-# Altair Comprehensive Implementation Plan
+# Altair — Implementation Plan
 
-| Field | Value |
-|---|---|
-| **Document** | Altair Comprehensive Implementation Plan |
-| **Version** | 1.0 |
-| **Status** | Draft |
-| **Last Updated** | 2026-03-11 |
-| **Related Docs** | PRDs, Architecture Spec, ADR-002, ADR-003, ADR-004, Schema Design Spec, PowerSync Sync Spec, Shared Contracts Spec |
+**Purpose:** Step-by-step feature-based build order for spec-driven development with Claude Code. Each step references the relevant docs, lists its dependencies, and defines its "done" criteria.
 
----
+**Key Constraint:** Solo developer using AI coding agents heavily. Steps are scoped so each is a self-contained prompt-friendly unit with clear inputs, outputs, and validation criteria.
 
-# 1. Purpose
+**Backend:** Rust (Axum) modular monolith. PostgreSQL primary DB. Self-hosted Docker Compose deployment.
 
-This document defines a **comprehensive, dependency-ordered implementation plan** for Altair.
+**Sync:** PowerSync (Postgres → SQLite). Offline-first clients.
 
-It is designed to answer:
-
-- what should be built first
-- what depends on what
-- what can happen in parallel
-- what should be deferred
-- where the main technical risks live
-- what “done enough” looks like at each stage
-
-This plan assumes the currently selected architecture:
-
-- **Web:** SvelteKit + Svelte 5
-- **Desktop:** Tauri + shared Svelte UI
-- **Mobile:** Android + Kotlin + Compose
-- **Backend:** Rust + Axum
-- **Primary DB:** Postgres
-- **Client DB:** SQLite
-- **Sync:** PowerSync
-- **Relationships:** first-class domain records
-- **Attachments:** object storage, metadata in Postgres
+**Clients:** SvelteKit 2 / Svelte 5 (Web + Tauri Desktop), Android native (Kotlin + Compose).
 
 ---
 
-# 2. Planning Principles
+## Dependency Graph (Visual)
 
-## 2.1 Build the riskiest foundations early
-
-The highest-risk parts are:
-
-- shared contracts drift
-- schema/scope design mistakes
-- sync scope mismatch
-- multi-user/shared-state behavior
-- attachment + metadata coordination
-- domain boundaries across Guidance / Knowledge / Tracking
-
-These must be validated **before** polishing UI breadth.
-
-## 2.2 Prefer vertical slices over horizontal perfection
-
-A thin working slice across:
-
-- contracts
-- schema
-- backend
-- sync
-- client
-- UI
-
-is worth more than a perfectly engineered subsystem that does nothing user-visible.
-
-## 2.3 Separate “must be correct now” from “can evolve later”
-
-Must be correct early:
-
-- contracts
-- schema direction
-- sync scope shape
-- auth model
-- entity ownership boundaries
-
-Can evolve later:
-
-- advanced AI
-- rich graph visualizations
-- fancy automation
-- plugin systems
-- WearOS
-
-## 2.4 Use explicit gates
-
-Each major phase should end with a **go/no-go review**.
-
-That prevents wandering into the next stage with hidden structural rot.
-
----
-
-# 3. Dependency Overview
-
-```mermaid
-flowchart TB
-    PRD[PRDs / ADRs / Architecture] --> Contracts
-    PRD --> Schema
-    Contracts --> BackendFoundation
-    Schema --> BackendFoundation
-    Schema --> PowerSyncSetup
-    Contracts --> PowerSyncSetup
-    BackendFoundation --> PowerSyncSetup
-    PowerSyncSetup --> AndroidClient
-    PowerSyncSetup --> WebClient
-    Contracts --> AndroidClient
-    Contracts --> WebClient
-    BackendFoundation --> AndroidClient
-    BackendFoundation --> WebClient
-    AndroidClient --> HouseholdValidation
-    WebClient --> HouseholdValidation
-    HouseholdValidation --> TrackingVerticalSlice
-    HouseholdValidation --> GuidanceVerticalSlice
-    HouseholdValidation --> KnowledgeVerticalSlice
-    TrackingVerticalSlice --> Attachments
-    KnowledgeVerticalSlice --> Attachments
-    GuidanceVerticalSlice --> CrossDomainRelations
-    TrackingVerticalSlice --> CrossDomainRelations
-    KnowledgeVerticalSlice --> CrossDomainRelations
-    CrossDomainRelations --> SearchFoundation
-    Attachments --> SearchFoundation
-    SearchFoundation --> AIPhase
-    TrackingVerticalSlice --> DesktopPhase
-    GuidanceVerticalSlice --> DesktopPhase
-    KnowledgeVerticalSlice --> DesktopPhase
+```
+                    ┌──────────────────────────────────┐
+                    │  STEP 1: Monorepo Scaffold        │
+                    │  + Shared Contracts                │
+                    └──────────┬───────────────────────┘
+                               │
+                  ┌────────────┼────────────┐
+                  ▼            ▼            ▼
+         ┌──────────────┐ ┌──────────────┐ ┌──────────────┐
+         │ STEP 2:      │ │ STEP 3:      │ │ STEP 4:      │
+         │ Backend      │ │ Web Client   │ │ Android      │
+         │ Foundation   │ │ Scaffold     │ │ Scaffold     │
+         │ (Axum +      │ │ (SvelteKit)  │ │ (Kotlin +    │
+         │  Postgres)   │ │              │ │  Compose)    │
+         └──────┬───────┘ └──────┬───────┘ └──────┬───────┘
+                │                │                 │
+                ▼                │                 │
+         ┌──────────────┐       │                 │
+         │ STEP 5:      │       │                 │
+         │ Auth +       │       │                 │
+         │ Identity     │       │                 │
+         └──────┬───────┘       │                 │
+                │                │                 │
+                ▼                │                 │
+         ┌──────────────┐       │                 │
+         │ STEP 6:      │       │                 │
+         │ Core Domain  │       │                 │
+         │ (backend)    │       │                 │
+         └──────┬───────┘       │                 │
+                │                │                 │
+                ▼                │                 │
+         ┌──────────────┐       │                 │
+         │ STEP 7:      │       │                 │
+         │ PowerSync    │       │                 │
+         │ Setup        │◄──────┘                 │
+         └──────┬───────┘                         │
+                │                                  │
+       ┌────────┼────────────────┐                │
+       ▼        ▼                ▼                │
+┌───────────┐ ┌───────────┐ ┌───────────┐        │
+│ STEP 8:   │ │ STEP 9:   │ │ STEP 10:  │        │
+│ Guidance  │ │ Knowledge │ │ Tracking  │        │
+│ Backend   │ │ Backend   │ │ Backend   │        │
+└─────┬─────┘ └─────┬─────┘ └─────┬─────┘        │
+      │              │              │               │
+      └──────────────┼──────────────┘               │
+                     ▼                              │
+              ┌──────────────┐                      │
+              │ STEP 11:     │                      │
+              │ Relationships│                      │
+              │ Backend      │                      │
+              └──────┬───────┘                      │
+                     │                              │
+            ┌────────┼────────┐                     │
+            ▼                 ▼                     │
+     ┌──────────────┐  ┌──────────────┐            │
+     │ STEP 12:     │  │ STEP 13:     │◄───────────┘
+     │ Web Client   │  │ Android      │
+     │ Guidance +   │  │ Client       │
+     │ Core UI      │  │ Core         │
+     └──────┬───────┘  └──────┬───────┘
+            │                  │
+            ▼                  ▼
+     ┌──────────────┐  ┌──────────────┐
+     │ STEP 14:     │  │ STEP 15:     │
+     │ Web Client   │  │ Android      │
+     │ Knowledge +  │  │ Knowledge +  │
+     │ Tracking     │  │ Tracking     │
+     └──────┬───────┘  └──────┬───────┘
+            │                  │
+            └────────┬─────────┘
+                     ▼
+              ┌──────────────┐
+              │ STEP 16:     │
+              │ Attachments  │
+              └──────┬───────┘
+                     │
+              ┌──────┴───────┐
+              ▼              ▼
+       ┌───────────┐  ┌───────────┐
+       │ STEP 17:  │  │ STEP 18:  │
+       │ Search    │  │ Desktop   │
+       │           │  │ (Tauri)   │
+       └─────┬─────┘  └───────────┘
+             │
+             ▼
+       ┌───────────┐
+       │ STEP 19:  │
+       │ AI        │
+       │ Enrichment│
+       └─────┬─────┘
+             │
+             ▼
+       ┌───────────┐
+       │ STEP 20:  │
+       │ Notif +   │
+       │ Household │
+       └───────────┘
 ```
 
 ---
 
-# 4. Phase Summary
+## Parallel Tracks
 
-| Phase | Name | Goal |
-|---|---|---|
-| 0 | Project Setup & Decision Lock | Freeze architecture direction and repo structure |
-| 1 | Shared Contracts Foundation | Eliminate identifier drift |
-| 2 | Database & Schema Foundation | Create canonical persistence layer |
-| 3 | Backend Core Foundation | Stand up Axum app, auth, migrations, base APIs |
-| 4 | PowerSync Foundation | Validate offline-first sync shape |
-| 5 | Multi-User Shared-State Validation | Prove household/shared flows |
-| 6 | Vertical Slice: Guidance | Deliver usable tasks/routines flow |
-| 7 | Vertical Slice: Tracking | Deliver usable inventory flow |
-| 8 | Vertical Slice: Knowledge | Deliver usable note/linking flow |
-| 9 | Attachments & Media | Attach files/images safely |
-| 10 | Cross-Domain Relationships | Make Altair feel like one system |
-| 11 | Search Foundation | Cross-app retrieval and discovery |
-| 12 | Desktop Shell | Add Tauri power-user surface |
-| 13 | AI Integration | Add optional enrichment safely |
-| 14 | Hardening & Beta Readiness | Stability, migrations, observability |
-| 15 | Post-Beta Expansion | WearOS, automations, richer semantics |
+| Track A: Backend | Track B: Web Client | Track C: Android Client | Track D: Desktop |
+|---|---|---|---|
+| Steps 1, 2, 5–11, 16–17, 19–20 | Steps 3, 7 (partial), 12, 14, 18 | Steps 4, 13, 15 | Step 18 |
+
+Backend is the critical path. Web and Android client scaffolds can proceed in parallel with backend foundation work. Client feature work begins once PowerSync sync is proven (Step 7).
+
+**Critical path to first web prototype:** Steps 1 → 2 → 5 → 6 → 7 → 12 (~18 days)
+**Critical path to first Android prototype:** Steps 1 → 2 → 5 → 6 → 7 → 4 → 13 (~20 days)
 
 ---
 
-# 5. Detailed Step-by-Step Plan
-
-# Phase 0 — Project Setup & Decision Lock
-
-## Objective
-
-Create the repo and document structure so implementation does not immediately dissolve into competing local truths.
-
-## Prerequisites
-
-- PRDs completed
-- architecture spec completed
-- ADRs accepted
-- schema direction selected
-- sync direction selected
-
-## Steps
-
-### 0.1 Create monorepo structure
-
-Create:
+## Monorepo Layout
 
 ```text
 altair/
   apps/
-    server/
-    web/
-    desktop/
-    android/
-    worker/
+    server/                    # Rust Axum backend
+    web/                       # SvelteKit 2 web client
+    desktop/                   # Tauri 2 + shared Svelte UI
+    android/                   # Kotlin + Jetpack Compose
   packages/
-    contracts/
-    design-system/
-    docs/
+    contracts/                 # Shared contract registries + generated bindings
+      registry/
+        entity-types.json
+        relation-types.json
+        sync-streams.json
+      schemas/
+        relation-record.schema.json
+        attachment-record.schema.json
+      generated/
+        typescript/
+        kotlin/
+        rust/
+    api-contracts/             # HTTP API type definitions (OpenAPI or equivalent)
+    design-tokens/             # Shared colors, spacing, typography tokens
   infra/
-    compose/
-    scripts/
-    migrations/
+    docker/                    # Dockerfiles
+    compose/                   # Docker Compose configs
+    migrations/                # PostgreSQL migrations
+    powersync/                 # PowerSync sync stream configs
+    scripts/                   # Codegen, seed data, dev utilities
   docs/
     prd/
     architecture/
     adr/
+    specs/
 ```
 
-### 0.2 Decide package manager / workspace conventions
+### Shared Contract Strategy
 
-Examples:
+Entity type strings, relation types, sync stream names, and status enums are defined once in `packages/contracts/registry/*.json` and generated into TypeScript, Kotlin, and Rust constants. No inline magic strings.
 
-- pnpm for TS workspace
-- Gradle for Android
-- Cargo for Rust
-- one root task runner strategy
-
-### 0.3 Define coding standards
-
-Add:
-
-- formatter configs
-- linter configs
-- editorconfig
-- naming rules for shared contracts
-
-### 0.4 Add CI skeleton
-
-Set up:
-
-- contract generation + validation
-- Rust lint/test
-- TypeScript lint/test
-- Kotlin build/test
-- migration validation later
-
-## Deliverables
-
-- monorepo skeleton
-- basic CI
-- docs locations
-- coding standards
-
-## Exit Gate
-
-All engineers can clone repo, run baseline tooling, and understand where contracts/schema/backend/client code belong.
+> **Pragmatic note:** Start with manual synchronization of constants in the early steps. Introduce codegen when you have three or more consumers. Don't let tooling block progress on Steps 2–7.
 
 ---
 
-# Phase 1 — Shared Contracts Foundation
+## STEP 1: Monorepo Scaffold + Shared Contracts
 
-## Objective
+**Dependencies:** None
+**Priority:** P0
+**Docs:** `altair-architecture-spec.md` §21 Repository Strategy, `altair-shared-contracts-spec.md`
 
-Create the shared contracts layer before backend and clients start inventing incompatible identifiers.
+### What to build
 
-## Depends On
+- Monorepo root with workspace configuration
+- `packages/contracts/` with canonical JSON registries
+- `apps/server/` empty Rust project (Cargo workspace member)
+- `apps/web/` empty SvelteKit project placeholder
+- `apps/android/` empty Gradle project placeholder
+- `infra/` directory structure with Docker Compose skeleton
+- `docs/` directory with all existing specs committed
+- `.editorconfig`, linting configs, CI placeholder
+- `README.md` with setup instructions
 
-- Phase 0
+### Registry files to create
 
-## Steps
+| File | Contents | Source Doc |
+|---|---|---|
+| `entity-types.json` | All entity type identifiers (user, household, guidance_*, knowledge_*, tracking_*) | `altair-entity-type-registry.md` |
+| `relation-types.json` | Relation type identifiers (references, supports, requires, etc.) | `altair-shared-contracts-spec.md` §6 |
+| `sync-streams.json` | Sync stream names (my_profile, my_household_data, initiative_detail, etc.) | `altair-powersync-sync-spec.md` §8 |
 
-### 1.1 Add canonical registry files
+### Initial codegen
 
-Create:
+A simple script that reads each JSON registry and emits:
+- `generated/typescript/entityTypes.ts`, `relationTypes.ts`, `syncStreams.ts`
+- `generated/kotlin/EntityType.kt`, `RelationType.kt`, `SyncStream.kt`
+- `generated/rust/entity_type.rs`, `relation_type.rs`, `sync_stream.rs`
 
-- `entity-types.json`
-- `relation-types.json`
-- `sync-streams.json`
+### Docker Compose skeleton
 
-### 1.2 Add generated bindings
+```yaml
+services:
+  postgres:
+    image: postgres:16
+  powersync:
+    image: journeyapps/powersync-service
+  minio:
+    image: minio/minio
+  server:
+    build: ./apps/server
+```
 
-Generate:
+### Done when
 
-- TypeScript constants/types
-- Kotlin enums/data classes
-- Rust enums/structs
-
-### 1.3 Add schema JSON for core DTOs
-
-Initial schemas:
-
-- `RelationRecord`
-- `AttachmentRecord`
-- `EntityRef`
-- `SyncSubscriptionRequest` (starter)
-
-### 1.4 Add codegen script
-
-Use the generator to emit language bindings from registry JSON.
-
-### 1.5 Add contract validation tests
-
-Tests must fail if:
-
-- registry shape is invalid
-- duplicates appear
-- generated files drift
-
-### 1.6 Add GitHub Actions workflow
-
-Enforce generation and validation on PRs.
-
-## Deliverables
-
-- canonical contracts package
-- generated bindings in all target languages
-- CI enforcement
-
-## Exit Gate
-
-No shared identifier can be added informally in app/backend code without repo friction.
+- [ ] Monorepo root exists with workspace config
+- [ ] All three JSON registry files contain correct values from spec docs
+- [ ] Codegen script emits valid TypeScript, Kotlin, and Rust files
+- [ ] `apps/server/` is a valid Cargo project that compiles (empty main)
+- [ ] `infra/compose/docker-compose.yml` has Postgres and MinIO services defined
+- [ ] `docs/` contains all spec documents
+- [ ] README has local dev setup instructions
 
 ---
 
-# Phase 2 — Database & Schema Foundation
+## STEP 2: Backend Foundation (Axum + Postgres)
 
-## Objective
+**Dependencies:** Step 1 (monorepo structure exists)
+**Priority:** P0
+**Docs:** `altair-architecture-spec.md` §11 Backend Architecture, §19 Deployment Architecture
 
-Create the canonical database model and migration path.
+### What to build
 
-## Depends On
+Rust Axum application with database connectivity, migration framework, and health endpoint. No domain logic yet — just the skeleton that everything builds on.
 
-- Phase 1
+### Crate structure
 
-## Steps
+```text
+apps/server/
+  Cargo.toml                  # Workspace member
+  src/
+    main.rs                   # Axum server entrypoint
+    config.rs                 # Env-based config (database_url, port, etc.)
+    db/
+      mod.rs                  # Connection pool setup (sqlx)
+      migrations/             # sqlx migrations
+    api/
+      mod.rs                  # Router composition
+      health.rs               # GET /health
+    error.rs                  # Unified error type
+    telemetry.rs              # Structured logging (tracing)
+```
 
-### 2.1 Create migration system
+### Key dependencies to pin
 
-Choose and wire migration tooling for Rust/Postgres stack.
+| Crate | Purpose |
+|---|---|
+| `axum` | HTTP framework |
+| `sqlx` + `sqlx-postgres` | Async Postgres with compile-time checked queries |
+| `tokio` | Async runtime |
+| `tracing` + `tracing-subscriber` | Structured logging |
+| `serde` + `serde_json` | Serialization |
+| `dotenvy` | Env file loading |
+| `uuid` | Entity IDs |
+| `chrono` | Timestamps |
+| `tower-http` | CORS, tracing middleware, compression |
 
-### 2.2 Implement baseline schema
+### Database setup
 
-Implement the initial schema for:
+- PostgreSQL 16 via Docker Compose
+- Initial migration: create `schema_version` tracking (sqlx handles this)
+- Connection pool via `sqlx::PgPool`
+- Health endpoint verifies DB connectivity
 
-- users
-- households
-- memberships
-- initiatives
-- tags
-- attachments
-- entity_relations
-- Guidance tables
-- Knowledge tables
-- Tracking tables
-- tag join tables
-- attachment join tables
+### Done when
 
-### 2.3 Add indexes and constraints
-
-At minimum:
-
-- ownership/scope indexes
-- relation lookup indexes
-- item barcode lookup index
-- quest assignment/status indexes
-
-### 2.4 Add seed data
-
-Load the dev seed dataset for:
-
-- one user
-- second household member
-- shared household
-- shared chores
-- inventory
-- notes
-- relations
-
-### 2.5 Review schema against sync scopes
-
-Review every table for:
-
-- ownership columns
-- household scope
-- initiative scope
-- whether table should auto-sync / on-demand / server-only
-
-## Deliverables
-
-- migration files
-- working local Postgres schema
-- seed dataset
-- schema review notes
-
-## Exit Gate
-
-You can stand up Postgres locally, apply migrations, seed data, and manually query all major domains coherently.
+- [ ] `docker compose up` starts Postgres and the Axum server
+- [ ] `GET /health` returns 200 with `{"status": "ok", "db": "connected"}`
+- [ ] sqlx migration framework runs on startup
+- [ ] Structured JSON logs emitted via tracing
+- [ ] Server reads config from environment variables
+- [ ] Dockerfile builds a release binary
 
 ---
 
-# Phase 3 — Backend Core Foundation
+## STEP 3: Web Client Scaffold (SvelteKit)
 
-## Objective
+**Dependencies:** Step 1 (monorepo structure)
+**Priority:** P0 (can run in parallel with Step 2)
+**Docs:** `altair-architecture-spec.md` §10.2 Web Client Architecture
 
-Stand up the Axum backend with auth, migrations, config, and first CRUD slices.
+### What to build
 
-## Depends On
+SvelteKit 2 project with TypeScript, basic layout shell, and generated contract types wired in.
 
-- Phase 2
+### Project structure
 
-## Steps
+```text
+apps/web/
+  src/
+    lib/
+      contracts/              # Symlink or copy of generated/typescript
+      api/                    # HTTP client wrapper
+      stores/                 # Svelte stores
+      components/
+        layout/               # Shell, nav, sidebar
+    routes/
+      +layout.svelte          # App shell
+      +page.svelte            # Landing / today view placeholder
+      guidance/
+      knowledge/
+      tracking/
+      settings/
+  static/
+  svelte.config.js
+  vite.config.ts
+  tailwind.config.js
+```
 
-### 3.1 Create Axum application skeleton
+### Key dependencies
 
-Set up:
+| Library | Purpose |
+|---|---|
+| SvelteKit 2 | Framework |
+| Svelte 5 | Reactivity |
+| TypeScript | Type safety |
+| Tailwind CSS | Utility-first styling |
+| `@powersync/web` | PowerSync client SDK (installed, not configured yet) |
 
-- config loading
-- router structure
-- DB pool
-- health endpoints
-- structured logging
+### Application shell
 
-### 3.2 Implement auth foundation
+- Top-level layout with navigation sidebar: Guidance, Knowledge, Tracking, Search, Settings
+- Empty route stubs for each domain
+- Dark mode support via Tailwind
+- Responsive layout (mobile-first)
+- Auth gate placeholder (redirects to login if no session)
 
-Build:
+### Done when
 
-- local account model
-- session/token issuance
-- password hashing
-- current-user resolution
-- authorization helpers
-
-### 3.3 Implement ownership and membership guards
-
-Provide reusable checks for:
-
-- user-owned records
-- household membership
-- initiative visibility
-- attachment ownership
-
-### 3.4 Implement core APIs
-
-Start with:
-
-- users/me
-- households
-- household memberships
-- initiatives
-- tags
-
-### 3.5 Implement relation write/read model
-
-Provide APIs to:
-
-- create relation
-- list relations by entity
-- accept/dismiss suggested relations
-
-### 3.6 Add integration tests
-
-Cover:
-
-- auth
-- household access boundaries
-- initiative visibility
-- relation creation rules
-
-## Deliverables
-
-- running server
-- auth foundation
-- core CRUD endpoints
-- authorization middleware/helpers
-
-## Exit Gate
-
-The server can authenticate a user, enforce household membership, and serve real data from the seeded database.
+- [ ] `npm run dev` serves the SvelteKit app
+- [ ] App shell renders with navigation sidebar
+- [ ] All domain route stubs exist and render placeholder content
+- [ ] Generated TypeScript contracts import without errors
+- [ ] Tailwind CSS works with dark mode toggle
+- [ ] Layout is responsive at mobile and desktop breakpoints
 
 ---
 
-# Phase 4 — PowerSync Foundation
+## STEP 4: Android Client Scaffold (Kotlin + Compose)
 
-## Objective
+**Dependencies:** Step 1 (monorepo structure)
+**Priority:** P0 (can run in parallel with Steps 2–3)
+**Docs:** `altair-architecture-spec.md` §10.4 Android Client Architecture
 
-Validate that the selected sync architecture works with real data and real scopes.
+### What to build
 
-## Depends On
+Android project with Jetpack Compose, multi-module structure, dependency injection, and generated contract constants wired in.
 
-- Phase 1
-- Phase 2
-- Phase 3
+### Module structure
 
-## Steps
+```text
+apps/android/
+  app/                        # Android app module (Compose UI, DI, navigation)
+  domain/                     # Pure Kotlin domain models + interfaces
+  data/                       # Room, PowerSync, repositories
+  core/                       # Use cases, ViewModels
+  gradle/libs.versions.toml   # Version catalog
+```
 
-### 4.1 Stand up PowerSync locally
+### Key dependencies
 
-Add local/dev environment wiring.
+| Library | Purpose | Min Version |
+|---|---|---|
+| Kotlin | Language | 2.0+ |
+| Compose BOM | UI toolkit | Latest stable |
+| Hilt | DI | 2.51+ |
+| Room | Local SQLite | 2.6+ |
+| Navigation Compose | Screen routing | 2.7+ |
+| WorkManager | Background jobs | 2.9+ |
+| PowerSync Android SDK | Sync | Latest |
+| Timber | Logging | 5.0+ |
 
-### 4.2 Implement starter Sync Streams
+### Application shell
 
-Start with:
+- Single-activity Compose app
+- Bottom navigation: Guidance, Knowledge, Tracking, (Search)
+- Empty screen stubs for each domain
+- Hilt DI wired and compiling
+- Generated Kotlin contract constants available in `domain` module
+- Material 3 theming with dark mode
 
-- `my_profile`
-- `my_memberships`
-- `my_personal_data`
-- `my_household_data`
-- `my_relations`
-- `my_attachment_metadata`
+### Done when
 
-### 4.3 Validate auth integration
-
-Ensure:
-
-- user identity is wired correctly
-- unauthorized parameters do not leak data
-- stream queries enforce access boundaries
-
-### 4.4 Add one on-demand stream
-
-Start with `initiative_detail`.
-
-### 4.5 Create sync verification checklist
-
-Verify:
-
-- first sync
-- reconnect
-- offline local write
-- upstream propagation
-- second device reflection
-
-### 4.6 Instrument sync behavior
-
-Capture:
-
-- sync timing
-- stream sizes
-- missing data cases
-- query pain points
-
-## Deliverables
-
-- local PowerSync environment
-- initial stream config
-- sync smoke tests
-- documented pain points
-
-## Exit Gate
-
-At least one Android or desktop-local SQLite client can sync baseline personal + household data successfully.
+- [ ] Project builds and runs on emulator
+- [ ] Empty Compose scaffold renders with bottom navigation
+- [ ] Hilt injection compiles (empty module provided)
+- [ ] All modules resolve dependencies correctly
+- [ ] Timber logs appear in Logcat
+- [ ] Generated Kotlin entity type constants available in `domain` module
+- [ ] Both debug and release variants build
 
 ---
 
-# Phase 5 — Multi-User Shared-State Validation
+## STEP 5: Auth + Identity Service
 
-## Objective
+**Dependencies:** Step 2 (Axum server running with Postgres)
+**Priority:** P0
+**Docs:** `altair-architecture-spec.md` §18 Security, §9.1 Identity Context
 
-Prove that shared household state works before broad feature development continues.
+### What to build
 
-## Depends On
+User registration, login, session management, and per-user authorization middleware. This gates everything else.
 
-- Phase 4
+### Database migrations
 
-## Steps
+| Table | Key Columns | Purpose |
+|---|---|---|
+| `users` | id (UUID), email, display_name, password_hash, created_at, updated_at | User accounts |
+| `sessions` | id, user_id, token_hash, expires_at, device_info | Session tracking |
+| `households` | id, name, created_by, created_at | Household containers |
+| `household_memberships` | id, household_id, user_id, role, joined_at | User ↔ Household mapping |
 
-### 5.1 Build household test matrix
+### API endpoints
 
-Test scenarios:
+| Method | Path | Purpose |
+|---|---|---|
+| POST | `/auth/register` | Create account (email + password) |
+| POST | `/auth/login` | Authenticate, return session token |
+| POST | `/auth/logout` | Invalidate session |
+| GET | `/auth/me` | Get current user profile |
+| PUT | `/auth/me` | Update profile |
+| POST | `/core/households` | Create household |
+| POST | `/core/households/:id/members` | Invite member |
+| GET | `/core/households` | List user's households |
 
-- two users in one household
-- one user personal only
-- one shared initiative
-- one private initiative
+### Backend modules
 
-### 5.2 Validate shared quest updates
+```text
+src/
+  auth/
+    mod.rs
+    handlers.rs               # Register, login, logout, me
+    service.rs                # Password hashing (Argon2id), session creation
+    middleware.rs             # Extract user from token, reject unauthenticated
+    models.rs                 # User, Session structs
+  core/
+    households/
+      handlers.rs
+      service.rs
+      models.rs
+```
 
-Scenario:
+### Auth middleware
 
-- user A completes “take out the trash”
-- user B sees updated status quickly
-- audit trail remains coherent
+Every request (except `/auth/register`, `/auth/login`, `/health`) must pass through auth middleware that:
+1. Extracts bearer token from `Authorization` header
+2. Validates session exists and is not expired
+3. Injects `AuthenticatedUser { user_id, household_ids }` into request extensions
+4. Returns 401 if invalid
 
-### 5.3 Validate shared inventory updates
+### Password security
 
-Scenario:
+- Argon2id hashing via `argon2` crate
+- No plaintext passwords stored or logged
+- Session tokens are random 256-bit values, stored as SHA-256 hash
 
-- user A consumes item
-- quantity updates
-- user B sees change
-- shopping list thresholds remain sensible
+### Done when
 
-### 5.4 Validate conflict cases
-
-Scenario examples:
-
-- both users decrement same item
-- one user edits note title while another archives note
-- one user removes item while another logs event
-
-### 5.5 Decide conflict UX policy
-
-Document where:
-
-- last-writer-wins is fine
-- event history is required
-- explicit conflict surfacing is needed
-
-## Deliverables
-
-- multi-user validation report
-- conflict policy notes
-- schema/API adjustments if required
-
-## Exit Gate
-
-Shared household inventory and shared chores work well enough that the architecture still deserves to exist.
-
----
-
-# Phase 6 — Vertical Slice: Guidance
-
-## Objective
-
-Deliver the first usable day-to-day workflow.
-
-## Depends On
-
-- Phase 5
-
-## Steps
-
-### 6.1 Backend Guidance APIs
-
-Implement:
-
-- epics CRUD
-- quests CRUD
-- routine CRUD
-- daily check-ins
-- focus sessions (basic)
-
-### 6.2 Android Guidance screens
-
-Build:
-
-- Today view
-- quest detail
-- routine list
-- complete quest flow
-
-### 6.3 Web Guidance screens
-
-Build:
-
-- initiative planning view
-- epic/quest management
-- routine editor
-- daily overview
-
-### 6.4 Sync validations
-
-Ensure:
-
-- completing quest offline works
-- quest status propagates
-- routine updates propagate
-
-### 6.5 Notifications (basic)
-
-Implement:
-
-- local notifications for due routines/tasks on Android
-- server-side notification model stub if not fully delivered yet
-
-## Deliverables
-
-- usable Guidance flow on Android + Web
-- offline quest completion
-- shared chore viability
-
-## Exit Gate
-
-A user can manage real tasks/routines, and a household can complete shared chores reliably.
+- [ ] User can register with email/password
+- [ ] User can login and receive a bearer token
+- [ ] Authenticated requests include user context
+- [ ] Unauthenticated requests to protected endpoints return 401
+- [ ] User can create a household
+- [ ] Household membership tracks which users belong to which households
+- [ ] Password is hashed with Argon2id
+- [ ] Sessions expire after configurable duration
+- [ ] Logout invalidates session
 
 ---
 
-# Phase 7 — Vertical Slice: Tracking
+## STEP 6: Core Domain Backend
 
-## Objective
+**Dependencies:** Step 5 (auth + users + households exist)
+**Priority:** P0
+**Docs:** `altair-core-prd.md`, `altair-schema-design-spec.md`, `altair-entity-type-registry.md`
 
-Deliver the first real inventory workflow.
+### What to build
 
-## Depends On
+Shared core entities that all three product domains depend on: initiatives, tags, attachments metadata, and the entity_relations table structure. No domain-specific data yet — just the shared foundation.
 
-- Phase 5
+### Database migrations
 
-## Steps
+| Table | Key Columns | Purpose | Source |
+|---|---|---|---|
+| `initiatives` | id, user_id, household_id (nullable), name, description, status, created_at, updated_at | Cross-domain organizing container | `altair-schema-design-spec.md` |
+| `tags` | id, user_id, household_id (nullable), name, color, created_at | User/household-scoped labels | `altair-schema-design-spec.md` |
+| `attachments` | id, entity_type, entity_id, filename, content_type, storage_key, size_bytes, processing_state, created_at | Attachment metadata (no binary) | `altair-shared-contracts-spec.md` §10 |
+| `entity_relations` | id, from_entity_type, from_entity_id, to_entity_type, to_entity_id, relation_type, source_type, status, confidence, evidence_json, created_by_user_id, created_by_process, created_at, updated_at, last_confirmed_at | Cross-domain relationship records | `ADR-004` |
 
-### 7.1 Backend Tracking APIs
+### Critical indexes
 
-Implement:
+```sql
+CREATE INDEX idx_initiatives_user ON initiatives(user_id);
+CREATE INDEX idx_initiatives_household ON initiatives(household_id);
+CREATE INDEX idx_tags_user ON tags(user_id);
+CREATE INDEX idx_attachments_entity ON attachments(entity_type, entity_id);
+CREATE INDEX idx_relations_from ON entity_relations(from_entity_type, from_entity_id);
+CREATE INDEX idx_relations_to ON entity_relations(to_entity_type, to_entity_id);
+CREATE INDEX idx_relations_status ON entity_relations(status);
+```
 
-- locations CRUD
-- categories CRUD
-- items CRUD
-- item event logging
-- shopping list CRUD
+### Validation rules
 
-### 7.2 Android Tracking screens
+- `entity_type` values must be from the canonical entity type registry — reject unknown types at write time
+- `relation_type` must be from the canonical relation type registry
+- `source_type` must be from the canonical source type list
+- `status` must be from the canonical status list
+- `confidence` must be 0.0–1.0 (nullable for user-created relations)
 
-Build:
+### API endpoints
 
-- item list
-- item detail
-- quantity update
-- shopping list
-- simple barcode field entry first
+| Method | Path | Purpose |
+|---|---|---|
+| POST | `/core/initiatives` | Create initiative |
+| GET | `/core/initiatives` | List user/household initiatives |
+| GET | `/core/initiatives/:id` | Get initiative detail |
+| PUT | `/core/initiatives/:id` | Update initiative |
+| DELETE | `/core/initiatives/:id` | Soft-delete initiative |
+| CRUD | `/core/tags` | Tag management |
+| GET | `/core/relations` | Query relations (filtered by entity, type, status) |
+| POST | `/core/relations` | Create relation |
+| PUT | `/core/relations/:id` | Update relation (accept/reject/dismiss) |
 
-### 7.3 Web Tracking screens
+### Done when
 
-Build:
-
-- inventory browser
-- item editing
-- location/category management
-- shopping list management
-
-### 7.4 Event-state consistency checks
-
-Ensure:
-
-- quantity changes create correct events
-- manual adjustments don’t desync from current state
-- history remains coherent
-
-### 7.5 Shared household tests
-
-Repeat:
-
-- quantity decrement
-- restock
-- shopping list propagation
-
-## Deliverables
-
-- household inventory MVP
-- item event history
-- shopping list flow
-
-## Exit Gate
-
-A household can actually track shared items and trust updates enough to use it in normal life.
+- [ ] Initiatives CRUD works with user and household scoping
+- [ ] Tags CRUD works with user and household scoping
+- [ ] `entity_relations` table exists with all columns from ADR-004
+- [ ] Relation create endpoint validates entity_type, relation_type, source_type, status against registry
+- [ ] Unknown entity types are rejected with 400
+- [ ] Relations can be queried by from-entity, to-entity, or both
+- [ ] Relation status can be updated (accept/reject/dismiss)
+- [ ] Attachment metadata table exists (binary upload deferred to Step 16)
+- [ ] All endpoints require authentication and enforce user/household authorization
 
 ---
 
-# Phase 8 — Vertical Slice: Knowledge
+## STEP 7: PowerSync Setup + Sync Proof-of-Life
 
-## Objective
+**Dependencies:** Step 6 (core tables exist to sync), Step 3 (web client to test with)
+**Priority:** P0
+**Docs:** `ADR-003-sync-layer-selection.md`, `altair-powersync-sync-spec.md`
 
-Deliver the first useful note/linking workflow.
+### What to build
 
-## Depends On
+PowerSync service configuration, sync stream definitions, and a proof-of-life round-trip: create data on the server → sync to web client SQLite → read locally offline.
 
-- Phase 5
+This is the highest-risk integration point in the project. Prove it works before building domain features.
 
-## Steps
+### PowerSync service configuration
 
-### 8.1 Backend Knowledge APIs
+- PowerSync service in Docker Compose pointing at Postgres
+- JWT auth integration (PowerSync authenticates clients using JWTs signed by the backend)
+- Backend endpoint to issue PowerSync JWT tokens for authenticated users
 
-Implement:
+### Sync stream definitions
 
-- notes CRUD
-- note snapshots
-- note hierarchy
-- tags for notes
+Implement the starter streams from `altair-powersync-sync-spec.md` §8:
 
-### 8.2 Android Knowledge screens
+#### Auto-subscribed streams
+| Stream | Tables Included | Scope |
+|---|---|---|
+| `my_profile` | users (self row only) | user_id |
+| `my_memberships` | household_memberships | user_id |
+| `my_personal_data` | initiatives, tags (user-owned) | user_id |
+| `my_household_data` | households, initiatives, tags (household-owned), tracking_locations, tracking_categories, tracking_items, tracking_shopping_lists, tracking_shopping_list_items | household_id via membership |
+| `my_relations` | entity_relations (scoped to user's initiatives + households) | user_id + household_id |
+| `my_attachment_metadata` | attachments (scoped to synced entities) | user_id + household_id |
 
-Build:
+#### On-demand streams
+| Stream | Tables Included | Scope |
+|---|---|---|
+| `initiative_detail` | guidance_epics, guidance_quests, knowledge_notes, tracking_items (for initiative) | initiative_id |
+| `note_detail` | knowledge_notes, knowledge_note_snapshots, attachments, entity_relations (note-scoped) | note_id |
+| `item_history` | tracking_items, tracking_item_events, attachments, entity_relations (item-scoped) | item_id |
+| `quest_detail` | guidance_quests, tags, attachments, entity_relations, guidance_focus_sessions | quest_id |
 
-- quick capture
-- note list
-- note detail/edit
-- offline save
+### Web client PowerSync integration
 
-### 8.3 Web Knowledge screens
+- Install `@powersync/web` in the SvelteKit app
+- Configure PowerSync client with backend JWT endpoint
+- Create local SQLite schema matching synced tables
+- Subscribe to auto-subscribed streams on login
+- Display synced data in a debug view
 
-Build:
+### Proof-of-life test
 
-- note browser
-- richer editing view
-- hierarchy navigation
-- tag filtering
+1. Create an initiative via the backend API
+2. Verify it appears in the web client's local SQLite within 5 seconds
+3. Disconnect the web client from the network
+4. Verify the data is still readable locally
+5. Create a tag while offline
+6. Reconnect and verify the tag syncs to Postgres
 
-### 8.4 Snapshot policy
+### Authorization rules
 
-Define:
+Every stream query must filter by `auth.user_id()` or household membership. A client cannot request data for users or households it does not belong to.
 
-- manual snapshot
-- conflict snapshot
-- autosave cadence if used
+### Done when
 
-### 8.5 Sync + content tests
-
-Validate:
-
-- note created offline
-- note edits sync cleanly
-- snapshots behave reasonably
-- household-shared notes stay scoped correctly
-
-## Deliverables
-
-- usable note system on Android + Web
-- snapshots/history baseline
-- shared vs personal note behavior
-
-## Exit Gate
-
-Users can capture and edit notes across devices without the note system feeling haunted.
-
----
-
-# Phase 9 — Attachments & Media
-
-## Objective
-
-Add image/file support without destabilizing sync.
-
-## Depends On
-
-- Phase 6
-- Phase 7
-- Phase 8
-
-## Steps
-
-### 9.1 Object storage setup
-
-Implement:
-
-- local dev object storage
-- upload/download path
-- signed access or gated backend fetch
-
-### 9.2 Attachment metadata APIs
-
-Implement:
-
-- create metadata
-- upload initiation
-- processing status updates
-- attachment listing by entity
-
-### 9.3 Entity link tables in API
-
-Support note/item/quest attachment linking.
-
-### 9.4 Android capture/import
-
-Support:
-
-- image capture
-- file attach
-- upload retry state
-
-### 9.5 Web upload flow
-
-Support:
-
-- drag/drop or file picker
-- progress
-- failed upload retry
-
-### 9.6 Processing pipeline stub
-
-Implement minimal:
-
-- image metadata extraction
-- thumbnail job placeholder
-- OCR hook placeholder
-
-## Deliverables
-
-- attachment metadata + upload flow
-- Android capture
-- Web upload
-- no sync abuse of binary blobs
-
-## Exit Gate
-
-Users can attach media to notes/items/quests and the system keeps metadata and binaries coherent.
+- [ ] PowerSync service starts in Docker Compose and connects to Postgres
+- [ ] Backend issues signed JWTs for PowerSync client auth
+- [ ] Web client connects to PowerSync and syncs auto-subscribed streams
+- [ ] Initiative created via API appears in web client local SQLite within 5s
+- [ ] Web client reads data offline after sync
+- [ ] Offline mutations (create tag) sync back to Postgres on reconnect
+- [ ] On-demand stream subscription works for initiative_detail
+- [ ] Authorization: client cannot access other users' data via PowerSync
 
 ---
 
-# Phase 10 — Cross-Domain Relationships
+## STEP 8: Guidance Domain Backend
 
-## Objective
+**Dependencies:** Step 6 (core domain tables), Step 5 (auth)
+**Priority:** P0
+**Docs:** `altair-guidance-prd.md`, `altair-schema-design-spec.md`, `altair-entity-type-registry.md`
 
-Make Altair behave like a connected system rather than three apps awkwardly sharing a database.
+### What to build
 
-## Depends On
+Backend tables, services, and API endpoints for the Guidance domain: epics, quests, routines, focus sessions, and daily check-ins.
 
-- Phase 6
-- Phase 7
-- Phase 8
+### Database migrations
 
-## Steps
+| Table | Key Columns | Purpose |
+|---|---|---|
+| `guidance_epics` | id, initiative_id, user_id, name, description, status, priority, created_at, updated_at | Large efforts grouping quests |
+| `guidance_quests` | id, epic_id (nullable), initiative_id (nullable), user_id, household_id (nullable), name, description, status, priority, due_date, estimated_minutes, created_at, updated_at | Actionable units of work |
+| `guidance_routines` | id, user_id, household_id (nullable), name, description, frequency, status, created_at, updated_at | Recurring habits/behaviors |
+| `guidance_focus_sessions` | id, quest_id, user_id, started_at, ended_at, duration_minutes, notes | Timed work sessions |
+| `guidance_daily_checkins` | id, user_id, date, energy_level, mood, notes, created_at | Daily self-assessment |
 
-### 10.1 Relation APIs
+### Tag association tables
 
-Finish:
+| Table | Purpose |
+|---|---|
+| `quest_tags` | Quest ↔ Tag many-to-many |
+| `routine_tags` | Routine ↔ Tag many-to-many |
 
-- create manual link
-- fetch related entities
-- accept/reject suggested links
-- filter by status/source/type
+### API endpoints
 
-### 10.2 Relation UI primitives
+| Method | Path | Purpose |
+|---|---|---|
+| CRUD | `/guidance/epics` | Epic management |
+| CRUD | `/guidance/quests` | Quest management |
+| POST | `/guidance/quests/:id/complete` | Mark quest complete |
+| CRUD | `/guidance/routines` | Routine management |
+| POST | `/guidance/routines/:id/trigger` | Create quest instances from routine |
+| CRUD | `/guidance/focus-sessions` | Focus session tracking |
+| POST | `/guidance/daily-checkins` | Record daily check-in |
+| GET | `/guidance/today` | Today's quests + routines + check-in status |
 
-Add:
+### Key business rules
 
-- “linked items”
-- “related notes”
-- “quest requires item”
-- “note supports initiative”
+- Quests can belong to an epic, an initiative, both, or neither
+- Quests can be user-scoped or household-scoped (shared chores)
+- Routines generate quest instances when triggered
+- Daily check-in is one per user per day (UNIQUE constraint on user_id + date)
+- Quest status transitions: pending → in_progress → completed / cancelled
 
-### 10.3 Cross-domain use cases
+### Done when
 
-Implement at least:
-
-- note references item
-- quest requires item
-- note supports initiative
-- item related to maintenance note
-
-### 10.4 Relation sync review
-
-Ensure relevant relation rows replicate with each scope.
-
-### 10.5 Explanation UX
-
-For suggested/AI relations show:
-
-- confidence
-- source
-- evidence snippet if available
-
-## Deliverables
-
-- functional relationship graph primitives
-- cross-domain linked navigation
-- explainable relation records
-
-## Exit Gate
-
-Altair starts to feel like a unified knowledge/planning/tracking system.
+- [ ] All Guidance tables created with correct columns and indexes
+- [ ] Epic/Quest/Routine CRUD endpoints work with proper auth
+- [ ] Quest completion endpoint updates status and records timestamp
+- [ ] Routine trigger creates quest instances
+- [ ] Daily check-in enforces one-per-day constraint
+- [ ] `/guidance/today` returns today's relevant quests and routines
+- [ ] Household-scoped quests visible to all household members
+- [ ] Tag associations work for quests and routines
 
 ---
 
-# Phase 11 — Search Foundation
+## STEP 9: Knowledge Domain Backend
 
-## Objective
+**Dependencies:** Step 6 (core domain tables), Step 5 (auth)
+**Priority:** P0 (can run in parallel with Step 8)
+**Docs:** `altair-knowledge-prd.md`, `altair-schema-design-spec.md`
 
-Deliver cross-domain retrieval before adding fancy AI frosting.
+### What to build
 
-## Depends On
+Backend tables, services, and API for the Knowledge domain: notes and note snapshots.
 
-- Phase 10
-- Phase 9
+### Database migrations
 
-## Steps
+| Table | Key Columns | Purpose |
+|---|---|---|
+| `knowledge_notes` | id, user_id, household_id (nullable), initiative_id (nullable), title, content (text/markdown), content_type, is_pinned, created_at, updated_at | Primary information units |
+| `knowledge_note_snapshots` | id, note_id, content, created_at, created_by_process | Point-in-time captures of note content |
+| `note_tags` | note_id, tag_id | Note ↔ Tag many-to-many |
+| `note_attachments` | note_id, attachment_id | Note ↔ Attachment many-to-many |
 
-### 11.1 Search indexing strategy
+### API endpoints
 
-Implement baseline index source from:
+| Method | Path | Purpose |
+|---|---|---|
+| CRUD | `/knowledge/notes` | Note management |
+| GET | `/knowledge/notes/:id/snapshots` | Get note revision history |
+| POST | `/knowledge/notes/:id/snapshots` | Create manual snapshot |
+| GET | `/knowledge/notes/:id/relations` | Get relations from/to this note |
+| GET | `/knowledge/notes/:id/backlinks` | Get entities that link TO this note |
 
-- notes
-- quests
-- items
-- tags
-- relation metadata
+### Key business rules
 
-### 11.2 Search API
+- Notes support markdown content
+- Snapshots are immutable once created
+- Auto-snapshot on significant edits (configurable — backend creates snapshot if content delta exceeds threshold)
+- Backlinks are derived from `entity_relations` where `to_entity_type = 'knowledge_note'`
+- Notes can be scoped to user, household, or initiative
 
-Support:
+### Done when
 
-- keyword search
-- filter by entity type
-- household/personal scope filtering
-- initiative filtering
-
-### 11.3 Web search UI
-
-Build:
-
-- global search panel
-- grouped results
-- quick navigation
-
-### 11.4 Android search UI
-
-Build:
-
-- quick search
-- entity-type filters
-- recent queries
-
-### 11.5 Measure search usefulness
-
-Track:
-
-- search latency
-- result quality
-- missing denormalized fields
-
-## Deliverables
-
-- cross-app keyword search
-- scoped result filtering
-- baseline retrieval utility
-
-## Exit Gate
-
-Users can find notes, items, and quests across the system without manually spelunking.
+- [ ] Notes CRUD works with proper auth and scoping
+- [ ] Snapshots can be created and listed for a note
+- [ ] Note backlinks query returns all entities that relate TO this note
+- [ ] Note tags and attachments associations work
+- [ ] Notes filterable by initiative, household, pinned status
 
 ---
 
-# Phase 12 — Desktop Shell
+## STEP 10: Tracking Domain Backend
 
-## Objective
+**Dependencies:** Step 6 (core domain tables), Step 5 (auth)
+**Priority:** P0 (can run in parallel with Steps 8–9)
+**Docs:** `altair-tracking-prd.md`, `altair-schema-design-spec.md`
 
-Add desktop power-user workflows only after core mobile/web behavior is real.
+### What to build
 
-## Depends On
+Backend tables, services, and API for the Tracking domain: locations, categories, items, item events, shopping lists.
 
-- Phase 6
-- Phase 7
-- Phase 8
-- ideally Phase 10
+### Database migrations
 
-## Steps
+| Table | Key Columns | Purpose |
+|---|---|---|
+| `tracking_locations` | id, user_id, household_id, name, description, parent_location_id (nullable), created_at | Storage locations (hierarchical) |
+| `tracking_categories` | id, user_id, household_id, name, description, parent_category_id (nullable), created_at | Item categorization (hierarchical) |
+| `tracking_items` | id, user_id, household_id, category_id, location_id, name, description, quantity, unit, min_quantity (nullable), barcode (nullable), status, created_at, updated_at | Physical/digital resources |
+| `tracking_item_events` | id, item_id, user_id, event_type, quantity_change, notes, created_at | Consumption/change records |
+| `tracking_shopping_lists` | id, user_id, household_id, name, status, created_at, updated_at | Shopping list containers |
+| `tracking_shopping_list_items` | id, shopping_list_id, item_id (nullable), name, quantity, unit, is_checked, created_at | Shopping list line items |
+| `item_tags` | item_id, tag_id | Item ↔ Tag many-to-many |
+| `item_attachments` | item_id, attachment_id | Item ↔ Attachment many-to-many |
 
-### 12.1 Tauri shell setup
+### API endpoints
 
-Create:
+| Method | Path | Purpose |
+|---|---|---|
+| CRUD | `/tracking/locations` | Location management (hierarchical) |
+| CRUD | `/tracking/categories` | Category management (hierarchical) |
+| CRUD | `/tracking/items` | Item management |
+| POST | `/tracking/items/:id/events` | Record consumption/change event |
+| GET | `/tracking/items/:id/events` | Get item event history |
+| GET | `/tracking/items/low-stock` | Items below min_quantity threshold |
+| CRUD | `/tracking/shopping-lists` | Shopping list management |
+| CRUD | `/tracking/shopping-lists/:id/items` | Shopping list item management |
+| POST | `/tracking/shopping-lists/:id/items/:item_id/check` | Toggle check state |
 
-- desktop app wrapper
-- shared auth/session handling
-- local storage hooks if needed
+### Key business rules
 
-### 12.2 Reuse web UI where appropriate
+- Items track quantity; events record changes (consumed, restocked, moved, etc.)
+- Low-stock detection: items where `quantity < min_quantity`
+- Locations and categories support one level of hierarchy (parent_id)
+- Shopping list items can reference a tracked item or be freeform text
+- All tracking entities are household-scoped by default
+- Item events are append-only (immutable log)
 
-Start with:
+### Done when
 
-- planning
-- search
-- note editing
-- item browser
-
-### 12.3 Add desktop-only enhancements
-
-Candidates:
-
-- multi-window support
-- better keyboard shortcuts
-- file import/export
-- richer graph views
-
-### 12.4 Desktop-specific validation
-
-Check:
-
-- local cache behavior
-- window state
-- OS integration
-- attachment flows
-
-## Deliverables
-
-- desktop shell MVP
-- power-user workflows
-- no desktop-only architectural surprises
-
-## Exit Gate
-
-Desktop adds value rather than creating another fragile client burden.
+- [ ] Location and category hierarchical CRUD works
+- [ ] Item CRUD with location and category assignment works
+- [ ] Item events create and update item quantity
+- [ ] Low-stock query returns items below threshold
+- [ ] Shopping list CRUD with check/uncheck works
+- [ ] All endpoints enforce household-level authorization
+- [ ] Item event history is queryable and sorted by date
 
 ---
 
-# Phase 13 — AI Integration
+## STEP 11: Relationships Backend (Wiring Cross-Domain Links)
 
-## Objective
+**Dependencies:** Steps 8, 9, 10 (all domain tables exist)
+**Priority:** P0
+**Docs:** `ADR-004-relationship-modeling-strategy.md`, `altair-entity-type-registry.md`, `altair-shared-contracts-spec.md` §6
 
-Add optional AI where it improves the product, not where it can show off.
+### What to build
 
-## Depends On
+Make the `entity_relations` system functional across all three domains. This is where Altair's cross-domain value lives.
 
-- Phase 10
-- Phase 11
-- ideally Phase 9
+### API enhancements
 
-## Steps
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/core/relations/for/:entity_type/:entity_id` | All relations from/to a specific entity |
+| GET | `/core/relations/graph/:entity_type/:entity_id` | One-hop relationship graph for an entity |
+| PUT | `/core/relations/:id/accept` | Accept a suggested relation |
+| PUT | `/core/relations/:id/dismiss` | Dismiss a suggested relation |
+| PUT | `/core/relations/:id/reject` | Reject a suggested relation |
+| GET | `/core/relations/suggested` | All suggested relations for the user (for review UI) |
 
-### 13.1 Build AI service abstraction
+### Cross-domain query examples to support
 
-Support:
+These queries validate that the relationship model actually works:
 
-- provider interface
-- job queue
-- retries
-- result persistence
+1. "What notes reference this item?" — `entity_relations WHERE to_entity_type = 'tracking_item' AND to_entity_id = X`
+2. "What items does this quest require?" — `entity_relations WHERE from_entity_type = 'guidance_quest' AND relation_type = 'requires'`
+3. "What is related to this initiative?" — `entity_relations WHERE from_entity_id = X OR to_entity_id = X` (both directions)
+4. "Show all AI-suggested relations pending review" — `entity_relations WHERE source_type = 'ai' AND status = 'suggested'`
 
-### 13.2 Implement first safe use cases
+### Seed data
 
-Start with:
+Create a development seed dataset that exercises cross-domain relationships per `altair-powersync-sync-spec.md` §10:
 
-- note summarization
-- relation suggestions
-- OCR/transcription ingestion
-- semantic link candidates
+- One user, one household, two members
+- One personal initiative, one household initiative
+- A note that references a tracking item
+- A quest that requires a tracking item
+- A note that supports an initiative
+- An item related to a note
+- One AI-suggested relation (status: suggested)
+- One user-dismissed relation (status: dismissed)
 
-### 13.3 Persist suggestions as first-class records
+### Done when
 
-Suggested links should become:
-
-- `entity_relations`
-- with `source_type = ai`
-- with confidence/evidence
-
-### 13.4 Add user review flow
-
-Users must be able to:
-
-- accept
-- dismiss
-- reject
-- inspect evidence
-
-### 13.5 Add failure-safe behavior
-
-If AI fails:
-
-- core app still works
-- edits are preserved
-- retry is possible
-- no fake confidence theater
-
-## Deliverables
-
-- optional AI enhancement layer
-- persisted suggested links
-- reviewable AI outputs
-
-## Exit Gate
-
-AI improves discovery/workflows without becoming a required crutch or a nonsense fountain.
+- [ ] Relations queryable by entity (both directions)
+- [ ] One-hop graph query returns all directly related entities with metadata
+- [ ] Accept/dismiss/reject updates relation status correctly
+- [ ] Suggested relations query works (for future review UI)
+- [ ] Seed dataset creates representative cross-domain relationships
+- [ ] All four cross-domain query examples above return correct results
+- [ ] Relation sync via PowerSync includes relations for user's scoped entities
 
 ---
 
-# Phase 14 — Hardening & Beta Readiness
+## STEP 12: Web Client — Guidance + Core UI
 
-## Objective
+**Dependencies:** Step 7 (PowerSync syncing data), Step 8 (Guidance backend)
+**Priority:** P0
+**Docs:** `altair-guidance-prd.md`, `altair-core-prd.md`, `altair-architecture-spec.md` §10.2
 
-Make the system durable enough for real daily usage.
+### What to build
 
-## Depends On
+First real web client screens. The Guidance domain is the natural starting point because "what should I do today?" is the highest-frequency user interaction.
 
-- All prior MVP phases
+### Pages to build
 
-## Steps
+| Route | Screen | Purpose |
+|---|---|---|
+| `/` | Today View | Today's quests, routines, daily check-in |
+| `/guidance/initiatives` | Initiative List | All user/household initiatives |
+| `/guidance/initiatives/:id` | Initiative Detail | Epics, quests, notes, items for this initiative |
+| `/guidance/quests` | Quest List | All quests (filterable by status, initiative) |
+| `/guidance/quests/:id` | Quest Detail | Quest info, related entities, focus sessions |
+| `/guidance/routines` | Routine List | All routines |
+| `/guidance/routines/:id` | Routine Detail | Routine info, generated quests |
+| `/settings` | Settings | User profile, household management, sync status |
 
-### 14.1 Observability
+### Today View (primary screen)
 
-Add:
+```
+┌─────────────────────────────────────────────────┐
+│  Good morning, Robert              Thu, Mar 26   │
+├─────────────────────────────────────────────────┤
+│                                                  │
+│  📋 TODAY'S QUESTS                    3 of 7 done│
+│  ┌─────────────────────────────────────────────┐ │
+│  │ ✓ Review PR feedback              Personal  │ │
+│  │ ○ Draft sync spec update          ARGUS     │ │
+│  │ ○ Check UPS battery status        Home      │ │
+│  └─────────────────────────────────────────────┘ │
+│                                                  │
+│  🔄 ROUTINES                                     │
+│  ┌─────────────────────────────────────────────┐ │
+│  │ ○ Morning routine (3 items)                 │ │
+│  │ ✓ Evening review                            │ │
+│  └─────────────────────────────────────────────┘ │
+│                                                  │
+│  📊 CHECK-IN                                     │
+│  ┌─────────────────────────────────────────────┐ │
+│  │ Energy: ●●●○○  Mood: 😊  [Edit]            │ │
+│  └─────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────┘
+```
 
-- request logging
-- sync metrics
-- job metrics
-- attachment error tracking
+### Data access pattern
 
-### 14.2 Migration testing
+All reads come from local PowerSync SQLite. Writes go to local SQLite first, then sync to Postgres via PowerSync.
 
-Test:
+### Key UI patterns
 
-- schema upgrades
-- stale client scenarios
-- PowerSync compatibility impacts
+- Quest completion: tap → local update → optimistic UI → sync in background
+- Initiative detail: subscribe to `initiative_detail` on-demand stream when navigating in
+- Offline indicator in app shell when sync is disconnected
+- Toast/notification on sync errors
 
-### 14.3 Backup/restore path
+### Done when
 
-Define:
-
-- Postgres backup
-- object storage backup
-- local restore instructions
-
-### 14.4 Reliability testing
-
-Run:
-
-- offline/online flapping
-- duplicate writes
-- delayed sync
-- concurrent household updates
-
-### 14.5 UX hardening
-
-Fix:
-
-- sync state visibility
-- stale data confusion
-- retry behavior
-- destructive action safety
-
-## Deliverables
-
-- beta checklist
-- observability baseline
-- migration confidence
-- reliability test results
-
-## Exit Gate
-
-You can trust the system enough to use it for real household/personal workflows without fear of silent corruption.
-
----
-
-# Phase 15 — Post-Beta Expansion
-
-## Objective
-
-Add higher-order capabilities after the core system proves itself.
-
-## Candidates
-
-- WearOS
-- richer automations
-- semantic search / embeddings
-- local desktop AI
-- graph visualization
-- OCR pipelines
-- receipt ingestion
-- maintenance forecasting
-- collaborative household rituals / workflows
-- iOS contributor path
-
-These should all wait until the core product proves that users actually want more complexity rather than merely tolerating it.
+- [ ] Today View shows today's quests and routines from local PowerSync data
+- [ ] Quest completion writes locally and syncs to server
+- [ ] Initiative list and detail views render with correct data
+- [ ] Quest list with status filtering works
+- [ ] Routine list shows routines; detail shows generated quests
+- [ ] Settings page shows user profile, household info, sync status
+- [ ] App works fully offline (reads + writes queue)
+- [ ] On-demand streams subscribe/unsubscribe on navigation
+- [ ] Empty states for all lists
 
 ---
 
-# 6. Recommended Parallelization
+## STEP 13: Android Client — Core + Guidance
 
-## Can be parallel after Phase 1
+**Dependencies:** Step 4 (Android scaffold), Step 7 (PowerSync), Step 8 (Guidance backend)
+**Priority:** P0
+**Docs:** `altair-architecture-spec.md` §10.4, `altair-guidance-prd.md`
 
-- backend skeleton
-- migration tooling
-- client shell setup
+### What to build
 
-## Can be parallel after Phase 4
+Android equivalent of Step 12. Room as local DB, PowerSync for sync, Compose UI.
 
-- Android Guidance slice
-- Web Guidance slice
-- Tracking backend APIs
-- Knowledge backend APIs
+### Domain models (in `domain` module)
 
-## Should stay mostly serialized
+Pure Kotlin data classes mirroring the server schema, using generated contract constants:
 
-- contracts → schema → sync validation
-- multi-user household validation before broad feature sprawl
-- attachment pipeline before AI media workflows
+| Entity | Key Fields |
+|---|---|
+| `User` | id, email, displayName |
+| `Initiative` | id, userId, householdId, name, description, status |
+| `Quest` | id, epicId, initiativeId, userId, householdId, name, status, priority, dueDate |
+| `Routine` | id, userId, householdId, name, frequency, status |
+| `Tag` | id, userId, householdId, name, color |
+| `DailyCheckin` | id, userId, date, energyLevel, mood, notes |
+| `EntityRelation` | id, fromEntityType, fromEntityId, toEntityType, toEntityId, relationType, sourceType, status, confidence |
 
----
+### Room database
 
-# 7. Minimum Viable Milestones
+- `AltairDatabase` with all tables matching PowerSync-synced schema
+- DAOs for each entity with common queries
+- PowerSync Android SDK integration for sync
 
-## Milestone A — Foundations Working
+### Screens to build
 
-Includes:
+| Screen | Purpose |
+|---|---|
+| Today | Today's quests + routines + check-in |
+| Initiative List | All initiatives |
+| Initiative Detail | Quests, related entities |
+| Quest Detail | Quest info, completion, related entities |
+| Routine List + Detail | Routine management |
+| Settings | Profile, households, sync status |
 
-- contracts
-- schema
-- backend auth/core APIs
-- baseline PowerSync
+### Key Android-specific behaviors
 
-## Milestone B — Shared Household Proven
+- WorkManager for background sync
+- Notification channel setup (used later in Step 20)
+- Share intent receiver (capture text into notes — wired later)
+- Material 3 dynamic color theming
 
-Includes:
+### Done when
 
-- multi-user household validation
-- shared chores
-- shared inventory updates
-
-## Milestone C — Product Useful
-
-Includes:
-
-- Guidance MVP
-- Tracking MVP
-- Knowledge MVP
-
-## Milestone D — Product Connected
-
-Includes:
-
-- cross-domain relations
-- attachments
-- search baseline
-
-## Milestone E — Product Durable
-
-Includes:
-
-- hardening
-- observability
-- migration confidence
-- beta readiness
+- [ ] PowerSync syncs data to Room on login
+- [ ] Today screen shows quests and routines from local Room data
+- [ ] Quest completion works offline and syncs
+- [ ] Initiative list and detail views work
+- [ ] Routine list and detail views work
+- [ ] Daily check-in creates and syncs
+- [ ] Settings shows sync status and user info
+- [ ] App survives rotation and process death
+- [ ] Background sync via WorkManager runs periodically
 
 ---
 
-# 8. Explicit Dependency Checklist
+## STEP 14: Web Client — Knowledge + Tracking
 
-## Must happen before Android/Web feature work
+**Dependencies:** Step 12 (web core UI exists), Steps 9–10 (Knowledge + Tracking backends)
+**Priority:** P1
+**Docs:** `altair-knowledge-prd.md`, `altair-tracking-prd.md`
 
-- contracts
-- base schema
-- auth
-- initial sync streams
+### What to build
 
-## Must happen before shared household features are trusted
+Knowledge and Tracking domain screens in the web client.
 
-- household membership model
-- authorization checks
-- shared-state sync validation
-- item event logging baseline
+### Knowledge pages
 
-## Must happen before AI
+| Route | Screen | Purpose |
+|---|---|---|
+| `/knowledge/notes` | Note List | All notes (searchable, filterable) |
+| `/knowledge/notes/:id` | Note Detail/Editor | View/edit note content (markdown) |
+| `/knowledge/notes/:id/history` | Snapshot History | Note revision timeline |
+| `/knowledge/notes/:id/relations` | Note Relations | Related entities + backlinks |
 
-- relations model
-- search foundation
-- attachment metadata flow
-- persisted suggestion lifecycle
+### Knowledge UI features
 
-## Must happen before desktop matters
+- Markdown editor with preview (use a Svelte markdown component)
+- Backlinks panel showing what entities link TO this note
+- Related entities panel showing what this note links TO
+- Tag management on notes
+- Snapshot history timeline
 
-- web/mobile core flows are already useful
+### Tracking pages
+
+| Route | Screen | Purpose |
+|---|---|---|
+| `/tracking/items` | Item List | All tracked items (filterable by location, category) |
+| `/tracking/items/:id` | Item Detail | Item info, event history, related entities |
+| `/tracking/locations` | Location Tree | Hierarchical location view |
+| `/tracking/categories` | Category Tree | Hierarchical category view |
+| `/tracking/shopping-lists` | Shopping Lists | Active shopping lists |
+| `/tracking/shopping-lists/:id` | Shopping List Detail | List items with check/uncheck |
+| `/tracking/low-stock` | Low Stock Dashboard | Items below threshold |
+
+### Tracking UI features
+
+- Item quantity adjustment (increment/decrement with event logging)
+- Shopping list with real-time check/uncheck (syncs across devices)
+- Low-stock alert indicators on items
+- Location and category tree views
+- Item event history timeline
+
+### Cross-domain relationship display
+
+Both Knowledge and Tracking detail views should show:
+- "Related to" panel listing entity_relations
+- Ability to create new manual relations (link note to item, etc.)
+- Visual distinction between user-created and AI-suggested relations
+
+### Done when
+
+- [ ] Note list with search and filtering works
+- [ ] Note editor supports markdown with preview
+- [ ] Note backlinks and relations panels display correctly
+- [ ] Snapshot history shows note revisions
+- [ ] Item list with location/category filtering works
+- [ ] Item quantity adjustment creates events and syncs
+- [ ] Shopping list CRUD with check/uncheck works and syncs
+- [ ] Low-stock dashboard shows items below threshold
+- [ ] Location and category tree views render hierarchically
+- [ ] Cross-domain relations visible on note and item detail screens
+- [ ] Manual relation creation works (link note ↔ item, note ↔ quest, etc.)
 
 ---
 
-# 9. Suggested Immediate Next Actions
+## STEP 15: Android Client — Knowledge + Tracking
 
-## In order
+**Dependencies:** Step 13 (Android core exists), Steps 9–10 (backends)
+**Priority:** P1
+**Docs:** `altair-knowledge-prd.md`, `altair-tracking-prd.md`
 
-1. **Create the monorepo skeleton** with the agreed package/app layout.
-2. **Install the shared contracts package** and wire CI enforcement.
-3. **Implement the initial Postgres migration set** and seed data.
-4. **Stand up the Axum server** with auth + core household/initiative APIs.
-5. **Bring up PowerSync locally** and validate baseline auto-subscribed streams.
-6. **Build one Android and one Web slice** for shared household quest completion.
-7. **Validate multi-user household behavior** before broadening feature development.
+### What to build
 
-That is the shortest path to learning whether the architecture is actually honest.
+Android equivalents of Step 14's knowledge and tracking screens, plus Android-specific capture features.
+
+### Knowledge screens
+
+| Screen | Purpose |
+|---|---|
+| Note List | Filterable list of notes |
+| Note Editor | Create/edit markdown notes |
+| Note Detail | View note with backlinks + relations |
+
+### Tracking screens
+
+| Screen | Purpose |
+|---|---|
+| Item List | Filterable item inventory |
+| Item Detail | Item info + event history + relations |
+| Shopping List | Check/uncheck items |
+| Quick Capture | Barcode scan or photo → create item |
+
+### Android-specific capture features
+
+- **Camera capture:** Take photo → create note with image attachment metadata
+- **Barcode scanner:** Scan → look up or create tracking item
+- **Share intent:** Receive shared text/URLs from other apps → create note
+- **Voice note:** Record audio → create note with audio attachment metadata
+
+> **Note:** Attachment binaries are not uploaded yet (that's Step 16). At this stage, capture creates the metadata records and stores the binary locally.
+
+### Done when
+
+- [ ] Note list, editor, and detail screens work offline
+- [ ] Item list and detail with event history works
+- [ ] Shopping list check/uncheck syncs across devices
+- [ ] Camera capture creates note with attachment metadata
+- [ ] Barcode scanner creates or finds tracking items
+- [ ] Share intent creates notes from external app content
+- [ ] Cross-domain relations visible on detail screens
+- [ ] All screens survive rotation and process death
 
 ---
 
-# 10. Final Recommendation
+## STEP 16: Attachment Service
 
-The implementation order should be driven by this rule:
+**Dependencies:** Step 14 or 15 (attachment metadata exists from captures), Step 2 (backend running)
+**Priority:** P1
+**Docs:** `altair-architecture-spec.md` §11 (Files Module), `altair-shared-contracts-spec.md` §10
 
-> **Prove contracts, schema, auth, and sync before building broad feature surfaces.**
+### What to build
 
-Then:
+Binary attachment upload, download, and processing pipeline. Object storage (MinIO for self-hosted), processing state machine, and client upload/download flows.
 
-> **Prove shared household behavior before assuming the product model works.**
+### Backend components
 
-Then:
+- MinIO object storage in Docker Compose
+- Upload endpoint: `POST /attachments/upload` (multipart)
+- Download endpoint: `GET /attachments/:id/download` (signed URL or proxy)
+- Processing state machine: pending → uploaded → processing → ready → failed
+- Thumbnail generation worker for images
+- Storage abstraction (S3-compatible interface for MinIO / AWS / local)
 
-> **Build Guidance, Tracking, and Knowledge as vertical slices before adding fancy AI, desktop extras, or graph wizardry.**
+### API endpoints
 
-That ordering gives you the best chance of discovering real architectural problems while they are still cheap to fix, instead of after the app has already accumulated a decorative layer of lies.
+| Method | Path | Purpose |
+|---|---|---|
+| POST | `/attachments/upload` | Upload binary, create/update attachment record |
+| GET | `/attachments/:id/download` | Get signed download URL or proxy download |
+| GET | `/attachments/:id/thumbnail` | Get thumbnail for images |
+| DELETE | `/attachments/:id` | Mark attachment deleted, schedule cleanup |
+
+### Client integration
+
+- Web: upload via fetch, display images inline, download links
+- Android: upload queued via WorkManager, local cache for downloaded files
+- Both clients: show processing state indicator (uploading, processing, ready)
+- Attachments synced only as metadata via PowerSync — binaries are fetched on demand
+
+### Processing pipeline
+
+1. Client uploads binary to `/attachments/upload`
+2. Server stores in MinIO, updates attachment record to `uploaded`
+3. Background worker picks up, generates thumbnails for images, sets `processing` → `ready`
+4. Future: OCR, AI description, embedding generation
+
+### Done when
+
+- [ ] MinIO running in Docker Compose
+- [ ] Upload endpoint accepts multipart file and stores in MinIO
+- [ ] Download endpoint returns file via signed URL
+- [ ] Attachment processing state transitions correctly
+- [ ] Image thumbnails generated by background worker
+- [ ] Web client can upload and display images/files
+- [ ] Android client queues uploads via WorkManager
+- [ ] Attachment metadata syncs via PowerSync; binaries fetched on demand
+- [ ] Deleted attachments cleaned from object storage
+
+---
+
+## STEP 17: Search
+
+**Dependencies:** Step 11 (relationships exist to search across), Step 14 (UI to display results)
+**Priority:** P1
+**Docs:** `altair-architecture-spec.md` §9.6 Search Context, `altair-core-prd.md` §Search
+
+### What to build
+
+Cross-domain search: keyword full-text search first, semantic/vector search later.
+
+### Phase 1: PostgreSQL full-text search
+
+Use Postgres `tsvector` and `tsquery` for keyword search across all domains.
+
+| Table | Indexed Columns |
+|---|---|
+| `knowledge_notes` | title, content |
+| `guidance_quests` | name, description |
+| `guidance_epics` | name, description |
+| `tracking_items` | name, description, barcode |
+| `initiatives` | name, description |
+
+### API endpoints
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/search?q=...&types=...` | Cross-domain keyword search |
+| GET | `/search/suggestions?q=...` | Autocomplete/type-ahead |
+
+### Search result shape
+
+```json
+{
+  "results": [
+    {
+      "entity_type": "knowledge_note",
+      "entity_id": "uuid",
+      "title": "HVAC Filter Replacement",
+      "snippet": "...matching text excerpt...",
+      "score": 0.87,
+      "updated_at": "2026-03-25T..."
+    }
+  ],
+  "total": 42
+}
+```
+
+### Phase 2: Semantic search (future prep)
+
+- Add `pgvector` extension to Postgres
+- `embeddings` table: entity_type, entity_id, embedding (vector), model, created_at
+- Embedding generation as background job (triggered on content change)
+- Hybrid search: combine keyword + vector scores
+- This phase can be deferred past v1 — prep the table and extension now
+
+### Client integration
+
+- Global search bar in web app shell and Android app bar
+- Results grouped by entity type
+- Click result → navigate to entity detail
+- Search works against local PowerSync data for basic filtering; full search hits the backend API
+
+### Done when
+
+- [ ] Full-text search indexes created on key tables
+- [ ] `/search` endpoint returns cross-domain results ranked by relevance
+- [ ] Search results include entity type, title, snippet, and score
+- [ ] Results filterable by entity type
+- [ ] Web client global search bar queries backend and displays results
+- [ ] Android search screen works similarly
+- [ ] pgvector extension installed and embeddings table exists (even if unused yet)
+
+---
+
+## STEP 18: Desktop Client (Tauri)
+
+**Dependencies:** Step 14 (web client Knowledge + Tracking complete — shared UI)
+**Priority:** P2
+**Docs:** `altair-architecture-spec.md` §10.3 Desktop Client Architecture
+
+### What to build
+
+Tauri 2 wrapper around the shared SvelteKit UI, with desktop-specific enhancements.
+
+### What Tauri adds over web
+
+- SQLite via PowerSync for true offline-first (not just browser cache)
+- Local file system access for imports/exports
+- System tray presence
+- Native notifications
+- Stronger local attachment cache
+- Multi-window potential (future)
+
+### Project setup
+
+```text
+apps/desktop/
+  src-tauri/
+    Cargo.toml
+    src/
+      main.rs                 # Tauri app entry
+      commands.rs             # Tauri commands (file access, etc.)
+    tauri.conf.json
+  src/                        # Shared Svelte UI (symlink or import from apps/web)
+```
+
+### Desktop-specific features
+
+- File import: drag-and-drop or file picker → create note/attachment
+- Export: export notes as markdown files, items as CSV
+- System tray: sync status indicator, quick-capture shortcut
+- Local AI adapter placeholder (future)
+
+### Build targets
+
+- Linux: `.deb` and `.AppImage`
+- Windows: `.msi` installer
+
+### Done when
+
+- [ ] Tauri app builds and runs on Linux
+- [ ] Shared Svelte UI renders identically to web
+- [ ] PowerSync syncs to local SQLite (not just browser IndexedDB)
+- [ ] File import (drag-and-drop) creates notes/attachments
+- [ ] Export notes as markdown files works
+- [ ] System tray shows sync status
+- [ ] Linux `.AppImage` and Windows `.msi` build successfully
+
+---
+
+## STEP 19: AI Enrichment Pipeline
+
+**Dependencies:** Step 17 (search + embeddings infrastructure), Step 11 (relationships to create)
+**Priority:** P2
+**Docs:** `altair-architecture-spec.md` §11 (AI Module), `ADR-004` §Inferred relationships
+
+### What to build
+
+Background AI pipeline that enriches content and suggests relationships. AI is optional and degrades gracefully — Altair must work fully without it.
+
+### Pipeline components
+
+1. **Embedding generation:** On note/item/quest create/update, generate embeddings via pluggable AI provider, store in pgvector
+2. **Relationship suggestion:** Compare new/updated entity embeddings against existing entities, suggest relations above confidence threshold
+3. **Content enrichment:** Summarize long notes, extract key entities, suggest tags
+4. **OCR/transcription:** Process image and audio attachments (deferred if no AI provider configured)
+
+### Backend modules
+
+```text
+src/
+  ai/
+    mod.rs
+    provider.rs               # Trait for AI providers (OpenAI, Ollama, etc.)
+    embedding.rs              # Embedding generation + storage
+    relationship_suggest.rs   # Similarity-based relation suggestions
+    enrichment.rs             # Tag/summary/entity extraction
+    jobs.rs                   # Background job definitions
+```
+
+### Configuration
+
+- AI provider configured via environment (API key + endpoint)
+- If no AI provider configured, all AI features silently no-op
+- Provider adapters: OpenAI API, Ollama (local), future others
+- Rate limiting and cost tracking per provider
+
+### Relationship suggestion flow
+
+1. Entity created/updated → embedding generated
+2. Background job compares embedding against entities in the same user/household scope
+3. If similarity > threshold, create `entity_relations` record with `source_type = 'ai'`, `status = 'suggested'`, `confidence = similarity_score`
+4. User reviews in "Suggested Relations" UI (built in Steps 12/14)
+
+### Done when
+
+- [ ] Embedding generation works with at least one provider (OpenAI or Ollama)
+- [ ] Embeddings stored in pgvector table
+- [ ] Relationship suggestion creates `entity_relations` records with AI source type
+- [ ] Suggestions appear in the "Suggested Relations" UI for user review
+- [ ] All AI features no-op gracefully if no provider configured
+- [ ] Background job processes queue without blocking API
+- [ ] Provider is configurable via environment variables
+
+---
+
+## STEP 20: Notifications + Household Shared State
+
+**Dependencies:** Step 13 (Android client for push), Step 12 (web client), Steps 8–10 (all domains)
+**Priority:** P2
+**Docs:** `altair-architecture-spec.md` §11 (Notify Module), `ADR-003` §Multi-user shared state
+
+### What to build
+
+Push notifications for Android (quest reminders, low-stock alerts, routine triggers) and refined household shared state behavior.
+
+### Notification types
+
+| Trigger | Channel | Content |
+|---|---|---|
+| Quest due date approaching | Push (Android) | "Quest X is due tomorrow" |
+| Routine trigger time | Push (Android) | "Time for your morning routine" |
+| Item low stock | Push (Android) + In-app | "Running low on X (2 remaining)" |
+| AI suggestion ready | In-app | "New suggested relation: Note ↔ Item" |
+| Household member action | In-app | "Jane completed 'Take out trash'" |
+
+### Backend
+
+- Notification preferences table (per-user, per-type enable/disable)
+- FCM (Firebase Cloud Messaging) integration for Android push
+- Notification generation workers triggered by domain events
+- Notification history table for in-app notification center
+
+### Android integration
+
+- FCM token registration on login
+- Notification channels (Guidance, Tracking, Household, AI)
+- Notification actions (mark quest complete from notification)
+
+### Household shared state refinements
+
+- Shared quest assignment (assign household quest to specific member)
+- Shared shopping list real-time sync (check item → all members see it)
+- Household activity feed (recent actions by all members)
+- Household member management (invite, remove, role changes)
+
+### Done when
+
+- [ ] Android receives push notifications for quest reminders
+- [ ] Low-stock notifications fire when items drop below threshold
+- [ ] Notification preferences allow per-type enable/disable
+- [ ] In-app notification center shows recent notifications
+- [ ] Household quest assignment works
+- [ ] Shared shopping list check/uncheck propagates to all members in real-time
+- [ ] Household activity feed shows recent member actions
+- [ ] Notification actions (complete quest from notification) work
+
+---
+
+## Integration Testing Milestones
+
+### Milestone 1: First Sync Round-Trip (after Steps 6 + 7)
+
+- Create an initiative via the API → appears in web client local SQLite within 5s
+- **This validates the entire backend + sync pipeline. Do it ASAP.**
+
+### Milestone 2: Offline Quest Completion (after Step 12)
+
+- Complete a quest in web client while offline → reconnect → quest status syncs to server → appears on other devices
+
+### Milestone 3: Cross-Domain Relationship (after Step 11 + 14)
+
+- Create a note that references a tracking item → relationship visible on both the note detail and item detail views
+- Verifies entity_relations + UI integration end-to-end
+
+### Milestone 4: Household Shared Inventory (after Steps 10 + 14 + 20)
+
+- User A adds item to shopping list → User B sees it on their device within 5s
+- User B checks item → User A sees it checked
+
+### Milestone 5: AI Suggestion Loop (after Step 19)
+
+- Create a note about HVAC filters → AI suggests relation to HVAC tracking item → user accepts in review UI → relation persists
+
+### Milestone 6: Full Daily Workflow (after Steps 12–15 + 20)
+
+- Morning: check daily routines → complete quests → review notes
+- Shopping: check low-stock → add to shopping list → check off at store
+- Evening: capture notes → see AI-suggested relations → review and accept
+
+---
+
+## Timeline Mapping
+
+| Step | Priority | Est. Effort | Can Parallel With |
+|---|---|---|---|
+| 1. Monorepo Scaffold + Contracts | P0 | 1 day | — |
+| 2. Backend Foundation (Axum + Postgres) | P0 | 2 days | 3, 4 |
+| 3. Web Client Scaffold (SvelteKit) | P0 | 1 day | 2, 4 |
+| 4. Android Client Scaffold | P0 | 1 day | 2, 3 |
+| 5. Auth + Identity | P0 | 2.5 days | — |
+| 6. Core Domain Backend | P0 | 2 days | — |
+| 7. PowerSync Setup + Proof-of-Life | P0 | 3 days | — |
+| 8. Guidance Backend | P0 | 2.5 days | 9, 10 |
+| 9. Knowledge Backend | P0 | 2 days | 8, 10 |
+| 10. Tracking Backend | P0 | 2.5 days | 8, 9 |
+| 11. Relationships Backend | P0 | 1.5 days | — |
+| 12. Web Client — Guidance + Core UI | P0 | 4 days | 13 |
+| 13. Android Client — Core + Guidance | P0 | 4 days | 12 |
+| 14. Web Client — Knowledge + Tracking | P1 | 4 days | 15 |
+| 15. Android Client — Knowledge + Tracking | P1 | 4 days | 14 |
+| 16. Attachments | P1 | 3 days | — |
+| 17. Search | P1 | 2.5 days | 18 |
+| 18. Desktop (Tauri) | P2 | 3 days | 17 |
+| 19. AI Enrichment | P2 | 3 days | — |
+| 20. Notifications + Household | P2 | 3 days | — |
+| **Total** | | **~50 days** | |
+
+> **Critical path to first working web prototype (today view + sync):** Steps 1 → 2 → 5 → 6 → 7 → 8 → 12 = ~18 working days
+
+> **Critical path to Android prototype:** Add Step 4 + 13 after Step 7 = ~20 working days
+
+> **Steps 8, 9, 10 are parallel** — all three domain backends can be built simultaneously after Step 6. Combined wall-clock time: ~3 days instead of ~7.
+
+> **Steps 12+13 and 14+15 are parallel pairs** — web and Android feature work can proceed simultaneously.
+
+---
+
+## Design Decisions Summary
+
+| # | Decision | Rationale |
+|---|---|---|
+| 1 | PostgreSQL as primary DB | Ecosystem maturity, PowerSync compatibility, self-hosting ease. ADR-002. |
+| 2 | PowerSync for sync | Best fit for Postgres → SQLite offline-first architecture. ADR-003. |
+| 3 | Relationships as first-class domain records | Core product value depends on cross-domain links being durable and queryable. ADR-004. |
+| 4 | Monorepo with shared contracts | One source of truth for entity types, relation types, sync streams. No drift. |
+| 5 | Web + Desktop share Svelte UI; Android is native | Right tool per platform. Mobile needs camera, notifications, widgets. Web/desktop share naturally. |
+| 6 | Backend is Rust modular monolith | Single deployable, clean module boundaries, extract services only when justified. |
+| 7 | AI is optional and degrades gracefully | Altair must work fully without AI configured. AI enriches but never gates. |
+| 8 | Attachments are metadata-first | PowerSync syncs metadata rows. Binaries stored in object storage, fetched on demand. |
+| 9 | Entity type registry enforced at write time | Backend rejects unknown entity types. Prevents ad hoc string drift across codebases. |
+| 10 | Sync scopes based on clear boundaries (user, household, initiative) | Avoids graph-traversal-based sync scope definitions. Keeps sync predictable. |
+
+---
+
+## Risk Register
+
+| Risk | Likelihood | Impact | Mitigation |
+|---|---|---|---|
+| PowerSync integration complexity | Medium | High | Step 7 is dedicated proof-of-life. Fail fast if sync doesn't work. |
+| Sync scope design becomes unwieldy | Medium | Medium | Start with simple scopes, add on-demand streams only when proven needed. |
+| Android + Web feature parity drift | Medium | Medium | Shared contracts prevent schema drift. Accept UI-level differences. |
+| Relationship model over-complexity | Low | Medium | Design guardrails from ADR-004. Don't create relations for every FK. |
+| AI scope creep | Medium | Medium | AI is last priority (Step 19). Ship without it first. |
+| Solo developer bandwidth | High | High | Steps sized for AI-assisted development. Parallel tracks are aspirational — serialize if needed. |
