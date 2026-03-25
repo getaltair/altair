@@ -4,16 +4,23 @@
 
 repos:
   # Built-in fast hooks (no network needed)
+  # Exclude hidden directories and files to avoid touching .claude/, .mise/, .serena/, etc.
   - repo: builtin
     hooks:
       - id: trailing-whitespace
-        exclude: \.md$
+        exclude: ^(\\.|apps\\/\\.)/|\\.md$
       - id: end-of-file-fixer
+        exclude: ^(\\.|apps\\/\\.)/
       - id: check-yaml
+        exclude: ^(\\.|apps\\/\\.)/
       - id: check-toml
+        exclude: ^(\\.|apps\\/\\.)/
       - id: check-merge-conflict
+        exclude: ^(\\.|apps\\/\\.)/
       - id: check-case-conflict
+        exclude: ^(\\.|apps\\/\\.)/
       - id: detect-private-key
+        exclude: ^(\\.|apps\\/\\.)/
 
   # TypeScript/JavaScript (apps/web)
   - repo: local
@@ -35,6 +42,7 @@ repos:
         pass_filenames: false
 
   # Rust (server, worker, src-tauri)
+  # Exclude hidden directories (e.g., .cache/, .nix/, etc.)
   - repo: local
     hooks:
       - id: cargo-fmt
@@ -42,6 +50,7 @@ repos:
         language: system
         entry: cargo fmt --all --
         files: \.rs$
+        exclude: ^(\\.|apps\\/\\.)/
         pass_filenames: true
 
       - id: cargo-clippy
@@ -49,6 +58,7 @@ repos:
         language: system
         entry: cargo clippy --all-targets --all-features -- -D warnings
         files: \.rs$
+        exclude: ^(\\.|apps\\/\\.)/
         pass_filenames: false
 
   # Kotlin (apps/android) - optional, uses EditorConfig

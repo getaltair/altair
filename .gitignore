@@ -1,33 +1,33 @@
+# =============================================================================
+# SvelteKit / Node.js / bun / TypeScript
+# =============================================================================
+
 # Dependencies
 node_modules/
-.pnpm-store/
+.pnp/
+.pnp.js
 
 # Build outputs
-dist/
-out/
-build/
-*.tgz
-
-# Rust / Cargo
-target/
-**/*.rs.bk
-*.pdb
-
-# Note: bun.lock and Cargo.lock should be committed for reproducible builds
-# Only ignore Cargo.lock for library crates if needed
-
-# SvelteKit
 .svelte-kit/
 .vercel/
-
-# Vite
-.vite/
+.turbo/
+.netlify/
+build/
+dist/
+.output/
 
 # Environment variables
 .env
-.env.*
-!.env.example
-!.env.template
+.env.local
+.env.production
+.env.development
+.env.*.local
+
+# Testing
+test-results/
+playwright-report/
+coverage/
+.nyc_output/
 
 # Logs
 logs/
@@ -35,31 +35,18 @@ logs/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-bun-debug.log*
-report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+lerna-debug.log*
 
-# Testing
-coverage/
-*.lcov
-.nyc_output/
-playwright-report/
-test-results/
-.vitest/
+# Editor directories and files
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+.history/
 
-# IDE / Editors
-.idea/
-.vscode/
-*.swp
-*.swo
-*~
-*.sublime-*
-.project
-.classpath
-.c9/
-*.launch
-.settings/
-
-# OS generated files
+# OS files
 .DS_Store
 .DS_Store?
 ._*
@@ -67,76 +54,104 @@ test-results/
 .Trashes
 ehthumbs.db
 Thumbs.db
-Desktop.ini
-
-# Caches
-.eslintcache
-.cache/
-.parcel-cache/
-.webpack-cache/
-.npm/
-*.tsbuildinfo
-
-# TypeScript
-*.tsbuildinfo
-
-# Database
-*.db
-*.db-journal
-*.sqlite
-*.sqlite3
-
-# Drizzle
-drizzle/meta/
-
-# Android
-apps/android/.gradle/
-apps/android/build/
-apps/android/app/build/
-apps/android/.idea/
-apps/android/*.iml
-apps/android/local.properties
-apps/android/.cxx/
-apps/android/.externalNativeBuild/
-apps/android/captures/
-apps/android/gradle.properties
-*.apk
-*.aab
-*.ap_
-*.dex
-*.class
-*.keystore
-*.jks
-
-# Tauri
-apps/web/src-tauri/target/
-apps/web/src-tauri/gen/
-apps/web/src-tauri/WixTools/
-apps/web/src-tauri/Cargo.lock
-
-# Playwright
-/test-results/
-/playwright-report/
-/blob-report/
-/playwright/.cache/
-
-# Secrets (never commit these)
-*.pem
-*.key
-*.crt
-secrets/
-.secrets/
-
-# Documentation builds
-docs/_build/
 
 # Temporary files
-tmp/
-temp/
 *.tmp
 *.temp
+*~
+*.swp
+*.swo
+.*.sw?
+.project
+.settings/
 
-# Misc
-*.bak
-*.backup
-*.orig
+# =============================================================================
+# Rust / Cargo
+# =============================================================================
+
+# Cargo
+target/
+Cargo.lock
+**/*.rs.bk
+**/*.rlib
+**/rmeta/
+
+# Rust Analyzer
+.rust-analyzer/
+
+# =============================================================================
+# Kotlin / Gradle / Android
+# =============================================================================
+
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+# Android Studio / IntelliJ IDEA
+.idea/
+*.iml
+*.ipr
+*.iws
+.idea_modules/
+out/
+.cxx/
+.externalNativeBuild/
+
+# Local configuration
+local.properties
+*.hprof
+.cxx/
+
+# Android signing
+*.jks
+*.keystore
+
+# =============================================================================
+# Tauri
+# =============================================================================
+
+src-tauri/target/
+src-tauri/wixtools/
+src-tauri/gen/
+
+# =============================================================================
+# Database / Drizzle
+# =============================================================================
+
+drizzle/
+.drizzle/
+
+# =============================================================================
+# General Development Tools
+# =============================================================================
+
+# mise
+.mise/
+
+# Serena (code indexing)
+.serena/
+
+# codegen script
+**/__pycache__/
+
+# =============================================================================
+# Claude Code / AI Tools
+# =============================================================================
+
+# Backup files (transcript backups before compaction)
+backups/*.jsonl
+backups/*.md
+
+# Hook logs (created at runtime)
+hooks/*/logs/
+
+# Session state tracking
+hooks/SkillActivationHook/recommendation-log.json
+
+# Dev Browser Skill Tidyness
+skills/dev-browser/profiles
+skills/dev-browser/src
+skills/dev-browser/tmp
