@@ -1,9 +1,0 @@
-{
-  "name": "altair-contracts-tooling-example",
-  "private": true,
-  "scripts": {
-    "generate:contracts": "python scripts/generate_contracts.py --root packages/contracts",
-    "test:contracts": "pytest tests"
-  },
-  "devDependencies": {}
-}
