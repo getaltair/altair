@@ -96,3 +96,93 @@ CREATE TABLE IF NOT EXISTS entity_relations (
 CREATE INDEX idx_relations_from ON entity_relations(from_entity_type, from_entity_id);
 CREATE INDEX idx_relations_to ON entity_relations(to_entity_type, to_entity_id);
 CREATE INDEX idx_relations_status ON entity_relations(status);
+
+-- Guidance Domain Tables
+
+CREATE TABLE IF NOT EXISTS guidance_epics (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    initiative_id UUID REFERENCES initiatives(id),
+    user_id UUID NOT NULL REFERENCES users(id),
+    name TEXT NOT NULL,
+    description TEXT,
+    status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'paused', 'completed', 'archived')),
+    priority TEXT NOT NULL DEFAULT 'medium' CHECK (priority IN ('low', 'medium', 'high', 'critical')),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX idx_guidance_epics_user ON guidance_epics(user_id);
+CREATE INDEX idx_guidance_epics_initiative ON guidance_epics(initiative_id);
+
+CREATE TABLE IF NOT EXISTS guidance_quests (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    epic_id UUID REFERENCES guidance_epics(id),
+    initiative_id UUID REFERENCES initiatives(id),
+    user_id UUID NOT NULL REFERENCES users(id),
+    household_id UUID REFERENCES households(id),
+    name TEXT NOT NULL,
+    description TEXT,
+    status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'in_progress', 'completed', 'cancelled')),
+    priority TEXT NOT NULL DEFAULT 'medium' CHECK (priority IN ('low', 'medium', 'high', 'critical')),
+    due_date DATE,
+    estimated_minutes INTEGER,
+    completed_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX idx_guidance_quests_user ON guidance_quests(user_id);
+CREATE INDEX idx_guidance_quests_epic ON guidance_quests(epic_id);
+CREATE INDEX idx_guidance_quests_initiative ON guidance_quests(initiative_id);
+CREATE INDEX idx_guidance_quests_household ON guidance_quests(household_id);
+CREATE INDEX idx_guidance_quests_status ON guidance_quests(status);
+CREATE INDEX idx_guidance_quests_due_date ON guidance_quests(due_date);
+
+CREATE TABLE IF NOT EXISTS guidance_routines (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id),
+    household_id UUID REFERENCES households(id),
+    name TEXT NOT NULL,
+    description TEXT,
+    frequency TEXT NOT NULL CHECK (frequency IN ('daily', 'weekly', 'biweekly', 'monthly')),
+    status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'paused', 'archived')),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX idx_guidance_routines_user ON guidance_routines(user_id);
+CREATE INDEX idx_guidance_routines_household ON guidance_routines(household_id);
+
+CREATE TABLE IF NOT EXISTS guidance_focus_sessions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    quest_id UUID NOT NULL REFERENCES guidance_quests(id),
+    user_id UUID NOT NULL REFERENCES users(id),
+    started_at TIMESTAMPTZ NOT NULL,
+    ended_at TIMESTAMPTZ,
+    duration_minutes INTEGER,
+    notes TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX idx_guidance_focus_sessions_quest ON guidance_focus_sessions(quest_id);
+CREATE INDEX idx_guidance_focus_sessions_user ON guidance_focus_sessions(user_id);
+
+CREATE TABLE IF NOT EXISTS guidance_daily_checkins (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id),
+    date DATE NOT NULL,
+    energy_level INTEGER CHECK (energy_level >= 1 AND energy_level <= 5),
+    mood TEXT,
+    notes TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE(user_id, date)
+);
+CREATE INDEX idx_guidance_daily_checkins_user_date ON guidance_daily_checkins(user_id, date);
+
+CREATE TABLE IF NOT EXISTS quest_tags (
+    quest_id UUID NOT NULL REFERENCES guidance_quests(id) ON DELETE CASCADE,
+    tag_id UUID NOT NULL REFERENCES tags(id) ON DELETE CASCADE,
+    PRIMARY KEY (quest_id, tag_id)
+);
+
+CREATE TABLE IF NOT EXISTS routine_tags (
+    routine_id UUID NOT NULL REFERENCES guidance_routines(id) ON DELETE CASCADE,
+    tag_id UUID NOT NULL REFERENCES tags(id) ON DELETE CASCADE,
+    PRIMARY KEY (routine_id, tag_id)
+);
