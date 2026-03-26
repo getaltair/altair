@@ -1,21 +1,14 @@
 use sqlx::{PgPool, QueryBuilder};
 use uuid::Uuid;
 
+use crate::contracts::ContentType;
 use crate::core::relations::models::EntityRelation;
+use crate::core::relations::service::SELECT_COLUMNS as RELATION_SELECT_COLUMNS;
 use crate::error::AppError;
 use super::models::{
     CreateNoteRequest, CreateSnapshotRequest, KnowledgeNote, KnowledgeNoteSnapshot,
     ListNotesQuery, UpdateNoteRequest,
 };
-
-/// Column list for entity_relations with NUMERIC -> FLOAT8 cast for confidence.
-const RELATION_SELECT_COLUMNS: &str = r#"
-    id, from_entity_type, from_entity_id, to_entity_type, to_entity_id,
-    relation_type, source_type, status,
-    CAST(confidence AS FLOAT8) AS confidence,
-    evidence_json, created_by_user_id, created_by_process,
-    created_at, updated_at, last_confirmed_at
-"#;
 
 /// Create a new knowledge note owned by the given user.
 ///
@@ -43,7 +36,7 @@ pub async fn create_note(
         crate::core::initiatives::service::get_initiative(pool, initiative_id, user_id).await?;
     }
 
-    let content_type = req.content_type.unwrap_or_else(|| "markdown".to_string());
+    let content_type = req.content_type.unwrap_or(ContentType::Markdown);
     let is_pinned = req.is_pinned.unwrap_or(false);
 
     sqlx::query_as::<_, KnowledgeNote>(
@@ -56,13 +49,16 @@ pub async fn create_note(
     .bind(req.initiative_id)
     .bind(&req.title)
     .bind(&req.content)
-    .bind(&content_type)
+    .bind(content_type.as_str())
     .bind(is_pinned)
     .fetch_one(pool)
     .await
     .map_err(|e| match &e {
         sqlx::Error::Database(db_err) if db_err.is_unique_violation() => {
             AppError::Conflict("Knowledge note already exists".to_string())
+        }
+        sqlx::Error::Database(db_err) if db_err.is_foreign_key_violation() => {
+            AppError::BadRequest("Referenced household or initiative does not exist".to_string())
         }
         sqlx::Error::Database(db_err) if db_err.is_check_violation() => {
             AppError::BadRequest("Invalid field value".to_string())
@@ -71,23 +67,35 @@ pub async fn create_note(
     })
 }
 
-/// List knowledge notes visible to the user, with optional filters.
+/// List knowledge notes owned by the user, or belonging to a household the
+/// user is a member of.
 ///
-/// Notes are scoped to the authenticated user. Optional filters narrow by
-/// household_id, initiative_id, and is_pinned.
+/// When `household_id` is provided, verifies membership and returns notes
+/// scoped to that household. Otherwise returns notes owned by the user.
+/// Optional filters narrow by initiative_id and is_pinned.
 pub async fn list_notes(
     pool: &PgPool,
     user_id: Uuid,
     query: ListNotesQuery,
 ) -> Result<Vec<KnowledgeNote>, AppError> {
     let mut qb: QueryBuilder<sqlx::Postgres> = QueryBuilder::new(
-        "SELECT id, user_id, household_id, initiative_id, title, content, content_type, is_pinned, created_at, updated_at FROM knowledge_notes WHERE user_id = ",
+        "SELECT id, user_id, household_id, initiative_id, title, content, content_type, is_pinned, created_at, updated_at FROM knowledge_notes WHERE ",
     );
-    qb.push_bind(user_id);
 
-    if let Some(household_id) = query.household_id {
-        qb.push(" AND household_id = ");
-        qb.push_bind(household_id);
+    if let Some(hid) = query.household_id {
+        // Verify user is a member of the household
+        let is_member =
+            crate::core::households::service::is_member(pool, hid, user_id).await?;
+        if !is_member {
+            return Err(AppError::Forbidden(
+                "You are not a member of this household".to_string(),
+            ));
+        }
+        qb.push("household_id = ");
+        qb.push_bind(hid);
+    } else {
+        qb.push("user_id = ");
+        qb.push_bind(user_id);
     }
 
     if let Some(initiative_id) = query.initiative_id {
@@ -101,6 +109,13 @@ pub async fn list_notes(
     }
 
     qb.push(" ORDER BY updated_at DESC");
+
+    let limit = query.limit.unwrap_or(50);
+    let offset = query.offset.unwrap_or(0);
+    qb.push(" LIMIT ");
+    qb.push_bind(limit);
+    qb.push(" OFFSET ");
+    qb.push_bind(offset);
 
     qb.build_query_as::<KnowledgeNote>()
         .fetch_all(pool)
@@ -160,6 +175,20 @@ pub async fn update_note(
     user_id: Uuid,
     req: UpdateNoteRequest,
 ) -> Result<KnowledgeNote, AppError> {
+    // Validate membership for FK changes before building the query
+    if let Some(Some(household_id)) = req.household_id {
+        let is_member =
+            crate::core::households::service::is_member(pool, household_id, user_id).await?;
+        if !is_member {
+            return Err(AppError::Forbidden(
+                "You are not a member of this household".to_string(),
+            ));
+        }
+    }
+    if let Some(Some(initiative_id)) = req.initiative_id {
+        crate::core::initiatives::service::get_initiative(pool, initiative_id, user_id).await?;
+    }
+
     let mut qb: QueryBuilder<sqlx::Postgres> =
         QueryBuilder::new("UPDATE knowledge_notes SET updated_at = now()");
 
@@ -181,7 +210,7 @@ pub async fn update_note(
 
     if let Some(ref content_type) = req.content_type {
         qb.push(", content_type = ");
-        qb.push_bind(content_type.clone());
+        qb.push_bind(content_type.as_str().to_string());
     }
 
     match &req.household_id {
@@ -224,6 +253,11 @@ pub async fn update_note(
             sqlx::Error::Database(db_err) if db_err.is_unique_violation() => {
                 AppError::Conflict("Knowledge note already exists".to_string())
             }
+            sqlx::Error::Database(db_err) if db_err.is_foreign_key_violation() => {
+                AppError::BadRequest(
+                    "Referenced household or initiative does not exist".to_string(),
+                )
+            }
             sqlx::Error::Database(db_err) if db_err.is_check_violation() => {
                 AppError::BadRequest("Invalid field value".to_string())
             }
@@ -264,9 +298,10 @@ pub async fn delete_note(
     Ok(())
 }
 
-/// Create a manual snapshot of a knowledge note's current content.
+/// Create a snapshot of a knowledge note's current content.
 ///
 /// Verifies the user has access to the note before creating the snapshot.
+/// Returns an error if the note has no content to snapshot.
 pub async fn create_snapshot(
     pool: &PgPool,
     note_id: Uuid,
@@ -276,7 +311,9 @@ pub async fn create_snapshot(
     // Verify note access
     let note = get_note(pool, note_id, user_id).await?;
 
-    let content = note.content.unwrap_or_default();
+    let content = note.content.ok_or_else(|| {
+        AppError::BadRequest("Cannot snapshot a note with no content".to_string())
+    })?;
 
     sqlx::query_as::<_, KnowledgeNoteSnapshot>(
         r#"INSERT INTO knowledge_note_snapshots (note_id, content, created_by_process)
@@ -371,10 +408,18 @@ pub async fn add_note_tag(
     user_id: Uuid,
 ) -> Result<(), AppError> {
     // Verify note ownership
-    let note = get_note(pool, note_id, user_id).await?;
-    if note.user_id != user_id {
-        return Err(AppError::Forbidden(
-            "Only the note owner can manage tags".to_string(),
+    let note_exists = sqlx::query_as::<_, (Uuid,)>(
+        "SELECT id FROM knowledge_notes WHERE id = $1 AND user_id = $2",
+    )
+    .bind(note_id)
+    .bind(user_id)
+    .fetch_optional(pool)
+    .await
+    .map_err(AppError::Database)?;
+
+    if note_exists.is_none() {
+        return Err(AppError::NotFound(
+            "Knowledge note not found".to_string(),
         ));
     }
 
@@ -386,6 +431,9 @@ pub async fn add_note_tag(
         .map_err(|e| match &e {
             sqlx::Error::Database(db_err) if db_err.is_unique_violation() => {
                 AppError::Conflict("Tag already associated with this note".to_string())
+            }
+            sqlx::Error::Database(db_err) if db_err.is_foreign_key_violation() => {
+                AppError::NotFound("Referenced tag does not exist".to_string())
             }
             _ => AppError::Database(e),
         })?;
@@ -403,10 +451,18 @@ pub async fn remove_note_tag(
     user_id: Uuid,
 ) -> Result<(), AppError> {
     // Verify note ownership
-    let note = get_note(pool, note_id, user_id).await?;
-    if note.user_id != user_id {
-        return Err(AppError::Forbidden(
-            "Only the note owner can manage tags".to_string(),
+    let note_exists = sqlx::query_as::<_, (Uuid,)>(
+        "SELECT id FROM knowledge_notes WHERE id = $1 AND user_id = $2",
+    )
+    .bind(note_id)
+    .bind(user_id)
+    .fetch_optional(pool)
+    .await
+    .map_err(AppError::Database)?;
+
+    if note_exists.is_none() {
+        return Err(AppError::NotFound(
+            "Knowledge note not found".to_string(),
         ));
     }
 
@@ -437,10 +493,18 @@ pub async fn add_note_attachment(
     user_id: Uuid,
 ) -> Result<(), AppError> {
     // Verify note ownership
-    let note = get_note(pool, note_id, user_id).await?;
-    if note.user_id != user_id {
-        return Err(AppError::Forbidden(
-            "Only the note owner can manage attachments".to_string(),
+    let note_exists = sqlx::query_as::<_, (Uuid,)>(
+        "SELECT id FROM knowledge_notes WHERE id = $1 AND user_id = $2",
+    )
+    .bind(note_id)
+    .bind(user_id)
+    .fetch_optional(pool)
+    .await
+    .map_err(AppError::Database)?;
+
+    if note_exists.is_none() {
+        return Err(AppError::NotFound(
+            "Knowledge note not found".to_string(),
         ));
     }
 
@@ -452,6 +516,9 @@ pub async fn add_note_attachment(
         .map_err(|e| match &e {
             sqlx::Error::Database(db_err) if db_err.is_unique_violation() => {
                 AppError::Conflict("Attachment already associated with this note".to_string())
+            }
+            sqlx::Error::Database(db_err) if db_err.is_foreign_key_violation() => {
+                AppError::NotFound("Referenced attachment does not exist".to_string())
             }
             _ => AppError::Database(e),
         })?;
@@ -469,10 +536,18 @@ pub async fn remove_note_attachment(
     user_id: Uuid,
 ) -> Result<(), AppError> {
     // Verify note ownership
-    let note = get_note(pool, note_id, user_id).await?;
-    if note.user_id != user_id {
-        return Err(AppError::Forbidden(
-            "Only the note owner can manage attachments".to_string(),
+    let note_exists = sqlx::query_as::<_, (Uuid,)>(
+        "SELECT id FROM knowledge_notes WHERE id = $1 AND user_id = $2",
+    )
+    .bind(note_id)
+    .bind(user_id)
+    .fetch_optional(pool)
+    .await
+    .map_err(AppError::Database)?;
+
+    if note_exists.is_none() {
+        return Err(AppError::NotFound(
+            "Knowledge note not found".to_string(),
         ));
     }
 

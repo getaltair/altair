@@ -3,6 +3,8 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use validator::Validate;
 
+use crate::contracts::ContentType;
+
 /// Database-backed knowledge note record
 #[derive(Debug, Clone, Serialize, sqlx::FromRow)]
 pub struct KnowledgeNote {
@@ -34,7 +36,7 @@ pub struct CreateNoteRequest {
     #[validate(length(min = 1, max = 500))]
     pub title: String,
     pub content: Option<String>,
-    pub content_type: Option<String>,
+    pub content_type: Option<ContentType>,
     pub household_id: Option<Uuid>,
     pub initiative_id: Option<Uuid>,
     pub is_pinned: Option<bool>,
@@ -50,31 +52,20 @@ pub struct CreateNoteRequest {
 pub struct UpdateNoteRequest {
     #[validate(length(min = 1, max = 500))]
     pub title: Option<String>,
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        deserialize_with = "crate::serde_util::double_option"
-    )]
+    #[serde(default, deserialize_with = "crate::serde_util::double_option")]
     pub content: Option<Option<String>>,
-    pub content_type: Option<String>,
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        deserialize_with = "crate::serde_util::double_option"
-    )]
+    pub content_type: Option<ContentType>,
+    #[serde(default, deserialize_with = "crate::serde_util::double_option")]
     pub household_id: Option<Option<Uuid>>,
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        deserialize_with = "crate::serde_util::double_option"
-    )]
+    #[serde(default, deserialize_with = "crate::serde_util::double_option")]
     pub initiative_id: Option<Option<Uuid>>,
     pub is_pinned: Option<bool>,
 }
 
 /// Request payload for creating a manual snapshot
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Validate)]
 pub struct CreateSnapshotRequest {
+    #[validate(length(max = 200))]
     pub created_by_process: Option<String>,
 }
 
@@ -84,6 +75,8 @@ pub struct ListNotesQuery {
     pub household_id: Option<Uuid>,
     pub initiative_id: Option<Uuid>,
     pub is_pinned: Option<bool>,
+    pub limit: Option<i64>,
+    pub offset: Option<i64>,
 }
 
 #[cfg(test)]
@@ -218,5 +211,67 @@ mod tests {
         let json = r#"{"title": "test", "household_id": null}"#;
         let req: UpdateNoteRequest = serde_json::from_str(json).unwrap();
         assert_eq!(req.household_id, Some(None));
+    }
+
+    #[test]
+    fn update_request_household_id_with_value_is_some_some() {
+        let id = Uuid::new_v4();
+        let json = format!(r#"{{"household_id": "{}"}}"#, id);
+        let req: UpdateNoteRequest = serde_json::from_str(&json).unwrap();
+        assert_eq!(req.household_id, Some(Some(id)));
+    }
+
+    // -- Double-option deserialization for initiative_id --------------------------
+
+    #[test]
+    fn update_request_initiative_id_absent_is_none() {
+        let json = r#"{"title": "test"}"#;
+        let req: UpdateNoteRequest = serde_json::from_str(json).unwrap();
+        assert_eq!(req.initiative_id, None);
+    }
+
+    #[test]
+    fn update_request_initiative_id_explicit_null_is_some_none() {
+        let json = r#"{"title": "test", "initiative_id": null}"#;
+        let req: UpdateNoteRequest = serde_json::from_str(json).unwrap();
+        assert_eq!(req.initiative_id, Some(None));
+    }
+
+    #[test]
+    fn update_request_initiative_id_with_value_is_some_some() {
+        let id = Uuid::new_v4();
+        let json = format!(r#"{{"initiative_id": "{}"}}"#, id);
+        let req: UpdateNoteRequest = serde_json::from_str(&json).unwrap();
+        assert_eq!(req.initiative_id, Some(Some(id)));
+    }
+
+    // -- UpdateNoteRequest title boundary -----------------------------------------
+
+    #[test]
+    fn update_request_title_over_500_chars_fails() {
+        let req = UpdateNoteRequest {
+            title: Some("a".repeat(501)),
+            content: None,
+            content_type: None,
+            household_id: None,
+            initiative_id: None,
+            is_pinned: None,
+        };
+        assert!(req.validate().is_err());
+    }
+
+    // -- ContentType deserialization -----------------------------------------------
+
+    #[test]
+    fn create_request_content_type_deserialization() {
+        use crate::contracts::ContentType;
+
+        let json = r#"{"title": "test", "content_type": "markdown"}"#;
+        let req: CreateNoteRequest = serde_json::from_str(json).unwrap();
+        assert_eq!(req.content_type, Some(ContentType::Markdown));
+
+        let json = r#"{"title": "test", "content_type": "plain"}"#;
+        let req: CreateNoteRequest = serde_json::from_str(json).unwrap();
+        assert_eq!(req.content_type, Some(ContentType::Plain));
     }
 }

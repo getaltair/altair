@@ -9,7 +9,7 @@ use crate::error::AppError;
 
 /// Column list with NUMERIC -> FLOAT8 cast for the confidence field.
 /// sqlx does not have the `numeric` feature enabled, so we cast in SQL.
-const SELECT_COLUMNS: &str = r#"
+pub const SELECT_COLUMNS: &str = r#"
     id, from_entity_type, from_entity_id, to_entity_type, to_entity_id,
     relation_type, source_type, status,
     CAST(confidence AS FLOAT8) AS confidence,

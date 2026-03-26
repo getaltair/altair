@@ -17,7 +17,8 @@ use super::{
     service,
 };
 
-/// Create a new knowledge note owned by the authenticated user
+/// Create a new knowledge note owned by the authenticated user.
+/// Returns 201 with the created note.
 pub async fn create_note(
     auth: AuthenticatedUser,
     State(pool): State<PgPool>,
@@ -29,7 +30,7 @@ pub async fn create_note(
     Ok((StatusCode::CREATED, Json(note)))
 }
 
-/// List knowledge notes visible to the authenticated user, with optional filters
+/// List knowledge notes owned by or shared with the authenticated user.
 pub async fn list_notes(
     auth: AuthenticatedUser,
     State(pool): State<PgPool>,
@@ -62,7 +63,7 @@ pub async fn update_note(
     Ok(Json(note))
 }
 
-/// Hard-delete a knowledge note
+/// Hard-delete a knowledge note. Returns 204 on success.
 pub async fn delete_note(
     auth: AuthenticatedUser,
     State(pool): State<PgPool>,
@@ -82,13 +83,15 @@ pub async fn list_snapshots(
     Ok(Json(snapshots))
 }
 
-/// Create a manual snapshot of a knowledge note
+/// Create a snapshot of a knowledge note's current content. Returns 201.
 pub async fn create_snapshot(
     auth: AuthenticatedUser,
     State(pool): State<PgPool>,
     Path(note_id): Path<Uuid>,
     Json(body): Json<CreateSnapshotRequest>,
 ) -> Result<(StatusCode, Json<KnowledgeNoteSnapshot>), AppError> {
+    body.validate()
+        .map_err(|e| AppError::BadRequest(e.to_string()))?;
     let snapshot = service::create_snapshot(&pool, note_id, auth.user_id, body).await?;
     Ok((StatusCode::CREATED, Json(snapshot)))
 }
@@ -113,7 +116,7 @@ pub async fn get_note_backlinks(
     Ok(Json(backlinks))
 }
 
-/// Associate a tag with a knowledge note
+/// Associate a tag with a knowledge note. Returns 201 on success.
 pub async fn add_note_tag(
     auth: AuthenticatedUser,
     State(pool): State<PgPool>,
@@ -123,7 +126,7 @@ pub async fn add_note_tag(
     Ok(StatusCode::CREATED)
 }
 
-/// Remove a tag association from a knowledge note
+/// Remove a tag association from a knowledge note. Returns 204 on success.
 pub async fn remove_note_tag(
     auth: AuthenticatedUser,
     State(pool): State<PgPool>,
@@ -133,7 +136,7 @@ pub async fn remove_note_tag(
     Ok(StatusCode::NO_CONTENT)
 }
 
-/// Associate an attachment with a knowledge note
+/// Associate an attachment with a knowledge note. Returns 201 on success.
 pub async fn add_note_attachment(
     auth: AuthenticatedUser,
     State(pool): State<PgPool>,
@@ -143,7 +146,7 @@ pub async fn add_note_attachment(
     Ok(StatusCode::CREATED)
 }
 
-/// Remove an attachment association from a knowledge note
+/// Remove an attachment association from a knowledge note. Returns 204 on success.
 pub async fn remove_note_attachment(
     auth: AuthenticatedUser,
     State(pool): State<PgPool>,
