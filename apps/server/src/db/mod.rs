@@ -43,7 +43,7 @@ pub async fn create_pool(config: &Config) -> Result<PgPool> {
         .test_before_acquire(true)
         .connect(config.database_url())
         .await
-        .map_err(|e| AppError::Database(e))?;
+        .map_err(AppError::Database)?;
 
     tracing::info!("Database connection pool created successfully");
     Ok(pool)
@@ -87,6 +87,7 @@ mod tests {
             db_min_conn: 5,
             db_max_conn: 20,
             db_timeout_sec: 30,
+            session_ttl_hours: 72,
         };
 
         // Attempt to create pool with invalid URL should return Database error
@@ -135,6 +136,7 @@ mod tests {
             db_min_conn: 5,
             db_max_conn: 20,
             db_timeout_sec: 30,
+            session_ttl_hours: 72,
         };
 
         let result = create_pool(&config).await;
@@ -161,6 +163,7 @@ mod tests {
             db_min_conn: 5,
             db_max_conn: 20,
             db_timeout_sec: 30,
+            session_ttl_hours: 72,
         };
 
         let result = create_pool(&config).await;

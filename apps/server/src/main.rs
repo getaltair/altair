@@ -4,11 +4,14 @@
 //! It initializes configuration, telemetry, database connectivity, and serves API.
 
 mod api;
+mod auth;
 mod config;
+mod core;
 mod db;
 mod error;
 mod telemetry;
 
+use api::AppState;
 use config::Config;
 use error::Result;
 use tokio::signal;
@@ -56,7 +59,8 @@ async fn main() -> Result<()> {
     db::run_migrations(&pool).await?;
 
     // Create API router with all routes and middleware
-    let app = api::create_router(pool);
+    let state = AppState { pool, config: config.clone() };
+    let app = api::create_router(state);
 
     // Build TCP listener
     let addr = format!("0.0.0.0:{}", config.port());
