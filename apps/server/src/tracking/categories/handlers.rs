@@ -1,0 +1,99 @@
+use axum::{
+    extract::{Json, Path, Query, State},
+    http::StatusCode,
+};
+use serde::Deserialize;
+use sqlx::PgPool;
+use uuid::Uuid;
+use validator::Validate;
+
+use crate::auth::middleware::AuthenticatedUser;
+use crate::error::AppError;
+use crate::tracking::{verify_household_membership, PaginationParams};
+use super::{
+    models::{CreateCategoryRequest, TrackingCategory, UpdateCategoryRequest},
+    service,
+};
+
+/// Query parameters for listing tracking categories
+#[derive(Debug, Deserialize)]
+pub struct ListCategoriesParams {
+    pub household_id: Uuid,
+}
+
+/// Create a new tracking category within a household
+pub async fn create_category(
+    auth: AuthenticatedUser,
+    State(pool): State<PgPool>,
+    Json(body): Json<CreateCategoryRequest>,
+) -> Result<(StatusCode, Json<TrackingCategory>), AppError> {
+    body.validate()
+        .map_err(|e| AppError::BadRequest(e.to_string()))?;
+
+    verify_household_membership(&pool, auth.user_id, body.household_id).await?;
+
+    let category = service::create_category(&pool, auth.user_id, body).await?;
+    Ok((StatusCode::CREATED, Json(category)))
+}
+
+/// List all tracking categories for a household
+pub async fn list_categories(
+    auth: AuthenticatedUser,
+    State(pool): State<PgPool>,
+    Query(params): Query<ListCategoriesParams>,
+    Query(pagination): Query<PaginationParams>,
+) -> Result<Json<Vec<TrackingCategory>>, AppError> {
+    verify_household_membership(&pool, auth.user_id, params.household_id).await?;
+
+    let categories = service::list_categories(
+        &pool,
+        params.household_id,
+        pagination.limit_or_default(),
+        pagination.offset_or_default(),
+    )
+    .await?;
+    Ok(Json(categories))
+}
+
+/// Get a single tracking category by ID
+pub async fn get_category(
+    auth: AuthenticatedUser,
+    State(pool): State<PgPool>,
+    Path(id): Path<Uuid>,
+) -> Result<Json<TrackingCategory>, AppError> {
+    let category = service::get_category(&pool, id).await?;
+
+    verify_household_membership(&pool, auth.user_id, category.household_id).await?;
+
+    Ok(Json(category))
+}
+
+/// Update an existing tracking category (partial update)
+pub async fn update_category(
+    auth: AuthenticatedUser,
+    State(pool): State<PgPool>,
+    Path(id): Path<Uuid>,
+    Json(body): Json<UpdateCategoryRequest>,
+) -> Result<Json<TrackingCategory>, AppError> {
+    body.validate()
+        .map_err(|e| AppError::BadRequest(e.to_string()))?;
+
+    let existing = service::get_category(&pool, id).await?;
+    verify_household_membership(&pool, auth.user_id, existing.household_id).await?;
+
+    let category = service::update_category(&pool, id, body).await?;
+    Ok(Json(category))
+}
+
+/// Delete a tracking category
+pub async fn delete_category(
+    auth: AuthenticatedUser,
+    State(pool): State<PgPool>,
+    Path(id): Path<Uuid>,
+) -> Result<StatusCode, AppError> {
+    let existing = service::get_category(&pool, id).await?;
+    verify_household_membership(&pool, auth.user_id, existing.household_id).await?;
+
+    service::delete_category(&pool, id).await?;
+    Ok(StatusCode::NO_CONTENT)
+}

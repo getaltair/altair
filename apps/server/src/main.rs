@@ -13,6 +13,7 @@ mod db;
 mod error;
 mod serde_util;
 mod telemetry;
+mod tracking;
 
 use api::AppState;
 use config::Config;

@@ -186,3 +186,99 @@ CREATE TABLE IF NOT EXISTS routine_tags (
     tag_id UUID NOT NULL REFERENCES tags(id) ON DELETE CASCADE,
     PRIMARY KEY (routine_id, tag_id)
 );
+
+-- Tracking Domain Tables
+
+CREATE TABLE tracking_locations (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id),
+    household_id UUID NOT NULL REFERENCES households(id),
+    name TEXT NOT NULL,
+    description TEXT,
+    parent_location_id UUID REFERENCES tracking_locations(id),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX idx_tracking_locations_household ON tracking_locations(household_id);
+CREATE INDEX idx_tracking_locations_parent ON tracking_locations(parent_location_id);
+
+CREATE TABLE tracking_categories (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id),
+    household_id UUID NOT NULL REFERENCES households(id),
+    name TEXT NOT NULL,
+    description TEXT,
+    parent_category_id UUID REFERENCES tracking_categories(id),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX idx_tracking_categories_household ON tracking_categories(household_id);
+CREATE INDEX idx_tracking_categories_parent ON tracking_categories(parent_category_id);
+
+CREATE TABLE tracking_items (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id),
+    household_id UUID NOT NULL REFERENCES households(id),
+    category_id UUID REFERENCES tracking_categories(id) ON DELETE SET NULL,
+    location_id UUID REFERENCES tracking_locations(id) ON DELETE SET NULL,
+    name TEXT NOT NULL,
+    description TEXT,
+    quantity INTEGER NOT NULL DEFAULT 0 CHECK (quantity >= 0),
+    unit TEXT,
+    min_quantity INTEGER,
+    barcode TEXT,
+    status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'archived')),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX idx_tracking_items_household ON tracking_items(household_id);
+CREATE INDEX idx_tracking_items_category ON tracking_items(category_id);
+CREATE INDEX idx_tracking_items_location ON tracking_items(location_id);
+CREATE INDEX idx_tracking_items_status ON tracking_items(status);
+
+CREATE TABLE tracking_item_events (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    item_id UUID NOT NULL REFERENCES tracking_items(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(id),
+    event_type TEXT NOT NULL CHECK (event_type IN ('consumed', 'restocked', 'moved', 'adjusted', 'expired', 'donated')),
+    quantity_change INTEGER NOT NULL,
+    notes TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX idx_tracking_item_events_item ON tracking_item_events(item_id);
+CREATE INDEX idx_tracking_item_events_created ON tracking_item_events(created_at);
+
+CREATE TABLE tracking_shopping_lists (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id),
+    household_id UUID NOT NULL REFERENCES households(id),
+    name TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'completed', 'archived')),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX idx_tracking_shopping_lists_household ON tracking_shopping_lists(household_id);
+
+CREATE TABLE tracking_shopping_list_items (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    shopping_list_id UUID NOT NULL REFERENCES tracking_shopping_lists(id) ON DELETE CASCADE,
+    item_id UUID REFERENCES tracking_items(id) ON DELETE SET NULL,
+    name TEXT NOT NULL,
+    quantity INTEGER NOT NULL DEFAULT 1,
+    unit TEXT,
+    is_checked BOOLEAN NOT NULL DEFAULT false,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX idx_tracking_shopping_list_items_list ON tracking_shopping_list_items(shopping_list_id);
+
+CREATE TABLE item_tags (
+    item_id UUID NOT NULL REFERENCES tracking_items(id) ON DELETE CASCADE,
+    tag_id UUID NOT NULL REFERENCES tags(id) ON DELETE CASCADE,
+    PRIMARY KEY (item_id, tag_id)
+);
+
+CREATE TABLE item_attachments (
+    item_id UUID NOT NULL REFERENCES tracking_items(id) ON DELETE CASCADE,
+    attachment_id UUID NOT NULL REFERENCES attachments(id) ON DELETE CASCADE,
+    PRIMARY KEY (item_id, attachment_id)
+);
