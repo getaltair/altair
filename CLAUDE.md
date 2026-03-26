@@ -155,6 +155,37 @@ Load the `git-commits` skill when the user requests committing or git work.
 
 ---
 
+## Design System
+
+**`DESIGN.md`** is the authoritative design system reference for this project. It documents the visual language, color palette, typography, component stylings, layout principles, and interaction patterns in semantic, natural language paired with exact technical values (hex codes, rem values, etc.).
+
+**When to load DESIGN.md:**
+
+- Before generating, modifying, or reviewing any UI component, screen, or layout
+- Before creating or editing Stitch screen prompts
+- When making decisions about colors, typography, spacing, elevation, or motion
+- When a sub-agent is assigned frontend or design work (instruct it to read `DESIGN.md` first)
+
+**How to use it:**
+
+- Treat DESIGN.md as the single source of truth for all visual decisions
+- Follow its color roles, surface hierarchy, and typography rules exactly
+- Apply its strict rules (no pure black, no 1px borders, no sharp corners, no dividers)
+- Use its descriptive language when writing Stitch prompts or design specifications
+- When trade-offs arise between aesthetics and the design system, the design system wins
+
+**DESIGN.md structure** (five core sections):
+
+1. Visual Theme & Atmosphere -- the creative north star and mood
+2. Color Palette & Roles -- named colors with hex codes and functional roles
+3. Typography Rules -- font families, hierarchy, and editorial conventions
+4. Component Stylings -- buttons, cards, inputs, navigation, indicators
+5. Layout Principles -- spacing strategy, depth philosophy, interaction patterns
+
+**Keeping it current:** When the design system evolves (new components, revised palette, updated patterns), update `DESIGN.md` to reflect those changes. Use the `design-md` skill to regenerate from Stitch projects when screens have been updated.
+
+---
+
 ## Coding Best Practices
 
 **Priority Order** (when trade-offs arise): Correctness > Maintainability > Performance > Brevity
@@ -210,7 +241,7 @@ Request → Load Skills → Assess Complexity → Route → Execute → Commit
 - **Collaborative** → `/team-plan` → user approval → `/team-build` (Agent Teams, contract-first)
 - **High-reliability** → `/team-plan` with Specialist + Quality Engineer validation
 
-**Key Skills**: `session-management`, `sub-agent-invocation`, `git-commits`, `codebase-navigation`
+**Key Skills**: `session-management`, `sub-agent-invocation`, `git-commits`, `codebase-navigation`, `design-md`
 **Key Commands**: `/team-plan`, `/build`, `/team-build`
 
 ---
@@ -223,5 +254,6 @@ Request → Load Skills → Assess Complexity → Route → Execute → Commit
 4. **Research-driven** - Complex tasks backed by comprehensive research
 5. **Framework evolution** - Recognize and capture reusable patterns
 6. **Task list sync** - Exact mirror of session checklists via TaskCreate/TaskUpdate
+7. **Design system compliance** - Load `DESIGN.md` before any UI/frontend work; all visual decisions must align with the documented design system
 
 **Success = Skills → Complexity Assessment → `/team-plan` → Approval → `/build` or `/team-build` → Improvement**
