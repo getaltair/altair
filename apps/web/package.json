@@ -17,8 +17,7 @@
 		"test:e2e": "playwright test"
 	},
 	"dependencies": {
-		"@altair/contracts": "workspace:*",
-		"@powersync/web": "^1.37.0"
+		"@altair/contracts": "workspace:*"
 	},
 	"devDependencies": {
 		"@eslint/compat": "^2.0.3",

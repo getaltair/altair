@@ -21,5 +21,4 @@ sha2 = "0.10"
 uuid = { version = "1", features = ["v4", "serde"] }
 tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.23", features = ["env-filter", "json"] }
-jsonwebtoken = "9"
 validator = { version = "0.20", features = ["derive"] }
