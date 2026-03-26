@@ -230,6 +230,94 @@ impl ProcessingState {
 }
 
 // ---------------------------------------------------------------------------
+// TrackingItemStatus
+// ---------------------------------------------------------------------------
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TrackingItemStatus {
+    Active,
+    Archived,
+}
+
+impl fmt::Display for TrackingItemStatus {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.as_str())
+    }
+}
+
+impl TrackingItemStatus {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            TrackingItemStatus::Active => "active",
+            TrackingItemStatus::Archived => "archived",
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// ShoppingListStatus
+// ---------------------------------------------------------------------------
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ShoppingListStatus {
+    Active,
+    Completed,
+    Archived,
+}
+
+impl fmt::Display for ShoppingListStatus {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.as_str())
+    }
+}
+
+impl ShoppingListStatus {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            ShoppingListStatus::Active => "active",
+            ShoppingListStatus::Completed => "completed",
+            ShoppingListStatus::Archived => "archived",
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// ItemEventType
+// ---------------------------------------------------------------------------
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ItemEventType {
+    Consumed,
+    Restocked,
+    Moved,
+    Adjusted,
+    Expired,
+    Donated,
+}
+
+impl fmt::Display for ItemEventType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.as_str())
+    }
+}
+
+impl ItemEventType {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            ItemEventType::Consumed => "consumed",
+            ItemEventType::Restocked => "restocked",
+            ItemEventType::Moved => "moved",
+            ItemEventType::Adjusted => "adjusted",
+            ItemEventType::Expired => "expired",
+            ItemEventType::Donated => "donated",
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
 
@@ -437,5 +525,96 @@ mod tests {
     fn processing_state_as_str() {
         assert_eq!(ProcessingState::Pending.as_str(), "pending");
         assert_eq!(ProcessingState::Ready.as_str(), "ready");
+    }
+
+    // -- TrackingItemStatus -------------------------------------------------
+
+    #[test]
+    fn tracking_item_status_serde_roundtrip() {
+        let variants = [
+            TrackingItemStatus::Active,
+            TrackingItemStatus::Archived,
+        ];
+        for variant in &variants {
+            let json = serde_json::to_string(variant).expect("serialize");
+            let back: TrackingItemStatus = serde_json::from_str(&json).expect("deserialize");
+            assert_eq!(&back, variant);
+        }
+    }
+
+    #[test]
+    fn tracking_item_status_unknown_string_fails() {
+        let result = serde_json::from_str::<TrackingItemStatus>("\"deleted\"");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn tracking_item_status_as_str() {
+        assert_eq!(TrackingItemStatus::Active.as_str(), "active");
+        assert_eq!(TrackingItemStatus::Archived.as_str(), "archived");
+    }
+
+    // -- ShoppingListStatus -------------------------------------------------
+
+    #[test]
+    fn shopping_list_status_serde_roundtrip() {
+        let variants = [
+            ShoppingListStatus::Active,
+            ShoppingListStatus::Completed,
+            ShoppingListStatus::Archived,
+        ];
+        for variant in &variants {
+            let json = serde_json::to_string(variant).expect("serialize");
+            let back: ShoppingListStatus = serde_json::from_str(&json).expect("deserialize");
+            assert_eq!(&back, variant);
+        }
+    }
+
+    #[test]
+    fn shopping_list_status_unknown_string_fails() {
+        let result = serde_json::from_str::<ShoppingListStatus>("\"cancelled\"");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn shopping_list_status_as_str() {
+        assert_eq!(ShoppingListStatus::Active.as_str(), "active");
+        assert_eq!(ShoppingListStatus::Completed.as_str(), "completed");
+        assert_eq!(ShoppingListStatus::Archived.as_str(), "archived");
+    }
+
+    // -- ItemEventType ------------------------------------------------------
+
+    #[test]
+    fn item_event_type_serde_roundtrip() {
+        let variants = [
+            ItemEventType::Consumed,
+            ItemEventType::Restocked,
+            ItemEventType::Moved,
+            ItemEventType::Adjusted,
+            ItemEventType::Expired,
+            ItemEventType::Donated,
+        ];
+        for variant in &variants {
+            let json = serde_json::to_string(variant).expect("serialize");
+            let back: ItemEventType = serde_json::from_str(&json).expect("deserialize");
+            assert_eq!(&back, variant);
+        }
+    }
+
+    #[test]
+    fn item_event_type_unknown_string_fails() {
+        let result = serde_json::from_str::<ItemEventType>("\"purchased\"");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn item_event_type_as_str() {
+        assert_eq!(ItemEventType::Consumed.as_str(), "consumed");
+        assert_eq!(ItemEventType::Restocked.as_str(), "restocked");
+        assert_eq!(ItemEventType::Moved.as_str(), "moved");
+        assert_eq!(ItemEventType::Adjusted.as_str(), "adjusted");
+        assert_eq!(ItemEventType::Expired.as_str(), "expired");
+        assert_eq!(ItemEventType::Donated.as_str(), "donated");
     }
 }
