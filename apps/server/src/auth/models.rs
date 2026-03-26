@@ -16,8 +16,8 @@ pub struct User {
 }
 
 /// Database-backed session record
-#[allow(dead_code)]
 #[derive(Debug, Clone, sqlx::FromRow)]
+#[allow(dead_code)]
 pub struct Session {
     pub id: Uuid,
     pub user_id: Uuid,
@@ -32,15 +32,18 @@ pub struct Session {
 pub struct RegisterRequest {
     #[validate(email)]
     pub email: String,
-    #[validate(length(min = 8))]
+    #[validate(length(min = 8, max = 128))]
     pub password: String,
+    #[validate(length(min = 1, max = 100))]
     pub display_name: String,
 }
 
 /// Login request payload
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Validate)]
 pub struct LoginRequest {
+    #[validate(email)]
     pub email: String,
+    #[validate(length(min = 1, max = 128))]
     pub password: String,
 }
 
@@ -57,6 +60,17 @@ pub struct UserProfile {
     pub email: String,
     pub display_name: String,
     pub created_at: DateTime<Utc>,
+}
+
+impl From<User> for UserProfile {
+    fn from(user: User) -> Self {
+        UserProfile {
+            id: user.id,
+            email: user.email,
+            display_name: user.display_name,
+            created_at: user.created_at,
+        }
+    }
 }
 
 /// Auth response returned on register/login
