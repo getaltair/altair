@@ -27,6 +27,13 @@ dev-server:
 dev-web:
     cd apps/web && pnpm dev
 
+# Start Android dev (just opens the project — actual dev is in Android Studio)
+dev-android:
+    @echo "Open apps/android/ in Android Studio"
+
+check-android:
+    cd apps/android && ./gradlew build
+
 # ─── Contracts ───────────────────────────────────────────────
 
 # Generate typed constants from contract registries
