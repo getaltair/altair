@@ -47,7 +47,8 @@ services:
       - ../powersync:/config
     environment:
       POWERSYNC_CONFIG: /config/powersync.yaml
-      POWERSYNC_JWT_SECRET: ${POWERSYNC_JWT_SECRET:-dev_powersync_secret_change_in_production}
+      # Must be base64url-encoded (RFC 7517). The Rust server signs with the raw decoded bytes.
+      POWERSYNC_JWT_SECRET: ${POWERSYNC_JWT_SECRET:-ZGV2X3Bvd2Vyc3luY19zZWNyZXRfY2hhbmdlX2luX3Byb2R1Y3Rpb24}
     depends_on:
       postgres:
         condition: service_healthy

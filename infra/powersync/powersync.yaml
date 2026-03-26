@@ -31,8 +31,8 @@ client_auth:
 # -----------------------------------------------------------------------
 # Sync Streams
 # -----------------------------------------------------------------------
-# 6 auto-subscribed streams (always synced on connect)
-# 4 on-demand streams (subscribed when navigating to detail views)
+# 5 auto-subscribed streams (always synced on connect)
+# 1 on-demand stream (subscribed when navigating to detail views)
 #
 # Every query filters by auth.user_id() or household membership subquery.
 # No stream may return data belonging to other users.
@@ -51,47 +51,39 @@ streams:
   my_profile:
     auto_subscribe: true
     query: |
-      SELECT id, email, display_name, timezone, default_household_id, is_active, created_at, updated_at
+      SELECT id, email, display_name, created_at, updated_at
       FROM users
-      WHERE id = auth.user_id() AND deleted_at IS NULL
+      WHERE id = auth.user_id()
 
   # 2. my_memberships: user's household_memberships rows + household details
   my_memberships:
     auto_subscribe: true
     queries:
       - |
-        SELECT id, household_id, user_id, role, is_active, created_at, updated_at
+        SELECT id, household_id, user_id, role, joined_at
         FROM household_memberships
-        WHERE user_id = auth.user_id() AND deleted_at IS NULL
+        WHERE user_id = auth.user_id()
       - |
-        SELECT h.id, h.owner_user_id, h.name, h.slug, h.description, h.created_at, h.updated_at, h.deleted_at
+        SELECT h.id, h.name, h.created_by, h.created_at
         FROM households h
         WHERE h.id IN (
           SELECT hm.household_id
           FROM household_memberships hm
-          WHERE hm.user_id = auth.user_id() AND hm.deleted_at IS NULL
-        ) AND h.deleted_at IS NULL
+          WHERE hm.user_id = auth.user_id()
+        )
 
   # 3. my_personal_data: user's personal entities (not in a household)
   my_personal_data:
     auto_subscribe: true
     queries:
       - |
-        SELECT id, owner_user_id, household_id, title, slug, description, status, start_date, target_date, completed_at, created_at, updated_at, deleted_at
+        SELECT id, user_id, household_id, name, description, status, created_at, updated_at
         FROM initiatives
-        WHERE owner_user_id = auth.user_id() AND deleted_at IS NULL
+        WHERE user_id = auth.user_id()
       - |
-        SELECT id, owner_user_id, household_id, initiative_id, title, description, cadence_type, cadence_config, is_active, last_completed_at, created_at, updated_at, deleted_at
-        FROM guidance_routines
-        WHERE owner_user_id = auth.user_id() AND deleted_at IS NULL
-      - |
-        SELECT id, owner_user_id, household_id, name, color, description, created_at, updated_at, deleted_at
+        SELECT id, user_id, household_id, name, color, created_at
         FROM tags
-        WHERE owner_user_id = auth.user_id() AND deleted_at IS NULL
-      - |
-        SELECT id, initiative_id, epic_id, owner_user_id, household_id, assigned_user_id, title, description, status, priority, energy_level, due_at, scheduled_for, completed_at, sort_order, created_at, updated_at, deleted_at
-        FROM guidance_quests
-        WHERE (owner_user_id = auth.user_id() OR assigned_user_id = auth.user_id()) AND deleted_at IS NULL
+        WHERE user_id = auth.user_id()
 
   # 4. my_household_data: all entities belonging to households the user is a member of
   my_household_data:
@@ -101,301 +93,66 @@ streams:
         WITH my_households AS (
           SELECT household_id
           FROM household_memberships
-          WHERE user_id = auth.user_id() AND deleted_at IS NULL
+          WHERE user_id = auth.user_id()
         )
-        SELECT id, owner_user_id, household_id, title, slug, description, status, start_date, target_date, completed_at, created_at, updated_at, deleted_at
+        SELECT id, user_id, household_id, name, description, status, created_at, updated_at
         FROM initiatives
-        WHERE household_id IN my_households AND deleted_at IS NULL
+        WHERE household_id IN (SELECT household_id FROM my_households)
       - |
         WITH my_households AS (
           SELECT household_id
           FROM household_memberships
-          WHERE user_id = auth.user_id() AND deleted_at IS NULL
+          WHERE user_id = auth.user_id()
         )
-        SELECT id, initiative_id, epic_id, owner_user_id, household_id, assigned_user_id, title, description, status, priority, energy_level, due_at, scheduled_for, completed_at, sort_order, created_at, updated_at, deleted_at
-        FROM guidance_quests
-        WHERE household_id IN my_households AND deleted_at IS NULL
-      - |
-        WITH my_households AS (
-          SELECT household_id
-          FROM household_memberships
-          WHERE user_id = auth.user_id() AND deleted_at IS NULL
-        )
-        SELECT id, owner_user_id, household_id, initiative_id, title, description, cadence_type, cadence_config, is_active, last_completed_at, created_at, updated_at, deleted_at
-        FROM guidance_routines
-        WHERE household_id IN my_households AND deleted_at IS NULL
-      - |
-        WITH my_households AS (
-          SELECT household_id
-          FROM household_memberships
-          WHERE user_id = auth.user_id() AND deleted_at IS NULL
-        )
-        SELECT id, owner_user_id, household_id, parent_location_id, name, location_type, description, created_at, updated_at, deleted_at
-        FROM tracking_locations
-        WHERE household_id IN my_households AND deleted_at IS NULL
-      - |
-        WITH my_households AS (
-          SELECT household_id
-          FROM household_memberships
-          WHERE user_id = auth.user_id() AND deleted_at IS NULL
-        )
-        SELECT id, owner_user_id, household_id, name, description, created_at, updated_at, deleted_at
-        FROM tracking_categories
-        WHERE household_id IN my_households AND deleted_at IS NULL
-      - |
-        WITH my_households AS (
-          SELECT household_id
-          FROM household_memberships
-          WHERE user_id = auth.user_id() AND deleted_at IS NULL
-        )
-        SELECT id, owner_user_id, household_id, initiative_id, location_id, category_id, name, description, sku, barcode, quantity, unit, min_quantity, reorder_quantity, is_consumable, expires_at, last_seen_at, metadata_json, created_at, updated_at, deleted_at
-        FROM tracking_items
-        WHERE household_id IN my_households AND deleted_at IS NULL
-      - |
-        WITH my_households AS (
-          SELECT household_id
-          FROM household_memberships
-          WHERE user_id = auth.user_id() AND deleted_at IS NULL
-        )
-        SELECT id, owner_user_id, household_id, name, status, created_at, updated_at, deleted_at
-        FROM tracking_shopping_lists
-        WHERE household_id IN my_households AND deleted_at IS NULL
-      - |
-        WITH my_households AS (
-          SELECT household_id
-          FROM household_memberships
-          WHERE user_id = auth.user_id() AND deleted_at IS NULL
-        ),
-        household_lists AS (
-          SELECT id
-          FROM tracking_shopping_lists
-          WHERE household_id IN my_households AND deleted_at IS NULL
-        )
-        SELECT id, shopping_list_id, item_id, name, quantity, unit, is_completed, notes, created_at, updated_at, deleted_at
-        FROM tracking_shopping_list_items
-        WHERE shopping_list_id IN household_lists AND deleted_at IS NULL
-      - |
-        WITH my_households AS (
-          SELECT household_id
-          FROM household_memberships
-          WHERE user_id = auth.user_id() AND deleted_at IS NULL
-        )
-        SELECT id, owner_user_id, household_id, name, color, description, created_at, updated_at, deleted_at
+        SELECT id, user_id, household_id, name, color, created_at
         FROM tags
-        WHERE household_id IN my_households AND deleted_at IS NULL
+        WHERE household_id IN (SELECT household_id FROM my_households)
 
   # 5. my_relations: entity_relations where either side belongs to the user's scope
   my_relations:
     auto_subscribe: true
     queries:
       - |
-        WITH my_households AS (
-          SELECT household_id
-          FROM household_memberships
-          WHERE user_id = auth.user_id() AND deleted_at IS NULL
-        )
-        SELECT id, household_id, initiative_id, owner_user_id, created_by_user_id, updated_by_user_id,
-               from_entity_type, from_entity_id, to_entity_type, to_entity_id,
+        SELECT id, from_entity_type, from_entity_id, to_entity_type, to_entity_id,
                relation_type, source_type, status, confidence, evidence_json,
-               created_by_process, last_confirmed_at, created_at, updated_at, deleted_at
+               created_by_user_id, created_by_process, last_confirmed_at,
+               created_at, updated_at
         FROM entity_relations
-        WHERE household_id IN my_households
-          AND status IN ('accepted', 'suggested')
-          AND deleted_at IS NULL
-      - |
-        SELECT id, household_id, initiative_id, owner_user_id, created_by_user_id, updated_by_user_id,
-               from_entity_type, from_entity_id, to_entity_type, to_entity_id,
-               relation_type, source_type, status, confidence, evidence_json,
-               created_by_process, last_confirmed_at, created_at, updated_at, deleted_at
-        FROM entity_relations
-        WHERE owner_user_id = auth.user_id()
-          AND household_id IS NULL
-          AND status IN ('accepted', 'suggested')
-          AND deleted_at IS NULL
-
-  # 6. my_attachment_metadata: attachments metadata for the user's entities
-  my_attachment_metadata:
-    auto_subscribe: true
-    queries:
-      - |
-        SELECT id, owner_user_id, household_id, initiative_id, storage_key, original_filename,
-               mime_type, size_bytes, sha256, processing_status, metadata_json,
-               created_at, updated_at, deleted_at
-        FROM attachments
-        WHERE owner_user_id = auth.user_id() AND deleted_at IS NULL
-      - |
-        WITH my_households AS (
-          SELECT household_id
-          FROM household_memberships
-          WHERE user_id = auth.user_id() AND deleted_at IS NULL
-        )
-        SELECT id, owner_user_id, household_id, initiative_id, storage_key, original_filename,
-               mime_type, size_bytes, sha256, processing_status, metadata_json,
-               created_at, updated_at, deleted_at
-        FROM attachments
-        WHERE household_id IN my_households AND deleted_at IS NULL
+        WHERE created_by_user_id = auth.user_id()
 
   # -------------------------------------------------------------------
   # ON-DEMAND STREAMS
   # -------------------------------------------------------------------
 
-  # 7. initiative_detail: full data for a single initiative by ID
+  # 6. initiative_detail: full data for a single initiative by ID
   initiative_detail:
     queries:
       - |
-        SELECT id, owner_user_id, household_id, title, slug, description, status, start_date, target_date, completed_at, created_at, updated_at, deleted_at
+        SELECT id, user_id, household_id, name, description, status, created_at, updated_at
         FROM initiatives
         WHERE id = subscription.parameter('initiative_id')
           AND (
-            owner_user_id = auth.user_id()
+            user_id = auth.user_id()
             OR household_id IN (
               SELECT household_id
               FROM household_memberships
-              WHERE user_id = auth.user_id() AND deleted_at IS NULL
+              WHERE user_id = auth.user_id()
             )
           )
-          AND deleted_at IS NULL
       - |
-        SELECT id, initiative_id, owner_user_id, household_id, title, description, status, priority, sort_order, completed_at, created_at, updated_at, deleted_at
-        FROM guidance_epics
-        WHERE initiative_id = subscription.parameter('initiative_id')
-          AND deleted_at IS NULL
+        SELECT id, entity_type, entity_id, filename, content_type, storage_key,
+               size_bytes, processing_state, created_at
+        FROM attachments
+        WHERE entity_type = 'initiative'
+          AND entity_id = subscription.parameter('initiative_id')
       - |
-        SELECT id, initiative_id, epic_id, owner_user_id, household_id, assigned_user_id, title, description, status, priority, energy_level, due_at, scheduled_for, completed_at, sort_order, created_at, updated_at, deleted_at
-        FROM guidance_quests
-        WHERE initiative_id = subscription.parameter('initiative_id')
-          AND deleted_at IS NULL
-      - |
-        SELECT id, owner_user_id, household_id, initiative_id, parent_note_id, title, slug, note_type, content_markdown, content_text, is_pinned, archived_at, created_at, updated_at, deleted_at
-        FROM knowledge_notes
-        WHERE initiative_id = subscription.parameter('initiative_id')
-          AND deleted_at IS NULL
-      - |
-        SELECT id, owner_user_id, household_id, initiative_id, location_id, category_id, name, description, sku, barcode, quantity, unit, min_quantity, reorder_quantity, is_consumable, expires_at, last_seen_at, metadata_json, created_at, updated_at, deleted_at
-        FROM tracking_items
-        WHERE initiative_id = subscription.parameter('initiative_id')
-          AND deleted_at IS NULL
-
-  # 8. note_detail: full data for a single knowledge note by ID
-  note_detail:
-    queries:
-      - |
-        SELECT id, owner_user_id, household_id, initiative_id, parent_note_id, title, slug, note_type, content_markdown, content_text, is_pinned, archived_at, created_at, updated_at, deleted_at
-        FROM knowledge_notes
-        WHERE id = subscription.parameter('note_id')
-          AND (
-            owner_user_id = auth.user_id()
-            OR household_id IN (
-              SELECT household_id
-              FROM household_memberships
-              WHERE user_id = auth.user_id() AND deleted_at IS NULL
-            )
-          )
-          AND deleted_at IS NULL
-      - |
-        SELECT id, note_id, created_by_user_id, snapshot_type, content_markdown, content_text, metadata_json, created_at
-        FROM knowledge_note_snapshots
-        WHERE note_id = subscription.parameter('note_id')
-      - |
-        SELECT nt.note_id, nt.tag_id, nt.created_at
-        FROM note_tags nt
-        WHERE nt.note_id = subscription.parameter('note_id')
-      - |
-        SELECT na.note_id, na.attachment_id, na.created_at
-        FROM note_attachments na
-        WHERE na.note_id = subscription.parameter('note_id')
-      - |
-        SELECT id, household_id, initiative_id, owner_user_id, created_by_user_id, updated_by_user_id,
-               from_entity_type, from_entity_id, to_entity_type, to_entity_id,
+        SELECT id, from_entity_type, from_entity_id, to_entity_type, to_entity_id,
                relation_type, source_type, status, confidence, evidence_json,
-               created_by_process, last_confirmed_at, created_at, updated_at, deleted_at
+               created_by_user_id, created_by_process, last_confirmed_at,
+               created_at, updated_at
         FROM entity_relations
         WHERE (
-          (from_entity_type = 'knowledge_note' AND from_entity_id = subscription.parameter('note_id'))
+          (from_entity_type = 'initiative' AND from_entity_id = subscription.parameter('initiative_id'))
           OR
-          (to_entity_type = 'knowledge_note' AND to_entity_id = subscription.parameter('note_id'))
+          (to_entity_type = 'initiative' AND to_entity_id = subscription.parameter('initiative_id'))
         )
-          AND deleted_at IS NULL
-
-  # 9. item_history: history for a single tracking item
-  item_history:
-    queries:
-      - |
-        SELECT id, owner_user_id, household_id, initiative_id, location_id, category_id, name, description, sku, barcode, quantity, unit, min_quantity, reorder_quantity, is_consumable, expires_at, last_seen_at, metadata_json, created_at, updated_at, deleted_at
-        FROM tracking_items
-        WHERE id = subscription.parameter('item_id')
-          AND (
-            owner_user_id = auth.user_id()
-            OR household_id IN (
-              SELECT household_id
-              FROM household_memberships
-              WHERE user_id = auth.user_id() AND deleted_at IS NULL
-            )
-          )
-          AND deleted_at IS NULL
-      - |
-        SELECT id, item_id, performed_by_user_id, event_type, delta_quantity, from_location_id, to_location_id, notes, metadata_json, occurred_at, created_at
-        FROM tracking_item_events
-        WHERE item_id = subscription.parameter('item_id')
-      - |
-        SELECT ia.item_id, ia.attachment_id, ia.created_at
-        FROM item_attachments ia
-        WHERE ia.item_id = subscription.parameter('item_id')
-      - |
-        SELECT it.item_id, it.tag_id, it.created_at
-        FROM item_tags it
-        WHERE it.item_id = subscription.parameter('item_id')
-      - |
-        SELECT id, household_id, initiative_id, owner_user_id, created_by_user_id, updated_by_user_id,
-               from_entity_type, from_entity_id, to_entity_type, to_entity_id,
-               relation_type, source_type, status, confidence, evidence_json,
-               created_by_process, last_confirmed_at, created_at, updated_at, deleted_at
-        FROM entity_relations
-        WHERE (
-          (from_entity_type = 'tracking_item' AND from_entity_id = subscription.parameter('item_id'))
-          OR
-          (to_entity_type = 'tracking_item' AND to_entity_id = subscription.parameter('item_id'))
-        )
-          AND deleted_at IS NULL
-
-  # 10. quest_detail: full data for a single guidance quest
-  quest_detail:
-    queries:
-      - |
-        SELECT id, initiative_id, epic_id, owner_user_id, household_id, assigned_user_id, title, description, status, priority, energy_level, due_at, scheduled_for, completed_at, sort_order, created_at, updated_at, deleted_at
-        FROM guidance_quests
-        WHERE id = subscription.parameter('quest_id')
-          AND (
-            owner_user_id = auth.user_id()
-            OR assigned_user_id = auth.user_id()
-            OR household_id IN (
-              SELECT household_id
-              FROM household_memberships
-              WHERE user_id = auth.user_id() AND deleted_at IS NULL
-            )
-          )
-          AND deleted_at IS NULL
-      - |
-        SELECT qt.quest_id, qt.tag_id, qt.created_at
-        FROM quest_tags qt
-        WHERE qt.quest_id = subscription.parameter('quest_id')
-      - |
-        SELECT qa.quest_id, qa.attachment_id, qa.created_at
-        FROM quest_attachments qa
-        WHERE qa.quest_id = subscription.parameter('quest_id')
-      - |
-        SELECT id, user_id, quest_id, started_at, ended_at, duration_seconds, notes, created_at, updated_at, deleted_at
-        FROM guidance_focus_sessions
-        WHERE quest_id = subscription.parameter('quest_id')
-      - |
-        SELECT id, household_id, initiative_id, owner_user_id, created_by_user_id, updated_by_user_id,
-               from_entity_type, from_entity_id, to_entity_type, to_entity_id,
-               relation_type, source_type, status, confidence, evidence_json,
-               created_by_process, last_confirmed_at, created_at, updated_at, deleted_at
-        FROM entity_relations
-        WHERE (
-          (from_entity_type = 'guidance_quest' AND from_entity_id = subscription.parameter('quest_id'))
-          OR
-          (to_entity_type = 'guidance_quest' AND to_entity_id = subscription.parameter('quest_id'))
-        )
-          AND deleted_at IS NULL
