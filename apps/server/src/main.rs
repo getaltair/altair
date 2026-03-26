@@ -6,6 +6,7 @@
 mod api;
 mod auth;
 mod config;
+mod contracts;
 mod core;
 mod db;
 mod error;
