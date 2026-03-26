@@ -71,7 +71,6 @@ Thumbs.db
 
 # Cargo
 target/
-Cargo.lock
 **/*.rs.bk
 **/*.rlib
 **/rmeta/
