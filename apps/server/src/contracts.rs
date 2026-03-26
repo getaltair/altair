@@ -36,6 +36,32 @@ impl InitiativeStatus {
 }
 
 // ---------------------------------------------------------------------------
+// ContentType
+// ---------------------------------------------------------------------------
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ContentType {
+    Markdown,
+    Plain,
+}
+
+impl ContentType {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            ContentType::Markdown => "markdown",
+            ContentType::Plain => "plain",
+        }
+    }
+}
+
+impl std::fmt::Display for ContentType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.as_str())
+    }
+}
+
+// ---------------------------------------------------------------------------
 // EntityType
 // ---------------------------------------------------------------------------
 
@@ -225,6 +251,124 @@ impl ProcessingState {
             ProcessingState::Processing => "processing",
             ProcessingState::Ready => "ready",
             ProcessingState::Failed => "failed",
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// QuestStatus
+// ---------------------------------------------------------------------------
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum QuestStatus {
+    Pending,
+    InProgress,
+    Completed,
+    Cancelled,
+}
+
+impl fmt::Display for QuestStatus {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.as_str())
+    }
+}
+
+impl QuestStatus {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            QuestStatus::Pending => "pending",
+            QuestStatus::InProgress => "in_progress",
+            QuestStatus::Completed => "completed",
+            QuestStatus::Cancelled => "cancelled",
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// RoutineStatus
+// ---------------------------------------------------------------------------
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum RoutineStatus {
+    Active,
+    Paused,
+    Archived,
+}
+
+impl fmt::Display for RoutineStatus {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.as_str())
+    }
+}
+
+impl RoutineStatus {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            RoutineStatus::Active => "active",
+            RoutineStatus::Paused => "paused",
+            RoutineStatus::Archived => "archived",
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// RoutineFrequency
+// ---------------------------------------------------------------------------
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum RoutineFrequency {
+    Daily,
+    Weekly,
+    Biweekly,
+    Monthly,
+}
+
+impl fmt::Display for RoutineFrequency {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.as_str())
+    }
+}
+
+impl RoutineFrequency {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            RoutineFrequency::Daily => "daily",
+            RoutineFrequency::Weekly => "weekly",
+            RoutineFrequency::Biweekly => "biweekly",
+            RoutineFrequency::Monthly => "monthly",
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Priority
+// ---------------------------------------------------------------------------
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Priority {
+    Low,
+    Medium,
+    High,
+    Critical,
+}
+
+impl fmt::Display for Priority {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.as_str())
+    }
+}
+
+impl Priority {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Priority::Low => "low",
+            Priority::Medium => "medium",
+            Priority::High => "high",
+            Priority::Critical => "critical",
         }
     }
 }
@@ -525,6 +669,128 @@ mod tests {
     fn processing_state_as_str() {
         assert_eq!(ProcessingState::Pending.as_str(), "pending");
         assert_eq!(ProcessingState::Ready.as_str(), "ready");
+    }
+
+    // -- QuestStatus --------------------------------------------------------
+
+    #[test]
+    fn quest_status_serde_roundtrip() {
+        let variants = [
+            QuestStatus::Pending,
+            QuestStatus::InProgress,
+            QuestStatus::Completed,
+            QuestStatus::Cancelled,
+        ];
+        for variant in &variants {
+            let json = serde_json::to_string(variant).expect("serialize");
+            let back: QuestStatus = serde_json::from_str(&json).expect("deserialize");
+            assert_eq!(&back, variant);
+        }
+    }
+
+    #[test]
+    fn quest_status_unknown_string_fails() {
+        let result = serde_json::from_str::<QuestStatus>("\"unknown\"");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn quest_status_as_str() {
+        assert_eq!(QuestStatus::Pending.as_str(), "pending");
+        assert_eq!(QuestStatus::InProgress.as_str(), "in_progress");
+        assert_eq!(QuestStatus::Completed.as_str(), "completed");
+        assert_eq!(QuestStatus::Cancelled.as_str(), "cancelled");
+    }
+
+    // -- RoutineStatus ------------------------------------------------------
+
+    #[test]
+    fn routine_status_serde_roundtrip() {
+        let variants = [
+            RoutineStatus::Active,
+            RoutineStatus::Paused,
+            RoutineStatus::Archived,
+        ];
+        for variant in &variants {
+            let json = serde_json::to_string(variant).expect("serialize");
+            let back: RoutineStatus = serde_json::from_str(&json).expect("deserialize");
+            assert_eq!(&back, variant);
+        }
+    }
+
+    #[test]
+    fn routine_status_unknown_string_fails() {
+        let result = serde_json::from_str::<RoutineStatus>("\"unknown\"");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn routine_status_as_str() {
+        assert_eq!(RoutineStatus::Active.as_str(), "active");
+        assert_eq!(RoutineStatus::Paused.as_str(), "paused");
+        assert_eq!(RoutineStatus::Archived.as_str(), "archived");
+    }
+
+    // -- RoutineFrequency ---------------------------------------------------
+
+    #[test]
+    fn routine_frequency_serde_roundtrip() {
+        let variants = [
+            RoutineFrequency::Daily,
+            RoutineFrequency::Weekly,
+            RoutineFrequency::Biweekly,
+            RoutineFrequency::Monthly,
+        ];
+        for variant in &variants {
+            let json = serde_json::to_string(variant).expect("serialize");
+            let back: RoutineFrequency = serde_json::from_str(&json).expect("deserialize");
+            assert_eq!(&back, variant);
+        }
+    }
+
+    #[test]
+    fn routine_frequency_unknown_string_fails() {
+        let result = serde_json::from_str::<RoutineFrequency>("\"unknown\"");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn routine_frequency_as_str() {
+        assert_eq!(RoutineFrequency::Daily.as_str(), "daily");
+        assert_eq!(RoutineFrequency::Weekly.as_str(), "weekly");
+        assert_eq!(RoutineFrequency::Biweekly.as_str(), "biweekly");
+        assert_eq!(RoutineFrequency::Monthly.as_str(), "monthly");
+    }
+
+    // -- Priority -----------------------------------------------------------
+
+    #[test]
+    fn priority_serde_roundtrip() {
+        let variants = [
+            Priority::Low,
+            Priority::Medium,
+            Priority::High,
+            Priority::Critical,
+        ];
+        for variant in &variants {
+            let json = serde_json::to_string(variant).expect("serialize");
+            let back: Priority = serde_json::from_str(&json).expect("deserialize");
+            assert_eq!(&back, variant);
+        }
+    }
+
+    #[test]
+    fn priority_unknown_string_fails() {
+        let result = serde_json::from_str::<Priority>("\"unknown\"");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn priority_as_str() {
+        assert_eq!(Priority::Low.as_str(), "low");
+        assert_eq!(Priority::Medium.as_str(), "medium");
+        assert_eq!(Priority::High.as_str(), "high");
+        assert_eq!(Priority::Critical.as_str(), "critical");
     }
 
     // -- TrackingItemStatus -------------------------------------------------

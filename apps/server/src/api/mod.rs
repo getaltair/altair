@@ -10,7 +10,14 @@ use crate::auth::handlers as auth_handlers;
 use crate::core::households::handlers as household_handlers;
 use crate::core::initiatives::handlers as initiative_handlers;
 use crate::core::relations::handlers as relation_handlers;
+use crate::core::knowledge::handlers as knowledge_handlers;
 use crate::core::tags::handlers as tag_handlers;
+use crate::guidance::daily_checkins::handlers as checkin_handlers;
+use crate::guidance::epics::handlers as epic_handlers;
+use crate::guidance::focus_sessions::handlers as focus_handlers;
+use crate::guidance::quests::handlers as quest_handlers;
+use crate::guidance::routines::handlers as routine_handlers;
+use crate::guidance::today;
 use crate::tracking::categories::handlers as category_handlers;
 use crate::tracking::items::handlers as item_handlers;
 use crate::tracking::locations::handlers as location_handlers;
@@ -98,6 +105,111 @@ pub fn create_router(state: AppState) -> Router {
         .route(
             "/core/relations/{id}",
             put(relation_handlers::update_relation_status),
+        )
+        // Guidance -- Epics
+        .route(
+            "/guidance/epics",
+            post(epic_handlers::create_epic).get(epic_handlers::list_epics),
+        )
+        .route(
+            "/guidance/epics/{id}",
+            get(epic_handlers::get_epic)
+                .put(epic_handlers::update_epic)
+                .delete(epic_handlers::delete_epic),
+        )
+        // Guidance -- Quests
+        .route(
+            "/guidance/quests",
+            post(quest_handlers::create_quest).get(quest_handlers::list_quests),
+        )
+        .route(
+            "/guidance/quests/{id}",
+            get(quest_handlers::get_quest)
+                .put(quest_handlers::update_quest)
+                .delete(quest_handlers::delete_quest),
+        )
+        .route(
+            "/guidance/quests/{id}/complete",
+            post(quest_handlers::complete_quest),
+        )
+        .route(
+            "/guidance/quests/{id}/tags/{tag_id}",
+            post(quest_handlers::add_quest_tag).delete(quest_handlers::remove_quest_tag),
+        )
+        // Guidance -- Routines
+        .route(
+            "/guidance/routines",
+            post(routine_handlers::create_routine).get(routine_handlers::list_routines),
+        )
+        .route(
+            "/guidance/routines/{id}",
+            get(routine_handlers::get_routine)
+                .put(routine_handlers::update_routine)
+                .delete(routine_handlers::delete_routine),
+        )
+        .route(
+            "/guidance/routines/{id}/trigger",
+            post(routine_handlers::trigger_routine),
+        )
+        .route(
+            "/guidance/routines/{id}/tags/{tag_id}",
+            post(routine_handlers::add_routine_tag).delete(routine_handlers::remove_routine_tag),
+        )
+        // Guidance -- Focus Sessions
+        .route(
+            "/guidance/focus-sessions",
+            post(focus_handlers::create_focus_session).get(focus_handlers::list_focus_sessions),
+        )
+        .route(
+            "/guidance/focus-sessions/{id}",
+            get(focus_handlers::get_focus_session)
+                .put(focus_handlers::update_focus_session)
+                .delete(focus_handlers::delete_focus_session),
+        )
+        // Guidance -- Daily Check-ins
+        .route(
+            "/guidance/daily-checkins",
+            post(checkin_handlers::create_or_update_checkin).get(checkin_handlers::list_checkins),
+        )
+        .route(
+            "/guidance/daily-checkins/{id}",
+            get(checkin_handlers::get_checkin),
+        )
+        // Guidance -- Today
+        .route("/guidance/today", get(today::handler))
+        // Knowledge note routes
+        .route(
+            "/knowledge/notes",
+            post(knowledge_handlers::create_note).get(knowledge_handlers::list_notes),
+        )
+        .route(
+            "/knowledge/notes/{id}",
+            get(knowledge_handlers::get_note)
+                .put(knowledge_handlers::update_note)
+                .delete(knowledge_handlers::delete_note),
+        )
+        .route(
+            "/knowledge/notes/{id}/snapshots",
+            get(knowledge_handlers::list_snapshots)
+                .post(knowledge_handlers::create_snapshot),
+        )
+        .route(
+            "/knowledge/notes/{id}/relations",
+            get(knowledge_handlers::get_note_relations),
+        )
+        .route(
+            "/knowledge/notes/{id}/backlinks",
+            get(knowledge_handlers::get_note_backlinks),
+        )
+        .route(
+            "/knowledge/notes/{note_id}/tags/{tag_id}",
+            post(knowledge_handlers::add_note_tag)
+                .delete(knowledge_handlers::remove_note_tag),
+        )
+        .route(
+            "/knowledge/notes/{note_id}/attachments/{attachment_id}",
+            post(knowledge_handlers::add_note_attachment)
+                .delete(knowledge_handlers::remove_note_attachment),
         )
         // Tracking item routes
         .route(

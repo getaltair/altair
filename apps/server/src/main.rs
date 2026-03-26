@@ -8,6 +8,7 @@ mod auth;
 mod config;
 mod contracts;
 mod core;
+mod guidance;
 mod db;
 mod error;
 mod serde_util;
