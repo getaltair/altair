@@ -1,19 +1,20 @@
+import { dev } from '$app/environment';
+import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 
 /**
  * Auth gate for the sync debug page.
  *
- * Mirrors the (app) layout guard. Once Better Auth session injection is
- * wired in hooks.server.ts, uncomment the redirect below.
+ * In production, unauthenticated users are redirected to the login page.
+ * In dev mode, a warning is logged but the page still loads to ease local testing.
  */
 export const load: PageServerLoad = async ({ locals }) => {
-	// TODO: Enable once Better Auth session injection is active.
-	// if (!locals.user) {
-	// 	redirect(302, '/login');
-	// }
-
-	if (!locals.user)
-		console.warn('[auth] Auth gate disabled: serving /debug/sync without authentication.');
+	if (!dev && !locals.user) {
+		redirect(302, '/login');
+	}
+	if (dev && !locals.user) {
+		console.warn('[sync-debug] No user session in dev mode -- page will load without auth');
+	}
 
 	return {};
 };
