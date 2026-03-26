@@ -2,3 +2,5 @@ packages:
   - "packages/*"
   - "apps/web"
   - "apps/desktop"
+onlyBuiltDependencies:
+  - esbuild
