@@ -9,6 +9,7 @@ use validator::Validate;
 
 use crate::auth::middleware::AuthenticatedUser;
 use crate::error::AppError;
+use crate::tracking::{verify_household_membership, PaginationParams};
 use super::{
     models::{
         CreateItemEventRequest, CreateItemRequest, TrackingItem, TrackingItemEvent,
@@ -27,21 +28,6 @@ pub struct ListItemsQuery {
 #[derive(Debug, Deserialize)]
 pub struct LowStockQuery {
     pub household_id: Uuid,
-}
-
-/// Verify the authenticated user is a member of the given household
-async fn verify_household_membership(
-    pool: &PgPool,
-    user_id: Uuid,
-    household_id: Uuid,
-) -> Result<(), AppError> {
-    let household_ids = crate::auth::service::get_user_household_ids(pool, user_id).await?;
-    if !household_ids.contains(&household_id) {
-        return Err(AppError::Forbidden(
-            "Not a member of this household".to_string(),
-        ));
-    }
-    Ok(())
 }
 
 /// Create a new tracking item
@@ -64,10 +50,17 @@ pub async fn list_items(
     auth: AuthenticatedUser,
     State(pool): State<PgPool>,
     Query(query): Query<ListItemsQuery>,
+    Query(pagination): Query<PaginationParams>,
 ) -> Result<Json<Vec<TrackingItem>>, AppError> {
     verify_household_membership(&pool, auth.user_id, query.household_id).await?;
 
-    let items = service::list_items(&pool, query.household_id).await?;
+    let items = service::list_items(
+        &pool,
+        query.household_id,
+        pagination.limit_or_default(),
+        pagination.offset_or_default(),
+    )
+    .await?;
     Ok(Json(items))
 }
 
@@ -139,12 +132,19 @@ pub async fn list_item_events(
     auth: AuthenticatedUser,
     State(pool): State<PgPool>,
     Path(item_id): Path<Uuid>,
+    Query(pagination): Query<PaginationParams>,
 ) -> Result<Json<Vec<TrackingItemEvent>>, AppError> {
     // Get item first to verify household membership
     let item = service::get_item(&pool, item_id).await?;
     verify_household_membership(&pool, auth.user_id, item.household_id).await?;
 
-    let events = service::list_item_events(&pool, item_id).await?;
+    let events = service::list_item_events(
+        &pool,
+        item_id,
+        pagination.limit_or_default(),
+        pagination.offset_or_default(),
+    )
+    .await?;
     Ok(Json(events))
 }
 
@@ -153,9 +153,16 @@ pub async fn list_low_stock_items(
     auth: AuthenticatedUser,
     State(pool): State<PgPool>,
     Query(query): Query<LowStockQuery>,
+    Query(pagination): Query<PaginationParams>,
 ) -> Result<Json<Vec<TrackingItem>>, AppError> {
     verify_household_membership(&pool, auth.user_id, query.household_id).await?;
 
-    let items = service::list_low_stock_items(&pool, query.household_id).await?;
+    let items = service::list_low_stock_items(
+        &pool,
+        query.household_id,
+        pagination.limit_or_default(),
+        pagination.offset_or_default(),
+    )
+    .await?;
     Ok(Json(items))
 }

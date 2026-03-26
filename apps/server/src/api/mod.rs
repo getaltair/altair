@@ -100,7 +100,6 @@ pub fn create_router(state: AppState) -> Router {
             put(relation_handlers::update_relation_status),
         )
         // Tracking item routes
-        // NOTE: /low-stock must be registered before /{id} to avoid path conflict
         .route(
             "/tracking/items/low-stock",
             get(item_handlers::list_low_stock_items),

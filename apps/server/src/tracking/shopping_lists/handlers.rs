@@ -9,6 +9,7 @@ use validator::Validate;
 
 use crate::auth::middleware::AuthenticatedUser;
 use crate::error::AppError;
+use crate::tracking::{verify_household_membership, PaginationParams};
 use super::{
     models::{
         CreateShoppingListItemRequest, CreateShoppingListRequest, TrackingShoppingList,
@@ -32,13 +33,7 @@ pub async fn create_list(
     body.validate()
         .map_err(|e| AppError::BadRequest(e.to_string()))?;
 
-    // Verify caller is a member of the household
-    let household_ids = crate::auth::service::get_user_household_ids(&pool, auth.user_id).await?;
-    if !household_ids.contains(&body.household_id) {
-        return Err(AppError::Forbidden(
-            "Not a member of this household".to_string(),
-        ));
-    }
+    verify_household_membership(&pool, auth.user_id, body.household_id).await?;
 
     let list = service::create_list(&pool, auth.user_id, body).await?;
     Ok((StatusCode::CREATED, Json(list)))
@@ -49,16 +44,17 @@ pub async fn list_lists(
     auth: AuthenticatedUser,
     State(pool): State<PgPool>,
     Query(query): Query<ListShoppingListsQuery>,
+    Query(pagination): Query<PaginationParams>,
 ) -> Result<Json<Vec<TrackingShoppingList>>, AppError> {
-    // Verify caller is a member of the household
-    let household_ids = crate::auth::service::get_user_household_ids(&pool, auth.user_id).await?;
-    if !household_ids.contains(&query.household_id) {
-        return Err(AppError::Forbidden(
-            "Not a member of this household".to_string(),
-        ));
-    }
+    verify_household_membership(&pool, auth.user_id, query.household_id).await?;
 
-    let lists = service::list_lists(&pool, query.household_id).await?;
+    let lists = service::list_lists(
+        &pool,
+        query.household_id,
+        pagination.limit_or_default(),
+        pagination.offset_or_default(),
+    )
+    .await?;
     Ok(Json(lists))
 }
 
@@ -70,13 +66,7 @@ pub async fn get_list(
 ) -> Result<Json<TrackingShoppingList>, AppError> {
     let list = service::get_list(&pool, id).await?;
 
-    // Verify caller is a member of the household
-    let household_ids = crate::auth::service::get_user_household_ids(&pool, auth.user_id).await?;
-    if !household_ids.contains(&list.household_id) {
-        return Err(AppError::Forbidden(
-            "Not a member of this household".to_string(),
-        ));
-    }
+    verify_household_membership(&pool, auth.user_id, list.household_id).await?;
 
     Ok(Json(list))
 }
@@ -91,14 +81,8 @@ pub async fn update_list(
     body.validate()
         .map_err(|e| AppError::BadRequest(e.to_string()))?;
 
-    // Fetch the list to check household membership
     let existing = service::get_list(&pool, id).await?;
-    let household_ids = crate::auth::service::get_user_household_ids(&pool, auth.user_id).await?;
-    if !household_ids.contains(&existing.household_id) {
-        return Err(AppError::Forbidden(
-            "Not a member of this household".to_string(),
-        ));
-    }
+    verify_household_membership(&pool, auth.user_id, existing.household_id).await?;
 
     let list = service::update_list(&pool, id, body).await?;
     Ok(Json(list))
@@ -110,14 +94,8 @@ pub async fn delete_list(
     State(pool): State<PgPool>,
     Path(id): Path<Uuid>,
 ) -> Result<StatusCode, AppError> {
-    // Fetch the list to check household membership
     let existing = service::get_list(&pool, id).await?;
-    let household_ids = crate::auth::service::get_user_household_ids(&pool, auth.user_id).await?;
-    if !household_ids.contains(&existing.household_id) {
-        return Err(AppError::Forbidden(
-            "Not a member of this household".to_string(),
-        ));
-    }
+    verify_household_membership(&pool, auth.user_id, existing.household_id).await?;
 
     service::delete_list(&pool, id).await?;
     Ok(StatusCode::NO_CONTENT)
@@ -130,12 +108,7 @@ async fn verify_item_access(
     user_id: Uuid,
 ) -> Result<TrackingShoppingList, AppError> {
     let list = service::get_list(pool, shopping_list_id).await?;
-    let household_ids = crate::auth::service::get_user_household_ids(pool, user_id).await?;
-    if !household_ids.contains(&list.household_id) {
-        return Err(AppError::Forbidden(
-            "Not a member of this household".to_string(),
-        ));
-    }
+    verify_household_membership(pool, user_id, list.household_id).await?;
     Ok(list)
 }
 
@@ -167,10 +140,17 @@ pub async fn list_list_items(
     auth: AuthenticatedUser,
     State(pool): State<PgPool>,
     Path(shopping_list_id): Path<Uuid>,
+    Query(pagination): Query<PaginationParams>,
 ) -> Result<Json<Vec<TrackingShoppingListItem>>, AppError> {
     verify_item_access(&pool, shopping_list_id, auth.user_id).await?;
 
-    let items = service::list_list_items(&pool, shopping_list_id).await?;
+    let items = service::list_list_items(
+        &pool,
+        shopping_list_id,
+        pagination.limit_or_default(),
+        pagination.offset_or_default(),
+    )
+    .await?;
     Ok(Json(items))
 }
 
@@ -186,7 +166,7 @@ pub async fn update_list_item(
 
     verify_item_access(&pool, path.id, auth.user_id).await?;
 
-    let item = service::update_list_item(&pool, path.item_id, body).await?;
+    let item = service::update_list_item(&pool, path.id, path.item_id, body).await?;
     Ok(Json(item))
 }
 
@@ -198,7 +178,7 @@ pub async fn remove_list_item(
 ) -> Result<StatusCode, AppError> {
     verify_item_access(&pool, path.id, auth.user_id).await?;
 
-    service::remove_list_item(&pool, path.item_id).await?;
+    service::remove_list_item(&pool, path.id, path.item_id).await?;
     Ok(StatusCode::NO_CONTENT)
 }
 
@@ -210,6 +190,6 @@ pub async fn toggle_check(
 ) -> Result<Json<TrackingShoppingListItem>, AppError> {
     verify_item_access(&pool, path.id, auth.user_id).await?;
 
-    let item = service::toggle_check(&pool, path.item_id).await?;
+    let item = service::toggle_check(&pool, path.id, path.item_id).await?;
     Ok(Json(item))
 }

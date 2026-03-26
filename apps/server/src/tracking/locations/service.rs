@@ -40,14 +40,19 @@ pub async fn create_location(
 pub async fn list_locations(
     pool: &PgPool,
     household_id: Uuid,
+    limit: i64,
+    offset: i64,
 ) -> Result<Vec<TrackingLocation>, AppError> {
     sqlx::query_as::<_, TrackingLocation>(
         r#"SELECT id, user_id, household_id, name, description, parent_location_id, created_at, updated_at
            FROM tracking_locations
            WHERE household_id = $1
-           ORDER BY name"#,
+           ORDER BY name
+           LIMIT $2 OFFSET $3"#,
     )
     .bind(household_id)
+    .bind(limit)
+    .bind(offset)
     .fetch_all(pool)
     .await
     .map_err(AppError::Database)
@@ -139,7 +144,12 @@ pub async fn delete_location(
         .bind(id)
         .execute(pool)
         .await
-        .map_err(AppError::Database)?;
+        .map_err(|e| match &e {
+            sqlx::Error::Database(db_err) if db_err.is_foreign_key_violation() => {
+                AppError::Conflict("Cannot delete: items still reference this location".to_string())
+            }
+            _ => AppError::Database(e),
+        })?;
 
     if result.rows_affected() == 0 {
         return Err(AppError::NotFound("Location not found".to_string()));

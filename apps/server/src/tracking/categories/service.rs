@@ -40,14 +40,19 @@ pub async fn create_category(
 pub async fn list_categories(
     pool: &PgPool,
     household_id: Uuid,
+    limit: i64,
+    offset: i64,
 ) -> Result<Vec<TrackingCategory>, AppError> {
     sqlx::query_as::<_, TrackingCategory>(
         r#"SELECT id, user_id, household_id, name, description, parent_category_id, created_at, updated_at
            FROM tracking_categories
            WHERE household_id = $1
-           ORDER BY name"#,
+           ORDER BY name
+           LIMIT $2 OFFSET $3"#,
     )
     .bind(household_id)
+    .bind(limit)
+    .bind(offset)
     .fetch_all(pool)
     .await
     .map_err(AppError::Database)
@@ -139,7 +144,12 @@ pub async fn delete_category(
         .bind(id)
         .execute(pool)
         .await
-        .map_err(AppError::Database)?;
+        .map_err(|e| match &e {
+            sqlx::Error::Database(db_err) if db_err.is_foreign_key_violation() => {
+                AppError::Conflict("Cannot delete: items still reference this category".to_string())
+            }
+            _ => AppError::Database(e),
+        })?;
 
     if result.rows_affected() == 0 {
         return Err(AppError::NotFound("Category not found".to_string()));

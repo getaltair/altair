@@ -8,8 +8,8 @@ use uuid::Uuid;
 use validator::Validate;
 
 use crate::auth::middleware::AuthenticatedUser;
-use crate::auth::service::get_user_household_ids;
 use crate::error::AppError;
+use crate::tracking::{verify_household_membership, PaginationParams};
 use super::{
     models::{CreateLocationRequest, TrackingLocation, UpdateLocationRequest},
     service,
@@ -19,21 +19,6 @@ use super::{
 #[derive(Debug, Deserialize)]
 pub struct ListLocationsParams {
     pub household_id: Uuid,
-}
-
-/// Verify the authenticated user is a member of the given household
-async fn verify_household_membership(
-    pool: &PgPool,
-    user_id: Uuid,
-    household_id: Uuid,
-) -> Result<(), AppError> {
-    let household_ids = get_user_household_ids(pool, user_id).await?;
-    if !household_ids.contains(&household_id) {
-        return Err(AppError::Forbidden(
-            "Not a member of this household".to_string(),
-        ));
-    }
-    Ok(())
 }
 
 /// Create a new tracking location within a household
@@ -56,10 +41,17 @@ pub async fn list_locations(
     auth: AuthenticatedUser,
     State(pool): State<PgPool>,
     Query(params): Query<ListLocationsParams>,
+    Query(pagination): Query<PaginationParams>,
 ) -> Result<Json<Vec<TrackingLocation>>, AppError> {
     verify_household_membership(&pool, auth.user_id, params.household_id).await?;
 
-    let locations = service::list_locations(&pool, params.household_id).await?;
+    let locations = service::list_locations(
+        &pool,
+        params.household_id,
+        pagination.limit_or_default(),
+        pagination.offset_or_default(),
+    )
+    .await?;
     Ok(Json(locations))
 }
 

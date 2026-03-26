@@ -1,4 +1,4 @@
-use sqlx::PgPool;
+use sqlx::{PgPool, QueryBuilder};
 use uuid::Uuid;
 
 use crate::error::AppError;
@@ -6,7 +6,10 @@ use super::models::{
     CreateItemEventRequest, CreateItemRequest, TrackingItem, TrackingItemEvent, UpdateItemRequest,
 };
 
-/// Create a new tracking item in the given household
+/// Create a new tracking item in the given household.
+///
+/// The caller is responsible for verifying household membership before
+/// invoking this function.
 pub async fn create_item(
     pool: &PgPool,
     user_id: Uuid,
@@ -35,13 +38,23 @@ pub async fn create_item(
     .bind(&req.barcode)
     .fetch_one(pool)
     .await
-    .map_err(AppError::Database)
+    .map_err(|e| match &e {
+        sqlx::Error::Database(db_err) if db_err.is_unique_violation() => {
+            AppError::Conflict("Tracking item already exists".to_string())
+        }
+        sqlx::Error::Database(db_err) if db_err.is_foreign_key_violation() => {
+            AppError::BadRequest("Invalid category, location, or household".to_string())
+        }
+        _ => AppError::Database(e),
+    })
 }
 
 /// List all tracking items belonging to a household
 pub async fn list_items(
     pool: &PgPool,
     household_id: Uuid,
+    limit: i64,
+    offset: i64,
 ) -> Result<Vec<TrackingItem>, AppError> {
     sqlx::query_as::<_, TrackingItem>(
         r#"SELECT id, user_id, household_id, category_id, location_id, name,
@@ -49,9 +62,12 @@ pub async fn list_items(
                   created_at, updated_at
            FROM tracking_items
            WHERE household_id = $1
-           ORDER BY created_at DESC"#,
+           ORDER BY created_at DESC
+           LIMIT $2 OFFSET $3"#,
     )
     .bind(household_id)
+    .bind(limit)
+    .bind(offset)
     .fetch_all(pool)
     .await
     .map_err(AppError::Database)
@@ -76,33 +92,58 @@ pub async fn get_item(
     .ok_or_else(|| AppError::NotFound("Tracking item not found".to_string()))
 }
 
-/// Update an existing tracking item with partial-update semantics
+/// Update an existing tracking item with true partial-update semantics.
+///
+/// Only fields present in the request are modified. Nullable fields use
+/// double-option semantics: `None` leaves the column unchanged, `Some(None)`
+/// sets it to NULL, `Some(Some(val))` sets it to `val`.
+///
+/// The caller is responsible for verifying household membership before
+/// invoking this function.
 pub async fn update_item(
     pool: &PgPool,
     id: Uuid,
     req: UpdateItemRequest,
 ) -> Result<TrackingItem, AppError> {
-    let mut qb: sqlx::QueryBuilder<sqlx::Postgres> =
-        sqlx::QueryBuilder::new("UPDATE tracking_items SET updated_at = now()");
+    let mut qb: QueryBuilder<sqlx::Postgres> =
+        QueryBuilder::new("UPDATE tracking_items SET updated_at = now()");
 
     if let Some(ref name) = req.name {
         qb.push(", name = ");
         qb.push_bind(name.clone());
     }
 
-    if let Some(ref description) = req.description {
-        qb.push(", description = ");
-        qb.push_bind(description.clone());
+    match &req.description {
+        Some(None) => {
+            qb.push(", description = NULL");
+        }
+        Some(Some(val)) => {
+            qb.push(", description = ");
+            qb.push_bind(val.clone());
+        }
+        None => {}
     }
 
-    if let Some(ref category_id) = req.category_id {
-        qb.push(", category_id = ");
-        qb.push_bind(*category_id);
+    match &req.category_id {
+        Some(None) => {
+            qb.push(", category_id = NULL");
+        }
+        Some(Some(val)) => {
+            qb.push(", category_id = ");
+            qb.push_bind(*val);
+        }
+        None => {}
     }
 
-    if let Some(ref location_id) = req.location_id {
-        qb.push(", location_id = ");
-        qb.push_bind(*location_id);
+    match &req.location_id {
+        Some(None) => {
+            qb.push(", location_id = NULL");
+        }
+        Some(Some(val)) => {
+            qb.push(", location_id = ");
+            qb.push_bind(*val);
+        }
+        None => {}
     }
 
     if let Some(quantity) = req.quantity {
@@ -110,24 +151,42 @@ pub async fn update_item(
         qb.push_bind(quantity);
     }
 
-    if let Some(ref unit) = req.unit {
-        qb.push(", unit = ");
-        qb.push_bind(unit.clone());
+    match &req.unit {
+        Some(None) => {
+            qb.push(", unit = NULL");
+        }
+        Some(Some(val)) => {
+            qb.push(", unit = ");
+            qb.push_bind(val.clone());
+        }
+        None => {}
     }
 
-    if let Some(min_quantity) = req.min_quantity {
-        qb.push(", min_quantity = ");
-        qb.push_bind(min_quantity);
+    match &req.min_quantity {
+        Some(None) => {
+            qb.push(", min_quantity = NULL");
+        }
+        Some(Some(val)) => {
+            qb.push(", min_quantity = ");
+            qb.push_bind(*val);
+        }
+        None => {}
     }
 
-    if let Some(ref barcode) = req.barcode {
-        qb.push(", barcode = ");
-        qb.push_bind(barcode.clone());
+    match &req.barcode {
+        Some(None) => {
+            qb.push(", barcode = NULL");
+        }
+        Some(Some(val)) => {
+            qb.push(", barcode = ");
+            qb.push_bind(val.clone());
+        }
+        None => {}
     }
 
     if let Some(ref status) = req.status {
         qb.push(", status = ");
-        qb.push_bind(status.clone());
+        qb.push_bind(status.as_str());
     }
 
     qb.push(" WHERE id = ");
@@ -140,11 +199,19 @@ pub async fn update_item(
     qb.build_query_as::<TrackingItem>()
         .fetch_optional(pool)
         .await
-        .map_err(AppError::Database)?
+        .map_err(|e| match &e {
+            sqlx::Error::Database(db_err) if db_err.is_foreign_key_violation() => {
+                AppError::BadRequest("Invalid category or location".to_string())
+            }
+            _ => AppError::Database(e),
+        })?
         .ok_or_else(|| AppError::NotFound("Tracking item not found".to_string()))
 }
 
-/// Delete a tracking item by ID
+/// Delete a tracking item by ID.
+///
+/// The caller is responsible for verifying household membership before
+/// invoking this function.
 pub async fn delete_item(
     pool: &PgPool,
     id: Uuid,
@@ -162,7 +229,9 @@ pub async fn delete_item(
     Ok(())
 }
 
-/// Create an item event and atomically update the item's quantity within a transaction
+/// Create an item event and atomically update the item's quantity within a transaction.
+///
+/// Returns `AppError::NotFound` if the referenced item does not exist.
 pub async fn create_item_event(
     pool: &PgPool,
     item_id: Uuid,
@@ -178,14 +247,15 @@ pub async fn create_item_event(
     )
     .bind(item_id)
     .bind(user_id)
-    .bind(&req.event_type)
+    .bind(req.event_type.as_str())
     .bind(req.quantity_change)
     .bind(&req.notes)
     .fetch_one(&mut *tx)
     .await
     .map_err(AppError::Database)?;
 
-    sqlx::query(
+    // Atomically adjust the item's running quantity to stay in sync with the event log
+    let result = sqlx::query(
         "UPDATE tracking_items SET quantity = quantity + $1, updated_at = now() WHERE id = $2",
     )
     .bind(req.quantity_change)
@@ -193,6 +263,10 @@ pub async fn create_item_event(
     .execute(&mut *tx)
     .await
     .map_err(AppError::Database)?;
+
+    if result.rows_affected() == 0 {
+        return Err(AppError::NotFound("Tracking item not found".to_string()));
+    }
 
     tx.commit().await.map_err(AppError::Database)?;
 
@@ -203,14 +277,19 @@ pub async fn create_item_event(
 pub async fn list_item_events(
     pool: &PgPool,
     item_id: Uuid,
+    limit: i64,
+    offset: i64,
 ) -> Result<Vec<TrackingItemEvent>, AppError> {
     sqlx::query_as::<_, TrackingItemEvent>(
         r#"SELECT id, item_id, user_id, event_type, quantity_change, notes, created_at
            FROM tracking_item_events
            WHERE item_id = $1
-           ORDER BY created_at DESC"#,
+           ORDER BY created_at DESC
+           LIMIT $2 OFFSET $3"#,
     )
     .bind(item_id)
+    .bind(limit)
+    .bind(offset)
     .fetch_all(pool)
     .await
     .map_err(AppError::Database)
@@ -220,15 +299,20 @@ pub async fn list_item_events(
 pub async fn list_low_stock_items(
     pool: &PgPool,
     household_id: Uuid,
+    limit: i64,
+    offset: i64,
 ) -> Result<Vec<TrackingItem>, AppError> {
     sqlx::query_as::<_, TrackingItem>(
         r#"SELECT id, user_id, household_id, category_id, location_id, name,
                   description, quantity, unit, min_quantity, barcode, status,
                   created_at, updated_at
            FROM tracking_items
-           WHERE household_id = $1 AND min_quantity IS NOT NULL AND quantity < min_quantity"#,
+           WHERE household_id = $1 AND min_quantity IS NOT NULL AND quantity < min_quantity
+           LIMIT $2 OFFSET $3"#,
     )
     .bind(household_id)
+    .bind(limit)
+    .bind(offset)
     .fetch_all(pool)
     .await
     .map_err(AppError::Database)
