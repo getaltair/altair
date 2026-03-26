@@ -17,15 +17,15 @@ use crate::error::AppError;
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PowerSyncClaims {
     /// Standard JWT subject (user ID as string)
-    pub sub: String,
+    pub(crate) sub: String,
     /// Issued-at timestamp (seconds since UNIX epoch)
-    pub iat: u64,
+    pub(crate) iat: u64,
     /// Expiration timestamp (seconds since UNIX epoch, 5 minutes from iat)
-    pub exp: u64,
+    pub(crate) exp: u64,
     /// User ID repeated for PowerSync token_parameters access
-    pub user_id: String,
+    pub(crate) user_id: String,
     /// Household UUIDs the user belongs to, for sync-rule bucket filtering
-    pub household_ids: Vec<String>,
+    pub(crate) household_ids: Vec<String>,
 }
 
 /// Generate an HS256-signed JWT for PowerSync authentication.
@@ -39,7 +39,7 @@ pub fn generate_powersync_token(
 ) -> Result<String, AppError> {
     let now = SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .expect("System clock is before UNIX epoch")
+        .map_err(|e| AppError::Internal(format!("System clock error: {e}")))?
         .as_secs();
 
     let claims = PowerSyncClaims {
@@ -50,7 +50,7 @@ pub fn generate_powersync_token(
         household_ids: household_ids.iter().map(|id| id.to_string()).collect(),
     };
 
-    let key = EncodingKey::from_secret(config.jwt_secret.as_bytes());
+    let key = EncodingKey::from_secret(config.jwt_secret().as_bytes());
     let header = Header::new(Algorithm::HS256);
 
     encode(&header, &claims, &key)
@@ -62,24 +62,9 @@ mod tests {
     use super::*;
     use jsonwebtoken::{decode, DecodingKey, Validation};
 
-    fn test_config() -> Config {
-        Config {
-            database_url: "test".to_string(),
-            port: 3000,
-            log_level: "info".to_string(),
-            environment: "development".to_string(),
-            db_min_conn: 5,
-            db_max_conn: 20,
-            db_timeout_sec: 30,
-            session_ttl_hours: 72,
-            jwt_secret: "test_jwt_secret_for_powersync".to_string(),
-            powersync_url: "http://localhost:8080".to_string(),
-        }
-    }
-
     #[test]
     fn test_generate_powersync_token_roundtrip() {
-        let config = test_config();
+        let config = Config::test_default();
         let user_id = Uuid::new_v4();
         let household_a = Uuid::new_v4();
         let household_b = Uuid::new_v4();
@@ -89,7 +74,7 @@ mod tests {
             .expect("token generation should succeed");
 
         // Decode and validate
-        let key = DecodingKey::from_secret(config.jwt_secret.as_bytes());
+        let key = DecodingKey::from_secret(config.jwt_secret().as_bytes());
         let mut validation = Validation::new(Algorithm::HS256);
         validation.set_required_spec_claims(&["sub", "iat", "exp"]);
 
@@ -107,13 +92,13 @@ mod tests {
 
     #[test]
     fn test_generate_powersync_token_empty_households() {
-        let config = test_config();
+        let config = Config::test_default();
         let user_id = Uuid::new_v4();
 
         let token = generate_powersync_token(&config, user_id, vec![])
             .expect("token generation should succeed with empty households");
 
-        let key = DecodingKey::from_secret(config.jwt_secret.as_bytes());
+        let key = DecodingKey::from_secret(config.jwt_secret().as_bytes());
         let mut validation = Validation::new(Algorithm::HS256);
         validation.set_required_spec_claims(&["sub", "iat", "exp"]);
 
@@ -128,7 +113,7 @@ mod tests {
 
     #[test]
     fn test_generate_powersync_token_wrong_key_fails_decode() {
-        let config = test_config();
+        let config = Config::test_default();
         let user_id = Uuid::new_v4();
 
         let token = generate_powersync_token(&config, user_id, vec![])

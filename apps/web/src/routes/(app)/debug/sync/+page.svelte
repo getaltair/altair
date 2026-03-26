@@ -3,10 +3,6 @@
 	import { initPowerSync, AltairConnector, SYNCED_TABLE_NAMES } from '$lib/sync/index.js';
 	import type { PowerSyncDatabase } from '@powersync/web';
 
-	// -----------------------------------------------------------------------
-	// Reactive state
-	// -----------------------------------------------------------------------
-
 	let db = $state<PowerSyncDatabase | null>(null);
 	let status = $state<'initializing' | 'connected' | 'connecting' | 'disconnected' | 'error'>(
 		'initializing'
@@ -17,10 +13,6 @@
 	let errorMessage = $state<string | null>(null);
 	let isReconnecting = $state(false);
 	let hasSynced = $state<boolean | undefined>(undefined);
-
-	// -----------------------------------------------------------------------
-	// Sync status polling
-	// -----------------------------------------------------------------------
 
 	function updateSyncStatus(database: PowerSyncDatabase) {
 		const syncStatus = database.currentStatus;
@@ -40,12 +32,14 @@
 	async function refreshRowCounts(database: PowerSyncDatabase) {
 		const counts: Record<string, number> = {};
 		for (const table of SYNCED_TABLE_NAMES) {
+			if (!/^[a-z_]+$/.test(table)) continue;
 			try {
 				const result = await database.get<{ count: number }>(
 					`SELECT COUNT(*) as count FROM ${table}`
 				);
 				counts[table] = result.count;
-			} catch {
+			} catch (err) {
+				console.error(`[sync-debug] Failed to count ${table}:`, err);
 				counts[table] = -1;
 			}
 		}
@@ -58,14 +52,11 @@
 				'SELECT * FROM initiatives LIMIT 10'
 			);
 			initiatives = rows;
-		} catch {
+		} catch (err) {
+			console.error('[sync-debug] Failed to query initiatives:', err);
 			initiatives = [];
 		}
 	}
-
-	// -----------------------------------------------------------------------
-	// Reconnect handler
-	// -----------------------------------------------------------------------
 
 	async function handleReconnect() {
 		if (!db) return;
@@ -83,10 +74,6 @@
 			isReconnecting = false;
 		}
 	}
-
-	// -----------------------------------------------------------------------
-	// Lifecycle
-	// -----------------------------------------------------------------------
 
 	onMount(() => {
 		let disposed = false;
@@ -114,9 +101,12 @@
 
 				// Periodically refresh row counts (every 5 seconds)
 				interval = setInterval(async () => {
-					if (!disposed && database) {
+					if (disposed) return;
+					try {
 						await refreshRowCounts(database);
 						await refreshInitiatives(database);
+					} catch (err) {
+						console.error('[sync-debug] Periodic refresh failed:', err);
 					}
 				}, 5000);
 			} catch (err) {
@@ -133,33 +123,24 @@
 		};
 	});
 
-	// -----------------------------------------------------------------------
-	// Derived
-	// -----------------------------------------------------------------------
+	const STATUS_COLOR: Record<string, string> = {
+		connected: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200',
+		connecting: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200',
+		error: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+		initializing: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+		disconnected: 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-200'
+	};
 
-	const statusColor = $derived(
-		status === 'connected'
-			? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200'
-			: status === 'connecting'
-				? 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200'
-				: status === 'error'
-					? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-					: status === 'initializing'
-						? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
-						: 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-200'
-	);
+	const STATUS_LABEL: Record<string, string> = {
+		connected: 'Connected',
+		connecting: 'Connecting...',
+		error: 'Error',
+		initializing: 'Initializing...',
+		disconnected: 'Disconnected'
+	};
 
-	const statusLabel = $derived(
-		status === 'connected'
-			? 'Connected'
-			: status === 'connecting'
-				? 'Connecting...'
-				: status === 'error'
-					? 'Error'
-					: status === 'initializing'
-						? 'Initializing...'
-						: 'Disconnected'
-	);
+	const statusColor = $derived(STATUS_COLOR[status] ?? STATUS_COLOR.disconnected);
+	const statusLabel = $derived(STATUS_LABEL[status] ?? STATUS_LABEL.disconnected);
 </script>
 
 <svelte:head>
@@ -167,7 +148,6 @@
 </svelte:head>
 
 <div class="space-y-6">
-	<!-- Header -->
 	<div>
 		<h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Sync Debug</h1>
 		<p class="mt-1 text-base text-slate-600 dark:text-slate-400">
@@ -175,7 +155,6 @@
 		</p>
 	</div>
 
-	<!-- Status card -->
 	<div
 		class="rounded-lg border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900"
 	>
@@ -207,7 +186,7 @@
 					Initial sync complete
 				</dt>
 				<dd class="mt-1 text-sm text-slate-900 dark:text-white">
-					{hasSynced === undefined ? 'Loading...' : hasSynced ? 'Yes' : 'No'}
+					{#if hasSynced === undefined}Loading...{:else if hasSynced}Yes{:else}No{/if}
 				</dd>
 			</div>
 		</dl>
@@ -221,7 +200,6 @@
 		{/if}
 	</div>
 
-	<!-- Row counts -->
 	<div
 		class="rounded-lg border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900"
 	>
@@ -267,7 +245,6 @@
 		{/if}
 	</div>
 
-	<!-- Sample data -->
 	<div
 		class="rounded-lg border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900"
 	>

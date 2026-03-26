@@ -77,20 +77,8 @@ mod tests {
             )
         }
 
-        // Create a Config with invalid database URL
-        // Note: Config fields are private, but tests in same crate can access them
-        let config = Config {
-            database_url: "postgresql://invalid:invalid@localhost:9999/nonexistent".to_string(),
-            port: 3001,
-            log_level: "info".to_string(),
-            environment: "test".to_string(),
-            db_min_conn: 5,
-            db_max_conn: 20,
-            db_timeout_sec: 30,
-            session_ttl_hours: 72,
-            jwt_secret: "test_secret".to_string(),
-            powersync_url: "http://localhost:8080".to_string(),
-        };
+        let mut config = Config::test_default();
+        config.database_url = "postgresql://invalid:invalid@localhost:9999/nonexistent".to_string();
 
         // Attempt to create pool with invalid URL should return Database error
         let result = create_pool(&config).await;
@@ -129,19 +117,9 @@ mod tests {
             )
         }
 
-        #[allow(dead_code)]
-        let config = Config {
-            database_url: "postgresql://user:pass@nonexistent-host.example.com:5432/db".to_string(),
-            port: 3001,
-            log_level: "info".to_string(),
-            environment: "test".to_string(),
-            db_min_conn: 5,
-            db_max_conn: 20,
-            db_timeout_sec: 30,
-            session_ttl_hours: 72,
-            jwt_secret: "test_secret".to_string(),
-            powersync_url: "http://localhost:8080".to_string(),
-        };
+        let mut config = Config::test_default();
+        config.database_url =
+            "postgresql://user:pass@nonexistent-host.example.com:5432/db".to_string();
 
         let result = create_pool(&config).await;
         assert!(
@@ -158,19 +136,8 @@ mod tests {
         setup_test_env();
         unsafe { std::env::set_var("DATABASE_URL", "not-a-valid-url") }
 
-        #[allow(dead_code)]
-        let config = Config {
-            database_url: "not-a-valid-url".to_string(),
-            port: 3001,
-            log_level: "info".to_string(),
-            environment: "test".to_string(),
-            db_min_conn: 5,
-            db_max_conn: 20,
-            db_timeout_sec: 30,
-            session_ttl_hours: 72,
-            jwt_secret: "test_secret".to_string(),
-            powersync_url: "http://localhost:8080".to_string(),
-        };
+        let mut config = Config::test_default();
+        config.database_url = "not-a-valid-url".to_string();
 
         let result = create_pool(&config).await;
         assert!(

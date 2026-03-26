@@ -7,6 +7,10 @@
  * NOTE: PowerSync automatically manages the `id` column (TEXT PRIMARY KEY)
  * on every table, so it is NOT included in the column definitions below.
  *
+ * Column definitions here match the current Postgres migration columns. The
+ * PowerSync YAML sync rules and the design spec (docs/schema/altair-schema-design-spec.md)
+ * may reference additional columns from the target schema that do not yet exist.
+ *
  * Only tables that currently exist in the Postgres migrations are included.
  * Future tables (tracking_locations, tracking_categories, tracking_items,
  * tracking_shopping_lists, tracking_shopping_list_items, knowledge_notes,
@@ -14,10 +18,6 @@
  * as their backend migrations land.
  */
 import { column, Schema, Table } from '@powersync/web';
-
-// ---------------------------------------------------------------------------
-// Table definitions (column names match Postgres migrations exactly)
-// ---------------------------------------------------------------------------
 
 const users = new Table({
 	email: column.text,
@@ -105,10 +105,6 @@ const entity_relations = new Table(
 		}
 	}
 );
-
-// ---------------------------------------------------------------------------
-// Schema export
-// ---------------------------------------------------------------------------
 
 export const AppSchema = new Schema({
 	users,

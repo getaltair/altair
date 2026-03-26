@@ -16,10 +16,6 @@ import {
 
 import { AppSchema } from './schema.js';
 
-// ---------------------------------------------------------------------------
-// Configuration
-// ---------------------------------------------------------------------------
-
 /**
  * Base URL for the Rust backend API.
  * In development this defaults to the local server; in production it should
@@ -27,15 +23,16 @@ import { AppSchema } from './schema.js';
  */
 const BACKEND_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
-// ---------------------------------------------------------------------------
-// Backend connector
-// ---------------------------------------------------------------------------
-
 export class AltairConnector implements PowerSyncBackendConnector {
 	/**
 	 * Fetch a fresh JWT and the PowerSync service endpoint from the backend.
-	 * The backend validates the session cookie and returns a signed token
-	 * scoped to the current user and their household memberships.
+	 *
+	 * TODO: Auth integration gap -- the Rust backend requires Authorization: Bearer <token>,
+	 * but this app uses Better Auth cookies for SvelteKit routes. The auth bridge between
+	 * Better Auth sessions and Rust backend Bearer tokens is not yet implemented.
+	 * Once the integration is wired (e.g., via a SvelteKit proxy endpoint or shared auth),
+	 * this connector will need to include the Bearer token in the Authorization header.
+	 * For now, credentials: 'include' sends cookies which will work once the proxy is in place.
 	 */
 	async fetchCredentials() {
 		const response = await fetch(`${BACKEND_URL}/auth/powersync-token`, {
@@ -44,14 +41,33 @@ export class AltairConnector implements PowerSyncBackendConnector {
 		});
 
 		if (!response.ok) {
-			throw new Error(`Failed to fetch PowerSync token: ${response.status}`);
+			const body = await response.text().catch(() => '');
+			throw new Error(`Failed to fetch PowerSync token (${response.status}): ${body}`);
 		}
 
-		const data: { token: string; powersync_url: string } = await response.json();
+		let data: unknown;
+		try {
+			data = await response.json();
+		} catch {
+			throw new Error('Failed to fetch PowerSync token: invalid JSON response');
+		}
+
+		if (
+			typeof data !== 'object' ||
+			data === null ||
+			typeof (data as Record<string, unknown>).token !== 'string' ||
+			typeof (data as Record<string, unknown>).powersync_url !== 'string'
+		) {
+			throw new Error(
+				'Failed to fetch PowerSync token: missing required fields (token, powersync_url)'
+			);
+		}
+
+		const { token, powersync_url } = data as { token: string; powersync_url: string };
 
 		return {
-			endpoint: data.powersync_url,
-			token: data.token
+			endpoint: powersync_url,
+			token
 		};
 	}
 
@@ -71,32 +87,48 @@ export class AltairConnector implements PowerSyncBackendConnector {
 		try {
 			for (const op of transaction.crud) {
 				const { table, id, opData } = op;
+				let resp: Response;
 
 				switch (op.op) {
 					case UpdateType.PUT:
-						await fetch(`${BACKEND_URL}/api/${table}`, {
+						resp = await fetch(`${BACKEND_URL}/core/${table}`, {
 							method: 'POST',
 							headers: { 'Content-Type': 'application/json' },
 							credentials: 'include',
 							body: JSON.stringify({ id, ...opData })
 						});
+						if (!resp.ok) {
+							const body = await resp.text().catch(() => '');
+							throw new Error(`${op.op} ${table}/${id} failed (${resp.status}): ${body}`);
+						}
 						break;
 
 					case UpdateType.PATCH:
-						await fetch(`${BACKEND_URL}/api/${table}/${id}`, {
+						resp = await fetch(`${BACKEND_URL}/core/${table}/${id}`, {
 							method: 'PATCH',
 							headers: { 'Content-Type': 'application/json' },
 							credentials: 'include',
 							body: JSON.stringify(opData)
 						});
+						if (!resp.ok) {
+							const body = await resp.text().catch(() => '');
+							throw new Error(`${op.op} ${table}/${id} failed (${resp.status}): ${body}`);
+						}
 						break;
 
 					case UpdateType.DELETE:
-						await fetch(`${BACKEND_URL}/api/${table}/${id}`, {
+						resp = await fetch(`${BACKEND_URL}/core/${table}/${id}`, {
 							method: 'DELETE',
 							credentials: 'include'
 						});
+						if (!resp.ok) {
+							const body = await resp.text().catch(() => '');
+							throw new Error(`${op.op} ${table}/${id} failed (${resp.status}): ${body}`);
+						}
 						break;
+
+					default:
+						throw new Error(`Unhandled CRUD operation type: ${op.op}`);
 				}
 			}
 
@@ -107,10 +139,6 @@ export class AltairConnector implements PowerSyncBackendConnector {
 		}
 	}
 }
-
-// ---------------------------------------------------------------------------
-// Database singleton
-// ---------------------------------------------------------------------------
 
 let _db: PowerSyncDatabase | null = null;
 
@@ -134,15 +162,27 @@ export function createPowerSyncClient(): PowerSyncDatabase {
  * - Calls `db.init()` to run schema migrations on the local database.
  * - Connects to the PowerSync service via the AltairConnector.
  *
- * Subsequent calls return the same instance.
+ * Subsequent calls return the same instance. The singleton is only assigned
+ * after init and connect succeed, so a failed attempt does not leave a
+ * partially-initialized instance in place.
  */
 export async function initPowerSync(): Promise<PowerSyncDatabase> {
-	if (!_db) {
-		_db = createPowerSyncClient();
-		await _db.init();
-		await _db.connect(new AltairConnector());
+	if (_db) return _db;
+
+	const client = createPowerSyncClient();
+	try {
+		await client.init();
+		await client.connect(new AltairConnector());
+		_db = client;
+		return _db;
+	} catch (err) {
+		try {
+			await client.close();
+		} catch {
+			/* ignore close errors */
+		}
+		throw err;
 	}
-	return _db;
 }
 
 /**
@@ -158,8 +198,13 @@ export function getPowerSyncDb(): PowerSyncDatabase | null {
  * After calling this, `initPowerSync()` will create a fresh connection.
  */
 export async function closePowerSync(): Promise<void> {
-	if (_db) {
-		await _db.close();
-		_db = null;
+	const db = _db;
+	_db = null;
+	if (db) {
+		try {
+			await db.close();
+		} catch (err) {
+			console.error('[powersync] Error closing database:', err);
+		}
 	}
 }

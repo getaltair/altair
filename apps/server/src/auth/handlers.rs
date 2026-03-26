@@ -110,6 +110,6 @@ pub async fn powersync_token(
 
     Ok(Json(PowerSyncTokenResponse {
         token,
-        powersync_url: config.powersync_url.clone(),
+        powersync_url: config.powersync_url().to_string(),
     }))
 }
