@@ -164,6 +164,7 @@ altair/
     architecture/
     adr/
     specs/
+    DESIGN.md                  # Visual design system (colors, typography, components)
 ```
 
 ### Shared Contract Strategy
@@ -189,6 +190,7 @@ Entity type strings, relation types, sync stream names, and status enums are def
 - `apps/android/` empty Gradle project placeholder
 - `infra/` directory structure with Docker Compose skeleton
 - `docs/` directory with all existing specs committed
+- `docs/DESIGN.md` — visual design system (color palette, typography, component styles)
 - `.editorconfig`, linting configs, CI placeholder
 - `README.md` with setup instructions
 
@@ -297,11 +299,11 @@ apps/server/
 
 **Dependencies:** Step 1 (monorepo structure)
 **Priority:** P0 (can run in parallel with Step 2)
-**Docs:** `altair-architecture-spec.md` §10.2 Web Client Architecture
+**Docs:** `altair-architecture-spec.md` §10.2 Web Client Architecture, `DESIGN.md`
 
 ### What to build
 
-SvelteKit 2 project with TypeScript, basic layout shell, and generated contract types wired in.
+SvelteKit 2 project with TypeScript, basic layout shell, generated contract types wired in, and Tailwind configured with the Altair design system color palette.
 
 ### Project structure
 
@@ -335,23 +337,29 @@ apps/web/
 | Svelte 5 | Reactivity |
 | TypeScript | Type safety |
 | Tailwind CSS | Utility-first styling |
+| `@fontsource/manrope` | Display/headline font (from DESIGN.md) |
+| `@fontsource-variable/plus-jakarta-sans` | Body/label font (from DESIGN.md) |
 | `@powersync/web` | PowerSync client SDK (installed, not configured yet) |
 
 ### Application shell
 
 - Top-level layout with navigation sidebar: Guidance, Knowledge, Tracking, Search, Settings
 - Empty route stubs for each domain
-- Dark mode support via Tailwind
+- Tailwind theme extended with Altair color palette from `DESIGN.md` §2 (primary, secondary, tertiary, surfaces, semantic colors)
+- Font families configured: Manrope for display/headings, Plus Jakarta Sans for body
+- Dark mode support via Tailwind (using `DESIGN.md` dark mode tonal hierarchy)
 - Responsive layout (mobile-first)
 - Auth gate placeholder (redirects to login if no session)
 
 ### Done when
 
-- [ ] `npm run dev` serves the SvelteKit app
+- [ ] `pnpm dev` serves the SvelteKit app
 - [ ] App shell renders with navigation sidebar
 - [ ] All domain route stubs exist and render placeholder content
 - [ ] Generated TypeScript contracts import without errors
-- [ ] Tailwind CSS works with dark mode toggle
+- [ ] Tailwind CSS works with custom Altair color tokens
+- [ ] Manrope and Plus Jakarta Sans fonts render correctly
+- [ ] Dark mode toggle switches between light/dark palettes
 - [ ] Layout is responsive at mobile and desktop breakpoints
 
 ---
@@ -360,11 +368,11 @@ apps/web/
 
 **Dependencies:** Step 1 (monorepo structure)
 **Priority:** P0 (can run in parallel with Steps 2–3)
-**Docs:** `altair-architecture-spec.md` §10.4 Android Client Architecture
+**Docs:** `altair-architecture-spec.md` §10.4 Android Client Architecture, `DESIGN.md`
 
 ### What to build
 
-Android project with Jetpack Compose, multi-module structure, dependency injection, and generated contract constants wired in.
+Android project with Jetpack Compose, single-module structure, Koin DI, generated contract constants, and a Material 3 theme adapted from the Altair design system.
 
 ### Module structure
 
@@ -412,15 +420,28 @@ apps/android/
 - Koin DI wired in Application class
 - Timber logging planted
 - Generated Kotlin contract constants available in `contracts` package
-- Material 3 theming with dark mode
+- Custom Material 3 `ColorScheme` mapped from `DESIGN.md` §2 color palette
+- Manrope and Plus Jakarta Sans bundled as font assets
+- Dark mode support using `DESIGN.md` dark tonal hierarchy
+
+### Android design system adaptation notes
+
+The `DESIGN.md` was authored for web. These adaptations apply to Android:
+
+- **Material 3 ColorScheme mapping:** Map the Altair palette into `lightColorScheme()` / `darkColorScheme()`. Primary = Deep Muted Teal-Navy (`#446273`), Surface = Frost-Touched Pearl (`#f8fafa`), OnSurface = Deep Ink Charcoal (`#2a3435`), Error = Warm Terracotta (`#9f403d`), etc.
+- **Touch transitions:** Use 150ms for direct touch feedback (tap, press) instead of the 300ms "Breathe" duration. Keep 300ms for progressive disclosure and expand/collapse animations.
+- **Component borders:** Material 3 `OutlinedTextField` and similar components have built-in outlines. Override where practical (filled text fields match the design), accept minor differences where fighting the framework isn't worth it.
+- **Rounded corners:** The design's `1rem` minimum maps well to Material 3's `ShapeDefaults.Medium` (12dp) and `Large` (16dp). Use `RoundedCornerShape(16.dp)` for cards and buttons.
+- **No shadows:** Set `Card(elevation = CardDefaults.cardElevation(0.dp))` and rely on tonal layering as the design system specifies.
 
 ### Done when
 
 - [ ] Project builds and runs on emulator
-- [ ] Empty Compose scaffold renders
+- [ ] Empty Compose scaffold renders with custom Altair color scheme
 - [ ] Koin modules resolve correctly at runtime
 - [ ] Timber logs appear in Logcat
 - [ ] Generated Kotlin entity type constants import without errors
+- [ ] Manrope and Plus Jakarta Sans fonts render in the UI
 - [ ] Both debug and release variants build
 
 ---
@@ -868,11 +889,30 @@ Create a development seed dataset that exercises cross-domain relationships per 
 
 **Dependencies:** Step 7 (PowerSync syncing data), Step 8 (Guidance backend)
 **Priority:** P0
-**Docs:** `altair-guidance-prd.md`, `altair-core-prd.md`, `altair-architecture-spec.md` §10.2
+**Docs:** `altair-guidance-prd.md`, `altair-core-prd.md`, `altair-architecture-spec.md` §10.2, `DESIGN.md`
 
 ### What to build
 
 First real web client screens. The Guidance domain is the natural starting point because "what should I do today?" is the highest-frequency user interaction.
+
+### Design system implementation (first sub-task)
+
+Before building screens, implement the `DESIGN.md` design system in Tailwind and Svelte components:
+
+- **Tailwind theme extension:** Map the full Altair color palette from `DESIGN.md` §2 into `tailwind.config.js` custom colors (primary, secondary, tertiary, surface hierarchy, semantic colors)
+- **CSS custom properties:** Define `--color-primary`, `--color-surface`, etc. for runtime dark mode switching
+- **Base component library:** Build foundational Svelte components that encode the design rules:
+  - `Card` — no borders, no shadows, tonal layering via surface hierarchy
+  - `Button` — pill-shaped (1.5rem radius), primary fill / ghost secondary variants
+  - `Input` — no border at rest, filled background, ghost border on focus
+  - `SectionLabel` — editorial-style all-caps `label-sm` with 0.1em letter-spacing
+- **Navigation sidebar:** Icon-based vertical nav per `DESIGN.md` §4, Material Symbols Outlined icons, tonal background distinction
+- **Typography scale:** Implement the Manrope (display/headlines) + Plus Jakarta Sans (body/labels) hierarchy with the specified sizes and line heights
+- **Signature gradient:** CSS utility for the 135° primary-to-container gradient on CTAs
+- **Scrollbar styling:** Ultra-thin 4-6px thumb, transparent track, Silver Haze color
+- **Transition defaults:** 300ms cubic-bezier(0.4, 0, 0.2, 1) as the global "Breathe" transition
+
+This component library is reused across all subsequent web client steps (14, 18).
 
 ### Pages to build
 
@@ -889,30 +929,44 @@ First real web client screens. The Guidance domain is the natural starting point
 
 ### Today View (primary screen)
 
+The Today View follows the `DESIGN.md` "Digital Sanctuary" aesthetic: generous whitespace, tonal card layering on Frost-Touched Pearl background, Manrope display heading for the greeting, no borders or dividers between sections.
+
 ```
 ┌─────────────────────────────────────────────────┐
-│  Good morning, Robert              Thu, Mar 26   │
-├─────────────────────────────────────────────────┤
 │                                                  │
-│  📋 TODAY'S QUESTS                    3 of 7 done│
+│  Good morning, Robert              Thu, Mar 26   │
+│                                                  │
+│                                                  │
+│  TODAY'S QUESTS                      3 of 7 done │
+│                                                  │
 │  ┌─────────────────────────────────────────────┐ │
 │  │ ✓ Review PR feedback              Personal  │ │
+│  │                                              │ │
 │  │ ○ Draft sync spec update          ARGUS     │ │
+│  │                                              │ │
 │  │ ○ Check UPS battery status        Home      │ │
 │  └─────────────────────────────────────────────┘ │
 │                                                  │
-│  🔄 ROUTINES                                     │
+│                                                  │
+│  ROUTINES                                        │
+│                                                  │
 │  ┌─────────────────────────────────────────────┐ │
 │  │ ○ Morning routine (3 items)                 │ │
+│  │                                              │ │
 │  │ ✓ Evening review                            │ │
 │  └─────────────────────────────────────────────┘ │
 │                                                  │
-│  📊 CHECK-IN                                     │
+│                                                  │
+│  CHECK-IN                                        │
+│                                                  │
 │  ┌─────────────────────────────────────────────┐ │
 │  │ Energy: ●●●○○  Mood: 😊  [Edit]            │ │
 │  └─────────────────────────────────────────────┘ │
+│                                                  │
 └─────────────────────────────────────────────────┘
 ```
+
+Section labels use the editorial `label-sm` all-caps treatment. Cards are Pure White on Frost-Touched Pearl — depth via tone, not shadow. Spacing between sections is 2rem minimum.
 
 ### Data access pattern
 
@@ -927,6 +981,10 @@ All reads come from local PowerSync SQLite. Writes go to local SQLite first, the
 
 ### Done when
 
+- [ ] Tailwind theme configured with full Altair color palette from DESIGN.md
+- [ ] Base component library (Card, Button, Input, SectionLabel) built and matches design system
+- [ ] Navigation sidebar renders with correct icons and tonal styling
+- [ ] Manrope + Plus Jakarta Sans typography hierarchy working
 - [ ] Today View shows today's quests and routines from local PowerSync data
 - [ ] Quest completion writes locally and syncs to server
 - [ ] Initiative list and detail views render with correct data
@@ -936,6 +994,7 @@ All reads come from local PowerSync SQLite. Writes go to local SQLite first, the
 - [ ] App works fully offline (reads + writes queue)
 - [ ] On-demand streams subscribe/unsubscribe on navigation
 - [ ] Empty states for all lists
+- [ ] Light and dark modes both match DESIGN.md tonal hierarchy
 
 ---
 
@@ -943,13 +1002,24 @@ All reads come from local PowerSync SQLite. Writes go to local SQLite first, the
 
 **Dependencies:** Step 4 (Android scaffold), Step 7 (PowerSync), Step 8 (Guidance backend)
 **Priority:** P0
-**Docs:** `altair-architecture-spec.md` §10.4, `altair-guidance-prd.md`
+**Docs:** `altair-architecture-spec.md` §10.4, `altair-guidance-prd.md`, `DESIGN.md`
 
 ### What to build
 
-Android equivalent of Step 12. Room as local DB, PowerSync for sync, Compose UI.
+Android equivalent of Step 12. Room as local DB, PowerSync for sync, Compose UI styled with the Altair design system (adapted for Material 3).
 
-### Domain models (in `domain` module)
+### Design system implementation (first sub-task)
+
+Before building screens, implement the Altair theme in Compose:
+
+- **`Color.kt`:** Define all Altair palette colors as Compose `Color` constants
+- **`Theme.kt`:** Custom `lightColorScheme()` and `darkColorScheme()` mapped from `DESIGN.md` §2
+- **`Type.kt`:** Typography scale using Manrope (display/headline) and Plus Jakarta Sans (body/label), with sizes and line heights from `DESIGN.md` §3
+- **`Shape.kt`:** Override `ShapeDefaults` — minimum 12dp corners for medium, 16dp for large, 24dp pill for buttons
+- **Base composables:** `AltairCard` (zero elevation, tonal layering), `AltairButton` (pill-shaped, primary/ghost variants), `AltairTextField` (filled, no outline at rest)
+- **Adaptation:** Use 150ms for touch feedback animations, 300ms for expand/collapse. Accept minor Material 3 component differences where overriding is disproportionate effort.
+
+### Domain models (in `domain` package)
 
 Pure Kotlin data classes mirroring the server schema, using generated contract constants:
 
@@ -985,10 +1055,13 @@ Pure Kotlin data classes mirroring the server schema, using generated contract c
 - WorkManager for background sync
 - Notification channel setup (used later in Step 20)
 - Share intent receiver (capture text into notes — wired later)
-- Material 3 dynamic color theming
+- Custom Altair Material 3 theme (not dynamic color — use the explicit DESIGN.md palette)
 
 ### Done when
 
+- [ ] Custom Altair `ColorScheme` renders correctly in light and dark modes
+- [ ] Manrope + Plus Jakarta Sans fonts render in Compose UI
+- [ ] Base composables (`AltairCard`, `AltairButton`, `AltairTextField`) built
 - [ ] PowerSync syncs data to Room on login
 - [ ] Today screen shows quests and routines from local Room data
 - [ ] Quest completion works offline and syncs
@@ -1498,6 +1571,8 @@ Push notifications for Android (quest reminders, low-stock alerts, routine trigg
 | 8 | Attachments are metadata-first | PowerSync syncs metadata rows. Binaries stored in object storage, fetched on demand. |
 | 9 | Entity type registry enforced at write time | Backend rejects unknown entity types. Prevents ad hoc string drift across codebases. |
 | 10 | Sync scopes based on clear boundaries (user, household, initiative) | Avoids graph-traversal-based sync scope definitions. Keeps sync predictable. |
+| 11 | "Digital Sanctuary" design system from DESIGN.md | Shared visual language across web and Android. Web implements directly; Android adapts through Material 3 `ColorScheme` mapping with faster touch transitions and accepted component differences. |
+| 12 | Android is single Gradle module | No KMP target exists (WearOS is Android, desktop is Tauri/Svelte). Package-based separation provides the same logical boundaries without Gradle overhead. |
 
 ---
 
