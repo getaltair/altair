@@ -13,27 +13,22 @@ pub enum AppError {
     Database(#[from] sqlx::Error),
 
     /// Not found error (404)
-    #[allow(dead_code)]
     #[error("Resource not found: {0}")]
     NotFound(String),
 
     /// Bad request error (400)
-    #[allow(dead_code)]
     #[error("Bad request: {0}")]
     BadRequest(String),
 
     /// Unauthorized error (401)
-    #[allow(dead_code)]
     #[error("Unauthorized: {0}")]
     Unauthorized(String),
 
     /// Forbidden error (403)
-    #[allow(dead_code)]
     #[error("Forbidden: {0}")]
     Forbidden(String),
 
     /// Conflict error (409)
-    #[allow(dead_code)]
     #[error("Conflict: {0}")]
     Conflict(String),
 
@@ -57,7 +52,7 @@ impl IntoResponse for AppError {
                 (
                     StatusCode::INTERNAL_SERVER_ERROR,
                     "database_error",
-                    format!("Database error: {}", err),
+                    "A database error occurred".to_string(),
                 )
             }
             AppError::NotFound(msg) => (StatusCode::NOT_FOUND, "not_found", msg.clone()),
@@ -70,7 +65,7 @@ impl IntoResponse for AppError {
                 (
                     StatusCode::INTERNAL_SERVER_ERROR,
                     "internal_error",
-                    msg.clone(),
+                    "An internal error occurred".to_string(),
                 )
             }
         };

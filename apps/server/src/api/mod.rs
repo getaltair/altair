@@ -37,7 +37,7 @@ impl axum::extract::FromRef<AppState> for crate::config::Config {
 ///
 /// # Middleware
 ///
-/// - **CORS**: Currently allows all origins (will be tightened for production)
+/// - **CORS**: Currently allows all origins
 /// - **Trace**: Request tracing for observability
 /// - **Compression**: GZIP compression for responses
 pub fn create_router(state: AppState) -> Router {
@@ -57,7 +57,7 @@ pub fn create_router(state: AppState) -> Router {
             post(household_handlers::create_household).get(household_handlers::list_households),
         )
         .route(
-            "/core/households/:id/members",
+            "/core/households/{id}/members",
             post(household_handlers::invite_member),
         )
         .layer(TraceLayer::new_for_http())

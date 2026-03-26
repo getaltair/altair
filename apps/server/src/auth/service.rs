@@ -11,7 +11,7 @@ use uuid::Uuid;
 use crate::error::AppError;
 use super::models::{Session, User};
 
-/// Hash a plaintext password using Argon2id with default parameters
+/// Hash a plaintext password using Argon2 with default parameters
 pub fn hash_password(password: &str) -> Result<String, AppError> {
     let salt = SaltString::generate(&mut OsRng);
     let argon2 = Argon2::default();
@@ -21,12 +21,10 @@ pub fn hash_password(password: &str) -> Result<String, AppError> {
         .map_err(|e| AppError::Internal(format!("Password hashing failed: {e}")))
 }
 
-/// Verify a plaintext password against an Argon2id hash
+/// Verify a plaintext password against an Argon2 hash
 pub fn verify_password(password: &str, hash: &str) -> Result<bool, AppError> {
-    let parsed_hash = match PasswordHash::new(hash) {
-        Ok(h) => h,
-        Err(_) => return Ok(false),
-    };
+    let parsed_hash = PasswordHash::new(hash)
+        .map_err(|e| AppError::Internal(format!("Corrupt password hash in database: {e}")))?;
     Ok(Argon2::default()
         .verify_password(password.as_bytes(), &parsed_hash)
         .is_ok())
@@ -70,7 +68,7 @@ pub async fn create_user(
     .await
     .map_err(|e| match &e {
         sqlx::Error::Database(db_err) if db_err.is_unique_violation() => {
-            AppError::Conflict("Email already registered".to_string())
+            AppError::Conflict("Registration could not be completed".to_string())
         }
         _ => AppError::Database(e),
     })
@@ -158,6 +156,10 @@ pub async fn validate_session(
 
     // Check expiry
     if session.expires_at < Utc::now() {
+        let _ = sqlx::query("DELETE FROM sessions WHERE id = $1")
+            .bind(session.id)
+            .execute(pool)
+            .await;
         return Err(AppError::Unauthorized("Session expired".to_string()));
     }
 
@@ -174,18 +176,39 @@ pub async fn validate_session(
     Ok((user, session))
 }
 
+/// Delete a session by its primary key
+pub async fn invalidate_session_by_id(pool: &PgPool, session_id: Uuid) -> Result<(), AppError> {
+    let result = sqlx::query("DELETE FROM sessions WHERE id = $1")
+        .bind(session_id)
+        .execute(pool)
+        .await
+        .map_err(AppError::Database)?;
+
+    if result.rows_affected() == 0 {
+        tracing::warn!("Session invalidation by ID matched zero rows");
+    }
+
+    Ok(())
+}
+
 /// Delete a session by its token hash, effectively logging the user out
+#[allow(dead_code)]
 pub async fn invalidate_session(pool: &PgPool, token_hash: &str) -> Result<(), AppError> {
-    sqlx::query("DELETE FROM sessions WHERE token_hash = $1")
+    let result = sqlx::query("DELETE FROM sessions WHERE token_hash = $1")
         .bind(token_hash)
         .execute(pool)
         .await
         .map_err(AppError::Database)?;
 
+    if result.rows_affected() == 0 {
+        tracing::warn!("Session invalidation matched zero rows");
+    }
+
     Ok(())
 }
 
 /// Get all household IDs a user belongs to
+#[allow(dead_code)]
 pub async fn get_user_household_ids(
     pool: &PgPool,
     user_id: Uuid,
@@ -233,4 +256,73 @@ pub async fn update_user_display_name(
     .await
     .map_err(AppError::Database)?
     .ok_or_else(|| AppError::NotFound("User not found".to_string()))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use sha2::{Digest, Sha256};
+
+    #[test]
+    fn hash_and_verify_roundtrip() {
+        let password = "correct-horse-battery-staple";
+        let hash = hash_password(password).expect("hashing should succeed");
+
+        assert!(
+            verify_password(password, &hash).expect("verify should not error"),
+            "same password should verify as true"
+        );
+        assert!(
+            !verify_password("wrong-password", &hash).expect("verify should not error"),
+            "wrong password should verify as false"
+        );
+    }
+
+    #[test]
+    fn verify_corrupt_hash_returns_error() {
+        let result = verify_password("password", "not-a-valid-hash");
+        assert!(
+            matches!(result, Err(AppError::Internal(_))),
+            "corrupt hash should return AppError::Internal"
+        );
+    }
+
+    #[test]
+    fn verify_empty_password_does_not_panic() {
+        let hash = hash_password("").expect("hashing empty string should succeed");
+        let result = verify_password("", &hash);
+        assert!(
+            result.is_ok(),
+            "verifying empty password should not panic or error"
+        );
+        assert!(result.unwrap(), "empty password should match its own hash");
+
+        let mismatch = verify_password("not-empty", &hash).expect("verify should not error");
+        assert!(!mismatch, "non-empty password should not match empty-password hash");
+    }
+
+    #[test]
+    fn generate_token_length() {
+        let (raw_token, token_hash) = generate_session_token();
+        assert_eq!(raw_token.len(), 64, "raw_token hex should be 64 chars (32 bytes)");
+        assert_eq!(token_hash.len(), 64, "token_hash hex should be 64 chars (SHA-256)");
+    }
+
+    #[test]
+    fn generate_token_uniqueness() {
+        let (token_a, _) = generate_session_token();
+        let (token_b, _) = generate_session_token();
+        assert_ne!(token_a, token_b, "two generated tokens should differ");
+    }
+
+    #[test]
+    fn generate_token_hash_correctness() {
+        let (raw_token, token_hash) = generate_session_token();
+        let decoded = hex::decode(&raw_token).expect("raw_token should be valid hex");
+        let expected_hash = hex::encode(Sha256::digest(&decoded));
+        assert_eq!(
+            token_hash, expected_hash,
+            "token_hash should equal SHA-256 of the raw token bytes"
+        );
+    }
 }
