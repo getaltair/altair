@@ -11,6 +11,10 @@ use crate::core::households::handlers as household_handlers;
 use crate::core::initiatives::handlers as initiative_handlers;
 use crate::core::relations::handlers as relation_handlers;
 use crate::core::tags::handlers as tag_handlers;
+use crate::tracking::categories::handlers as category_handlers;
+use crate::tracking::items::handlers as item_handlers;
+use crate::tracking::locations::handlers as location_handlers;
+use crate::tracking::shopping_lists::handlers as shopping_list_handlers;
 
 #[derive(Clone)]
 pub struct AppState {
@@ -94,6 +98,77 @@ pub fn create_router(state: AppState) -> Router {
         .route(
             "/core/relations/{id}",
             put(relation_handlers::update_relation_status),
+        )
+        // Tracking item routes
+        // NOTE: /low-stock must be registered before /{id} to avoid path conflict
+        .route(
+            "/tracking/items/low-stock",
+            get(item_handlers::list_low_stock_items),
+        )
+        .route(
+            "/tracking/items",
+            post(item_handlers::create_item).get(item_handlers::list_items),
+        )
+        .route(
+            "/tracking/items/{id}",
+            get(item_handlers::get_item)
+                .put(item_handlers::update_item)
+                .delete(item_handlers::delete_item),
+        )
+        .route(
+            "/tracking/items/{id}/events",
+            post(item_handlers::create_item_event)
+                .get(item_handlers::list_item_events),
+        )
+        // Tracking location routes
+        .route(
+            "/tracking/locations",
+            post(location_handlers::create_location)
+                .get(location_handlers::list_locations),
+        )
+        .route(
+            "/tracking/locations/{id}",
+            get(location_handlers::get_location)
+                .put(location_handlers::update_location)
+                .delete(location_handlers::delete_location),
+        )
+        // Tracking category routes
+        .route(
+            "/tracking/categories",
+            post(category_handlers::create_category)
+                .get(category_handlers::list_categories),
+        )
+        .route(
+            "/tracking/categories/{id}",
+            get(category_handlers::get_category)
+                .put(category_handlers::update_category)
+                .delete(category_handlers::delete_category),
+        )
+        // Shopping list routes
+        .route(
+            "/tracking/shopping-lists",
+            post(shopping_list_handlers::create_list)
+                .get(shopping_list_handlers::list_lists),
+        )
+        .route(
+            "/tracking/shopping-lists/{id}",
+            get(shopping_list_handlers::get_list)
+                .put(shopping_list_handlers::update_list)
+                .delete(shopping_list_handlers::delete_list),
+        )
+        .route(
+            "/tracking/shopping-lists/{id}/items",
+            post(shopping_list_handlers::add_list_item)
+                .get(shopping_list_handlers::list_list_items),
+        )
+        .route(
+            "/tracking/shopping-lists/{id}/items/{item_id}",
+            put(shopping_list_handlers::update_list_item)
+                .delete(shopping_list_handlers::remove_list_item),
+        )
+        .route(
+            "/tracking/shopping-lists/{id}/items/{item_id}/check",
+            post(shopping_list_handlers::toggle_check),
         )
         .layer(TraceLayer::new_for_http())
         .layer(CompressionLayer::new())
