@@ -7,8 +7,12 @@ use validator::Validate;
 
 use crate::{config::Config, error::AppError};
 use super::{
+    jwt,
     middleware::AuthenticatedUser,
-    models::{AuthResponse, LoginRequest, RegisterRequest, UpdateProfileRequest, UserProfile},
+    models::{
+        AuthResponse, LoginRequest, PowerSyncTokenResponse, RegisterRequest, UpdateProfileRequest,
+        UserProfile,
+    },
     service,
 };
 
@@ -89,4 +93,23 @@ pub async fn update_me(
     };
 
     Ok(Json(user.into()))
+}
+
+/// Generate a short-lived PowerSync JWT for the authenticated user.
+///
+/// The token includes the user's household IDs so that PowerSync
+/// sync rules can filter data to the correct buckets.
+pub async fn powersync_token(
+    auth: AuthenticatedUser,
+    State(pool): State<PgPool>,
+    State(config): State<Config>,
+) -> Result<Json<PowerSyncTokenResponse>, AppError> {
+    let household_ids = service::get_user_household_ids(&pool, auth.user_id).await?;
+
+    let token = jwt::generate_powersync_token(&config, auth.user_id, household_ids)?;
+
+    Ok(Json(PowerSyncTokenResponse {
+        token,
+        powersync_url: config.powersync_url.clone(),
+    }))
 }

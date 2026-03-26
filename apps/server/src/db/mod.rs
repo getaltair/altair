@@ -88,6 +88,8 @@ mod tests {
             db_max_conn: 20,
             db_timeout_sec: 30,
             session_ttl_hours: 72,
+            jwt_secret: "test_secret".to_string(),
+            powersync_url: "http://localhost:8080".to_string(),
         };
 
         // Attempt to create pool with invalid URL should return Database error
@@ -137,6 +139,8 @@ mod tests {
             db_max_conn: 20,
             db_timeout_sec: 30,
             session_ttl_hours: 72,
+            jwt_secret: "test_secret".to_string(),
+            powersync_url: "http://localhost:8080".to_string(),
         };
 
         let result = create_pool(&config).await;
@@ -164,6 +168,8 @@ mod tests {
             db_max_conn: 20,
             db_timeout_sec: 30,
             session_ttl_hours: 72,
+            jwt_secret: "test_secret".to_string(),
+            powersync_url: "http://localhost:8080".to_string(),
         };
 
         let result = create_pool(&config).await;
