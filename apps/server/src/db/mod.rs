@@ -33,7 +33,7 @@ use sqlx::{PgPool, postgres::PgPoolOptions};
 /// use crate::db::create_pool;
 ///
 /// let config = Config::load()?;
-/// let pool = create_pool(&config)?;
+/// let pool = create_pool(&config).await?;
 /// ```
 pub async fn create_pool(config: &Config) -> Result<PgPool> {
     let pool = PgPoolOptions::new()

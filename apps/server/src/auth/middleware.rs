@@ -15,8 +15,7 @@ use super::service;
 #[derive(Debug, Clone)]
 pub struct AuthenticatedUser {
     pub user_id: Uuid,
-    #[allow(dead_code)]
-    pub household_ids: Vec<Uuid>,
+    pub session_id: Uuid,
 }
 
 impl<S> FromRequestParts<S> for AuthenticatedUser
@@ -27,7 +26,6 @@ where
     type Rejection = AppError;
 
     async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
-        // Extract bearer token from Authorization header
         let auth_header = parts
             .headers
             .get("Authorization")
@@ -40,18 +38,12 @@ where
                 AppError::Unauthorized("Invalid Authorization header format".to_string())
             })?;
 
-        // Get pool from state
         let pool = PgPool::from_ref(state);
-
-        // Validate session
-        let (user, _session) = service::validate_session(&pool, raw_token).await?;
-
-        // Get household IDs
-        let household_ids = service::get_user_household_ids(&pool, user.id).await?;
+        let (user, session) = service::validate_session(&pool, raw_token).await?;
 
         Ok(AuthenticatedUser {
             user_id: user.id,
-            household_ids,
+            session_id: session.id,
         })
     }
 }
