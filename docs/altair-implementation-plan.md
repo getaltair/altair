@@ -368,45 +368,59 @@ Android project with Jetpack Compose, multi-module structure, dependency injecti
 
 ### Module structure
 
+Single-module with package-based separation. No multi-module split needed for an Android-only app at this stage.
+
 ```text
 apps/android/
-  app/                        # Android app module (Compose UI, DI, navigation)
-  domain/                     # Pure Kotlin domain models + interfaces
-  data/                       # Room, PowerSync, repositories
-  core/                       # Use cases, ViewModels
-  gradle/libs.versions.toml   # Version catalog
+  app/
+    src/main/kotlin/com/altair/app/
+      AltairApp.kt                # Application class + Koin
+      MainActivity.kt             # Single activity
+      di/                          # Koin modules
+      navigation/                  # Nav graph
+      domain/models/               # Domain data classes
+      domain/repositories/         # Repository interfaces
+      data/local/                  # Room DB + DAOs
+      data/sync/                   # PowerSync
+      data/repositories/           # Repository implementations
+      ui/guidance/                 # Guidance screens
+      ui/knowledge/                # Knowledge screens
+      ui/tracking/                 # Tracking screens
+      contracts/                   # Generated contract constants
+  gradle/libs.versions.toml        # Version catalog
 ```
+
+> **Pragmatic note:** The architecture spec mentions desktop uses Tauri + Svelte, not Kotlin. WearOS is Android — not KMP. There is no KMP target, so there's no reason to split into Gradle modules for code sharing. Package discipline in a single module gives you the same logical separation without the Gradle overhead. Extract modules later only if you hit a real reason.
 
 ### Key dependencies
 
-| Library | Purpose | Min Version |
+| Library | Purpose | Version |
 |---|---|---|
-| Kotlin | Language | 2.0+ |
-| Compose BOM | UI toolkit | Latest stable |
-| Koin | DI | 4.0+ |
-| Room | Local SQLite | 2.6+ |
-| Navigation Compose | Screen routing | 2.7+ |
-| WorkManager | Background jobs | 2.9+ |
-| PowerSync Android SDK | Sync | Latest |
-| Timber | Logging | 5.0+ |
+| Kotlin | Language | 2.3.20 |
+| Compose BOM | UI toolkit | 2026.03.00 |
+| Koin BOM | DI | 4.2.0 |
+| KSP | Annotation processing (for Room) | 2.3.6 |
+| Room | Local SQLite | 2.7.1 (pinned, added Step 13) |
+| Navigation Compose | Screen routing | 2.9.0 (pinned, added Step 13) |
+| WorkManager | Background jobs | 2.10.1 (pinned, added Step 13) |
+| PowerSync Android SDK | Sync | Latest (added Step 13) |
+| Timber | Logging | 5.0.1 |
 
 ### Application shell
 
 - Single-activity Compose app
-- Bottom navigation: Guidance, Knowledge, Tracking, (Search)
-- Empty screen stubs for each domain
-- Koin DI wired and compiling
-- Generated Kotlin contract constants available in `domain` module
+- Koin DI wired in Application class
+- Timber logging planted
+- Generated Kotlin contract constants available in `contracts` package
 - Material 3 theming with dark mode
 
 ### Done when
 
 - [ ] Project builds and runs on emulator
-- [ ] Empty Compose scaffold renders with bottom navigation
+- [ ] Empty Compose scaffold renders
 - [ ] Koin modules resolve correctly at runtime
-- [ ] All modules resolve dependencies correctly
 - [ ] Timber logs appear in Logcat
-- [ ] Generated Kotlin entity type constants available in `domain` module
+- [ ] Generated Kotlin entity type constants import without errors
 - [ ] Both debug and release variants build
 
 ---
