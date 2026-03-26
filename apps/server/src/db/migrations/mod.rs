@@ -3,9 +3,8 @@ use sqlx::PgPool;
 
 /// Run database migrations
 ///
-/// Uses the sqlx::migrate! macro which ensures migrations are checked
-/// at compile time. On first run, it creates the `_sqlx_migrations` table
-/// to track which migrations have been applied.
+/// This function is currently a placeholder that logs when called.
+/// Actual migration files and execution logic will be added in later steps.
 ///
 /// # Arguments
 ///

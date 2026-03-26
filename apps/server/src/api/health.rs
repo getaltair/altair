@@ -1,4 +1,8 @@
-use axum::{extract::State, http::StatusCode, response::{IntoResponse, Json}};
+use axum::{
+    extract::State,
+    http::StatusCode,
+    response::{IntoResponse, Json},
+};
 use chrono::Utc;
 use serde::Serialize;
 use sqlx::PgPool;
@@ -6,8 +10,8 @@ use sqlx::PgPool;
 /// Health check response
 #[derive(Serialize)]
 pub struct HealthResponse {
-    /// Overall status of the service
-    pub status: String,
+    /// HTTP status code returned by the endpoint
+    pub http_status_code: String,
     /// Database connection status
     pub db: String,
     /// Current timestamp in ISO 8601 format
@@ -43,7 +47,7 @@ pub async fn health(State(pool): State<PgPool>) -> impl IntoResponse {
     };
 
     let response = HealthResponse {
-        status: status.as_u16().to_string(),
+        http_status_code: status.as_u16().to_string(),
         db: db_status,
         timestamp: Utc::now().to_rfc3339(),
     };

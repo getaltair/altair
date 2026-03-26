@@ -2,16 +2,9 @@ mod health;
 
 pub use health::health;
 
-use axum::{
-    Router,
-    routing::get,
-};
+use axum::{Router, routing::get};
 use sqlx::PgPool;
-use tower_http::{
-    cors::CorsLayer,
-    trace::TraceLayer,
-    compression::CompressionLayer,
-};
+use tower_http::{compression::CompressionLayer, cors::CorsLayer, trace::TraceLayer};
 
 /// Create and configure the main API router
 ///
@@ -24,6 +17,7 @@ use tower_http::{
 /// # Middleware
 ///
 /// - **CORS**: Currently allows all origins (will be tightened in auth step)
+/// - **TODO**: Tighten CORS configuration to specific allowed origins in production
 /// - **Trace**: Request tracing for observability
 /// - **Compression**: GZIP compression for responses
 ///

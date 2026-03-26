@@ -13,8 +13,14 @@ use tracing_subscriber::{EnvFilter, fmt, layer::SubscriberExt, util::SubscriberI
 /// telemetry::init("info").expect("Failed to initialize telemetry");
 /// ```
 pub fn init(log_level: &str) -> Result<()> {
-    let filter = EnvFilter::try_from_default_env()
-        .unwrap_or_else(|_| EnvFilter::new(log_level));
+    let filter = EnvFilter::try_from_default_env().unwrap_or_else(|e| {
+        tracing::warn!(
+            "Failed to parse RUST_LOG from environment ({}), falling back to log_level='{}'",
+            e,
+            log_level
+        );
+        EnvFilter::new(log_level)
+    });
 
     // Set up JSON formatting for structured logs
     tracing_subscriber::registry()
@@ -29,21 +35,4 @@ pub fn init(log_level: &str) -> Result<()> {
         .init();
 
     Ok(())
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_init_basic() {
-        // Test that telemetry initialization doesn't panic with valid log level
-        // We can't actually initialize the global subscriber in tests
-        // because it can only be set once per process
-        let result = std::panic::catch_unwind(|| {
-            // This would normally work, but we skip actual init in tests
-            // to avoid "multiple subscriber" errors
-        });
-        assert!(result.is_ok());
-    }
 }
