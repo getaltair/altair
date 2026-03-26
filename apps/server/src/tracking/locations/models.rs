@@ -35,12 +35,9 @@ pub struct CreateLocationRequest {
 pub struct UpdateLocationRequest {
     #[validate(length(min = 1, max = 200))]
     pub name: Option<String>,
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        deserialize_with = "crate::serde_util::double_option"
-    )]
+    #[serde(default, deserialize_with = "crate::serde_util::double_option")]
     pub description: Option<Option<String>>,
+    #[serde(default, deserialize_with = "crate::serde_util::double_option")]
     pub parent_location_id: Option<Option<Uuid>>,
 }
 
