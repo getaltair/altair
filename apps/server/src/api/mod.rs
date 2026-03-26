@@ -55,6 +55,7 @@ pub fn create_router(state: AppState) -> Router {
             "/auth/me",
             get(auth_handlers::get_me).put(auth_handlers::update_me),
         )
+        .route("/auth/powersync-token", post(auth_handlers::powersync_token))
         .route(
             "/core/households",
             post(household_handlers::create_household).get(household_handlers::list_households),

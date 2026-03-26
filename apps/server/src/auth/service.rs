@@ -208,7 +208,6 @@ pub async fn invalidate_session(pool: &PgPool, token_hash: &str) -> Result<(), A
 }
 
 /// Get all household IDs a user belongs to
-#[allow(dead_code)]
 pub async fn get_user_household_ids(
     pool: &PgPool,
     user_id: Uuid,

@@ -20,6 +20,10 @@ pub struct Config {
     pub db_timeout_sec: u64,
     /// Session time-to-live in hours
     pub session_ttl_hours: u64,
+    /// Secret key for signing PowerSync JWTs (HS256)
+    pub jwt_secret: String,
+    /// PowerSync service URL
+    pub powersync_url: String,
 }
 
 impl Config {
@@ -36,6 +40,8 @@ impl Config {
     /// - `DB_MAX_CONN` - Maximum database pool connections (default: 20)
     /// - `DB_TIMEOUT_SEC` - Database connection acquire timeout in seconds (default: 30)
     /// - `SESSION_TTL_HOURS` - Session time-to-live in hours (default: 72)
+    /// - `POWERSYNC_JWT_SECRET` - Secret for signing PowerSync JWTs (default: dev secret)
+    /// - `POWERSYNC_URL` - PowerSync service URL (default: "http://localhost:8080")
     pub fn load() -> Result<Self> {
         Ok(Config {
             database_url: Self::require_env("DATABASE_URL")?,
@@ -46,6 +52,10 @@ impl Config {
             db_max_conn: Self::parse_env_var("DB_MAX_CONN", "20")?,
             db_timeout_sec: Self::parse_env_var("DB_TIMEOUT_SEC", "30")?,
             session_ttl_hours: Self::parse_env_var("SESSION_TTL_HOURS", "72")?,
+            jwt_secret: env::var("POWERSYNC_JWT_SECRET")
+                .unwrap_or_else(|_| "dev_powersync_secret_change_in_production".to_string()),
+            powersync_url: env::var("POWERSYNC_URL")
+                .unwrap_or_else(|_| "http://localhost:8080".to_string()),
         })
     }
 
@@ -97,6 +107,16 @@ impl Config {
     /// Get the session time-to-live in hours
     pub fn session_ttl_hours(&self) -> u64 {
         self.session_ttl_hours
+    }
+
+    /// Get the PowerSync JWT signing secret
+    pub fn jwt_secret(&self) -> &str {
+        &self.jwt_secret
+    }
+
+    /// Get the PowerSync service URL
+    pub fn powersync_url(&self) -> &str {
+        &self.powersync_url
     }
 
     /// Get a required environment variable, returning an error if missing
@@ -152,6 +172,8 @@ mod tests {
             db_max_conn: 20,
             db_timeout_sec: 30,
             session_ttl_hours: 72,
+            jwt_secret: "test_secret".to_string(),
+            powersync_url: "http://localhost:8080".to_string(),
         };
         assert!(config.is_development());
         assert!(!config.is_production());
@@ -168,6 +190,8 @@ mod tests {
             db_max_conn: 20,
             db_timeout_sec: 30,
             session_ttl_hours: 72,
+            jwt_secret: "test_secret".to_string(),
+            powersync_url: "http://localhost:8080".to_string(),
         };
         assert!(!config.is_development());
         assert!(config.is_production());

@@ -79,3 +79,12 @@ pub struct AuthResponse {
     pub token: String,
     pub user: UserProfile,
 }
+
+/// Response for the PowerSync token endpoint
+#[derive(Debug, Serialize)]
+pub struct PowerSyncTokenResponse {
+    /// Signed JWT for PowerSync authentication
+    pub token: String,
+    /// PowerSync service URL the client should connect to
+    pub powersync_url: String,
+}
