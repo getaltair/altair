@@ -2,12 +2,15 @@ mod health;
 
 use axum::{
     Router,
-    routing::{get, post},
+    routing::{get, post, put},
 };
 use tower_http::{compression::CompressionLayer, cors::CorsLayer, trace::TraceLayer};
 
 use crate::auth::handlers as auth_handlers;
 use crate::core::households::handlers as household_handlers;
+use crate::core::initiatives::handlers as initiative_handlers;
+use crate::core::relations::handlers as relation_handlers;
+use crate::core::tags::handlers as tag_handlers;
 
 #[derive(Clone)]
 pub struct AppState {
@@ -59,6 +62,37 @@ pub fn create_router(state: AppState) -> Router {
         .route(
             "/core/households/{id}/members",
             post(household_handlers::invite_member),
+        )
+        // Initiative routes
+        .route(
+            "/core/initiatives",
+            post(initiative_handlers::create_initiative)
+                .get(initiative_handlers::list_initiatives),
+        )
+        .route(
+            "/core/initiatives/{id}",
+            get(initiative_handlers::get_initiative)
+                .put(initiative_handlers::update_initiative)
+                .delete(initiative_handlers::delete_initiative),
+        )
+        // Tag routes
+        .route(
+            "/core/tags",
+            post(tag_handlers::create_tag).get(tag_handlers::list_tags),
+        )
+        .route(
+            "/core/tags/{id}",
+            put(tag_handlers::update_tag).delete(tag_handlers::delete_tag),
+        )
+        // Relation routes
+        .route(
+            "/core/relations",
+            post(relation_handlers::create_relation)
+                .get(relation_handlers::query_relations),
+        )
+        .route(
+            "/core/relations/{id}",
+            put(relation_handlers::update_relation_status),
         )
         .layer(TraceLayer::new_for_http())
         .layer(CompressionLayer::new())
