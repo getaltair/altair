@@ -13,19 +13,24 @@ pub enum AppError {
     Database(#[from] sqlx::Error),
 
     /// Not found error (404)
-    #[allow(dead_code)]
     #[error("Resource not found: {0}")]
     NotFound(String),
 
     /// Bad request error (400)
-    #[allow(dead_code)]
     #[error("Bad request: {0}")]
     BadRequest(String),
 
     /// Unauthorized error (401)
-    #[allow(dead_code)]
     #[error("Unauthorized: {0}")]
     Unauthorized(String),
+
+    /// Forbidden error (403)
+    #[error("Forbidden: {0}")]
+    Forbidden(String),
+
+    /// Conflict error (409)
+    #[error("Conflict: {0}")]
+    Conflict(String),
 
     /// Internal server error (500)
     #[error("Internal server error: {0}")]
@@ -47,18 +52,20 @@ impl IntoResponse for AppError {
                 (
                     StatusCode::INTERNAL_SERVER_ERROR,
                     "database_error",
-                    format!("Database error: {}", err),
+                    "A database error occurred".to_string(),
                 )
             }
             AppError::NotFound(msg) => (StatusCode::NOT_FOUND, "not_found", msg.clone()),
             AppError::BadRequest(msg) => (StatusCode::BAD_REQUEST, "bad_request", msg.clone()),
             AppError::Unauthorized(msg) => (StatusCode::UNAUTHORIZED, "unauthorized", msg.clone()),
+            AppError::Forbidden(msg) => (StatusCode::FORBIDDEN, "forbidden", msg.clone()),
+            AppError::Conflict(msg) => (StatusCode::CONFLICT, "conflict", msg.clone()),
             AppError::Internal(msg) => {
                 tracing::error!("Internal error: {}", msg);
                 (
                     StatusCode::INTERNAL_SERVER_ERROR,
                     "internal_error",
-                    msg.clone(),
+                    "An internal error occurred".to_string(),
                 )
             }
         };
@@ -157,24 +164,46 @@ mod tests {
     }
 
     #[test]
+    fn test_error_forbidden_maps_to_403() {
+        let app_error = AppError::Forbidden("Access denied".to_string());
+        let response = app_error.into_response();
+
+        assert_eq!(response.status(), StatusCode::FORBIDDEN);
+    }
+
+    #[test]
+    fn test_error_conflict_maps_to_409() {
+        let app_error = AppError::Conflict("Resource already exists".to_string());
+        let response = app_error.into_response();
+
+        assert_eq!(response.status(), StatusCode::CONFLICT);
+    }
+
+    #[test]
     fn test_error_variants_are_distinct() {
         // Verify that each error variant produces a unique response
         let db_err = AppError::Database(sqlx::Error::RowNotFound);
         let nf_err = AppError::NotFound("not found".to_string());
         let br_err = AppError::BadRequest("bad request".to_string());
         let un_err = AppError::Unauthorized("unauthorized".to_string());
+        let fb_err = AppError::Forbidden("forbidden".to_string());
+        let cf_err = AppError::Conflict("conflict".to_string());
         let in_err = AppError::Internal("internal".to_string());
 
         let db_resp = db_err.into_response();
         let nf_resp = nf_err.into_response();
         let br_resp = br_err.into_response();
         let un_resp = un_err.into_response();
+        let fb_resp = fb_err.into_response();
+        let cf_resp = cf_err.into_response();
         let in_resp = in_err.into_response();
 
         assert_eq!(db_resp.status(), StatusCode::INTERNAL_SERVER_ERROR);
         assert_eq!(nf_resp.status(), StatusCode::NOT_FOUND);
         assert_eq!(br_resp.status(), StatusCode::BAD_REQUEST);
         assert_eq!(un_resp.status(), StatusCode::UNAUTHORIZED);
+        assert_eq!(fb_resp.status(), StatusCode::FORBIDDEN);
+        assert_eq!(cf_resp.status(), StatusCode::CONFLICT);
         assert_eq!(in_resp.status(), StatusCode::INTERNAL_SERVER_ERROR);
     }
 }

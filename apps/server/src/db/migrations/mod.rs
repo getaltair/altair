@@ -1,10 +1,12 @@
-use crate::error::Result;
 use sqlx::PgPool;
 
-/// Run database migrations
+use crate::error::AppError;
+
+/// Run database migrations from the `migrations/` directory
 ///
-/// This function is currently a placeholder that logs when called.
-/// Actual migration files and execution logic will be added in later steps.
+/// Uses sqlx's built-in migration runner to apply all pending SQL migrations
+/// in order. The `_sqlx_migrations` table tracks which migrations have been
+/// applied.
 ///
 /// # Arguments
 ///
@@ -14,26 +16,14 @@ use sqlx::PgPool;
 ///
 /// * `Ok(())` on successful migration or if already up-to-date
 /// * `Err(AppError)` if migration fails
-///
-/// # Note
-///
-/// Actual migration files will be added in later steps. This function
-/// sets up the migration framework only.
-///
-/// # Example
-///
-/// ```no_run
-/// use sqlx::PgPool;
-/// use crate::db::run_migrations;
-///
-/// let pool = PgPool::connect("...").await?;
-/// run_migrations(&pool).await?;
-/// ```
-pub async fn run_migrations(_pool: &PgPool) -> Result<()> {
+pub async fn run_migrations(pool: &PgPool) -> Result<(), AppError> {
     tracing::info!("Running database migrations...");
 
-    // For now, we skip migrations since there are no migration files yet.
-    // The _sqlx_migrations table will be created automatically when we run the first migration.
-    tracing::info!("No migrations to run yet (migration framework ready)");
+    sqlx::migrate!("./migrations")
+        .run(pool)
+        .await
+        .map_err(|e| AppError::Internal(format!("Migration failed: {}", e)))?;
+
+    tracing::info!("Database migrations completed successfully");
     Ok(())
 }
