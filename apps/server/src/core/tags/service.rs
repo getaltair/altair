@@ -1,4 +1,4 @@
-use sqlx::PgPool;
+use sqlx::{PgPool, QueryBuilder};
 use uuid::Uuid;
 
 use crate::error::AppError;
@@ -35,7 +35,15 @@ pub async fn create_tag(
     .bind(&req.color)
     .fetch_one(pool)
     .await
-    .map_err(AppError::Database)
+    .map_err(|e| match &e {
+        sqlx::Error::Database(db_err) if db_err.is_unique_violation() => {
+            AppError::Conflict("Tag already exists".to_string())
+        }
+        sqlx::Error::Database(db_err) if db_err.is_check_violation() => {
+            AppError::BadRequest("Invalid field value".to_string())
+        }
+        _ => AppError::Database(e),
+    })
 }
 
 /// List tags visible to the user.
@@ -80,33 +88,59 @@ pub async fn list_tags(
     }
 }
 
-/// Update a tag's fields.
+/// Update a tag's fields with true partial-update semantics.
 ///
-/// Only the tag owner can update it. Uses COALESCE to apply partial updates,
-/// leaving unchanged fields at their current values.
+/// Only the tag owner can update it. Each field follows these rules:
+/// - `name`: `None` leaves it unchanged, `Some(val)` sets it to `val`
+/// - `color`: `None` leaves it unchanged, `Some(None)` sets it to NULL,
+///   `Some(Some(val))` sets it to `val`
 pub async fn update_tag(
     pool: &PgPool,
     id: Uuid,
     user_id: Uuid,
     req: UpdateTagRequest,
 ) -> Result<Tag, AppError> {
-    let tag = sqlx::query_as::<_, Tag>(
-        r#"UPDATE tags
-           SET name = COALESCE($1, name),
-               color = COALESCE($2, color)
-           WHERE id = $3 AND user_id = $4
-           RETURNING id, user_id, household_id, name, color, created_at"#,
-    )
-    .bind(&req.name)
-    .bind(&req.color)
-    .bind(id)
-    .bind(user_id)
-    .fetch_optional(pool)
-    .await
-    .map_err(AppError::Database)?
-    .ok_or_else(|| {
-        AppError::NotFound("Tag not found or you do not have permission".to_string())
-    })?;
+    let mut qb: QueryBuilder<sqlx::Postgres> =
+        QueryBuilder::new("UPDATE tags SET name = name");
+
+    if let Some(ref name) = req.name {
+        qb.push(", name = ");
+        qb.push_bind(name.clone());
+    }
+
+    match &req.color {
+        Some(None) => {
+            qb.push(", color = NULL");
+        }
+        Some(Some(val)) => {
+            qb.push(", color = ");
+            qb.push_bind(val.clone());
+        }
+        None => {}
+    }
+
+    qb.push(" WHERE id = ");
+    qb.push_bind(id);
+    qb.push(" AND user_id = ");
+    qb.push_bind(user_id);
+    qb.push(" RETURNING id, user_id, household_id, name, color, created_at");
+
+    let tag = qb
+        .build_query_as::<Tag>()
+        .fetch_optional(pool)
+        .await
+        .map_err(|e| match &e {
+            sqlx::Error::Database(db_err) if db_err.is_unique_violation() => {
+                AppError::Conflict("Tag already exists".to_string())
+            }
+            sqlx::Error::Database(db_err) if db_err.is_check_violation() => {
+                AppError::BadRequest("Invalid field value".to_string())
+            }
+            _ => AppError::Database(e),
+        })?
+        .ok_or_else(|| {
+            AppError::NotFound("Tag not found or you do not have permission".to_string())
+        })?;
 
     Ok(tag)
 }

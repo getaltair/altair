@@ -3,7 +3,7 @@ use serde::Serialize;
 use uuid::Uuid;
 
 #[allow(dead_code)]
-#[derive(Debug, Serialize, sqlx::FromRow)]
+#[derive(Debug, Clone, Serialize, sqlx::FromRow)]
 pub struct Attachment {
     pub id: Uuid,
     pub entity_type: String,

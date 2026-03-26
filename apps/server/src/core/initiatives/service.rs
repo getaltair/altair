@@ -1,29 +1,21 @@
-use sqlx::PgPool;
+use sqlx::{PgPool, QueryBuilder};
 use uuid::Uuid;
 
-use crate::contracts::INITIATIVE_STATUSES;
+use crate::contracts::InitiativeStatus;
 use crate::error::AppError;
 use super::models::{CreateInitiativeRequest, Initiative, UpdateInitiativeRequest};
 
 /// Create a new initiative owned by the given user.
 ///
 /// If `household_id` is provided, verifies the user is a member of that
-/// household before creating the initiative. Status defaults to "active"
+/// household before creating the initiative. Status defaults to `Active`
 /// when not specified in the request.
 pub async fn create_initiative(
     pool: &PgPool,
     user_id: Uuid,
     req: CreateInitiativeRequest,
 ) -> Result<Initiative, AppError> {
-    // Validate status if provided
-    let status = req.status.as_deref().unwrap_or("active");
-    if !INITIATIVE_STATUSES.contains(&status) {
-        return Err(AppError::BadRequest(format!(
-            "Invalid status '{}'. Must be one of: {}",
-            status,
-            INITIATIVE_STATUSES.join(", ")
-        )));
-    }
+    let status = req.status.unwrap_or(InitiativeStatus::Active);
 
     // If household_id is provided, verify the user is a member
     if let Some(household_id) = req.household_id {
@@ -45,10 +37,18 @@ pub async fn create_initiative(
     .bind(req.household_id)
     .bind(&req.name)
     .bind(&req.description)
-    .bind(status)
+    .bind(status.as_str())
     .fetch_one(pool)
     .await
-    .map_err(AppError::Database)
+    .map_err(|e| match &e {
+        sqlx::Error::Database(db_err) if db_err.is_unique_violation() => {
+            AppError::Conflict("Initiative already exists".to_string())
+        }
+        sqlx::Error::Database(db_err) if db_err.is_check_violation() => {
+            AppError::BadRequest("Invalid field value".to_string())
+        }
+        _ => AppError::Database(e),
+    })
 }
 
 /// List initiatives visible to the user.
@@ -131,47 +131,67 @@ pub async fn get_initiative(
     ))
 }
 
-/// Update an initiative's fields.
+/// Update an initiative's fields with true partial-update semantics.
 ///
-/// Only the initiative owner can update it. Uses COALESCE to apply partial
-/// updates, leaving unchanged fields at their current values.
+/// Only the initiative owner can update it. Each field follows these rules:
+/// - `name`: `None` leaves it unchanged, `Some(val)` sets it to `val`
+/// - `description`: `None` leaves it unchanged, `Some(None)` sets it to NULL,
+///   `Some(Some(val))` sets it to `val`
+/// - `status`: `None` leaves it unchanged, `Some(val)` sets it to `val`
 pub async fn update_initiative(
     pool: &PgPool,
     id: Uuid,
     user_id: Uuid,
     req: UpdateInitiativeRequest,
 ) -> Result<Initiative, AppError> {
-    // Validate status if provided
-    if let Some(ref status) = req.status
-        && !INITIATIVE_STATUSES.contains(&status.as_str())
-    {
-        return Err(AppError::BadRequest(format!(
-            "Invalid status '{}'. Must be one of: {}",
-            status,
-            INITIATIVE_STATUSES.join(", ")
-        )));
+    let mut qb: QueryBuilder<sqlx::Postgres> =
+        QueryBuilder::new("UPDATE initiatives SET updated_at = now()");
+
+    if let Some(ref name) = req.name {
+        qb.push(", name = ");
+        qb.push_bind(name.clone());
     }
 
-    let initiative = sqlx::query_as::<_, Initiative>(
-        r#"UPDATE initiatives
-           SET name = COALESCE($1, name),
-               description = COALESCE($2, description),
-               status = COALESCE($3, status),
-               updated_at = now()
-           WHERE id = $4 AND user_id = $5
-           RETURNING id, user_id, household_id, name, description, status, created_at, updated_at"#,
-    )
-    .bind(&req.name)
-    .bind(&req.description)
-    .bind(&req.status)
-    .bind(id)
-    .bind(user_id)
-    .fetch_optional(pool)
-    .await
-    .map_err(AppError::Database)?
-    .ok_or_else(|| {
-        AppError::NotFound("Initiative not found or you do not have permission".to_string())
-    })?;
+    match &req.description {
+        Some(None) => {
+            qb.push(", description = NULL");
+        }
+        Some(Some(val)) => {
+            qb.push(", description = ");
+            qb.push_bind(val.clone());
+        }
+        None => {}
+    }
+
+    if let Some(ref status) = req.status {
+        qb.push(", status = ");
+        qb.push_bind(status.as_str());
+    }
+
+    qb.push(" WHERE id = ");
+    qb.push_bind(id);
+    qb.push(" AND user_id = ");
+    qb.push_bind(user_id);
+    qb.push(" RETURNING id, user_id, household_id, name, description, status, created_at, updated_at");
+
+    let initiative = qb
+        .build_query_as::<Initiative>()
+        .fetch_optional(pool)
+        .await
+        .map_err(|e| match &e {
+            sqlx::Error::Database(db_err) if db_err.is_unique_violation() => {
+                AppError::Conflict("Initiative already exists".to_string())
+            }
+            sqlx::Error::Database(db_err) if db_err.is_check_violation() => {
+                AppError::BadRequest("Invalid field value".to_string())
+            }
+            _ => AppError::Database(e),
+        })?
+        .ok_or_else(|| {
+            AppError::NotFound(
+                "Initiative not found or you do not have permission".to_string(),
+            )
+        })?;
 
     Ok(initiative)
 }
@@ -186,9 +206,10 @@ pub async fn soft_delete_initiative(
 ) -> Result<(), AppError> {
     let result = sqlx::query(
         r#"UPDATE initiatives
-           SET status = 'archived', updated_at = now()
-           WHERE id = $1 AND user_id = $2"#,
+           SET status = $1, updated_at = now()
+           WHERE id = $2 AND user_id = $3"#,
     )
+    .bind(InitiativeStatus::Archived.as_str())
     .bind(id)
     .bind(user_id)
     .execute(pool)

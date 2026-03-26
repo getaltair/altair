@@ -4,7 +4,7 @@ use uuid::Uuid;
 use super::models::{
     CreateRelationRequest, EntityRelation, RelationQuery, UpdateRelationStatusRequest,
 };
-use crate::contracts;
+use crate::contracts::SourceType;
 use crate::error::AppError;
 
 /// Column list with NUMERIC -> FLOAT8 cast for the confidence field.
@@ -17,38 +17,15 @@ const SELECT_COLUMNS: &str = r#"
     created_at, updated_at, last_confirmed_at
 "#;
 
-/// Create a new entity relation after validating all domain constraints
+/// Create a new entity relation. Validation of entity types, relation types,
+/// source types, and statuses is handled by serde deserialization of the
+/// request enums, so no manual `is_valid_*` checks are needed.
 pub async fn create_relation(
     pool: &PgPool,
     user_id: Uuid,
     req: CreateRelationRequest,
 ) -> Result<EntityRelation, AppError> {
-    if !contracts::is_valid_entity_type(&req.from_entity_type) {
-        return Err(AppError::BadRequest(format!(
-            "Unknown entity type: {}",
-            req.from_entity_type
-        )));
-    }
-    if !contracts::is_valid_entity_type(&req.to_entity_type) {
-        return Err(AppError::BadRequest(format!(
-            "Unknown entity type: {}",
-            req.to_entity_type
-        )));
-    }
-    if !contracts::is_valid_relation_type(&req.relation_type) {
-        return Err(AppError::BadRequest(format!(
-            "Unknown relation type: {}",
-            req.relation_type
-        )));
-    }
-
-    let source_type = req.source_type.as_deref().unwrap_or("user");
-    if !contracts::is_valid_source_type(source_type) {
-        return Err(AppError::BadRequest(format!(
-            "Unknown source type: {}",
-            source_type
-        )));
-    }
+    let source_type = req.source_type.unwrap_or(SourceType::User);
 
     let relation = sqlx::query_as::<_, EntityRelation>(&format!(
         "INSERT INTO entity_relations \
@@ -57,26 +34,36 @@ pub async fn create_relation(
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) \
          RETURNING {SELECT_COLUMNS}"
     ))
-    .bind(&req.from_entity_type)
+    .bind(req.from_entity_type.as_str())
     .bind(req.from_entity_id)
-    .bind(&req.to_entity_type)
+    .bind(req.to_entity_type.as_str())
     .bind(req.to_entity_id)
-    .bind(&req.relation_type)
-    .bind(source_type)
+    .bind(req.relation_type.as_str())
+    .bind(source_type.as_str())
     .bind(req.confidence)
     .bind(&req.evidence_json)
     .bind(user_id)
     .fetch_one(pool)
     .await
-    .map_err(AppError::Database)?;
+    .map_err(|e| match &e {
+        sqlx::Error::Database(db_err) if db_err.is_unique_violation() => {
+            AppError::Conflict("Entity relation already exists".to_string())
+        }
+        sqlx::Error::Database(db_err) if db_err.is_check_violation() => {
+            AppError::BadRequest("Invalid field value".to_string())
+        }
+        _ => AppError::Database(e),
+    })?;
 
     Ok(relation)
 }
 
 /// Query entity relations with optional filters. At least one of from_entity_id
-/// or to_entity_id must be provided to prevent unbounded table scans.
+/// or to_entity_id must be provided to prevent unbounded table scans. Results
+/// are scoped to relations created by the authenticated user.
 pub async fn query_relations(
     pool: &PgPool,
+    user_id: Uuid,
     query: RelationQuery,
 ) -> Result<Vec<EntityRelation>, AppError> {
     if query.from_entity_id.is_none() && query.to_entity_id.is_none() {
@@ -89,62 +76,39 @@ pub async fn query_relations(
         "SELECT {SELECT_COLUMNS} FROM entity_relations WHERE "
     ));
 
-    let mut has_condition = false;
+    // Always scope to the authenticated user's relations
+    qb.push("created_by_user_id = ");
+    qb.push_bind(user_id);
 
     if let Some(ref v) = query.from_entity_type {
-        qb.push("from_entity_type = ");
-        qb.push_bind(v.clone());
-        has_condition = true;
+        qb.push(" AND from_entity_type = ");
+        qb.push_bind(v.as_str().to_owned());
     }
 
     if let Some(v) = query.from_entity_id {
-        if has_condition {
-            qb.push(" AND ");
-        }
-        qb.push("from_entity_id = ");
+        qb.push(" AND from_entity_id = ");
         qb.push_bind(v);
-        has_condition = true;
     }
 
     if let Some(ref v) = query.to_entity_type {
-        if has_condition {
-            qb.push(" AND ");
-        }
-        qb.push("to_entity_type = ");
-        qb.push_bind(v.clone());
-        has_condition = true;
+        qb.push(" AND to_entity_type = ");
+        qb.push_bind(v.as_str().to_owned());
     }
 
     if let Some(v) = query.to_entity_id {
-        if has_condition {
-            qb.push(" AND ");
-        }
-        qb.push("to_entity_id = ");
+        qb.push(" AND to_entity_id = ");
         qb.push_bind(v);
-        has_condition = true;
     }
 
     if let Some(ref v) = query.relation_type {
-        if has_condition {
-            qb.push(" AND ");
-        }
-        qb.push("relation_type = ");
-        qb.push_bind(v.clone());
-        has_condition = true;
+        qb.push(" AND relation_type = ");
+        qb.push_bind(v.as_str().to_owned());
     }
 
     if let Some(ref v) = query.status {
-        if has_condition {
-            qb.push(" AND ");
-        }
-        qb.push("status = ");
-        qb.push_bind(v.clone());
-        // Mark used so the compiler doesn't warn about the final assignment
-        has_condition = true;
+        qb.push(" AND status = ");
+        qb.push_bind(v.as_str().to_owned());
     }
-
-    // Safety: at least from_entity_id or to_entity_id was provided, so has_condition is true
-    let _ = has_condition;
 
     qb.push(" ORDER BY created_at DESC");
 
@@ -157,32 +121,44 @@ pub async fn query_relations(
     Ok(relations)
 }
 
-/// Update the status (and optionally last_confirmed_at) of an existing entity relation
+// TODO: DB-backed test needed for query_relations entity-id validation.
+// The check at the top of query_relations (both from_entity_id and to_entity_id are None
+// -> BadRequest) is synchronous and fires before any DB call, but we cannot construct
+// a dummy PgPool without a live database. When #[sqlx::test] infrastructure is added,
+// add a test that passes an empty RelationQuery and asserts BadRequest. For now, the
+// validation logic is covered by the serde-level tests in models.rs and by the
+// RelationQuery::default() test verifying all fields start as None.
+
+/// Update the status (and optionally last_confirmed_at) of an existing entity relation.
+/// Only the relation creator can update status. Status validation is handled by serde
+/// deserialization of `RelationStatus`.
 pub async fn update_relation_status(
     pool: &PgPool,
     id: Uuid,
-    _user_id: Uuid,
+    user_id: Uuid,
     req: UpdateRelationStatusRequest,
 ) -> Result<EntityRelation, AppError> {
-    if !contracts::is_valid_relation_status(&req.status) {
-        return Err(AppError::BadRequest(format!(
-            "Unknown relation status: {}",
-            req.status
-        )));
-    }
-
     let relation = sqlx::query_as::<_, EntityRelation>(&format!(
         "UPDATE entity_relations \
          SET status = $1, updated_at = now(), last_confirmed_at = COALESCE($2, last_confirmed_at) \
-         WHERE id = $3 \
+         WHERE id = $3 AND created_by_user_id = $4 \
          RETURNING {SELECT_COLUMNS}"
     ))
-    .bind(&req.status)
+    .bind(req.status.as_str())
     .bind(req.last_confirmed_at)
     .bind(id)
+    .bind(user_id)
     .fetch_optional(pool)
     .await
-    .map_err(AppError::Database)?
+    .map_err(|e| match &e {
+        sqlx::Error::Database(db_err) if db_err.is_unique_violation() => {
+            AppError::Conflict("Entity relation already exists".to_string())
+        }
+        sqlx::Error::Database(db_err) if db_err.is_check_violation() => {
+            AppError::BadRequest("Invalid field value".to_string())
+        }
+        _ => AppError::Database(e),
+    })?
     .ok_or_else(|| AppError::NotFound(format!("Entity relation not found: {id}")))?;
 
     Ok(relation)
