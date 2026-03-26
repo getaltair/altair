@@ -10,7 +10,7 @@ pub async fn create_focus_session(
     user_id: Uuid,
     req: &CreateFocusSessionRequest,
 ) -> Result<GuidanceFocusSession, AppError> {
-    sqlx::query_as::<_, GuidanceFocusSession>(
+    let session = sqlx::query_as::<_, GuidanceFocusSession>(
         r#"INSERT INTO guidance_focus_sessions (quest_id, user_id, started_at, ended_at, duration_minutes, notes)
            VALUES ($1, $2, $3, $4, $5, $6)
            RETURNING id, quest_id, user_id, started_at, ended_at, duration_minutes, notes, created_at"#,
@@ -23,7 +23,21 @@ pub async fn create_focus_session(
     .bind(&req.notes)
     .fetch_one(pool)
     .await
-    .map_err(AppError::Database)
+    .map_err(|e| match &e {
+        sqlx::Error::Database(db_err) if db_err.is_unique_violation() => {
+            AppError::Conflict("Focus session already exists".to_string())
+        }
+        sqlx::Error::Database(db_err) if db_err.is_check_violation() => {
+            AppError::BadRequest("Invalid field value".to_string())
+        }
+        sqlx::Error::Database(db_err) if db_err.is_foreign_key_violation() => {
+            AppError::BadRequest("Referenced resource does not exist".to_string())
+        }
+        _ => AppError::Database(e),
+    })?;
+
+    tracing::info!(session_id = %session.id, user_id = %user_id, "Created focus session");
+    Ok(session)
 }
 
 /// List all focus sessions for the authenticated user
@@ -93,11 +107,26 @@ pub async fn update_focus_session(
     qb.push_bind(user_id);
     qb.push(" RETURNING id, quest_id, user_id, started_at, ended_at, duration_minutes, notes, created_at");
 
-    qb.build_query_as::<GuidanceFocusSession>()
+    let session = qb
+        .build_query_as::<GuidanceFocusSession>()
         .fetch_optional(pool)
         .await
-        .map_err(AppError::Database)?
-        .ok_or_else(|| AppError::NotFound("Focus session not found".to_string()))
+        .map_err(|e| match &e {
+            sqlx::Error::Database(db_err) if db_err.is_unique_violation() => {
+                AppError::Conflict("Focus session already exists".to_string())
+            }
+            sqlx::Error::Database(db_err) if db_err.is_check_violation() => {
+                AppError::BadRequest("Invalid field value".to_string())
+            }
+            sqlx::Error::Database(db_err) if db_err.is_foreign_key_violation() => {
+                AppError::BadRequest("Referenced resource does not exist".to_string())
+            }
+            _ => AppError::Database(e),
+        })?
+        .ok_or_else(|| AppError::NotFound("Focus session not found".to_string()))?;
+
+    tracing::info!(session_id = %session_id, user_id = %user_id, "Updated focus session");
+    Ok(session)
 }
 
 /// Delete a focus session by ID. Only the session owner can delete it.
@@ -113,11 +142,23 @@ pub async fn delete_focus_session(
     .bind(user_id)
     .execute(pool)
     .await
-    .map_err(AppError::Database)?;
+    .map_err(|e| match &e {
+        sqlx::Error::Database(db_err) if db_err.is_unique_violation() => {
+            AppError::Conflict("Resource already exists".to_string())
+        }
+        sqlx::Error::Database(db_err) if db_err.is_check_violation() => {
+            AppError::BadRequest("Invalid field value".to_string())
+        }
+        sqlx::Error::Database(db_err) if db_err.is_foreign_key_violation() => {
+            AppError::BadRequest("Referenced resource does not exist".to_string())
+        }
+        _ => AppError::Database(e),
+    })?;
 
     if result.rows_affected() == 0 {
         return Err(AppError::NotFound("Focus session not found".to_string()));
     }
 
+    tracing::info!(session_id = %session_id, user_id = %user_id, "Deleted focus session");
     Ok(())
 }

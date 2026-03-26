@@ -9,7 +9,8 @@ use super::models::*;
 ///
 /// Uses an upsert (INSERT ... ON CONFLICT) to handle the case where a check-in
 /// for the same user and date already exists. If no date is provided, defaults
-/// to today (UTC).
+/// to today (UTC). On conflict, uses COALESCE to preserve existing values when
+/// the incoming value is NULL, preventing accidental overwrites.
 pub async fn create_or_update_checkin(
     pool: &PgPool,
     user_id: Uuid,
@@ -17,13 +18,13 @@ pub async fn create_or_update_checkin(
 ) -> Result<GuidanceDailyCheckin, AppError> {
     let date = req.date.unwrap_or_else(|| Utc::now().date_naive());
 
-    sqlx::query_as::<_, GuidanceDailyCheckin>(
+    let checkin = sqlx::query_as::<_, GuidanceDailyCheckin>(
         r#"INSERT INTO guidance_daily_checkins (user_id, date, energy_level, mood, notes)
            VALUES ($1, $2, $3, $4, $5)
            ON CONFLICT (user_id, date) DO UPDATE
-           SET energy_level = EXCLUDED.energy_level,
-               mood = EXCLUDED.mood,
-               notes = EXCLUDED.notes,
+           SET energy_level = COALESCE(EXCLUDED.energy_level, guidance_daily_checkins.energy_level),
+               mood = COALESCE(EXCLUDED.mood, guidance_daily_checkins.mood),
+               notes = COALESCE(EXCLUDED.notes, guidance_daily_checkins.notes),
                created_at = guidance_daily_checkins.created_at
            RETURNING id, user_id, date, energy_level, mood, notes, created_at"#,
     )
@@ -34,7 +35,21 @@ pub async fn create_or_update_checkin(
     .bind(&req.notes)
     .fetch_one(pool)
     .await
-    .map_err(AppError::Database)
+    .map_err(|e| match &e {
+        sqlx::Error::Database(db_err) if db_err.is_unique_violation() => {
+            AppError::Conflict("Daily check-in already exists".to_string())
+        }
+        sqlx::Error::Database(db_err) if db_err.is_check_violation() => {
+            AppError::BadRequest("Invalid field value".to_string())
+        }
+        sqlx::Error::Database(db_err) if db_err.is_foreign_key_violation() => {
+            AppError::BadRequest("Referenced resource does not exist".to_string())
+        }
+        _ => AppError::Database(e),
+    })?;
+
+    tracing::info!(checkin_id = %checkin.id, user_id = %user_id, date = %date, "Upserted daily check-in");
+    Ok(checkin)
 }
 
 /// List all daily check-ins for the user, ordered by date descending
