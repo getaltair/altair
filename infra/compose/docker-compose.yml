@@ -44,6 +44,29 @@ services:
   #     postgres:
   #       condition: service_healthy
 
+  # Altair backend server
+  server:
+    build:
+      context: ../../
+      dockerfile: apps/server/Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgresql://altair:altair_dev@postgres:5432/altair
+      PORT: 3000
+      RUST_LOG: info
+      APP_ENV: development
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
 volumes:
   pgdata:
   garage-meta:
