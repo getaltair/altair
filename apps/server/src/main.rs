@@ -10,6 +10,7 @@ mod contracts;
 mod core;
 mod db;
 mod error;
+mod serde_util;
 mod telemetry;
 
 use api::AppState;
