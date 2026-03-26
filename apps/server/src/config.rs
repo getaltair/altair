@@ -43,78 +43,83 @@ impl Config {
     /// - `POWERSYNC_JWT_SECRET` - Secret for signing PowerSync JWTs (default: dev secret)
     /// - `POWERSYNC_URL` - PowerSync service URL (default: "http://localhost:8080")
     pub fn load() -> Result<Self> {
+        let environment = env::var("APP_ENV").unwrap_or_else(|_| "development".to_string());
+        let is_production = environment == "production";
+
+        let jwt_secret = if is_production {
+            Self::require_env("POWERSYNC_JWT_SECRET")?
+        } else {
+            env::var("POWERSYNC_JWT_SECRET").unwrap_or_else(|_| {
+                tracing::warn!("POWERSYNC_JWT_SECRET not set, using insecure dev default");
+                "dev_powersync_secret_change_in_production".to_string()
+            })
+        };
+
+        let powersync_url = env::var("POWERSYNC_URL").unwrap_or_else(|_| {
+            if !is_production {
+                tracing::warn!("POWERSYNC_URL not set, using localhost default");
+            }
+            "http://localhost:8080".to_string()
+        });
+
         Ok(Config {
             database_url: Self::require_env("DATABASE_URL")?,
             port: Self::parse_env_var("PORT", "3000")?,
             log_level: env::var("RUST_LOG").unwrap_or_else(|_| "info".to_string()),
-            environment: env::var("APP_ENV").unwrap_or_else(|_| "development".to_string()),
+            environment,
             db_min_conn: Self::parse_env_var("DB_MIN_CONN", "5")?,
             db_max_conn: Self::parse_env_var("DB_MAX_CONN", "20")?,
             db_timeout_sec: Self::parse_env_var("DB_TIMEOUT_SEC", "30")?,
             session_ttl_hours: Self::parse_env_var("SESSION_TTL_HOURS", "72")?,
-            jwt_secret: env::var("POWERSYNC_JWT_SECRET")
-                .unwrap_or_else(|_| "dev_powersync_secret_change_in_production".to_string()),
-            powersync_url: env::var("POWERSYNC_URL")
-                .unwrap_or_else(|_| "http://localhost:8080".to_string()),
+            jwt_secret,
+            powersync_url,
         })
     }
 
-    /// Get the database URL as a string slice
     pub fn database_url(&self) -> &str {
         &self.database_url
     }
 
-    /// Check if running in development mode
     pub fn is_development(&self) -> bool {
         self.environment == "development"
     }
 
-    /// Check if running in production mode
     pub fn is_production(&self) -> bool {
         self.environment == "production"
     }
 
-    /// Get the server port
     pub fn port(&self) -> u16 {
         self.port
     }
 
-    /// Get the environment name
     pub fn environment(&self) -> &str {
         &self.environment
     }
 
-    /// Get the log level as a string slice
     pub fn log_level(&self) -> &str {
         &self.log_level
     }
 
-    /// Get the minimum database pool connections
     pub fn db_min_conn(&self) -> u32 {
         self.db_min_conn
     }
 
-    /// Get the maximum database pool connections
     pub fn db_max_conn(&self) -> u32 {
         self.db_max_conn
     }
 
-    /// Get the database connection acquire timeout in seconds
     pub fn db_timeout_sec(&self) -> u64 {
         self.db_timeout_sec
     }
 
-    /// Get the session time-to-live in hours
     pub fn session_ttl_hours(&self) -> u64 {
         self.session_ttl_hours
     }
 
-    /// Get the PowerSync JWT signing secret
     pub fn jwt_secret(&self) -> &str {
         &self.jwt_secret
     }
 
-    /// Get the PowerSync service URL
     pub fn powersync_url(&self) -> &str {
         &self.powersync_url
     }
@@ -124,6 +129,26 @@ impl Config {
         env::var(key).map_err(|_| {
             AppError::Internal(format!("Required environment variable '{}' is not set", key))
         })
+    }
+
+    /// Return a Config pre-filled with safe test defaults.
+    ///
+    /// Intended for unit tests that need a Config but do not care about
+    /// specific values. Matches the defaults used across the test suite.
+    #[cfg(test)]
+    pub fn test_default() -> Config {
+        Config {
+            database_url: "postgresql://test:test@localhost:5432/test".to_string(),
+            port: 3000,
+            log_level: "info".to_string(),
+            environment: "development".to_string(),
+            db_min_conn: 5,
+            db_max_conn: 20,
+            db_timeout_sec: 30,
+            session_ttl_hours: 72,
+            jwt_secret: "test_jwt_secret_for_powersync".to_string(),
+            powersync_url: "http://localhost:8080".to_string(),
+        }
     }
 
     /// Parse an environment variable to a specific type with a default value
@@ -163,36 +188,15 @@ mod tests {
 
     #[test]
     fn test_is_development() {
-        let config = Config {
-            database_url: "test".to_string(),
-            port: 3000,
-            log_level: "info".to_string(),
-            environment: "development".to_string(),
-            db_min_conn: 5,
-            db_max_conn: 20,
-            db_timeout_sec: 30,
-            session_ttl_hours: 72,
-            jwt_secret: "test_secret".to_string(),
-            powersync_url: "http://localhost:8080".to_string(),
-        };
+        let config = Config::test_default();
         assert!(config.is_development());
         assert!(!config.is_production());
     }
 
     #[test]
     fn test_is_production() {
-        let config = Config {
-            database_url: "test".to_string(),
-            port: 3000,
-            log_level: "warn".to_string(),
-            environment: "production".to_string(),
-            db_min_conn: 5,
-            db_max_conn: 20,
-            db_timeout_sec: 30,
-            session_ttl_hours: 72,
-            jwt_secret: "test_secret".to_string(),
-            powersync_url: "http://localhost:8080".to_string(),
-        };
+        let mut config = Config::test_default();
+        config.environment = "production".to_string();
         assert!(!config.is_development());
         assert!(config.is_production());
     }
