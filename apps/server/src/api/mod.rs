@@ -10,6 +10,7 @@ use crate::auth::handlers as auth_handlers;
 use crate::core::households::handlers as household_handlers;
 use crate::core::initiatives::handlers as initiative_handlers;
 use crate::core::relations::handlers as relation_handlers;
+use crate::core::knowledge::handlers as knowledge_handlers;
 use crate::core::tags::handlers as tag_handlers;
 
 #[derive(Clone)]
@@ -94,6 +95,40 @@ pub fn create_router(state: AppState) -> Router {
         .route(
             "/core/relations/{id}",
             put(relation_handlers::update_relation_status),
+        )
+        // Knowledge note routes
+        .route(
+            "/knowledge/notes",
+            post(knowledge_handlers::create_note).get(knowledge_handlers::list_notes),
+        )
+        .route(
+            "/knowledge/notes/{id}",
+            get(knowledge_handlers::get_note)
+                .put(knowledge_handlers::update_note)
+                .delete(knowledge_handlers::delete_note),
+        )
+        .route(
+            "/knowledge/notes/{id}/snapshots",
+            get(knowledge_handlers::list_snapshots)
+                .post(knowledge_handlers::create_snapshot),
+        )
+        .route(
+            "/knowledge/notes/{id}/relations",
+            get(knowledge_handlers::get_note_relations),
+        )
+        .route(
+            "/knowledge/notes/{id}/backlinks",
+            get(knowledge_handlers::get_note_backlinks),
+        )
+        .route(
+            "/knowledge/notes/{note_id}/tags/{tag_id}",
+            post(knowledge_handlers::add_note_tag)
+                .delete(knowledge_handlers::remove_note_tag),
+        )
+        .route(
+            "/knowledge/notes/{note_id}/attachments/{attachment_id}",
+            post(knowledge_handlers::add_note_attachment)
+                .delete(knowledge_handlers::remove_note_attachment),
         )
         .layer(TraceLayer::new_for_http())
         .layer(CompressionLayer::new())
