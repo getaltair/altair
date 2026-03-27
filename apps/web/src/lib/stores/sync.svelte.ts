@@ -21,6 +21,15 @@ import type {
 	RoutineStatus
 } from '$lib/types/guidance.js';
 import type { Initiative } from '$lib/types/core.js';
+import type { KnowledgeNote, KnowledgeNoteSnapshot } from '$lib/types/knowledge.js';
+import type {
+	TrackingItem,
+	TrackingItemEvent,
+	TrackingLocation,
+	TrackingCategory,
+	TrackingShoppingList,
+	TrackingShoppingListItem
+} from '$lib/types/tracking.js';
 
 // ---------------------------------------------------------------------------
 // Reactive module-level state (Svelte 5 runes)
@@ -30,6 +39,14 @@ export type SyncConnectionStatus = 'connected' | 'connecting' | 'disconnected' |
 
 export type QuestFilter = { status?: QuestStatus; initiative_id?: string };
 export type RoutineFilter = { status?: RoutineStatus };
+export type NoteFilter = {
+	household_id?: string;
+	initiative_id?: string;
+	is_pinned?: number;
+	search?: string;
+};
+export type ItemFilter = { household_id?: string; category_id?: string; location_id?: string };
+export type ShoppingListFilter = { household_id?: string; status?: string };
 
 let db = $state<PowerSyncDatabase | null>(null);
 let syncStatus = $state<SyncConnectionStatus>('disconnected');
@@ -288,5 +305,251 @@ export const syncStore = {
 			`SELECT * FROM initiatives${where} ORDER BY name ASC`,
 			params
 		);
+	},
+
+	// -- Knowledge note queries -----------------------------------------------
+
+	/**
+	 * Query knowledge notes with optional filters.
+	 */
+	async queryNotes(filter?: NoteFilter): Promise<KnowledgeNote[]> {
+		const database = requireDb();
+		const conditions: string[] = [];
+		const params: unknown[] = [];
+
+		if (filter?.household_id) {
+			conditions.push('household_id = ?');
+			params.push(filter.household_id);
+		}
+		if (filter?.initiative_id) {
+			conditions.push('initiative_id = ?');
+			params.push(filter.initiative_id);
+		}
+		if (filter?.is_pinned !== undefined) {
+			conditions.push('is_pinned = ?');
+			params.push(filter.is_pinned);
+		}
+		if (filter?.search) {
+			conditions.push("title LIKE '%' || ? || '%'");
+			params.push(filter.search);
+		}
+
+		const where = conditions.length > 0 ? ` WHERE ${conditions.join(' AND ')}` : '';
+		return database.getAll<KnowledgeNote>(
+			`SELECT * FROM knowledge_notes${where} ORDER BY is_pinned DESC, updated_at DESC`,
+			params
+		);
+	},
+
+	/**
+	 * Get a single knowledge note by ID.
+	 */
+	async queryNote(id: string): Promise<KnowledgeNote | null> {
+		const database = requireDb();
+		return database.getOptional<KnowledgeNote>('SELECT * FROM knowledge_notes WHERE id = ?', [id]);
+	},
+
+	/**
+	 * Get all snapshots for a note, ordered newest first.
+	 */
+	async queryNoteSnapshots(noteId: string): Promise<KnowledgeNoteSnapshot[]> {
+		const database = requireDb();
+		return database.getAll<KnowledgeNoteSnapshot>(
+			'SELECT * FROM knowledge_note_snapshots WHERE note_id = ? ORDER BY created_at DESC',
+			[noteId]
+		);
+	},
+
+	// -- Tracking item queries ------------------------------------------------
+
+	/**
+	 * Query tracking items with optional filters.
+	 */
+	async queryItems(filter?: ItemFilter): Promise<TrackingItem[]> {
+		const database = requireDb();
+		const conditions: string[] = [];
+		const params: unknown[] = [];
+
+		if (filter?.household_id) {
+			conditions.push('household_id = ?');
+			params.push(filter.household_id);
+		}
+		if (filter?.category_id) {
+			conditions.push('category_id = ?');
+			params.push(filter.category_id);
+		}
+		if (filter?.location_id) {
+			conditions.push('location_id = ?');
+			params.push(filter.location_id);
+		}
+
+		const where = conditions.length > 0 ? ` WHERE ${conditions.join(' AND ')}` : '';
+		return database.getAll<TrackingItem>(
+			`SELECT * FROM tracking_items${where} ORDER BY name ASC`,
+			params
+		);
+	},
+
+	/**
+	 * Get a single tracking item by ID.
+	 */
+	async queryItem(id: string): Promise<TrackingItem | null> {
+		const database = requireDb();
+		return database.getOptional<TrackingItem>('SELECT * FROM tracking_items WHERE id = ?', [id]);
+	},
+
+	/**
+	 * Get all events for a tracking item, ordered newest first.
+	 */
+	async queryItemEvents(itemId: string): Promise<TrackingItemEvent[]> {
+		const database = requireDb();
+		return database.getAll<TrackingItemEvent>(
+			'SELECT * FROM tracking_item_events WHERE item_id = ? ORDER BY created_at DESC',
+			[itemId]
+		);
+	},
+
+	/**
+	 * Items where quantity is below min_quantity threshold.
+	 */
+	async queryLowStockItems(householdId: string): Promise<TrackingItem[]> {
+		const database = requireDb();
+		return database.getAll<TrackingItem>(
+			`SELECT * FROM tracking_items
+			 WHERE household_id = ?
+			   AND min_quantity IS NOT NULL
+			   AND quantity < min_quantity
+			 ORDER BY name ASC`,
+			[householdId]
+		);
+	},
+
+	/**
+	 * Query all locations for a household.
+	 */
+	async queryLocations(householdId: string): Promise<TrackingLocation[]> {
+		const database = requireDb();
+		return database.getAll<TrackingLocation>(
+			'SELECT * FROM tracking_locations WHERE household_id = ? ORDER BY name ASC',
+			[householdId]
+		);
+	},
+
+	/**
+	 * Query all categories for a household.
+	 */
+	async queryCategories(householdId: string): Promise<TrackingCategory[]> {
+		const database = requireDb();
+		return database.getAll<TrackingCategory>(
+			'SELECT * FROM tracking_categories WHERE household_id = ? ORDER BY name ASC',
+			[householdId]
+		);
+	},
+
+	/**
+	 * Query shopping lists with optional filters.
+	 */
+	async queryShoppingLists(filter?: ShoppingListFilter): Promise<TrackingShoppingList[]> {
+		const database = requireDb();
+		const conditions: string[] = [];
+		const params: unknown[] = [];
+
+		if (filter?.household_id) {
+			conditions.push('household_id = ?');
+			params.push(filter.household_id);
+		}
+		if (filter?.status) {
+			conditions.push('status = ?');
+			params.push(filter.status);
+		}
+
+		const where = conditions.length > 0 ? ` WHERE ${conditions.join(' AND ')}` : '';
+		return database.getAll<TrackingShoppingList>(
+			`SELECT * FROM tracking_shopping_lists${where} ORDER BY updated_at DESC`,
+			params
+		);
+	},
+
+	/**
+	 * Get all items in a shopping list.
+	 */
+	async queryShoppingListItems(listId: string): Promise<TrackingShoppingListItem[]> {
+		const database = requireDb();
+		return database.getAll<TrackingShoppingListItem>(
+			'SELECT * FROM tracking_shopping_list_items WHERE shopping_list_id = ? ORDER BY created_at ASC',
+			[listId]
+		);
+	},
+
+	// -- Mutation helpers ------------------------------------------------------
+
+	/**
+	 * Adjust an item's quantity and record the event.
+	 * Uses optimistic local writes via PowerSync's db.execute.
+	 */
+	async adjustItemQuantity(
+		itemId: string,
+		change: number,
+		eventType: string,
+		notes?: string
+	): Promise<void> {
+		const database = requireDb();
+		const item = await this.queryItem(itemId);
+		if (!item) throw new Error('[sync] Item not found: ' + itemId);
+
+		// eslint-disable-next-line svelte/prefer-svelte-reactivity
+		const now = new Date().toISOString();
+		await database.writeTransaction(async (tx) => {
+			await tx.execute('UPDATE tracking_items SET quantity = ?, updated_at = ? WHERE id = ?', [
+				item.quantity + change,
+				now,
+				itemId
+			]);
+			await tx.execute(
+				'INSERT INTO tracking_item_events (id, item_id, user_id, event_type, quantity_change, notes, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+				[crypto.randomUUID(), itemId, item.user_id, eventType, change, notes ?? null, now]
+			);
+		});
+	},
+
+	/**
+	 * Toggle the checked state of a shopping list item.
+	 */
+	async toggleShoppingListItemCheck(itemId: string): Promise<void> {
+		const database = requireDb();
+		const current = await database.getOptional<{ is_checked: number }>(
+			'SELECT is_checked FROM tracking_shopping_list_items WHERE id = ?',
+			[itemId]
+		);
+		if (!current) throw new Error('[sync] Shopping list item not found: ' + itemId);
+		await database.execute('UPDATE tracking_shopping_list_items SET is_checked = ? WHERE id = ?', [
+			current.is_checked ? 0 : 1,
+			itemId
+		]);
+	},
+
+	async updateNote(id: string, content: string, contentType: string): Promise<void> {
+		const database = requireDb();
+		// eslint-disable-next-line svelte/prefer-svelte-reactivity
+		const now = new Date().toISOString();
+		await database.execute(
+			'UPDATE knowledge_notes SET content = ?, content_type = ?, updated_at = ? WHERE id = ?',
+			[content, contentType, now, id]
+		);
+	},
+
+	async toggleNotePin(id: string, currentPinned: boolean): Promise<void> {
+		const database = requireDb();
+		// eslint-disable-next-line svelte/prefer-svelte-reactivity
+		const now = new Date().toISOString();
+		await database.execute(
+			'UPDATE knowledge_notes SET is_pinned = ?, updated_at = ? WHERE id = ?',
+			[currentPinned ? 0 : 1, now, id]
+		);
+	},
+
+	async deleteNote(id: string): Promise<void> {
+		const database = requireDb();
+		await database.execute('DELETE FROM knowledge_notes WHERE id = ?', [id]);
 	}
 };

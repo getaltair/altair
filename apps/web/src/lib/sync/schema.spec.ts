@@ -14,7 +14,15 @@ describe('AppSchema', () => {
 		'guidance_epics',
 		'guidance_routines',
 		'guidance_focus_sessions',
-		'guidance_daily_checkins'
+		'guidance_daily_checkins',
+		'knowledge_notes',
+		'knowledge_note_snapshots',
+		'tracking_items',
+		'tracking_item_events',
+		'tracking_locations',
+		'tracking_categories',
+		'tracking_shopping_lists',
+		'tracking_shopping_list_items'
 	] as const;
 
 	it('contains exactly the expected tables', () => {
@@ -159,5 +167,96 @@ describe('table column definitions', () => {
 		expect(cols).toContain('energy_level');
 		expect(cols).toContain('mood');
 		expect(cols).toContain('notes');
+	});
+
+	it('knowledge_notes table has note-specific columns', () => {
+		const cols = columnNames('knowledge_notes');
+		expect(cols).toContain('user_id');
+		expect(cols).toContain('household_id');
+		expect(cols).toContain('initiative_id');
+		expect(cols).toContain('title');
+		expect(cols).toContain('content');
+		expect(cols).toContain('content_type');
+		expect(cols).toContain('is_pinned');
+		expect(cols).toContain('created_at');
+		expect(cols).toContain('updated_at');
+	});
+
+	it('knowledge_note_snapshots table has snapshot-specific columns', () => {
+		const cols = columnNames('knowledge_note_snapshots');
+		expect(cols).toContain('note_id');
+		expect(cols).toContain('content');
+		expect(cols).toContain('created_at');
+		expect(cols).toContain('created_by_process');
+	});
+
+	it('tracking_items table has item-specific columns', () => {
+		const cols = columnNames('tracking_items');
+		expect(cols).toContain('user_id');
+		expect(cols).toContain('household_id');
+		expect(cols).toContain('category_id');
+		expect(cols).toContain('location_id');
+		expect(cols).toContain('name');
+		expect(cols).toContain('description');
+		expect(cols).toContain('quantity');
+		expect(cols).toContain('unit');
+		expect(cols).toContain('min_quantity');
+		expect(cols).toContain('barcode');
+		expect(cols).toContain('status');
+		expect(cols).toContain('created_at');
+		expect(cols).toContain('updated_at');
+	});
+
+	it('tracking_item_events table has event-specific columns', () => {
+		const cols = columnNames('tracking_item_events');
+		expect(cols).toContain('item_id');
+		expect(cols).toContain('user_id');
+		expect(cols).toContain('event_type');
+		expect(cols).toContain('quantity_change');
+		expect(cols).toContain('notes');
+		expect(cols).toContain('created_at');
+	});
+
+	it('tracking_locations table has location-specific columns', () => {
+		const cols = columnNames('tracking_locations');
+		expect(cols).toContain('user_id');
+		expect(cols).toContain('household_id');
+		expect(cols).toContain('name');
+		expect(cols).toContain('description');
+		expect(cols).toContain('parent_location_id');
+		expect(cols).toContain('created_at');
+		expect(cols).toContain('updated_at');
+	});
+
+	it('tracking_categories table has category-specific columns', () => {
+		const cols = columnNames('tracking_categories');
+		expect(cols).toContain('user_id');
+		expect(cols).toContain('household_id');
+		expect(cols).toContain('name');
+		expect(cols).toContain('description');
+		expect(cols).toContain('parent_category_id');
+		expect(cols).toContain('created_at');
+		expect(cols).toContain('updated_at');
+	});
+
+	it('tracking_shopping_lists table has shopping-list-specific columns', () => {
+		const cols = columnNames('tracking_shopping_lists');
+		expect(cols).toContain('user_id');
+		expect(cols).toContain('household_id');
+		expect(cols).toContain('name');
+		expect(cols).toContain('status');
+		expect(cols).toContain('created_at');
+		expect(cols).toContain('updated_at');
+	});
+
+	it('tracking_shopping_list_items table has list-item-specific columns', () => {
+		const cols = columnNames('tracking_shopping_list_items');
+		expect(cols).toContain('shopping_list_id');
+		expect(cols).toContain('item_id');
+		expect(cols).toContain('name');
+		expect(cols).toContain('quantity');
+		expect(cols).toContain('unit');
+		expect(cols).toContain('is_checked');
+		expect(cols).toContain('created_at');
 	});
 });

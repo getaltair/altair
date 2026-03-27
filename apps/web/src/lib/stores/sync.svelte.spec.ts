@@ -603,3 +603,484 @@ describe('statusChanged listener', () => {
 		expect(syncStore.lastSyncedAt).toBe(syncDate.toISOString());
 	});
 });
+
+// ===========================================================================
+// queryNotes()
+// ===========================================================================
+describe('syncStore.queryNotes()', () => {
+	beforeEach(async () => {
+		await syncStore._doInitialize();
+	});
+
+	it('returns all notes with no WHERE clause when no filter is provided', async () => {
+		await syncStore.queryNotes();
+
+		const [sql, params] = mockGetAll.mock.calls[0] as [string, unknown[]];
+		expect(sql).toContain('SELECT * FROM knowledge_notes');
+		expect(sql).not.toContain('WHERE');
+		expect(params).toEqual([]);
+	});
+
+	it('adds household_id = ? condition when household_id filter is provided', async () => {
+		await syncStore.queryNotes({ household_id: 'hh-1' });
+
+		const [sql, params] = mockGetAll.mock.calls[0] as [string, unknown[]];
+		expect(sql).toContain('household_id = ?');
+		expect(params).toEqual(['hh-1']);
+	});
+
+	it('adds is_pinned = ? condition when is_pinned filter is provided', async () => {
+		await syncStore.queryNotes({ is_pinned: 1 });
+
+		const [sql, params] = mockGetAll.mock.calls[0] as [string, unknown[]];
+		expect(sql).toContain('is_pinned = ?');
+		expect(params).toEqual([1]);
+	});
+
+	it('adds title LIKE condition when search filter is provided', async () => {
+		await syncStore.queryNotes({ search: 'recipe' });
+
+		const [sql, params] = mockGetAll.mock.calls[0] as [string, unknown[]];
+		expect(sql).toContain('LIKE');
+		expect(params).toEqual(['recipe']);
+	});
+
+	it('orders results by is_pinned DESC, updated_at DESC', async () => {
+		await syncStore.queryNotes();
+
+		const [sql] = mockGetAll.mock.calls[0] as [string, unknown[]];
+		expect(sql).toContain('ORDER BY is_pinned DESC, updated_at DESC');
+	});
+});
+
+// ===========================================================================
+// queryNote()
+// ===========================================================================
+describe('syncStore.queryNote()', () => {
+	beforeEach(async () => {
+		await syncStore._doInitialize();
+	});
+
+	it('queries a single note by ID using getOptional', async () => {
+		await syncStore.queryNote('note-1');
+
+		const [sql, params] = mockGetOptional.mock.calls[0] as [string, unknown[]];
+		expect(sql).toContain('SELECT * FROM knowledge_notes WHERE id = ?');
+		expect(params).toEqual(['note-1']);
+	});
+});
+
+// ===========================================================================
+// queryNoteSnapshots()
+// ===========================================================================
+describe('syncStore.queryNoteSnapshots()', () => {
+	beforeEach(async () => {
+		await syncStore._doInitialize();
+	});
+
+	it('queries snapshots by note_id', async () => {
+		await syncStore.queryNoteSnapshots('note-1');
+
+		const [sql, params] = mockGetAll.mock.calls[0] as [string, unknown[]];
+		expect(sql).toContain('FROM knowledge_note_snapshots');
+		expect(sql).toContain('note_id = ?');
+		expect(params).toEqual(['note-1']);
+	});
+
+	it('orders results by created_at DESC', async () => {
+		await syncStore.queryNoteSnapshots('note-1');
+
+		const [sql] = mockGetAll.mock.calls[0] as [string, unknown[]];
+		expect(sql).toContain('ORDER BY created_at DESC');
+	});
+});
+
+// ===========================================================================
+// queryItems()
+// ===========================================================================
+describe('syncStore.queryItems()', () => {
+	beforeEach(async () => {
+		await syncStore._doInitialize();
+	});
+
+	it('returns all items with no WHERE clause when no filter is provided', async () => {
+		await syncStore.queryItems();
+
+		const [sql, params] = mockGetAll.mock.calls[0] as [string, unknown[]];
+		expect(sql).toContain('SELECT * FROM tracking_items');
+		expect(sql).not.toContain('WHERE');
+		expect(params).toEqual([]);
+	});
+
+	it('adds household_id = ? condition when household_id filter is provided', async () => {
+		await syncStore.queryItems({ household_id: 'hh-1' });
+
+		const [sql, params] = mockGetAll.mock.calls[0] as [string, unknown[]];
+		expect(sql).toContain('household_id = ?');
+		expect(params).toEqual(['hh-1']);
+	});
+
+	it('adds category_id = ? condition when category_id filter is provided', async () => {
+		await syncStore.queryItems({ category_id: 'cat-1' });
+
+		const [sql, params] = mockGetAll.mock.calls[0] as [string, unknown[]];
+		expect(sql).toContain('category_id = ?');
+		expect(params).toEqual(['cat-1']);
+	});
+
+	it('adds location_id = ? condition when location_id filter is provided', async () => {
+		await syncStore.queryItems({ location_id: 'loc-1' });
+
+		const [sql, params] = mockGetAll.mock.calls[0] as [string, unknown[]];
+		expect(sql).toContain('location_id = ?');
+		expect(params).toEqual(['loc-1']);
+	});
+
+	it('orders results by name ASC', async () => {
+		await syncStore.queryItems();
+
+		const [sql] = mockGetAll.mock.calls[0] as [string, unknown[]];
+		expect(sql).toContain('ORDER BY name ASC');
+	});
+});
+
+// ===========================================================================
+// queryItem()
+// ===========================================================================
+describe('syncStore.queryItem()', () => {
+	beforeEach(async () => {
+		await syncStore._doInitialize();
+	});
+
+	it('queries a single item by ID using getOptional', async () => {
+		await syncStore.queryItem('item-1');
+
+		const [sql, params] = mockGetOptional.mock.calls[0] as [string, unknown[]];
+		expect(sql).toContain('SELECT * FROM tracking_items WHERE id = ?');
+		expect(params).toEqual(['item-1']);
+	});
+});
+
+// ===========================================================================
+// queryItemEvents()
+// ===========================================================================
+describe('syncStore.queryItemEvents()', () => {
+	beforeEach(async () => {
+		await syncStore._doInitialize();
+	});
+
+	it('queries events by item_id', async () => {
+		await syncStore.queryItemEvents('item-1');
+
+		const [sql, params] = mockGetAll.mock.calls[0] as [string, unknown[]];
+		expect(sql).toContain('FROM tracking_item_events');
+		expect(sql).toContain('item_id = ?');
+		expect(params).toEqual(['item-1']);
+	});
+
+	it('orders results by created_at DESC', async () => {
+		await syncStore.queryItemEvents('item-1');
+
+		const [sql] = mockGetAll.mock.calls[0] as [string, unknown[]];
+		expect(sql).toContain('ORDER BY created_at DESC');
+	});
+});
+
+// ===========================================================================
+// queryLowStockItems()
+// ===========================================================================
+describe('syncStore.queryLowStockItems()', () => {
+	beforeEach(async () => {
+		await syncStore._doInitialize();
+	});
+
+	it('filters by household_id', async () => {
+		await syncStore.queryLowStockItems('hh-1');
+
+		const [sql, params] = mockGetAll.mock.calls[0] as [string, unknown[]];
+		expect(sql).toContain('household_id = ?');
+		expect(params).toEqual(['hh-1']);
+	});
+
+	it('includes WHERE clause checking quantity < min_quantity', async () => {
+		await syncStore.queryLowStockItems('hh-1');
+
+		const [sql] = mockGetAll.mock.calls[0] as [string, unknown[]];
+		expect(sql).toContain('quantity < min_quantity');
+	});
+
+	it('excludes items where min_quantity IS NULL', async () => {
+		await syncStore.queryLowStockItems('hh-1');
+
+		const [sql] = mockGetAll.mock.calls[0] as [string, unknown[]];
+		expect(sql).toContain('min_quantity IS NOT NULL');
+	});
+
+	it('orders results by name ASC', async () => {
+		await syncStore.queryLowStockItems('hh-1');
+
+		const [sql] = mockGetAll.mock.calls[0] as [string, unknown[]];
+		expect(sql).toContain('ORDER BY name ASC');
+	});
+});
+
+// ===========================================================================
+// queryLocations()
+// ===========================================================================
+describe('syncStore.queryLocations()', () => {
+	beforeEach(async () => {
+		await syncStore._doInitialize();
+	});
+
+	it('queries locations by household_id', async () => {
+		await syncStore.queryLocations('hh-1');
+
+		const [sql, params] = mockGetAll.mock.calls[0] as [string, unknown[]];
+		expect(sql).toContain('FROM tracking_locations');
+		expect(sql).toContain('household_id = ?');
+		expect(params).toEqual(['hh-1']);
+	});
+
+	it('orders results by name ASC', async () => {
+		await syncStore.queryLocations('hh-1');
+
+		const [sql] = mockGetAll.mock.calls[0] as [string, unknown[]];
+		expect(sql).toContain('ORDER BY name ASC');
+	});
+});
+
+// ===========================================================================
+// queryCategories()
+// ===========================================================================
+describe('syncStore.queryCategories()', () => {
+	beforeEach(async () => {
+		await syncStore._doInitialize();
+	});
+
+	it('queries categories by household_id', async () => {
+		await syncStore.queryCategories('hh-1');
+
+		const [sql, params] = mockGetAll.mock.calls[0] as [string, unknown[]];
+		expect(sql).toContain('FROM tracking_categories');
+		expect(sql).toContain('household_id = ?');
+		expect(params).toEqual(['hh-1']);
+	});
+
+	it('orders results by name ASC', async () => {
+		await syncStore.queryCategories('hh-1');
+
+		const [sql] = mockGetAll.mock.calls[0] as [string, unknown[]];
+		expect(sql).toContain('ORDER BY name ASC');
+	});
+});
+
+// ===========================================================================
+// queryShoppingLists()
+// ===========================================================================
+describe('syncStore.queryShoppingLists()', () => {
+	beforeEach(async () => {
+		await syncStore._doInitialize();
+	});
+
+	it('returns all shopping lists with no WHERE clause when no filter is provided', async () => {
+		await syncStore.queryShoppingLists();
+
+		const [sql, params] = mockGetAll.mock.calls[0] as [string, unknown[]];
+		expect(sql).toContain('SELECT * FROM tracking_shopping_lists');
+		expect(sql).not.toContain('WHERE');
+		expect(params).toEqual([]);
+	});
+
+	it('adds household_id = ? condition when household_id filter is provided', async () => {
+		await syncStore.queryShoppingLists({ household_id: 'hh-1' });
+
+		const [sql, params] = mockGetAll.mock.calls[0] as [string, unknown[]];
+		expect(sql).toContain('household_id = ?');
+		expect(params).toEqual(['hh-1']);
+	});
+
+	it('adds status = ? condition when status filter is provided', async () => {
+		await syncStore.queryShoppingLists({ status: 'active' });
+
+		const [sql, params] = mockGetAll.mock.calls[0] as [string, unknown[]];
+		expect(sql).toContain('status = ?');
+		expect(params).toEqual(['active']);
+	});
+
+	it('orders results by updated_at DESC', async () => {
+		await syncStore.queryShoppingLists();
+
+		const [sql] = mockGetAll.mock.calls[0] as [string, unknown[]];
+		expect(sql).toContain('ORDER BY updated_at DESC');
+	});
+});
+
+// ===========================================================================
+// queryShoppingListItems()
+// ===========================================================================
+describe('syncStore.queryShoppingListItems()', () => {
+	beforeEach(async () => {
+		await syncStore._doInitialize();
+	});
+
+	it('queries items by shopping_list_id', async () => {
+		await syncStore.queryShoppingListItems('list-1');
+
+		const [sql, params] = mockGetAll.mock.calls[0] as [string, unknown[]];
+		expect(sql).toContain('FROM tracking_shopping_list_items');
+		expect(sql).toContain('shopping_list_id = ?');
+		expect(params).toEqual(['list-1']);
+	});
+
+	it('orders results by created_at ASC', async () => {
+		await syncStore.queryShoppingListItems('list-1');
+
+		const [sql] = mockGetAll.mock.calls[0] as [string, unknown[]];
+		expect(sql).toContain('ORDER BY created_at ASC');
+	});
+});
+
+// ===========================================================================
+// adjustItemQuantity()
+// ===========================================================================
+describe('syncStore.adjustItemQuantity()', () => {
+	beforeEach(async () => {
+		await syncStore._doInitialize();
+	});
+
+	it('throws when item is not found', async () => {
+		mockGetOptional.mockResolvedValueOnce(null);
+
+		await expect(syncStore.adjustItemQuantity('no-item', 1, 'restocked')).rejects.toThrow(
+			'Item not found'
+		);
+	});
+
+	it('uses writeTransaction for atomicity', async () => {
+		const mockTx = {
+			execute: vi.fn().mockResolvedValue(undefined)
+		};
+		const mockWriteTransaction = vi.fn().mockImplementation(async (fn) => fn(mockTx));
+		const mockDb = makeMockDb();
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		(mockDb as any).writeTransaction = mockWriteTransaction;
+
+		mockGetPowerSyncDb.mockReturnValue(mockDb);
+		await syncStore._doInitialize();
+
+		mockGetOptional.mockResolvedValueOnce({ id: 'item-1', quantity: 5, user_id: 'u1' });
+
+		await syncStore.adjustItemQuantity('item-1', 3, 'restocked', 'bulk buy');
+
+		expect(mockWriteTransaction).toHaveBeenCalledTimes(1);
+		// UPDATE tracking_items SET quantity
+		const updateSql = mockTx.execute.mock.calls[0][0] as string;
+		expect(updateSql).toContain('UPDATE tracking_items SET quantity');
+		// INSERT INTO tracking_item_events
+		const insertSql = mockTx.execute.mock.calls[1][0] as string;
+		expect(insertSql).toContain('INSERT INTO tracking_item_events');
+	});
+});
+
+// ===========================================================================
+// toggleShoppingListItemCheck()
+// ===========================================================================
+describe('syncStore.toggleShoppingListItemCheck()', () => {
+	beforeEach(async () => {
+		await syncStore._doInitialize();
+	});
+
+	it('throws when shopping list item is not found', async () => {
+		mockGetOptional.mockResolvedValueOnce(null);
+
+		await expect(syncStore.toggleShoppingListItemCheck('no-item')).rejects.toThrow(
+			'Shopping list item not found'
+		);
+	});
+
+	it('toggles is_checked from 0 to 1', async () => {
+		mockGetOptional.mockResolvedValueOnce({ is_checked: 0 });
+
+		await syncStore.toggleShoppingListItemCheck('item-1');
+
+		const [sql, params] = mockExecute.mock.calls[0] as [string, unknown[]];
+		expect(sql).toContain('UPDATE tracking_shopping_list_items SET is_checked');
+		expect(params).toEqual([1, 'item-1']);
+	});
+
+	it('toggles is_checked from 1 to 0', async () => {
+		mockGetOptional.mockResolvedValueOnce({ is_checked: 1 });
+
+		await syncStore.toggleShoppingListItemCheck('item-1');
+
+		const [sql, params] = mockExecute.mock.calls[0] as [string, unknown[]];
+		expect(sql).toContain('UPDATE tracking_shopping_list_items SET is_checked');
+		expect(params).toEqual([0, 'item-1']);
+	});
+});
+
+// ===========================================================================
+// updateNote()
+// ===========================================================================
+describe('syncStore.updateNote()', () => {
+	beforeEach(async () => {
+		await syncStore._doInitialize();
+	});
+
+	it('executes correct UPDATE SQL for knowledge_notes', async () => {
+		await syncStore.updateNote('note-1', 'new content', 'markdown');
+
+		const [sql, params] = mockExecute.mock.calls[0] as [string, unknown[]];
+		expect(sql).toContain('UPDATE knowledge_notes SET content = ?');
+		expect(sql).toContain('content_type = ?');
+		expect(sql).toContain('updated_at = ?');
+		expect(sql).toContain('WHERE id = ?');
+		expect(params![0]).toBe('new content');
+		expect(params![1]).toBe('markdown');
+		expect(params![3]).toBe('note-1');
+	});
+});
+
+// ===========================================================================
+// toggleNotePin()
+// ===========================================================================
+describe('syncStore.toggleNotePin()', () => {
+	beforeEach(async () => {
+		await syncStore._doInitialize();
+	});
+
+	it('sets is_pinned to 0 when currently pinned', async () => {
+		await syncStore.toggleNotePin('note-1', true);
+
+		const [sql, params] = mockExecute.mock.calls[0] as [string, unknown[]];
+		expect(sql).toContain('UPDATE knowledge_notes SET is_pinned = ?');
+		expect(params![0]).toBe(0);
+		expect(params![2]).toBe('note-1');
+	});
+
+	it('sets is_pinned to 1 when currently unpinned', async () => {
+		await syncStore.toggleNotePin('note-1', false);
+
+		const [sql, params] = mockExecute.mock.calls[0] as [string, unknown[]];
+		expect(sql).toContain('UPDATE knowledge_notes SET is_pinned = ?');
+		expect(params![0]).toBe(1);
+		expect(params![2]).toBe('note-1');
+	});
+});
+
+// ===========================================================================
+// deleteNote()
+// ===========================================================================
+describe('syncStore.deleteNote()', () => {
+	beforeEach(async () => {
+		await syncStore._doInitialize();
+	});
+
+	it('executes DELETE FROM knowledge_notes with correct id', async () => {
+		await syncStore.deleteNote('note-1');
+
+		const [sql, params] = mockExecute.mock.calls[0] as [string, unknown[]];
+		expect(sql).toContain('DELETE FROM knowledge_notes WHERE id = ?');
+		expect(params).toEqual(['note-1']);
+	});
+});
