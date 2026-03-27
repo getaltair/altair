@@ -1,8 +1,12 @@
 package com.getaltair.altair.ui.settings
 
-data class SettingsUiState(
-    val email: String = "",
-    val displayName: String = "",
-    val isSyncing: Boolean = false,
-    val isDarkMode: Boolean = false,
-)
+sealed class SettingsUiState {
+    data object Loading : SettingsUiState()
+    data class Success(
+        val email: String,
+        val displayName: String,
+        val isSyncing: Boolean,
+        val isDarkMode: Boolean,
+    ) : SettingsUiState()
+    data class Error(val message: String) : SettingsUiState()
+}

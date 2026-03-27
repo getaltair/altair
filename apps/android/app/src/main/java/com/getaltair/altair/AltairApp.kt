@@ -1,12 +1,14 @@
 package com.getaltair.altair
 
 import android.app.Application
+import com.getaltair.altair.BuildConfig
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.getaltair.altair.di.databaseModule
+import com.getaltair.altair.di.preferencesModule
 import com.getaltair.altair.di.repositoryModule
 import com.getaltair.altair.di.syncModule
 import com.getaltair.altair.di.viewModelModule
@@ -22,7 +24,9 @@ class AltairApp : Application() {
         super.onCreate()
 
         // Logging
-        Timber.plant(Timber.DebugTree())
+        if (BuildConfig.DEBUG) {
+            Timber.plant(Timber.DebugTree())
+        }
 
         // Dependency injection
         startKoin {
@@ -30,6 +34,7 @@ class AltairApp : Application() {
             androidContext(this@AltairApp)
             modules(
                 databaseModule,
+                preferencesModule,
                 repositoryModule,
                 syncModule,
                 viewModelModule,
@@ -43,18 +48,22 @@ class AltairApp : Application() {
     }
 
     private fun scheduleSyncWorker() {
-        val constraints = Constraints.Builder()
-            .setRequiredNetworkType(NetworkType.CONNECTED)
-            .build()
+        try {
+            val constraints = Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build()
 
-        val syncRequest = PeriodicWorkRequestBuilder<SyncWorker>(
-            15, TimeUnit.MINUTES,
-        ).setConstraints(constraints).build()
+            val syncRequest = PeriodicWorkRequestBuilder<SyncWorker>(
+                15, TimeUnit.MINUTES,
+            ).setConstraints(constraints).build()
 
-        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
-            SyncWorker.WORK_NAME,
-            ExistingPeriodicWorkPolicy.KEEP,
-            syncRequest,
-        )
+            WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+                SyncWorker.WORK_NAME,
+                ExistingPeriodicWorkPolicy.KEEP,
+                syncRequest,
+            )
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to schedule sync worker")
+        }
     }
 }
