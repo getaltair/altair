@@ -96,11 +96,35 @@ pub fn create_router(state: AppState) -> Router {
             "/core/tags/{id}",
             put(tag_handlers::update_tag).delete(tag_handlers::delete_tag),
         )
-        // Relation routes
+        // Relation routes -- specific paths must come before the {id} catch-all
+        .route(
+            "/core/relations/suggested",
+            get(relation_handlers::get_suggested_relations),
+        )
+        .route(
+            "/core/relations/for/{entity_type}/{entity_id}",
+            get(relation_handlers::get_relations_for_entity),
+        )
+        .route(
+            "/core/relations/graph/{entity_type}/{entity_id}",
+            get(relation_handlers::get_relation_graph),
+        )
         .route(
             "/core/relations",
             post(relation_handlers::create_relation)
                 .get(relation_handlers::query_relations),
+        )
+        .route(
+            "/core/relations/{id}/accept",
+            put(relation_handlers::accept_relation),
+        )
+        .route(
+            "/core/relations/{id}/dismiss",
+            put(relation_handlers::dismiss_relation),
+        )
+        .route(
+            "/core/relations/{id}/reject",
+            put(relation_handlers::reject_relation),
         )
         .route(
             "/core/relations/{id}",

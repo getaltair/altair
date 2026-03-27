@@ -25,6 +25,10 @@ pub struct EntityRelation {
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
     pub last_confirmed_at: Option<DateTime<Utc>>,
+    pub household_id: Option<Uuid>,
+    pub initiative_id: Option<Uuid>,
+    pub owner_user_id: Option<Uuid>,
+    pub updated_by_user_id: Option<Uuid>,
 }
 
 /// Request payload for creating a new entity relation
@@ -39,6 +43,8 @@ pub struct CreateRelationRequest {
     #[validate(range(min = 0.0, max = 1.0))]
     pub confidence: Option<f64>,
     pub evidence_json: Option<Value>,
+    pub household_id: Option<Uuid>,
+    pub initiative_id: Option<Uuid>,
 }
 
 /// Request payload for updating an entity relation's status
@@ -59,6 +65,46 @@ pub struct RelationQuery {
     pub status: Option<RelationStatus>,
 }
 
+/// Path parameters for entity-scoped relation endpoints.
+/// Uses String (not EntityType enum) for Axum path extraction compatibility.
+#[allow(dead_code)]
+#[derive(Debug, Deserialize)]
+pub struct EntityPathParams {
+    pub entity_type: String,
+    pub entity_id: Uuid,
+}
+
+/// A single node in the one-hop relation graph for an entity
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RelationGraphNode {
+    pub entity_type: String,
+    pub entity_id: Uuid,
+    pub relation_id: Uuid,
+    pub relation_type: String,
+    pub direction: String,
+    pub source_type: String,
+    pub status: String,
+    pub confidence: Option<f64>,
+    pub evidence_json: Option<Value>,
+    pub created_at: DateTime<Utc>,
+}
+
+/// Response for the relation graph endpoint: the source entity plus all one-hop neighbors
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RelationGraphResponse {
+    pub entity_type: String,
+    pub entity_id: Uuid,
+    pub relations: Vec<RelationGraphNode>,
+}
+
+/// Query parameters for the suggested relations endpoint
+#[allow(dead_code)]
+#[derive(Debug, Deserialize, Default)]
+pub struct SuggestedRelationsQuery {
+    pub relation_type: Option<RelationType>,
+    pub entity_type: Option<EntityType>,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -75,6 +121,8 @@ mod tests {
             source_type: None,
             confidence,
             evidence_json: None,
+            household_id: None,
+            initiative_id: None,
         }
     }
 
@@ -189,5 +237,160 @@ mod tests {
         assert!(q.to_entity_id.is_none());
         assert!(q.relation_type.is_none());
         assert!(q.status.is_none());
+    }
+
+    // -- CreateRelationRequest with new optional fields --------------------------
+
+    #[test]
+    fn create_relation_with_household_and_initiative() {
+        let json = r#"{
+            "from_entity_type": "knowledge_note",
+            "from_entity_id": "00000000-0000-0000-0000-000000000001",
+            "to_entity_type": "guidance_quest",
+            "to_entity_id": "00000000-0000-0000-0000-000000000002",
+            "relation_type": "supports",
+            "household_id": "00000000-0000-0000-0000-000000000003",
+            "initiative_id": "00000000-0000-0000-0000-000000000004"
+        }"#;
+        let req: CreateRelationRequest = serde_json::from_str(json).unwrap();
+        assert!(req.household_id.is_some());
+        assert!(req.initiative_id.is_some());
+    }
+
+    #[test]
+    fn create_relation_without_optional_scoping_fields() {
+        let json = r#"{
+            "from_entity_type": "tracking_item",
+            "from_entity_id": "00000000-0000-0000-0000-000000000001",
+            "to_entity_type": "knowledge_note",
+            "to_entity_id": "00000000-0000-0000-0000-000000000002",
+            "relation_type": "references"
+        }"#;
+        let req: CreateRelationRequest = serde_json::from_str(json).unwrap();
+        assert!(req.household_id.is_none());
+        assert!(req.initiative_id.is_none());
+    }
+
+    // -- EntityPathParams --------------------------------------------------------
+
+    #[test]
+    fn entity_path_params_deserializes_valid() {
+        let json = r#"{
+            "entity_type": "knowledge_note",
+            "entity_id": "00000000-0000-0000-0000-000000000001"
+        }"#;
+        let params: EntityPathParams = serde_json::from_str(json).unwrap();
+        assert_eq!(params.entity_type, "knowledge_note");
+        assert_eq!(
+            params.entity_id,
+            Uuid::parse_str("00000000-0000-0000-0000-000000000001").unwrap()
+        );
+    }
+
+    #[test]
+    fn entity_path_params_accepts_any_string_entity_type() {
+        // EntityPathParams uses String, not EntityType, so unknown types are accepted
+        // at the deserialization level (validation happens in the service layer)
+        let json = r#"{
+            "entity_type": "unknown_entity",
+            "entity_id": "00000000-0000-0000-0000-000000000001"
+        }"#;
+        let result = serde_json::from_str::<EntityPathParams>(json);
+        assert!(result.is_ok());
+    }
+
+    // -- RelationGraphNode -------------------------------------------------------
+
+    #[test]
+    fn relation_graph_node_serialization_roundtrip() {
+        let node = RelationGraphNode {
+            entity_type: "tracking_item".to_string(),
+            entity_id: Uuid::new_v4(),
+            relation_id: Uuid::new_v4(),
+            relation_type: "references".to_string(),
+            direction: "outgoing".to_string(),
+            source_type: "user".to_string(),
+            status: "accepted".to_string(),
+            confidence: Some(0.95),
+            evidence_json: None,
+            created_at: Utc::now(),
+        };
+        let json = serde_json::to_string(&node).unwrap();
+        let back: RelationGraphNode = serde_json::from_str(&json).unwrap();
+        assert_eq!(back.entity_type, node.entity_type);
+        assert_eq!(back.entity_id, node.entity_id);
+        assert_eq!(back.relation_id, node.relation_id);
+        assert_eq!(back.direction, "outgoing");
+        assert_eq!(back.confidence, Some(0.95));
+    }
+
+    #[test]
+    fn relation_graph_node_with_evidence_json() {
+        let evidence = serde_json::json!({"source": "ai_analysis", "score": 0.8});
+        let node = RelationGraphNode {
+            entity_type: "guidance_quest".to_string(),
+            entity_id: Uuid::new_v4(),
+            relation_id: Uuid::new_v4(),
+            relation_type: "supports".to_string(),
+            direction: "incoming".to_string(),
+            source_type: "ai".to_string(),
+            status: "suggested".to_string(),
+            confidence: Some(0.8),
+            evidence_json: Some(evidence.clone()),
+            created_at: Utc::now(),
+        };
+        let json = serde_json::to_string(&node).unwrap();
+        let back: RelationGraphNode = serde_json::from_str(&json).unwrap();
+        assert_eq!(back.evidence_json.unwrap(), evidence);
+    }
+
+    // -- RelationGraphResponse ---------------------------------------------------
+
+    #[test]
+    fn relation_graph_response_serialization_roundtrip() {
+        let response = RelationGraphResponse {
+            entity_type: "knowledge_note".to_string(),
+            entity_id: Uuid::new_v4(),
+            relations: vec![
+                RelationGraphNode {
+                    entity_type: "tracking_item".to_string(),
+                    entity_id: Uuid::new_v4(),
+                    relation_id: Uuid::new_v4(),
+                    relation_type: "references".to_string(),
+                    direction: "outgoing".to_string(),
+                    source_type: "user".to_string(),
+                    status: "accepted".to_string(),
+                    confidence: None,
+                    evidence_json: None,
+                    created_at: Utc::now(),
+                },
+            ],
+        };
+        let json = serde_json::to_string(&response).unwrap();
+        let back: RelationGraphResponse = serde_json::from_str(&json).unwrap();
+        assert_eq!(back.entity_type, "knowledge_note");
+        assert_eq!(back.relations.len(), 1);
+        assert_eq!(back.relations[0].direction, "outgoing");
+    }
+
+    #[test]
+    fn relation_graph_response_empty_relations() {
+        let response = RelationGraphResponse {
+            entity_type: "initiative".to_string(),
+            entity_id: Uuid::new_v4(),
+            relations: vec![],
+        };
+        let json = serde_json::to_string(&response).unwrap();
+        let back: RelationGraphResponse = serde_json::from_str(&json).unwrap();
+        assert!(back.relations.is_empty());
+    }
+
+    // -- SuggestedRelationsQuery -------------------------------------------------
+
+    #[test]
+    fn suggested_relations_query_default_has_all_none() {
+        let q = SuggestedRelationsQuery::default();
+        assert!(q.relation_type.is_none());
+        assert!(q.entity_type.is_none());
     }
 }
