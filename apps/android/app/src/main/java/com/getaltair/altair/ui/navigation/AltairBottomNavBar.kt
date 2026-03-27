@@ -1,8 +1,8 @@
 package com.getaltair.altair.ui.navigation
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
@@ -23,7 +23,7 @@ private data class BottomNavItem(
 
 private val bottomNavItems = listOf(
     BottomNavItem("Today", Icons.Default.DateRange, Screen.Today.route),
-    BottomNavItem("Initiatives", Icons.Default.List, Screen.InitiativeList.route),
+    BottomNavItem("Initiatives", Icons.AutoMirrored.Filled.List, Screen.InitiativeList.route),
     BottomNavItem("Routines", Icons.Default.Refresh, Screen.RoutineList.route),
     BottomNavItem("Settings", Icons.Default.Settings, Screen.Settings.route),
 )
