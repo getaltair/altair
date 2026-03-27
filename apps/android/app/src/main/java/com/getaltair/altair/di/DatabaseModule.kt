@@ -2,6 +2,8 @@ package com.getaltair.altair.di
 
 import android.content.Context
 import androidx.room.Room
+import androidx.room.RoomDatabase
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.getaltair.altair.data.local.database.AltairDatabase
 import org.koin.android.ext.koin.androidContext
 import org.koin.dsl.module
@@ -37,4 +39,16 @@ private fun provideDatabase(context: Context): AltairDatabase =
         context.applicationContext,
         AltairDatabase::class.java,
         "altair.db",
-    ).fallbackToDestructiveMigration().build()
+    )
+    .fallbackToDestructiveMigration()
+    .addCallback(object : RoomDatabase.Callback() {
+        override fun onOpen(db: SupportSQLiteDatabase) {
+            super.onOpen(db)
+            val now = System.currentTimeMillis()
+            db.execSQL(
+                """INSERT OR IGNORE INTO users (id, email, display_name, created_at, updated_at)
+                   VALUES ('00000000-0000-0000-0000-000000000001', 'dev@altair.app', 'Dev User', $now, $now)""",
+            )
+        }
+    })
+    .build()
