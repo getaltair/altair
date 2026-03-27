@@ -49,8 +49,8 @@ export function initTheme(): void {
 	let stored: Theme | null = null;
 	try {
 		stored = localStorage.getItem(STORAGE_KEY) as Theme | null;
-	} catch {
-		console.warn('[theme] localStorage unavailable, using OS preference.');
+	} catch (err) {
+		console.warn('[theme] localStorage unavailable, using OS preference.', err);
 	}
 
 	if (stored === 'light' || stored === 'dark') {
@@ -65,8 +65,8 @@ export function initTheme(): void {
 		document.documentElement.classList.toggle('dark', value === 'dark');
 		try {
 			localStorage.setItem(STORAGE_KEY, value);
-		} catch {
-			console.warn('[theme] Could not persist theme preference.');
+		} catch (err) {
+			console.warn('[theme] Could not persist theme preference.', err);
 		}
 	});
 }
