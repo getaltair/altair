@@ -1,5 +1,119 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap');
+
 @import 'tailwindcss';
 @plugin '@tailwindcss/forms';
 @plugin '@tailwindcss/typography';
 
 @custom-variant dark (&:where(.dark *));
+
+/* ---------------------------------------------------------------------------
+ * Tailwind v4 Theme – Altair Design System
+ *
+ * All values derived from DESIGN.md. Colors, fonts, and semantic tokens are
+ * exposed as Tailwind utilities (e.g. `bg-primary`, `text-on-surface`,
+ * `font-display`) through the @theme block.
+ * --------------------------------------------------------------------------- */
+
+@theme {
+	/* --- Primary Palette --- */
+	--color-primary: #446273;
+	--color-primary-dim: #385666;
+	--color-primary-container: #c7e7fa;
+	--color-primary-fixed-dim: #bad9ec;
+
+	/* --- Secondary & Tertiary --- */
+	--color-secondary: #4f626b;
+	--color-secondary-container: #d1e6f0;
+	--color-tertiary: #546260;
+	--color-tertiary-container: #e8f7f4;
+
+	/* --- Surface Hierarchy (The Tonal Stack) --- */
+	--color-surface: #f8fafa;
+	--color-surface-low: #f0f4f5;
+	--color-surface-container: #e9eff0;
+	--color-surface-high: #e1eaeb;
+	--color-surface-highest: #dae5e6;
+	--color-surface-dim: #cfddde;
+	--color-pure-white: #ffffff;
+
+	/* --- On-Surface Text --- */
+	--color-on-surface: #2a3435;
+	--color-on-surface-muted: #566162;
+	--color-on-surface-subtle: #8a9e9f;
+
+	/* --- Outlines --- */
+	--color-outline: #727d7e;
+	--color-outline-variant: #a9b4b5;
+
+	/* --- Semantic & State Colors --- */
+	--color-warm-terracotta: #c97c5d; /* Accent warm tone; not the DESIGN.md error color #9f403d */
+	--color-soft-coral: #e8a090;
+	--color-sage-whisper: #a8c5a0;
+	--color-morning-gold: #d4a853;
+	--color-error: #9f403d;
+	--color-error-container: #fe8983;
+
+	/* --- Font Families --- */
+	--font-display: 'Manrope', sans-serif;
+	--font-body: 'Plus Jakarta Sans', sans-serif;
+}
+
+/* ---------------------------------------------------------------------------
+ * Runtime CSS Custom Properties – Light / Dark Switching
+ *
+ * These vars are toggled by the theme store (.dark class on <html>).
+ * Use them for backgrounds and text that must flip automatically.
+ * --------------------------------------------------------------------------- */
+
+:root {
+	--bg-primary: #f8fafa;
+	--bg-sidebar: #f0f4f5;
+	--text-primary: #2a3435;
+	--text-muted: #566162;
+	--card-bg: #ffffff;
+}
+
+.dark {
+	--bg-primary: #1a2526;
+	--bg-sidebar: #141e1f;
+	--text-primary: #f0f4f5;
+	--text-muted: #8a9e9f;
+	--card-bg: #1e2d2f;
+}
+
+/* ---------------------------------------------------------------------------
+ * Global Utility Classes
+ * --------------------------------------------------------------------------- */
+
+/* "Breathe" transition – 300ms cubic-bezier per DESIGN.md Section 7 */
+.transition-breathe {
+	transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Signature gradient – Primary → Primary Container at 135deg */
+.gradient-signature {
+	background: linear-gradient(135deg, #446273 0%, #c7e7fa 100%);
+}
+
+/* ---------------------------------------------------------------------------
+ * Scrollbar Styles -- ultra-thin, unobtrusive (matching DESIGN.md scrollbar specs)
+ * --------------------------------------------------------------------------- */
+
+* {
+	scrollbar-width: thin;
+	scrollbar-color: #a9b4b5 transparent;
+}
+
+*::-webkit-scrollbar {
+	width: 5px;
+	height: 5px;
+}
+
+*::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+	background: #a9b4b5;
+	border-radius: 10px;
+}

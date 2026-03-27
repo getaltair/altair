@@ -1,6 +1,8 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import Sidebar from './Sidebar.svelte';
+	import OfflineIndicator from '$lib/components/ui/OfflineIndicator.svelte';
+	import { syncStore } from '$lib/stores/sync.svelte';
 
 	interface Props {
 		children: Snippet;
@@ -11,42 +13,39 @@
 	let sidebarOpen = $state(false);
 </script>
 
-<div class="min-h-screen bg-slate-50 dark:bg-slate-950">
+<svelte:head>
+	<link
+		rel="stylesheet"
+		href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+	/>
+</svelte:head>
+
+<div class="min-h-screen bg-surface dark:bg-[#1a2526]">
 	<Sidebar open={sidebarOpen} onclose={() => (sidebarOpen = false)} />
 
-	<!-- Mobile header with hamburger -->
+	<!-- Mobile header -->
 	<header
-		class="sticky top-0 z-20 flex h-14 items-center border-b border-slate-200 bg-white/80 px-4 backdrop-blur-sm lg:hidden dark:border-slate-700 dark:bg-slate-900/80"
+		class="sticky top-0 z-20 flex h-14 items-center bg-surface-low/80 px-4 backdrop-blur-sm lg:hidden dark:bg-[#141e1f]/80"
 	>
 		<button
 			onclick={() => (sidebarOpen = true)}
 			aria-label="Open navigation"
-			class="rounded-lg p-2 text-slate-600 hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:text-slate-400 dark:hover:bg-slate-800"
+			class="transition-breathe rounded-xl p-2 text-on-surface-muted hover:bg-surface-container focus:outline-none focus-visible:ring-2 focus-visible:ring-primary dark:text-on-surface-subtle dark:hover:bg-[#263638]"
 		>
-			<!-- Hamburger icon -->
-			<svg
-				xmlns="http://www.w3.org/2000/svg"
-				width="22"
-				height="22"
-				viewBox="0 0 24 24"
-				fill="none"
-				stroke="currentColor"
-				stroke-width="2"
-				stroke-linecap="round"
-				stroke-linejoin="round"
-				aria-hidden="true"
-			>
-				<line x1="3" y1="6" x2="21" y2="6" />
-				<line x1="3" y1="12" x2="21" y2="12" />
-				<line x1="3" y1="18" x2="21" y2="18" />
-			</svg>
+			<span class="material-symbols-outlined text-[22px]" aria-hidden="true">menu</span>
 		</button>
-		<span class="ml-3 text-base font-semibold text-slate-900 dark:text-white">Altair</span>
+		<div class="ml-3 flex items-center gap-2">
+			<div class="h-2 w-2 rounded bg-primary"></div>
+			<span class="font-display text-base font-bold text-on-surface dark:text-[#f0f4f5]"
+				>Altair</span
+			>
+		</div>
 	</header>
 
 	<!-- Main content area: offset by sidebar on desktop -->
 	<main class="lg:pl-64">
-		<div class="mx-auto max-w-5xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+		<OfflineIndicator status={syncStore.syncStatus} />
+		<div class="mx-auto max-w-[1200px] p-6 md:p-8">
 			{@render children()}
 		</div>
 	</main>
