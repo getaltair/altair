@@ -13,9 +13,16 @@
 	onMount(async () => {
 		error = null;
 		try {
-			// Get householdId from all items as fallback
+			// Query householdId directly instead of deriving from items
 			const allItems = await syncStore.queryItems();
-			const householdId = allItems[0]?.household_id ?? '';
+			const db = syncStore.db;
+			let householdId = '';
+			if (db) {
+				const result = await db.getAll<{ household_id: string }>(
+					'SELECT household_id FROM household_memberships LIMIT 1'
+				);
+				householdId = result[0]?.household_id ?? '';
+			}
 			if (householdId) {
 				lowStockItems = await syncStore.queryLowStockItems(householdId);
 			} else {

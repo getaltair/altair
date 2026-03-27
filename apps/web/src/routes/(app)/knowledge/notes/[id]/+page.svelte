@@ -45,14 +45,8 @@
 		if (!note || saving) return;
 		saving = true;
 		try {
-			const db = syncStore.db;
-			if (db) {
-				await db.execute(
-					'UPDATE knowledge_notes SET content = ?, content_type = ?, updated_at = ? WHERE id = ?',
-					[editContent, editContentType, new Date().toISOString(), id]
-				);
-				note = await syncStore.queryNote(id);
-			}
+			await syncStore.updateNote(id, editContent, editContentType);
+			note = await syncStore.queryNote(id);
 		} catch (err) {
 			console.error('[note-detail] Failed to save:', err);
 			error = 'Could not save changes. Please try again.';
@@ -63,16 +57,8 @@
 	async function handleTogglePin() {
 		if (!note) return;
 		try {
-			const db = syncStore.db;
-			if (db) {
-				const newPinned = note.is_pinned === 1 ? 0 : 1;
-				await db.execute('UPDATE knowledge_notes SET is_pinned = ?, updated_at = ? WHERE id = ?', [
-					newPinned,
-					new Date().toISOString(),
-					id
-				]);
-				note = await syncStore.queryNote(id);
-			}
+			await syncStore.toggleNotePin(id, note.is_pinned === 1);
+			note = await syncStore.queryNote(id);
 		} catch (err) {
 			console.error('[note-detail] Failed to toggle pin:', err);
 			error = 'Could not update pin status. Please try again.';
@@ -82,11 +68,8 @@
 	async function handleDelete() {
 		if (!note) return;
 		try {
-			const db = syncStore.db;
-			if (db) {
-				await db.execute('DELETE FROM knowledge_notes WHERE id = ?', [id]);
-				goto(resolve('/knowledge/notes' as '/'));
-			}
+			await syncStore.deleteNote(id);
+			goto(resolve('/knowledge/notes' as '/'));
 		} catch (err) {
 			console.error('[note-detail] Failed to delete:', err);
 			error = 'Could not delete note. Please try again.';

@@ -12,9 +12,15 @@
 	onMount(async () => {
 		error = null;
 		try {
-			// Get householdId from items as a fallback
-			const items = await syncStore.queryItems();
-			const householdId = items[0]?.household_id ?? '';
+			// Query householdId directly instead of deriving from items
+			const db = syncStore.db;
+			let householdId = '';
+			if (db) {
+				const result = await db.getAll<{ household_id: string }>(
+					'SELECT household_id FROM household_memberships LIMIT 1'
+				);
+				householdId = result[0]?.household_id ?? '';
+			}
 			locations = await syncStore.queryLocations(householdId);
 		} catch (err) {
 			console.error('[tracking-locations] Failed to load:', err);
@@ -61,10 +67,10 @@
 		<Card>
 			<TreeView
 				items={locations}
-				getId={(item) => (item as TrackingLocation).id}
-				getParentId={(item) => (item as TrackingLocation).parent_location_id}
-				getName={(item) => (item as TrackingLocation).name}
-				getDescription={(item) => (item as TrackingLocation).description ?? undefined}
+				getId={(item) => item.id}
+				getParentId={(item) => item.parent_location_id}
+				getName={(item) => item.name}
+				getDescription={(item) => item.description ?? undefined}
 			/>
 		</Card>
 	{/if}

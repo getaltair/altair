@@ -84,47 +84,49 @@
 		{/each}
 	</div>
 
-	<!-- List count -->
-	{#if !loading && !error}
-		<p class="mb-4 font-body text-xs text-outline-variant dark:text-on-surface-muted">
-			{filteredLists.length} list{filteredLists.length !== 1 ? 's' : ''}
-		</p>
-	{/if}
+	<div role="tabpanel">
+		<!-- List count -->
+		{#if !loading && !error}
+			<p class="mb-4 font-body text-xs text-outline-variant dark:text-on-surface-muted">
+				{filteredLists.length} list{filteredLists.length !== 1 ? 's' : ''}
+			</p>
+		{/if}
 
-	<!-- Shopping lists -->
-	{#if loading}
-		<div class="space-y-3">
-			{#each [0, 1, 2] as i (i)}
-				<div class="h-20 animate-pulse rounded-2xl bg-surface-low dark:bg-surface-high"></div>
-			{/each}
-		</div>
-	{:else if error}
-		<Card>
-			<div class="flex flex-col items-center gap-3 py-6 text-center">
-				<span class="material-symbols-outlined text-3xl text-error">cloud_off</span>
-				<p class="font-body text-sm text-on-surface-muted">{error}</p>
+		<!-- Shopping lists -->
+		{#if loading}
+			<div class="space-y-3">
+				{#each [0, 1, 2] as i (i)}
+					<div class="h-20 animate-pulse rounded-2xl bg-surface-low dark:bg-surface-high"></div>
+				{/each}
 			</div>
-		</Card>
-	{:else if filteredLists.length === 0}
-		<EmptyState
-			title="No shopping lists"
-			description={statusFilter === 'all'
-				? 'Create a shopping list to plan your purchases.'
-				: `No ${statusFilter} lists right now.`}
-			icon="shopping_cart"
-		/>
-	{:else}
-		<div class="space-y-3" role="list">
-			{#each filteredLists as list (list.id)}
-				{@const counts = listItemCounts.get(list.id)}
-				<a href={resolve(`/tracking/shopping-lists/${list.id}` as '/')} class="block">
-					<ShoppingListCard
-						{list}
-						itemCount={counts?.total ?? 0}
-						checkedCount={counts?.checked ?? 0}
-					/>
-				</a>
-			{/each}
-		</div>
-	{/if}
+		{:else if error}
+			<Card>
+				<div class="flex flex-col items-center gap-3 py-6 text-center">
+					<span class="material-symbols-outlined text-3xl text-error">cloud_off</span>
+					<p class="font-body text-sm text-on-surface-muted">{error}</p>
+				</div>
+			</Card>
+		{:else if filteredLists.length === 0}
+			<EmptyState
+				title="No shopping lists"
+				description={statusFilter === 'all'
+					? 'Create a shopping list to plan your purchases.'
+					: `No ${statusFilter} lists right now.`}
+				icon="shopping_cart"
+			/>
+		{:else}
+			<div class="space-y-3" role="list">
+				{#each filteredLists as list (list.id)}
+					{@const counts = listItemCounts.get(list.id)}
+					<a href={resolve(`/tracking/shopping-lists/${list.id}` as '/')} class="block">
+						<ShoppingListCard
+							{list}
+							itemCount={counts?.total ?? 0}
+							checkedCount={counts?.checked ?? 0}
+						/>
+					</a>
+				{/each}
+			</div>
+		{/if}
+	</div>
 </main>

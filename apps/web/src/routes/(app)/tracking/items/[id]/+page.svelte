@@ -17,7 +17,7 @@
 		stockLevelClass
 	} from '$lib/utils/tracking-format.js';
 
-	const id = $derived(page.params.id!);
+	const id = $derived(page.params.id ?? '');
 	let item = $state<TrackingItem | null>(null);
 	let events = $state<TrackingItemEvent[]>([]);
 	let loading = $state(true);
@@ -26,6 +26,11 @@
 
 	onMount(async () => {
 		error = null;
+		if (!id) {
+			error = 'Invalid ID.';
+			loading = false;
+			return;
+		}
 		try {
 			item = await syncStore.queryItem(id);
 			if (item) {

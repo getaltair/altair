@@ -6,7 +6,7 @@
 	import ShoppingListItem from '$lib/components/tracking/ShoppingListItem.svelte';
 	import { BackLink, Card, EmptyState, SectionLabel } from '$lib/components/ui/index.js';
 
-	const id = $derived(page.params.id!);
+	const id = $derived(page.params.id ?? '');
 	let list = $state<TrackingShoppingList | null>(null);
 	let items = $state<TrackingShoppingListItem[]>([]);
 	let loading = $state(true);
@@ -18,6 +18,11 @@
 
 	onMount(async () => {
 		error = null;
+		if (!id) {
+			error = 'Invalid ID.';
+			loading = false;
+			return;
+		}
 		try {
 			const db = syncStore.db;
 			if (db) {
@@ -43,6 +48,7 @@
 			items = await syncStore.queryShoppingListItems(id);
 		} catch (err) {
 			console.error('[shopping-list-detail] Failed to toggle item:', err);
+			error = 'Failed to toggle item.';
 		}
 	}
 </script>

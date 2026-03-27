@@ -85,44 +85,46 @@
 		{/each}
 	</div>
 
-	<!-- Note count -->
-	{#if !loading}
-		<p class="mb-4 font-body text-xs text-outline-variant dark:text-on-surface-muted">
-			{filteredNotes.length} note{filteredNotes.length !== 1 ? 's' : ''}
-		</p>
-	{/if}
+	<div role="tabpanel">
+		<!-- Note count -->
+		{#if !loading}
+			<p class="mb-4 font-body text-xs text-outline-variant dark:text-on-surface-muted">
+				{filteredNotes.length} note{filteredNotes.length !== 1 ? 's' : ''}
+			</p>
+		{/if}
 
-	<!-- Note list -->
-	{#if loading}
-		<div class="space-y-3">
-			{#each [0, 1, 2] as i (i)}
-				<div class="h-20 animate-pulse rounded-2xl bg-surface-low dark:bg-surface-high"></div>
-			{/each}
-		</div>
-	{:else if error}
-		<Card>
-			<div class="flex flex-col items-center gap-3 py-6 text-center">
-				<span class="material-symbols-outlined text-3xl text-error">cloud_off</span>
-				<p class="font-body text-sm text-on-surface-muted">{error}</p>
+		<!-- Note list -->
+		{#if loading}
+			<div class="space-y-3">
+				{#each [0, 1, 2] as i (i)}
+					<div class="h-20 animate-pulse rounded-2xl bg-surface-low dark:bg-surface-high"></div>
+				{/each}
 			</div>
-		</Card>
-	{:else if filteredNotes.length === 0}
-		<EmptyState
-			title="No notes found"
-			description={activeFilter === 'pinned'
-				? 'No pinned notes yet.'
-				: searchQuery
-					? 'No notes match your search.'
-					: 'Notes help you capture and organize knowledge.'}
-			icon="description"
-		/>
-	{:else}
-		<div class="space-y-3" role="list">
-			{#each filteredNotes as note (note.id)}
-				<a href={resolve(`/knowledge/notes/${note.id}` as '/')} class="block">
-					<NoteCard {note} />
-				</a>
-			{/each}
-		</div>
-	{/if}
+		{:else if error}
+			<Card>
+				<div class="flex flex-col items-center gap-3 py-6 text-center">
+					<span class="material-symbols-outlined text-3xl text-error">cloud_off</span>
+					<p class="font-body text-sm text-on-surface-muted">{error}</p>
+				</div>
+			</Card>
+		{:else if filteredNotes.length === 0}
+			<EmptyState
+				title="No notes found"
+				description={activeFilter === 'pinned'
+					? 'No pinned notes yet.'
+					: searchQuery
+						? 'No notes match your search.'
+						: 'Notes help you capture and organize knowledge.'}
+				icon="description"
+			/>
+		{:else}
+			<div class="space-y-3" role="list">
+				{#each filteredNotes as note (note.id)}
+					<a href={resolve(`/knowledge/notes/${note.id}` as '/')} class="block">
+						<NoteCard {note} />
+					</a>
+				{/each}
+			</div>
+		{/if}
+	</div>
 </main>

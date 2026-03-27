@@ -1,20 +1,20 @@
-<script lang="ts">
+<script lang="ts" generics="T">
 	import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 
 	interface Props {
-		items: unknown[];
-		getId: (item: unknown) => string;
-		getParentId: (item: unknown) => string | undefined | null;
-		getName: (item: unknown) => string;
-		getDescription?: (item: unknown) => string | undefined;
-		onSelect?: (item: unknown) => void;
+		items: T[];
+		getId: (item: T) => string;
+		getParentId: (item: T) => string | undefined | null;
+		getName: (item: T) => string;
+		getDescription?: (item: T) => string | undefined;
+		onSelect?: (item: T) => void;
 	}
 
 	let { items, getId, getParentId, getName, getDescription, onSelect }: Props = $props();
 
 	// Build tree structure from flat list
 	interface TreeNode {
-		item: unknown;
+		item: T;
 		children: TreeNode[];
 	}
 

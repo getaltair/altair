@@ -28,9 +28,15 @@
 		try {
 			allItems = await syncStore.queryItems();
 
-			// Load locations and categories for filter dropdowns
-			// Use empty string as householdId fallback
-			const householdId = allItems[0]?.household_id ?? '';
+			// Query householdId directly instead of deriving from items
+			const db = syncStore.db;
+			let householdId = '';
+			if (db) {
+				const result = await db.getAll<{ household_id: string }>(
+					'SELECT household_id FROM household_memberships LIMIT 1'
+				);
+				householdId = result[0]?.household_id ?? '';
+			}
 			if (householdId) {
 				locations = await syncStore.queryLocations(householdId);
 				categories = await syncStore.queryCategories(householdId);

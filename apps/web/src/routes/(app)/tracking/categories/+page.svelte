@@ -12,8 +12,15 @@
 	onMount(async () => {
 		error = null;
 		try {
-			const items = await syncStore.queryItems();
-			const householdId = items[0]?.household_id ?? '';
+			// Query householdId directly instead of deriving from items
+			const db = syncStore.db;
+			let householdId = '';
+			if (db) {
+				const result = await db.getAll<{ household_id: string }>(
+					'SELECT household_id FROM household_memberships LIMIT 1'
+				);
+				householdId = result[0]?.household_id ?? '';
+			}
 			categories = await syncStore.queryCategories(householdId);
 		} catch (err) {
 			console.error('[tracking-categories] Failed to load:', err);
@@ -60,10 +67,10 @@
 		<Card>
 			<TreeView
 				items={categories}
-				getId={(item) => (item as TrackingCategory).id}
-				getParentId={(item) => (item as TrackingCategory).parent_category_id}
-				getName={(item) => (item as TrackingCategory).name}
-				getDescription={(item) => (item as TrackingCategory).description ?? undefined}
+				getId={(item) => item.id}
+				getParentId={(item) => item.parent_category_id}
+				getName={(item) => item.name}
+				getDescription={(item) => item.description ?? undefined}
 			/>
 		</Card>
 	{/if}
