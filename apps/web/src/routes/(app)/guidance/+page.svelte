@@ -1,30 +1,145 @@
 <script lang="ts">
-	import { EntityType } from '$lib/contracts';
+	import { onMount } from 'svelte';
+	import { resolve } from '$app/paths';
+	import { syncStore } from '$lib/stores/sync.svelte';
+	import Card from '$lib/components/ui/Card.svelte';
+	import SectionLabel from '$lib/components/ui/SectionLabel.svelte';
+
+	let initiativeCount = $state(0);
+	let activeQuestCount = $state(0);
+	let routineCount = $state(0);
+	let loading = $state(true);
+	let error = $state<string | null>(null);
+
+	onMount(async () => {
+		error = null;
+		try {
+			const initiatives = await syncStore.queryInitiatives();
+			const quests = await syncStore.queryQuests({ status: 'in_progress' });
+			const routines = await syncStore.queryRoutines({ status: 'active' });
+			initiativeCount = initiatives.length;
+			activeQuestCount = quests.length;
+			routineCount = routines.length;
+		} catch (err) {
+			console.error('[guidance] Failed to load stats:', err);
+			error = 'Could not load data. Please try again.';
+		}
+		loading = false;
+	});
+
+	const navItems = [
+		{
+			href: '/guidance/initiatives',
+			icon: 'flag',
+			title: 'Initiatives',
+			description: 'Long-term goals and projects'
+		},
+		{
+			href: '/guidance/quests',
+			icon: 'task_alt',
+			title: 'Quests',
+			description: 'Tasks and things to do'
+		},
+		{
+			href: '/guidance/routines',
+			icon: 'repeat',
+			title: 'Routines',
+			description: 'Regular habits and activities'
+		}
+	];
 </script>
 
 <svelte:head>
 	<title>Guidance - Altair</title>
 </svelte:head>
 
-<div class="space-y-4">
-	<div>
-		<h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Guidance</h1>
-		<p class="mt-1 text-base text-slate-600 dark:text-slate-400">
-			Plan quests, build routines, and stay focused on what matters.
+<main class="mx-auto max-w-2xl px-4 py-8">
+	<!-- Header -->
+	<div class="mb-10">
+		<h1 class="font-display text-3xl font-bold text-on-surface dark:text-[var(--text-primary)]">
+			Guidance
+		</h1>
+		<p class="mt-2 font-body text-sm text-on-surface-muted dark:text-on-surface-subtle">
+			What should I do?
 		</p>
 	</div>
 
-	<div
-		class="rounded-lg border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900"
-	>
-		<p class="text-sm text-slate-500 dark:text-slate-400">
-			Entity type: <code
-				class="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs text-indigo-700 dark:bg-slate-800 dark:text-indigo-300"
-				>{EntityType.GUIDANCE_QUEST}</code
-			>
-		</p>
-		<p class="mt-3 text-sm text-slate-500 dark:text-slate-400">
-			This page will list guidance quests, epics, routines, and focus sessions.
-		</p>
-	</div>
-</div>
+	<!-- Stat cards grid -->
+	<section class="mb-10">
+		<SectionLabel text="OVERVIEW" />
+		{#if error}
+			<Card>
+				<div class="flex flex-col items-center gap-3 py-6 text-center">
+					<span class="material-symbols-outlined text-3xl text-error">cloud_off</span>
+					<p class="font-body text-sm text-on-surface-muted">{error}</p>
+				</div>
+			</Card>
+		{:else}
+			<div class="grid grid-cols-3 gap-4">
+				{#each [{ href: '/guidance/initiatives', count: initiativeCount, label: 'Initiatives' }, { href: '/guidance/quests', count: activeQuestCount, label: 'Active Quests' }, { href: '/guidance/routines', count: routineCount, label: 'Routines' }] as stat (stat.href)}
+					<a href={resolve(stat.href as '/')} class="block">
+						<Card>
+							<div class="text-center">
+								{#if loading}
+									<div
+										class="mx-auto h-9 w-12 animate-pulse rounded-lg bg-surface-low dark:bg-surface-high"
+									></div>
+								{:else}
+									<span
+										class="font-display text-3xl font-bold text-primary dark:text-primary-container"
+									>
+										{stat.count}
+									</span>
+								{/if}
+								<p
+									class="mt-1 font-body text-xs font-semibold tracking-widest text-on-surface-muted uppercase dark:text-on-surface-subtle"
+								>
+									{stat.label}
+								</p>
+							</div>
+						</Card>
+					</a>
+				{/each}
+			</div>
+		{/if}
+	</section>
+
+	<!-- Navigation cards -->
+	<section>
+		<SectionLabel text="EXPLORE" />
+		<div class="space-y-3">
+			{#each navItems as item (item.href)}
+				<a href={resolve(item.href as '/')} class="block">
+					<Card class="transition-breathe hover:bg-surface-low dark:hover:bg-[var(--card-bg)]">
+						<div class="flex items-center gap-4">
+							<span
+								class="material-symbols-outlined text-4xl text-primary dark:text-primary-container"
+								aria-hidden="true"
+							>
+								{item.icon}
+							</span>
+							<div class="min-w-0 flex-1">
+								<h3
+									class="font-display text-base font-bold text-on-surface dark:text-[var(--text-primary)]"
+								>
+									{item.title}
+								</h3>
+								<p
+									class="mt-0.5 font-body text-sm text-on-surface-muted dark:text-on-surface-subtle"
+								>
+									{item.description}
+								</p>
+							</div>
+							<span
+								class="material-symbols-outlined text-xl text-outline-variant dark:text-on-surface-muted"
+								aria-hidden="true"
+							>
+								chevron_right
+							</span>
+						</div>
+					</Card>
+				</a>
+			{/each}
+		</div>
+	</section>
+</main>
