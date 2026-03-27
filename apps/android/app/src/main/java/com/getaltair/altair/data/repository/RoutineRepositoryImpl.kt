@@ -6,6 +6,7 @@ import com.getaltair.altair.data.local.mapper.toEntity
 import com.getaltair.altair.domain.entity.Routine
 import com.getaltair.altair.domain.repository.RoutineRepository
 import java.util.UUID
+import com.getaltair.altair.util.mapToDomain
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -15,14 +16,10 @@ class RoutineRepositoryImpl(
 ) : RoutineRepository {
 
     override fun getAll(): Flow<List<Routine>> =
-        routineDao.getByUserId(userId()).map { entities ->
-            entities.map { it.toDomain() }
-        }
+        routineDao.getByUserId(userId()).mapToDomain { it.toDomain() }
 
     override fun getActive(): Flow<List<Routine>> =
-        routineDao.getActiveByUserId(userId()).map { entities ->
-            entities.map { it.toDomain() }
-        }
+        routineDao.getActiveByUserId(userId()).mapToDomain { it.toDomain() }
 
     override fun getById(id: UUID): Flow<Routine?> =
         routineDao.getById(id).map { it?.toDomain() }

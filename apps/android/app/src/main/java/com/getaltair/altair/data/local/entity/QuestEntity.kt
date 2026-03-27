@@ -14,21 +14,25 @@ import java.util.UUID
             entity = EpicEntity::class,
             parentColumns = ["id"],
             childColumns = ["epic_id"],
+            onDelete = ForeignKey.NO_ACTION,
         ),
         ForeignKey(
             entity = InitiativeEntity::class,
             parentColumns = ["id"],
             childColumns = ["initiative_id"],
+            onDelete = ForeignKey.NO_ACTION,
         ),
         ForeignKey(
             entity = UserEntity::class,
             parentColumns = ["id"],
             childColumns = ["user_id"],
+            onDelete = ForeignKey.NO_ACTION,
         ),
         ForeignKey(
             entity = HouseholdEntity::class,
             parentColumns = ["id"],
             childColumns = ["household_id"],
+            onDelete = ForeignKey.NO_ACTION,
         ),
     ],
     indices = [

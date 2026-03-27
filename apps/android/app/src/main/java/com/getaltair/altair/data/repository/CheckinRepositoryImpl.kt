@@ -7,6 +7,7 @@ import com.getaltair.altair.domain.entity.DailyCheckin
 import com.getaltair.altair.domain.repository.CheckinRepository
 import java.time.LocalDate
 import java.util.UUID
+import com.getaltair.altair.util.mapToDomain
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -22,11 +23,9 @@ class CheckinRepositoryImpl(
         start: LocalDate,
         end: LocalDate,
     ): Flow<List<DailyCheckin>> =
-        checkinDao.getByUserInRange(userId, start.toString(), end.toString()).map { entities ->
-            entities.map { it.toDomain() }
-        }
+        checkinDao.getByUserInRange(userId, start.toString(), end.toString()).mapToDomain { it.toDomain() }
 
     override suspend fun save(checkin: DailyCheckin) {
-        checkinDao.insert(checkin.toEntity())
+        checkinDao.upsert(checkin.toEntity())
     }
 }

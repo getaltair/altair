@@ -6,6 +6,7 @@ import com.getaltair.altair.data.local.mapper.toEntity
 import com.getaltair.altair.domain.entity.Initiative
 import com.getaltair.altair.domain.repository.InitiativeRepository
 import java.util.UUID
+import com.getaltair.altair.util.mapToDomain
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -15,9 +16,7 @@ class InitiativeRepositoryImpl(
 ) : InitiativeRepository {
 
     override fun getAll(): Flow<List<Initiative>> =
-        initiativeDao.getByUserId(userId()).map { entities ->
-            entities.map { it.toDomain() }
-        }
+        initiativeDao.getByUserId(userId()).mapToDomain { it.toDomain() }
 
     override fun getById(id: UUID): Flow<Initiative?> =
         initiativeDao.getById(id).map { it?.toDomain() }

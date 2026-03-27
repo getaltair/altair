@@ -14,11 +14,13 @@ import java.util.UUID
             entity = InitiativeEntity::class,
             parentColumns = ["id"],
             childColumns = ["initiative_id"],
+            onDelete = ForeignKey.NO_ACTION,
         ),
         ForeignKey(
             entity = UserEntity::class,
             parentColumns = ["id"],
             childColumns = ["user_id"],
+            onDelete = ForeignKey.NO_ACTION,
         ),
     ],
     indices = [

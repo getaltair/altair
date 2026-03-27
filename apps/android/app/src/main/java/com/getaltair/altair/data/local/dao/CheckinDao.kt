@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
 import androidx.room.Update
+import androidx.room.Upsert
 import com.getaltair.altair.data.local.entity.CheckinEntity
 import java.util.UUID
 import kotlinx.coroutines.flow.Flow
@@ -22,4 +23,7 @@ interface CheckinDao {
 
     @Update
     suspend fun update(entity: CheckinEntity)
+
+    @Upsert
+    suspend fun upsert(entity: CheckinEntity)
 }

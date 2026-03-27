@@ -11,6 +11,7 @@ val databaseModule = module {
     single<AltairDatabase> { provideDatabase(androidContext()) }
 
     single { get<AltairDatabase>().userDao() }
+    single { get<AltairDatabase>().householdDao() }
     single { get<AltairDatabase>().initiativeDao() }
     single { get<AltairDatabase>().epicDao() }
     single { get<AltairDatabase>().questDao() }
@@ -21,9 +22,10 @@ val databaseModule = module {
     single { get<AltairDatabase>().entityRelationDao() }
 }
 
+@Suppress("DEPRECATION")
 private fun provideDatabase(context: Context): AltairDatabase =
     Room.databaseBuilder(
         context.applicationContext,
         AltairDatabase::class.java,
         "altair.db",
-    ).build()
+    ).fallbackToDestructiveMigration().build()

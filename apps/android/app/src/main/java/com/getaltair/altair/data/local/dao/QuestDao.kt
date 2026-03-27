@@ -24,8 +24,8 @@ interface QuestDao {
     @Query("SELECT * FROM guidance_quests WHERE status = :status ORDER BY created_at DESC")
     fun getByStatus(status: String): Flow<List<QuestEntity>>
 
-    @Query("SELECT * FROM guidance_quests WHERE due_date = date('now', 'localtime') ORDER BY priority DESC")
-    fun getDueToday(): Flow<List<QuestEntity>>
+    @Query("SELECT * FROM guidance_quests WHERE due_date = :date ORDER BY priority DESC")
+    fun getDueToday(date: String): Flow<List<QuestEntity>>
 
     @Query("SELECT * FROM guidance_quests WHERE due_date <= :date ORDER BY due_date ASC")
     fun getDueBefore(date: String): Flow<List<QuestEntity>>

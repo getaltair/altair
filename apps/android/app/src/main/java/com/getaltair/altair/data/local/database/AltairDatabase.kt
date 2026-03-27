@@ -8,6 +8,7 @@ import com.getaltair.altair.data.local.dao.CheckinDao
 import com.getaltair.altair.data.local.dao.EntityRelationDao
 import com.getaltair.altair.data.local.dao.EpicDao
 import com.getaltair.altair.data.local.dao.FocusSessionDao
+import com.getaltair.altair.data.local.dao.HouseholdDao
 import com.getaltair.altair.data.local.dao.InitiativeDao
 import com.getaltair.altair.data.local.dao.QuestDao
 import com.getaltair.altair.data.local.dao.RoutineDao
@@ -37,12 +38,13 @@ import com.getaltair.altair.data.local.entity.UserEntity
         FocusSessionEntity::class,
         EntityRelationEntity::class,
     ],
-    version = 1,
+    version = 2,
     exportSchema = true,
 )
 @TypeConverters(RoomConverters::class)
 abstract class AltairDatabase : RoomDatabase() {
     abstract fun userDao(): UserDao
+    abstract fun householdDao(): HouseholdDao
     abstract fun initiativeDao(): InitiativeDao
     abstract fun epicDao(): EpicDao
     abstract fun questDao(): QuestDao

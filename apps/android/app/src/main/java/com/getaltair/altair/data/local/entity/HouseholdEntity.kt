@@ -14,6 +14,7 @@ import java.util.UUID
             entity = UserEntity::class,
             parentColumns = ["id"],
             childColumns = ["created_by"],
+            onDelete = ForeignKey.NO_ACTION,
         ),
     ],
     indices = [
