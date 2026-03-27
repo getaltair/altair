@@ -6,6 +6,9 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import com.getaltair.altair.ui.capture.BarcodeScannerScreen
+import com.getaltair.altair.ui.capture.CameraCaptureScreen
+import com.getaltair.altair.ui.capture.VoiceNoteScreen
 import com.getaltair.altair.ui.guidance.checkin.CheckinScreen
 import com.getaltair.altair.ui.guidance.initiative.InitiativeDetailScreen
 import com.getaltair.altair.ui.guidance.initiative.InitiativeListScreen
@@ -13,7 +16,14 @@ import com.getaltair.altair.ui.guidance.quest.QuestDetailScreen
 import com.getaltair.altair.ui.guidance.routine.RoutineDetailScreen
 import com.getaltair.altair.ui.guidance.routine.RoutineListScreen
 import com.getaltair.altair.ui.guidance.today.TodayScreen
+import com.getaltair.altair.ui.knowledge.NoteDetailScreen
+import com.getaltair.altair.ui.knowledge.NoteEditorScreen
+import com.getaltair.altair.ui.knowledge.NoteListScreen
 import com.getaltair.altair.ui.settings.SettingsScreen
+import com.getaltair.altair.ui.tracking.item.ItemDetailScreen
+import com.getaltair.altair.ui.tracking.item.ItemListScreen
+import com.getaltair.altair.ui.tracking.shopping.ShoppingListScreen
+import com.getaltair.altair.ui.tracking.shopping.ShoppingListsScreen
 import java.util.UUID
 
 @Composable
@@ -97,6 +107,119 @@ fun AltairNavGraph(
         composable(Screen.Settings.route) {
             SettingsScreen(
                 onNavigateToTab = { route -> navigateToTab(navController, route) },
+            )
+        }
+
+        composable(Screen.NoteList.route) {
+            NoteListScreen(
+                onNavigateToDetail = { noteId ->
+                    navController.navigate(Screen.NoteDetail(noteId).route)
+                },
+                onNavigateToEditor = { noteId ->
+                    navController.navigate(
+                        if (noteId != null) Screen.NoteEditor(noteId).route
+                        else Screen.NoteEditor().route,
+                    )
+                },
+                onNavigateToCamera = {
+                    navController.navigate(Screen.CameraCapture.route)
+                },
+                onNavigateToTab = { route -> navigateToTab(navController, route) },
+            )
+        }
+
+        composable(
+            route = Screen.NoteDetail.ROUTE,
+            arguments = listOf(
+                navArgument(Screen.NoteDetail.ARG_NOTE_ID) { type = NavType.StringType },
+            ),
+        ) {
+            NoteDetailScreen(
+                onNavigateUp = { navController.popBackStack() },
+                onNavigateToEditor = { noteId ->
+                    navController.navigate(Screen.NoteEditor(noteId).route)
+                },
+            )
+        }
+
+        composable(
+            route = Screen.NoteEditor.ROUTE,
+            arguments = listOf(
+                navArgument(Screen.NoteEditor.ARG_NOTE_ID) {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                },
+            ),
+        ) { backStackEntry ->
+            val noteId = backStackEntry.arguments?.getString(Screen.NoteEditor.ARG_NOTE_ID)
+            NoteEditorScreen(
+                noteId = noteId,
+                onNavigateUp = { navController.popBackStack() },
+            )
+        }
+
+        composable(Screen.ItemList.route) {
+            ItemListScreen(
+                onNavigateToDetail = { itemId ->
+                    navController.navigate(Screen.ItemDetail(itemId).route)
+                },
+                onNavigateToBarcodeScanner = {
+                    navController.navigate(Screen.BarcodeScanner.route)
+                },
+                onNavigateToTab = { route -> navigateToTab(navController, route) },
+            )
+        }
+
+        composable(
+            route = Screen.ItemDetail.ROUTE,
+            arguments = listOf(
+                navArgument(Screen.ItemDetail.ARG_ITEM_ID) { type = NavType.StringType },
+            ),
+        ) {
+            ItemDetailScreen(
+                onNavigateUp = { navController.popBackStack() },
+            )
+        }
+
+        composable(Screen.ShoppingLists.route) {
+            ShoppingListsScreen(
+                onNavigateToList = { listId ->
+                    navController.navigate(Screen.ShoppingListDetail(listId).route)
+                },
+                onNavigateToTab = { route -> navigateToTab(navController, route) },
+            )
+        }
+
+        composable(
+            route = Screen.ShoppingListDetail.ROUTE,
+            arguments = listOf(
+                navArgument(Screen.ShoppingListDetail.ARG_LIST_ID) { type = NavType.StringType },
+            ),
+        ) {
+            ShoppingListScreen(
+                onNavigateUp = { navController.popBackStack() },
+            )
+        }
+
+        composable(Screen.CameraCapture.route) {
+            CameraCaptureScreen(
+                onNavigateUp = { navController.popBackStack() },
+                onPhotoCaptured = { navController.popBackStack() },
+            )
+        }
+
+        composable(Screen.BarcodeScanner.route) {
+            BarcodeScannerScreen(
+                onBarcodeFound = { navController.popBackStack() },
+                onNavigateUp = { navController.popBackStack() },
+            )
+        }
+
+        composable(Screen.VoiceNote.route) {
+            VoiceNoteScreen(
+                onRecordingSaved = { navController.popBackStack() },
+                onNavigateUp = { navController.popBackStack() },
             )
         }
     }
