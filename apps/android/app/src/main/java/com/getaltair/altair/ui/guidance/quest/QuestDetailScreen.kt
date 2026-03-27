@@ -1,7 +1,6 @@
 package com.getaltair.altair.ui.guidance.quest
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -11,30 +10,27 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.getaltair.altair.domain.entity.Priority
 import com.getaltair.altair.domain.entity.Quest
+import com.getaltair.altair.domain.entity.QuestStatus
+import com.getaltair.altair.ui.common.UiState
 import com.getaltair.altair.ui.components.AltairButton
 import com.getaltair.altair.ui.components.AltairCard
+import com.getaltair.altair.ui.components.AltairDetailScaffold
+import com.getaltair.altair.ui.components.AltairErrorBox
+import com.getaltair.altair.ui.components.AltairLoadingBox
+import com.getaltair.altair.util.capitalizeFirst
 import java.time.format.DateTimeFormatter
 import org.koin.androidx.compose.koinViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun QuestDetailScreen(
     onBack: () -> Unit,
@@ -42,62 +38,27 @@ fun QuestDetailScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
-        topBar = {
-            TopAppBar(
-                title = {
-                    val title = when (val state = uiState) {
-                        is QuestDetailUiState.Success -> state.quest.name
-                        else -> "Quest"
-                    }
-                    Text(text = title, style = MaterialTheme.typography.titleLarge)
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background,
-                    titleContentColor = MaterialTheme.colorScheme.onBackground,
-                ),
-            )
-        },
-    ) { innerPadding ->
+    val title = when (val state = uiState) {
+        is UiState.Success -> state.data.name
+        else -> "Quest"
+    }
+
+    AltairDetailScaffold(title = title, onBack = onBack) { innerPadding ->
         when (val state = uiState) {
-            is QuestDetailUiState.Loading -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-                }
+            is UiState.Loading -> {
+                AltairLoadingBox(modifier = Modifier.padding(innerPadding))
             }
 
-            is QuestDetailUiState.Error -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = state.message,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.error,
-                    )
-                }
+            is UiState.Error -> {
+                AltairErrorBox(
+                    message = state.message,
+                    modifier = Modifier.padding(innerPadding),
+                )
             }
 
-            is QuestDetailUiState.Success -> {
+            is UiState.Success -> {
                 QuestDetailContent(
-                    quest = state.quest,
+                    quest = state.data,
                     onComplete = viewModel::completeQuest,
                     modifier = Modifier.padding(innerPadding),
                 )
@@ -112,8 +73,8 @@ private fun QuestDetailContent(
     onComplete: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val isCompleted = quest.status == "completed"
-    val isInProgress = quest.status == "in_progress"
+    val isCompleted = quest.status == QuestStatus.COMPLETED
+    val isInProgress = quest.status == QuestStatus.IN_PROGRESS
 
     Column(
         modifier = modifier
@@ -130,14 +91,14 @@ private fun QuestDetailContent(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        text = quest.status.replaceFirstChar { it.uppercase() },
+                        text = quest.status.value.capitalizeFirst(),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.primary,
                     )
                     Text(
-                        text = quest.priority.replaceFirstChar { it.uppercase() },
+                        text = quest.priority.value.capitalizeFirst(),
                         style = MaterialTheme.typography.labelMedium,
-                        color = if (quest.priority == "high") {
+                        color = if (quest.priority == Priority.HIGH) {
                             MaterialTheme.colorScheme.error
                         } else {
                             MaterialTheme.colorScheme.onSurfaceVariant

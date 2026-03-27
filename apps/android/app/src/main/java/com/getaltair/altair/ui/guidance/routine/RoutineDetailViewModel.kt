@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.getaltair.altair.domain.repository.RoutineRepository
 import com.getaltair.altair.navigation.Screen
+import com.getaltair.altair.ui.common.UiState
 import java.util.UUID
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,10 +19,12 @@ class RoutineDetailViewModel(
 ) : ViewModel() {
 
     private val routineId: UUID = UUID.fromString(
-        savedStateHandle.get<String>(Screen.RoutineDetail.ARG_ID)!!,
+        requireNotNull(savedStateHandle.get<String>(Screen.RoutineDetail.ARG_ID)) {
+            "Missing routine ID navigation argument"
+        },
     )
 
-    private val _uiState = MutableStateFlow<RoutineDetailUiState>(RoutineDetailUiState.Loading)
+    private val _uiState = MutableStateFlow<RoutineDetailUiState>(UiState.Loading)
     val uiState: StateFlow<RoutineDetailUiState> = _uiState.asStateFlow()
 
     init {
@@ -33,13 +36,13 @@ class RoutineDetailViewModel(
             routineRepository.getById(routineId)
                 .catch { e ->
                     _uiState.value =
-                        RoutineDetailUiState.Error(e.message ?: "Unknown error")
+                        UiState.Error(e.message ?: "Unknown error")
                 }
                 .collect { routine ->
                     _uiState.value = if (routine != null) {
-                        RoutineDetailUiState.Success(routine)
+                        UiState.Success(routine)
                     } else {
-                        RoutineDetailUiState.Error("Routine not found")
+                        UiState.Error("Routine not found")
                     }
                 }
         }

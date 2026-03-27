@@ -3,6 +3,7 @@ package com.getaltair.altair.ui.guidance.routine
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.getaltair.altair.domain.repository.RoutineRepository
+import com.getaltair.altair.ui.common.UiState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -13,7 +14,7 @@ class RoutineListViewModel(
     private val routineRepository: RoutineRepository,
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow<RoutineListUiState>(RoutineListUiState.Loading)
+    private val _uiState = MutableStateFlow<RoutineListUiState>(UiState.Loading)
     val uiState: StateFlow<RoutineListUiState> = _uiState.asStateFlow()
 
     init {
@@ -25,10 +26,10 @@ class RoutineListViewModel(
             routineRepository.getAll()
                 .catch { e ->
                     _uiState.value =
-                        RoutineListUiState.Error(e.message ?: "Unknown error")
+                        UiState.Error(e.message ?: "Unknown error")
                 }
                 .collect { routines ->
-                    _uiState.value = RoutineListUiState.Success(routines)
+                    _uiState.value = UiState.Success(routines)
                 }
         }
     }

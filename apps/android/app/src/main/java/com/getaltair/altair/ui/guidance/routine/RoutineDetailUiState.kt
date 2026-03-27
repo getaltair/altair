@@ -1,9 +1,6 @@
 package com.getaltair.altair.ui.guidance.routine
 
 import com.getaltair.altair.domain.entity.Routine
+import com.getaltair.altair.ui.common.UiState
 
-sealed class RoutineDetailUiState {
-    data object Loading : RoutineDetailUiState()
-    data class Success(val routine: Routine) : RoutineDetailUiState()
-    data class Error(val message: String) : RoutineDetailUiState()
-}
+typealias RoutineDetailUiState = UiState<Routine>

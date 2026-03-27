@@ -1,7 +1,6 @@
 package com.getaltair.altair.ui.guidance.routine
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -11,17 +10,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -29,10 +19,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.getaltair.altair.domain.entity.Routine
+import com.getaltair.altair.ui.common.UiState
 import com.getaltair.altair.ui.components.AltairCard
+import com.getaltair.altair.ui.components.AltairDetailScaffold
+import com.getaltair.altair.ui.components.AltairErrorBox
+import com.getaltair.altair.ui.components.AltairLoadingBox
+import com.getaltair.altair.util.capitalizeFirst
 import org.koin.androidx.compose.koinViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RoutineDetailScreen(
     onBack: () -> Unit,
@@ -40,62 +34,27 @@ fun RoutineDetailScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
-        topBar = {
-            TopAppBar(
-                title = {
-                    val title = when (val state = uiState) {
-                        is RoutineDetailUiState.Success -> state.routine.name
-                        else -> "Routine"
-                    }
-                    Text(text = title, style = MaterialTheme.typography.titleLarge)
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background,
-                    titleContentColor = MaterialTheme.colorScheme.onBackground,
-                ),
-            )
-        },
-    ) { innerPadding ->
+    val title = when (val state = uiState) {
+        is UiState.Success -> state.data.name
+        else -> "Routine"
+    }
+
+    AltairDetailScaffold(title = title, onBack = onBack) { innerPadding ->
         when (val state = uiState) {
-            is RoutineDetailUiState.Loading -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-                }
+            is UiState.Loading -> {
+                AltairLoadingBox(modifier = Modifier.padding(innerPadding))
             }
 
-            is RoutineDetailUiState.Error -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = state.message,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.error,
-                    )
-                }
+            is UiState.Error -> {
+                AltairErrorBox(
+                    message = state.message,
+                    modifier = Modifier.padding(innerPadding),
+                )
             }
 
-            is RoutineDetailUiState.Success -> {
+            is UiState.Success -> {
                 RoutineDetailContent(
-                    routine = state.routine,
+                    routine = state.data,
                     modifier = Modifier.padding(innerPadding),
                 )
             }
@@ -123,12 +82,12 @@ private fun RoutineDetailContent(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        text = routine.status.replaceFirstChar { it.uppercase() },
+                        text = routine.status.value.capitalizeFirst(),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.primary,
                     )
                     Text(
-                        text = routine.frequency.replaceFirstChar { it.uppercase() },
+                        text = routine.frequency.value.capitalizeFirst(),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

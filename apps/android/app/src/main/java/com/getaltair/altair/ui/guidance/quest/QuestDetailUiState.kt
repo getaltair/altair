@@ -1,9 +1,6 @@
 package com.getaltair.altair.ui.guidance.quest
 
 import com.getaltair.altair.domain.entity.Quest
+import com.getaltair.altair.ui.common.UiState
 
-sealed class QuestDetailUiState {
-    data object Loading : QuestDetailUiState()
-    data class Success(val quest: Quest) : QuestDetailUiState()
-    data class Error(val message: String) : QuestDetailUiState()
-}
+typealias QuestDetailUiState = UiState<Quest>

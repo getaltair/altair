@@ -2,7 +2,6 @@ package com.getaltair.altair.ui.components
 
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.RowScope
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
@@ -22,7 +21,7 @@ fun AltairButton(
         onClick = onClick,
         modifier = modifier,
         enabled = enabled,
-        shape = RoundedCornerShape(24.dp),
+        shape = MaterialTheme.shapes.large,
         colors = ButtonDefaults.buttonColors(
             containerColor = MaterialTheme.colorScheme.primary,
             contentColor = MaterialTheme.colorScheme.onPrimary,
@@ -43,7 +42,7 @@ fun AltairGhostButton(
         onClick = onClick,
         modifier = modifier,
         enabled = enabled,
-        shape = RoundedCornerShape(24.dp),
+        shape = MaterialTheme.shapes.large,
         colors = ButtonDefaults.textButtonColors(
             contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
         ),

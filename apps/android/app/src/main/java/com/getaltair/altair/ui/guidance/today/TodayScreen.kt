@@ -2,7 +2,6 @@ package com.getaltair.altair.ui.guidance.today
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -16,7 +15,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -30,12 +28,17 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.getaltair.altair.R
+import com.getaltair.altair.domain.entity.Priority
 import com.getaltair.altair.domain.entity.Quest
+import com.getaltair.altair.domain.entity.QuestStatus
 import com.getaltair.altair.domain.entity.Routine
 import com.getaltair.altair.navigation.Screen
 import com.getaltair.altair.ui.components.AltairButton
 import com.getaltair.altair.ui.components.AltairCard
+import com.getaltair.altair.ui.components.AltairErrorBox
+import com.getaltair.altair.ui.components.AltairLoadingBox
 import com.getaltair.altair.ui.navigation.AltairBottomNavBar
+import com.getaltair.altair.util.capitalizeFirst
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.UUID
@@ -61,29 +64,14 @@ fun TodayScreen(
     ) { innerPadding ->
         when (val state = uiState) {
             is TodayUiState.Loading -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-                }
+                AltairLoadingBox(modifier = Modifier.padding(innerPadding))
             }
 
             is TodayUiState.Error -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = state.message,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.error,
-                    )
-                }
+                AltairErrorBox(
+                    message = state.message,
+                    modifier = Modifier.padding(innerPadding),
+                )
             }
 
             is TodayUiState.Success -> {
@@ -216,7 +204,7 @@ private fun QuestCard(
     onComplete: () -> Unit,
     onClick: () -> Unit,
 ) {
-    val isCompleted = quest.status == "completed"
+    val isCompleted = quest.status == QuestStatus.COMPLETED
 
     AltairCard(
         modifier = Modifier
@@ -257,7 +245,7 @@ private fun QuestCard(
                     )
                 }
             }
-            if (quest.priority == "high") {
+            if (quest.priority == Priority.HIGH) {
                 Spacer(modifier = Modifier.width(8.dp))
                 Icon(
                     painter = painterResource(R.drawable.ic_priority_high),
@@ -296,7 +284,7 @@ private fun RoutineCard(routine: Routine) {
                 }
             }
             Text(
-                text = routine.frequency.replaceFirstChar { it.uppercase() },
+                text = routine.frequency.value.capitalizeFirst(),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

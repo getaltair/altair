@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.getaltair.altair.domain.repository.EpicRepository
 import com.getaltair.altair.domain.repository.InitiativeRepository
 import com.getaltair.altair.navigation.Screen
+import com.getaltair.altair.ui.common.UiState
 import java.util.UUID
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -21,11 +22,13 @@ class InitiativeDetailViewModel(
 ) : ViewModel() {
 
     private val initiativeId: UUID = UUID.fromString(
-        savedStateHandle.get<String>(Screen.InitiativeDetail.ARG_ID)!!,
+        requireNotNull(savedStateHandle.get<String>(Screen.InitiativeDetail.ARG_ID)) {
+            "Missing initiative ID navigation argument"
+        },
     )
 
     private val _uiState =
-        MutableStateFlow<InitiativeDetailUiState>(InitiativeDetailUiState.Loading)
+        MutableStateFlow<InitiativeDetailUiState>(UiState.Loading)
     val uiState: StateFlow<InitiativeDetailUiState> = _uiState.asStateFlow()
 
     init {
@@ -39,13 +42,13 @@ class InitiativeDetailViewModel(
                 epicRepository.getByInitiative(initiativeId),
             ) { initiative, epics ->
                 if (initiative != null) {
-                    InitiativeDetailUiState.Success(initiative, epics)
+                    UiState.Success(InitiativeDetailData(initiative, epics))
                 } else {
-                    InitiativeDetailUiState.Error("Initiative not found")
+                    UiState.Error("Initiative not found")
                 }
             }.catch { e ->
                 _uiState.value =
-                    InitiativeDetailUiState.Error(e.message ?: "Unknown error")
+                    UiState.Error(e.message ?: "Unknown error")
             }.collect { state ->
                 _uiState.value = state
             }

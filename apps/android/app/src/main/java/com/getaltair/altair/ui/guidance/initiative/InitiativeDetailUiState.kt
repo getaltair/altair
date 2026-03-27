@@ -2,13 +2,11 @@ package com.getaltair.altair.ui.guidance.initiative
 
 import com.getaltair.altair.domain.entity.Epic
 import com.getaltair.altair.domain.entity.Initiative
+import com.getaltair.altair.ui.common.UiState
 
-sealed class InitiativeDetailUiState {
-    data object Loading : InitiativeDetailUiState()
-    data class Success(
-        val initiative: Initiative,
-        val epics: List<Epic>,
-    ) : InitiativeDetailUiState()
+data class InitiativeDetailData(
+    val initiative: Initiative,
+    val epics: List<Epic>,
+)
 
-    data class Error(val message: String) : InitiativeDetailUiState()
-}
+typealias InitiativeDetailUiState = UiState<InitiativeDetailData>

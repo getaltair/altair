@@ -3,6 +3,7 @@ package com.getaltair.altair.ui.guidance.initiative
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.getaltair.altair.domain.repository.InitiativeRepository
+import com.getaltair.altair.ui.common.UiState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -13,7 +14,7 @@ class InitiativeListViewModel(
     private val initiativeRepository: InitiativeRepository,
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow<InitiativeListUiState>(InitiativeListUiState.Loading)
+    private val _uiState = MutableStateFlow<InitiativeListUiState>(UiState.Loading)
     val uiState: StateFlow<InitiativeListUiState> = _uiState.asStateFlow()
 
     init {
@@ -25,10 +26,10 @@ class InitiativeListViewModel(
             initiativeRepository.getAll()
                 .catch { e ->
                     _uiState.value =
-                        InitiativeListUiState.Error(e.message ?: "Unknown error")
+                        UiState.Error(e.message ?: "Unknown error")
                 }
                 .collect { initiatives ->
-                    _uiState.value = InitiativeListUiState.Success(initiatives)
+                    _uiState.value = UiState.Success(initiatives)
                 }
         }
     }

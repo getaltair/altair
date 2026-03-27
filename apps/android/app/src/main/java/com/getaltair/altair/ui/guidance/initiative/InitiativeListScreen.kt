@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -27,8 +26,12 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.getaltair.altair.domain.entity.Initiative
 import com.getaltair.altair.navigation.Screen
+import com.getaltair.altair.ui.common.UiState
 import com.getaltair.altair.ui.components.AltairCard
+import com.getaltair.altair.ui.components.AltairErrorBox
+import com.getaltair.altair.ui.components.AltairLoadingBox
 import com.getaltair.altair.ui.navigation.AltairBottomNavBar
+import com.getaltair.altair.util.capitalizeFirst
 import java.util.UUID
 import org.koin.androidx.compose.koinViewModel
 
@@ -65,34 +68,19 @@ fun InitiativeListScreen(
         },
     ) { innerPadding ->
         when (val state = uiState) {
-            is InitiativeListUiState.Loading -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-                }
+            is UiState.Loading -> {
+                AltairLoadingBox(modifier = Modifier.padding(innerPadding))
             }
 
-            is InitiativeListUiState.Error -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = state.message,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.error,
-                    )
-                }
+            is UiState.Error -> {
+                AltairErrorBox(
+                    message = state.message,
+                    modifier = Modifier.padding(innerPadding),
+                )
             }
 
-            is InitiativeListUiState.Success -> {
-                if (state.initiatives.isEmpty()) {
+            is UiState.Success -> {
+                if (state.data.isEmpty()) {
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
@@ -113,8 +101,7 @@ fun InitiativeListScreen(
                             .padding(horizontal = 16.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp),
                     ) {
-                        item { Spacer(modifier = Modifier.height(0.dp)) }
-                        items(state.initiatives, key = { it.id }) { initiative ->
+                        items(state.data, key = { it.id }) { initiative ->
                             InitiativeCard(
                                 initiative = initiative,
                                 onClick = { onNavigateToDetail(initiative.id) },
@@ -150,7 +137,7 @@ private fun InitiativeCard(
                     color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.weight(1f),
                 )
-                StatusBadge(status = initiative.status)
+                StatusBadge(status = initiative.status.value)
             }
             if (initiative.description != null) {
                 Spacer(modifier = Modifier.height(4.dp))
@@ -168,7 +155,7 @@ private fun InitiativeCard(
 @Composable
 private fun StatusBadge(status: String) {
     Text(
-        text = status.replaceFirstChar { it.uppercase() },
+        text = status.capitalizeFirst(),
         style = MaterialTheme.typography.labelSmall,
         color = MaterialTheme.colorScheme.primary,
     )

@@ -1,7 +1,6 @@
 package com.getaltair.altair.ui.guidance.initiative
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -11,17 +10,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -30,10 +20,14 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.getaltair.altair.domain.entity.Epic
 import com.getaltair.altair.domain.entity.Initiative
+import com.getaltair.altair.ui.common.UiState
 import com.getaltair.altair.ui.components.AltairCard
+import com.getaltair.altair.ui.components.AltairDetailScaffold
+import com.getaltair.altair.ui.components.AltairErrorBox
+import com.getaltair.altair.ui.components.AltairLoadingBox
+import com.getaltair.altair.util.capitalizeFirst
 import org.koin.androidx.compose.koinViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun InitiativeDetailScreen(
     onBack: () -> Unit,
@@ -41,63 +35,28 @@ fun InitiativeDetailScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
-        topBar = {
-            TopAppBar(
-                title = {
-                    val title = when (val state = uiState) {
-                        is InitiativeDetailUiState.Success -> state.initiative.name
-                        else -> "Initiative"
-                    }
-                    Text(text = title, style = MaterialTheme.typography.titleLarge)
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background,
-                    titleContentColor = MaterialTheme.colorScheme.onBackground,
-                ),
-            )
-        },
-    ) { innerPadding ->
+    val title = when (val state = uiState) {
+        is UiState.Success -> state.data.initiative.name
+        else -> "Initiative"
+    }
+
+    AltairDetailScaffold(title = title, onBack = onBack) { innerPadding ->
         when (val state = uiState) {
-            is InitiativeDetailUiState.Loading -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-                }
+            is UiState.Loading -> {
+                AltairLoadingBox(modifier = Modifier.padding(innerPadding))
             }
 
-            is InitiativeDetailUiState.Error -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = state.message,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.error,
-                    )
-                }
+            is UiState.Error -> {
+                AltairErrorBox(
+                    message = state.message,
+                    modifier = Modifier.padding(innerPadding),
+                )
             }
 
-            is InitiativeDetailUiState.Success -> {
+            is UiState.Success -> {
                 InitiativeDetailContent(
-                    initiative = state.initiative,
-                    epics = state.epics,
+                    initiative = state.data.initiative,
+                    epics = state.data.epics,
                     modifier = Modifier.padding(innerPadding),
                 )
             }
@@ -120,7 +79,7 @@ private fun InitiativeDetailContent(
         item {
             Column {
                 Text(
-                    text = initiative.status.replaceFirstChar { it.uppercase() },
+                    text = initiative.status.value.capitalizeFirst(),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.primary,
                 )
@@ -169,7 +128,7 @@ private fun EpicCard(epic: Epic) {
                     modifier = Modifier.weight(1f),
                 )
                 Text(
-                    text = epic.status.replaceFirstChar { it.uppercase() },
+                    text = epic.status.value.capitalizeFirst(),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.primary,
                 )

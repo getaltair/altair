@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.getaltair.altair.domain.repository.QuestRepository
 import com.getaltair.altair.navigation.Screen
+import com.getaltair.altair.ui.common.UiState
 import java.util.UUID
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,10 +19,12 @@ class QuestDetailViewModel(
 ) : ViewModel() {
 
     private val questId: UUID = UUID.fromString(
-        savedStateHandle.get<String>(Screen.QuestDetail.ARG_ID)!!,
+        requireNotNull(savedStateHandle.get<String>(Screen.QuestDetail.ARG_ID)) {
+            "Missing quest ID navigation argument"
+        },
     )
 
-    private val _uiState = MutableStateFlow<QuestDetailUiState>(QuestDetailUiState.Loading)
+    private val _uiState = MutableStateFlow<QuestDetailUiState>(UiState.Loading)
     val uiState: StateFlow<QuestDetailUiState> = _uiState.asStateFlow()
 
     init {
@@ -33,19 +36,26 @@ class QuestDetailViewModel(
             questRepository.getById(questId)
                 .catch { e ->
                     _uiState.value =
-                        QuestDetailUiState.Error(e.message ?: "Unknown error")
+                        UiState.Error(e.message ?: "Unknown error")
                 }
                 .collect { quest ->
                     _uiState.value = if (quest != null) {
-                        QuestDetailUiState.Success(quest)
+                        UiState.Success(quest)
                     } else {
-                        QuestDetailUiState.Error("Quest not found")
+                        UiState.Error("Quest not found")
                     }
                 }
         }
     }
 
     fun completeQuest() {
-        viewModelScope.launch { questRepository.complete(questId) }
+        viewModelScope.launch {
+            try {
+                questRepository.complete(questId)
+            } catch (e: Exception) {
+                _uiState.value =
+                    UiState.Error(e.message ?: "Failed to complete quest")
+            }
+        }
     }
 }

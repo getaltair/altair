@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -27,8 +26,12 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.getaltair.altair.domain.entity.Routine
 import com.getaltair.altair.navigation.Screen
+import com.getaltair.altair.ui.common.UiState
 import com.getaltair.altair.ui.components.AltairCard
+import com.getaltair.altair.ui.components.AltairErrorBox
+import com.getaltair.altair.ui.components.AltairLoadingBox
 import com.getaltair.altair.ui.navigation.AltairBottomNavBar
+import com.getaltair.altair.util.capitalizeFirst
 import java.util.UUID
 import org.koin.androidx.compose.koinViewModel
 
@@ -65,34 +68,19 @@ fun RoutineListScreen(
         },
     ) { innerPadding ->
         when (val state = uiState) {
-            is RoutineListUiState.Loading -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-                }
+            is UiState.Loading -> {
+                AltairLoadingBox(modifier = Modifier.padding(innerPadding))
             }
 
-            is RoutineListUiState.Error -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = state.message,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.error,
-                    )
-                }
+            is UiState.Error -> {
+                AltairErrorBox(
+                    message = state.message,
+                    modifier = Modifier.padding(innerPadding),
+                )
             }
 
-            is RoutineListUiState.Success -> {
-                if (state.routines.isEmpty()) {
+            is UiState.Success -> {
+                if (state.data.isEmpty()) {
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
@@ -113,8 +101,7 @@ fun RoutineListScreen(
                             .padding(horizontal = 16.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp),
                     ) {
-                        item { Spacer(modifier = Modifier.height(0.dp)) }
-                        items(state.routines, key = { it.id }) { routine ->
+                        items(state.data, key = { it.id }) { routine ->
                             RoutineListCard(
                                 routine = routine,
                                 onClick = { onNavigateToDetail(routine.id) },
@@ -151,7 +138,7 @@ private fun RoutineListCard(
                     modifier = Modifier.weight(1f),
                 )
                 Text(
-                    text = routine.frequency.replaceFirstChar { it.uppercase() },
+                    text = routine.frequency.value.capitalizeFirst(),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.primary,
                 )
@@ -167,7 +154,7 @@ private fun RoutineListCard(
             }
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = routine.status.replaceFirstChar { it.uppercase() },
+                text = routine.status.value.capitalizeFirst(),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
