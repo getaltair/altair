@@ -9,7 +9,12 @@ describe('AppSchema', () => {
 		'initiatives',
 		'tags',
 		'attachments',
-		'entity_relations'
+		'entity_relations',
+		'guidance_quests',
+		'guidance_epics',
+		'guidance_routines',
+		'guidance_focus_sessions',
+		'guidance_daily_checkins'
 	] as const;
 
 	it('contains exactly the expected tables', () => {
@@ -100,5 +105,59 @@ describe('table column definitions', () => {
 		expect(cols).toContain('relation_type');
 		expect(cols).toContain('confidence');
 		expect(cols).toContain('evidence_json');
+	});
+
+	it('guidance_quests table has quest-specific columns', () => {
+		const cols = columnNames('guidance_quests');
+		expect(cols).toContain('epic_id');
+		expect(cols).toContain('initiative_id');
+		expect(cols).toContain('user_id');
+		expect(cols).toContain('household_id');
+		expect(cols).toContain('name');
+		expect(cols).toContain('description');
+		expect(cols).toContain('status');
+		expect(cols).toContain('priority');
+		expect(cols).toContain('due_date');
+		expect(cols).toContain('estimated_minutes');
+		expect(cols).toContain('completed_at');
+	});
+
+	it('guidance_epics table has epic-specific columns', () => {
+		const cols = columnNames('guidance_epics');
+		expect(cols).toContain('initiative_id');
+		expect(cols).toContain('user_id');
+		expect(cols).toContain('name');
+		expect(cols).toContain('description');
+		expect(cols).toContain('status');
+		expect(cols).toContain('priority');
+	});
+
+	it('guidance_routines table has routine-specific columns', () => {
+		const cols = columnNames('guidance_routines');
+		expect(cols).toContain('user_id');
+		expect(cols).toContain('household_id');
+		expect(cols).toContain('name');
+		expect(cols).toContain('description');
+		expect(cols).toContain('frequency');
+		expect(cols).toContain('status');
+	});
+
+	it('guidance_focus_sessions table has session-specific columns', () => {
+		const cols = columnNames('guidance_focus_sessions');
+		expect(cols).toContain('quest_id');
+		expect(cols).toContain('user_id');
+		expect(cols).toContain('started_at');
+		expect(cols).toContain('ended_at');
+		expect(cols).toContain('duration_minutes');
+		expect(cols).toContain('notes');
+	});
+
+	it('guidance_daily_checkins table has checkin-specific columns', () => {
+		const cols = columnNames('guidance_daily_checkins');
+		expect(cols).toContain('user_id');
+		expect(cols).toContain('date');
+		expect(cols).toContain('energy_level');
+		expect(cols).toContain('mood');
+		expect(cols).toContain('notes');
 	});
 });
