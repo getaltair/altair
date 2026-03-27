@@ -54,7 +54,7 @@
 
 		try {
 			await db.execute(
-				'INSERT INTO entity_relations (id, from_entity_id, from_entity_type, to_entity_id, to_entity_type, relation_type, source_type, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+				'INSERT INTO entity_relations (id, from_entity_id, from_entity_type, to_entity_id, to_entity_type, relation_type, source_type, status, confidence, evidence_json, created_by_user_id, created_by_process, created_at, updated_at, last_confirmed_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
 				[
 					crypto.randomUUID(),
 					fromEntityId,
@@ -64,8 +64,13 @@
 					relationType,
 					'user',
 					'accepted',
+					null,
+					null,
+					null,
+					'web_ui',
 					new Date().toISOString(),
-					new Date().toISOString()
+					new Date().toISOString(),
+					null
 				]
 			);
 			targetId = '';
@@ -76,9 +81,9 @@
 		} catch (err) {
 			console.error('[create-relation] Failed to create relation:', err);
 			error = 'Could not create relation. Please try again.';
+		} finally {
+			submitting = false;
 		}
-
-		submitting = false;
 	}
 
 	function handleBackdropClick(e: MouseEvent) {

@@ -26,6 +26,7 @@ const BACKEND_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 type RouteResolver = string | ((op: CrudEntry) => string);
 
+/** Maps table names to API routes. Values are either static strings or functions that resolve routes from CRUD operation data. */
 const TABLE_ROUTE_MAP: Record<string, RouteResolver> = {
 	households: '/core/households',
 	initiatives: '/core/initiatives',
@@ -112,8 +113,8 @@ export class AltairConnector implements PowerSyncBackendConnector {
 			for (const op of transaction.crud) {
 				const { id, opData } = op;
 				const routeOrFn = TABLE_ROUTE_MAP[op.table];
-				const route =
-					typeof routeOrFn === 'function' ? routeOrFn(op) : (routeOrFn ?? `/core/${op.table}`);
+				if (!routeOrFn) throw new Error(`[powersync] No route mapped for table: ${op.table}`);
+				const route = typeof routeOrFn === 'function' ? routeOrFn(op) : routeOrFn;
 				let resp: Response;
 
 				switch (op.op) {

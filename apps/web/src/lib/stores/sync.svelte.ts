@@ -495,19 +495,21 @@ export const syncStore = {
 	): Promise<void> {
 		const database = requireDb();
 		const item = await this.queryItem(itemId);
-		if (!item) return;
+		if (!item) throw new Error('[sync] Item not found: ' + itemId);
 
 		// eslint-disable-next-line svelte/prefer-svelte-reactivity
 		const now = new Date().toISOString();
-		await database.execute('UPDATE tracking_items SET quantity = ?, updated_at = ? WHERE id = ?', [
-			item.quantity + change,
-			now,
-			itemId
-		]);
-		await database.execute(
-			'INSERT INTO tracking_item_events (id, item_id, user_id, event_type, quantity_change, notes, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
-			[crypto.randomUUID(), itemId, item.user_id, eventType, change, notes ?? null, now]
-		);
+		await database.writeTransaction(async (tx) => {
+			await tx.execute('UPDATE tracking_items SET quantity = ?, updated_at = ? WHERE id = ?', [
+				item.quantity + change,
+				now,
+				itemId
+			]);
+			await tx.execute(
+				'INSERT INTO tracking_item_events (id, item_id, user_id, event_type, quantity_change, notes, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+				[crypto.randomUUID(), itemId, item.user_id, eventType, change, notes ?? null, now]
+			);
+		});
 	},
 
 	/**
@@ -519,11 +521,35 @@ export const syncStore = {
 			'SELECT is_checked FROM tracking_shopping_list_items WHERE id = ?',
 			[itemId]
 		);
-		if (current) {
-			await database.execute(
-				'UPDATE tracking_shopping_list_items SET is_checked = ? WHERE id = ?',
-				[current.is_checked ? 0 : 1, itemId]
-			);
-		}
+		if (!current) throw new Error('[sync] Shopping list item not found: ' + itemId);
+		await database.execute('UPDATE tracking_shopping_list_items SET is_checked = ? WHERE id = ?', [
+			current.is_checked ? 0 : 1,
+			itemId
+		]);
+	},
+
+	async updateNote(id: string, content: string, contentType: string): Promise<void> {
+		const database = requireDb();
+		// eslint-disable-next-line svelte/prefer-svelte-reactivity
+		const now = new Date().toISOString();
+		await database.execute(
+			'UPDATE knowledge_notes SET content = ?, content_type = ?, updated_at = ? WHERE id = ?',
+			[content, contentType, now, id]
+		);
+	},
+
+	async toggleNotePin(id: string, currentPinned: boolean): Promise<void> {
+		const database = requireDb();
+		// eslint-disable-next-line svelte/prefer-svelte-reactivity
+		const now = new Date().toISOString();
+		await database.execute(
+			'UPDATE knowledge_notes SET is_pinned = ?, updated_at = ? WHERE id = ?',
+			[currentPinned ? 0 : 1, now, id]
+		);
+	},
+
+	async deleteNote(id: string): Promise<void> {
+		const database = requireDb();
+		await database.execute('DELETE FROM knowledge_notes WHERE id = ?', [id]);
 	}
 };
