@@ -149,6 +149,7 @@ hooks/*/logs/
 
 # Session state tracking
 hooks/SkillActivationHook/recommendation-log.json
+.claude/tasks/
 
 # Dev Browser Skill Tidyness
 skills/dev-browser/profiles
