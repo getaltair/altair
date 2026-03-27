@@ -1,58 +1,94 @@
 package com.getaltair.altair.ui.theme
 
-import android.app.Activity
-import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
-
-private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
-)
 
 private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
+    primary = DeepMutedTealNavy,
+    onPrimary = OnPrimaryLight,
+    primaryContainer = WhisperSoftIceBlue,
+    onPrimaryContainer = SubduedTealNavy,
+    secondary = SlateHarbor,
+    onSecondary = OnPrimaryLight,
+    secondaryContainer = MorningFrostBlue,
+    onSecondaryContainer = SlateHarbor,
+    tertiary = WeatheredStoneGreen,
+    onTertiary = OnPrimaryLight,
+    tertiaryContainer = MistySageWash,
+    onTertiaryContainer = WeatheredStoneGreen,
+    error = WarmTerracotta,
+    onError = OnPrimaryLight,
+    errorContainer = SoftCoralBlush,
+    onErrorContainer = WarmTerracotta,
+    background = FrostTouchedPearl,
+    onBackground = DeepInkCharcoal,
+    surface = FrostTouchedPearl,
+    onSurface = DeepInkCharcoal,
+    surfaceVariant = PaleMorningMist,
+    onSurfaceVariant = MutedSlate,
+    surfaceContainerLowest = PureWhite,
+    surfaceContainerLow = PaleMorningMist,
+    surfaceContainer = SoftCloudGrey,
+    surfaceContainerHigh = CoolPebbleWash,
+    surfaceContainerHighest = GentleStone,
+    surfaceDim = VeiledSeafoam,
+    outline = WornGraphite,
+    outlineVariant = SilverHaze,
+    inverseSurface = DeepInkCharcoal,
+    inverseOnSurface = FrostTouchedPearl,
+    inversePrimary = GentleDawnBlue,
+)
 
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
+private val DarkColorScheme = darkColorScheme(
+    primary = GentleDawnBlue,
+    onPrimary = SubduedTealNavy,
+    primaryContainer = SubduedTealNavy,
+    onPrimaryContainer = WhisperSoftIceBlue,
+    secondary = MorningFrostBlue,
+    onSecondary = SubduedTealNavy,
+    secondaryContainer = SlateHarbor,
+    onSecondaryContainer = MorningFrostBlue,
+    tertiary = MistySageWash,
+    onTertiary = SubduedTealNavy,
+    tertiaryContainer = WeatheredStoneGreen,
+    onTertiaryContainer = MistySageWash,
+    error = SoftCoralBlush,
+    onError = WarmTerracotta,
+    errorContainer = WarmTerracotta,
+    onErrorContainer = SoftCoralBlush,
+    background = DarkSurface,
+    onBackground = DarkOnSurface,
+    surface = DarkSurface,
+    onSurface = DarkOnSurface,
+    surfaceVariant = DarkSurfaceContainerHigh,
+    onSurfaceVariant = DarkOnSurfaceVariant,
+    surfaceContainerLowest = DarkSurfaceDim,
+    surfaceContainerLow = DarkSurfaceContainerLow,
+    surfaceContainer = DarkSurfaceContainer,
+    surfaceContainerHigh = DarkSurfaceContainerHigh,
+    surfaceContainerHighest = DarkSurfaceContainerHighest,
+    surfaceDim = DarkSurfaceDim,
+    outline = DarkOutline,
+    outlineVariant = DarkOutlineVariant,
+    inverseSurface = FrostTouchedPearl,
+    inverseOnSurface = DeepInkCharcoal,
+    inversePrimary = DeepMutedTealNavy,
 )
 
 @Composable
 fun AltairTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
-    }
+    val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
 
     MaterialTheme(
         colorScheme = colorScheme,
-        typography = Typography,
-        content = content
+        typography = AltairTypography,
+        shapes = AltairShapes,
+        content = content,
     )
 }
