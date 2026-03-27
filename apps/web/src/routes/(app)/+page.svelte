@@ -1,79 +1,166 @@
 <script lang="ts">
-	import { EntityType } from '$lib/contracts';
-	import { resolve } from '$app/paths';
+	import { onMount } from 'svelte';
+	import { syncStore } from '$lib/stores/sync.svelte';
+	import { page } from '$app/state';
+	import QuestCard from '$lib/components/guidance/QuestCard.svelte';
+	import RoutineCard from '$lib/components/guidance/RoutineCard.svelte';
+	import CheckinCard from '$lib/components/guidance/CheckinCard.svelte';
+	import SectionLabel from '$lib/components/ui/SectionLabel.svelte';
+	import EmptyState from '$lib/components/ui/EmptyState.svelte';
+	import Card from '$lib/components/ui/Card.svelte';
+	import type {
+		GuidanceQuest,
+		GuidanceRoutine,
+		GuidanceDailyCheckin
+	} from '$lib/types/guidance.js';
+
+	let quests = $state<GuidanceQuest[]>([]);
+	let routines = $state<GuidanceRoutine[]>([]);
+	let checkin = $state<GuidanceDailyCheckin | null>(null);
+	let loading = $state(true);
+	let error = $state<string | null>(null);
+
+	// Greeting based on time of day
+	const greeting = $derived.by(() => {
+		const hour = new Date().getHours();
+		if (hour < 12) return 'Good morning';
+		if (hour < 17) return 'Good afternoon';
+		return 'Good evening';
+	});
+
+	const user = $derived(page.data?.user as { id: string; email: string; name: string } | null);
+	const userName = $derived(user?.name?.split(' ')[0] ?? 'there');
+
+	// Today's date in editorial format: "Thursday, March 26"
+	const dateDisplay = $derived(
+		new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
+	);
+
+	const completedCount = $derived(quests.filter((q) => q.status === 'completed').length);
+	const totalCount = $derived(quests.length);
+
+	async function loadData() {
+		loading = true;
+		error = null;
+		const [questsResult, routinesResult, checkinResult] = await Promise.allSettled([
+			syncStore.queryTodayQuests(),
+			syncStore.queryTodayRoutines(),
+			syncStore.queryTodayCheckin()
+		]);
+		if (questsResult.status === 'fulfilled') quests = questsResult.value;
+		if (routinesResult.status === 'fulfilled') routines = routinesResult.value;
+		if (checkinResult.status === 'fulfilled') checkin = checkinResult.value;
+		const anyFailed = [questsResult, routinesResult, checkinResult].some(
+			(r) => r.status === 'rejected'
+		);
+		if (anyFailed) error = 'Some data could not be loaded. Pull to refresh.';
+		loading = false;
+	}
+
+	async function handleQuestComplete(id: string) {
+		try {
+			await syncStore.completeQuest(id);
+			quests = await syncStore.queryTodayQuests();
+		} catch (err) {
+			console.error('[today] Failed to complete quest:', err);
+			error = 'Could not complete quest. Please try again.';
+			await loadData();
+		}
+	}
+
+	onMount(() => {
+		loadData();
+	});
 </script>
 
 <svelte:head>
-	<title>Altair</title>
+	<title>Today - Altair</title>
 </svelte:head>
 
-<div class="space-y-8">
-	<div>
-		<h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-			Welcome to Altair
-		</h1>
-		<p class="mt-2 text-base text-slate-600 dark:text-slate-400">
-			Your household command center. Organize guidance quests, capture knowledge, and track what
-			matters.
+<main class="mx-auto max-w-2xl px-4 py-8">
+	<!-- Header: Greeting + Date -->
+	<div class="mb-10 flex items-start justify-between">
+		<div>
+			<h1 class="font-display text-3xl font-bold text-on-surface dark:text-[var(--text-primary)]">
+				{greeting}, {userName}
+			</h1>
+		</div>
+		<p class="mt-1 font-body text-sm text-on-surface-muted dark:text-on-surface-subtle">
+			{dateDisplay}
 		</p>
 	</div>
 
-	<nav class="grid gap-4 sm:grid-cols-3" aria-label="Quick navigation">
-		<a
-			href={resolve('/guidance')}
-			class="group rounded-xl border border-slate-200 bg-white p-5 transition-shadow hover:shadow-md dark:border-slate-700 dark:bg-slate-900"
-		>
-			<h2
-				class="text-lg font-semibold text-slate-900 group-hover:text-indigo-600 dark:text-white dark:group-hover:text-indigo-400"
-			>
-				Guidance
-			</h2>
-			<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-				Manage quests, routines, and focus sessions.
-			</p>
-			<span
-				class="mt-3 inline-block rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-medium text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300"
-			>
-				{EntityType.GUIDANCE_QUEST}
-			</span>
-		</a>
+	<!-- TODAY'S QUESTS section -->
+	<section class="mb-8">
+		<div class="mb-3 flex items-center justify-between">
+			<SectionLabel text="TODAY'S QUESTS" />
+			{#if totalCount > 0}
+				<span class="font-body text-xs text-on-surface-muted"
+					>{completedCount} of {totalCount} done</span
+				>
+			{/if}
+		</div>
 
-		<a
-			href={resolve('/knowledge')}
-			class="group rounded-xl border border-slate-200 bg-white p-5 transition-shadow hover:shadow-md dark:border-slate-700 dark:bg-slate-900"
-		>
-			<h2
-				class="text-lg font-semibold text-slate-900 group-hover:text-indigo-600 dark:text-white dark:group-hover:text-indigo-400"
-			>
-				Knowledge
-			</h2>
-			<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-				Capture notes, ideas, and reference material.
-			</p>
-			<span
-				class="mt-3 inline-block rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-medium text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300"
-			>
-				{EntityType.KNOWLEDGE_NOTE}
-			</span>
-		</a>
+		{#if loading}
+			<!-- Loading skeleton -->
+			<div class="space-y-3">
+				{#each [0, 1, 2] as i (i)}
+					<div class="h-16 animate-pulse rounded-2xl bg-surface-low dark:bg-surface-high"></div>
+				{/each}
+			</div>
+		{:else if error}
+			<Card>
+				<div class="flex flex-col items-center gap-3 py-6 text-center">
+					<span class="material-symbols-outlined text-3xl text-error">cloud_off</span>
+					<p class="font-body text-sm text-on-surface-muted">{error}</p>
+				</div>
+			</Card>
+		{:else if quests.length === 0}
+			<EmptyState
+				title="No quests for today"
+				description="You're all caught up! Add quests to see them here."
+				icon="check_circle"
+			/>
+		{:else}
+			<div class="space-y-3" role="list">
+				{#each quests as quest (quest.id)}
+					<QuestCard {quest} onComplete={handleQuestComplete} />
+				{/each}
+			</div>
+		{/if}
+	</section>
 
-		<a
-			href={resolve('/tracking')}
-			class="group rounded-xl border border-slate-200 bg-white p-5 transition-shadow hover:shadow-md dark:border-slate-700 dark:bg-slate-900"
-		>
-			<h2
-				class="text-lg font-semibold text-slate-900 group-hover:text-indigo-600 dark:text-white dark:group-hover:text-indigo-400"
-			>
-				Tracking
-			</h2>
-			<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-				Track items, locations, and shopping lists.
-			</p>
-			<span
-				class="mt-3 inline-block rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-medium text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300"
-			>
-				{EntityType.TRACKING_ITEM}
-			</span>
-		</a>
-	</nav>
-</div>
+	<!-- ROUTINES section -->
+	<section class="mb-8">
+		<SectionLabel text="ROUTINES" />
+		{#if loading}
+			<div class="space-y-3">
+				{#each [0, 1] as i (i)}
+					<div class="h-14 animate-pulse rounded-2xl bg-surface-low dark:bg-surface-high"></div>
+				{/each}
+			</div>
+		{:else if routines.length === 0}
+			<EmptyState
+				title="No active routines"
+				description="Set up routines to build consistent habits."
+				icon="repeat"
+			/>
+		{:else}
+			<div class="space-y-3" role="list">
+				{#each routines as routine (routine.id)}
+					<RoutineCard {routine} />
+				{/each}
+			</div>
+		{/if}
+	</section>
+
+	<!-- CHECK-IN section -->
+	<section class="mb-8">
+		<SectionLabel text="CHECK-IN" />
+		{#if loading}
+			<div class="h-20 animate-pulse rounded-2xl bg-surface-low dark:bg-surface-high"></div>
+		{:else}
+			<CheckinCard {checkin} />
+		{/if}
+	</section>
+</main>
