@@ -57,6 +57,7 @@ class NoteEditorViewModel(
         _uiState.value = _uiState.value.copy(
             title = title,
             hasUnsavedChanges = true,
+            titleError = false,
         )
     }
 
@@ -83,7 +84,10 @@ class NoteEditorViewModel(
 
     fun save() {
         val state = _uiState.value
-        if (state.title.isBlank()) return
+        if (state.title.isBlank()) {
+            _uiState.value = state.copy(titleError = true)
+            return
+        }
 
         viewModelScope.launch {
             _uiState.value = state.copy(isLoading = true)

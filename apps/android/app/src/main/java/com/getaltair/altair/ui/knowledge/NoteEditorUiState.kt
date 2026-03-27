@@ -10,4 +10,5 @@ data class NoteEditorUiState(
     val isLoading: Boolean = false,
     val isSaved: Boolean = false,
     val hasUnsavedChanges: Boolean = false,
+    val titleError: Boolean = false,
 )

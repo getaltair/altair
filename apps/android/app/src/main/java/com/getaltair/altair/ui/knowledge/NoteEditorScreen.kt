@@ -107,6 +107,12 @@ fun NoteEditorScreen(
                     onValueChange = viewModel::onTitleChange,
                     label = { Text("Title") },
                     singleLine = true,
+                    isError = uiState.titleError,
+                    supportingText = if (uiState.titleError) {
+                        { Text("Title is required") }
+                    } else {
+                        null
+                    },
                     modifier = Modifier.fillMaxWidth(),
                 )
 
@@ -160,7 +166,7 @@ fun NoteEditorScreen(
 
                 AltairButton(
                     onClick = viewModel::save,
-                    enabled = uiState.title.isNotBlank() && !uiState.isLoading,
+                    enabled = !uiState.isLoading,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Text(if (isEditMode) "Update Note" else "Create Note")

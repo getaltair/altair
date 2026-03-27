@@ -38,7 +38,7 @@ sealed class Screen(val route: String) {
         }
     }
     data class NoteEditor(val noteId: String? = null) : Screen(
-        if (noteId != null) "note_editor/${noteId}" else "note_editor"
+        if (noteId != null) "note_editor?noteId=${noteId}" else "note_editor"
     ) {
         companion object {
             const val ROUTE = "note_editor?noteId={noteId}"
