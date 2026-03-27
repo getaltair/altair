@@ -11,16 +11,9 @@
 // Enum literal types
 // ---------------------------------------------------------------------------
 
-export type TrackingItemStatus = 'active' | 'consumed' | 'disposed' | 'lost';
+export type TrackingItemStatus = 'active' | 'archived';
 
-export type ItemEventType =
-	| 'added'
-	| 'removed'
-	| 'consumed'
-	| 'restocked'
-	| 'adjusted'
-	| 'moved'
-	| 'expired';
+export type ItemEventType = 'consumed' | 'restocked' | 'moved' | 'adjusted' | 'expired' | 'donated';
 
 export type ShoppingListStatus = 'active' | 'completed' | 'archived';
 

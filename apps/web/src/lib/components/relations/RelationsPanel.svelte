@@ -113,7 +113,7 @@
 				<div class="space-y-2" role="list">
 					{#each outgoing as relation (relation.id)}
 						<Card
-							class={relation.source_type === 'ai' || relation.source_type === 'ai_suggested'
+							class={relation.source_type === 'ai_suggested'
 								? 'border border-dashed border-outline-variant/30 dark:border-[#3a5a5c]/50'
 								: ''}
 						>
@@ -140,7 +140,7 @@
 									>
 										{formatRelationType(relation.relation_type)}
 									</span>
-									{#if relation.source_type === 'ai' || relation.source_type === 'ai_suggested'}
+									{#if relation.source_type === 'ai_suggested'}
 										<span
 											class="material-symbols-outlined text-sm text-outline-variant dark:text-on-surface-muted"
 											title="AI suggested"
@@ -166,7 +166,7 @@
 				<div class="space-y-2" role="list">
 					{#each incoming as relation (relation.id)}
 						<Card
-							class={relation.source_type === 'ai' || relation.source_type === 'ai_suggested'
+							class={relation.source_type === 'ai_suggested'
 								? 'border border-dashed border-outline-variant/30 dark:border-[#3a5a5c]/50'
 								: ''}
 						>
@@ -193,7 +193,7 @@
 									>
 										{formatRelationType(relation.relation_type)}
 									</span>
-									{#if relation.source_type === 'ai' || relation.source_type === 'ai_suggested'}
+									{#if relation.source_type === 'ai_suggested'}
 										<span
 											class="material-symbols-outlined text-sm text-outline-variant dark:text-on-surface-muted"
 											title="AI suggested"

@@ -1,16 +1,6 @@
 import type { TrackingItemStatus, ItemEventType } from '$lib/types/tracking.js';
 
-/**
- * Format an ISO date string into a human-readable form.
- */
-export function formatDate(dateStr: string): string {
-	const d = new Date(dateStr);
-	return d.toLocaleDateString('en-US', {
-		month: 'short',
-		day: 'numeric',
-		year: 'numeric'
-	});
-}
+export { formatDate } from '$lib/utils/date-format.js';
 
 /**
  * Map an item status to Tailwind badge classes (bg + text).
@@ -19,10 +9,7 @@ export function itemStatusColor(status: TrackingItemStatus): string {
 	switch (status) {
 		case 'active':
 			return 'bg-[#a8c5a0]/30 text-[#5a8a52]';
-		case 'consumed':
-			return 'bg-[#c7e7fa]/50 text-[#446273]';
-		case 'disposed':
-		case 'lost':
+		case 'archived':
 			return 'bg-[#e8eef0] text-[#566162]';
 		default:
 			return 'bg-surface-low text-on-surface-muted';
@@ -34,10 +21,6 @@ export function itemStatusColor(status: TrackingItemStatus): string {
  */
 export function eventTypeLabel(type: ItemEventType): string {
 	switch (type) {
-		case 'added':
-			return 'Added';
-		case 'removed':
-			return 'Removed';
 		case 'consumed':
 			return 'Consumed';
 		case 'restocked':
@@ -48,6 +31,8 @@ export function eventTypeLabel(type: ItemEventType): string {
 			return 'Moved';
 		case 'expired':
 			return 'Expired';
+		case 'donated':
+			return 'Donated';
 		default:
 			return String(type).charAt(0).toUpperCase() + String(type).slice(1);
 	}
@@ -58,10 +43,6 @@ export function eventTypeLabel(type: ItemEventType): string {
  */
 export function eventTypeIcon(type: ItemEventType): string {
 	switch (type) {
-		case 'added':
-			return 'add_circle';
-		case 'removed':
-			return 'remove_circle';
 		case 'consumed':
 			return 'restaurant';
 		case 'restocked':
@@ -72,6 +53,8 @@ export function eventTypeIcon(type: ItemEventType): string {
 			return 'move_item';
 		case 'expired':
 			return 'event_busy';
+		case 'donated':
+			return 'volunteer_activism';
 		default:
 			return 'circle';
 	}

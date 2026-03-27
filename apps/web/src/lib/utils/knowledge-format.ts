@@ -4,18 +4,7 @@
  * Mirrors the pattern established by `guidance-format.ts`.
  */
 
-/**
- * Format an ISO date string to a human-readable short date.
- * e.g. "2026-03-27T12:00:00Z" -> "Mar 27, 2026"
- */
-export function formatDate(dateStr: string): string {
-	const d = new Date(dateStr);
-	return d.toLocaleDateString('en-US', {
-		month: 'short',
-		day: 'numeric',
-		year: 'numeric'
-	});
-}
+export { formatDate } from '$lib/utils/date-format.js';
 
 /**
  * Return a human-readable label for a content_type value.
