@@ -11,6 +11,7 @@ import {
 	PowerSyncDatabase,
 	UpdateType,
 	type AbstractPowerSyncDatabase,
+	type CrudEntry,
 	type PowerSyncBackendConnector
 } from '@powersync/web';
 
@@ -22,6 +23,29 @@ import { AppSchema } from './schema.js';
  * be set via the VITE_API_URL environment variable.
  */
 const BACKEND_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
+type RouteResolver = string | ((op: CrudEntry) => string);
+
+const TABLE_ROUTE_MAP: Record<string, RouteResolver> = {
+	households: '/core/households',
+	initiatives: '/core/initiatives',
+	tags: '/core/tags',
+	entity_relations: '/core/relations',
+	guidance_quests: '/guidance/quests',
+	guidance_epics: '/guidance/epics',
+	guidance_routines: '/guidance/routines',
+	guidance_focus_sessions: '/guidance/focus-sessions',
+	guidance_daily_checkins: '/guidance/daily-checkins',
+	knowledge_notes: '/knowledge/notes',
+	tracking_items: '/tracking/items',
+	tracking_locations: '/tracking/locations',
+	tracking_categories: '/tracking/categories',
+	tracking_shopping_lists: '/tracking/shopping-lists',
+	knowledge_note_snapshots: (op: CrudEntry) => `/knowledge/notes/${op.opData?.note_id}/snapshots`,
+	tracking_item_events: (op: CrudEntry) => `/tracking/items/${op.opData?.item_id}/events`,
+	tracking_shopping_list_items: (op: CrudEntry) =>
+		`/tracking/shopping-lists/${op.opData?.shopping_list_id}/items`
+};
 
 export class AltairConnector implements PowerSyncBackendConnector {
 	/**
@@ -86,12 +110,15 @@ export class AltairConnector implements PowerSyncBackendConnector {
 
 		try {
 			for (const op of transaction.crud) {
-				const { table, id, opData } = op;
+				const { id, opData } = op;
+				const routeOrFn = TABLE_ROUTE_MAP[op.table];
+				const route =
+					typeof routeOrFn === 'function' ? routeOrFn(op) : (routeOrFn ?? `/core/${op.table}`);
 				let resp: Response;
 
 				switch (op.op) {
 					case UpdateType.PUT:
-						resp = await fetch(`${BACKEND_URL}/core/${table}`, {
+						resp = await fetch(`${BACKEND_URL}${route}`, {
 							method: 'POST',
 							headers: { 'Content-Type': 'application/json' },
 							credentials: 'include',
@@ -99,12 +126,12 @@ export class AltairConnector implements PowerSyncBackendConnector {
 						});
 						if (!resp.ok) {
 							const body = await resp.text().catch(() => '');
-							throw new Error(`${op.op} ${table}/${id} failed (${resp.status}): ${body}`);
+							throw new Error(`${op.op} ${op.table}/${id} failed (${resp.status}): ${body}`);
 						}
 						break;
 
 					case UpdateType.PATCH:
-						resp = await fetch(`${BACKEND_URL}/core/${table}/${id}`, {
+						resp = await fetch(`${BACKEND_URL}${route}/${id}`, {
 							method: 'PATCH',
 							headers: { 'Content-Type': 'application/json' },
 							credentials: 'include',
@@ -112,18 +139,18 @@ export class AltairConnector implements PowerSyncBackendConnector {
 						});
 						if (!resp.ok) {
 							const body = await resp.text().catch(() => '');
-							throw new Error(`${op.op} ${table}/${id} failed (${resp.status}): ${body}`);
+							throw new Error(`${op.op} ${op.table}/${id} failed (${resp.status}): ${body}`);
 						}
 						break;
 
 					case UpdateType.DELETE:
-						resp = await fetch(`${BACKEND_URL}/core/${table}/${id}`, {
+						resp = await fetch(`${BACKEND_URL}${route}/${id}`, {
 							method: 'DELETE',
 							credentials: 'include'
 						});
 						if (!resp.ok) {
 							const body = await resp.text().catch(() => '');
-							throw new Error(`${op.op} ${table}/${id} failed (${resp.status}): ${body}`);
+							throw new Error(`${op.op} ${op.table}/${id} failed (${resp.status}): ${body}`);
 						}
 						break;
 
