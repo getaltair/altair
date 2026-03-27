@@ -75,6 +75,10 @@ class NoteEditorViewModel(
         )
     }
 
+    fun onSaveErrorDismiss() {
+        _uiState.value = _uiState.value.copy(saveError = null)
+    }
+
     fun onPinToggle() {
         _uiState.value = _uiState.value.copy(
             isPinned = !_uiState.value.isPinned,
@@ -129,8 +133,11 @@ class NoteEditorViewModel(
                     isSaved = true,
                     hasUnsavedChanges = false,
                 )
-            } catch (_: Exception) {
-                _uiState.value = state.copy(isLoading = false)
+            } catch (e: Exception) {
+                _uiState.value = state.copy(
+                    isLoading = false,
+                    saveError = "${e::class.simpleName}: ${e.message}",
+                )
             }
         }
     }

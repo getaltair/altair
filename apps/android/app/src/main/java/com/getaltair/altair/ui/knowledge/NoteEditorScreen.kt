@@ -177,6 +177,20 @@ fun NoteEditorScreen(
         }
     }
 
+    val saveError = uiState.saveError
+    if (saveError != null) {
+        AlertDialog(
+            onDismissRequest = { viewModel.onSaveErrorDismiss() },
+            title = { Text("Save Failed") },
+            text = { Text(saveError) },
+            confirmButton = {
+                TextButton(onClick = { viewModel.onSaveErrorDismiss() }) {
+                    Text("OK")
+                }
+            },
+        )
+    }
+
     if (showDiscardDialog) {
         AlertDialog(
             onDismissRequest = { showDiscardDialog = false },
