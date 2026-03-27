@@ -30,7 +30,7 @@ class KnowledgeNoteRepositoryImpl(
         knowledgeNoteDao.getPinned(userId()).mapToDomain { it.toDomain() }
 
     override suspend fun create(note: KnowledgeNote) {
-        knowledgeNoteDao.insert(note.toEntity())
+        knowledgeNoteDao.insert(note.copy(userId = userId()).toEntity())
     }
 
     override suspend fun update(note: KnowledgeNote) {

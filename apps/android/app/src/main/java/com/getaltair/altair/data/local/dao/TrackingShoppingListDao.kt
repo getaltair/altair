@@ -13,6 +13,9 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface TrackingShoppingListDao {
 
+    @Query("SELECT * FROM tracking_shopping_lists WHERE user_id = :userId ORDER BY created_at DESC")
+    fun getByUserId(userId: UUID): Flow<List<TrackingShoppingListEntity>>
+
     @Query("SELECT * FROM tracking_shopping_lists WHERE household_id = :householdId ORDER BY created_at DESC")
     fun getByHousehold(householdId: UUID): Flow<List<TrackingShoppingListEntity>>
 

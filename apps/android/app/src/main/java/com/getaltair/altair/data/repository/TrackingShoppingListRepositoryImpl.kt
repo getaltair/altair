@@ -19,7 +19,7 @@ class TrackingShoppingListRepositoryImpl(
 ) : TrackingShoppingListRepository {
 
     override fun getAll(): Flow<List<TrackingShoppingList>> =
-        shoppingListDao.getByHousehold(userId()).mapToDomain { it.toDomain() }
+        shoppingListDao.getByUserId(userId()).mapToDomain { it.toDomain() }
 
     override fun getById(id: UUID): Flow<TrackingShoppingList?> =
         shoppingListDao.getById(id).map { it?.toDomain() }
@@ -28,7 +28,7 @@ class TrackingShoppingListRepositoryImpl(
         shoppingListItemDao.getByListId(listId).mapToDomain { it.toDomain() }
 
     override suspend fun create(list: TrackingShoppingList) {
-        shoppingListDao.insert(list.toEntity())
+        shoppingListDao.insert(list.copy(userId = userId()).toEntity())
     }
 
     override suspend fun update(list: TrackingShoppingList) {

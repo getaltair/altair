@@ -28,7 +28,7 @@ class TrackingItemRepositoryImpl(
         trackingItemDao.getByBarcode(userId(), barcode).map { it?.toDomain() }
 
     override suspend fun create(item: TrackingItem) {
-        trackingItemDao.insert(item.toEntity())
+        trackingItemDao.insert(item.copy(userId = userId()).toEntity())
     }
 
     override suspend fun update(item: TrackingItem) {
