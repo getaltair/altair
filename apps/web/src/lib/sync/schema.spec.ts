@@ -14,7 +14,15 @@ describe('AppSchema', () => {
 		'guidance_epics',
 		'guidance_routines',
 		'guidance_focus_sessions',
-		'guidance_daily_checkins'
+		'guidance_daily_checkins',
+		'knowledge_notes',
+		'knowledge_note_snapshots',
+		'tracking_items',
+		'tracking_item_events',
+		'tracking_locations',
+		'tracking_categories',
+		'tracking_shopping_lists',
+		'tracking_shopping_list_items'
 	] as const;
 
 	it('contains exactly the expected tables', () => {
