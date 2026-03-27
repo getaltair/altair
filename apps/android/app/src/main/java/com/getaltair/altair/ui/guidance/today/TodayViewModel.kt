@@ -17,6 +17,7 @@ class TodayViewModel(
     private val questRepository: QuestRepository,
     private val routineRepository: RoutineRepository,
     private val checkinRepository: CheckinRepository,
+    private val userIdProvider: () -> UUID,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<TodayUiState>(TodayUiState.Loading)
@@ -31,7 +32,7 @@ class TodayViewModel(
             combine(
                 questRepository.getDueToday(),
                 routineRepository.getActive(),
-                checkinRepository.getForToday(PLACEHOLDER_USER_ID),
+                checkinRepository.getForToday(userIdProvider()),
             ) { quests, routines, checkin ->
                 TodayUiState.Success(quests, routines, checkin)
             }.catch { e ->
@@ -43,11 +44,14 @@ class TodayViewModel(
     }
 
     fun completeQuest(id: UUID) {
-        viewModelScope.launch { questRepository.complete(id) }
+        viewModelScope.launch {
+            try {
+                questRepository.complete(id)
+            } catch (e: Exception) {
+                _uiState.value =
+                    TodayUiState.Error(e.message ?: "Failed to complete quest")
+            }
+        }
     }
 
-    companion object {
-        val PLACEHOLDER_USER_ID: UUID =
-            UUID.fromString("00000000-0000-0000-0000-000000000001")
-    }
 }

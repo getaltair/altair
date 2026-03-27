@@ -16,6 +16,10 @@ class SyncWorker(
     private val syncManager: SyncManager by inject()
 
     override suspend fun doWork(): Result {
+        if (runAttemptCount >= 5) {
+            Timber.e("SyncWorker: giving up after $runAttemptCount attempts")
+            return Result.failure()
+        }
         Timber.d("SyncWorker: starting periodic sync")
         return try {
             syncManager.startSync()

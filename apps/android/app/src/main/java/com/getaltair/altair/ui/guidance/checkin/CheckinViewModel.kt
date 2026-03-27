@@ -11,11 +11,13 @@ import java.util.UUID
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
 
 class CheckinViewModel(
     private val savedStateHandle: SavedStateHandle,
     private val checkinRepository: CheckinRepository,
+    private val userIdProvider: () -> UUID,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<CheckinUiState>(CheckinUiState.Loading)
@@ -27,22 +29,27 @@ class CheckinViewModel(
 
     private fun loadCheckin() {
         viewModelScope.launch {
-            checkinRepository.getForToday(PLACEHOLDER_USER_ID).collect { existing ->
-                if (existing != null) {
-                    _uiState.value = CheckinUiState.Ready(
-                        energyLevel = existing.energyLevel,
-                        mood = existing.mood ?: "",
-                        notes = existing.notes ?: "",
-                        isSaved = true,
-                    )
-                } else {
-                    _uiState.value = CheckinUiState.Ready(
-                        energyLevel = savedStateHandle.get<Int>(KEY_ENERGY),
-                        mood = savedStateHandle.get<String>(KEY_MOOD) ?: "",
-                        notes = savedStateHandle.get<String>(KEY_NOTES) ?: "",
-                    )
+            checkinRepository.getForToday(userIdProvider())
+                .catch { e ->
+                    _uiState.value =
+                        CheckinUiState.Error(e.message ?: "Failed to load check-in")
                 }
-            }
+                .collect { existing ->
+                    if (existing != null) {
+                        _uiState.value = CheckinUiState.Ready(
+                            energyLevel = existing.energyLevel,
+                            mood = existing.mood ?: "",
+                            notes = existing.notes ?: "",
+                            isSaved = true,
+                        )
+                    } else {
+                        _uiState.value = CheckinUiState.Ready(
+                            energyLevel = savedStateHandle.get<Int>(KEY_ENERGY),
+                            mood = savedStateHandle.get<String>(KEY_MOOD) ?: "",
+                            notes = savedStateHandle.get<String>(KEY_NOTES) ?: "",
+                        )
+                    }
+                }
         }
     }
 
@@ -68,7 +75,7 @@ class CheckinViewModel(
             try {
                 val checkin = DailyCheckin(
                     id = UUID.randomUUID(),
-                    userId = PLACEHOLDER_USER_ID,
+                    userId = userIdProvider(),
                     date = LocalDate.now(),
                     energyLevel = state.energyLevel,
                     mood = state.mood.ifBlank { null },
@@ -89,8 +96,6 @@ class CheckinViewModel(
     }
 
     companion object {
-        val PLACEHOLDER_USER_ID: UUID =
-            UUID.fromString("00000000-0000-0000-0000-000000000001")
         private const val KEY_ENERGY = "checkin_energy"
         private const val KEY_MOOD = "checkin_mood"
         private const val KEY_NOTES = "checkin_notes"
