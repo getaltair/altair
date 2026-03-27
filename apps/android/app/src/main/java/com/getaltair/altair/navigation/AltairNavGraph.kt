@@ -24,8 +24,6 @@ import com.getaltair.altair.ui.tracking.item.ItemDetailScreen
 import com.getaltair.altair.ui.tracking.item.ItemListScreen
 import com.getaltair.altair.ui.tracking.shopping.ShoppingListScreen
 import com.getaltair.altair.ui.tracking.shopping.ShoppingListsScreen
-import java.util.UUID
-
 @Composable
 fun AltairNavGraph(
     navController: NavHostController,
@@ -116,10 +114,11 @@ fun AltairNavGraph(
                     navController.navigate(Screen.NoteDetail(noteId).route)
                 },
                 onNavigateToEditor = { noteId ->
-                    navController.navigate(
-                        if (noteId != null) Screen.NoteEditor(noteId).route
-                        else Screen.NoteEditor().route,
-                    )
+                    if (noteId != null) {
+                        navController.navigate(Screen.NoteEditorEdit(noteId).route)
+                    } else {
+                        navController.navigate(Screen.NoteEditorCreate.route)
+                    }
                 },
                 onNavigateToCamera = {
                     navController.navigate(Screen.CameraCapture.route)
@@ -137,22 +136,25 @@ fun AltairNavGraph(
             NoteDetailScreen(
                 onNavigateUp = { navController.popBackStack() },
                 onNavigateToEditor = { noteId ->
-                    navController.navigate(Screen.NoteEditor(noteId).route)
+                    navController.navigate(Screen.NoteEditorEdit(noteId).route)
                 },
             )
         }
 
+        composable(Screen.NoteEditorCreate.route) {
+            NoteEditorScreen(
+                noteId = null,
+                onNavigateUp = { navController.popBackStack() },
+            )
+        }
+
         composable(
-            route = Screen.NoteEditor.ROUTE,
+            route = Screen.NoteEditorEdit.ROUTE,
             arguments = listOf(
-                navArgument(Screen.NoteEditor.ARG_NOTE_ID) {
-                    type = NavType.StringType
-                    nullable = true
-                    defaultValue = null
-                },
+                navArgument(Screen.NoteEditorEdit.ARG_NOTE_ID) { type = NavType.StringType },
             ),
         ) { backStackEntry ->
-            val noteId = backStackEntry.arguments?.getString(Screen.NoteEditor.ARG_NOTE_ID)
+            val noteId = backStackEntry.arguments?.getString(Screen.NoteEditorEdit.ARG_NOTE_ID)
             NoteEditorScreen(
                 noteId = noteId,
                 onNavigateUp = { navController.popBackStack() },

@@ -21,7 +21,7 @@ class NoteEditorViewModel(
     private val knowledgeNoteRepository: KnowledgeNoteRepository,
 ) : ViewModel() {
 
-    private val noteId: String? = savedStateHandle.get<String>(Screen.NoteEditor.ARG_NOTE_ID)
+    private val noteId: String? = savedStateHandle.get<String>(Screen.NoteEditorEdit.ARG_NOTE_ID)
     private val isEditMode: Boolean = noteId != null
 
     private val _uiState = MutableStateFlow(NoteEditorUiState())
