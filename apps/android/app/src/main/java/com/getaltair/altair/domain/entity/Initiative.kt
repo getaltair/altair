@@ -9,7 +9,7 @@ data class Initiative(
     val householdId: UUID?,
     val name: String,
     val description: String?,
-    val status: String,
+    val status: InitiativeStatus,
     val createdAt: Instant,
     val updatedAt: Instant,
 )

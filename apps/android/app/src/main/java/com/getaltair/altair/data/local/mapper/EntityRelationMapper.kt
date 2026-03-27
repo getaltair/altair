@@ -14,8 +14,16 @@ fun EntityRelationEntity.toDomain(): EntityRelation = EntityRelation(
     sourceType = sourceType,
     status = status,
     confidence = confidence,
+    evidenceJson = evidenceJson,
+    householdId = householdId,
+    initiativeId = initiativeId,
+    ownerUserId = ownerUserId,
+    createdByUserId = createdByUserId,
+    updatedByUserId = updatedByUserId,
+    createdByProcess = createdByProcess,
     createdAt = Instant.ofEpochMilli(createdAt),
     updatedAt = Instant.ofEpochMilli(updatedAt),
+    lastConfirmedAt = lastConfirmedAt?.let { Instant.ofEpochMilli(it) },
 )
 
 fun EntityRelation.toEntity(): EntityRelationEntity = EntityRelationEntity(
@@ -28,6 +36,14 @@ fun EntityRelation.toEntity(): EntityRelationEntity = EntityRelationEntity(
     sourceType = sourceType,
     status = status,
     confidence = confidence,
+    evidenceJson = evidenceJson,
+    householdId = householdId,
+    initiativeId = initiativeId,
+    ownerUserId = ownerUserId,
+    createdByUserId = createdByUserId,
+    updatedByUserId = updatedByUserId,
+    createdByProcess = createdByProcess,
     createdAt = createdAt.toEpochMilli(),
     updatedAt = updatedAt.toEpochMilli(),
+    lastConfirmedAt = lastConfirmedAt?.toEpochMilli(),
 )

@@ -9,8 +9,8 @@ data class Epic(
     val userId: UUID,
     val name: String,
     val description: String?,
-    val status: String,
-    val priority: String,
+    val status: EpicStatus,
+    val priority: Priority,
     val createdAt: Instant,
     val updatedAt: Instant,
 )

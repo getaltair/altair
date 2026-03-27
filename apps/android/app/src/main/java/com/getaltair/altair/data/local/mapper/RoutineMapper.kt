@@ -1,7 +1,9 @@
 package com.getaltair.altair.data.local.mapper
 
 import com.getaltair.altair.data.local.entity.RoutineEntity
+import com.getaltair.altair.domain.entity.Frequency
 import com.getaltair.altair.domain.entity.Routine
+import com.getaltair.altair.domain.entity.RoutineStatus
 import java.time.Instant
 
 fun RoutineEntity.toDomain(): Routine = Routine(
@@ -10,8 +12,8 @@ fun RoutineEntity.toDomain(): Routine = Routine(
     householdId = householdId,
     name = name,
     description = description,
-    frequency = frequency,
-    status = status,
+    frequency = Frequency.fromString(frequency),
+    status = RoutineStatus.fromString(status),
     createdAt = Instant.ofEpochMilli(createdAt),
     updatedAt = Instant.ofEpochMilli(updatedAt),
 )
@@ -22,8 +24,8 @@ fun Routine.toEntity(): RoutineEntity = RoutineEntity(
     householdId = householdId,
     name = name,
     description = description,
-    frequency = frequency,
-    status = status,
+    frequency = frequency.value,
+    status = status.value,
     createdAt = createdAt.toEpochMilli(),
     updatedAt = updatedAt.toEpochMilli(),
 )

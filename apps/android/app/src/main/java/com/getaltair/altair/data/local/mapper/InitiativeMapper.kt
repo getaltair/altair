@@ -2,6 +2,7 @@ package com.getaltair.altair.data.local.mapper
 
 import com.getaltair.altair.data.local.entity.InitiativeEntity
 import com.getaltair.altair.domain.entity.Initiative
+import com.getaltair.altair.domain.entity.InitiativeStatus
 import java.time.Instant
 
 fun InitiativeEntity.toDomain(): Initiative = Initiative(
@@ -10,7 +11,7 @@ fun InitiativeEntity.toDomain(): Initiative = Initiative(
     householdId = householdId,
     name = name,
     description = description,
-    status = status,
+    status = InitiativeStatus.fromString(status),
     createdAt = Instant.ofEpochMilli(createdAt),
     updatedAt = Instant.ofEpochMilli(updatedAt),
 )
@@ -21,7 +22,7 @@ fun Initiative.toEntity(): InitiativeEntity = InitiativeEntity(
     householdId = householdId,
     name = name,
     description = description,
-    status = status,
+    status = status.value,
     createdAt = createdAt.toEpochMilli(),
     updatedAt = updatedAt.toEpochMilli(),
 )

@@ -9,8 +9,8 @@ data class Routine(
     val householdId: UUID?,
     val name: String,
     val description: String?,
-    val frequency: String,
-    val status: String,
+    val frequency: Frequency,
+    val status: RoutineStatus,
     val createdAt: Instant,
     val updatedAt: Instant,
 )

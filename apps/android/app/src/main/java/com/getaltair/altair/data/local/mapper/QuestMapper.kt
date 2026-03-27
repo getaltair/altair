@@ -1,7 +1,9 @@
 package com.getaltair.altair.data.local.mapper
 
 import com.getaltair.altair.data.local.entity.QuestEntity
+import com.getaltair.altair.domain.entity.Priority
 import com.getaltair.altair.domain.entity.Quest
+import com.getaltair.altair.domain.entity.QuestStatus
 import java.time.Instant
 import java.time.LocalDate
 
@@ -13,8 +15,8 @@ fun QuestEntity.toDomain(): Quest = Quest(
     householdId = householdId,
     name = name,
     description = description,
-    status = status,
-    priority = priority,
+    status = QuestStatus.fromString(status),
+    priority = Priority.fromString(priority),
     dueDate = dueDate?.let { LocalDate.parse(it) },
     estimatedMinutes = estimatedMinutes,
     completedAt = completedAt?.let { Instant.ofEpochMilli(it) },
@@ -30,8 +32,8 @@ fun Quest.toEntity(): QuestEntity = QuestEntity(
     householdId = householdId,
     name = name,
     description = description,
-    status = status,
-    priority = priority,
+    status = status.value,
+    priority = priority.value,
     dueDate = dueDate?.toString(),
     estimatedMinutes = estimatedMinutes,
     completedAt = completedAt?.toEpochMilli(),
