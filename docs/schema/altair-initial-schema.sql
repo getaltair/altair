@@ -87,7 +87,11 @@ CREATE TABLE IF NOT EXISTS entity_relations (
     status TEXT NOT NULL DEFAULT 'accepted',
     confidence NUMERIC CHECK (confidence >= 0.0 AND confidence <= 1.0),
     evidence_json JSONB,
+    household_id UUID REFERENCES households(id),
+    initiative_id UUID REFERENCES initiatives(id),
+    owner_user_id UUID REFERENCES users(id),
     created_by_user_id UUID REFERENCES users(id),
+    updated_by_user_id UUID REFERENCES users(id),
     created_by_process TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -96,6 +100,9 @@ CREATE TABLE IF NOT EXISTS entity_relations (
 CREATE INDEX idx_relations_from ON entity_relations(from_entity_type, from_entity_id);
 CREATE INDEX idx_relations_to ON entity_relations(to_entity_type, to_entity_id);
 CREATE INDEX idx_relations_status ON entity_relations(status);
+CREATE INDEX idx_relations_household ON entity_relations(household_id);
+CREATE INDEX idx_relations_owner ON entity_relations(owner_user_id);
+CREATE INDEX idx_relations_created_by ON entity_relations(created_by_user_id);
 
 -- Guidance Domain Tables
 

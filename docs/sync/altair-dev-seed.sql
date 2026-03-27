@@ -231,5 +231,24 @@ VALUES
     '{"reason":"trash bags likely support trash chore"}'::jsonb,
     'seed_ai_demo',
     NULL
+  ),
+  (
+    '15151515-1515-1515-1515-151515151515',
+    '33333333-3333-3333-3333-333333333333',
+    '55555555-5555-5555-5555-555555555552',
+    NULL,
+    '11111111-1111-1111-1111-111111111111',
+    '11111111-1111-1111-1111-111111111111',
+    'knowledge_note',
+    'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa2',
+    'guidance_quest',
+    '88888888-8888-8888-8888-888888888883',
+    'supports',
+    'user',
+    'dismissed',
+    1.0,
+    '{"reason":"HVAC note supports filter replacement quest"}'::jsonb,
+    NULL,
+    NULL
   )
 ON CONFLICT (id) DO NOTHING;
