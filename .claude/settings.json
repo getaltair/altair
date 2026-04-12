@@ -1,0 +1,93 @@
+{
+  "statusLine": {
+    "type": "command",
+    "command": "bun run .claude/hooks/context-recovery/statusline-monitor.ts"
+  },
+  "permissions": {
+    "allow": [
+      "Edit",
+      "Write",
+      "Bash(git add:*)",
+      "Bash(git diff:*)",
+      "Bash(git status:*)",
+      "Bash(git log:*)",
+      "Bash(git commit:*)",
+      "Bash(git checkout:*)",
+      "Bash(git push:*)",
+      "Bash(ls:*)",
+      "Bash(mkdir:*)",
+      "Bash(cp:*)",
+      "Bash(mv:*)",
+      "Bash(bun:*)"
+    ],
+    "deny": [],
+    "ask": []
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run --directory claude-memory-compiler python hooks/session-start.py",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bun run .claude/hooks/skill-activation/skill-activation.ts"
+          },
+          {
+            "type": "command",
+            "command": "bun run .claude/hooks/validators/secret-detector.ts"
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bun run .claude/hooks/context-recovery/conv-backup.ts",
+            "async": true
+          },
+          {
+            "type": "command",
+            "command": "uv run --directory claude-memory-compiler python hooks/pre-compact.py",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run --directory claude-memory-compiler python hooks/session-end.py",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bun run .claude/hooks/formatter/formatter.ts"
+          }
+        ]
+      }
+    ]
+  }
+}
