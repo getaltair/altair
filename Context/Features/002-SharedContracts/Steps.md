@@ -223,7 +223,7 @@ Verify all assertions:
 
 Tasks identified during code review that were missed in the original implementation.
 
-- [ ] S013: Implement S007-T drift-detection test scenarios
+- [x] S013: Implement S007-T drift-detection test scenarios
   - **Assigned:** builder-infra
   - **Depends:** S007
   - **Parallel:** false
@@ -234,14 +234,14 @@ Tasks identified during code review that were missed in the original implementat
     (4) Remove one entry from a binding file, run script — assert exit code 1.
   - **Relates to:** P2-009, A-008, S007-T
 
-- [ ] S014: Add throwing fromValue() companion to all three Kotlin enums
+- [x] S014: Add throwing fromValue() companion to all three Kotlin enums
   - **Assigned:** builder-android
   - **Depends:** S006
   - **Parallel:** false
   - **Detail:** Rename existing `fromValue()` to `fromValueOrNull()` on EntityType, RelationType, and SyncStream. Add a throwing variant: `fun fromValue(value: String): EntityType = fromValueOrNull(value) ?: throw IllegalArgumentException("Unknown EntityType: '$value'")`. This prevents `!!` usage at Step 3/8 callsites per kotlin-android.md convention.
   - **Relates to:** P2-010
 
-- [ ] S015: Add entry-count tests for RelationType and SyncStream in Kotlin
+- [x] S015: Add entry-count tests for RelationType and SyncStream in Kotlin
   - **Assigned:** builder-android
   - **Depends:** S006
   - **Parallel:** false
