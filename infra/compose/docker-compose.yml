@@ -72,6 +72,7 @@ services:
   powersync:
     image: journeyapps/powersync-service:latest
     restart: unless-stopped
+    env_file: ./.env
     depends_on:
       mongodb:
         condition: service_healthy
