@@ -99,10 +99,26 @@ jobs:
       - name: Build and Lint
         run: ./gradlew build lint
 
+  validate-contracts:
+    name: Validate Contracts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install web dependencies
+        run: bun install
+        working-directory: apps/web
+
+      - name: Run validation script
+        run: bun run packages/contracts/scripts/validate.ts
+
   smoke-test:
     name: Smoke Test
     runs-on: ubuntu-latest
-    needs: [rust, web]
+    needs: [rust, web, android, validate-contracts]
     steps:
       - uses: actions/checkout@v4
 

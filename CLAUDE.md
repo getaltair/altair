@@ -67,10 +67,10 @@ Quick tasks skip to a single-file quick plan.
 | `/backlog` | Add to or prioritize the backlog |
 
 ### Complexity Routing
-
-- **Simple** (< 50 lines, single file): Direct implementation, no plan needed
-- **Medium** (50-300 lines, 2-5 files): `/quick` plan
-- **Complex** (> 300 lines, cross-cutting): `/blueprint` full planning cycle
+- **Trivial** (single file, obvious fix) -- Execute directly
+- **Moderate** (2-5 files, clear scope) -- `/quick` then execute
+- **Complex** (multi-phase, 5+ files) -- `/blueprint` then `/impl`
+- **Collaborative** (cross-domain integration) -- `/blueprint` then `/team-impl`
 
 ## Conventions
 

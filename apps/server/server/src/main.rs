@@ -3,6 +3,7 @@ use tracing::info;
 use tracing_subscriber::EnvFilter;
 
 mod config;
+mod contracts;
 mod error;
 mod routes;
 

@@ -1,0 +1,23 @@
+{
+  "contracts_version": "1.0.0",
+  "values": [
+    { "id": "user",                        "description": "Platform user account" },
+    { "id": "household",                   "description": "Shared household space" },
+    { "id": "initiative",                  "description": "High-level goal or project" },
+    { "id": "tag",                         "description": "User-defined label" },
+    { "id": "attachment",                  "description": "File attached to an entity" },
+    { "id": "guidance_epic",               "description": "Epic: a grouped set of quests within an initiative" },
+    { "id": "guidance_quest",              "description": "Quest: a single actionable task" },
+    { "id": "guidance_routine",            "description": "Routine: a recurring task template" },
+    { "id": "guidance_focus_session",      "description": "Focus session: a timed work block on a quest" },
+    { "id": "guidance_daily_checkin",      "description": "Daily check-in: energy and mood snapshot" },
+    { "id": "knowledge_note",              "description": "Note: a freeform text document" },
+    { "id": "knowledge_note_snapshot",     "description": "Note snapshot: an immutable version of a note" },
+    { "id": "tracking_location",           "description": "Location: a physical or logical storage place" },
+    { "id": "tracking_category",           "description": "Category: a label grouping tracked items" },
+    { "id": "tracking_item",               "description": "Item: a tracked inventory object" },
+    { "id": "tracking_item_event",         "description": "Item event: a quantity change record" },
+    { "id": "tracking_shopping_list",      "description": "Shopping list: a household purchase list" },
+    { "id": "tracking_shopping_list_item", "description": "Shopping list item: a single entry on a shopping list" }
+  ]
+}

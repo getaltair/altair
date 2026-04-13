@@ -1,3 +1,4 @@
+use crate::contracts::EntityType;
 use axum::{Json, Router, routing::get};
 use serde_json::{Value, json};
 
@@ -7,6 +8,12 @@ pub fn router() -> Router {
 
 async fn health_handler() -> Json<Value> {
     Json(json!({ "status": "ok" }))
+}
+
+/// Compile-time proof that crate::contracts resolves from a route module (A-014).
+#[allow(dead_code)]
+fn _assert_contracts() {
+    let _: EntityType = EntityType::Initiative;
 }
 
 #[cfg(test)]
