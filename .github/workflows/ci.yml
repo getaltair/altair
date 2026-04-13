@@ -83,8 +83,8 @@ jobs:
       - name: Setup JDK 17
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
-          distribution: 'temurin'
+          java-version: "17"
+          distribution: "temurin"
 
       - name: Cache Gradle
         uses: actions/cache@v4
@@ -99,6 +99,8 @@ jobs:
       - name: Build and Lint
         run: ./gradlew build lint
 
+  # Run from repo root — validate.ts resolves ROOT via import.meta.url
+  # and imports TS binding files via Bun's dynamic import, using the web app's module graph
   validate-contracts:
     name: Validate Contracts
     runs-on: ubuntu-latest
