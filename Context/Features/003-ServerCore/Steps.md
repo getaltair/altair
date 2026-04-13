@@ -8,8 +8,8 @@
 ## Progress
 - **Status:** Complete
 - **Current task:** —
-- **Last milestone:** M8 — Full validation complete (2026-04-13)
-- **Results:** 51 cargo tests pass; 16/18 FA assertions PASS, 2 MANUAL (live DB); note: 24 migration files (gap at slot 9 — entity_tags renumbered 000009→000025 for FK ordering)
+- **Last milestone:** M9 — Auth integration test coverage complete (2026-04-13)
+- **Results:** 71 cargo tests pass (63 unit + 8 auth integration); 13 Vitest tests pass; 0 clippy warnings; bun check 0 errors; all 18 FA assertions covered; note: sqlx::test tests require DATABASE_URL env var pointing to running postgres
 
 ---
 

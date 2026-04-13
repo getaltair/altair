@@ -193,7 +193,7 @@ struct RefreshTokenRecord {
 }
 
 // ---------------------------------------------------------------------------
-// Tests (S012-T)
+// Tests (S012-T, S030)
 // ---------------------------------------------------------------------------
 
 #[cfg(test)]
@@ -268,5 +268,148 @@ mod tests {
         assert!(!raw.is_empty());
         assert!(!hash.is_empty());
         assert_ne!(raw, hash);
+    }
+
+    // ---------------------------------------------------------------------------
+    // Security invariant tests for rotate_refresh_token (S030)
+    // ---------------------------------------------------------------------------
+
+    /// Insert a minimal user row and return its id.
+    async fn insert_test_user(pool: &sqlx::PgPool) -> Uuid {
+        let user_id = Uuid::new_v4();
+        sqlx::query(
+            "INSERT INTO users (id, email, display_name, password_hash, is_admin, status) \
+             VALUES ($1, $2, $3, $4, false, 'active')",
+        )
+        .bind(user_id)
+        .bind(format!("testuser-{}@example.com", user_id))
+        .bind("Test User")
+        .bind("dummy_hash_not_used_by_rotation")
+        .execute(pool)
+        .await
+        .expect("Failed to insert test user");
+        user_id
+    }
+
+    /// Compute the sha256 hex hash that the service stores / looks up.
+    fn sha256_hex(raw: &str) -> String {
+        hex::encode(Sha256::digest(raw.as_bytes()))
+    }
+
+    fn test_enc_key() -> jsonwebtoken::EncodingKey {
+        let (priv_pem, _) = generate_test_rsa_pem();
+        jsonwebtoken::EncodingKey::from_rsa_pem(priv_pem.as_bytes()).unwrap()
+    }
+
+    /// S030-T1: A revoked token must return AppError::Unauthorized.
+    #[sqlx::test(migrations = "../../../infra/migrations")]
+    async fn rotate_revoked_token_returns_unauthorized(pool: sqlx::PgPool) {
+        let user_id = insert_test_user(&pool).await;
+        let raw_token = "revoked_test_token_s030_t1";
+        let token_hash = sha256_hex(raw_token);
+
+        sqlx::query(
+            "INSERT INTO refresh_tokens (user_id, token_hash, expires_at, revoked_at) \
+             VALUES ($1, $2, NOW() + INTERVAL '7 days', NOW())",
+        )
+        .bind(user_id)
+        .bind(&token_hash)
+        .execute(&pool)
+        .await
+        .expect("Failed to insert revoked token");
+
+        let enc_key = test_enc_key();
+        let result = rotate_refresh_token(&pool, raw_token, &enc_key).await;
+
+        assert!(
+            matches!(result, Err(AppError::Unauthorized)),
+            "Expected Unauthorized for revoked token, got: {:?}",
+            result.err()
+        );
+    }
+
+    /// S030-T2: An expired token must return AppError::Unauthorized.
+    #[sqlx::test(migrations = "../../../infra/migrations")]
+    async fn rotate_expired_token_returns_unauthorized(pool: sqlx::PgPool) {
+        let user_id = insert_test_user(&pool).await;
+        let raw_token = "expired_test_token_s030_t2";
+        let token_hash = sha256_hex(raw_token);
+
+        sqlx::query(
+            "INSERT INTO refresh_tokens (user_id, token_hash, expires_at) \
+             VALUES ($1, $2, NOW() - INTERVAL '1 hour')",
+        )
+        .bind(user_id)
+        .bind(&token_hash)
+        .execute(&pool)
+        .await
+        .expect("Failed to insert expired token");
+
+        let enc_key = test_enc_key();
+        let result = rotate_refresh_token(&pool, raw_token, &enc_key).await;
+
+        assert!(
+            matches!(result, Err(AppError::Unauthorized)),
+            "Expected Unauthorized for expired token, got: {:?}",
+            result.err()
+        );
+    }
+
+    /// S030-T3: A token not in the database must return AppError::Unauthorized.
+    #[sqlx::test(migrations = "../../../infra/migrations")]
+    async fn rotate_nonexistent_token_returns_unauthorized(pool: sqlx::PgPool) {
+        let raw_token = "this_token_was_never_stored_s030_t3";
+
+        let enc_key = test_enc_key();
+        let result = rotate_refresh_token(&pool, raw_token, &enc_key).await;
+
+        assert!(
+            matches!(result, Err(AppError::Unauthorized)),
+            "Expected Unauthorized for unknown token, got: {:?}",
+            result.err()
+        );
+    }
+
+    /// S030-T4: Valid rotation — old token is revoked in DB, new token pair is returned.
+    #[sqlx::test(migrations = "../../../infra/migrations")]
+    async fn rotate_valid_token_revokes_old_and_returns_new_pair(pool: sqlx::PgPool) {
+        let user_id = insert_test_user(&pool).await;
+        let raw_token = "valid_test_token_s030_t4";
+        let token_hash = sha256_hex(raw_token);
+
+        sqlx::query(
+            "INSERT INTO refresh_tokens (user_id, token_hash, expires_at) \
+             VALUES ($1, $2, NOW() + INTERVAL '7 days')",
+        )
+        .bind(user_id)
+        .bind(&token_hash)
+        .execute(&pool)
+        .await
+        .expect("Failed to insert valid token");
+
+        let enc_key = test_enc_key();
+        let result = rotate_refresh_token(&pool, raw_token, &enc_key).await;
+
+        let token_response = result.expect("Expected Ok(TokenResponse) for valid token");
+        assert!(!token_response.access_token.is_empty(), "access_token must not be empty");
+        assert!(!token_response.refresh_token.is_empty(), "refresh_token must not be empty");
+        assert_ne!(
+            token_response.refresh_token, raw_token,
+            "New refresh token must differ from old"
+        );
+
+        // Assert the old token is now revoked in the DB.
+        let revoked_at: Option<chrono::DateTime<Utc>> = sqlx::query_scalar(
+            "SELECT revoked_at FROM refresh_tokens WHERE token_hash = $1",
+        )
+        .bind(&token_hash)
+        .fetch_one(&pool)
+        .await
+        .expect("Old token must still exist in DB");
+
+        assert!(
+            revoked_at.is_some(),
+            "Old refresh token must have revoked_at set after rotation"
+        );
     }
 }

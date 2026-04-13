@@ -1,6 +1,7 @@
 ---
 description: Execute Steps.md via hub-and-spoke sub-agent orchestration
 model: sonnet
+effort: medium
 ---
 
 # Implementation Orchestrator
