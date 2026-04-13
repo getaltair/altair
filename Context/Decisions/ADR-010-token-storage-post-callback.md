@@ -2,7 +2,9 @@
 
 ## Status
 
-Accepted
+Superseded by [ADR-012](ADR-012-builtin-auth-argon2id-jwt.md)
+
+> The OIDC callback flow no longer exists. The security principle of httpOnly cookie storage for tokens is adopted directly in ADR-012's token model. The specific OIDC callback redirect pattern described here is no longer applicable.
 
 ## Date
 

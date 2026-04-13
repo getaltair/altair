@@ -2,7 +2,11 @@
 
 ## Status
 
-Accepted
+Partially Superseded by [ADR-012](ADR-012-builtin-auth-argon2id-jwt.md)
+
+> **What's superseded:** Identity provider choice (Zitadel/OIDC), token model (provider-issued JWTs), auth flow (OIDC authorization code + PKCE), security controls delegated to identity provider.
+>
+> **What remains active:** Authorization model — household_memberships table, user/household scoping on every query, RLS policies on PostgreSQL, PowerSync connector auth pattern (now using server-issued JWT instead of OIDC access token).
 
 ## Date
 

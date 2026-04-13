@@ -93,3 +93,34 @@ Soft deletes with tombstones. Deleted rows remain queryable for sync reconciliat
 
 - Field-level conflict detection (merging non-conflicting field changes) is a future optimization, not required for v1
 - CRDT-based text merging for Notes is explicitly deferred — conflict copies are simpler and sufficient for v1
+
+## Exit Cost Assessment (Added 2026-04-12)
+
+PowerSync is the only sync solution meeting all requirements (offline local writes + PostgreSQL + Web SDK + Android native SDK + self-hostable). This makes it the correct choice, but the lock-in should be documented.
+
+### What's Proprietary
+
+| Component | Lock-in Level | Detail |
+|-----------|---------------|--------|
+| **Sync rules** | High | YAML-based DSL for defining bucket partitioning and data scoping. No standard equivalent. |
+| **Client SDKs** | High | PowerSync JS SDK (web) and Kotlin SDK (Android) manage the local SQLite database, outbox, and sync protocol. Deep integration into data layer. |
+| **Connector pattern** | Medium | `PowerSyncBackendConnector` interface for auth token refresh and CRUD upload. Replaceable but shapes the data layer architecture. |
+| **MongoDB dependency** | Medium | PowerSync service requires MongoDB as its internal metadata store. Adds ~200-400MB RAM and operational surface. |
+| **Sync protocol** | High | Proprietary wire protocol between PowerSync service and client SDKs. Not interchangeable with other sync engines. |
+
+### What a Migration Looks Like
+
+Replacing PowerSync would require:
+
+1. **New sync engine selection** — No drop-in replacement exists today. ElectricSQL dropped offline writes. Triplit lacks Android SDK. Custom sync is 3-6 months of infrastructure work.
+2. **Client SDK replacement** — Both web and Android data layers would need rewriting. Room DAOs and SvelteKit stores are decoupled from PowerSync via repository pattern, but the sync plumbing (outbox, checkpoint, conflict detection) is PowerSync-specific.
+3. **Server CRUD endpoint rewrite** — The mutation envelope format is PowerSync-specific. Server-side conflict detection logic is reusable but the transport layer changes.
+4. **MongoDB removal** — Only needed for PowerSync. Removing it frees ~200-400MB RAM and simplifies the deployment stack.
+5. **Sync rules translation** — Bucket partitioning and data scoping rules must be re-expressed in whatever the replacement uses.
+
+### Mitigation
+
+- Repository pattern in Android and web isolates domain logic from sync plumbing
+- Server-side conflict resolution logic (LWW, conflict copies) is sync-engine-agnostic
+- Domain models and DTOs are independent of PowerSync
+- The exit path is expensive but bounded — it's a data layer rewrite, not an application rewrite

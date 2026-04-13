@@ -2,7 +2,9 @@
 
 ## Status
 
-Accepted
+Superseded by [ADR-012](ADR-012-builtin-auth-argon2id-jwt.md)
+
+> The OIDC authorization code flow no longer exists. Web CSRF protection is handled by SvelteKit's built-in origin checking and `SameSite=Lax` cookies. The `state` parameter pattern described here is no longer applicable.
 
 ## Date
 
