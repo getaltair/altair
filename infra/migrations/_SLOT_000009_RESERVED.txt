@@ -1,0 +1,8 @@
+Slot 000009 is intentionally empty.
+
+During Feature 003 (Server Core), entity_tags was initially assigned slot 000009 but
+was renumbered to 000025 to resolve FK ordering constraints (entity_tags references
+several tables that are created in slots 000010–000024).
+
+sqlx migrates by timestamp/version, not by sequential position, so gaps are harmless.
+The next available slot after 000025 is 000026.

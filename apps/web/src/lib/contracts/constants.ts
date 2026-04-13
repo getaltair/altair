@@ -1,5 +1,5 @@
-import { EntityType } from './entityTypes.js';
-import type { EntityTypeValue } from './entityTypes.js';
+import { EntityType } from "./entityTypes.js";
+import type { EntityTypeValue } from "./entityTypes.js";
 
 /**
  * The subset of entity types that sync through PowerSync streams.

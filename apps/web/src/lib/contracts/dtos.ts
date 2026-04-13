@@ -1,6 +1,6 @@
-import type { EntityTypeValue } from './entityTypes.js';
-import type { RelationTypeValue } from './relationTypes.js';
-import type { SyncStreamValue } from './syncStreams.js';
+import type { EntityTypeValue } from "./entityTypes.js";
+import type { RelationTypeValue } from "./relationTypes.js";
+import type { SyncStreamValue } from "./syncStreams.js";
 
 /** A polymorphic reference to any entity by type and UUID. */
 export interface EntityRef {

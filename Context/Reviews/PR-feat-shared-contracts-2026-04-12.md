@@ -4,7 +4,7 @@
 **Feature:** Context/Features/002-SharedContracts/
 **Branch:** feat/shared-contracts
 **Reviewers:** pr-review-toolkit (code-reviewer, pr-test-analyzer, silent-failure-hunter, type-design-analyzer, comment-analyzer)
-**Status:** 🟡 Partially resolved
+**Status:** ✅ Resolved
 
 ## Summary
 
@@ -55,8 +55,8 @@
 - **Severity:** Medium
 - **Detail:** `bun install` runs in `apps/web` (correct for node_modules), but `bun run packages/contracts/scripts/validate.ts` runs from the checkout root with no `working-directory` override. The dynamic `import()` of TypeScript files from `apps/web/src/lib/contracts/` depends on Bun's module resolution finding the web app's tsconfig. If this breaks in CI, the error is `validate.ts: unexpected error: <import error>` with no indication of the actual cause. Per S008 the approach is intentional — confirm it holds on a clean CI runner, or add a `working-directory: .` comment explaining why root execution is correct.
 - **Relates to:** S008
-- **Status:** ⚠️ Deferred
-- **Resolution:** `security_reminder_hook` blocks all edits to ci.yml. The validate.ts rewrite now uses `fileURLToPath(import.meta.url)` for ROOT resolution (self-documenting). Add an explanatory comment to ci.yml manually: `# Run from repo root — validate.ts resolves ROOT via import.meta.url and imports TS binding files via Bun's dynamic import, using the web app's module graph.`
+- **Status:** ✅ Fixed
+- **Resolution:** Comment added to `.github/workflows/ci.yml` lines 102-103 above the `validate-contracts` job: `# Run from repo root — validate.ts resolves ROOT via import.meta.url / # and imports TS binding files via Bun's dynamic import, using the web app's module graph`
 
 #### [FIX] P2-006: validate.ts error messages swallow file context
 - **File:** `packages/contracts/scripts/validate.ts:15-19,35-47,61-64`
@@ -137,20 +137,20 @@
 ---
 
 ## Resolution Checklist
-- [x] All [FIX] findings resolved (10 fixed, 1 deferred — P2-005 blocked by security_reminder_hook)
+- [x] All [FIX] findings resolved (11/11 — P2-005 comment confirmed in ci.yml 2026-04-13)
 - [x] All [TASK] findings added to Steps.md (S013, S014, S015 in Phase 6)
 - [x] All [ADR] findings have ADRs created or dismissed (none)
 - [x] All [RULE] findings applied or dismissed (none)
 - [x] Review verified by review-verify agent
 
 ## Resolution Summary
-**Resolved at:** 2026-04-12
-**Session:** resolve-review session — all FIX and TASK findings executed
+**Resolved at:** 2026-04-13 (P2-005 final close)
+**Session:** resolve-review session — all FIX and TASK findings executed; P2-005 comment confirmed in ci.yml
 
 | Category | Total | Resolved | Deferred |
 |---|---|---|---|
-| [FIX] | 11 | 10 | 1 (P2-005, hook-blocked) |
+| [FIX] | 11 | 11 | 0 |
 | [TASK] | 3 | 3 | 0 |
 | [ADR] | 0 | — | — |
 | [RULE] | 0 | — | — |
-| **Total** | **14** | **13** | **1** |
+| **Total** | **14** | **14** | **0** |

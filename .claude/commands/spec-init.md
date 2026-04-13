@@ -1,6 +1,7 @@
 ---
 description: Initialize spec-driven design templates for the project
 model: sonnet
+effort: low
 ---
 
 # Initialize Spec Templates

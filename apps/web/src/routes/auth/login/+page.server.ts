@@ -1,29 +1,66 @@
-import { redirect } from '@sveltejs/kit';
-import { PUBLIC_ZITADEL_CLIENT_ID, PUBLIC_ZITADEL_ISSUER } from '$env/static/public';
-import { generateCodeVerifier, generateCodeChallenge } from '$lib/auth/pkce';
-import type { PageServerLoadEvent } from './$types';
+import { fail, redirect } from "@sveltejs/kit";
+import { dev } from "$app/environment";
+import type { Actions } from "./$types";
+import { PUBLIC_API_BASE_URL } from "$env/static/public";
 
-export async function load(event: PageServerLoadEvent): Promise<never> {
-	const codeVerifier = generateCodeVerifier();
-	const codeChallenge = await generateCodeChallenge(codeVerifier);
+export const actions: Actions = {
+  default: async ({ request, cookies }) => {
+    const data = await request.formData();
+    const email = data.get("email") as string;
+    const password = data.get("password") as string;
 
-	event.cookies.set('code_verifier', codeVerifier, {
-		httpOnly: true,
-		sameSite: 'lax',
-		path: '/',
-		maxAge: 600
-	});
+    if (!email || !password) {
+      return fail(400, { error: "Email and password are required" });
+    }
 
-	const params = new URLSearchParams({
-		response_type: 'code',
-		client_id: PUBLIC_ZITADEL_CLIENT_ID,
-		redirect_uri: 'http://localhost:5173/auth/callback',
-		scope: 'openid profile email',
-		code_challenge: codeChallenge,
-		code_challenge_method: 'S256'
-	});
+    let response: Response;
+    try {
+      response = await fetch(`${PUBLIC_API_BASE_URL}/api/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+    } catch {
+      return fail(503, { error: "Server unavailable. Please try again." });
+    }
 
-	const authUrl = `${PUBLIC_ZITADEL_ISSUER}/oauth/v2/authorize?${params.toString()}`;
+    if (response.ok) {
+      // P4-011: guard against malformed server response before using the body.
+      let body: { access_token: string; refresh_token: string };
+      try {
+        body = await response.json();
+      } catch {
+        return fail(500, { error: "Server returned an unexpected response." });
+      }
+      if (!body.access_token || !body.refresh_token) {
+        return fail(500, { error: "Server returned incomplete token data." });
+      }
 
-	throw redirect(302, authUrl);
-}
+      // P4-006: Secure attribute omitted in dev (HTTP), enabled in production (HTTPS).
+      cookies.set("access_token", body.access_token, {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        maxAge: 900,
+        secure: !dev,
+      });
+      cookies.set("refresh_token", body.refresh_token, {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/api/auth/",
+        maxAge: 604800,
+        secure: !dev,
+      });
+      redirect(303, "/");
+    }
+
+    if (response.status === 401) {
+      return fail(401, { error: "Invalid email or password" });
+    }
+    if (response.status === 403) {
+      return fail(403, { error: "Account pending admin approval" });
+    }
+
+    return fail(response.status, { error: "Login failed. Please try again." });
+  },
+};
