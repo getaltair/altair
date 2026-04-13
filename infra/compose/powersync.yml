@@ -1,0 +1,20 @@
+# PowerSync Service Configuration
+# Credentials are injected via environment variables from .env
+# Sync rules are defined in apps/web/src/lib/sync/schema.ts
+
+replication:
+  connections:
+    - type: postgresql
+      uri: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/altair_db
+
+storage:
+  type: mongodb
+  uri: mongodb://mongodb:27017/powersync
+
+client_auth:
+  # JWKS endpoint from Zitadel for validating client JWTs
+  jwks_urls:
+    - ${POWERSYNC_JWT_JWKS_URL}
+
+api:
+  port: 8080

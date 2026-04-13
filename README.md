@@ -1,5 +1,7 @@
 # Altair
 
+[![CI](https://github.com/getaltair/altair/actions/workflows/ci.yml/badge.svg)](https://github.com/getaltair/altair/actions/workflows/ci.yml)
+
 A self-hosted personal operating system for managing knowledge, goals, and resources across everyday life.
 
 Altair integrates three primary domains:
@@ -46,7 +48,7 @@ Altair integrates three primary domains:
               +-------------+-------------+
               |                           |
      +--------+--------+        +--------+--------+
-     |  Zitadel (OIDC)  |        |  Garage (S3)    |
+     |  Zitadel (OIDC)  |        |  RustFS (S3)    |
      |  (auth/identity)  |        |  (attachments)  |
      +-----------------+        +-----------------+
 ```
@@ -61,7 +63,7 @@ Altair integrates three primary domains:
 | Database | PostgreSQL | Primary data store |
 | Sync | PowerSync Open Edition | Offline-first sync |
 | Auth | Zitadel (OIDC) | Identity and authentication |
-| Storage | Garage / RustFS (S3-compatible) | Attachment and file storage |
+| Storage | RustFS (S3-compatible) | Attachment and file storage |
 | Search | PostgreSQL FTS + pgvector | Keyword and semantic search |
 
 ## Requirements
@@ -78,42 +80,68 @@ Altair integrates three primary domains:
 - 8GB RAM (Raspberry Pi 5, NAS, or $15/mo VPS)
 - 64GB+ storage
 
-## Quick Start
+## Local Development Setup
 
 ### Prerequisites
 
-```bash
-# Install mise (toolchain manager)
-curl https://mise.run | sh
+- Docker and Docker Compose v2
+- [mise](https://mise.jl.dev) — manages Bun, Rust, and Java toolchains
+- sqlx CLI for running migrations
 
-# Install project toolchains
-mise install    # Installs Bun + Rust
+### Environment Setup
+
+Copy the example env file and fill in credentials:
+
+```bash
+cp infra/compose/.env.example infra/compose/.env
+# Edit infra/compose/.env — set POSTGRES_PASSWORD, ZITADEL_MASTERKEY (≥32 chars),
+# GARAGE_RPC_SECRET, GARAGE_ADMIN_TOKEN, and update DATABASE_URL to match
 ```
 
-### Development
+See `infra/compose/.env.example` for all required variables and their descriptions.
+
+### Install Toolchains
 
 ```bash
-# Start infrastructure (Postgres, PowerSync, Zitadel, Garage)
-docker compose up -d
+mise install    # installs Bun, Rust (stable), and Java 17 (temurin)
+cargo install sqlx-cli --no-default-features --features postgres
+```
 
-# Server
-cd apps/server && cargo run
+### Start Infrastructure
 
-# Web client
+```bash
+cd infra/compose && docker compose up -d
+# First run: allow ~30s for Zitadel to initialize
+```
+
+### Run Migrations
+
+```bash
+# From repo root — set DATABASE_URL to match your infra/compose/.env values
+DATABASE_URL=postgres://altair_user:yourpassword@localhost:5432/altair_db \
+  sqlx migrate run --source infra/migrations
+```
+
+### Apply Seed Data (optional, for local dev)
+
+```bash
+psql $DATABASE_URL -f infra/scripts/seed.sql
+```
+
+### Start Applications
+
+Open separate terminals for each:
+
+```bash
+# Rust API server — listens on port 8000
+cd apps/server
+DATABASE_URL=postgres://altair_user:yourpassword@localhost:5432/altair_db cargo run
+
+# SvelteKit web client — listens on port 5173
 cd apps/web && bun install && bun dev
 
-# Android
-# Open apps/android/ in Android Studio
+# Android — open apps/android/ in Android Studio, then run on emulator or device
 ```
-
-### Production (Self-Hosted)
-
-```bash
-# Deploy full stack
-docker compose -f infra/compose/docker-compose.prod.yml up -d
-```
-
-See the [self-hosting guide](docs/self-hosting.md) for detailed setup instructions.
 
 ## Project Structure
 
