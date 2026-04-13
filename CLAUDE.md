@@ -28,7 +28,7 @@ Clients sync through PowerSync. The server is the source of truth via Postgres.
 | PostgreSQL | server-side | Main database |
 | PowerSync | sync layer | Client-server DB sync |
 | SQLite | Android local | Offline-first local storage |
-| S3-compatible (Garage/RustFS) | server-side | Attachment/file storage |
+| RustFS (S3-compatible) | server-side | Attachment/file storage |
 
 ## Key Directories
 

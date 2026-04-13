@@ -48,7 +48,7 @@ Altair integrates three primary domains:
               +-------------+-------------+
               |                           |
      +--------+--------+        +--------+--------+
-     |  Zitadel (OIDC)  |        |  Garage (S3)    |
+     |  Zitadel (OIDC)  |        |  RustFS (S3)    |
      |  (auth/identity)  |        |  (attachments)  |
      +-----------------+        +-----------------+
 ```
@@ -63,7 +63,7 @@ Altair integrates three primary domains:
 | Database | PostgreSQL | Primary data store |
 | Sync | PowerSync Open Edition | Offline-first sync |
 | Auth | Zitadel (OIDC) | Identity and authentication |
-| Storage | Garage / RustFS (S3-compatible) | Attachment and file storage |
+| Storage | RustFS (S3-compatible) | Attachment and file storage |
 | Search | PostgreSQL FTS + pgvector | Keyword and semantic search |
 
 ## Requirements

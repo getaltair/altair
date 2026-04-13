@@ -82,18 +82,19 @@ services:
     ports:
       - "8082:8080"
 
-  garage:
-    image: dxflrs/garage:v1
+  rustfs:
+    image: rustfs/rustfs
     restart: unless-stopped
+    environment:
+      RUSTFS_ACCESS_KEY: ${RUSTFS_ACCESS_KEY}
+      RUSTFS_SECRET_KEY: ${RUSTFS_SECRET_KEY}
     volumes:
-      - garage_meta:/var/lib/garage/meta
-      - garage_data:/var/lib/garage/data
+      - rustfs_data:/data
     ports:
-      - "3900:3900"
-      - "3902:3902"
+      - "9000:9000"
+      - "9001:9001"
 
 volumes:
   postgres_data:
   mongodb_data:
-  garage_meta:
-  garage_data:
+  rustfs_data:
