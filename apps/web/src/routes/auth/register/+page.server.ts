@@ -6,24 +6,28 @@ export const actions: Actions = {
   default: async ({ request, cookies }) => {
     const data = await request.formData();
     const email = data.get("email") as string;
+    const display_name = data.get("display_name") as string;
     const password = data.get("password") as string;
 
-    if (!email || !password) {
-      return fail(400, { error: "Email and password are required" });
+    if (!email || !display_name || !password) {
+      return fail(400, { error: "All fields are required" });
+    }
+    if (password.length < 8) {
+      return fail(400, { error: "Password must be at least 8 characters" });
     }
 
     let response: Response;
     try {
-      response = await fetch(`${PUBLIC_API_BASE_URL}/api/auth/login`, {
+      response = await fetch(`${PUBLIC_API_BASE_URL}/api/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, display_name, password }),
       });
     } catch {
       return fail(503, { error: "Server unavailable. Please try again." });
     }
 
-    if (response.ok) {
+    if (response.status === 201) {
       const body = (await response.json()) as {
         access_token: string;
         refresh_token: string;
@@ -43,13 +47,18 @@ export const actions: Actions = {
       redirect(303, "/");
     }
 
-    if (response.status === 401) {
-      return fail(401, { error: "Invalid email or password" });
+    if (response.status === 202) {
+      return {
+        pending: true,
+        message: "Account created. Awaiting admin approval.",
+      };
     }
-    if (response.status === 403) {
-      return fail(403, { error: "Account pending admin approval" });
+    if (response.status === 409) {
+      return fail(409, { error: "Email already registered" });
     }
 
-    return fail(response.status, { error: "Login failed. Please try again." });
+    return fail(response.status, {
+      error: "Registration failed. Please try again.",
+    });
   },
 };
