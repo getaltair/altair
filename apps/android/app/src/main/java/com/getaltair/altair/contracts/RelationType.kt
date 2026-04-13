@@ -16,6 +16,9 @@ enum class RelationType(
     ;
 
     companion object {
-        fun fromValue(value: String): RelationType? = entries.find { it.value == value }
+        fun fromValueOrNull(value: String): RelationType? = entries.find { it.value == value }
+
+        fun fromValue(value: String): RelationType =
+            fromValueOrNull(value) ?: throw IllegalArgumentException("Unknown RelationType: '$value'")
     }
 }

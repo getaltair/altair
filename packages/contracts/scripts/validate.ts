@@ -102,7 +102,7 @@ function checkKotlin(): string[] {
 
   const extractKotlinValues = (filePath: string): string[] => {
     const text = readFileSync(resolve(ROOT, filePath), 'utf8');
-    const values = [...text.matchAll(/"([^"]+)"\)/g)].map((m) => m[1]);
+    const values = [...text.matchAll(/[A-Z_]+\("([^"]+)"\)/g)].map((m) => m[1]);
     if (values.length === 0) {
       errors.push(
         `Kotlin: no enum values extracted from ${filePath} — file may be empty or pattern did not match`

@@ -26,6 +26,8 @@ enum class EntityType(
     ;
 
     companion object {
-        fun fromValue(value: String): EntityType? = entries.find { it.value == value }
+        fun fromValueOrNull(value: String): EntityType? = entries.find { it.value == value }
+
+        fun fromValue(value: String): EntityType = fromValueOrNull(value) ?: throw IllegalArgumentException("Unknown EntityType: '$value'")
     }
 }

@@ -13,8 +13,8 @@ class EntityTypeTest {
     }
 
     @Test
-    fun fromValue_unknownType_returnsNull() {
-        val result = EntityType.fromValue("unknown_fake_type")
+    fun fromValueOrNull_unknownType_returnsNull() {
+        val result = EntityType.fromValueOrNull("unknown_fake_type")
         assertNull(result)
     }
 
@@ -34,5 +34,15 @@ class EntityTypeTest {
     fun fromValue_relatedTo_returnsRelatedTo() {
         val result = RelationType.fromValue("related_to")
         assertEquals(RelationType.RELATED_TO, result)
+    }
+
+    @Test
+    fun relationTypeEntries_hasSize8() {
+        assertEquals(8, RelationType.entries.size)
+    }
+
+    @Test
+    fun syncStreamEntries_hasSize5() {
+        assertEquals(5, SyncStream.entries.size)
     }
 }

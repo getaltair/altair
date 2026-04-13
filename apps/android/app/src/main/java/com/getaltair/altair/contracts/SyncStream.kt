@@ -14,6 +14,8 @@ enum class SyncStream(
     ;
 
     companion object {
-        fun fromValue(value: String): SyncStream? = entries.find { it.value == value }
+        fun fromValueOrNull(value: String): SyncStream? = entries.find { it.value == value }
+
+        fun fromValue(value: String): SyncStream = fromValueOrNull(value) ?: throw IllegalArgumentException("Unknown SyncStream: '$value'")
     }
 }
