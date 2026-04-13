@@ -29,12 +29,12 @@ services:
   zitadel:
     image: ghcr.io/zitadel/zitadel:latest
     restart: unless-stopped
-    command: start-from-init --masterkeyFromEnv
+    command: start-from-init --masterkeyFromEnv --tlsMode disabled
     depends_on:
       postgres-init:
         condition: service_completed_successfully
     ports:
-      - "8080:8080"
+      - "8081:8080"
     environment:
       ZITADEL_DATABASE_POSTGRES_HOST: postgres
       ZITADEL_DATABASE_POSTGRES_PORT: 5432
@@ -47,10 +47,10 @@ services:
       ZITADEL_DATABASE_POSTGRES_ADMIN_SSL_MODE: disable
       ZITADEL_MASTERKEY: ${ZITADEL_MASTERKEY}
       ZITADEL_EXTERNALSECURE: "false"
-      ZITADEL_EXTERNALPORT: "8080"
+      ZITADEL_EXTERNALPORT: "8081"
       ZITADEL_EXTERNALDOMAIN: localhost
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://localhost:8080/debug/healthz/ready || exit 1"]
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8080/debug/healthz || exit 1"]
       interval: 15s
       timeout: 10s
       retries: 10
@@ -79,7 +79,7 @@ services:
       postgres:
         condition: service_healthy
     volumes:
-      - ./powersync.yml:/home/node/service/config/powersync.yaml:ro
+      - ./powersync.yml:/app/powersync.yaml:ro
     ports:
       - "8082:8080"
 
