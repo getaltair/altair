@@ -656,7 +656,7 @@ no TODO/FIXME stubs in auth/ or core/ modules
 
 Tasks added from PR review findings P4-014, P4-015, P4-016, P4-025, P4-026, P4-028.
 
-- [ ] S029: Auth handler integration tests — register, login, refresh, logout
+- [x] S029: Auth handler integration tests — register, login, refresh, logout
   - **Assigned:** builder-rust
   - **Depends:** S015
   - **Relates to:** P4-014
@@ -665,14 +665,14 @@ Tasks added from PR review findings P4-014, P4-015, P4-016, P4-025, P4-026, P4-0
     containing email claim; login pending user → 403; login wrong password → 401;
     logout with valid token → 204, token revoked; replay old token after rotate → 401
 
-- [ ] S030: `rotate_refresh_token` security invariant tests
+- [x] S030: `rotate_refresh_token` security invariant tests
   - **Assigned:** builder-rust
   - **Depends:** S015
   - **Relates to:** P4-015
   - **Scenarios (sqlx::test):** revoked token returns 401; expired token returns 401; token
     not found returns 401; valid rotation revokes old token and returns new pair
 
-- [ ] S031: `hooks.server.ts` JWT decode unit tests (Vitest)
+- [x] S031: `hooks.server.ts` JWT decode unit tests (Vitest)
   - **Assigned:** builder-web
   - **Depends:** S026
   - **Relates to:** P4-016
@@ -680,7 +680,7 @@ Tasks added from PR review findings P4-014, P4-015, P4-016, P4-025, P4-026, P4-0
     valid structure but non-JSON payload → null; token missing exp → null;
     valid token with email claim → user populated with correct email and id
 
-- [ ] S032: Initiative service sqlx::test integration tests replacing SQL string assertions
+- [x] S032: Initiative service sqlx::test integration tests replacing SQL string assertions
   - **Assigned:** builder-rust
   - **Depends:** S020
   - **Relates to:** P4-028
@@ -688,10 +688,10 @@ Tasks added from PR review findings P4-014, P4-015, P4-016, P4-025, P4-026, P4-0
     contains only their own records (FA-009 at DB level); PATCH updates only provided fields;
     GET by wrong user → NotFound; soft delete sets deleted_at
 
-- [ ] S033-T: `extract_token_from_body_or_cookie` priority contract test
+- [x] S033-T: `extract_token_from_body_or_cookie` priority contract test
   - **Note:** Already added inline in handlers.rs tests (P4-025 resolved inline)
 
-- [ ] S034-T: Extractor malformed `Authorization` header tests
+- [x] S034-T: Extractor malformed `Authorization` header tests
   - **Note:** Already added inline in extractor.rs tests (P4-026 resolved inline)
 
 ---
