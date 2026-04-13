@@ -1,0 +1,13 @@
+{
+  "contracts_version": "1.0.0",
+  "values": [
+    { "id": "references",     "description": "One entity cites or links to another" },
+    { "id": "supports",       "description": "One entity provides evidence or backing for another" },
+    { "id": "requires",       "description": "One entity depends on another to function" },
+    { "id": "related_to",     "description": "General association between two entities" },
+    { "id": "depends_on",     "description": "Completion of one entity is blocked by another" },
+    { "id": "duplicates",     "description": "Two entities represent the same real-world thing" },
+    { "id": "similar_to",     "description": "Two entities share significant overlap in content or purpose" },
+    { "id": "generated_from", "description": "One entity was derived or created from another" }
+  ]
+}

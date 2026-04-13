@@ -1,0 +1,12 @@
+{
+  "contracts_version": "1.0.0",
+  "provisional": true,
+  "note": "Stream SQL bucket definitions are designed in Step 4 (Sync Engine); these names may be revised.",
+  "values": [
+    { "id": "user_data",  "description": "User's own Core entities (initiatives, tags, attachments)" },
+    { "id": "household",  "description": "Household-scoped data (memberships, locations, categories)" },
+    { "id": "guidance",   "description": "Guidance domain tables (epics, quests, routines, focus sessions, daily checkins)" },
+    { "id": "knowledge",  "description": "Knowledge domain tables (notes, note snapshots)" },
+    { "id": "tracking",   "description": "Tracking domain tables (items, item events, shopping lists)" }
+  ]
+}
