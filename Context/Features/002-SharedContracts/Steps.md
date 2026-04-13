@@ -219,6 +219,37 @@ Verify all assertions:
 
 ---
 
+### Phase 6: Post-Review Additions (2026-04-12)
+
+Tasks identified during code review that were missed in the original implementation.
+
+- [ ] S013: Implement S007-T drift-detection test scenarios
+  - **Assigned:** builder-infra
+  - **Depends:** S007
+  - **Parallel:** false
+  - **Detail:** S007-T test scenarios were planned but not shipped. Implement all four:
+    (1) Run script with correct bindings — assert exit code 0;
+    (2) Temporarily add `{ "id": "test_fake_type", "description": "Test" }` to entity-types.json, run script — assert exit code 1 and diff output names `test_fake_type`;
+    (3) Revert dummy entry — assert exit code 0 again;
+    (4) Remove one entry from a binding file, run script — assert exit code 1.
+  - **Relates to:** P2-009, A-008, S007-T
+
+- [ ] S014: Add throwing fromValue() companion to all three Kotlin enums
+  - **Assigned:** builder-android
+  - **Depends:** S006
+  - **Parallel:** false
+  - **Detail:** Rename existing `fromValue()` to `fromValueOrNull()` on EntityType, RelationType, and SyncStream. Add a throwing variant: `fun fromValue(value: String): EntityType = fromValueOrNull(value) ?: throw IllegalArgumentException("Unknown EntityType: '$value'")`. This prevents `!!` usage at Step 3/8 callsites per kotlin-android.md convention.
+  - **Relates to:** P2-010
+
+- [ ] S015: Add entry-count tests for RelationType and SyncStream in Kotlin
+  - **Assigned:** builder-android
+  - **Depends:** S006
+  - **Parallel:** false
+  - **Detail:** Add `assertEquals(8, RelationType.entries.size)` and `assertEquals(5, SyncStream.entries.size)` assertions. Add to EntityTypeTest.kt or create RelationTypeTest.kt. Satisfies A-002 fully in Kotlin.
+  - **Relates to:** P2-011, A-002
+
+---
+
 ## Acceptance Criteria
 
 - [ ] All testable assertions from Spec.md verified (A-001 through A-012, A-014; A-013 partial per note above)
