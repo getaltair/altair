@@ -6,9 +6,10 @@
 ---
 
 ## Progress
-- **Status:** Not started
-- **Current task:** --
-- **Last milestone:** --
+- **Status:** Complete
+- **Current task:** —
+- **Last milestone:** M8 — Full validation complete (2026-04-13)
+- **Results:** 51 cargo tests pass; 16/18 FA assertions PASS, 2 MANUAL (live DB); note: 24 migration files (gap at slot 9 — entity_tags renumbered 000009→000025 for FK ordering)
 
 ---
 

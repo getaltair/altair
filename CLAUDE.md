@@ -167,6 +167,6 @@ cd apps/server && cargo run
 
 ## Active Work
 
-- **Feature:** Architecture review and planning
-- **Status:** All 8 ADRs accepted. Implementation plan updated. Ready for Step 1 (Foundation).
-- **Next:** Resolve remaining open questions (GAPS.md), then begin Step 1 per `docs/specs/10-PLAN-001-v1.md`
+- **Feature:** Feature 003 Server Core — complete
+- **Status:** Implementation done. Auth endpoints live at `POST /api/auth/register`, `POST /api/auth/login`. Web login at `/auth/login`.
+- **Next:** Feature 004 Sync Engine
