@@ -11,6 +11,21 @@ pub enum AppError {
     #[error("Not found")]
     NotFound,
 
+    #[error("Unauthorized")]
+    Unauthorized,
+
+    #[error("Forbidden")]
+    Forbidden,
+
+    #[error("{0}")]
+    BadRequest(String),
+
+    #[error("{0}")]
+    Conflict(String),
+
+    #[error("{0}")]
+    UnprocessableEntity(String),
+
     #[error("Internal server error")]
     Internal(#[from] anyhow::Error),
 }
@@ -18,7 +33,12 @@ pub enum AppError {
 impl IntoResponse for AppError {
     fn into_response(self) -> Response {
         let (status, message) = match &self {
-            AppError::NotFound => (StatusCode::NOT_FOUND, self.to_string()),
+            AppError::NotFound => (StatusCode::NOT_FOUND, "Not found".to_string()),
+            AppError::Unauthorized => (StatusCode::UNAUTHORIZED, "Unauthorized".to_string()),
+            AppError::Forbidden => (StatusCode::FORBIDDEN, "Forbidden".to_string()),
+            AppError::BadRequest(msg) => (StatusCode::BAD_REQUEST, msg.clone()),
+            AppError::Conflict(msg) => (StatusCode::CONFLICT, msg.clone()),
+            AppError::UnprocessableEntity(msg) => (StatusCode::UNPROCESSABLE_ENTITY, msg.clone()),
             AppError::Internal(e) => {
                 tracing::error!("Internal error: {:?}", e);
                 (
@@ -78,6 +98,62 @@ mod tests {
         assert!(
             !text.contains("secret internal detail"),
             "Internal error details must not be leaked"
+        );
+    }
+
+    // Helper: drive an AppError through IntoResponse and return (status, body_text)
+    async fn status_and_body(err: AppError) -> (StatusCode, String) {
+        let response = err.into_response();
+        let status = response.status();
+        let bytes = axum::body::to_bytes(response.into_body(), usize::MAX)
+            .await
+            .unwrap();
+        (status, String::from_utf8_lossy(&bytes).into_owned())
+    }
+
+    #[tokio::test]
+    async fn unauthorized_returns_401() {
+        let (status, body) = status_and_body(AppError::Unauthorized).await;
+        assert_eq!(status, StatusCode::UNAUTHORIZED);
+        assert!(body.contains("\"Unauthorized\""), "body was: {body}");
+    }
+
+    #[tokio::test]
+    async fn forbidden_returns_403() {
+        let (status, _body) = status_and_body(AppError::Forbidden).await;
+        assert_eq!(status, StatusCode::FORBIDDEN);
+    }
+
+    #[tokio::test]
+    async fn bad_request_returns_400_with_message() {
+        let (status, body) = status_and_body(AppError::BadRequest("bad input".to_string())).await;
+        assert_eq!(status, StatusCode::BAD_REQUEST);
+        assert!(body.contains("\"bad input\""), "body was: {body}");
+    }
+
+    #[tokio::test]
+    async fn conflict_returns_409() {
+        let (status, body) = status_and_body(AppError::Conflict("duplicate".to_string())).await;
+        assert_eq!(status, StatusCode::CONFLICT);
+        assert!(body.contains("\"duplicate\""), "body was: {body}");
+    }
+
+    #[tokio::test]
+    async fn unprocessable_entity_returns_422() {
+        let (status, body) =
+            status_and_body(AppError::UnprocessableEntity("invalid type".to_string())).await;
+        assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
+        assert!(body.contains("\"invalid type\""), "body was: {body}");
+    }
+
+    #[tokio::test]
+    async fn internal_error_does_not_leak_inner_detail() {
+        let (status, body) =
+            status_and_body(AppError::Internal(anyhow::anyhow!("super secret detail"))).await;
+        assert_eq!(status, StatusCode::INTERNAL_SERVER_ERROR);
+        assert!(
+            !body.contains("super secret detail"),
+            "Internal error must not leak details; body was: {body}"
         );
     }
 }
