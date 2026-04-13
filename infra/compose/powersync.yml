@@ -12,7 +12,7 @@ storage:
   uri: mongodb://mongodb:27017/powersync
 
 client_auth:
-  # JWKS endpoint from Zitadel for validating client JWTs
+  # JWKS endpoint from Altair server — see ADR-012
   jwks_urls:
     - ${POWERSYNC_JWT_JWKS_URL}
 
