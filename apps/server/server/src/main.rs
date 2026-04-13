@@ -7,8 +7,6 @@ mod contracts;
 mod error;
 mod routes;
 
-pub use contracts::*;
-
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let dotenv_result = dotenvy::dotenv();

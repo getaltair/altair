@@ -6,20 +6,32 @@
  */
 
 import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
 
-const ROOT = resolve(import.meta.dir, '../../..');
+// Resolve repo root relative to this script's location (packages/contracts/scripts/).
+const ROOT = resolve(fileURLToPath(new URL('../../..', import.meta.url)));
 
 type Registry = { contracts_version: string; values: { id: string; description: string }[] };
 
 function loadRegistry(relPath: string): string[] {
   const abs = resolve(ROOT, relPath);
-  const reg: Registry = JSON.parse(readFileSync(abs, 'utf8'));
+  let reg: Registry;
+  try {
+    reg = JSON.parse(readFileSync(abs, 'utf8'));
+  } catch (e) {
+    throw new Error(`${relPath}: failed to parse — ${e}`);
+  }
+  if (!Array.isArray(reg.values)) {
+    throw new Error(`${relPath}: missing or invalid "values" array`);
+  }
   return reg.values.map((v) => v.id);
 }
 
 function diff(name: string, expected: string[], actual: string[]): string[] {
   const errors: string[] = [];
+  const dupes = actual.filter((id, i) => actual.indexOf(id) !== i);
+  if (dupes.length) errors.push(`${name}: duplicate values in binding: ${dupes.join(', ')}`);
   const missing = expected.filter((id) => !actual.includes(id));
   const extra = actual.filter((id) => !expected.includes(id));
   if (missing.length) errors.push(`${name}: missing from binding: ${missing.join(', ')}`);
@@ -32,23 +44,53 @@ async function checkTypeScript(): Promise<string[]> {
 
   // Entity types
   const entityIds = loadRegistry('packages/contracts/entity-types.json');
-  const { EntityType } = await import(resolve(ROOT, 'apps/web/src/lib/contracts/entityTypes.ts'));
-  const tsEntityValues = Object.values(EntityType) as string[];
-  errors.push(...diff('TS EntityType', entityIds, tsEntityValues));
+  const entityFile = resolve(ROOT, 'apps/web/src/lib/contracts/entityTypes.ts');
+  let entityMod: { EntityType: Record<string, string> };
+  try {
+    entityMod = await import(entityFile);
+  } catch (e) {
+    errors.push(`TS EntityType: failed to import ${entityFile} — ${e}`);
+    return errors;
+  }
+  errors.push(...diff('TS EntityType', entityIds, Object.values(entityMod.EntityType)));
 
   // Relation types
   const relationIds = loadRegistry('packages/contracts/relation-types.json');
-  const { RelationType } = await import(resolve(ROOT, 'apps/web/src/lib/contracts/relationTypes.ts'));
-  const tsRelationValues = Object.values(RelationType) as string[];
-  errors.push(...diff('TS RelationType', relationIds, tsRelationValues));
+  const relationFile = resolve(ROOT, 'apps/web/src/lib/contracts/relationTypes.ts');
+  let relationMod: { RelationType: Record<string, string> };
+  try {
+    relationMod = await import(relationFile);
+  } catch (e) {
+    errors.push(`TS RelationType: failed to import ${relationFile} — ${e}`);
+    return errors;
+  }
+  errors.push(...diff('TS RelationType', relationIds, Object.values(relationMod.RelationType)));
 
   // Sync streams
   const streamIds = loadRegistry('packages/contracts/sync-streams.json');
-  const { SyncStream } = await import(resolve(ROOT, 'apps/web/src/lib/contracts/syncStreams.ts'));
-  const tsStreamValues = Object.values(SyncStream) as string[];
-  errors.push(...diff('TS SyncStream', streamIds, tsStreamValues));
+  const streamFile = resolve(ROOT, 'apps/web/src/lib/contracts/syncStreams.ts');
+  let streamMod: { SyncStream: Record<string, string> };
+  try {
+    streamMod = await import(streamFile);
+  } catch (e) {
+    errors.push(`TS SyncStream: failed to import ${streamFile} — ${e}`);
+    return errors;
+  }
+  errors.push(...diff('TS SyncStream', streamIds, Object.values(streamMod.SyncStream)));
 
   return errors;
+}
+
+/**
+ * Extracts serde rename values from a named enum block in Rust source text.
+ * Scopes extraction to the enum body to avoid capturing field-level serde renames
+ * from structs, which would cause false positives in drift detection.
+ */
+function extractRustEnumValues(contractsText: string, enumName: string): string[] {
+  const enumBodyRegex = new RegExp(`enum\\s+${enumName}[^{]*\\{([^}]+)\\}`);
+  const match = contractsText.match(enumBodyRegex);
+  if (!match) return [];
+  return [...match[1].matchAll(/serde\(rename\s*=\s*"([^"]+)"\)/g)].map((m) => m[1]);
 }
 
 function checkKotlin(): string[] {
@@ -60,8 +102,13 @@ function checkKotlin(): string[] {
 
   const extractKotlinValues = (filePath: string): string[] => {
     const text = readFileSync(resolve(ROOT, filePath), 'utf8');
-    const matches = [...text.matchAll(/"([^"]+)"\)/g)].map((m) => m[1]);
-    return matches;
+    const values = [...text.matchAll(/"([^"]+)"\)/g)].map((m) => m[1]);
+    if (values.length === 0) {
+      errors.push(
+        `Kotlin: no enum values extracted from ${filePath} — file may be empty or pattern did not match`
+      );
+    }
+    return values;
   };
 
   const kotlinEntityValues = extractKotlinValues(
@@ -89,25 +136,19 @@ function checkRust(): string[] {
   const relationIds = loadRegistry('packages/contracts/relation-types.json');
   const streamIds = loadRegistry('packages/contracts/sync-streams.json');
 
-  const contractsText = readFileSync(
-    resolve(ROOT, 'apps/server/server/src/contracts.rs'),
-    'utf8'
-  );
+  const contractsFile = resolve(ROOT, 'apps/server/server/src/contracts.rs');
+  const contractsText = readFileSync(contractsFile, 'utf8');
 
-  // Extract all serde rename values: #[serde(rename = "value")]
-  const allRenames = [...contractsText.matchAll(/serde\(rename\s*=\s*"([^"]+)"\)/g)].map(
-    (m) => m[1]
-  );
+  const rustEntityValues = extractRustEnumValues(contractsText, 'EntityType');
+  const rustRelationValues = extractRustEnumValues(contractsText, 'RelationType');
+  const rustStreamValues = extractRustEnumValues(contractsText, 'SyncStream');
 
-  // Partition by known registry: entity types come first, then relations, then streams
-  // Use registry sets to categorize
-  const entitySet = new Set(entityIds);
-  const relationSet = new Set(relationIds);
-  const streamSet = new Set(streamIds);
-
-  const rustEntityValues = allRenames.filter((v) => entitySet.has(v) || (!relationSet.has(v) && !streamSet.has(v) && entityIds.includes(v)));
-  const rustRelationValues = allRenames.filter((v) => relationSet.has(v));
-  const rustStreamValues = allRenames.filter((v) => streamSet.has(v));
+  if (rustEntityValues.length === 0)
+    errors.push(`Rust EntityType: enum block not found in ${contractsFile}`);
+  if (rustRelationValues.length === 0)
+    errors.push(`Rust RelationType: enum block not found in ${contractsFile}`);
+  if (rustStreamValues.length === 0)
+    errors.push(`Rust SyncStream: enum block not found in ${contractsFile}`);
 
   errors.push(...diff('Rust EntityType', entityIds, rustEntityValues));
   errors.push(...diff('Rust RelationType', relationIds, rustRelationValues));
@@ -133,7 +174,9 @@ async function main() {
     for (const err of allErrors) {
       console.error(`  - ${err}`);
     }
-    console.error(`\n${allErrors.length} issue(s) found. Update the binding files to match the JSON registries.`);
+    console.error(
+      `\n${allErrors.length} issue(s) found. Update the binding files to match the JSON registries.`
+    );
     process.exit(1);
   }
 }

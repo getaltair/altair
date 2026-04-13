@@ -1,5 +1,6 @@
 // Source of truth: packages/contracts/entity-types.json, relation-types.json, sync-streams.json
-// Do not add inline enum values here — update the JSON registries and regenerate bindings.
+// Do not add inline enum values here — update the JSON registries and update all three
+// binding files (contracts.rs, EntityType.kt, entityTypes.ts) manually, then run validate.ts.
 
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
@@ -111,6 +112,7 @@ pub struct RelationRecord {
 
 /// Mirrors the attachments table schema from docs/specs/05-erd.md.
 /// Note: state is a raw string — typed enum lives in Step 3 domain modules.
+/// Note: size_bytes is u64 (non-negative); TypeScript uses `number | null` and Kotlin uses `Long?` (i64, signed).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AttachmentRecord {
     pub id: Uuid,
@@ -118,7 +120,7 @@ pub struct AttachmentRecord {
     pub entity_id: Uuid,
     pub file_name: String,
     pub content_type: String,
-    pub size_bytes: Option<i64>,
+    pub size_bytes: Option<u64>,
     pub state: String,
     pub storage_path: Option<String>,
     pub user_id: Uuid,

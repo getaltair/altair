@@ -1,23 +1,23 @@
 package com.getaltair.altair.contracts
 
-// Source of truth: packages/contracts/entity-types.json, relation-types.json, sync-streams.json
-// Note: JSON serialization annotations are deferred to Step 8 (Android Client)
-//       when the JSON library (Gson / Moshi / kotlinx.serialization) is chosen.
+// DTOs wrapping contracts defined in EntityType.kt, RelationType.kt, and SyncStream.kt.
+// JSON serialization annotations are deferred to Step 8 (Android Client) when the JSON
+// library (Gson / Moshi / kotlinx.serialization) is chosen.
 
 /** A polymorphic reference to any entity by type and UUID. */
 data class EntityRef(
-    val entityType: String, // EntityType.value
+    val entityType: EntityType,
     val entityId: String, // UUID string
 )
 
 /** Mirrors the entity_relations table schema from docs/specs/05-erd.md. */
 data class RelationRecord(
     val id: String,
-    val fromEntityType: String, // EntityType.value
+    val fromEntityType: EntityType,
     val fromEntityId: String,
-    val toEntityType: String, // EntityType.value
+    val toEntityType: EntityType,
     val toEntityId: String,
-    val relationType: String, // RelationType.value
+    val relationType: RelationType,
     val sourceType: String,
     val status: String,
     val confidence: Double?,
@@ -31,7 +31,7 @@ data class RelationRecord(
 /** Mirrors the attachments table schema from docs/specs/05-erd.md. */
 data class AttachmentRecord(
     val id: String,
-    val entityType: String, // EntityType.value
+    val entityType: EntityType,
     val entityId: String,
     val fileName: String,
     val contentType: String,

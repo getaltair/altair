@@ -1,5 +1,6 @@
 import type { EntityTypeValue } from './entityTypes.js';
 import type { RelationTypeValue } from './relationTypes.js';
+import type { SyncStreamValue } from './syncStreams.js';
 
 /** A polymorphic reference to any entity by type and UUID. */
 export interface EntityRef {
@@ -44,6 +45,6 @@ export interface AttachmentRecord {
 
 /** Parameters for subscribing to PowerSync sync streams. */
 export interface SyncSubscriptionRequest {
-  streams: string[];
+  streams: SyncStreamValue[];
   user_id: string;
 }
