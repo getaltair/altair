@@ -1,4 +1,5 @@
 import { fail, redirect } from "@sveltejs/kit";
+import { dev } from "$app/environment";
 import type { Actions } from "./$types";
 import { PUBLIC_API_BASE_URL } from "$env/static/public";
 
@@ -28,21 +29,31 @@ export const actions: Actions = {
     }
 
     if (response.status === 201) {
-      const body = (await response.json()) as {
-        access_token: string;
-        refresh_token: string;
-      };
+      // P4-011: guard against malformed server response before using the body.
+      let body: { access_token: string; refresh_token: string };
+      try {
+        body = await response.json();
+      } catch {
+        return fail(500, { error: "Server returned an unexpected response." });
+      }
+      if (!body.access_token || !body.refresh_token) {
+        return fail(500, { error: "Server returned incomplete token data." });
+      }
+
+      // P4-006: Secure attribute omitted in dev (HTTP), enabled in production (HTTPS).
       cookies.set("access_token", body.access_token, {
         httpOnly: true,
         sameSite: "lax",
         path: "/",
         maxAge: 900,
+        secure: !dev,
       });
       cookies.set("refresh_token", body.refresh_token, {
         httpOnly: true,
         sameSite: "lax",
-        path: "/api/auth/refresh",
+        path: "/api/auth/",
         maxAge: 604800,
+        secure: !dev,
       });
       redirect(303, "/");
     }

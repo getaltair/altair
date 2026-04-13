@@ -22,7 +22,10 @@ export const handle: Handle = async ({ event, resolve }) => {
       } else {
         event.locals.user = null;
       }
-    } catch {
+    } catch (e) {
+      // P4-005: log decode failures so cookie corruption or proxy truncation is
+      // visible in server logs rather than silently degrading auth for all users.
+      console.error("[hooks.server] Failed to decode access_token cookie:", e);
       event.locals.user = null;
     }
   } else {

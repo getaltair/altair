@@ -35,8 +35,9 @@ where
                 }
             } else if let Some(cookie_header) = headers.get("Cookie") {
                 // 2. Fall back to access_token cookie
+                // P4-027: string-parsing delegated to the shared `super::parse_cookie_value`.
                 let cookies = cookie_header.to_str().map_err(|_| AppError::Unauthorized)?;
-                parse_cookie_value(cookies, "access_token").ok_or(AppError::Unauthorized)?
+                super::parse_cookie_value(cookies, "access_token").ok_or(AppError::Unauthorized)?
             } else {
                 return Err(AppError::Unauthorized);
             };
@@ -44,8 +45,22 @@ where
             let mut validation = Validation::new(Algorithm::RS256);
             validation.set_required_spec_claims(&["sub", "exp"]);
 
+            // P4-004: match on error kind so non-expiry failures (algorithm confusion,
+            // wrong deployment key, malformed token) are logged at warn level before
+            // returning 401. ExpiredSignature is expected and logged at debug level only.
             let token_data = decode::<Claims>(&token, &app_state.dec_key, &validation)
-                .map_err(|_| AppError::Unauthorized)?;
+                .map_err(|e| {
+                    use jsonwebtoken::errors::ErrorKind;
+                    match e.kind() {
+                        ErrorKind::ExpiredSignature => {
+                            tracing::debug!("JWT rejected: token expired");
+                        }
+                        kind => {
+                            tracing::warn!(error_kind = ?kind, "JWT decode failed — possible key mismatch or malformed token");
+                        }
+                    }
+                    AppError::Unauthorized
+                })?;
 
             Ok(AuthUser {
                 user_id: token_data.claims.sub,
@@ -53,14 +68,6 @@ where
             })
         }
     }
-}
-
-fn parse_cookie_value(header: &str, name: &str) -> Option<String> {
-    header.split(';').find_map(|part| {
-        let part = part.trim();
-        part.strip_prefix(&format!("{}=", name))
-            .map(|v| v.to_string())
-    })
 }
 
 // ---------------------------------------------------------------------------
@@ -87,7 +94,7 @@ mod tests {
     fn build_test_state() -> AppState {
         let pem = generate_test_rsa_pem();
         let pool = sqlx::PgPool::connect_lazy("postgres://localhost/test").unwrap();
-        build_app_state(pool, &pem).unwrap()
+        build_app_state(pool, &pem, false).unwrap()
     }
 
     fn generate_test_rsa_pem() -> String {
@@ -135,7 +142,8 @@ mod tests {
     async fn test_valid_bearer_token_returns_user_id() {
         let state = build_test_state();
         let user_id = Uuid::new_v4();
-        let token = issue_access_token(user_id, vec![], &state.enc_key).unwrap();
+        let token =
+            issue_access_token(user_id, "user@example.com", vec![], &state.enc_key).unwrap();
 
         let app = make_app(state);
 
@@ -167,6 +175,7 @@ mod tests {
         let now = chrono::Utc::now().timestamp();
         let claims = Claims {
             sub: user_id,
+            email: "user@example.com".to_string(),
             household_ids: vec![],
             iat: now - 1000,
             exp: now - 500, // expired
@@ -195,7 +204,8 @@ mod tests {
     async fn test_valid_access_token_cookie_returns_user_id() {
         let state = build_test_state();
         let user_id = Uuid::new_v4();
-        let token = issue_access_token(user_id, vec![], &state.enc_key).unwrap();
+        let token =
+            issue_access_token(user_id, "user@example.com", vec![], &state.enc_key).unwrap();
 
         let app = make_app(state);
 
@@ -216,5 +226,45 @@ mod tests {
             .unwrap();
         let json: serde_json::Value = serde_json::from_slice(&body_bytes).unwrap();
         assert_eq!(json["user_id"].as_str().unwrap(), user_id.to_string());
+    }
+
+    // P4-026: malformed Authorization header edge cases
+    #[tokio::test]
+    async fn test_non_bearer_scheme_returns_401() {
+        let state = build_test_state();
+        let app = make_app(state);
+
+        let resp = app
+            .oneshot(
+                Request::builder()
+                    .uri("/protected")
+                    .header("Authorization", "Basic dXNlcjpwYXNz")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+    }
+
+    #[tokio::test]
+    async fn test_bearer_with_no_token_returns_401() {
+        let state = build_test_state();
+        let app = make_app(state);
+
+        let resp = app
+            .oneshot(
+                Request::builder()
+                    .uri("/protected")
+                    .header("Authorization", "Bearer")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        // "Bearer" with no trailing space+token: strip_prefix("Bearer ") returns None → 401
+        assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
     }
 }

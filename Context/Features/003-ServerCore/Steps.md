@@ -650,6 +650,57 @@ no TODO/FIXME stubs in auth/ or core/ modules
 
 ---
 
+---
+
+### Phase 9: Auth Integration Tests (added post-review)
+
+Tasks added from PR review findings P4-014, P4-015, P4-016, P4-025, P4-026, P4-028.
+
+- [ ] S029: Auth handler integration tests — register, login, refresh, logout
+  - **Assigned:** builder-rust
+  - **Depends:** S015
+  - **Relates to:** P4-014
+  - **Scenarios (sqlx::test):** first register → 201, user is admin and active; second register
+    → 202, user is pending; duplicate email → 409; login active user → 200 with valid JWT
+    containing email claim; login pending user → 403; login wrong password → 401;
+    logout with valid token → 204, token revoked; replay old token after rotate → 401
+
+- [ ] S030: `rotate_refresh_token` security invariant tests
+  - **Assigned:** builder-rust
+  - **Depends:** S015
+  - **Relates to:** P4-015
+  - **Scenarios (sqlx::test):** revoked token returns 401; expired token returns 401; token
+    not found returns 401; valid rotation revokes old token and returns new pair
+
+- [ ] S031: `hooks.server.ts` JWT decode unit tests (Vitest)
+  - **Assigned:** builder-web
+  - **Depends:** S026
+  - **Relates to:** P4-016
+  - **Scenarios:** truncated cookie (undefined payload) → locals.user is null; JWT with
+    valid structure but non-JSON payload → null; token missing exp → null;
+    valid token with email claim → user populated with correct email and id
+
+- [ ] S032: Initiative service sqlx::test integration tests replacing SQL string assertions
+  - **Assigned:** builder-rust
+  - **Depends:** S020
+  - **Relates to:** P4-028
+  - **Scenarios (sqlx::test):** insert two users' initiatives; assert each user's list
+    contains only their own records (FA-009 at DB level); PATCH updates only provided fields;
+    GET by wrong user → NotFound; soft delete sets deleted_at
+
+- [ ] S033-T: `extract_token_from_body_or_cookie` priority contract test
+  - **Note:** Already added inline in handlers.rs tests (P4-025 resolved inline)
+
+- [ ] S034-T: Extractor malformed `Authorization` header tests
+  - **Note:** Already added inline in extractor.rs tests (P4-026 resolved inline)
+
+---
+
+🏁 **MILESTONE 9: Auth integration test coverage complete**
+Verify: `cargo test` green with sqlx::test auth integration tests; Vitest passing for hooks
+
+---
+
 ## Acceptance Criteria
 - [ ] All 18 testable assertions (FA-001–FA-018) verified
 - [ ] `cargo test` passes in `apps/server/`

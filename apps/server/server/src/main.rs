@@ -28,6 +28,8 @@ pub struct AppState {
     pub dec_key: DecodingKey,
     /// Pre-serialized JSON string for `GET /api/auth/.well-known/jwks.json`.
     pub jwks_json: String,
+    /// Whether to set `Secure` on auth cookies. True in production (APP_ENV=production).
+    pub secure_cookies: bool,
 }
 
 #[tokio::main]
@@ -59,7 +61,7 @@ async fn main() -> anyhow::Result<()> {
         .context("Failed to run database migrations")?;
 
     // --- Parse RSA private key and build jwt keys + JWKS ---
-    let app_state = build_app_state(pool, &config.jwt_private_key_pem)
+    let app_state = build_app_state(pool, &config.jwt_private_key_pem, config.secure_cookies)
         .context("Failed to initialise application state from JWT_PRIVATE_KEY")?;
 
     let app: Router = Router::new()
@@ -81,7 +83,7 @@ async fn main() -> anyhow::Result<()> {
 /// Parse the PEM private key and construct the full AppState.
 ///
 /// Separated from `main` so it can be called in tests without a real DB pool.
-pub fn build_app_state(pool: PgPool, pem: &str) -> anyhow::Result<AppState> {
+pub fn build_app_state(pool: PgPool, pem: &str, secure_cookies: bool) -> anyhow::Result<AppState> {
     // Parse the PKCS#8 PEM private key.
     let private_key = rsa::RsaPrivateKey::from_pkcs8_pem(pem).context(
         "Failed to parse RSA private key from JWT_PRIVATE_KEY — \
@@ -125,5 +127,6 @@ pub fn build_app_state(pool: PgPool, pem: &str) -> anyhow::Result<AppState> {
         enc_key,
         dec_key,
         jwks_json,
+        secure_cookies,
     })
 }

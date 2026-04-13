@@ -1,5 +1,5 @@
 use anyhow::Context;
-use base64::{Engine as _, engine::general_purpose::STANDARD as BASE64};
+use base64::{engine::general_purpose::STANDARD as BASE64, Engine as _};
 
 #[derive(Debug, Clone)]
 pub struct Config {
@@ -9,6 +9,9 @@ pub struct Config {
     /// RSA private key in PEM format, decoded from the base64-encoded JWT_PRIVATE_KEY env var.
     /// Generate with: openssl genrsa 2048 | base64 -w0
     pub jwt_private_key_pem: String,
+    /// Whether to set the `Secure` attribute on auth cookies. Enabled when APP_ENV=production.
+    /// Disable for local HTTP dev by setting APP_ENV=development (or omitting the variable).
+    pub secure_cookies: bool,
 }
 
 impl Config {
@@ -29,10 +32,15 @@ impl Config {
         let jwt_private_key_pem = String::from_utf8(pem_bytes)
             .context("JWT_PRIVATE_KEY decoded bytes are not valid UTF-8")?;
 
+        let secure_cookies = std::env::var("APP_ENV")
+            .map(|v| v == "production")
+            .unwrap_or(false);
+
         Ok(Self {
             bind_addr,
             database_url,
             jwt_private_key_pem,
+            secure_cookies,
         })
     }
 }
@@ -40,7 +48,7 @@ impl Config {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use base64::{Engine as _, engine::general_purpose::STANDARD as BASE64};
+    use base64::{engine::general_purpose::STANDARD as BASE64, Engine as _};
     use rsa::{pkcs8::EncodePrivateKey, traits::PublicKeyParts};
 
     /// Generate a fresh 2048-bit RSA PEM and return it base64-encoded.
@@ -224,7 +232,7 @@ mod tests {
     #[test]
     fn valid_rsa_pem_parses_and_jwt_round_trips() {
         use jsonwebtoken::{
-            Algorithm, DecodingKey, EncodingKey, Header, Validation, decode, encode,
+            decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation,
         };
         use rsa::pkcs8::DecodePrivateKey;
         use serde::{Deserialize, Serialize};

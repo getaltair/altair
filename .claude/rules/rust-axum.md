@@ -36,6 +36,7 @@ Every domain module contains:
 - Map database errors to appropriate HTTP status codes
 - No `unwrap()` in production code; use `?`, `expect()` with message, or explicit match
 - No `panic!()` or `unreachable!()` outside of tests
+- Map `sqlx::Error` via `anyhow::Error::from(e)`, **never** `.to_string()` — `.to_string()` flattens the error chain and leaks schema detail (table/constraint names) into logs. Prefer `impl From<sqlx::Error> for AppError` to eliminate boilerplate and preserve the full error chain.
 
 ## Safety
 
@@ -47,6 +48,7 @@ Every domain module contains:
 ## Async
 
 - No blocking calls inside `async` functions (no `std::thread::sleep`, no blocking I/O)
+- CPU-intensive synchronous operations (e.g. Argon2id hashing/verification) must be wrapped in `tokio::task::spawn_blocking` to avoid blocking a Tokio worker thread
 - `tokio::spawn` must have error handling on the `JoinHandle`
 - Always `.await` futures; detect missing `.await`
 
