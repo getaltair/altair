@@ -172,11 +172,17 @@ mod tests {
             .expect("list for user_b failed");
 
         assert_eq!(a_list.len(), 1, "user_a should see exactly 1 initiative");
-        assert_eq!(a_list[0].user_id, user_a, "user_a result must belong to user_a");
+        assert_eq!(
+            a_list[0].user_id, user_a,
+            "user_a result must belong to user_a"
+        );
         assert_eq!(a_list[0].title, "User A Initiative");
 
         assert_eq!(b_list.len(), 1, "user_b should see exactly 1 initiative");
-        assert_eq!(b_list[0].user_id, user_b, "user_b result must belong to user_b");
+        assert_eq!(
+            b_list[0].user_id, user_b,
+            "user_b result must belong to user_b"
+        );
         assert_eq!(b_list[0].title, "User B Initiative");
     }
 
@@ -277,13 +283,12 @@ mod tests {
             .expect("delete_initiative failed");
 
         // Verify the row still exists but deleted_at is set.
-        let deleted_at: Option<chrono::DateTime<chrono::Utc>> = sqlx::query_scalar(
-            "SELECT deleted_at FROM initiatives WHERE id = $1",
-        )
-        .bind(initiative.id)
-        .fetch_one(&pool)
-        .await
-        .expect("Row must still exist after soft delete");
+        let deleted_at: Option<chrono::DateTime<chrono::Utc>> =
+            sqlx::query_scalar("SELECT deleted_at FROM initiatives WHERE id = $1")
+                .bind(initiative.id)
+                .fetch_one(&pool)
+                .await
+                .expect("Row must still exist after soft delete");
 
         assert!(
             deleted_at.is_some(),

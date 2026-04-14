@@ -1,0 +1,52 @@
+bucket_definitions:
+
+  # User-owned personal data
+  user_data:
+    parameters: SELECT request.user_id() AS user_id
+    data:
+      - SELECT * FROM users            WHERE id = bucket.user_id
+      - SELECT * FROM initiatives      WHERE user_id = bucket.user_id
+      - SELECT * FROM tags             WHERE user_id = bucket.user_id
+      - SELECT * FROM attachments      WHERE user_id = bucket.user_id
+      - SELECT * FROM entity_relations WHERE user_id = bucket.user_id
+
+  # Household-scoped shared data (user must be a member)
+  household:
+    parameters: >
+      SELECT hm.household_id
+        FROM household_memberships hm
+       WHERE hm.user_id = request.user_id()
+    data:
+      - SELECT * FROM households            WHERE id = bucket.household_id
+      - SELECT * FROM household_memberships WHERE household_id = bucket.household_id
+
+  # Guidance domain — user-owned
+  guidance:
+    parameters: SELECT request.user_id() AS user_id
+    data:
+      - SELECT * FROM guidance_epics          WHERE user_id = bucket.user_id
+      - SELECT * FROM guidance_quests         WHERE user_id = bucket.user_id
+      - SELECT * FROM guidance_routines       WHERE user_id = bucket.user_id
+      - SELECT * FROM guidance_focus_sessions WHERE user_id = bucket.user_id
+      - SELECT * FROM guidance_daily_checkins WHERE user_id = bucket.user_id
+
+  # Knowledge domain — user-owned
+  knowledge:
+    parameters: SELECT request.user_id() AS user_id
+    data:
+      - SELECT * FROM knowledge_notes          WHERE user_id = bucket.user_id
+      - SELECT * FROM knowledge_note_snapshots WHERE user_id = bucket.user_id
+
+  # Tracking domain — household-scoped
+  tracking:
+    parameters: >
+      SELECT hm.household_id
+        FROM household_memberships hm
+       WHERE hm.user_id = request.user_id()
+    data:
+      - SELECT * FROM tracking_locations           WHERE household_id = bucket.household_id
+      - SELECT * FROM tracking_categories          WHERE household_id = bucket.household_id
+      - SELECT * FROM tracking_items               WHERE household_id = bucket.household_id
+      - SELECT * FROM tracking_item_events         WHERE household_id = bucket.household_id
+      - SELECT * FROM tracking_shopping_lists      WHERE household_id = bucket.household_id
+      - SELECT * FROM tracking_shopping_list_items WHERE household_id = bucket.household_id

@@ -13,6 +13,7 @@ pub mod core;
 pub mod db;
 pub mod error;
 pub mod routes;
+pub mod sync;
 
 /// Application state shared across all Axum handlers.
 ///

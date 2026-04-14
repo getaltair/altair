@@ -94,7 +94,12 @@ pub async fn register(
         };
 
         let mut headers = HeaderMap::new();
-        set_auth_cookies(&mut headers, &access_token, &raw_refresh, state.secure_cookies)?;
+        set_auth_cookies(
+            &mut headers,
+            &access_token,
+            &raw_refresh,
+            state.secure_cookies,
+        )?;
 
         Ok((StatusCode::CREATED, headers, Json(token_response)).into_response())
     } else {
@@ -167,7 +172,12 @@ pub async fn login(
     };
 
     let mut headers = HeaderMap::new();
-    set_auth_cookies(&mut headers, &access_token, &raw_refresh, state.secure_cookies)?;
+    set_auth_cookies(
+        &mut headers,
+        &access_token,
+        &raw_refresh,
+        state.secure_cookies,
+    )?;
 
     Ok((StatusCode::OK, headers, Json(token_response)).into_response())
 }
@@ -539,8 +549,11 @@ mod tests {
             axum::http::header::COOKIE,
             axum::http::HeaderValue::from_static("refresh_token=cookie_token"),
         );
-        let result =
-            extract_token_from_body_or_cookie(Some("body_token".to_string()), &headers, "refresh_token");
+        let result = extract_token_from_body_or_cookie(
+            Some("body_token".to_string()),
+            &headers,
+            "refresh_token",
+        );
         assert_eq!(result.unwrap(), "body_token");
     }
 

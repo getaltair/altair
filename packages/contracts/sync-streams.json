@@ -1,7 +1,7 @@
 {
   "contracts_version": "1.0.0",
-  "provisional": true,
-  "note": "Stream SQL bucket definitions are designed in Step 4 (Sync Engine); these names may be revised.",
+  "provisional": false,
+  "note": "Finalised bucket names from Feature 004 sync_rules.yaml: user_data, household, guidance, knowledge, tracking.",
   "values": [
     { "id": "user_data",  "description": "User's own Core entities (initiatives, tags, attachments)" },
     { "id": "household",  "description": "Household-scoped data (memberships, locations, categories)" },

@@ -30,8 +30,8 @@ use tower::ServiceExt;
 
 fn generate_test_rsa_pem() -> String {
     use rsa::rand_core::OsRng;
-    let private_key = rsa::RsaPrivateKey::new(&mut OsRng, 2048)
-        .expect("Failed to generate RSA key for tests");
+    let private_key =
+        rsa::RsaPrivateKey::new(&mut OsRng, 2048).expect("Failed to generate RSA key for tests");
     private_key
         .to_pkcs8_pem(rsa::pkcs8::LineEnding::LF)
         .expect("Failed to encode RSA key as PEM")
@@ -40,20 +40,16 @@ fn generate_test_rsa_pem() -> String {
 
 fn build_test_app(pool: PgPool) -> Router {
     let pem = generate_test_rsa_pem();
-    let state: AppState = build_app_state(pool, &pem, false)
-        .expect("Failed to build AppState for test");
-    Router::new()
-        .merge(auth_router())
-        .with_state(state)
+    let state: AppState =
+        build_app_state(pool, &pem, false).expect("Failed to build AppState for test");
+    Router::new().merge(auth_router()).with_state(state)
 }
 
 fn build_test_app_with_state(pool: PgPool) -> (Router, AppState) {
     let pem = generate_test_rsa_pem();
-    let state: AppState = build_app_state(pool, &pem, false)
-        .expect("Failed to build AppState for test");
-    let app = Router::new()
-        .merge(auth_router())
-        .with_state(state.clone());
+    let state: AppState =
+        build_app_state(pool, &pem, false).expect("Failed to build AppState for test");
+    let app = Router::new().merge(auth_router()).with_state(state.clone());
     (app, state)
 }
 
@@ -92,22 +88,34 @@ async fn test_first_register_returns_201_admin_active(pool: PgPool) {
     )
     .await;
 
-    assert_eq!(resp.status(), StatusCode::CREATED, "First register must return 201");
+    assert_eq!(
+        resp.status(),
+        StatusCode::CREATED,
+        "First register must return 201"
+    );
 
     let json = body_json(resp).await;
-    assert!(json["access_token"].is_string(), "access_token must be present");
-    assert!(json["refresh_token"].is_string(), "refresh_token must be present");
+    assert!(
+        json["access_token"].is_string(),
+        "access_token must be present"
+    );
+    assert!(
+        json["refresh_token"].is_string(),
+        "refresh_token must be present"
+    );
     assert_eq!(json["token_type"], "Bearer");
 
     // Verify DB row: is_admin=true, status=active
-    let row: (bool, String) =
-        sqlx::query_as("SELECT is_admin, status FROM users WHERE email = $1")
-            .bind("admin@example.com")
-            .fetch_one(&pool)
-            .await
-            .expect("User must exist in DB after first register");
+    let row: (bool, String) = sqlx::query_as("SELECT is_admin, status FROM users WHERE email = $1")
+        .bind("admin@example.com")
+        .fetch_one(&pool)
+        .await
+        .expect("User must exist in DB after first register");
     assert!(row.0, "First registered user must be admin");
-    assert_eq!(row.1, "active", "First registered user must have status=active");
+    assert_eq!(
+        row.1, "active",
+        "First registered user must have status=active"
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -132,22 +140,33 @@ async fn test_second_register_returns_202_pending(pool: PgPool) {
     )
     .await;
 
-    assert_eq!(resp.status(), StatusCode::ACCEPTED, "Second register must return 202");
+    assert_eq!(
+        resp.status(),
+        StatusCode::ACCEPTED,
+        "Second register must return 202"
+    );
 
     let json = body_json(resp).await;
-    assert!(json["access_token"].is_null() || json.get("access_token").is_none(),
-        "Pending user must not receive access_token, got: {json}");
-    assert!(json["message"].is_string(), "Pending response must include a message");
+    assert!(
+        json["access_token"].is_null() || json.get("access_token").is_none(),
+        "Pending user must not receive access_token, got: {json}"
+    );
+    assert!(
+        json["message"].is_string(),
+        "Pending response must include a message"
+    );
 
     // Verify DB row: status=pending, is_admin=false
-    let row: (bool, String) =
-        sqlx::query_as("SELECT is_admin, status FROM users WHERE email = $1")
-            .bind("user@example.com")
-            .fetch_one(&pool)
-            .await
-            .expect("Second user must exist in DB");
+    let row: (bool, String) = sqlx::query_as("SELECT is_admin, status FROM users WHERE email = $1")
+        .bind("user@example.com")
+        .fetch_one(&pool)
+        .await
+        .expect("Second user must exist in DB");
     assert!(!row.0, "Second registered user must not be admin");
-    assert_eq!(row.1, "pending", "Second registered user must have status=pending");
+    assert_eq!(
+        row.1, "pending",
+        "Second registered user must have status=pending"
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -170,7 +189,11 @@ async fn test_duplicate_email_returns_409(pool: PgPool) {
     )
     .await;
 
-    assert_eq!(resp.status(), StatusCode::CONFLICT, "Duplicate email must return 409");
+    assert_eq!(
+        resp.status(),
+        StatusCode::CONFLICT,
+        "Duplicate email must return 409"
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -195,10 +218,15 @@ async fn test_login_active_user_returns_200_with_jwt(pool: PgPool) {
     )
     .await;
 
-    assert_eq!(resp.status(), StatusCode::OK, "Login with valid active user must return 200");
+    assert_eq!(
+        resp.status(),
+        StatusCode::OK,
+        "Login with valid active user must return 200"
+    );
 
     let json = body_json(resp).await;
-    let access_token = json["access_token"].as_str()
+    let access_token = json["access_token"]
+        .as_str()
         .expect("access_token must be a string in login response");
 
     // Decode the JWT and verify email claim is present and correct
@@ -214,7 +242,9 @@ async fn test_login_active_user_returns_200_with_jwt(pool: PgPool) {
 
     // email claim must match
     assert_eq!(
-        claims["email"].as_str().expect("email claim must be a string"),
+        claims["email"]
+            .as_str()
+            .expect("email claim must be a string"),
         "active@example.com",
         "email claim must match registered email"
     );
@@ -248,7 +278,11 @@ async fn test_login_pending_user_returns_403(pool: PgPool) {
     )
     .await;
 
-    assert_eq!(resp.status(), StatusCode::FORBIDDEN, "Login for pending user must return 403");
+    assert_eq!(
+        resp.status(),
+        StatusCode::FORBIDDEN,
+        "Login for pending user must return 403"
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -271,7 +305,11 @@ async fn test_login_wrong_password_returns_401(pool: PgPool) {
     )
     .await;
 
-    assert_eq!(resp.status(), StatusCode::UNAUTHORIZED, "Wrong password must return 401");
+    assert_eq!(
+        resp.status(),
+        StatusCode::UNAUTHORIZED,
+        "Wrong password must return 401"
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -295,7 +333,8 @@ async fn test_logout_revokes_refresh_token(pool: PgPool) {
     )
     .await;
     let login_json = body_json(login_resp).await;
-    let refresh_token = login_json["refresh_token"].as_str()
+    let refresh_token = login_json["refresh_token"]
+        .as_str()
         .expect("refresh_token must be present after login")
         .to_string();
 
@@ -349,7 +388,8 @@ async fn test_replay_old_refresh_token_after_rotate_returns_401(pool: PgPool) {
     )
     .await;
     let login_json = body_json(login_resp).await;
-    let old_refresh_token = login_json["refresh_token"].as_str()
+    let old_refresh_token = login_json["refresh_token"]
+        .as_str()
         .expect("refresh_token must be present after login")
         .to_string();
 

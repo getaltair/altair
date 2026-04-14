@@ -1,5 +1,5 @@
 use anyhow::Context;
-use base64::{engine::general_purpose::STANDARD as BASE64, Engine as _};
+use base64::{Engine as _, engine::general_purpose::STANDARD as BASE64};
 
 #[derive(Debug, Clone)]
 pub struct Config {
@@ -48,7 +48,7 @@ impl Config {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use base64::{engine::general_purpose::STANDARD as BASE64, Engine as _};
+    use base64::{Engine as _, engine::general_purpose::STANDARD as BASE64};
     use rsa::{pkcs8::EncodePrivateKey, traits::PublicKeyParts};
 
     /// Generate a fresh 2048-bit RSA PEM and return it base64-encoded.
@@ -232,7 +232,7 @@ mod tests {
     #[test]
     fn valid_rsa_pem_parses_and_jwt_round_trips() {
         use jsonwebtoken::{
-            decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation,
+            Algorithm, DecodingKey, EncodingKey, Header, Validation, decode, encode,
         };
         use rsa::pkcs8::DecodePrivateKey;
         use serde::{Deserialize, Serialize};
