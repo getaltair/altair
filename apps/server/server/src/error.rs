@@ -181,4 +181,40 @@ mod tests {
             "Internal error must not leak details; body was: {body}"
         );
     }
+
+    // --- From<sqlx::Error> conversion tests ---
+
+    #[tokio::test]
+    async fn sqlx_error_converts_to_internal() {
+        let sqlx_err = sqlx::Error::RowNotFound;
+        let app_err = AppError::from(sqlx_err);
+        assert!(
+            matches!(app_err, AppError::Internal(_)),
+            "sqlx::Error must convert to AppError::Internal"
+        );
+    }
+
+    #[tokio::test]
+    async fn sqlx_error_returns_500() {
+        let sqlx_err = sqlx::Error::RowNotFound;
+        let (status, _body) = status_and_body(AppError::from(sqlx_err)).await;
+        assert_eq!(status, StatusCode::INTERNAL_SERVER_ERROR);
+    }
+
+    #[tokio::test]
+    async fn sqlx_error_does_not_leak_schema_detail() {
+        // Use a Protocol error that embeds realistic schema detail (constraint names, table names).
+        let detail = "duplicate key value violates unique constraint \"pk_users\"";
+        let sqlx_err = sqlx::Error::Protocol(detail.into());
+        let (status, body) = status_and_body(AppError::from(sqlx_err)).await;
+        assert_eq!(status, StatusCode::INTERNAL_SERVER_ERROR);
+        assert!(
+            !body.contains(detail),
+            "Schema detail must not appear in the response body; body was: {body}"
+        );
+        assert!(
+            !body.contains("pk_users"),
+            "Table/constraint names must not be leaked; body was: {body}"
+        );
+    }
 }

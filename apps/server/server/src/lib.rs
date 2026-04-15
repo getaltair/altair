@@ -16,6 +16,7 @@ pub mod guidance;
 pub mod knowledge;
 pub mod routes;
 pub mod sync;
+pub mod tracking;
 
 /// Application state shared across all Axum handlers.
 ///
