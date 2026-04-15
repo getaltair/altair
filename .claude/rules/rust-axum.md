@@ -38,6 +38,7 @@ Every domain module contains:
 - No `panic!()` or `unreachable!()` outside of tests
 - Map `sqlx::Error` via `anyhow::Error::from(e)`, **never** `.to_string()` — `.to_string()` flattens the error chain and leaks schema detail (table/constraint names) into logs. Prefer `impl From<sqlx::Error> for AppError` to eliminate boilerplate and preserve the full error chain.
 - **Never** write `.map_err(|e| AppError::Internal(anyhow::Error::from(e)))` inline. Add `impl From<sqlx::Error> for AppError` once per crate (in `error.rs`) and use `?` directly. The inline form appeared ~40 times in the sync module — it is a maintenance hazard and obscures intent.
+- **Never** write `let _ = tx.rollback().await` to discard rollback errors. A failed rollback leaves the connection in an ambiguous state and the error disappears silently. Always log rollback failures: `if let Err(rb_err) = tx.rollback().await { tracing::warn!("rollback failed: {:?}", rb_err); }`. The `let _` form is banned — treat it as a bug on sight.
 
 ## Safety
 
