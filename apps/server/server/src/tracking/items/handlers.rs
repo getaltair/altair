@@ -12,6 +12,7 @@ use super::service;
 use crate::AppState;
 use crate::auth::models::AuthUser;
 use crate::error::AppError;
+use crate::tracking::HouseholdQuery;
 
 #[derive(Debug, Deserialize)]
 pub struct ListItemsQuery {
@@ -28,16 +29,16 @@ fn default_limit() -> i64 {
     50
 }
 
-#[derive(Debug, Deserialize)]
-pub struct HouseholdQuery {
-    pub household_id: Uuid,
-}
-
 pub async fn list(
     State(state): State<AppState>,
     auth: AuthUser,
     Query(params): Query<ListItemsQuery>,
 ) -> Result<impl IntoResponse, AppError> {
+    if params.limit < 0 || params.offset < 0 {
+        return Err(AppError::BadRequest(
+            "limit and offset must be non-negative".to_string(),
+        ));
+    }
     let items = service::list_items(
         &state.db,
         auth.user_id,
@@ -56,6 +57,9 @@ pub async fn create(
     auth: AuthUser,
     Json(req): Json<CreateItemRequest>,
 ) -> Result<impl IntoResponse, AppError> {
+    if req.name.trim().is_empty() {
+        return Err(AppError::BadRequest("name must not be empty".to_string()));
+    }
     let item = service::create_item(&state.db, auth.user_id, req).await?;
     Ok((StatusCode::CREATED, Json(item)))
 }
@@ -77,6 +81,22 @@ pub async fn update(
     Query(params): Query<HouseholdQuery>,
     Json(req): Json<UpdateItemRequest>,
 ) -> Result<impl IntoResponse, AppError> {
+    if req.name.is_none()
+        && req.description.is_none()
+        && req.barcode.is_none()
+        && req.location_id.is_none()
+        && req.category_id.is_none()
+        && req.expires_at.is_none()
+    {
+        return Err(AppError::BadRequest(
+            "at least one field must be provided".to_string(),
+        ));
+    }
+    if let Some(name) = &req.name
+        && name.trim().is_empty()
+    {
+        return Err(AppError::BadRequest("name must not be empty".to_string()));
+    }
     let item =
         service::update_item(&state.db, auth.user_id, params.household_id, item_id, req).await?;
     Ok(Json(item))

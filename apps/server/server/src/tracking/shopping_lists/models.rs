@@ -43,9 +43,3 @@ pub struct CreateShoppingListRequest {
 pub struct UpdateShoppingListRequest {
     pub name: Option<String>,
 }
-
-/// Query parameter for handlers that scope by household.
-#[derive(Debug, Deserialize)]
-pub struct HouseholdQuery {
-    pub household_id: Uuid,
-}

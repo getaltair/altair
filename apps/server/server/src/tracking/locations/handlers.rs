@@ -4,7 +4,6 @@ use axum::{
     http::StatusCode,
     response::IntoResponse,
 };
-use serde::Deserialize;
 use uuid::Uuid;
 
 use super::models::{CreateLocationRequest, UpdateLocationRequest};
@@ -12,11 +11,7 @@ use super::service;
 use crate::AppState;
 use crate::auth::models::AuthUser;
 use crate::error::AppError;
-
-#[derive(Debug, Deserialize)]
-pub struct HouseholdQuery {
-    pub household_id: Uuid,
-}
+use crate::tracking::HouseholdQuery;
 
 pub async fn list(
     State(state): State<AppState>,
@@ -32,6 +27,9 @@ pub async fn create(
     auth: AuthUser,
     Json(req): Json<CreateLocationRequest>,
 ) -> Result<impl IntoResponse, AppError> {
+    if req.name.trim().is_empty() {
+        return Err(AppError::BadRequest("name must not be empty".to_string()));
+    }
     let location = service::create_location(&state.db, auth.user_id, req).await?;
     Ok((StatusCode::CREATED, Json(location)))
 }
@@ -53,6 +51,13 @@ pub async fn update(
     Query(query): Query<HouseholdQuery>,
     Json(req): Json<UpdateLocationRequest>,
 ) -> Result<impl IntoResponse, AppError> {
+    match &req.name {
+        None => return Err(AppError::BadRequest("at least one field must be provided".to_string())),
+        Some(name) if name.trim().is_empty() => {
+            return Err(AppError::BadRequest("name must not be empty".to_string()))
+        }
+        Some(_) => {}
+    }
     let location =
         service::update_location(&state.db, auth.user_id, query.household_id, id, req).await?;
     Ok(Json(location))

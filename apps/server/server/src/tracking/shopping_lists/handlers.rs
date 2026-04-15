@@ -6,11 +6,12 @@ use axum::{
 };
 use uuid::Uuid;
 
-use super::models::{CreateShoppingListRequest, HouseholdQuery, UpdateShoppingListRequest};
+use super::models::{CreateShoppingListRequest, UpdateShoppingListRequest};
 use super::service;
 use crate::AppState;
 use crate::auth::models::AuthUser;
 use crate::error::AppError;
+use crate::tracking::HouseholdQuery;
 
 pub async fn list(
     State(state): State<AppState>,
@@ -50,6 +51,13 @@ pub async fn update(
     Path(id): Path<Uuid>,
     Json(req): Json<UpdateShoppingListRequest>,
 ) -> Result<impl IntoResponse, AppError> {
+    match &req.name {
+        None => return Err(AppError::BadRequest("at least one field must be provided".to_string())),
+        Some(name) if name.trim().is_empty() => {
+            return Err(AppError::BadRequest("name must not be empty".to_string()))
+        }
+        Some(_) => {}
+    }
     let list =
         service::update_shopping_list(&state.db, auth.user_id, q.household_id, id, req).await?;
     Ok(Json(list))

@@ -219,6 +219,74 @@
 
 ---
 
+---
+
+### Phase 8: Review-Driven Follow-Up Tasks
+
+- [ ] S011: Add HTTP-layer integration tests for all tracking endpoints
+  - Add Axum `TestClient` (or equivalent) tests that drive the full handler → service → DB stack for all six tracking sub-modules: locations, categories, items, item_events, shopping_lists, shopping_list_items.
+  - At minimum: 200/201 happy path, 400 for bad input, 403 for non-member, 404 for missing resource, 409 for duplicate.
+  - These are end-to-end, not unit tests — they exercise routing, extractor, handler validation, service, and DB layers together.
+  - **Assigned:** builder
+  - **Depends:** S010
+  - **Parallel:** false
+
+- [ ] S012: Add test for create_item_event when item has NULL household_id
+  - Verifies that `create_item_event` returns `AppError::NotFound` (not a panic or 500) when the target item exists but `household_id IS NULL` — exercising the household isolation check added in the P6-002 fix.
+  - **Assigned:** builder
+  - **Depends:** S006-T
+  - **Parallel:** false
+
+- [ ] S013: Add shopping_list_items isolation tests for remove and list paths
+  - Verify that a user from household A cannot `remove` or `list` items in a shopping list owned by household B. Both paths must return 403.
+  - **Assigned:** builder
+  - **Depends:** S008-T
+  - **Parallel:** false
+
+- [ ] S014: Add test verifying transaction rollback prevents status persistence
+  - For the `Pending → Purchased` path in `update_shopping_list_item`, simulate a failure in `create_item_event_in_tx` and verify the shopping list item status is NOT persisted (i.e., the transaction rolled back correctly). Guards against partial-commit bugs.
+  - **Assigned:** builder
+  - **Depends:** S008-T
+  - **Parallel:** false
+
+- [ ] S015: Derive `sqlx::Type` on `ShoppingListItemStatus` and eliminate the `str_to_status` helper
+  - Add `#[derive(sqlx::Type)]` with `#[sqlx(type_name = "varchar", rename_all = "snake_case")]` so sqlx decodes the status column directly into the enum. Remove the manual `String` field and the `str_to_status` conversion in service.rs. Update `TrackingShoppingListItemRow.status` from `String` to `ShoppingListItemStatus`. Update `TrackingShoppingListItem.status` accordingly.
+  - **Assigned:** builder
+  - **Depends:** S008
+  - **Parallel:** false
+
+- [ ] S015-T: Add test for the `str_to_status` error path before removing it in S015
+  - Verify that an unknown status string returns an error (not a panic). This test documents the current behavior and can be removed once S015 makes it obsolete.
+  - **Assigned:** builder
+  - **Depends:** S008-T
+  - **Parallel:** false
+
+- [ ] S016: Change `event_type: String` to `event_type: ItemEventType` in `TrackingItemEventRow` and `TrackingItemEvent`
+  - Add `#[derive(sqlx::Type)]` with appropriate rename on `ItemEventType`. Update the row struct, response struct, and the `From` conversion. Remove any manual string-to-enum conversion in service.rs.
+  - **Assigned:** builder
+  - **Depends:** S006
+  - **Parallel:** false
+
+- [ ] S017: Add 403 tests for update, delete, and get on categories and shopping_lists for non-members
+  - Extend `categories/service.rs` and `shopping_lists/service.rs` tests to include: non-member calling `update_*`, `delete_*`, and `get_*` each returns `AppError::Forbidden`.
+  - **Assigned:** builder
+  - **Depends:** S004-T, S007-T
+  - **Parallel:** false
+
+- [ ] S018: Add pagination tests for `list_item_events`
+  - Seed N > 50 events for an item and verify: default limit returns 50, `limit=N` returns all, `offset=k` returns correct slice, results are ordered `created_at ASC`.
+  - **Assigned:** builder
+  - **Depends:** S006-T
+  - **Parallel:** false
+
+- [ ] S019: Add test for `update_item` with a cross-household `location_id`
+  - Verify that `update_item` with a `location_id` belonging to a different household returns `AppError::UnprocessableEntity` (422). Guards invariant E-8 on the update path.
+  - **Assigned:** builder
+  - **Depends:** S005-T
+  - **Parallel:** false
+
+---
+
 ## Acceptance Criteria
 
 - [ ] All 15 testable assertions (FA-001–FA-015) pass

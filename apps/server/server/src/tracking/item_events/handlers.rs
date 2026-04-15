@@ -35,6 +35,11 @@ pub async fn list(
     Path(item_id): Path<Uuid>,
     Query(params): Query<ListEventsQuery>,
 ) -> Result<impl IntoResponse, AppError> {
+    if params.limit < 0 || params.offset < 0 {
+        return Err(AppError::BadRequest(
+            "limit and offset must be non-negative".to_string(),
+        ));
+    }
     let events = service::list_item_events(
         &state.db,
         auth.user_id,
@@ -48,11 +53,16 @@ pub async fn list(
 }
 
 /// POST /api/tracking/items/{id}/events
+///
+/// The URL path `{id}` is authoritative: the handler overrides `req.item_id` so
+/// a client cannot target a different item by placing a different UUID in the body.
 pub async fn create(
     State(state): State<AppState>,
     auth: AuthUser,
-    Json(req): Json<CreateItemEventRequest>,
+    Path(item_id): Path<Uuid>,
+    Json(mut req): Json<CreateItemEventRequest>,
 ) -> Result<impl IntoResponse, AppError> {
+    req.item_id = item_id;
     let event = service::create_item_event(&state.db, auth.user_id, req).await?;
     Ok((StatusCode::CREATED, Json(event)))
 }

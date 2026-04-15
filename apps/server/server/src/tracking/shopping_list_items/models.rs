@@ -100,9 +100,3 @@ pub struct CreateShoppingListItemRequest {
 pub struct UpdateShoppingListItemRequest {
     pub status: ShoppingListItemStatus,
 }
-
-/// Query parameter for handlers that scope by household.
-#[derive(Debug, Deserialize)]
-pub struct HouseholdQuery {
-    pub household_id: Uuid,
-}

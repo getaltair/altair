@@ -6,11 +6,12 @@ use axum::{
 };
 use uuid::Uuid;
 
-use super::models::{CreateShoppingListItemRequest, HouseholdQuery, UpdateShoppingListItemRequest};
+use super::models::{CreateShoppingListItemRequest, UpdateShoppingListItemRequest};
 use super::service;
 use crate::AppState;
 use crate::auth::models::AuthUser;
 use crate::error::AppError;
+use crate::tracking::HouseholdQuery;
 
 pub async fn list(
     State(state): State<AppState>,

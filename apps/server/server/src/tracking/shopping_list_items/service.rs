@@ -90,7 +90,7 @@ pub async fn add_shopping_list_item(
 
     let quantity = req.quantity.unwrap_or(1);
 
-    let row = sqlx::query_as::<_, TrackingShoppingListItemRow>(&format!(
+    let result = sqlx::query_as::<_, TrackingShoppingListItemRow>(&format!(
         "INSERT INTO tracking_shopping_list_items \
          (shopping_list_id, item_id, name, quantity, status) \
          VALUES ($1, $2, $3, $4, 'pending') \
@@ -101,9 +101,17 @@ pub async fn add_shopping_list_item(
     .bind(&req.name)
     .bind(quantity)
     .fetch_one(pool)
-    .await?;
+    .await;
 
-    Ok(TrackingShoppingListItem::from(row))
+    match result {
+        Ok(row) => Ok(TrackingShoppingListItem::from(row)),
+        Err(sqlx::Error::Database(ref e)) if e.code().as_deref() == Some("23505") => {
+            Err(AppError::Conflict(
+                "shopping list item already exists".to_string(),
+            ))
+        }
+        Err(e) => Err(e.into()),
+    }
 }
 
 /// Update the status of a shopping list item.
@@ -166,11 +174,20 @@ pub async fn update_shopping_list_item(
         (ShoppingListItemStatus::Purchased, Some(inv_item_id)) => {
             let mut tx = pool.begin().await?;
 
-            // Acquire row lock on the inventory item before modifying quantity.
-            sqlx::query("SELECT id FROM tracking_items WHERE id = $1 FOR UPDATE")
-                .bind(inv_item_id)
-                .execute(&mut *tx)
-                .await?;
+            // Acquire row lock on the inventory item; check it still exists (not soft-deleted).
+            let item_exists = sqlx::query_scalar::<_, bool>(
+                "SELECT EXISTS(SELECT 1 FROM tracking_items WHERE id = $1 AND deleted_at IS NULL FOR UPDATE)",
+            )
+            .bind(inv_item_id)
+            .fetch_one(&mut *tx)
+            .await?;
+
+            if !item_exists {
+                if let Err(rb_err) = tx.rollback().await {
+                    tracing::warn!("rollback failed (postgres will auto-rollback on drop): {:?}", rb_err);
+                }
+                return Err(AppError::NotFound);
+            }
 
             // Update shopping list item status inside the transaction.
             let row = sqlx::query_as::<_, TrackingShoppingListItemRow>(&format!(
@@ -187,7 +204,9 @@ pub async fn update_shopping_list_item(
             let row = match row {
                 Some(r) => r,
                 None => {
-                    let _ = tx.rollback().await;
+                    if let Err(rb_err) = tx.rollback().await {
+                        tracing::warn!("rollback failed (postgres will auto-rollback on drop): {:?}", rb_err);
+                    }
                     return Err(AppError::NotFound);
                 }
             };
@@ -197,7 +216,9 @@ pub async fn update_shopping_list_item(
                 create_item_event_in_tx(&mut tx, inv_item_id, ItemEventType::Consume, -1.0).await;
 
             if let Err(e) = event_result {
-                let _ = tx.rollback().await;
+                if let Err(rb_err) = tx.rollback().await {
+                    tracing::warn!("rollback failed (postgres will auto-rollback on drop): {:?}", rb_err);
+                }
                 return Err(e);
             }
 
@@ -212,11 +233,20 @@ pub async fn update_shopping_list_item(
         (ShoppingListItemStatus::Pending, Some(inv_item_id)) => {
             let mut tx = pool.begin().await?;
 
-            // Acquire row lock on the inventory item.
-            sqlx::query("SELECT id FROM tracking_items WHERE id = $1 FOR UPDATE")
-                .bind(inv_item_id)
-                .execute(&mut *tx)
-                .await?;
+            // Acquire row lock on the inventory item; check it still exists (not soft-deleted).
+            let item_exists = sqlx::query_scalar::<_, bool>(
+                "SELECT EXISTS(SELECT 1 FROM tracking_items WHERE id = $1 AND deleted_at IS NULL FOR UPDATE)",
+            )
+            .bind(inv_item_id)
+            .fetch_one(&mut *tx)
+            .await?;
+
+            if !item_exists {
+                if let Err(rb_err) = tx.rollback().await {
+                    tracing::warn!("rollback failed (postgres will auto-rollback on drop): {:?}", rb_err);
+                }
+                return Err(AppError::NotFound);
+            }
 
             let row = sqlx::query_as::<_, TrackingShoppingListItemRow>(&format!(
                 "UPDATE tracking_shopping_list_items \
@@ -232,7 +262,9 @@ pub async fn update_shopping_list_item(
             let row = match row {
                 Some(r) => r,
                 None => {
-                    let _ = tx.rollback().await;
+                    if let Err(rb_err) = tx.rollback().await {
+                        tracing::warn!("rollback failed (postgres will auto-rollback on drop): {:?}", rb_err);
+                    }
                     return Err(AppError::NotFound);
                 }
             };
@@ -242,7 +274,9 @@ pub async fn update_shopping_list_item(
                     .await;
 
             if let Err(e) = event_result {
-                let _ = tx.rollback().await;
+                if let Err(rb_err) = tx.rollback().await {
+                    tracing::warn!("rollback failed (postgres will auto-rollback on drop): {:?}", rb_err);
+                }
                 return Err(e);
             }
 

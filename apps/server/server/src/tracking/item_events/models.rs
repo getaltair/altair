@@ -78,6 +78,9 @@ impl From<TrackingItemEventRow> for TrackingItemEvent {
 /// will not reduce the derived quantity below zero (invariant E-7).
 ///
 /// `occurred_at` defaults to NOW() if None.
+///
+/// `from_location_id` and `to_location_id` are required for `Move` events;
+/// at least one must be non-None. They are ignored for other event types.
 #[derive(Debug, Deserialize)]
 pub struct CreateItemEventRequest {
     pub id: Option<Uuid>,
@@ -85,4 +88,7 @@ pub struct CreateItemEventRequest {
     pub event_type: ItemEventType,
     pub quantity_delta: f64,
     pub occurred_at: Option<DateTime<Utc>>,
+    pub from_location_id: Option<Uuid>,
+    pub to_location_id: Option<Uuid>,
+    pub notes: Option<String>,
 }

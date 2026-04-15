@@ -59,8 +59,14 @@ impl IntoResponse for AppError {
     fn into_response(self) -> Response {
         let (status, message) = match &self {
             AppError::NotFound => (StatusCode::NOT_FOUND, "Not found".to_string()),
-            AppError::Unauthorized => (StatusCode::UNAUTHORIZED, "Unauthorized".to_string()),
-            AppError::Forbidden => (StatusCode::FORBIDDEN, "Forbidden".to_string()),
+            AppError::Unauthorized => {
+                tracing::debug!("Unauthorized response");
+                (StatusCode::UNAUTHORIZED, "Unauthorized".to_string())
+            }
+            AppError::Forbidden => {
+                tracing::debug!("Forbidden response");
+                (StatusCode::FORBIDDEN, "Forbidden".to_string())
+            }
             AppError::BadRequest(msg) => (StatusCode::BAD_REQUEST, msg.clone()),
             AppError::Conflict(msg) => (StatusCode::CONFLICT, msg.clone()),
             AppError::UnprocessableEntity(msg) => (StatusCode::UNPROCESSABLE_ENTITY, msg.clone()),

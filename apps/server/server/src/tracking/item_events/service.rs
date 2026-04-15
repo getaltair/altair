@@ -49,6 +49,37 @@ pub async fn create_item_event(
     // Step 2: assert membership.
     assert_household_member(pool, user_id, household_id).await?;
 
+    // Validate quantity_delta polarity per event type.
+    match req.event_type {
+        ItemEventType::Restock | ItemEventType::Purchase | ItemEventType::PurchaseReversed => {
+            if req.quantity_delta < 0.0 {
+                return Err(AppError::UnprocessableEntity(
+                    "quantity_delta must be positive for this event type".to_string(),
+                ));
+            }
+        }
+        ItemEventType::Consume | ItemEventType::Loss | ItemEventType::Expire => {
+            if req.quantity_delta > 0.0 {
+                return Err(AppError::UnprocessableEntity(
+                    "quantity_delta must be negative for this event type".to_string(),
+                ));
+            }
+        }
+        // Adjustment and Move accept any sign.
+        ItemEventType::Adjustment | ItemEventType::Move => {}
+    }
+
+    // Move events must specify at least one location (from or to).
+    if matches!(req.event_type, ItemEventType::Move)
+        && req.from_location_id.is_none()
+        && req.to_location_id.is_none()
+    {
+        return Err(AppError::UnprocessableEntity(
+            "Move events must specify at least one of from_location_id or to_location_id"
+                .to_string(),
+        ));
+    }
+
     // Step 3: begin transaction.
     let mut tx = pool.begin().await?;
 
@@ -62,7 +93,9 @@ pub async fn create_item_event(
 
     if !item_exists {
         // Item was soft-deleted between the initial check and locking.
-        let _ = tx.rollback().await;
+        if let Err(rb_err) = tx.rollback().await {
+            tracing::warn!("rollback failed (postgres will auto-rollback on drop): {:?}", rb_err);
+        }
         return Err(AppError::UnprocessableEntity(
             "item has been deleted".to_string(),
         ));
@@ -79,7 +112,9 @@ pub async fn create_item_event(
 
     // Invariant E-7: quantity must not go below zero.
     if current_qty + req.quantity_delta < 0.0 {
-        let _ = tx.rollback().await;
+        if let Err(rb_err) = tx.rollback().await {
+            tracing::warn!("rollback failed (postgres will auto-rollback on drop): {:?}", rb_err);
+        }
         return Err(AppError::UnprocessableEntity(
             "quantity would go below zero".to_string(),
         ));
@@ -92,14 +127,17 @@ pub async fn create_item_event(
 
     let result = sqlx::query_as::<_, TrackingItemEventRow>(&format!(
         "INSERT INTO tracking_item_events \
-         (id, item_id, event_type, quantity_change, occurred_at) \
-         VALUES ($1, $2, $3, $4, $5) \
+         (id, item_id, event_type, quantity_change, from_location_id, to_location_id, notes, occurred_at) \
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8) \
          RETURNING {SELECT_COLS}"
     ))
     .bind(event_id)
     .bind(req.item_id)
     .bind(event_type_str)
     .bind(req.quantity_delta)
+    .bind(req.from_location_id)
+    .bind(req.to_location_id)
+    .bind(&req.notes)
     .bind(occurred_at)
     .fetch_one(&mut *tx)
     .await;
@@ -111,13 +149,17 @@ pub async fn create_item_event(
             Ok(TrackingItemEvent::from(row))
         }
         Err(sqlx::Error::Database(ref e)) if e.code().as_deref() == Some("23505") => {
-            let _ = tx.rollback().await;
+            if let Err(rb_err) = tx.rollback().await {
+                tracing::warn!("rollback failed (postgres will auto-rollback on drop): {:?}", rb_err);
+            }
             Err(AppError::Conflict(
                 "event with this id already exists".to_string(),
             ))
         }
         Err(e) => {
-            let _ = tx.rollback().await;
+            if let Err(rb_err) = tx.rollback().await {
+                tracing::warn!("rollback failed (postgres will auto-rollback on drop): {:?}", rb_err);
+            }
             Err(e.into())
         }
     }
@@ -190,6 +232,20 @@ pub async fn list_item_events(
 ) -> Result<Vec<TrackingItemEvent>, AppError> {
     assert_household_member(pool, user_id, household_id).await?;
 
+    // FA-001: verify the item belongs to the caller-supplied household.
+    // Without this check, a member of household A could pass household_id=A with
+    // any item_id from household B and read its full event history.
+    let item_household: Option<Uuid> = sqlx::query_scalar(
+        "SELECT household_id FROM tracking_items WHERE id = $1 AND deleted_at IS NULL",
+    )
+    .bind(item_id)
+    .fetch_optional(pool)
+    .await?;
+    match item_household {
+        Some(hid) if hid == household_id => {}
+        _ => return Err(AppError::NotFound),
+    }
+
     let rows = sqlx::query_as::<_, TrackingItemEventRow>(&format!(
         "SELECT {SELECT_COLS} FROM tracking_item_events \
          WHERE item_id = $1 \
@@ -228,6 +284,7 @@ mod tests {
     use super::*;
     use sqlx::PgPool;
     use std::sync::Arc;
+    use tokio::sync::Barrier;
 
     // ---------------------------------------------------------------------------
     // Test helpers
@@ -285,6 +342,9 @@ mod tests {
             event_type: ItemEventType::Restock,
             quantity_delta,
             occurred_at: None,
+            from_location_id: None,
+            to_location_id: None,
+            notes: None,
         }
     }
 
@@ -311,6 +371,9 @@ mod tests {
             event_type: ItemEventType::Consume,
             quantity_delta: -1.0,
             occurred_at: None,
+            from_location_id: None,
+            to_location_id: None,
+            notes: None,
         };
 
         let result = create_item_event(&pool, user_id, req).await;
@@ -345,6 +408,9 @@ mod tests {
             event_type: ItemEventType::Restock,
             quantity_delta: 5.0,
             occurred_at: None,
+            from_location_id: None,
+            to_location_id: None,
+            notes: None,
         };
         create_item_event(&pool, user_id, req1)
             .await
@@ -356,6 +422,9 @@ mod tests {
             event_type: ItemEventType::Restock,
             quantity_delta: 3.0,
             occurred_at: None,
+            from_location_id: None,
+            to_location_id: None,
+            notes: None,
         };
         let result = create_item_event(&pool, user_id, req2).await;
 
@@ -399,6 +468,9 @@ mod tests {
                 event_type: ItemEventType::Restock,
                 quantity_delta: 1.0,
                 occurred_at: Some(occurred_at),
+                from_location_id: None,
+                to_location_id: None,
+                notes: None,
             };
             create_item_event(&pool, user_id, req)
                 .await
@@ -454,37 +526,54 @@ mod tests {
             .expect("restock must succeed");
 
         // Spawn two tasks each trying to consume all 5 units (total would be -10, violating E-7).
+        // A Barrier ensures both tasks have started before either calls create_item_event,
+        // exercising the SELECT FOR UPDATE lock as the correctness mechanism.
         let pool = Arc::new(pool);
-        let pool1 = Arc::clone(&pool);
-        let pool2 = Arc::clone(&pool);
+        let barrier = Arc::new(Barrier::new(2));
 
-        let task1 = tokio::spawn(async move {
-            let req = CreateItemEventRequest {
-                id: None,
-                item_id,
-                event_type: ItemEventType::Consume,
-                quantity_delta: -5.0,
-                occurred_at: None,
-            };
-            create_item_event(&pool1, user_id, req).await
+        let task1 = tokio::spawn({
+            let pool = Arc::clone(&pool);
+            let barrier = Arc::clone(&barrier);
+            async move {
+                barrier.wait().await;
+                let req = CreateItemEventRequest {
+                    id: None,
+                    item_id,
+                    event_type: ItemEventType::Consume,
+                    quantity_delta: -5.0,
+                    occurred_at: None,
+                    from_location_id: None,
+                    to_location_id: None,
+                    notes: None,
+                };
+                create_item_event(&pool, user_id, req).await
+            }
         });
 
-        let task2 = tokio::spawn(async move {
-            let req = CreateItemEventRequest {
-                id: None,
-                item_id,
-                event_type: ItemEventType::Consume,
-                quantity_delta: -5.0,
-                occurred_at: None,
-            };
-            create_item_event(&pool2, user_id, req).await
+        let task2 = tokio::spawn({
+            let pool = Arc::clone(&pool);
+            let barrier = Arc::clone(&barrier);
+            async move {
+                barrier.wait().await;
+                let req = CreateItemEventRequest {
+                    id: None,
+                    item_id,
+                    event_type: ItemEventType::Consume,
+                    quantity_delta: -5.0,
+                    occurred_at: None,
+                    from_location_id: None,
+                    to_location_id: None,
+                    notes: None,
+                };
+                create_item_event(&pool, user_id, req).await
+            }
         });
 
-        let result1 = task1.await.expect("task1 must not panic");
-        let result2 = task2.await.expect("task2 must not panic");
+        let r1 = task1.await.expect("task1 must not panic");
+        let r2 = task2.await.expect("task2 must not panic");
 
-        let successes = [&result1, &result2].iter().filter(|r| r.is_ok()).count();
-        let failures = [&result1, &result2]
+        let successes = [&r1, &r2].iter().filter(|r| r.is_ok()).count();
+        let failures = [&r1, &r2]
             .iter()
             .filter(|r| matches!(r, Err(AppError::UnprocessableEntity(_))))
             .count();
@@ -492,12 +581,12 @@ mod tests {
         assert_eq!(
             successes, 1,
             "exactly one consume must succeed; results: {:?}, {:?}",
-            result1, result2
+            r1, r2
         );
         assert_eq!(
             failures, 1,
             "exactly one consume must return 422; results: {:?}, {:?}",
-            result1, result2
+            r1, r2
         );
     }
 }
