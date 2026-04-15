@@ -169,4 +169,6 @@ cd apps/server && cargo run
 
 - **Feature:** Feature 004 Sync Engine — complete
 - **Status:** Implementation done. PowerSync integration wired end-to-end across server, web, and Android clients.
-- **Next:** Feature 005 Guidance Domain (or 006/007 per parallel track)
+
+- **Feature:** Feature 005 Guidance Domain — in progress
+- **Status:** Implementation underway. Building quests, routines, epics, focus sessions, and daily check-ins across server, web, and Android clients.

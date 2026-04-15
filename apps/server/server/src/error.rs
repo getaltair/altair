@@ -30,6 +30,19 @@ pub enum AppError {
     Internal(#[from] anyhow::Error),
 }
 
+impl From<sqlx::Error> for AppError {
+    fn from(e: sqlx::Error) -> Self {
+        match e {
+            // NOTE: RowNotFound maps to NotFound. This is safe because all row lookups in
+            // the codebase use fetch_optional + .ok_or(AppError::NotFound). Any future use
+            // of fetch_one on a query that might return zero rows would silently produce 404
+            // instead of 500 — use fetch_optional to preserve the intended semantics.
+            sqlx::Error::RowNotFound => AppError::NotFound,
+            _ => AppError::Internal(anyhow::Error::from(e)),
+        }
+    }
+}
+
 impl IntoResponse for AppError {
     fn into_response(self) -> Response {
         let (status, message) = match &self {
