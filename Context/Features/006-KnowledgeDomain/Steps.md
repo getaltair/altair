@@ -214,6 +214,23 @@
 
 ---
 
+### Phase 6: Post-Review Tests (review-driven additions, 2026-04-15)
+
+- [ ] S009: Cross-user mutation isolation tests (SEC-1)
+  — unit: `update_note(note_a.id, ..., user_b_id)` → NotFound; `delete_note(note_a.id, user_b_id)` → NotFound
+  — integration: `PUT /knowledge/notes/{note_a_id}` as User B → 404; `DELETE /knowledge/notes/{note_a_id}` as User B → 404
+  Ensures that if the `AND user_id = $N` guard is ever accidentally dropped, the test suite fails rather than silently passing.
+  - **Relates to:** SEC-1 (Spec.md), P6-014, P6-015
+  - **Status:** Complete (added in service.rs unit tests + knowledge_integration.rs)
+
+- [ ] S010: Snapshot invariant edge-case tests
+  — unit: `create_snapshot` on a soft-deleted note → NotFound (A-021, P6-017)
+  — integration: `DELETE /knowledge/notes/{id}/snapshots/{snap_id}` with valid auth → 404 or 405 (E-6, P6-016)
+  - **Relates to:** A-021, E-6 (Spec.md), P6-016, P6-017
+  - **Status:** Complete (unit test in service.rs; DELETE assertion extended in test_create_snapshot_returns_201_with_content)
+
+---
+
 ## Acceptance Criteria
 
 - [ ] A-018 (partial): POST with client-generated UUID → GET returns same note

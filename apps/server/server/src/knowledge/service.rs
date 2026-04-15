@@ -1,3 +1,4 @@
+use chrono::{DateTime, Duration, Utc};
 use sqlx::PgPool;
 use uuid::Uuid;
 
@@ -5,6 +6,38 @@ use super::models::{
     CreateNoteRequest, CreateSnapshotRequest, NoteResponse, SnapshotResponse, UpdateNoteRequest,
 };
 use crate::error::AppError;
+
+// ---------------------------------------------------------------------------
+// Private DB mapping type — carries `deleted_at` for query filtering but is
+// not exposed in the public API contract (NoteResponse omits it).
+// ---------------------------------------------------------------------------
+
+#[derive(sqlx::FromRow)]
+struct NoteRow {
+    id: Uuid,
+    title: String,
+    content: Option<String>,
+    initiative_id: Option<Uuid>,
+    user_id: Uuid,
+    created_at: DateTime<Utc>,
+    updated_at: DateTime<Utc>,
+    #[allow(dead_code)]
+    deleted_at: Option<DateTime<Utc>>,
+}
+
+impl From<NoteRow> for NoteResponse {
+    fn from(row: NoteRow) -> Self {
+        NoteResponse {
+            id: row.id,
+            title: row.title,
+            content: row.content,
+            initiative_id: row.initiative_id,
+            user_id: row.user_id,
+            created_at: row.created_at,
+            updated_at: row.updated_at,
+        }
+    }
+}
 
 // ---------------------------------------------------------------------------
 // Note CRUD
@@ -15,8 +48,12 @@ pub async fn create_note(
     req: CreateNoteRequest,
     user_id: Uuid,
 ) -> Result<NoteResponse, AppError> {
+    if req.title.trim().is_empty() {
+        return Err(AppError::BadRequest("title must not be empty".to_string()));
+    }
     let id = req.id.unwrap_or_else(Uuid::new_v4);
-    let row = sqlx::query_as::<_, NoteResponse>(
+    // TODO: emit NoteLinked domain event when this note is linked to another note
+    let row = sqlx::query_as::<_, NoteRow>(
         "INSERT INTO knowledge_notes (id, title, content, initiative_id, user_id) \
          VALUES ($1, $2, $3, $4, $5) \
          RETURNING *",
@@ -27,10 +64,9 @@ pub async fn create_note(
     .bind(req.initiative_id)
     .bind(user_id)
     .fetch_one(db)
-    .await
-    .map_err(|e| AppError::Internal(anyhow::Error::from(e)))?;
+    .await?;
 
-    Ok(row)
+    Ok(NoteResponse::from(row))
 }
 
 pub async fn list_notes(
@@ -39,7 +75,7 @@ pub async fn list_notes(
     initiative_id: Option<Uuid>,
 ) -> Result<Vec<NoteResponse>, AppError> {
     if let Some(init_id) = initiative_id {
-        let rows = sqlx::query_as::<_, NoteResponse>(
+        let rows = sqlx::query_as::<_, NoteRow>(
             "SELECT * FROM knowledge_notes \
              WHERE user_id = $1 AND deleted_at IS NULL AND initiative_id = $2 \
              ORDER BY created_at DESC",
@@ -47,20 +83,18 @@ pub async fn list_notes(
         .bind(user_id)
         .bind(init_id)
         .fetch_all(db)
-        .await
-        .map_err(|e| AppError::Internal(anyhow::Error::from(e)))?;
-        Ok(rows)
+        .await?;
+        Ok(rows.into_iter().map(NoteResponse::from).collect())
     } else {
-        let rows = sqlx::query_as::<_, NoteResponse>(
+        let rows = sqlx::query_as::<_, NoteRow>(
             "SELECT * FROM knowledge_notes \
              WHERE user_id = $1 AND deleted_at IS NULL \
              ORDER BY created_at DESC",
         )
         .bind(user_id)
         .fetch_all(db)
-        .await
-        .map_err(|e| AppError::Internal(anyhow::Error::from(e)))?;
-        Ok(rows)
+        .await?;
+        Ok(rows.into_iter().map(NoteResponse::from).collect())
     }
 }
 
@@ -69,17 +103,16 @@ pub async fn get_note(
     note_id: Uuid,
     user_id: Uuid,
 ) -> Result<NoteResponse, AppError> {
-    let row = sqlx::query_as::<_, NoteResponse>(
+    let row = sqlx::query_as::<_, NoteRow>(
         "SELECT * FROM knowledge_notes \
          WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL",
     )
     .bind(note_id)
     .bind(user_id)
     .fetch_optional(db)
-    .await
-    .map_err(|e| AppError::Internal(anyhow::Error::from(e)))?;
+    .await?;
 
-    row.ok_or(AppError::NotFound)
+    row.map(NoteResponse::from).ok_or(AppError::NotFound)
 }
 
 pub async fn update_note(
@@ -88,9 +121,21 @@ pub async fn update_note(
     req: UpdateNoteRequest,
     user_id: Uuid,
 ) -> Result<NoteResponse, AppError> {
-    let row = sqlx::query_as::<_, NoteResponse>(
+    if req.title.is_none() && req.content.is_none() {
+        return Err(AppError::BadRequest(
+            "at least one field required".to_string(),
+        ));
+    }
+    if let Some(ref title) = req.title {
+        if title.trim().is_empty() {
+            return Err(AppError::BadRequest("title must not be empty".to_string()));
+        }
+    }
+    // `updated_at` is intentionally omitted — the `knowledge_notes_updated_at` trigger
+    // sets it on every UPDATE; a manual SET would be redundant and mislead readers.
+    let row = sqlx::query_as::<_, NoteRow>(
         "UPDATE knowledge_notes \
-         SET title = COALESCE($1, title), content = COALESCE($2, content), updated_at = NOW() \
+         SET title = COALESCE($1, title), content = COALESCE($2, content) \
          WHERE id = $3 AND user_id = $4 AND deleted_at IS NULL \
          RETURNING *",
     )
@@ -99,23 +144,22 @@ pub async fn update_note(
     .bind(note_id)
     .bind(user_id)
     .fetch_optional(db)
-    .await
-    .map_err(|e| AppError::Internal(anyhow::Error::from(e)))?;
+    .await?;
 
-    row.ok_or(AppError::NotFound)
+    row.map(NoteResponse::from).ok_or(AppError::NotFound)
 }
 
 pub async fn delete_note(db: &PgPool, note_id: Uuid, user_id: Uuid) -> Result<(), AppError> {
+    // `updated_at` is intentionally omitted — the trigger handles it.
     let result = sqlx::query(
         "UPDATE knowledge_notes \
-         SET deleted_at = NOW(), updated_at = NOW() \
+         SET deleted_at = NOW() \
          WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL",
     )
     .bind(note_id)
     .bind(user_id)
     .execute(db)
-    .await
-    .map_err(|e| AppError::Internal(anyhow::Error::from(e)))?;
+    .await?;
 
     if result.rows_affected() == 0 {
         return Err(AppError::NotFound);
@@ -134,12 +178,26 @@ pub async fn create_snapshot(
     req: CreateSnapshotRequest,
     user_id: Uuid,
 ) -> Result<SnapshotResponse, AppError> {
-    // Verify the note exists and belongs to the caller before inserting a snapshot.
+    // Reject captured_at values more than 30 seconds in the future to prevent
+    // timestamp manipulation that would float snapshots above real captures in
+    // the DESC ordering of list_snapshots.
+    if req.captured_at > Utc::now() + Duration::seconds(30) {
+        return Err(AppError::BadRequest(
+            "captured_at must not be more than 30 seconds in the future".to_string(),
+        ));
+    }
+
+    // SEC-1 (Spec.md): verify note ownership before inserting a snapshot.
+    // Returns NotFound — not Forbidden — to avoid leaking whether the note exists at all.
     get_note(db, note_id, user_id).await?;
 
+    // COALESCE(n.content, '') handles notes with NULL content — the snapshot column is
+    // TEXT NOT NULL (migration 000018), so we map NULL → empty string rather than crashing.
+    // fetch_optional handles TOCTOU: if the note is soft-deleted between the get_note
+    // pre-check and this INSERT, the SELECT returns no rows → NotFound (not 500).
     let row = sqlx::query_as::<_, SnapshotResponse>(
         "INSERT INTO knowledge_note_snapshots (id, note_id, content, captured_at) \
-         SELECT gen_random_uuid(), n.id, n.content, $2 \
+         SELECT gen_random_uuid(), n.id, COALESCE(n.content, ''), $2 \
          FROM knowledge_notes n \
          WHERE n.id = $1 AND n.user_id = $3 AND n.deleted_at IS NULL \
          RETURNING *",
@@ -147,9 +205,9 @@ pub async fn create_snapshot(
     .bind(note_id)
     .bind(req.captured_at)
     .bind(user_id)
-    .fetch_one(db)
-    .await
-    .map_err(|e| AppError::Internal(anyhow::Error::from(e)))?;
+    .fetch_optional(db)
+    .await?
+    .ok_or(AppError::NotFound)?;
 
     Ok(row)
 }
@@ -159,7 +217,8 @@ pub async fn list_snapshots(
     note_id: Uuid,
     user_id: Uuid,
 ) -> Result<Vec<SnapshotResponse>, AppError> {
-    // Verify the note belongs to the caller (SEC-1).
+    // SEC-1 (Spec.md): verify note ownership before returning snapshots.
+    // Returns NotFound — not Forbidden — to avoid leaking whether the note exists at all.
     get_note(db, note_id, user_id).await?;
 
     let rows = sqlx::query_as::<_, SnapshotResponse>(
@@ -169,8 +228,7 @@ pub async fn list_snapshots(
     )
     .bind(note_id)
     .fetch_all(db)
-    .await
-    .map_err(|e| AppError::Internal(anyhow::Error::from(e)))?;
+    .await?;
 
     Ok(rows)
 }
@@ -184,10 +242,11 @@ pub async fn list_backlinks(
     note_id: Uuid,
     user_id: Uuid,
 ) -> Result<Vec<NoteResponse>, AppError> {
-    // Verify the target note belongs to the caller before returning backlinks.
+    // SEC-1 (Spec.md): verify target note ownership before returning backlinks.
+    // Returns NotFound — not Forbidden — to avoid leaking whether the note exists at all.
     get_note(db, note_id, user_id).await?;
 
-    let rows = sqlx::query_as::<_, NoteResponse>(
+    let rows = sqlx::query_as::<_, NoteRow>(
         "SELECT n.* \
          FROM knowledge_notes n \
          JOIN entity_relations er \
@@ -202,10 +261,9 @@ pub async fn list_backlinks(
     .bind(note_id)
     .bind(user_id)
     .fetch_all(db)
-    .await
-    .map_err(|e| AppError::Internal(anyhow::Error::from(e)))?;
+    .await?;
 
-    Ok(rows)
+    Ok(rows.into_iter().map(NoteResponse::from).collect())
 }
 
 // ---------------------------------------------------------------------------
@@ -280,7 +338,6 @@ mod tests {
         let user_id = Uuid::new_v4();
         insert_test_user(&pool, user_id, "filter_user@example.com").await;
 
-        // Insert an initiative directly so we have a valid FK target.
         let initiative_id = Uuid::new_v4();
         sqlx::query(
             "INSERT INTO initiatives (id, user_id, title, status) VALUES ($1, $2, 'Init', 'draft')",
@@ -519,7 +576,7 @@ mod tests {
             &pool,
             note.id,
             CreateSnapshotRequest {
-                captured_at: chrono::Utc::now(),
+                captured_at: Utc::now(),
             },
             user_id,
         )
@@ -527,8 +584,7 @@ mod tests {
         .expect("create_snapshot failed");
 
         assert_eq!(
-            snapshot.content,
-            Some("original content".to_string()),
+            snapshot.content, "original content",
             "snapshot content must equal note content at capture time"
         );
     }
@@ -536,8 +592,6 @@ mod tests {
     // GET snapshots → ordered by captured_at DESC
     #[sqlx::test(migrations = "../../../infra/migrations")]
     async fn list_snapshots_ordered_by_captured_at_desc(pool: PgPool) {
-        use chrono::Duration;
-
         let user_id = Uuid::new_v4();
         insert_test_user(&pool, user_id, "snapshot_order@example.com").await;
 
@@ -554,7 +608,7 @@ mod tests {
         .await
         .expect("create_note failed");
 
-        let now = chrono::Utc::now();
+        let now = Utc::now();
         let later = now + Duration::seconds(1);
         let earlier = now - Duration::seconds(1);
 
@@ -609,12 +663,11 @@ mod tests {
         .await
         .expect("create_note failed");
 
-        // User B attempts to snapshot User A's note.
         let result = create_snapshot(
             &pool,
             note.id,
             CreateSnapshotRequest {
-                captured_at: chrono::Utc::now(),
+                captured_at: Utc::now(),
             },
             user_b_id,
         )
@@ -628,7 +681,7 @@ mod tests {
 
     // E-6: update_snapshot and delete_snapshot intentionally absent — snapshots are immutable
 
-    // Snapshot content preserved after note update
+    // Snapshot content preserved after note update (A-021)
     #[sqlx::test(migrations = "../../../infra/migrations")]
     async fn snapshot_content_preserved_after_note_update(pool: PgPool) {
         let user_id = Uuid::new_v4();
@@ -651,14 +704,13 @@ mod tests {
             &pool,
             note.id,
             CreateSnapshotRequest {
-                captured_at: chrono::Utc::now(),
+                captured_at: Utc::now(),
             },
             user_id,
         )
         .await
         .expect("create_snapshot failed");
 
-        // Update note content.
         update_note(
             &pool,
             note.id,
@@ -677,9 +729,46 @@ mod tests {
 
         assert_eq!(snapshots.len(), 1, "expected one snapshot");
         assert_eq!(
-            snapshots[0].content,
-            Some("original".to_string()),
+            snapshots[0].content, "original",
             "snapshot content must remain 'original' after note update"
+        );
+    }
+
+    // A-021: create_snapshot on soft-deleted note → NotFound (P6-017)
+    #[sqlx::test(migrations = "../../../infra/migrations")]
+    async fn create_snapshot_on_deleted_note_returns_not_found(pool: PgPool) {
+        let user_id = Uuid::new_v4();
+        insert_test_user(&pool, user_id, "snap_deleted@example.com").await;
+
+        let note = create_note(
+            &pool,
+            CreateNoteRequest {
+                id: None,
+                title: "To Delete".to_string(),
+                content: Some("content".to_string()),
+                initiative_id: None,
+            },
+            user_id,
+        )
+        .await
+        .expect("create_note failed");
+
+        delete_note(&pool, note.id, user_id)
+            .await
+            .expect("delete_note failed");
+
+        let result = create_snapshot(
+            &pool,
+            note.id,
+            CreateSnapshotRequest {
+                captured_at: Utc::now(),
+            },
+            user_id,
+        )
+        .await;
+        assert!(
+            matches!(result, Err(AppError::NotFound)),
+            "create_snapshot on soft-deleted note must return NotFound"
         );
     }
 
@@ -719,7 +808,6 @@ mod tests {
         .await
         .expect("create_note B failed");
 
-        // Insert a relation: A → B
         sqlx::query(
             "INSERT INTO entity_relations \
              (id, from_entity_type, from_entity_id, to_entity_type, to_entity_id, relation_type, source_type, user_id) \
@@ -790,7 +878,6 @@ mod tests {
         .await
         .expect("create_note failed");
 
-        // User B tries to list backlinks for User A's note.
         let result = list_backlinks(&pool, note.id, user_b_id).await;
 
         assert!(
@@ -831,7 +918,6 @@ mod tests {
         .await
         .expect("create_note B failed");
 
-        // Insert a relation A → B, then soft-delete it.
         sqlx::query(
             "INSERT INTO entity_relations \
              (id, from_entity_type, from_entity_id, to_entity_type, to_entity_id, relation_type, source_type, user_id) \
@@ -861,6 +947,75 @@ mod tests {
         assert!(
             backlinks.is_empty(),
             "deleted entity_relation must not appear in backlinks"
+        );
+    }
+
+    // ---------------------------------------------------------------------------
+    // Cross-user mutation isolation (SEC-1, P6-014, P6-015)
+    // ---------------------------------------------------------------------------
+
+    // SEC-1: User B cannot update User A's note (P6-014)
+    #[sqlx::test(migrations = "../../../infra/migrations")]
+    async fn update_other_users_note_returns_not_found(pool: PgPool) {
+        let user_a_id = Uuid::new_v4();
+        let user_b_id = Uuid::new_v4();
+        insert_test_user(&pool, user_a_id, "update_iso_a@example.com").await;
+        insert_test_user(&pool, user_b_id, "update_iso_b@example.com").await;
+
+        let note = create_note(
+            &pool,
+            CreateNoteRequest {
+                id: None,
+                title: "User A Note".to_string(),
+                content: None,
+                initiative_id: None,
+            },
+            user_a_id,
+        )
+        .await
+        .expect("create_note failed");
+
+        let result = update_note(
+            &pool,
+            note.id,
+            UpdateNoteRequest {
+                title: Some("Tampered".to_string()),
+                content: None,
+            },
+            user_b_id,
+        )
+        .await;
+        assert!(
+            matches!(result, Err(AppError::NotFound)),
+            "User B must not update User A's note"
+        );
+    }
+
+    // SEC-1: User B cannot delete User A's note (P6-015)
+    #[sqlx::test(migrations = "../../../infra/migrations")]
+    async fn delete_other_users_note_returns_not_found(pool: PgPool) {
+        let user_a_id = Uuid::new_v4();
+        let user_b_id = Uuid::new_v4();
+        insert_test_user(&pool, user_a_id, "delete_iso_a@example.com").await;
+        insert_test_user(&pool, user_b_id, "delete_iso_b@example.com").await;
+
+        let note = create_note(
+            &pool,
+            CreateNoteRequest {
+                id: None,
+                title: "User A Note".to_string(),
+                content: None,
+                initiative_id: None,
+            },
+            user_a_id,
+        )
+        .await
+        .expect("create_note failed");
+
+        let result = delete_note(&pool, note.id, user_b_id).await;
+        assert!(
+            matches!(result, Err(AppError::NotFound)),
+            "User B must not delete User A's note"
         );
     }
 }

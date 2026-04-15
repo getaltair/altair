@@ -458,6 +458,21 @@ async fn test_create_snapshot_returns_201_with_content(pool: PgPool) {
         "no PUT on snapshot — got: {}",
         resp.status()
     );
+
+    // E-6: DELETE on snapshot endpoint → 404 or 405 (P6-016)
+    let resp = request(
+        app.clone(),
+        "DELETE",
+        &format!("/api/knowledge/notes/{note_id}/snapshots/{snap_id}"),
+        Some(&token),
+        None,
+    )
+    .await;
+    assert!(
+        resp.status() == StatusCode::NOT_FOUND || resp.status() == StatusCode::METHOD_NOT_ALLOWED,
+        "DELETE on snapshot must not be allowed (E-6) — got: {}",
+        resp.status()
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -629,4 +644,88 @@ async fn test_initiative_id_filter(pool: PgPool) {
     let notes = body_json(resp).await;
     let arr = notes.as_array().unwrap();
     assert_eq!(arr.len(), 0, "no notes linked to other initiative");
+}
+
+// ---------------------------------------------------------------------------
+// SEC-1: Cross-user mutation isolation (P6-014, P6-015)
+// ---------------------------------------------------------------------------
+
+#[sqlx::test(migrations = "../../../infra/migrations")]
+async fn test_user_isolation_update_other_users_note_returns_404(pool: PgPool) {
+    let user_a_id = Uuid::new_v4();
+    let user_b_id = Uuid::new_v4();
+    insert_user(&pool, user_a_id, "put_iso_a@example.com").await;
+    insert_user(&pool, user_b_id, "put_iso_b@example.com").await;
+
+    let (app, state) = build_test_app(pool);
+    let token_a = make_token(&state, user_a_id);
+    let token_b = make_token(&state, user_b_id);
+
+    // User A creates note
+    let resp = request(
+        app.clone(),
+        "POST",
+        "/api/knowledge/notes",
+        Some(&token_a),
+        Some(r#"{"title":"User A Note"}"#),
+    )
+    .await;
+    assert_eq!(resp.status(), StatusCode::CREATED);
+    let note = body_json(resp).await;
+    let note_id = note["id"].as_str().unwrap().to_string();
+
+    // User B attempts PUT → 404
+    let resp = request(
+        app.clone(),
+        "PUT",
+        &format!("/api/knowledge/notes/{note_id}"),
+        Some(&token_b),
+        Some(r#"{"title":"Tampered"}"#),
+    )
+    .await;
+    assert_eq!(
+        resp.status(),
+        StatusCode::NOT_FOUND,
+        "User B must not update User A's note (SEC-1)"
+    );
+}
+
+#[sqlx::test(migrations = "../../../infra/migrations")]
+async fn test_user_isolation_delete_other_users_note_returns_404(pool: PgPool) {
+    let user_a_id = Uuid::new_v4();
+    let user_b_id = Uuid::new_v4();
+    insert_user(&pool, user_a_id, "del_iso_a@example.com").await;
+    insert_user(&pool, user_b_id, "del_iso_b@example.com").await;
+
+    let (app, state) = build_test_app(pool);
+    let token_a = make_token(&state, user_a_id);
+    let token_b = make_token(&state, user_b_id);
+
+    // User A creates note
+    let resp = request(
+        app.clone(),
+        "POST",
+        "/api/knowledge/notes",
+        Some(&token_a),
+        Some(r#"{"title":"User A Note"}"#),
+    )
+    .await;
+    assert_eq!(resp.status(), StatusCode::CREATED);
+    let note = body_json(resp).await;
+    let note_id = note["id"].as_str().unwrap().to_string();
+
+    // User B attempts DELETE → 404
+    let resp = request(
+        app.clone(),
+        "DELETE",
+        &format!("/api/knowledge/notes/{note_id}"),
+        Some(&token_b),
+        None,
+    )
+    .await;
+    assert_eq!(
+        resp.status(),
+        StatusCode::NOT_FOUND,
+        "User B must not delete User A's note (SEC-1)"
+    );
 }

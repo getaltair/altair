@@ -4,6 +4,7 @@ use axum::{
     response::{IntoResponse, Response},
 };
 use serde_json::json;
+use sqlx;
 
 #[derive(Debug, thiserror::Error)]
 #[allow(dead_code)]
@@ -32,11 +33,24 @@ pub enum AppError {
 
 impl From<sqlx::Error> for AppError {
     fn from(e: sqlx::Error) -> Self {
+        // Inspect database-level error codes before consuming `e`.
+        if let sqlx::Error::Database(ref db_err) = e {
+            match db_err.code().as_deref() {
+                // 23505: unique_violation — duplicate client-generated UUID (A-018 retry)
+                Some("23505") => return AppError::Conflict("duplicate key".to_string()),
+                // 23503: foreign_key_violation — invalid FK reference (e.g. initiative_id)
+                Some("23503") => {
+                    return AppError::BadRequest(
+                        "foreign key constraint violation".to_string(),
+                    )
+                }
+                _ => {}
+            }
+        }
         match e {
-            // NOTE: RowNotFound maps to NotFound. This is safe because all row lookups in
-            // the codebase use fetch_optional + .ok_or(AppError::NotFound). Any future use
-            // of fetch_one on a query that might return zero rows would silently produce 404
-            // instead of 500 — use fetch_optional to preserve the intended semantics.
+            // NOTE: RowNotFound maps to NotFound. All row lookups use fetch_optional +
+            // .ok_or(AppError::NotFound); fetch_one on a query returning zero rows would
+            // silently produce 404 instead of 500 — use fetch_optional to preserve intent.
             sqlx::Error::RowNotFound => AppError::NotFound,
             _ => AppError::Internal(anyhow::Error::from(e)),
         }
