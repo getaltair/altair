@@ -98,11 +98,7 @@ pub async fn list_notes(
     }
 }
 
-pub async fn get_note(
-    db: &PgPool,
-    note_id: Uuid,
-    user_id: Uuid,
-) -> Result<NoteResponse, AppError> {
+pub async fn get_note(db: &PgPool, note_id: Uuid, user_id: Uuid) -> Result<NoteResponse, AppError> {
     let row = sqlx::query_as::<_, NoteRow>(
         "SELECT * FROM knowledge_notes \
          WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL",
@@ -126,10 +122,8 @@ pub async fn update_note(
             "at least one field required".to_string(),
         ));
     }
-    if let Some(ref title) = req.title {
-        if title.trim().is_empty() {
-            return Err(AppError::BadRequest("title must not be empty".to_string()));
-        }
+    if req.title.as_deref().is_some_and(|t| t.trim().is_empty()) {
+        return Err(AppError::BadRequest("title must not be empty".to_string()));
     }
     // `updated_at` is intentionally omitted — the `knowledge_notes_updated_at` trigger
     // sets it on every UPDATE; a manual SET would be redundant and mislead readers.
@@ -625,7 +619,9 @@ mod tests {
         create_snapshot(
             &pool,
             note.id,
-            CreateSnapshotRequest { captured_at: earlier },
+            CreateSnapshotRequest {
+                captured_at: earlier,
+            },
             user_id,
         )
         .await
@@ -825,10 +821,7 @@ mod tests {
             .expect("list_backlinks failed");
 
         assert_eq!(backlinks.len(), 1, "expected one backlink for note B");
-        assert_eq!(
-            backlinks[0].id, note_a.id,
-            "backlink source must be note A"
-        );
+        assert_eq!(backlinks[0].id, note_a.id, "backlink source must be note A");
     }
 
     // No backlinks → empty list
