@@ -165,7 +165,7 @@ mod tests {
     use crate::guidance::focus_sessions::models::{
         CreateFocusSessionRequest, UpdateFocusSessionRequest,
     };
-    use chrono::{Duration, Utc};
+    use chrono::{Duration, SubsecRound, Utc};
     use sqlx::PgPool;
 
     async fn insert_test_user(pool: &PgPool, user_id: Uuid, email: &str) {
@@ -300,7 +300,8 @@ mod tests {
             Some(1),
             "floor(90s / 60) must be 1"
         );
-        assert_eq!(updated.ended_at, Some(ended_at));
+        // Postgres stores timestamptz at microsecond precision; truncate before comparing.
+        assert_eq!(updated.ended_at, Some(ended_at.trunc_subsecs(6)));
     }
 
     // A-G-11: PATCH with ended_at = started_at + 120s → duration_minutes = 2.
