@@ -13,6 +13,20 @@ jobs:
     defaults:
       run:
         working-directory: apps/server
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: altair_user
+          POSTGRES_PASSWORD: change_me_in_production
+          POSTGRES_DB: altair_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v4
 
@@ -40,15 +54,25 @@ jobs:
         env:
           SQLX_OFFLINE: "true"
 
+      - name: Install sqlx-cli
+        run: cargo install sqlx-cli --no-default-features --features postgres
+
       - name: Check sqlx offline cache
         run: cargo sqlx prepare --check --workspace
         env:
           SQLX_OFFLINE: "true"
 
       - name: Test
-        run: cargo test
+        # Config tests temporarily unset DATABASE_URL via std::env::remove_var, which is
+        # process-global. serial_test::serial only prevents races between other #[serial]
+        # tests; #[sqlx::test] tests on parallel threads would still race. Running
+        # single-threaded eliminates the race entirely. serial_test 3.x has no exclusive
+        # attribute that blocks non-serial threads, so --test-threads=1 is the correct
+        # solution for tests that own process-global state.
+        run: cargo test -- --test-threads=1
         env:
           SQLX_OFFLINE: "true"
+          DATABASE_URL: postgres://altair_user:change_me_in_production@localhost:5432/altair_db
 
   web:
     name: Web
@@ -64,6 +88,9 @@ jobs:
 
       - name: Install dependencies
         run: bun install
+
+      - name: Create .env
+        run: cp .env.example .env
 
       - name: Type check
         run: bun run check
@@ -168,23 +195,6 @@ jobs:
             exit 1
           fi
 
-      - name: Wait for Zitadel
-        run: |
-          echo "Waiting for Zitadel..."
-          READY=false
-          for i in $(seq 1 40); do
-            if curl -sf http://localhost:8081/debug/healthz; then
-              READY=true
-              break
-            fi
-            echo "Attempt $i/40 failed, retrying in 10s..."
-            sleep 10
-          done
-          if [ "$READY" != "true" ]; then
-            echo "FAIL: Zitadel did not become ready after 40 attempts"
-            exit 1
-          fi
-
       - name: Run migrations
         run: |
           DATABASE_URL=postgres://altair_user:change_me_in_production@localhost:5432/altair_db \
@@ -209,8 +219,10 @@ jobs:
 
       - name: Start server and check health (FA-S1)
         run: |
+          JWT_KEY=$(openssl genrsa 2048 | base64 -w0)
           DATABASE_URL=postgres://altair_user:change_me_in_production@localhost:5432/altair_db \
             BIND_ADDR=0.0.0.0:8000 \
+            JWT_PRIVATE_KEY=$JWT_KEY \
             ./apps/server/target/debug/altair-server &
           SERVER_PID=$!
           echo "Server PID: $SERVER_PID"
@@ -221,9 +233,15 @@ jobs:
 
       - name: Rollback migrations (FA-010)
         run: |
-          for i in 1 2 3 4; do
-            DATABASE_URL=postgres://altair_user:change_me_in_production@localhost:5432/altair_db \
-              sqlx migrate revert --source infra/migrations
+          # sqlx migrate revert exits 0 with "no migrations available to revert" when
+          # there is nothing left — the while loop would spin forever. Break on that
+          # message explicitly.
+          while true; do
+            result=$(DATABASE_URL=postgres://altair_user:change_me_in_production@localhost:5432/altair_db \
+              sqlx migrate revert --source infra/migrations 2>&1)
+            echo "$result"
+            echo "$result" | grep -qi "no migrations available to revert" && break
+            echo "$result" | grep -qi "error" && exit 1
           done
           COUNT=$(PGPASSWORD=change_me_in_production psql -h localhost -U altair_user altair_db -tAc \
             "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_name != '_sqlx_migrations'")

@@ -190,23 +190,25 @@ mod tests {
 
     // --- From<sqlx::Error> conversion tests ---
 
-    #[tokio::test]
-    async fn sqlx_error_converts_to_internal() {
-        let sqlx_err = sqlx::Error::RowNotFound;
-        let app_err = AppError::from(sqlx_err);
+    // From<sqlx::Error>: non-RowNotFound variants must produce AppError::Internal.
+    #[test]
+    fn sqlx_error_converts_to_internal() {
+        let err: AppError = sqlx::Error::PoolTimedOut.into();
         assert!(
-            matches!(app_err, AppError::Internal(_)),
+            matches!(err, AppError::Internal(_)),
             "sqlx::Error must convert to AppError::Internal"
         );
     }
 
+    // From<sqlx::Error>: non-RowNotFound variant must yield HTTP 500.
     #[tokio::test]
     async fn sqlx_error_returns_500() {
-        let sqlx_err = sqlx::Error::RowNotFound;
-        let (status, _body) = status_and_body(AppError::from(sqlx_err)).await;
+        let (status, _) = status_and_body(sqlx::Error::PoolTimedOut.into()).await;
         assert_eq!(status, StatusCode::INTERNAL_SERVER_ERROR);
     }
 
+    // From<sqlx::Error>: sqlx error details (e.g. table/constraint names) must not
+    // appear in the HTTP response body.
     #[tokio::test]
     async fn sqlx_error_does_not_leak_schema_detail() {
         // Use a Protocol error that embeds realistic schema detail (constraint names, table names).
@@ -222,5 +224,14 @@ mod tests {
             !body.contains("pk_users"),
             "Table/constraint names must not be leaked; body was: {body}"
         );
+    }
+
+    // From<sqlx::Error>: RowNotFound must map to AppError::NotFound (404), not Internal.
+    // All service-layer lookups use fetch_optional + .ok_or(AppError::NotFound), so this
+    // mapping is safe and intentional — see error.rs impl note.
+    #[tokio::test]
+    async fn sqlx_row_not_found_converts_to_not_found() {
+        let (status, _) = status_and_body(sqlx::Error::RowNotFound.into()).await;
+        assert_eq!(status, StatusCode::NOT_FOUND);
     }
 }

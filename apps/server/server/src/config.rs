@@ -63,8 +63,12 @@ mod tests {
         BASE64.encode(pem.as_bytes())
     }
 
-    // SAFETY note for all tests below: serial_test enforces that all tests in
-    // this module run sequentially, preventing concurrent env var access.
+    // SAFETY note for all tests below: these tests mutate process-global env vars via
+    // std::env::remove_var. serial_test::serial serialises them against each other.
+    // The CI job runs cargo test with --test-threads=1, which prevents any concurrent
+    // test threads from reading DATABASE_URL while these tests temporarily unset it.
+    // serial_test 3.x has no "exclusive" attribute (blocks all threads); --test-threads=1
+    // is the correct solution for tests that own process-global state.
 
     #[serial_test::serial]
     #[test]
