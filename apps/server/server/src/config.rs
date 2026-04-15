@@ -63,12 +63,14 @@ mod tests {
         BASE64.encode(pem.as_bytes())
     }
 
-    // SAFETY note for all tests below: #[exclusive] blocks ALL other tests in the process
-    // from running concurrently, which is required here because std::env::remove_var is
-    // process-global. #[serial] only prevents concurrency with other #[serial] tests and
-    // would still race with #[sqlx::test] tests running on other threads.
+    // SAFETY note for all tests below: these tests mutate process-global env vars via
+    // std::env::remove_var. serial_test::serial serialises them against each other.
+    // The CI job runs cargo test with --test-threads=1, which prevents any concurrent
+    // test threads from reading DATABASE_URL while these tests temporarily unset it.
+    // serial_test 3.x has no "exclusive" attribute (blocks all threads); --test-threads=1
+    // is the correct solution for tests that own process-global state.
 
-    #[serial_test::exclusive]
+    #[serial_test::serial]
     #[test]
     fn missing_database_url_returns_error() {
         let saved_db = std::env::var("DATABASE_URL").ok();
@@ -96,7 +98,7 @@ mod tests {
         }
     }
 
-    #[serial_test::exclusive]
+    #[serial_test::serial]
     #[test]
     fn missing_jwt_private_key_returns_error() {
         let saved_db = std::env::var("DATABASE_URL").ok();
@@ -124,7 +126,7 @@ mod tests {
         }
     }
 
-    #[serial_test::exclusive]
+    #[serial_test::serial]
     #[test]
     fn invalid_base64_jwt_private_key_returns_error() {
         let saved_db = std::env::var("DATABASE_URL").ok();
@@ -152,7 +154,7 @@ mod tests {
         }
     }
 
-    #[serial_test::exclusive]
+    #[serial_test::serial]
     #[test]
     fn happy_path_returns_correct_values() {
         let saved_db = std::env::var("DATABASE_URL").ok();
@@ -192,7 +194,7 @@ mod tests {
         }
     }
 
-    #[serial_test::exclusive]
+    #[serial_test::serial]
     #[test]
     fn missing_bind_addr_falls_back_to_default() {
         let saved_db = std::env::var("DATABASE_URL").ok();

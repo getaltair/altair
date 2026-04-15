@@ -63,10 +63,13 @@ jobs:
           SQLX_OFFLINE: "true"
 
       - name: Test
-        # Config tests use std::env::remove_var (process-global) and are annotated with
-        # #[serial_test::exclusive], which blocks ALL other tests from running concurrently
-        # while those tests execute. This makes parallel execution safe.
-        run: cargo test
+        # Config tests temporarily unset DATABASE_URL via std::env::remove_var, which is
+        # process-global. serial_test::serial only prevents races between other #[serial]
+        # tests; #[sqlx::test] tests on parallel threads would still race. Running
+        # single-threaded eliminates the race entirely. serial_test 3.x has no exclusive
+        # attribute that blocks non-serial threads, so --test-threads=1 is the correct
+        # solution for tests that own process-global state.
+        run: cargo test -- --test-threads=1
         env:
           SQLX_OFFLINE: "true"
           DATABASE_URL: postgres://altair_user:change_me_in_production@localhost:5432/altair_db
