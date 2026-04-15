@@ -31,18 +31,29 @@ pub enum AppError {
     Internal(#[from] anyhow::Error),
 }
 
+/// Maps a PostgreSQL error code to an AppError where a specific HTTP status is warranted.
+/// Returns None for unrecognized codes; the caller falls through to AppError::Internal.
+///
+/// Extracted as a pure function so the mapping logic is unit-testable without a live DB
+/// connection (sqlx::Error::Database cannot be constructed outside sqlx internals).
+fn pg_code_to_app_error(code: &str) -> Option<AppError> {
+    match code {
+        // 23505: unique_violation — duplicate client-generated UUID (A-018 retry)
+        "23505" => Some(AppError::Conflict("duplicate key".to_string())),
+        // 23503: foreign_key_violation — invalid FK reference (e.g. initiative_id)
+        "23503" => Some(AppError::BadRequest(
+            "foreign key constraint violation".to_string(),
+        )),
+        _ => None,
+    }
+}
+
 impl From<sqlx::Error> for AppError {
     fn from(e: sqlx::Error) -> Self {
         // Inspect database-level error codes before consuming `e`.
         if let sqlx::Error::Database(ref db_err) = e {
-            match db_err.code().as_deref() {
-                // 23505: unique_violation — duplicate client-generated UUID (A-018 retry)
-                Some("23505") => return AppError::Conflict("duplicate key".to_string()),
-                // 23503: foreign_key_violation — invalid FK reference (e.g. initiative_id)
-                Some("23503") => {
-                    return AppError::BadRequest("foreign key constraint violation".to_string());
-                }
-                _ => {}
+            if let Some(app_err) = db_err.code().as_deref().and_then(pg_code_to_app_error) {
+                return app_err;
             }
         }
         match e {
@@ -233,5 +244,33 @@ mod tests {
     async fn sqlx_row_not_found_converts_to_not_found() {
         let (status, _) = status_and_body(sqlx::Error::RowNotFound.into()).await;
         assert_eq!(status, StatusCode::NOT_FOUND);
+    }
+
+    // --- pg_code_to_app_error unit tests ---
+    // These test the extracted pure function directly, avoiding the need for a live DB
+    // connection to construct sqlx::Error::Database.
+
+    #[test]
+    fn pg_23505_maps_to_conflict() {
+        assert!(
+            matches!(pg_code_to_app_error("23505"), Some(AppError::Conflict(_))),
+            "23505 (unique_violation) must map to Conflict"
+        );
+    }
+
+    #[test]
+    fn pg_23503_maps_to_bad_request() {
+        assert!(
+            matches!(pg_code_to_app_error("23503"), Some(AppError::BadRequest(_))),
+            "23503 (foreign_key_violation) must map to BadRequest"
+        );
+    }
+
+    #[test]
+    fn pg_unknown_code_returns_none() {
+        assert!(
+            pg_code_to_app_error("99999").is_none(),
+            "Unrecognized PG codes must return None (caller produces Internal)"
+        );
     }
 }
