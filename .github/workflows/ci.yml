@@ -213,8 +213,10 @@ jobs:
 
       - name: Start server and check health (FA-S1)
         run: |
+          JWT_KEY=$(openssl genrsa 2048 | base64 -w0)
           DATABASE_URL=postgres://altair_user:change_me_in_production@localhost:5432/altair_db \
             BIND_ADDR=0.0.0.0:8000 \
+            JWT_PRIVATE_KEY=$JWT_KEY \
             ./apps/server/target/debug/altair-server &
           SERVER_PID=$!
           echo "Server PID: $SERVER_PID"
