@@ -1055,7 +1055,12 @@ async fn insert_test_snapshot(pool: &PgPool, snapshot_id: Uuid, note_id: Uuid) {
     .expect("insert_test_snapshot failed");
 }
 
-async fn insert_test_quest(pool: &PgPool, quest_id: Uuid, user_id: Uuid, title: &str) -> DateTime<Utc> {
+async fn insert_test_quest(
+    pool: &PgPool,
+    quest_id: Uuid,
+    user_id: Uuid,
+    title: &str,
+) -> DateTime<Utc> {
     let row: (DateTime<Utc>,) = sqlx::query_as(
         "INSERT INTO guidance_quests (id, user_id, title) VALUES ($1, $2, $3) RETURNING updated_at",
     )
@@ -1365,7 +1370,14 @@ async fn s022_resolve_already_resolved_conflict_returns_409(pool: PgPool) {
 
     let conflict_id = Uuid::new_v4();
     // Insert with resolution = 'accepted' (already resolved).
-    insert_test_conflict(&pool, conflict_id, user_id, "accepted", "2026-01-01T00:00:00Z").await;
+    insert_test_conflict(
+        &pool,
+        conflict_id,
+        user_id,
+        "accepted",
+        "2026-01-01T00:00:00Z",
+    )
+    .await;
 
     let (app, state) = build_test_app_with_state(pool);
     let token = make_token(&state, user_id);
@@ -1386,7 +1398,14 @@ async fn s022_resolve_invalid_resolution_returns_422(pool: PgPool) {
     insert_test_user(&pool, user_id, "s022_422@example.com").await;
 
     let conflict_id = Uuid::new_v4();
-    insert_test_conflict(&pool, conflict_id, user_id, "pending", "2026-01-01T00:00:00Z").await;
+    insert_test_conflict(
+        &pool,
+        conflict_id,
+        user_id,
+        "pending",
+        "2026-01-01T00:00:00Z",
+    )
+    .await;
 
     let (app, state) = build_test_app_with_state(pool);
     let token = make_token(&state, user_id);
@@ -1419,13 +1438,11 @@ async fn s025_guidance_quest_lww_rejected_returns_conflicted_and_row_unchanged(p
     insert_test_quest(&pool, quest_id, user_id, "Original Title").await;
 
     // Advance the server's updated_at far into the future to simulate a concurrent server write.
-    sqlx::query(
-        "UPDATE guidance_quests SET updated_at = now() + interval '1 hour' WHERE id = $1",
-    )
-    .bind(quest_id)
-    .execute(&pool)
-    .await
-    .expect("S025: failed to advance updated_at");
+    sqlx::query("UPDATE guidance_quests SET updated_at = now() + interval '1 hour' WHERE id = $1")
+        .bind(quest_id)
+        .execute(&pool)
+        .await
+        .expect("S025: failed to advance updated_at");
 
     // Read back the actual updated_at to avoid host/DB clock-skew dependency.
     let (server_updated_at,): (DateTime<Utc>,) =
@@ -1475,25 +1492,25 @@ async fn s025_guidance_quest_lww_rejected_returns_conflicted_and_row_unchanged(p
     );
 
     // Quest row data must be unchanged — server title wins.
-    let title: (String,) =
-        sqlx::query_as("SELECT title FROM guidance_quests WHERE id = $1")
-            .bind(quest_id)
-            .fetch_one(&pool)
-            .await
-            .expect("S025: quest query failed");
+    let title: (String,) = sqlx::query_as("SELECT title FROM guidance_quests WHERE id = $1")
+        .bind(quest_id)
+        .fetch_one(&pool)
+        .await
+        .expect("S025: quest query failed");
     assert_eq!(
         title.0, "Original Title",
         "S025: quest title must be unchanged after LWW reject"
     );
 
     // A sync_conflicts row with resolution 'pending' must exist for this user.
-    let conflict: Option<(String,)> =
-        sqlx::query_as("SELECT resolution FROM sync_conflicts WHERE entity_id = $1 AND user_id = $2")
-            .bind(quest_id)
-            .bind(user_id)
-            .fetch_optional(&pool)
-            .await
-            .expect("S025: sync_conflicts query failed");
+    let conflict: Option<(String,)> = sqlx::query_as(
+        "SELECT resolution FROM sync_conflicts WHERE entity_id = $1 AND user_id = $2",
+    )
+    .bind(quest_id)
+    .bind(user_id)
+    .fetch_optional(&pool)
+    .await
+    .expect("S025: sync_conflicts query failed");
     assert_eq!(
         conflict.map(|r| r.0),
         Some("pending".to_string()),
