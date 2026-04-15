@@ -283,6 +283,58 @@
 
 ---
 
+### Phase 8: Post-Review Fixes — Tests
+
+Tasks added from P5 code review findings. All relate to missing test coverage identified during review.
+
+- [ ] S018-T: Integration test for mixed-validity batch — partial commit behavior (P5-015)
+  Document and test the current behavior: `apply_mutations` processes serially; the first error aborts with already-committed mutations unrolled. Assert: `[valid_create, forbidden_update]` returns 403 and first mutation IS committed; document partial-commit semantics in code comment.
+  - **Assigned:** builder-rust
+  - **Depends:** S009
+  - **Relates to:** FA-001, FA-004
+
+- [ ] S019-T: Integration tests for delete on non-deletable entity types (P5-016)
+  One test per guarded type (`TrackingItemEvent`, `KnowledgeNoteSnapshot`, `Tag`): POST /api/sync/push with `operation: "delete"` returns 400 Bad Request.
+  - **Assigned:** builder-rust
+  - **Depends:** S010
+
+- [ ] S020-T: Integration test for Update on immutable `KnowledgeNoteSnapshot` (P5-017)
+  POST /api/sync/push with `operation: "update"` for entity_type `knowledge_note_snapshot` returns 400 Bad Request with message "knowledge_note_snapshot is immutable".
+  - **Assigned:** builder-rust
+  - **Depends:** S009
+
+- [ ] S021-T: Integration tests for ownership on Household, TrackingItem, TrackingItemEvent (P5-018)
+  One test per type: non-owner/non-member attempting Update returns 403 Forbidden. Covers FA-005 for all indirect ownership paths.
+  - **Assigned:** builder-rust
+  - **Depends:** S005
+  - **Relates to:** FA-005
+
+- [ ] S022-T: Integration tests for resolve endpoint edge cases (P5-019)
+  (1) Resolving an already-resolved conflict returns 409. (2) Submitting an out-of-enum resolution string (e.g. `"garbage"`) returns 400 Bad Request (serde will reject at deserialization boundary).
+  - **Assigned:** builder-rust
+  - **Depends:** S016
+  - **Relates to:** FA-006
+
+- [ ] S023: Refactor `MutationEnvelope` to enum-of-structs (P5-024)
+  Replace flat struct with `#[serde(tag = "operation")] enum MutationPayload { Create { payload: Value, … }, Update { payload: Value, base_version: DateTime<Utc>, … }, Delete { … } }`. Wire format preserved; invalid cross-field states become unrepresentable at the serde boundary. Update service.rs dispatch accordingly.
+  - **Assigned:** builder-rust
+  - **Depends:** S009
+
+- [ ] S024: Add `ConflictStatus` enum replacing `'pending'` string literals (P5-025)
+  Add `pub enum ConflictStatus { Pending, Accepted, Rejected, ConflictCopy }` with `as_str()` impl. Use in `service::list_conflicts` and `service::resolve_conflict` WHERE clauses. Eliminates silent typo risk on the `'pending'` filter.
+  - **Assigned:** builder-rust
+  - **Depends:** S015
+
+- [ ] S025-T: Integration test for non-KnowledgeNote LWW Rejected path (P5-026)
+  For e.g. `GuidanceQuest`: submit Update with `occurred_at` older than server's `updated_at`; assert response contains `status: "conflicted"`, row data is unchanged, and `sync_conflicts` row exists with `resolution = 'pending'`.
+  - **Assigned:** builder-rust
+  - **Depends:** S009
+  - **Relates to:** FA-008
+
+🏁 **MILESTONE 8: Post-review hardening complete** — all P5 test tasks pass; `cargo test` exits 0
+
+---
+
 ## Acceptance Criteria
 
 - [ ] FA-001 through FA-014 all verified (FA-010, FA-011 marked REQUIRES_LIVE_ENV)
