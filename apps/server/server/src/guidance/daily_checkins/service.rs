@@ -41,6 +41,12 @@ pub async fn create_checkin(
     user_id: Uuid,
     req: CreateCheckinRequest,
 ) -> Result<DailyCheckin, AppError> {
+    if !(1..=10).contains(&req.energy_level) {
+        return Err(AppError::UnprocessableEntity(
+            "energy_level must be between 1 and 10".to_string(),
+        ));
+    }
+
     let result = sqlx::query_as::<_, DailyCheckin>(
         "INSERT INTO guidance_daily_checkins (id, user_id, checkin_date, energy_level, mood, notes) \
          VALUES (gen_random_uuid(), $1, $2, $3, $4, $5) \
@@ -71,7 +77,13 @@ pub async fn update_checkin(
     user_id: Uuid,
     req: UpdateCheckinRequest,
 ) -> Result<DailyCheckin, AppError> {
-    let row = sqlx::query_as::<_, DailyCheckin>(
+    if req.energy_level.is_some_and(|l| !(1..=10).contains(&l)) {
+        return Err(AppError::UnprocessableEntity(
+            "energy_level must be between 1 and 10".to_string(),
+        ));
+    }
+
+    let result = sqlx::query_as::<_, DailyCheckin>(
         "UPDATE guidance_daily_checkins \
          SET \
            checkin_date = COALESCE($3, checkin_date), \
@@ -89,9 +101,18 @@ pub async fn update_checkin(
     .bind(&req.mood)
     .bind(&req.notes)
     .fetch_optional(pool)
-    .await?;
+    .await;
 
-    row.ok_or(AppError::NotFound)
+    match result {
+        Ok(Some(row)) => Ok(row),
+        Ok(None) => Err(AppError::NotFound),
+        Err(sqlx::Error::Database(ref db_err)) if db_err.code().as_deref() == Some("23505") => {
+            Err(AppError::Conflict(
+                "Check-in already exists for this date".to_string(),
+            ))
+        }
+        Err(e) => Err(e.into()),
+    }
 }
 
 pub async fn delete_checkin(pool: &PgPool, id: Uuid, user_id: Uuid) -> Result<(), AppError> {

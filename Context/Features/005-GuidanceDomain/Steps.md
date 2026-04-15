@@ -96,6 +96,16 @@ The most complex module. Depends on Epics (epic status update on transition) and
   - **Depends:** S004
   - **Parallel:** false
 
+- [ ] S012-T: Add missing forbidden-transition and terminal-state tests to `src/guidance/quests/models.rs` — (not_started→deferred rejected; in_progress→not_started rejected; deferred→in_progress rejected; completed→cancelled rejected); relates to A-G-05, A-G-06 (P6-006)
+  - **Assigned:** builder
+  - **Depends:** S004-T
+  - **Parallel:** false
+
+- [ ] S013: Introduce `QuestPriority` enum (`Low`, `Medium`, `High`) in `src/guidance/quests/models.rs` with `#[derive(sqlx::Type, Serialize, Deserialize)]`; replace `priority: String` fields on `Quest`, `CreateQuestRequest`, `UpdateQuestRequest`, and `QuestListParams`; add `#[sqlx(type_name = "varchar", rename_all = "snake_case")]` and `#[serde(rename_all = "snake_case")]` (P6-014)
+  - **Assigned:** builder
+  - **Depends:** S004
+  - **Parallel:** false
+
 - [ ] S005: Implement `src/guidance/quests/service.rs` — list (with filter params), get, create (initiative ownership check per E-3), update (transition guard → UnprocessableEntity on invalid transition; epic status recalculation inside sqlx transaction when quest has epic_id; QuestCompleted tracing event on completion), soft-delete
   - **Assigned:** builder
   - **Depends:** S004-T
@@ -135,6 +145,16 @@ Both depend on the quest module established in Phase 3. Routines spawn quests; f
   - **Depends:** S007
   - **Parallel:** true
 
+- [ ] S014: Introduce `RoutineStatus` enum (`Active`, `Paused`) in `src/guidance/routines/models.rs` with `#[derive(sqlx::Type, Serialize, Deserialize)]`; replace `status: String` on `Routine` to match the `QuestStatus`/`EpicStatus` pattern (P6-015)
+  - **Assigned:** builder
+  - **Depends:** S007
+  - **Parallel:** true
+
+- [ ] S015-T: Add cross-user isolation test for routines service — `get_routine(pool, routine.id, other_user_id)` must return `NotFound`; mirrors pattern in epics, quests, focus sessions, and daily checkins modules (P6-007)
+  - **Assigned:** builder
+  - **Depends:** S007-T
+  - **Parallel:** true
+
 - [ ] S008: Implement `src/guidance/focus_sessions/` module — `models.rs` (FocusSession, CreateFocusSessionRequest, UpdateFocusSessionRequest with optional ended_at); `service.rs` (list by quest_id, get, create with quest auto-transition to in_progress if not_started, update with server-computed duration_minutes when ended_at provided, soft-delete); `handlers.rs`; `mod.rs` (router at `/api/guidance/focus-sessions`)
   - **Assigned:** builder
   - **Depends:** S006
@@ -143,6 +163,16 @@ Both depend on the quest module established in Phase 3. Routines spawn quests; f
 - [ ] S008-T: Integration-test focus sessions service — (create session on not_started quest auto-transitions quest to in_progress — A-G-10; PATCH with ended_at computes and persists duration_minutes correctly — A-G-11; create session on already in_progress quest leaves quest status unchanged; duration_minutes = floor((ended_at - started_at) / 60 seconds); soft-delete excludes from list)
   - **Assigned:** builder
   - **Depends:** S008
+  - **Parallel:** true
+
+- [ ] S016-T: Strengthen A-G-14 QuestCompleted event test — current test verifies 200 response only; add `tracing_test::traced_test` subscriber to assert `tracing::info!` with `quest_id` and message `QuestCompleted` fires when quest transitions to completed; if `tracing_test` crate is unavailable, promote `QuestCompleted` to a structured `DomainEvent` type assertable in unit tests (P6-008)
+  - **Assigned:** builder
+  - **Depends:** S010
+  - **Parallel:** false
+
+- [ ] S017-T: Document and test focus session creation on completed/cancelled quests — decide and enforce one of: (a) return 422 UnprocessableEntity (quests in terminal status cannot be focused), (b) allow and document explicitly; add a test that captures the chosen behavior so a future change is visible (P6-019)
+  - **Assigned:** builder
+  - **Depends:** S008-T
   - **Parallel:** true
 
 - [ ] S009: Register routines and focus_sessions sub-routers in `src/guidance/mod.rs`; register epics and daily_checkins sub-routers (complete the guidance router)

@@ -160,10 +160,11 @@ pub async fn spawn_routine_quest(
     let existing = sqlx::query_as::<_, Quest>(&format!(
         "SELECT {QUEST_COLUMNS} \
          FROM guidance_quests \
-         WHERE routine_id = $1 AND due_date = $2 AND deleted_at IS NULL"
+         WHERE routine_id = $1 AND due_date = $2 AND user_id = $3 AND deleted_at IS NULL"
     ))
     .bind(routine_id)
     .bind(due_date)
+    .bind(user_id)
     .fetch_optional(pool)
     .await?;
 

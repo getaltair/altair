@@ -59,17 +59,20 @@ pub async fn create_session(
 
     let quest_status = quest_status.ok_or(AppError::NotFound)?;
 
-    // A-G-10: auto-transition not_started → in_progress.
-    // We UPDATE directly (bypassing quest service state machine) since we've already
-    // verified the quest is not_started and this avoids a circular dependency.
+    // A-G-10: auto-transition not_started → in_progress and the session INSERT must be
+    // atomic. If the INSERT fails after the UPDATE, the quest would be permanently stuck
+    // in_progress with no session attached.
+    let mut tx = pool.begin().await?;
+
     if quest_status == "not_started" {
         sqlx::query(
             "UPDATE guidance_quests \
              SET status = 'in_progress', updated_at = NOW() \
-             WHERE id = $1",
+             WHERE id = $1 AND user_id = $2",
         )
         .bind(req.quest_id)
-        .execute(pool)
+        .bind(user_id)
+        .execute(&mut *tx)
         .await?;
     }
     // If already in_progress, leave unchanged.
@@ -84,8 +87,10 @@ pub async fn create_session(
     .bind(user_id)
     .bind(req.quest_id)
     .bind(req.started_at)
-    .fetch_one(pool)
+    .fetch_one(&mut *tx)
     .await?;
+
+    tx.commit().await?;
 
     Ok(session)
 }
@@ -100,6 +105,13 @@ pub async fn update_session(
     let current = get_session(pool, id, user_id).await?;
 
     let updated = if let Some(ended_at) = req.ended_at {
+        // Reject negative or zero durations — clock drift or malformed client input.
+        if ended_at <= current.started_at {
+            return Err(AppError::UnprocessableEntity(
+                "ended_at must be after started_at".to_string(),
+            ));
+        }
+
         // A-G-11: compute duration_minutes = floor((ended_at - started_at).num_seconds() / 60).
         let duration_secs = (ended_at - current.started_at).num_seconds();
         let duration_minutes = (duration_secs / 60) as i32;

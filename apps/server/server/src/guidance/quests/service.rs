@@ -3,6 +3,7 @@ use uuid::Uuid;
 
 use super::models::{CreateQuestRequest, Quest, QuestListParams, QuestStatus, UpdateQuestRequest};
 use crate::error::AppError;
+use crate::guidance::epics::models::EpicStatus;
 use crate::guidance::epics::service::check_initiative_ownership;
 
 const QUEST_COLUMNS: &str =
@@ -109,9 +110,16 @@ pub async fn update_quest(
 
     let transitioning_to_completed =
         matches!(&req.status, Some(s) if *s == QuestStatus::Completed);
+    let transitioning_to_in_progress =
+        matches!(&req.status, Some(s) if *s == QuestStatus::InProgress);
 
-    if let (true, Some(epic_id)) = (transitioning_to_completed, current.epic_id) {
-
+    // Trigger epic recalculation when transitioning to in_progress (not_started → in_progress
+    // should flip the epic not_started → in_progress) or completed. Both need a transaction
+    // to keep the quest update and epic status change atomic.
+    if let Some(epic_id) = current
+        .epic_id
+        .filter(|_| transitioning_to_completed || transitioning_to_in_progress)
+    {
         let mut tx = pool.begin().await?;
 
         let updated = sqlx::query_as::<_, Quest>(&format!(
@@ -142,11 +150,13 @@ pub async fn update_quest(
         .ok_or(AppError::NotFound)?;
 
         #[allow(clippy::explicit_auto_deref)]
-        recalculate_epic_status(&mut *tx, epic_id).await?;
+        recalculate_epic_status(&mut *tx, epic_id, user_id).await?;
 
         tx.commit().await?;
 
-        tracing::info!(quest_id = %id, "QuestCompleted");
+        if transitioning_to_completed {
+            tracing::info!(quest_id = %id, "QuestCompleted");
+        }
         return Ok(updated);
     }
 
@@ -207,6 +217,7 @@ pub async fn delete_quest(pool: &PgPool, id: Uuid, user_id: Uuid) -> Result<(), 
 async fn recalculate_epic_status(
     tx: &mut sqlx::PgConnection,
     epic_id: Uuid,
+    user_id: Uuid,
 ) -> Result<(), AppError> {
     let total: i64 = sqlx::query_scalar(
         "SELECT COUNT(*) FROM guidance_quests \
@@ -233,18 +244,21 @@ async fn recalculate_epic_status(
     .await?;
 
     let new_status = if total > 0 && completed == total {
-        "completed"
+        EpicStatus::Completed
     } else if in_progress > 0 {
-        "in_progress"
+        EpicStatus::InProgress
     } else {
-        "not_started"
+        EpicStatus::NotStarted
     };
 
-    sqlx::query("UPDATE guidance_epics SET status = $1, updated_at = NOW() WHERE id = $2")
-        .bind(new_status)
-        .bind(epic_id)
-        .execute(&mut *tx)
-        .await?;
+    sqlx::query(
+        "UPDATE guidance_epics SET status = $1, updated_at = NOW() WHERE id = $2 AND user_id = $3",
+    )
+    .bind(new_status)
+    .bind(epic_id)
+    .bind(user_id)
+    .execute(&mut *tx)
+    .await?;
 
     Ok(())
 }
