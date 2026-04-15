@@ -30,6 +30,15 @@ pub enum AppError {
     Internal(#[from] anyhow::Error),
 }
 
+impl From<sqlx::Error> for AppError {
+    fn from(e: sqlx::Error) -> Self {
+        match e {
+            sqlx::Error::RowNotFound => AppError::NotFound,
+            _ => AppError::Internal(anyhow::Error::from(e)),
+        }
+    }
+}
+
 impl IntoResponse for AppError {
     fn into_response(self) -> Response {
         let (status, message) = match &self {

@@ -12,6 +12,7 @@ pub mod contracts;
 pub mod core;
 pub mod db;
 pub mod error;
+pub mod guidance;
 pub mod routes;
 pub mod sync;
 
