@@ -40,9 +40,7 @@ impl From<sqlx::Error> for AppError {
                 Some("23505") => return AppError::Conflict("duplicate key".to_string()),
                 // 23503: foreign_key_violation — invalid FK reference (e.g. initiative_id)
                 Some("23503") => {
-                    return AppError::BadRequest(
-                        "foreign key constraint violation".to_string(),
-                    )
+                    return AppError::BadRequest("foreign key constraint violation".to_string());
                 }
                 _ => {}
             }
