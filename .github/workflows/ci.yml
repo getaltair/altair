@@ -13,6 +13,20 @@ jobs:
     defaults:
       run:
         working-directory: apps/server
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: altair_user
+          POSTGRES_PASSWORD: change_me_in_production
+          POSTGRES_DB: altair_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v4
 
@@ -52,6 +66,7 @@ jobs:
         run: cargo test
         env:
           SQLX_OFFLINE: "true"
+          DATABASE_URL: postgres://altair_user:change_me_in_production@localhost:5432/altair_db
 
   web:
     name: Web
