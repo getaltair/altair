@@ -73,9 +73,10 @@ pub struct SyncUploadResponse {
     pub results: Vec<MutationResult>,
 }
 
-/// A single pending conflict record returned to the authenticated user.
-#[derive(Debug, Clone, Serialize, sqlx::FromRow)]
-pub struct ConflictRecord {
+/// A single pending conflict record returned by the database query.
+/// `entity_type` is read back as `String` and converted to `EntityType` post-query.
+#[derive(Debug, Clone, sqlx::FromRow)]
+pub(crate) struct ConflictRow {
     pub id: Uuid,
     pub entity_type: String,
     pub entity_id: Uuid,
@@ -86,11 +87,43 @@ pub struct ConflictRecord {
     pub created_at: DateTime<Utc>,
 }
 
+/// A single pending conflict record returned to the authenticated user.
+#[derive(Debug, Clone, Serialize)]
+pub struct ConflictRecord {
+    pub id: Uuid,
+    pub entity_type: EntityType,
+    pub entity_id: Uuid,
+    pub base_version: Option<DateTime<Utc>>,
+    pub current_version: Option<DateTime<Utc>>,
+    pub incoming_payload: Option<serde_json::Value>,
+    pub current_payload: Option<serde_json::Value>,
+    pub created_at: DateTime<Utc>,
+}
+
+impl ConflictRecord {
+    /// Convert a `ConflictRow` to a `ConflictRecord`, parsing `entity_type`.
+    /// Returns `None` if the stored string is not a known `EntityType` variant.
+    pub(crate) fn from_row(row: ConflictRow) -> Option<Self> {
+        let entity_type: EntityType =
+            serde_json::from_value(serde_json::Value::String(row.entity_type)).ok()?;
+        Some(Self {
+            id: row.id,
+            entity_type,
+            entity_id: row.entity_id,
+            base_version: row.base_version,
+            current_version: row.current_version,
+            incoming_payload: row.incoming_payload,
+            current_payload: row.current_payload,
+            created_at: row.created_at,
+        })
+    }
+}
+
 /// Query parameters for paginating the conflicts list.
 #[derive(Debug, Clone, Deserialize)]
 pub struct ConflictPageParams {
     pub cursor: Option<Uuid>,
-    pub limit: Option<i64>,
+    pub limit: Option<u32>,
 }
 
 /// Paginated response for the conflicts list endpoint.

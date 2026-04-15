@@ -1,5 +1,6 @@
 use chrono::{DateTime, Utc};
 use sqlx::{PgPool, Postgres, Transaction};
+use tracing::warn;
 use uuid::Uuid;
 
 use crate::auth::models::AuthUser;
@@ -259,6 +260,79 @@ pub async fn check_ownership(
 }
 
 // ---------------------------------------------------------------------------
+// S005: check_create_allowed (ADR-018)
+// ---------------------------------------------------------------------------
+
+/// Entity types that clients may create via sync push (ADR-018 allowlist).
+const SYNC_CREATABLE_USER_SCOPED: &[EntityType] = &[
+    EntityType::KnowledgeNote,
+    EntityType::GuidanceQuest,
+    EntityType::GuidanceRoutine,
+    EntityType::GuidanceEpic,
+    EntityType::GuidanceFocusSession,
+    EntityType::GuidanceDailyCheckin,
+    EntityType::Tag,
+    EntityType::Initiative,
+    EntityType::Attachment,
+];
+
+const SYNC_CREATABLE_HOUSEHOLD_SCOPED: &[EntityType] = &[
+    EntityType::TrackingLocation,
+    EntityType::TrackingCategory,
+    EntityType::TrackingShoppingList,
+    EntityType::TrackingItem,
+    EntityType::TrackingItemEvent,
+    EntityType::TrackingShoppingListItem,
+];
+
+/// Checks whether a Create mutation is permitted for the given entity type, and verifies
+/// household membership for household-scoped creates (ADR-018).
+///
+/// Returns `Ok(())` if the create is allowed, `AppError::BadRequest` if the entity type
+/// is not creatable via sync, and `AppError::Forbidden` if household membership fails.
+pub async fn check_create_allowed(
+    db: &PgPool,
+    entity_type: &EntityType,
+    payload: Option<&serde_json::Value>,
+    auth_user: &AuthUser,
+) -> Result<(), AppError> {
+    if SYNC_CREATABLE_USER_SCOPED.contains(entity_type) {
+        return Ok(());
+    }
+
+    if SYNC_CREATABLE_HOUSEHOLD_SCOPED.contains(entity_type) {
+        // Extract and verify household_id from payload (ADR-018).
+        let household_id_str = payload
+            .and_then(|p| p.get("household_id"))
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| AppError::BadRequest("household_id required for household-scoped create".to_string()))?;
+        let household_id = Uuid::parse_str(household_id_str)
+            .map_err(|_| AppError::BadRequest("household_id must be a valid UUID".to_string()))?;
+
+        let member: Option<(i32,)> = sqlx::query_as(
+            "SELECT 1 FROM household_memberships \
+             WHERE household_id = $1 AND user_id = $2 AND deleted_at IS NULL",
+        )
+        .bind(household_id)
+        .bind(auth_user.user_id)
+        .fetch_optional(db)
+        .await
+        .map_err(|e| AppError::Internal(anyhow::Error::from(e)))?;
+
+        return if member.is_some() {
+            Ok(())
+        } else {
+            Err(AppError::Forbidden)
+        };
+    }
+
+    // Entity type is not in either allowlist — not creatable via sync.
+    Err(AppError::BadRequest(format!(
+        "{entity_type:?} is not creatable via sync push"
+    )))
+}
+
+// ---------------------------------------------------------------------------
 // S007: detect_conflict
 // ---------------------------------------------------------------------------
 
@@ -342,30 +416,41 @@ pub fn check_quantity_conflict(payload: &serde_json::Value) -> bool {
 }
 
 // ---------------------------------------------------------------------------
-// S006: record_sync_mutation
+// S006: try_record_sync_mutation
 // ---------------------------------------------------------------------------
 
-/// INSERT a row into `sync_mutations` as a dedup record for this mutation.
-/// Called inside the per-mutation transaction, after the mutation is applied.
-async fn record_sync_mutation(
+/// Attempt to INSERT a row into `sync_mutations` as the dedup record for this mutation.
+///
+/// Uses `ON CONFLICT (mutation_id) DO NOTHING RETURNING mutation_id` so the check and
+/// record are atomic within the caller's transaction. Returns `Some(mutation_id)` if the
+/// row was newly inserted (proceed), or `None` if it already existed (Deduplicated).
+async fn try_record_sync_mutation(
     tx: &mut Transaction<'_, Postgres>,
     envelope: &MutationEnvelope,
     user_id: Uuid,
-) -> Result<(), AppError> {
+) -> Result<Option<(Uuid,)>, AppError> {
     // Serialize entity_type and operation to their canonical string forms.
     let entity_type_str = serde_json::to_value(&envelope.entity_type)
-        .ok()
-        .and_then(|v| v.as_str().map(|s| s.to_owned()))
-        .unwrap_or_default();
-    let operation_str = serde_json::to_value(&envelope.operation)
-        .ok()
-        .and_then(|v| v.as_str().map(|s| s.to_owned()))
-        .unwrap_or_default();
+        .map_err(|e| {
+            warn!("failed to serialize entity_type {:?}: {e}", envelope.entity_type);
+            AppError::Internal(anyhow::anyhow!("entity_type serialization failed: {e}"))
+        })?
+        .as_str()
+        .ok_or_else(|| AppError::Internal(anyhow::anyhow!("entity_type serialized to non-string")))?
+        .to_owned();
 
-    sqlx::query(
+    let operation_str = serde_json::to_value(&envelope.operation)
+        .map_err(|e| AppError::Internal(anyhow::anyhow!("operation serialization failed: {e}")))?
+        .as_str()
+        .ok_or_else(|| AppError::Internal(anyhow::anyhow!("operation serialized to non-string")))?
+        .to_owned();
+
+    let row: Option<(Uuid,)> = sqlx::query_as(
         "INSERT INTO sync_mutations \
          (mutation_id, device_id, user_id, entity_type, entity_id, operation) \
-         VALUES ($1, $2, $3, $4, $5, $6)",
+         VALUES ($1, $2, $3, $4, $5, $6) \
+         ON CONFLICT (mutation_id) DO NOTHING \
+         RETURNING mutation_id",
     )
     .bind(envelope.mutation_id)
     .bind(envelope.device_id)
@@ -373,11 +458,11 @@ async fn record_sync_mutation(
     .bind(&entity_type_str)
     .bind(envelope.entity_id)
     .bind(&operation_str)
-    .execute(tx.as_mut())
+    .fetch_optional(tx.as_mut())
     .await
     .map_err(|e| AppError::Internal(anyhow::Error::from(e)))?;
 
-    Ok(())
+    Ok(row)
 }
 
 // ---------------------------------------------------------------------------
@@ -496,40 +581,39 @@ async fn process_single_mutation(
     envelope: MutationEnvelope,
     auth_user: &AuthUser,
 ) -> Result<MutationResult, AppError> {
-    // Step 1: Dedup check — if mutation_id already applied, skip.
-    let already_applied: Option<(Uuid,)> =
-        sqlx::query_as("SELECT mutation_id FROM sync_mutations WHERE mutation_id = $1")
-            .bind(envelope.mutation_id)
-            .fetch_optional(db)
+    // Step 1: Authorization check.
+    // Create: verify the entity type is creatable via sync and household membership (ADR-018).
+    // Update/Delete: verify the existing row is owned by auth_user.
+    if matches!(envelope.operation, Operation::Create) {
+        check_create_allowed(db, &envelope.entity_type, envelope.payload.as_ref(), auth_user).await?;
+    } else {
+        check_ownership(db, &envelope.entity_type, envelope.entity_id, auth_user).await?;
+    }
+
+    // Step 2: Begin transaction.
+    let mut tx = db
+        .begin()
+        .await
+        .map_err(|e| AppError::Internal(anyhow::Error::from(e)))?;
+
+    // Step 3: Atomic dedup — attempt to record the mutation. If the mutation_id
+    // already exists, DO NOTHING is triggered and RETURNING yields no row → Deduplicated.
+    let dedup_row: Option<(Uuid,)> = try_record_sync_mutation(&mut tx, &envelope, auth_user.user_id).await?;
+    if dedup_row.is_none() {
+        tx.commit()
             .await
             .map_err(|e| AppError::Internal(anyhow::Error::from(e)))?;
-
-    if already_applied.is_some() {
         return Ok(MutationResult {
             mutation_id: envelope.mutation_id,
             status: MutationStatus::Deduplicated,
         });
     }
 
-    // Step 2: Ownership check — skip for Create (row doesn't exist yet).
-    // For Update/Delete, the row must already exist and must be owned by auth_user.
-    if !matches!(envelope.operation, Operation::Create) {
-        check_ownership(db, &envelope.entity_type, envelope.entity_id, auth_user).await?;
-    }
-
-    // Step 3: Begin transaction.
-    let mut tx = db
-        .begin()
-        .await
-        .map_err(|e| AppError::Internal(anyhow::Error::from(e)))?;
-
-    // Step 4+5+6: Dispatch by operation.
+    // Step 4+5: Dispatch by operation.
     let mutation_result = dispatch_mutation(&mut tx, &envelope, auth_user).await;
 
     match mutation_result {
         Ok(status) => {
-            // Step 6: Record to sync_mutations.
-            record_sync_mutation(&mut tx, &envelope, auth_user.user_id).await?;
             tx.commit()
                 .await
                 .map_err(|e| AppError::Internal(anyhow::Error::from(e)))?;
@@ -540,7 +624,9 @@ async fn process_single_mutation(
         }
         Err(e) => {
             // Rollback on any error (Forbidden, Conflict, Internal).
-            let _ = tx.rollback().await;
+            if let Err(rollback_err) = tx.rollback().await {
+                warn!("transaction rollback failed: {rollback_err}");
+            }
             Err(e)
         }
     }
@@ -612,12 +698,9 @@ async fn apply_create(
 
 /// Insert a new row from a payload JSONB value.
 ///
-/// Strategy: build an INSERT using the payload's keys as column names.
-/// Always override `id` to entity_id. For user-scoped tables, override `user_id`.
-/// For household-scoped tables, preserve `household_id` from payload.
-///
-/// This is a "best effort" generic insert: the payload must conform to the
-/// table schema. Any unknown columns will cause a DB error (surfaced as Internal).
+/// Builds a parameterized INSERT using only the allowlisted columns for this entity type.
+/// Always sets `id` from `entity_id`. Adds `user_id` for user-scoped tables.
+/// Payload keys that are not in the allowlist or fail the safe-identifier regex are dropped.
 async fn insert_from_payload(
     tx: &mut Transaction<'_, Postgres>,
     table: &str,
@@ -626,12 +709,17 @@ async fn insert_from_payload(
     user_id: Uuid,
     payload: Option<&serde_json::Value>,
 ) -> Result<(), AppError> {
-    let payload_obj = payload
-        .and_then(|p| p.as_object())
-        .cloned()
-        .unwrap_or_default();
+    // P5-009: require a JSON object; reject arrays and null.
+    let payload_obj = match payload {
+        None => {
+            return Err(AppError::BadRequest("Create payload must be a JSON object".to_string()));
+        }
+        Some(p) => p.as_object().ok_or_else(|| {
+            AppError::BadRequest("Create payload must be a JSON object".to_string())
+        })?,
+    };
 
-    // Determine which "server-controlled" columns to inject/override.
+    // Determine whether this entity type has a server-controlled user_id column.
     let is_user_scoped = matches!(
         entity_type,
         EntityType::Initiative
@@ -647,31 +735,30 @@ async fn insert_from_payload(
             | EntityType::TrackingItem
     );
 
-    // Build column list and placeholder list from payload keys.
-    // We always include `id`. Add `user_id` for user-scoped tables.
-    // Exclude server-managed columns from payload to avoid conflicts.
-    let excluded_keys: &[&str] = &["id", "user_id", "created_at", "updated_at", "deleted_at"];
+    let allow = allowed_columns(entity_type);
+    // Server-controlled columns must never come from the payload.
+    let excluded: &[&str] = &["id", "user_id", "created_at", "updated_at", "deleted_at", "household_id"];
 
-    // The first N columns are typed binds (Uuid). Track how many precede JSON values.
-    let mut typed_uuid_count: usize = 1; // always: id
+    // id is always first; user_id second for user-scoped tables.
     let mut columns: Vec<String> = vec!["id".to_owned()];
     let mut json_values: Vec<serde_json::Value> = vec![];
+    let mut typed_uuid_count: usize = 1;
 
     if is_user_scoped {
         columns.push("user_id".to_owned());
         typed_uuid_count += 1;
     }
 
-    for (key, val) in &payload_obj {
-        if excluded_keys.contains(&key.as_str()) {
+    for (key, val) in payload_obj {
+        if excluded.contains(&key.as_str()) {
+            continue;
+        }
+        // ADR-017: only allowlisted, safe-identifier keys may become column names.
+        if !allow.contains(&key.as_str()) || !is_safe_column_name(key) {
             continue;
         }
         columns.push(key.clone());
         json_values.push(val.clone());
-    }
-
-    if columns.is_empty() {
-        return Err(AppError::BadRequest("Create payload is empty".to_string()));
     }
 
     let col_list = columns.join(", ");
@@ -680,13 +767,10 @@ async fn insert_from_payload(
 
     let sql = format!("INSERT INTO {table} ({col_list}) VALUES ({placeholder_list})");
 
-    // Bind typed Uuid parameters first (avoids TEXT→UUID cast failures in Postgres).
     let mut query = sqlx::query(&sql).bind(entity_id);
     if typed_uuid_count > 1 {
-        // user_id is the second typed param
         query = query.bind(user_id);
     }
-    // Then bind the remaining JSON-derived values.
     for val in &json_values {
         query = bind_json_value(query, val);
     }
@@ -775,49 +859,36 @@ async fn apply_update(
     match outcome {
         ConflictOutcome::Clean => {
             // No conflict; apply the update.
-            apply_update_to_table(tx, &envelope.entity_type, envelope.entity_id).await?;
+            apply_update_to_table(tx, &envelope.entity_type, envelope.entity_id, &envelope.payload).await?;
             Ok(MutationStatus::Accepted)
         }
 
         ConflictOutcome::Accepted { current_payload } => {
             // LWW: incoming wins. For KnowledgeNote, create a conflict copy instead.
             if matches!(envelope.entity_type, EntityType::KnowledgeNote) {
-                if let Some(payload) = &envelope.payload {
-                    let conflict_id = create_conflict_copy(
-                        tx,
-                        envelope.entity_id,
-                        payload,
-                        auth_user.user_id,
-                        envelope.mutation_id,
-                        envelope.base_version,
-                        Some(
-                            current_payload
-                                .get("updated_at")
-                                .and_then(|v| v.as_str())
-                                .and_then(|s| s.parse::<DateTime<Utc>>().ok())
-                                .unwrap_or(envelope.occurred_at),
-                        ),
+                let payload = envelope.payload.as_ref().ok_or_else(|| {
+                    AppError::BadRequest(
+                        "KnowledgeNote update conflict requires a non-null payload".to_string(),
                     )
-                    .await?;
-                    return Ok(MutationStatus::Conflicted { conflict_id });
-                }
-            }
-
-            // TrackingItemEvent + quantity conflict → Conflict error (S009 wiring).
-            if matches!(envelope.entity_type, EntityType::TrackingItemEvent) {
-                if let Some(payload) = &envelope.payload {
-                    if check_quantity_conflict(payload) {
-                        return Err(AppError::Conflict(
-                            "quantity conflict — re-read and resubmit".to_string(),
-                        ));
-                    }
-                }
+                })?;
+                let current_version = parse_updated_at_from_payload(&current_payload, envelope.entity_id);
+                let conflict_id = create_conflict_copy(
+                    tx,
+                    envelope.entity_id,
+                    payload,
+                    auth_user.user_id,
+                    envelope.mutation_id,
+                    envelope.base_version,
+                    Some(current_version),
+                )
+                .await?;
+                return Ok(MutationStatus::Conflicted { conflict_id });
             }
 
             // General LWW: log conflict, apply incoming mutation.
             let conflict_id =
                 record_conflict_row(tx, envelope, &current_payload, auth_user.user_id).await?;
-            apply_update_to_table(tx, &envelope.entity_type, envelope.entity_id).await?;
+            apply_update_to_table(tx, &envelope.entity_type, envelope.entity_id, &envelope.payload).await?;
             Ok(MutationStatus::Conflicted { conflict_id })
         }
 
@@ -825,28 +896,24 @@ async fn apply_update(
             // For KnowledgeNote: still create a conflict copy even when rejected
             // (the spec says "instead of LWW, create a new note row").
             if matches!(envelope.entity_type, EntityType::KnowledgeNote) {
-                if let Some(payload) = &envelope.payload {
-                    let conflict_id = create_conflict_copy(
-                        tx,
-                        envelope.entity_id,
-                        payload,
-                        auth_user.user_id,
-                        envelope.mutation_id,
-                        envelope.base_version,
-                        Some(
-                            current_payload
-                                .get("updated_at")
-                                .and_then(|v| v.as_str())
-                                .and_then(|s| s.parse::<DateTime<Utc>>().ok())
-                                .unwrap_or(envelope.occurred_at),
-                        ),
+                let payload = envelope.payload.as_ref().ok_or_else(|| {
+                    AppError::BadRequest(
+                        "KnowledgeNote update conflict requires a non-null payload".to_string(),
                     )
-                    .await?;
-                    return Ok(MutationStatus::Conflicted { conflict_id });
-                }
+                })?;
+                let current_version = parse_updated_at_from_payload(&current_payload, envelope.entity_id);
+                let conflict_id = create_conflict_copy(
+                    tx,
+                    envelope.entity_id,
+                    payload,
+                    auth_user.user_id,
+                    envelope.mutation_id,
+                    envelope.base_version,
+                    Some(current_version),
+                )
+                .await?;
+                return Ok(MutationStatus::Conflicted { conflict_id });
             }
-
-            // TrackingItemEvent + quantity: hard reject (already handled above for append-only path).
 
             // General LWW reject: log conflict, do NOT apply the update.
             let conflict_id =
@@ -856,16 +923,117 @@ async fn apply_update(
     }
 }
 
-/// Apply a safe UPDATE (only bumps updated_at) for user-scoped mutable tables.
+/// Returns the `updated_at` timestamp from a DB payload JSON object.
+///
+/// Logs a warning if the value is missing or cannot be parsed, and falls back to
+/// `entity_id`-keyed log entry so the caller can correlate which row was affected.
+fn parse_updated_at_from_payload(payload: &serde_json::Value, entity_id: Uuid) -> DateTime<Utc> {
+    match payload
+        .get("updated_at")
+        .and_then(|v| v.as_str())
+        .and_then(|s| s.parse::<DateTime<Utc>>().ok())
+    {
+        Some(ts) => ts,
+        None => {
+            warn!(
+                "could not parse updated_at from DB payload for entity {entity_id}; \
+                 falling back to epoch — conflict audit trail may be inaccurate"
+            );
+            DateTime::from_timestamp(0, 0).unwrap()
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// S001 (ADR-017): allowed_columns
+// ---------------------------------------------------------------------------
+
+/// Returns the set of column names that clients are permitted to write for a given
+/// entity type via the sync push endpoint.
+///
+/// These are lowercase snake_case names matching the Postgres schema.
+/// `id`, `user_id`, `household_id`, `created_at`, `updated_at`, and `deleted_at`
+/// are **excluded** — they are set server-side.
+///
+/// Any payload key NOT in this list is silently dropped before the INSERT/UPDATE is
+/// built. This is the authoritative injection-prevention control (ADR-017).
+pub(crate) fn allowed_columns(entity_type: &EntityType) -> &'static [&'static str] {
+    match entity_type {
+        EntityType::User => &[],
+        EntityType::Household => &[],
+        EntityType::KnowledgeNoteSnapshot => &[],
+        EntityType::Initiative => &["name", "description", "status"],
+        EntityType::Tag => &["name", "color"],
+        EntityType::Attachment => &["file_name", "mime_type", "size_bytes", "storage_key"],
+        EntityType::GuidanceEpic => &["title", "description", "status", "initiative_id"],
+        EntityType::GuidanceQuest => &["title", "description", "status", "epic_id", "initiative_id", "due_date"],
+        EntityType::GuidanceRoutine => &["title", "description", "frequency", "status"],
+        EntityType::GuidanceFocusSession => &["title", "notes", "quest_id", "started_at", "ended_at", "duration_seconds"],
+        EntityType::GuidanceDailyCheckin => &["mood", "notes", "checkin_date"],
+        EntityType::KnowledgeNote => &["title", "content", "initiative_id"],
+        EntityType::TrackingLocation => &["name", "description"],
+        EntityType::TrackingCategory => &["name", "description", "color"],
+        EntityType::TrackingItem => &["name", "description", "category_id", "location_id", "quantity", "unit", "low_threshold"],
+        EntityType::TrackingItemEvent => &["quantity", "consumed_quantity", "notes", "event_date"],
+        EntityType::TrackingShoppingList => &["name", "notes", "status"],
+        EntityType::TrackingShoppingListItem => &["name", "quantity", "unit", "is_checked"],
+    }
+}
+
+/// Validate a column name key from a client payload.
+///
+/// Returns true only if the key is purely `[a-z_][a-z0-9_]*` (no SQL metacharacters).
+/// This is a defence-in-depth guard that catches any key that somehow escapes the
+/// `allowed_columns` allowlist (e.g., a developer accidentally adds a dangerous string).
+fn is_safe_column_name(key: &str) -> bool {
+    let mut chars = key.chars();
+    match chars.next() {
+        Some(c) if c.is_ascii_lowercase() || c == '_' => {}
+        _ => return false,
+    }
+    chars.all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '_')
+}
+
+/// Apply an UPDATE to a table, writing allowed payload fields plus bumping `updated_at`.
 async fn apply_update_to_table(
     tx: &mut Transaction<'_, Postgres>,
     entity_type: &EntityType,
     entity_id: Uuid,
+    payload: &Option<serde_json::Value>,
 ) -> Result<(), AppError> {
     let table = entity_type_to_table(entity_type);
-    let sql = format!("UPDATE {table} SET updated_at = now() WHERE id = $1");
-    sqlx::query(&sql)
-        .bind(entity_id)
+    let allow = allowed_columns(entity_type);
+
+    // Build SET clauses: always include updated_at; add payload fields that pass the allowlist.
+    let mut set_clauses: Vec<String> = vec!["updated_at = now()".to_owned()];
+    let mut json_values: Vec<serde_json::Value> = vec![];
+    let mut param_idx = 2usize; // $1 is entity_id
+
+    if let Some(p) = payload {
+        let obj = p.as_object().ok_or_else(|| {
+            AppError::BadRequest("Update payload must be a JSON object".to_string())
+        })?;
+        for (key, val) in obj {
+            if !allow.contains(&key.as_str()) {
+                continue;
+            }
+            if !is_safe_column_name(key) {
+                // Should not happen given the allowlist, but guard anyway.
+                continue;
+            }
+            set_clauses.push(format!("{key} = ${param_idx}"));
+            json_values.push(val.clone());
+            param_idx += 1;
+        }
+    }
+
+    let set_str = set_clauses.join(", ");
+    let sql = format!("UPDATE {table} SET {set_str} WHERE id = $1");
+    let mut query = sqlx::query(&sql).bind(entity_id);
+    for val in &json_values {
+        query = bind_json_value(query, val);
+    }
+    query
         .execute(tx.as_mut())
         .await
         .map_err(|e| AppError::Internal(anyhow::Error::from(e)))?;
@@ -886,9 +1054,13 @@ async fn record_conflict_row(
         .and_then(|s| s.parse::<DateTime<Utc>>().ok());
 
     let entity_type_str = serde_json::to_value(&envelope.entity_type)
-        .ok()
-        .and_then(|v| v.as_str().map(|s| s.to_owned()))
-        .unwrap_or_default();
+        .map_err(|e| {
+            warn!("failed to serialize entity_type {:?}: {e}", envelope.entity_type);
+            AppError::Internal(anyhow::anyhow!("entity_type serialization failed: {e}"))
+        })?
+        .as_str()
+        .ok_or_else(|| AppError::Internal(anyhow::anyhow!("entity_type serialized to non-string")))?
+        .to_owned();
 
     let row: (Uuid,) = sqlx::query_as(
         "INSERT INTO sync_conflicts \
@@ -935,14 +1107,148 @@ async fn apply_delete(
     }
 
     let table = entity_type_to_table(&envelope.entity_type);
-    let sql = format!("UPDATE {table} SET deleted_at = now() WHERE id = $1");
-    sqlx::query(&sql)
+    let sql = format!("UPDATE {table} SET deleted_at = now() WHERE id = $1 AND deleted_at IS NULL");
+    let result = sqlx::query(&sql)
         .bind(envelope.entity_id)
         .execute(tx.as_mut())
         .await
         .map_err(|e| AppError::Internal(anyhow::Error::from(e)))?;
 
+    if result.rows_affected() == 0 {
+        return Err(AppError::NotFound);
+    }
+
     Ok(MutationStatus::Accepted)
+}
+
+// ---------------------------------------------------------------------------
+// S015: list_conflicts / resolve_conflict (moved from handlers per P5-011)
+// ---------------------------------------------------------------------------
+
+/// Returns a cursor-paginated page of pending sync conflicts for the authenticated user.
+///
+/// Uses a stable `(created_at, id)` tuple cursor so pagination is not disrupted when
+/// the cursor row is later resolved (fixes P5-023).
+pub async fn list_conflicts(
+    db: &PgPool,
+    user_id: Uuid,
+    cursor: Option<Uuid>,
+    limit: u32,
+) -> Result<Vec<crate::sync::models::ConflictRecord>, AppError> {
+    use crate::sync::models::ConflictRow;
+
+    let limit_i64 = limit as i64;
+
+    let rows: Vec<ConflictRow> = if let Some(cursor_id) = cursor {
+        // Stable tuple cursor: fetch the anchor's (created_at, id) so that resolving
+        // the cursor row does not collapse the next page to empty (P5-023).
+        let anchor: Option<(DateTime<Utc>, Uuid)> = sqlx::query_as(
+            "SELECT created_at, id FROM sync_conflicts WHERE id = $1",
+        )
+        .bind(cursor_id)
+        .fetch_optional(db)
+        .await
+        .map_err(|e| AppError::Internal(anyhow::Error::from(e)))?;
+
+        match anchor {
+            None => vec![],
+            Some((anchor_created_at, anchor_id)) => {
+                sqlx::query_as(
+                    "SELECT id, entity_type, entity_id, base_version, current_version, \
+                     incoming_payload, current_payload, created_at \
+                     FROM sync_conflicts \
+                     WHERE user_id = $1 \
+                       AND resolution = 'pending' \
+                       AND (created_at, id) < ($2, $3) \
+                     ORDER BY created_at DESC, id DESC \
+                     LIMIT $4",
+                )
+                .bind(user_id)
+                .bind(anchor_created_at)
+                .bind(anchor_id)
+                .bind(limit_i64)
+                .fetch_all(db)
+                .await
+                .map_err(|e| AppError::Internal(anyhow::Error::from(e)))?
+            }
+        }
+    } else {
+        sqlx::query_as(
+            "SELECT id, entity_type, entity_id, base_version, current_version, \
+             incoming_payload, current_payload, created_at \
+             FROM sync_conflicts \
+             WHERE user_id = $1 \
+               AND resolution = 'pending' \
+             ORDER BY created_at DESC, id DESC \
+             LIMIT $2",
+        )
+        .bind(user_id)
+        .bind(limit_i64)
+        .fetch_all(db)
+        .await
+        .map_err(|e| AppError::Internal(anyhow::Error::from(e)))?
+    };
+
+    let mut records = Vec::with_capacity(rows.len());
+    for row in rows {
+        match crate::sync::models::ConflictRecord::from_row(row) {
+            Some(r) => records.push(r),
+            None => {
+                warn!("sync_conflicts row for user {user_id} has unrecognized entity_type; skipping");
+            }
+        }
+    }
+    Ok(records)
+}
+
+/// Marks a pending conflict as resolved (`accepted` or `rejected`).
+///
+/// Returns:
+/// - `Ok(())` on success
+/// - `AppError::NotFound` if the conflict id does not exist
+/// - `AppError::Forbidden` if the conflict belongs to a different user
+/// - `AppError::Conflict` if the conflict has already been resolved (P5-012)
+pub async fn resolve_conflict(
+    db: &PgPool,
+    conflict_id: Uuid,
+    user_id: Uuid,
+    resolution: &str,
+) -> Result<(), AppError> {
+    // Only update rows that are still pending (P5-012: prevent re-resolution).
+    let result = sqlx::query(
+        "UPDATE sync_conflicts \
+         SET resolution = $1, resolved_at = now() \
+         WHERE id = $2 AND user_id = $3 AND resolution = 'pending'",
+    )
+    .bind(resolution)
+    .bind(conflict_id)
+    .bind(user_id)
+    .execute(db)
+    .await
+    .map_err(|e| AppError::Internal(anyhow::Error::from(e)))?;
+
+    if result.rows_affected() == 1 {
+        return Ok(());
+    }
+
+    // Disambiguate: does the row exist at all? Is it the wrong user, or already resolved?
+    let row: Option<(Uuid, String)> =
+        sqlx::query_as("SELECT user_id, resolution FROM sync_conflicts WHERE id = $1")
+            .bind(conflict_id)
+            .fetch_optional(db)
+            .await
+            .map_err(|e| AppError::Internal(anyhow::Error::from(e)))?;
+
+    match row {
+        None => Err(AppError::NotFound),
+        Some((owner_id, _)) if owner_id != user_id => Err(AppError::Forbidden),
+        Some((_, res)) if res != "pending" => Err(AppError::Conflict(format!(
+            "conflict is already {res}"
+        ))),
+        _ => Err(AppError::Internal(anyhow::anyhow!(
+            "resolve_conflict: unexpected state for conflict {conflict_id}"
+        ))),
+    }
 }
 
 // ---------------------------------------------------------------------------
