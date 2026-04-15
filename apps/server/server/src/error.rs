@@ -4,6 +4,7 @@ use axum::{
     response::{IntoResponse, Response},
 };
 use serde_json::json;
+use sqlx;
 
 #[derive(Debug, thiserror::Error)]
 #[allow(dead_code)]
@@ -32,11 +33,22 @@ pub enum AppError {
 
 impl From<sqlx::Error> for AppError {
     fn from(e: sqlx::Error) -> Self {
+        // Inspect database-level error codes before consuming `e`.
+        if let sqlx::Error::Database(ref db_err) = e {
+            match db_err.code().as_deref() {
+                // 23505: unique_violation — duplicate client-generated UUID (A-018 retry)
+                Some("23505") => return AppError::Conflict("duplicate key".to_string()),
+                // 23503: foreign_key_violation — invalid FK reference (e.g. initiative_id)
+                Some("23503") => {
+                    return AppError::BadRequest("foreign key constraint violation".to_string());
+                }
+                _ => {}
+            }
+        }
         match e {
-            // NOTE: RowNotFound maps to NotFound. This is safe because all row lookups in
-            // the codebase use fetch_optional + .ok_or(AppError::NotFound). Any future use
-            // of fetch_one on a query that might return zero rows would silently produce 404
-            // instead of 500 — use fetch_optional to preserve the intended semantics.
+            // NOTE: RowNotFound maps to NotFound. All row lookups use fetch_optional +
+            // .ok_or(AppError::NotFound); fetch_one on a query returning zero rows would
+            // silently produce 404 instead of 500 — use fetch_optional to preserve intent.
             sqlx::Error::RowNotFound => AppError::NotFound,
             _ => AppError::Internal(anyhow::Error::from(e)),
         }
@@ -47,8 +59,14 @@ impl IntoResponse for AppError {
     fn into_response(self) -> Response {
         let (status, message) = match &self {
             AppError::NotFound => (StatusCode::NOT_FOUND, "Not found".to_string()),
-            AppError::Unauthorized => (StatusCode::UNAUTHORIZED, "Unauthorized".to_string()),
-            AppError::Forbidden => (StatusCode::FORBIDDEN, "Forbidden".to_string()),
+            AppError::Unauthorized => {
+                tracing::debug!("Unauthorized response");
+                (StatusCode::UNAUTHORIZED, "Unauthorized".to_string())
+            }
+            AppError::Forbidden => {
+                tracing::debug!("Forbidden response");
+                (StatusCode::FORBIDDEN, "Forbidden".to_string())
+            }
             AppError::BadRequest(msg) => (StatusCode::BAD_REQUEST, msg.clone()),
             AppError::Conflict(msg) => (StatusCode::CONFLICT, msg.clone()),
             AppError::UnprocessableEntity(msg) => (StatusCode::UNPROCESSABLE_ENTITY, msg.clone()),
@@ -170,6 +188,8 @@ mod tests {
         );
     }
 
+    // --- From<sqlx::Error> conversion tests ---
+
     // From<sqlx::Error>: non-RowNotFound variants must produce AppError::Internal.
     #[test]
     fn sqlx_error_converts_to_internal() {
@@ -191,10 +211,18 @@ mod tests {
     // appear in the HTTP response body.
     #[tokio::test]
     async fn sqlx_error_does_not_leak_schema_detail() {
-        let (_, body) = status_and_body(sqlx::Error::PoolTimedOut.into()).await;
+        // Use a Protocol error that embeds realistic schema detail (constraint names, table names).
+        let detail = "duplicate key value violates unique constraint \"pk_users\"";
+        let sqlx_err = sqlx::Error::Protocol(detail.into());
+        let (status, body) = status_and_body(AppError::from(sqlx_err)).await;
+        assert_eq!(status, StatusCode::INTERNAL_SERVER_ERROR);
         assert!(
-            !body.to_lowercase().contains("pool"),
-            "sqlx error details must not appear in response body; body was: {body}"
+            !body.contains(detail),
+            "Schema detail must not appear in the response body; body was: {body}"
+        );
+        assert!(
+            !body.contains("pk_users"),
+            "Table/constraint names must not be leaked; body was: {body}"
         );
     }
 
