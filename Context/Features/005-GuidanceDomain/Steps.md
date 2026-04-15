@@ -4,9 +4,9 @@
 **Tech:** Context/Features/005-GuidanceDomain/Tech.md
 
 ## Progress
-- **Status:** Not started
+- **Status:** Complete
 - **Current task:** --
-- **Last milestone:** --
+- **Last milestone:** Validation complete — ready for commit
 
 ---
 
