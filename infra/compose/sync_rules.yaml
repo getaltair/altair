@@ -34,8 +34,9 @@ bucket_definitions:
   knowledge:
     parameters: SELECT request.user_id() AS user_id
     data:
-      - SELECT * FROM knowledge_notes          WHERE user_id = bucket.user_id
-      - SELECT * FROM knowledge_note_snapshots WHERE user_id = bucket.user_id
+      - SELECT * FROM knowledge_notes WHERE user_id = bucket.user_id
+      - SELECT * FROM knowledge_note_snapshots
+          WHERE note_id IN (SELECT id FROM knowledge_notes WHERE user_id = bucket.user_id)
 
   # Tracking domain — household-scoped
   tracking:
@@ -47,6 +48,8 @@ bucket_definitions:
       - SELECT * FROM tracking_locations           WHERE household_id = bucket.household_id
       - SELECT * FROM tracking_categories          WHERE household_id = bucket.household_id
       - SELECT * FROM tracking_items               WHERE household_id = bucket.household_id
-      - SELECT * FROM tracking_item_events         WHERE household_id = bucket.household_id
-      - SELECT * FROM tracking_shopping_lists      WHERE household_id = bucket.household_id
-      - SELECT * FROM tracking_shopping_list_items WHERE household_id = bucket.household_id
+      - SELECT * FROM tracking_item_events
+          WHERE item_id IN (SELECT id FROM tracking_items WHERE household_id = bucket.household_id)
+      - SELECT * FROM tracking_shopping_lists WHERE household_id = bucket.household_id
+      - SELECT * FROM tracking_shopping_list_items
+          WHERE shopping_list_id IN (SELECT id FROM tracking_shopping_lists WHERE household_id = bucket.household_id)
