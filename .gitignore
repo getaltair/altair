@@ -34,6 +34,7 @@ local.properties
 *.class
 *.log
 *.jar
+!apps/android/gradle/wrapper/gradle-wrapper.jar
 *.aar
 captures/
 .externalNativeBuild/

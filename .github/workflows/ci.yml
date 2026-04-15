@@ -40,6 +40,9 @@ jobs:
         env:
           SQLX_OFFLINE: "true"
 
+      - name: Install sqlx-cli
+        run: cargo install sqlx-cli --no-default-features --features postgres
+
       - name: Check sqlx offline cache
         run: cargo sqlx prepare --check --workspace
         env:
@@ -64,6 +67,9 @@ jobs:
 
       - name: Install dependencies
         run: bun install
+
+      - name: Create .env
+        run: cp .env.example .env
 
       - name: Type check
         run: bun run check
@@ -168,23 +174,6 @@ jobs:
             exit 1
           fi
 
-      - name: Wait for Zitadel
-        run: |
-          echo "Waiting for Zitadel..."
-          READY=false
-          for i in $(seq 1 40); do
-            if curl -sf http://localhost:8081/debug/healthz; then
-              READY=true
-              break
-            fi
-            echo "Attempt $i/40 failed, retrying in 10s..."
-            sleep 10
-          done
-          if [ "$READY" != "true" ]; then
-            echo "FAIL: Zitadel did not become ready after 40 attempts"
-            exit 1
-          fi
-
       - name: Run migrations
         run: |
           DATABASE_URL=postgres://altair_user:change_me_in_production@localhost:5432/altair_db \
@@ -221,10 +210,8 @@ jobs:
 
       - name: Rollback migrations (FA-010)
         run: |
-          for i in 1 2 3 4; do
-            DATABASE_URL=postgres://altair_user:change_me_in_production@localhost:5432/altair_db \
-              sqlx migrate revert --source infra/migrations
-          done
+          while DATABASE_URL=postgres://altair_user:change_me_in_production@localhost:5432/altair_db \
+            sqlx migrate revert --source infra/migrations; do :; done
           COUNT=$(PGPASSWORD=change_me_in_production psql -h localhost -U altair_user altair_db -tAc \
             "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_name != '_sqlx_migrations'")
           [ "$COUNT" -eq 0 ] || (echo "FAIL: tables remain after rollback" && exit 1)
