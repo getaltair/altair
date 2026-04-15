@@ -63,10 +63,12 @@ mod tests {
         BASE64.encode(pem.as_bytes())
     }
 
-    // SAFETY note for all tests below: serial_test enforces that all tests in
-    // this module run sequentially, preventing concurrent env var access.
+    // SAFETY note for all tests below: #[exclusive] blocks ALL other tests in the process
+    // from running concurrently, which is required here because std::env::remove_var is
+    // process-global. #[serial] only prevents concurrency with other #[serial] tests and
+    // would still race with #[sqlx::test] tests running on other threads.
 
-    #[serial_test::serial]
+    #[serial_test::exclusive]
     #[test]
     fn missing_database_url_returns_error() {
         let saved_db = std::env::var("DATABASE_URL").ok();
@@ -94,7 +96,7 @@ mod tests {
         }
     }
 
-    #[serial_test::serial]
+    #[serial_test::exclusive]
     #[test]
     fn missing_jwt_private_key_returns_error() {
         let saved_db = std::env::var("DATABASE_URL").ok();
@@ -122,7 +124,7 @@ mod tests {
         }
     }
 
-    #[serial_test::serial]
+    #[serial_test::exclusive]
     #[test]
     fn invalid_base64_jwt_private_key_returns_error() {
         let saved_db = std::env::var("DATABASE_URL").ok();
@@ -150,7 +152,7 @@ mod tests {
         }
     }
 
-    #[serial_test::serial]
+    #[serial_test::exclusive]
     #[test]
     fn happy_path_returns_correct_values() {
         let saved_db = std::env::var("DATABASE_URL").ok();
@@ -190,7 +192,7 @@ mod tests {
         }
     }
 
-    #[serial_test::serial]
+    #[serial_test::exclusive]
     #[test]
     fn missing_bind_addr_falls_back_to_default() {
         let saved_db = std::env::var("DATABASE_URL").ok();

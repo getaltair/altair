@@ -63,11 +63,10 @@ jobs:
           SQLX_OFFLINE: "true"
 
       - name: Test
-        # Single-threaded to prevent config tests (which temporarily remove DATABASE_URL
-        # from the process env via std::env::remove_var) from racing with #[sqlx::test]
-        # tests that need DATABASE_URL set. The underlying fix is to use serial_test's
-        # exclusive attribute on config tests; tracked as a separate backlog item.
-        run: cargo test -- --test-threads=1
+        # Config tests use std::env::remove_var (process-global) and are annotated with
+        # #[serial_test::exclusive], which blocks ALL other tests from running concurrently
+        # while those tests execute. This makes parallel execution safe.
+        run: cargo test
         env:
           SQLX_OFFLINE: "true"
           DATABASE_URL: postgres://altair_user:change_me_in_production@localhost:5432/altair_db
