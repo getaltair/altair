@@ -233,8 +233,16 @@ jobs:
 
       - name: Rollback migrations (FA-010)
         run: |
-          while DATABASE_URL=postgres://altair_user:change_me_in_production@localhost:5432/altair_db \
-            sqlx migrate revert --source infra/migrations; do :; done
+          # sqlx migrate revert exits 0 with "no migrations available to revert" when
+          # there is nothing left — the while loop would spin forever. Break on that
+          # message explicitly.
+          while true; do
+            result=$(DATABASE_URL=postgres://altair_user:change_me_in_production@localhost:5432/altair_db \
+              sqlx migrate revert --source infra/migrations 2>&1)
+            echo "$result"
+            echo "$result" | grep -qi "no migrations available to revert" && break
+            echo "$result" | grep -qi "error" && exit 1
+          done
           COUNT=$(PGPASSWORD=change_me_in_production psql -h localhost -U altair_user altair_db -tAc \
             "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_name != '_sqlx_migrations'")
           [ "$COUNT" -eq 0 ] || (echo "FAIL: tables remain after rollback" && exit 1)
