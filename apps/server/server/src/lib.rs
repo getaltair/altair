@@ -13,6 +13,7 @@ pub mod core;
 pub mod db;
 pub mod error;
 pub mod guidance;
+pub mod knowledge;
 pub mod routes;
 pub mod sync;
 
