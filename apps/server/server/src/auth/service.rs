@@ -249,8 +249,7 @@ mod tests {
         let household_id = Uuid::new_v4();
 
         let token =
-            issue_access_token(user_id, "user@example.com", vec![household_id], &enc_key)
-                .unwrap();
+            issue_access_token(user_id, "user@example.com", vec![household_id], &enc_key).unwrap();
         assert!(!token.is_empty());
 
         let mut validation = Validation::new(Algorithm::RS256);
@@ -391,21 +390,26 @@ mod tests {
         let result = rotate_refresh_token(&pool, raw_token, &enc_key).await;
 
         let token_response = result.expect("Expected Ok(TokenResponse) for valid token");
-        assert!(!token_response.access_token.is_empty(), "access_token must not be empty");
-        assert!(!token_response.refresh_token.is_empty(), "refresh_token must not be empty");
+        assert!(
+            !token_response.access_token.is_empty(),
+            "access_token must not be empty"
+        );
+        assert!(
+            !token_response.refresh_token.is_empty(),
+            "refresh_token must not be empty"
+        );
         assert_ne!(
             token_response.refresh_token, raw_token,
             "New refresh token must differ from old"
         );
 
         // Assert the old token is now revoked in the DB.
-        let revoked_at: Option<chrono::DateTime<Utc>> = sqlx::query_scalar(
-            "SELECT revoked_at FROM refresh_tokens WHERE token_hash = $1",
-        )
-        .bind(&token_hash)
-        .fetch_one(&pool)
-        .await
-        .expect("Old token must still exist in DB");
+        let revoked_at: Option<chrono::DateTime<Utc>> =
+            sqlx::query_scalar("SELECT revoked_at FROM refresh_tokens WHERE token_hash = $1")
+                .bind(&token_hash)
+                .fetch_one(&pool)
+                .await
+                .expect("Old token must still exist in DB");
 
         assert!(
             revoked_at.is_some(),

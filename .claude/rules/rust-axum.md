@@ -37,6 +37,7 @@ Every domain module contains:
 - No `unwrap()` in production code; use `?`, `expect()` with message, or explicit match
 - No `panic!()` or `unreachable!()` outside of tests
 - Map `sqlx::Error` via `anyhow::Error::from(e)`, **never** `.to_string()` — `.to_string()` flattens the error chain and leaks schema detail (table/constraint names) into logs. Prefer `impl From<sqlx::Error> for AppError` to eliminate boilerplate and preserve the full error chain.
+- **Never** write `.map_err(|e| AppError::Internal(anyhow::Error::from(e)))` inline. Add `impl From<sqlx::Error> for AppError` once per crate (in `error.rs`) and use `?` directly. The inline form appeared ~40 times in the sync module — it is a maintenance hazard and obscures intent.
 
 ## Safety
 

@@ -1,4 +1,4 @@
-use altair_server::{auth, build_app_state, config, core, db, routes};
+use altair_server::{auth, build_app_state, config, core, db, routes, sync};
 use anyhow::Context;
 use axum::Router;
 use tracing::info;
@@ -41,6 +41,7 @@ async fn main() -> anyhow::Result<()> {
         .merge(core::initiatives::router())
         .merge(core::tags::router())
         .merge(core::relations::router())
+        .merge(sync::router())
         .merge(routes::router().with_state(()))
         .with_state(app_state);
 

@@ -167,6 +167,6 @@ cd apps/server && cargo run
 
 ## Active Work
 
-- **Feature:** Feature 003 Server Core — complete
-- **Status:** Implementation done. Auth endpoints live at `POST /api/auth/register`, `POST /api/auth/login`. Web login at `/auth/login`.
-- **Next:** Feature 004 Sync Engine
+- **Feature:** Feature 004 Sync Engine — complete
+- **Status:** Implementation done. PowerSync integration wired end-to-end across server, web, and Android clients.
+- **Next:** Feature 005 Guidance Domain (or 006/007 per parallel track)

@@ -1,6 +1,8 @@
 # PowerSync Service Configuration
 # Credentials are injected via environment variables from .env
-# Sync rules are defined in apps/web/src/lib/sync/schema.ts
+
+sync_rules:
+  path: ./sync_rules.yaml
 
 replication:
   connections:
