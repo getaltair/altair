@@ -170,5 +170,8 @@ cd apps/server && cargo run
 - **Feature:** Feature 004 Sync Engine — complete
 - **Status:** Implementation done. PowerSync integration wired end-to-end across server, web, and Android clients.
 
-- **Feature:** Feature 005 Guidance Domain — in progress
-- **Status:** Implementation underway. Building quests, routines, epics, focus sessions, and daily check-ins across server, web, and Android clients.
+- **Feature:** Feature 005 Guidance Domain — complete
+- **Status:** Quests, routines, epics, focus sessions, and daily check-ins implemented across server, web, and Android clients.
+
+- **Feature:** Feature 007 Tracking Domain — in progress
+- **Status:** Server implementation in progress. Module path: `apps/server/src/tracking/`

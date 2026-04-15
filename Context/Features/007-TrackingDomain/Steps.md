@@ -4,9 +4,9 @@
 **Tech:** Context/Features/007-TrackingDomain/Tech.md
 
 ## Progress
-- **Status:** Not started
+- **Status:** Complete
 - **Current task:** --
-- **Last milestone:** --
+- **Last milestone:** Milestone 6 — Feature complete (2026-04-15)
 
 ## Team Orchestration
 
@@ -208,7 +208,7 @@
   - **Depends:** S008
   - **Parallel:** false
 
-- [ ] S010: Full validation pass — run all tracking integration tests, clippy, fmt
+- [x] S010: Full validation pass — run all tracking integration tests, clippy, fmt
   - **Assigned:** validator
   - **Depends:** S008-T, S009-D
   - **Parallel:** false
