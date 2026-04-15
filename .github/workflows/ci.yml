@@ -55,7 +55,7 @@ jobs:
           SQLX_OFFLINE: "true"
 
       - name: Install sqlx-cli
-        run: cargo install sqlx-cli --no-default-features --features postgres
+        run: cargo install sqlx-cli --version 0.8.3 --no-default-features --features postgres
 
       - name: Check sqlx offline cache
         run: cargo sqlx prepare --check --workspace
@@ -169,7 +169,7 @@ jobs:
             ${{ runner.os }}-cargo-
 
       - name: Install sqlx-cli
-        run: cargo install sqlx-cli --no-default-features --features postgres
+        run: cargo install sqlx-cli --version 0.8.3 --no-default-features --features postgres
 
       - name: Create .env from example
         run: cp .env.example .env
@@ -220,6 +220,7 @@ jobs:
       - name: Start server and check health (FA-S1)
         run: |
           JWT_KEY=$(openssl genrsa 2048 | base64 -w0)
+          [ -z "$JWT_KEY" ] && { echo "FAIL: JWT key generation failed"; exit 1; }
           DATABASE_URL=postgres://altair_user:change_me_in_production@localhost:5432/altair_db \
             BIND_ADDR=0.0.0.0:8000 \
             JWT_PRIVATE_KEY=$JWT_KEY \
@@ -235,13 +236,18 @@ jobs:
         run: |
           # sqlx migrate revert exits 0 with "no migrations available to revert" when
           # there is nothing left — the while loop would spin forever. Break on that
-          # message explicitly.
+          # message explicitly. Cap at 35 iterations (there are 29 migrations) so a
+          # rewording of the terminal message can never produce a 6-hour hang.
+          # Check exit status rather than grepping stdout for "error" to avoid false
+          # positives on migration names that contain the word (e.g. add_error_codes_table).
+          REVERTS=0; MAX_REVERTS=35
           while true; do
-            result=$(DATABASE_URL=postgres://altair_user:change_me_in_production@localhost:5432/altair_db \
-              sqlx migrate revert --source infra/migrations 2>&1)
-            echo "$result"
-            echo "$result" | grep -qi "no migrations available to revert" && break
-            echo "$result" | grep -qi "error" && exit 1
+            [ "$REVERTS" -ge "$MAX_REVERTS" ] && { echo "FAIL: exceeded $MAX_REVERTS revert iterations"; exit 1; }
+            output=$(DATABASE_URL=postgres://altair_user:change_me_in_production@localhost:5432/altair_db \
+              sqlx migrate revert --source infra/migrations 2>&1); STATUS=$?
+            echo "$output"; REVERTS=$((REVERTS+1))
+            echo "$output" | grep -qi "no migrations available to revert" && break
+            [ "$STATUS" -ne 0 ] && exit 1
           done
           COUNT=$(PGPASSWORD=change_me_in_production psql -h localhost -U altair_user altair_db -tAc \
             "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_name != '_sqlx_migrations'")
