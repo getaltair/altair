@@ -3,20 +3,49 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-/// Client-to-server mutation operation.
+/// The operation-specific fields of a client mutation.
+///
+/// Using a tagged enum makes invalid cross-field states unrepresentable at the serde boundary
+/// (e.g. `base_version` cannot be sent on a Create, and `payload` is required for Create/Update).
+///
+/// The `"operation"` field in the JSON wire format acts as the discriminant tag, so the
+/// shape is identical to the previous flat struct:
+///   `{ "operation": "update", "payload": {...}, "base_version": "..." }`
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum Operation {
-    Create,
-    Update,
-    Delete,
+#[serde(tag = "operation", rename_all = "snake_case")]
+pub enum MutationPayload {
+    /// Create a new entity. `payload` holds the full entity state.
+    Create {
+        /// Full entity state. Required for creates.
+        payload: Option<serde_json::Value>,
+    },
+    /// Update an existing entity. `base_version` is the client's last-known `updated_at`.
+    Update {
+        /// Updated entity fields. Required for updates.
+        payload: Option<serde_json::Value>,
+        /// Client's last-known `updated_at`. Null triggers LWW fallback.
+        base_version: Option<DateTime<Utc>>,
+    },
+    /// Soft-delete an existing entity. No payload needed.
+    Delete {},
+}
+
+impl MutationPayload {
+    /// Returns the canonical lowercase operation string for use in SQL and logs.
+    pub fn operation_str(&self) -> &'static str {
+        match self {
+            MutationPayload::Create { .. } => "create",
+            MutationPayload::Update { .. } => "update",
+            MutationPayload::Delete { .. } => "delete",
+        }
+    }
 }
 
 /// A single client mutation packaged for upload to the server.
 ///
-/// Clients include their last-known `updated_at` for an entity as `base_version`.
-/// The server compares this against the row's current `updated_at` to detect conflicts.
-/// `base_version` is null for create operations.
+/// The operation, payload, and base_version are encoded in the `operation` field
+/// via `MutationPayload`. This makes invalid cross-field states (e.g. `base_version`
+/// on a Create) unrepresentable at the serde boundary.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MutationEnvelope {
     /// Client-generated stable UUID for this mutation; used for idempotent dedup (invariant S-2).
@@ -27,12 +56,10 @@ pub struct MutationEnvelope {
     pub entity_type: EntityType,
     /// Target entity UUID.
     pub entity_id: Uuid,
-    /// Create, update, or delete.
-    pub operation: Operation,
-    /// Full entity state for create/update; null for delete.
-    pub payload: Option<serde_json::Value>,
-    /// Client's last-known `updated_at` for this entity. Null on create.
-    pub base_version: Option<DateTime<Utc>>,
+    /// Operation with its associated fields (create/update/delete).
+    /// Flattened into the JSON object so the wire format is unchanged.
+    #[serde(flatten)]
+    pub operation: MutationPayload,
     /// Client wall-clock time of the mutation; used for LWW tiebreaking.
     pub occurred_at: DateTime<Utc>,
 }
@@ -133,6 +160,31 @@ pub struct ConflictListResponse {
     pub next_cursor: Option<Uuid>,
 }
 
+/// Lifecycle status of a conflict row in `sync_conflicts`.
+///
+/// Replaces raw `'pending'` / `'accepted'` / `'rejected'` / `'conflict_copy'`
+/// string literals so typos are caught at compile time rather than silently
+/// producing wrong SQL results.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ConflictStatus {
+    Pending,
+    Accepted,
+    Rejected,
+    ConflictCopy,
+}
+
+impl ConflictStatus {
+    /// Returns the canonical lowercase string used in SQL and audit trails.
+    pub fn as_str(self) -> &'static str {
+        match self {
+            ConflictStatus::Pending => "pending",
+            ConflictStatus::Accepted => "accepted",
+            ConflictStatus::Rejected => "rejected",
+            ConflictStatus::ConflictCopy => "conflict_copy",
+        }
+    }
+}
+
 /// Resolution decision for a conflict.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -161,19 +213,40 @@ mod tests {
     use super::*;
 
     #[test]
-    fn operation_serializes_to_snake_case() {
+    fn mutation_payload_operation_str() {
         assert_eq!(
-            serde_json::to_string(&Operation::Create).unwrap(),
-            r#""create""#
+            MutationPayload::Create { payload: None }.operation_str(),
+            "create"
         );
         assert_eq!(
-            serde_json::to_string(&Operation::Update).unwrap(),
-            r#""update""#
+            MutationPayload::Update {
+                payload: None,
+                base_version: None
+            }
+            .operation_str(),
+            "update"
         );
-        assert_eq!(
-            serde_json::to_string(&Operation::Delete).unwrap(),
-            r#""delete""#
-        );
+        assert_eq!(MutationPayload::Delete {}.operation_str(), "delete");
+    }
+
+    #[test]
+    fn mutation_payload_serializes_with_operation_discriminant() {
+        let create = MutationPayload::Create {
+            payload: Some(serde_json::json!({ "title": "t" })),
+        };
+        let json: serde_json::Value = serde_json::to_value(&create).unwrap();
+        assert_eq!(json["operation"], "create");
+
+        let update = MutationPayload::Update {
+            payload: None,
+            base_version: None,
+        };
+        let json: serde_json::Value = serde_json::to_value(&update).unwrap();
+        assert_eq!(json["operation"], "update");
+
+        let delete = MutationPayload::Delete {};
+        let json: serde_json::Value = serde_json::to_value(&delete).unwrap();
+        assert_eq!(json["operation"], "delete");
     }
 
     #[test]
@@ -218,14 +291,47 @@ mod tests {
             device_id: Uuid::nil(),
             entity_type: EntityType::KnowledgeNote,
             entity_id: Uuid::nil(),
-            operation: Operation::Update,
-            payload: Some(serde_json::json!({ "title": "test" })),
-            base_version: None,
+            operation: MutationPayload::Update {
+                payload: Some(serde_json::json!({ "title": "test" })),
+                base_version: None,
+            },
             occurred_at: DateTime::from_timestamp(0, 0).unwrap(),
         };
         let json = serde_json::to_string(&envelope).unwrap();
         let parsed: MutationEnvelope = serde_json::from_str(&json).unwrap();
         assert_eq!(parsed.mutation_id, envelope.mutation_id);
-        assert!(parsed.base_version.is_none());
+        // Verify the operation field round-tripped as "update".
+        let json_val: serde_json::Value = serde_json::from_str(&json).unwrap();
+        assert_eq!(json_val["operation"], "update");
+    }
+
+    #[test]
+    fn create_envelope_deserializes_from_wire_json() {
+        // Wire format: operation discriminant flattened into the outer object.
+        let wire = serde_json::json!({
+            "mutation_id": "00000000-0000-0000-0000-000000000001",
+            "device_id": "00000000-0000-0000-0000-000000000002",
+            "entity_type": "knowledge_note",
+            "entity_id": "00000000-0000-0000-0000-000000000003",
+            "operation": "create",
+            "payload": { "title": "Hello" },
+            "occurred_at": "1970-01-01T00:00:00Z"
+        });
+        let envelope: MutationEnvelope = serde_json::from_value(wire).unwrap();
+        assert!(matches!(envelope.operation, MutationPayload::Create { .. }));
+    }
+
+    #[test]
+    fn delete_envelope_deserializes_without_payload() {
+        let wire = serde_json::json!({
+            "mutation_id": "00000000-0000-0000-0000-000000000001",
+            "device_id": "00000000-0000-0000-0000-000000000002",
+            "entity_type": "knowledge_note",
+            "entity_id": "00000000-0000-0000-0000-000000000003",
+            "operation": "delete",
+            "occurred_at": "1970-01-01T00:00:00Z"
+        });
+        let envelope: MutationEnvelope = serde_json::from_value(wire).unwrap();
+        assert!(matches!(envelope.operation, MutationPayload::Delete {}));
     }
 }

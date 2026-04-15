@@ -31,10 +31,10 @@ pub async fn create_tag(pool: &PgPool, user_id: Uuid, name: String) -> Result<Ta
     .await
     .map_err(|e| {
         // Postgres unique violation error code is 23505
-        if let sqlx::Error::Database(ref db_err) = e {
-            if db_err.code().as_deref() == Some("23505") {
-                return AppError::Conflict("Tag name already exists".to_string());
-            }
+        if let sqlx::Error::Database(ref db_err) = e
+            && db_err.code().as_deref() == Some("23505")
+        {
+            return AppError::Conflict("Tag name already exists".to_string());
         }
         AppError::Internal(anyhow::anyhow!(e.to_string()))
     })?;

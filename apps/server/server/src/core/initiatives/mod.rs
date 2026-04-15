@@ -6,7 +6,7 @@ use crate::AppState;
 use axum::Router;
 
 pub fn router() -> Router<AppState> {
-    use axum::routing::{delete, get, patch, post};
+    use axum::routing::get;
     Router::new()
         .route(
             "/api/initiatives",

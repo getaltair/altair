@@ -6,7 +6,9 @@ use uuid::Uuid;
 use crate::auth::models::AuthUser;
 use crate::contracts::EntityType;
 use crate::error::AppError;
-use crate::sync::models::{MutationEnvelope, MutationResult, MutationStatus, Operation};
+use crate::sync::models::{
+    ConflictStatus, MutationEnvelope, MutationPayload, MutationResult, MutationStatus,
+};
 
 // ---------------------------------------------------------------------------
 // S007: ConflictOutcome
@@ -305,7 +307,11 @@ pub async fn check_create_allowed(
         let household_id_str = payload
             .and_then(|p| p.get("household_id"))
             .and_then(|v| v.as_str())
-            .ok_or_else(|| AppError::BadRequest("household_id required for household-scoped create".to_string()))?;
+            .ok_or_else(|| {
+                AppError::BadRequest(
+                    "household_id required for household-scoped create".to_string(),
+                )
+            })?;
         let household_id = Uuid::parse_str(household_id_str)
             .map_err(|_| AppError::BadRequest("household_id must be a valid UUID".to_string()))?;
 
@@ -429,21 +435,20 @@ async fn try_record_sync_mutation(
     envelope: &MutationEnvelope,
     user_id: Uuid,
 ) -> Result<Option<(Uuid,)>, AppError> {
-    // Serialize entity_type and operation to their canonical string forms.
-    let entity_type_str = serde_json::to_value(&envelope.entity_type)
+    // Serialize entity_type to its canonical string form; operation uses the typed method.
+    let entity_type_str = serde_json::to_value(envelope.entity_type)
         .map_err(|e| {
-            warn!("failed to serialize entity_type {:?}: {e}", envelope.entity_type);
+            warn!(
+                "failed to serialize entity_type {:?}: {e}",
+                envelope.entity_type
+            );
             AppError::Internal(anyhow::anyhow!("entity_type serialization failed: {e}"))
         })?
         .as_str()
         .ok_or_else(|| AppError::Internal(anyhow::anyhow!("entity_type serialized to non-string")))?
         .to_owned();
 
-    let operation_str = serde_json::to_value(&envelope.operation)
-        .map_err(|e| AppError::Internal(anyhow::anyhow!("operation serialization failed: {e}")))?
-        .as_str()
-        .ok_or_else(|| AppError::Internal(anyhow::anyhow!("operation serialized to non-string")))?
-        .to_owned();
+    let operation_str = envelope.operation.operation_str();
 
     let row: Option<(Uuid,)> = sqlx::query_as(
         "INSERT INTO sync_mutations \
@@ -455,9 +460,9 @@ async fn try_record_sync_mutation(
     .bind(envelope.mutation_id)
     .bind(envelope.device_id)
     .bind(user_id)
-    .bind(&entity_type_str)
+    .bind(entity_type_str)
     .bind(envelope.entity_id)
-    .bind(&operation_str)
+    .bind(operation_str)
     .fetch_optional(tx.as_mut())
     .await
     .map_err(|e| AppError::Internal(anyhow::Error::from(e)))?;
@@ -529,22 +534,24 @@ pub async fn create_conflict_copy(
 
     // 3. Record sync_conflicts row with resolution = "conflict_copy".
     let current_payload: Option<serde_json::Value> = None; // caller can pass if needed
-    sqlx::query(
+    let sql = format!(
         "INSERT INTO sync_conflicts \
          (mutation_id, entity_type, entity_id, base_version, current_version, \
           incoming_payload, current_payload, resolution, user_id) \
-         VALUES ($1, 'knowledge_note', $2, $3, $4, $5, $6, 'conflict_copy', $7)",
-    )
-    .bind(mutation_id)
-    .bind(original_entity_id)
-    .bind(base_version)
-    .bind(current_version)
-    .bind(payload)
-    .bind(current_payload)
-    .bind(user_id)
-    .execute(tx.as_mut())
-    .await
-    .map_err(|e| AppError::Internal(anyhow::Error::from(e)))?;
+         VALUES ($1, 'knowledge_note', $2, $3, $4, $5, $6, '{}', $7)",
+        ConflictStatus::ConflictCopy.as_str()
+    );
+    sqlx::query(&sql)
+        .bind(mutation_id)
+        .bind(original_entity_id)
+        .bind(base_version)
+        .bind(current_version)
+        .bind(payload)
+        .bind(current_payload)
+        .bind(user_id)
+        .execute(tx.as_mut())
+        .await
+        .map_err(|e| AppError::Internal(anyhow::Error::from(e)))?;
 
     Ok(new_id)
 }
@@ -558,6 +565,18 @@ pub async fn create_conflict_copy(
 /// Each mutation is processed independently within its own transaction.
 /// Returns a per-mutation result. Returns Err on unrecoverable errors
 /// (e.g., Forbidden ownership violation or quantity conflict).
+///
+/// # Partial-commit semantics (P5-015)
+///
+/// Mutations are processed one at a time. Each successful mutation is committed
+/// before the next one starts. If a later mutation fails (e.g., Forbidden), the
+/// function returns `Err` immediately — but all earlier mutations in the batch
+/// are already durably committed. Callers receive the error status code (e.g.,
+/// 403) even though some rows from that same batch may have been written.
+///
+/// Clients should not rely on all-or-nothing batch atomicity. If a partial
+/// failure matters, submit mutations in separate requests or ensure the batch
+/// is ordered so dependent mutations come first.
 pub async fn apply_mutations(
     db: &PgPool,
     mutations: Vec<MutationEnvelope>,
@@ -584,8 +603,8 @@ async fn process_single_mutation(
     // Step 1: Authorization check.
     // Create: verify the entity type is creatable via sync and household membership (ADR-018).
     // Update/Delete: verify the existing row is owned by auth_user.
-    if matches!(envelope.operation, Operation::Create) {
-        check_create_allowed(db, &envelope.entity_type, envelope.payload.as_ref(), auth_user).await?;
+    if let MutationPayload::Create { payload } = &envelope.operation {
+        check_create_allowed(db, &envelope.entity_type, payload.as_ref(), auth_user).await?;
     } else {
         check_ownership(db, &envelope.entity_type, envelope.entity_id, auth_user).await?;
     }
@@ -598,7 +617,8 @@ async fn process_single_mutation(
 
     // Step 3: Atomic dedup — attempt to record the mutation. If the mutation_id
     // already exists, DO NOTHING is triggered and RETURNING yields no row → Deduplicated.
-    let dedup_row: Option<(Uuid,)> = try_record_sync_mutation(&mut tx, &envelope, auth_user.user_id).await?;
+    let dedup_row: Option<(Uuid,)> =
+        try_record_sync_mutation(&mut tx, &envelope, auth_user.user_id).await?;
     if dedup_row.is_none() {
         tx.commit()
             .await
@@ -639,9 +659,14 @@ async fn dispatch_mutation(
     auth_user: &AuthUser,
 ) -> Result<MutationStatus, AppError> {
     match &envelope.operation {
-        Operation::Create => apply_create(tx, envelope, auth_user).await,
-        Operation::Update => apply_update(tx, envelope, auth_user).await,
-        Operation::Delete => apply_delete(tx, envelope).await,
+        MutationPayload::Create { payload } => {
+            apply_create(tx, envelope, payload.as_ref(), auth_user).await
+        }
+        MutationPayload::Update {
+            payload,
+            base_version,
+        } => apply_update(tx, envelope, payload.as_ref(), *base_version, auth_user).await,
+        MutationPayload::Delete {} => apply_delete(tx, envelope).await,
     }
 }
 
@@ -652,6 +677,7 @@ async fn dispatch_mutation(
 async fn apply_create(
     tx: &mut Transaction<'_, Postgres>,
     envelope: &MutationEnvelope,
+    payload: Option<&serde_json::Value>,
     auth_user: &AuthUser,
 ) -> Result<MutationStatus, AppError> {
     let table = entity_type_to_table(&envelope.entity_type);
@@ -689,7 +715,7 @@ async fn apply_create(
         &envelope.entity_type,
         envelope.entity_id,
         auth_user.user_id,
-        envelope.payload.as_ref(),
+        payload,
     )
     .await?;
 
@@ -712,7 +738,9 @@ async fn insert_from_payload(
     // P5-009: require a JSON object; reject arrays and null.
     let payload_obj = match payload {
         None => {
-            return Err(AppError::BadRequest("Create payload must be a JSON object".to_string()));
+            return Err(AppError::BadRequest(
+                "Create payload must be a JSON object".to_string(),
+            ));
         }
         Some(p) => p.as_object().ok_or_else(|| {
             AppError::BadRequest("Create payload must be a JSON object".to_string())
@@ -737,7 +765,14 @@ async fn insert_from_payload(
 
     let allow = allowed_columns(entity_type);
     // Server-controlled columns must never come from the payload.
-    let excluded: &[&str] = &["id", "user_id", "created_at", "updated_at", "deleted_at", "household_id"];
+    let excluded: &[&str] = &[
+        "id",
+        "user_id",
+        "created_at",
+        "updated_at",
+        "deleted_at",
+        "household_id",
+    ];
 
     // id is always first; user_id second for user-scoped tables.
     let mut columns: Vec<String> = vec!["id".to_owned()];
@@ -818,6 +853,8 @@ fn bind_json_value<'q>(
 async fn apply_update(
     tx: &mut Transaction<'_, Postgres>,
     envelope: &MutationEnvelope,
+    payload: Option<&serde_json::Value>,
+    base_version: Option<DateTime<Utc>>,
     auth_user: &AuthUser,
 ) -> Result<MutationStatus, AppError> {
     // TrackingItemEvent is append-only: no updated_at. Conflict detection is
@@ -825,13 +862,11 @@ async fn apply_update(
     if matches!(envelope.entity_type, EntityType::TrackingItemEvent) {
         // S009: Check quantity conflict before accepting.
         // Conflict detection is bypassed (no updated_at), so we always hit quantity check.
-        if let Some(payload) = &envelope.payload {
-            if check_quantity_conflict(payload) {
-                // Per S009: reject with Conflict so the client re-reads and resubmits.
-                return Err(AppError::Conflict(
-                    "quantity conflict — re-read and resubmit".to_string(),
-                ));
-            }
+        if payload.is_some_and(check_quantity_conflict) {
+            // Per S009: reject with Conflict so the client re-reads and resubmit.
+            return Err(AppError::Conflict(
+                "quantity conflict — re-read and resubmit".to_string(),
+            ));
         }
         // No conflict check possible; apply LWW accept.
         // For append-only tables, "update" semantics are not applicable.
@@ -851,34 +886,42 @@ async fn apply_update(
         tx,
         &envelope.entity_type,
         envelope.entity_id,
-        envelope.base_version,
+        base_version,
         envelope.occurred_at,
     )
     .await?;
 
+    let owned_payload = payload.cloned();
     match outcome {
         ConflictOutcome::Clean => {
             // No conflict; apply the update.
-            apply_update_to_table(tx, &envelope.entity_type, envelope.entity_id, &envelope.payload).await?;
+            apply_update_to_table(
+                tx,
+                &envelope.entity_type,
+                envelope.entity_id,
+                &owned_payload,
+            )
+            .await?;
             Ok(MutationStatus::Accepted)
         }
 
         ConflictOutcome::Accepted { current_payload } => {
             // LWW: incoming wins. For KnowledgeNote, create a conflict copy instead.
             if matches!(envelope.entity_type, EntityType::KnowledgeNote) {
-                let payload = envelope.payload.as_ref().ok_or_else(|| {
+                let p = payload.ok_or_else(|| {
                     AppError::BadRequest(
                         "KnowledgeNote update conflict requires a non-null payload".to_string(),
                     )
                 })?;
-                let current_version = parse_updated_at_from_payload(&current_payload, envelope.entity_id);
+                let current_version =
+                    parse_updated_at_from_payload(&current_payload, envelope.entity_id);
                 let conflict_id = create_conflict_copy(
                     tx,
                     envelope.entity_id,
-                    payload,
+                    p,
                     auth_user.user_id,
                     envelope.mutation_id,
-                    envelope.base_version,
+                    base_version,
                     Some(current_version),
                 )
                 .await?;
@@ -886,9 +929,22 @@ async fn apply_update(
             }
 
             // General LWW: log conflict, apply incoming mutation.
-            let conflict_id =
-                record_conflict_row(tx, envelope, &current_payload, auth_user.user_id).await?;
-            apply_update_to_table(tx, &envelope.entity_type, envelope.entity_id, &envelope.payload).await?;
+            let conflict_id = record_conflict_row(
+                tx,
+                envelope,
+                base_version,
+                &owned_payload,
+                &current_payload,
+                auth_user.user_id,
+            )
+            .await?;
+            apply_update_to_table(
+                tx,
+                &envelope.entity_type,
+                envelope.entity_id,
+                &owned_payload,
+            )
+            .await?;
             Ok(MutationStatus::Conflicted { conflict_id })
         }
 
@@ -896,19 +952,20 @@ async fn apply_update(
             // For KnowledgeNote: still create a conflict copy even when rejected
             // (the spec says "instead of LWW, create a new note row").
             if matches!(envelope.entity_type, EntityType::KnowledgeNote) {
-                let payload = envelope.payload.as_ref().ok_or_else(|| {
+                let p = payload.ok_or_else(|| {
                     AppError::BadRequest(
                         "KnowledgeNote update conflict requires a non-null payload".to_string(),
                     )
                 })?;
-                let current_version = parse_updated_at_from_payload(&current_payload, envelope.entity_id);
+                let current_version =
+                    parse_updated_at_from_payload(&current_payload, envelope.entity_id);
                 let conflict_id = create_conflict_copy(
                     tx,
                     envelope.entity_id,
-                    payload,
+                    p,
                     auth_user.user_id,
                     envelope.mutation_id,
-                    envelope.base_version,
+                    base_version,
                     Some(current_version),
                 )
                 .await?;
@@ -916,8 +973,15 @@ async fn apply_update(
             }
 
             // General LWW reject: log conflict, do NOT apply the update.
-            let conflict_id =
-                record_conflict_row(tx, envelope, &current_payload, auth_user.user_id).await?;
+            let conflict_id = record_conflict_row(
+                tx,
+                envelope,
+                base_version,
+                &owned_payload,
+                &current_payload,
+                auth_user.user_id,
+            )
+            .await?;
             Ok(MutationStatus::Conflicted { conflict_id })
         }
     }
@@ -966,14 +1030,36 @@ pub(crate) fn allowed_columns(entity_type: &EntityType) -> &'static [&'static st
         EntityType::Tag => &["name", "color"],
         EntityType::Attachment => &["file_name", "mime_type", "size_bytes", "storage_key"],
         EntityType::GuidanceEpic => &["title", "description", "status", "initiative_id"],
-        EntityType::GuidanceQuest => &["title", "description", "status", "epic_id", "initiative_id", "due_date"],
+        EntityType::GuidanceQuest => &[
+            "title",
+            "description",
+            "status",
+            "epic_id",
+            "initiative_id",
+            "due_date",
+        ],
         EntityType::GuidanceRoutine => &["title", "description", "frequency", "status"],
-        EntityType::GuidanceFocusSession => &["title", "notes", "quest_id", "started_at", "ended_at", "duration_seconds"],
+        EntityType::GuidanceFocusSession => &[
+            "title",
+            "notes",
+            "quest_id",
+            "started_at",
+            "ended_at",
+            "duration_seconds",
+        ],
         EntityType::GuidanceDailyCheckin => &["mood", "notes", "checkin_date"],
         EntityType::KnowledgeNote => &["title", "content", "initiative_id"],
         EntityType::TrackingLocation => &["name", "description"],
         EntityType::TrackingCategory => &["name", "description", "color"],
-        EntityType::TrackingItem => &["name", "description", "category_id", "location_id", "quantity", "unit", "low_threshold"],
+        EntityType::TrackingItem => &[
+            "name",
+            "description",
+            "category_id",
+            "location_id",
+            "quantity",
+            "unit",
+            "low_threshold",
+        ],
         EntityType::TrackingItemEvent => &["quantity", "consumed_quantity", "notes", "event_date"],
         EntityType::TrackingShoppingList => &["name", "notes", "status"],
         EntityType::TrackingShoppingListItem => &["name", "quantity", "unit", "is_checked"],
@@ -1044,6 +1130,8 @@ async fn apply_update_to_table(
 async fn record_conflict_row(
     tx: &mut Transaction<'_, Postgres>,
     envelope: &MutationEnvelope,
+    base_version: Option<DateTime<Utc>>,
+    incoming_payload: &Option<serde_json::Value>,
     current_payload: &serde_json::Value,
     user_id: Uuid,
 ) -> Result<Uuid, AppError> {
@@ -1053,33 +1141,38 @@ async fn record_conflict_row(
         .and_then(|v| v.as_str())
         .and_then(|s| s.parse::<DateTime<Utc>>().ok());
 
-    let entity_type_str = serde_json::to_value(&envelope.entity_type)
+    let entity_type_str = serde_json::to_value(envelope.entity_type)
         .map_err(|e| {
-            warn!("failed to serialize entity_type {:?}: {e}", envelope.entity_type);
+            warn!(
+                "failed to serialize entity_type {:?}: {e}",
+                envelope.entity_type
+            );
             AppError::Internal(anyhow::anyhow!("entity_type serialization failed: {e}"))
         })?
         .as_str()
         .ok_or_else(|| AppError::Internal(anyhow::anyhow!("entity_type serialized to non-string")))?
         .to_owned();
 
-    let row: (Uuid,) = sqlx::query_as(
+    let sql = format!(
         "INSERT INTO sync_conflicts \
          (mutation_id, entity_type, entity_id, base_version, current_version, \
           incoming_payload, current_payload, resolution, user_id) \
-         VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending', $8) \
+         VALUES ($1, $2, $3, $4, $5, $6, $7, '{}', $8) \
          RETURNING id",
-    )
-    .bind(envelope.mutation_id)
-    .bind(&entity_type_str)
-    .bind(envelope.entity_id)
-    .bind(envelope.base_version)
-    .bind(current_version)
-    .bind(&envelope.payload)
-    .bind(current_payload)
-    .bind(user_id)
-    .fetch_one(tx.as_mut())
-    .await
-    .map_err(|e| AppError::Internal(anyhow::Error::from(e)))?;
+        ConflictStatus::Pending.as_str()
+    );
+    let row: (Uuid,) = sqlx::query_as(&sql)
+        .bind(envelope.mutation_id)
+        .bind(&entity_type_str)
+        .bind(envelope.entity_id)
+        .bind(base_version)
+        .bind(current_version)
+        .bind(incoming_payload)
+        .bind(current_payload)
+        .bind(user_id)
+        .fetch_one(tx.as_mut())
+        .await
+        .map_err(|e| AppError::Internal(anyhow::Error::from(e)))?;
 
     Ok(row.0)
 }
@@ -1142,51 +1235,54 @@ pub async fn list_conflicts(
     let rows: Vec<ConflictRow> = if let Some(cursor_id) = cursor {
         // Stable tuple cursor: fetch the anchor's (created_at, id) so that resolving
         // the cursor row does not collapse the next page to empty (P5-023).
-        let anchor: Option<(DateTime<Utc>, Uuid)> = sqlx::query_as(
-            "SELECT created_at, id FROM sync_conflicts WHERE id = $1",
-        )
-        .bind(cursor_id)
-        .fetch_optional(db)
-        .await
-        .map_err(|e| AppError::Internal(anyhow::Error::from(e)))?;
+        let anchor: Option<(DateTime<Utc>, Uuid)> =
+            sqlx::query_as("SELECT created_at, id FROM sync_conflicts WHERE id = $1")
+                .bind(cursor_id)
+                .fetch_optional(db)
+                .await
+                .map_err(|e| AppError::Internal(anyhow::Error::from(e)))?;
 
         match anchor {
             None => vec![],
             Some((anchor_created_at, anchor_id)) => {
-                sqlx::query_as(
+                let sql = format!(
                     "SELECT id, entity_type, entity_id, base_version, current_version, \
                      incoming_payload, current_payload, created_at \
                      FROM sync_conflicts \
                      WHERE user_id = $1 \
-                       AND resolution = 'pending' \
+                       AND resolution = '{}' \
                        AND (created_at, id) < ($2, $3) \
                      ORDER BY created_at DESC, id DESC \
                      LIMIT $4",
-                )
-                .bind(user_id)
-                .bind(anchor_created_at)
-                .bind(anchor_id)
-                .bind(limit_i64)
-                .fetch_all(db)
-                .await
-                .map_err(|e| AppError::Internal(anyhow::Error::from(e)))?
+                    ConflictStatus::Pending.as_str()
+                );
+                sqlx::query_as(&sql)
+                    .bind(user_id)
+                    .bind(anchor_created_at)
+                    .bind(anchor_id)
+                    .bind(limit_i64)
+                    .fetch_all(db)
+                    .await
+                    .map_err(|e| AppError::Internal(anyhow::Error::from(e)))?
             }
         }
     } else {
-        sqlx::query_as(
+        let sql = format!(
             "SELECT id, entity_type, entity_id, base_version, current_version, \
              incoming_payload, current_payload, created_at \
              FROM sync_conflicts \
              WHERE user_id = $1 \
-               AND resolution = 'pending' \
+               AND resolution = '{}' \
              ORDER BY created_at DESC, id DESC \
              LIMIT $2",
-        )
-        .bind(user_id)
-        .bind(limit_i64)
-        .fetch_all(db)
-        .await
-        .map_err(|e| AppError::Internal(anyhow::Error::from(e)))?
+            ConflictStatus::Pending.as_str()
+        );
+        sqlx::query_as(&sql)
+            .bind(user_id)
+            .bind(limit_i64)
+            .fetch_all(db)
+            .await
+            .map_err(|e| AppError::Internal(anyhow::Error::from(e)))?
     };
 
     let mut records = Vec::with_capacity(rows.len());
@@ -1194,7 +1290,9 @@ pub async fn list_conflicts(
         match crate::sync::models::ConflictRecord::from_row(row) {
             Some(r) => records.push(r),
             None => {
-                warn!("sync_conflicts row for user {user_id} has unrecognized entity_type; skipping");
+                warn!(
+                    "sync_conflicts row for user {user_id} has unrecognized entity_type; skipping"
+                );
             }
         }
     }
@@ -1215,17 +1313,19 @@ pub async fn resolve_conflict(
     resolution: &str,
 ) -> Result<(), AppError> {
     // Only update rows that are still pending (P5-012: prevent re-resolution).
-    let result = sqlx::query(
+    let pending = ConflictStatus::Pending.as_str();
+    let sql = format!(
         "UPDATE sync_conflicts \
          SET resolution = $1, resolved_at = now() \
-         WHERE id = $2 AND user_id = $3 AND resolution = 'pending'",
-    )
-    .bind(resolution)
-    .bind(conflict_id)
-    .bind(user_id)
-    .execute(db)
-    .await
-    .map_err(|e| AppError::Internal(anyhow::Error::from(e)))?;
+         WHERE id = $2 AND user_id = $3 AND resolution = '{pending}'"
+    );
+    let result = sqlx::query(&sql)
+        .bind(resolution)
+        .bind(conflict_id)
+        .bind(user_id)
+        .execute(db)
+        .await
+        .map_err(|e| AppError::Internal(anyhow::Error::from(e)))?;
 
     if result.rows_affected() == 1 {
         return Ok(());
@@ -1242,9 +1342,9 @@ pub async fn resolve_conflict(
     match row {
         None => Err(AppError::NotFound),
         Some((owner_id, _)) if owner_id != user_id => Err(AppError::Forbidden),
-        Some((_, res)) if res != "pending" => Err(AppError::Conflict(format!(
-            "conflict is already {res}"
-        ))),
+        Some((_, res)) if res != ConflictStatus::Pending.as_str() => {
+            Err(AppError::Conflict(format!("conflict is already {res}")))
+        }
         _ => Err(AppError::Internal(anyhow::anyhow!(
             "resolve_conflict: unexpected state for conflict {conflict_id}"
         ))),
@@ -1260,7 +1360,7 @@ mod tests {
     use super::*;
     use crate::auth::models::AuthUser;
     use crate::contracts::EntityType;
-    use crate::sync::models::{MutationEnvelope, MutationStatus, Operation};
+    use crate::sync::models::{MutationEnvelope, MutationPayload, MutationStatus};
     use sqlx::PgPool;
     use uuid::Uuid;
 
@@ -1332,9 +1432,7 @@ mod tests {
     fn make_envelope(
         entity_type: EntityType,
         entity_id: Uuid,
-        operation: Operation,
-        payload: Option<serde_json::Value>,
-        base_version: Option<DateTime<Utc>>,
+        operation: MutationPayload,
     ) -> MutationEnvelope {
         MutationEnvelope {
             mutation_id: Uuid::new_v4(),
@@ -1342,10 +1440,26 @@ mod tests {
             entity_type,
             entity_id,
             operation,
-            payload,
-            base_version,
             occurred_at: Utc::now(),
         }
+    }
+
+    fn make_create(payload: Option<serde_json::Value>) -> MutationPayload {
+        MutationPayload::Create { payload }
+    }
+
+    fn make_update(
+        payload: Option<serde_json::Value>,
+        base_version: Option<DateTime<Utc>>,
+    ) -> MutationPayload {
+        MutationPayload::Update {
+            payload,
+            base_version,
+        }
+    }
+
+    fn make_delete() -> MutationPayload {
+        MutationPayload::Delete {}
     }
 
     // ------------------------------------------------------------------
@@ -1542,9 +1656,9 @@ mod tests {
         let envelope = make_envelope(
             EntityType::KnowledgeNote,
             note_id,
-            Operation::Create,
-            Some(serde_json::json!({ "title": "New Note", "content": "Hello" })),
-            None,
+            make_create(Some(
+                serde_json::json!({ "title": "New Note", "content": "Hello" }),
+            )),
         );
         let mutation_id = envelope.mutation_id;
         let auth = make_auth_user(user_id);
@@ -1592,9 +1706,7 @@ mod tests {
         let envelope = make_envelope(
             EntityType::KnowledgeNote,
             note_id,
-            Operation::Create,
-            Some(serde_json::json!({ "title": "Dedup Note" })),
-            None,
+            make_create(Some(serde_json::json!({ "title": "Dedup Note" }))),
         );
         let auth = make_auth_user(user_id);
 
@@ -1637,9 +1749,7 @@ mod tests {
         let envelope = make_envelope(
             EntityType::KnowledgeNote,
             note_id,
-            Operation::Update,
-            Some(serde_json::json!({ "title": "Hacked" })),
-            None,
+            make_update(Some(serde_json::json!({ "title": "Hacked" })), None),
         );
         let auth = make_auth_user(attacker);
 
@@ -1660,13 +1770,7 @@ mod tests {
         let note_id = Uuid::new_v4();
         insert_test_note(&pool, note_id, user_id, "To Be Deleted").await;
 
-        let envelope = make_envelope(
-            EntityType::KnowledgeNote,
-            note_id,
-            Operation::Delete,
-            None,
-            None,
-        );
+        let envelope = make_envelope(EntityType::KnowledgeNote, note_id, make_delete());
         let auth = make_auth_user(user_id);
 
         let results = apply_mutations(&pool, vec![envelope], auth)
@@ -1840,9 +1944,10 @@ mod tests {
             device_id: Uuid::new_v4(),
             entity_type: EntityType::KnowledgeNote,
             entity_id: note_id,
-            operation: Operation::Update,
-            payload: Some(serde_json::json!({ "title": "Conflicting update" })),
-            base_version: Some(old_updated_at),
+            operation: MutationPayload::Update {
+                payload: Some(serde_json::json!({ "title": "Conflicting update" })),
+                base_version: Some(old_updated_at),
+            },
             occurred_at: Utc::now() + chrono::Duration::hours(1),
         };
         let auth = make_auth_user(user_id);
@@ -1896,9 +2001,10 @@ mod tests {
             device_id: Uuid::new_v4(),
             entity_type: EntityType::KnowledgeNote,
             entity_id: note_id,
-            operation: Operation::Update,
-            payload: Some(serde_json::json!({ "title": "My Conflicting Version" })),
-            base_version: Some(old_updated_at),
+            operation: MutationPayload::Update {
+                payload: Some(serde_json::json!({ "title": "My Conflicting Version" })),
+                base_version: Some(old_updated_at),
+            },
             occurred_at: Utc::now() + chrono::Duration::hours(1),
         };
         let auth = make_auth_user(user_id);
@@ -1946,9 +2052,10 @@ mod tests {
             device_id: Uuid::new_v4(),
             entity_type: EntityType::KnowledgeNote,
             entity_id: note_id,
-            operation: Operation::Update,
-            payload: Some(serde_json::json!({ "title": "Conflict Copy Relation" })),
-            base_version: Some(old_updated_at),
+            operation: MutationPayload::Update {
+                payload: Some(serde_json::json!({ "title": "Conflict Copy Relation" })),
+                base_version: Some(old_updated_at),
+            },
             occurred_at: Utc::now() + chrono::Duration::hours(1),
         };
         let auth = make_auth_user(user_id);
@@ -1994,9 +2101,10 @@ mod tests {
             device_id: Uuid::new_v4(),
             entity_type: EntityType::KnowledgeNote,
             entity_id: note_id,
-            operation: Operation::Update,
-            payload: Some(serde_json::json!({ "title": "Conflict Resolution" })),
-            base_version: Some(old_updated_at),
+            operation: MutationPayload::Update {
+                payload: Some(serde_json::json!({ "title": "Conflict Resolution" })),
+                base_version: Some(old_updated_at),
+            },
             occurred_at: Utc::now() + chrono::Duration::hours(1),
         };
         let auth = make_auth_user(user_id);
@@ -2040,9 +2148,10 @@ mod tests {
             device_id: Uuid::new_v4(),
             entity_type: EntityType::KnowledgeNote,
             entity_id: note_id,
-            operation: Operation::Update,
-            payload: Some(serde_json::json!({ "title": "Conflict" })),
-            base_version: Some(old_updated_at),
+            operation: MutationPayload::Update {
+                payload: Some(serde_json::json!({ "title": "Conflict" })),
+                base_version: Some(old_updated_at),
+            },
             occurred_at: Utc::now() + chrono::Duration::hours(1),
         };
         let auth = make_auth_user(user_id);
@@ -2084,9 +2193,10 @@ mod tests {
             device_id: Uuid::new_v4(),
             entity_type: EntityType::KnowledgeNote,
             entity_id: note_id,
-            operation: Operation::Update,
-            payload: Some(serde_json::json!({ "title": "My Version" })),
-            base_version: Some(old_updated_at),
+            operation: MutationPayload::Update {
+                payload: Some(serde_json::json!({ "title": "My Version" })),
+                base_version: Some(old_updated_at),
+            },
             occurred_at: Utc::now() + chrono::Duration::hours(1),
         };
         let auth = make_auth_user(user_id);
@@ -2142,9 +2252,7 @@ mod tests {
         let envelope = make_envelope(
             EntityType::TrackingItemEvent,
             event_id,
-            Operation::Update,
-            Some(serde_json::json!({ "quantity": 5 })),
-            None,
+            make_update(Some(serde_json::json!({ "quantity": 5 })), None),
         );
         let auth = make_auth_user(user_id);
 
@@ -2190,9 +2298,10 @@ mod tests {
         let envelope = make_envelope(
             EntityType::TrackingItemEvent,
             event_id,
-            Operation::Update,
-            Some(serde_json::json!({ "notes": "updated note text" })),
-            None,
+            make_update(
+                Some(serde_json::json!({ "notes": "updated note text" })),
+                None,
+            ),
         );
         let auth = make_auth_user(user_id);
 
@@ -2228,9 +2337,10 @@ mod tests {
             device_id: Uuid::new_v4(),
             entity_type: EntityType::KnowledgeNote,
             entity_id: note_id,
-            operation: Operation::Update,
-            payload: Some(serde_json::json!({ "title": "Note about quantity", "quantity": 3 })),
-            base_version: Some(old_updated_at),
+            operation: MutationPayload::Update {
+                payload: Some(serde_json::json!({ "title": "Note about quantity", "quantity": 3 })),
+                base_version: Some(old_updated_at),
+            },
             occurred_at: Utc::now() + chrono::Duration::hours(1),
         };
         let auth = make_auth_user(user_id);
@@ -2246,6 +2356,504 @@ mod tests {
             matches!(results[0].status, MutationStatus::Conflicted { .. }),
             "should be Conflicted (conflict copy), not quantity error; got: {:?}",
             results[0].status
+        );
+    }
+
+    // ------------------------------------------------------------------
+    // S018-T: mixed-validity batch — partial commit semantics (FA-001, FA-004)
+    // ------------------------------------------------------------------
+
+    /// Verifies that in a batch [valid_create, forbidden_update], the first mutation IS
+    /// committed to the DB even though the second returns 403 Forbidden.
+    ///
+    /// Partial-commit semantics: each mutation runs in its own independent transaction.
+    /// If mutation N fails with Forbidden/Conflict/BadRequest, mutations 1..N-1 remain
+    /// committed. The caller (push_handler) propagates the error as an HTTP response for the
+    /// whole batch, but the DB state reflects the partial progress.
+    #[sqlx::test(migrations = "../../../infra/migrations")]
+    async fn mixed_batch_partial_commit_first_mutation_survives(pool: PgPool) {
+        let owner = Uuid::new_v4();
+        let other = Uuid::new_v4();
+        insert_test_user(&pool, owner, "partial_owner@example.com").await;
+        insert_test_user(&pool, other, "partial_other@example.com").await;
+
+        // Insert a note owned by `other` that `owner` will try to update (forbidden).
+        let foreign_note_id = Uuid::new_v4();
+        insert_test_note(&pool, foreign_note_id, other, "Foreign Note").await;
+
+        // Mutation 1: valid create for a new note (as owner).
+        let new_note_id = Uuid::new_v4();
+        let valid_create = make_envelope(
+            EntityType::KnowledgeNote,
+            new_note_id,
+            make_create(Some(serde_json::json!({ "title": "Valid New Note" }))),
+        );
+
+        // Mutation 2: forbidden update of another user's note.
+        let forbidden_update = make_envelope(
+            EntityType::KnowledgeNote,
+            foreign_note_id,
+            make_update(Some(serde_json::json!({ "title": "Hacked" })), None),
+        );
+
+        let auth = make_auth_user(owner);
+        let result = apply_mutations(&pool, vec![valid_create, forbidden_update], auth).await;
+
+        // The batch as a whole returns Forbidden (from mutation 2).
+        assert!(
+            matches!(result, Err(AppError::Forbidden)),
+            "batch must return Forbidden; got: {:?}",
+            result
+        );
+
+        // Mutation 1 IS committed — the new note row must exist in the DB.
+        let note_exists: Option<(Uuid,)> =
+            sqlx::query_as("SELECT id FROM knowledge_notes WHERE id = $1")
+                .bind(new_note_id)
+                .fetch_optional(&pool)
+                .await
+                .expect("query failed");
+        assert!(
+            note_exists.is_some(),
+            "first mutation must be durably committed even when second fails (partial-commit semantics)"
+        );
+    }
+
+    // ------------------------------------------------------------------
+    // S019-T: delete on non-deletable entity types (FA-005)
+    // ------------------------------------------------------------------
+
+    #[sqlx::test(migrations = "../../../infra/migrations")]
+    async fn delete_tracking_item_event_returns_bad_request(pool: PgPool) {
+        let user_id = Uuid::new_v4();
+        insert_test_user(&pool, user_id, "del_tie@example.com").await;
+        let hh_id = Uuid::new_v4();
+        insert_test_household(&pool, hh_id, user_id).await;
+
+        let item_id = Uuid::new_v4();
+        sqlx::query(
+            "INSERT INTO tracking_items (id, name, user_id, household_id) VALUES ($1, 'Salt', $2, $3)",
+        )
+        .bind(item_id)
+        .bind(user_id)
+        .bind(hh_id)
+        .execute(&pool)
+        .await
+        .expect("insert tracking_item failed");
+
+        let event_id = Uuid::new_v4();
+        sqlx::query(
+            "INSERT INTO tracking_item_events \
+             (id, item_id, event_type, quantity_change, occurred_at) \
+             VALUES ($1, $2, 'use', 1, now())",
+        )
+        .bind(event_id)
+        .bind(item_id)
+        .execute(&pool)
+        .await
+        .expect("insert tracking_item_event failed");
+
+        let envelope = make_envelope(EntityType::TrackingItemEvent, event_id, make_delete());
+        let auth = make_auth_user(user_id);
+
+        let result = apply_mutations(&pool, vec![envelope], auth).await;
+        assert!(
+            matches!(result, Err(AppError::BadRequest(_))),
+            "delete on TrackingItemEvent must return BadRequest; got: {:?}",
+            result
+        );
+    }
+
+    #[sqlx::test(migrations = "../../../infra/migrations")]
+    async fn delete_knowledge_note_snapshot_returns_bad_request(pool: PgPool) {
+        let user_id = Uuid::new_v4();
+        insert_test_user(&pool, user_id, "del_kns@example.com").await;
+
+        let note_id = Uuid::new_v4();
+        insert_test_note(&pool, note_id, user_id, "Note with snapshot").await;
+
+        let snapshot_id = Uuid::new_v4();
+        sqlx::query(
+            "INSERT INTO knowledge_note_snapshots (id, note_id, content, captured_at) \
+             VALUES ($1, $2, 'snapshot content', now())",
+        )
+        .bind(snapshot_id)
+        .bind(note_id)
+        .execute(&pool)
+        .await
+        .expect("insert knowledge_note_snapshot failed");
+
+        let envelope = make_envelope(
+            EntityType::KnowledgeNoteSnapshot,
+            snapshot_id,
+            make_delete(),
+        );
+        let auth = make_auth_user(user_id);
+
+        let result = apply_mutations(&pool, vec![envelope], auth).await;
+        assert!(
+            matches!(result, Err(AppError::BadRequest(_))),
+            "delete on KnowledgeNoteSnapshot must return BadRequest; got: {:?}",
+            result
+        );
+    }
+
+    #[sqlx::test(migrations = "../../../infra/migrations")]
+    async fn delete_tag_returns_bad_request(pool: PgPool) {
+        let user_id = Uuid::new_v4();
+        insert_test_user(&pool, user_id, "del_tag@example.com").await;
+
+        let tag_id = Uuid::new_v4();
+        sqlx::query("INSERT INTO tags (id, name, user_id) VALUES ($1, 'Work', $2)")
+            .bind(tag_id)
+            .bind(user_id)
+            .execute(&pool)
+            .await
+            .expect("insert tag failed");
+
+        let envelope = make_envelope(EntityType::Tag, tag_id, make_delete());
+        let auth = make_auth_user(user_id);
+
+        let result = apply_mutations(&pool, vec![envelope], auth).await;
+        assert!(
+            matches!(result, Err(AppError::BadRequest(_))),
+            "delete on Tag must return BadRequest; got: {:?}",
+            result
+        );
+    }
+
+    // ------------------------------------------------------------------
+    // S020-T: update on immutable KnowledgeNoteSnapshot (FA-005)
+    // ------------------------------------------------------------------
+
+    #[sqlx::test(migrations = "../../../infra/migrations")]
+    async fn update_knowledge_note_snapshot_returns_bad_request_immutable(pool: PgPool) {
+        let user_id = Uuid::new_v4();
+        insert_test_user(&pool, user_id, "upd_kns@example.com").await;
+
+        let note_id = Uuid::new_v4();
+        insert_test_note(&pool, note_id, user_id, "Snapshotted Note").await;
+
+        let snapshot_id = Uuid::new_v4();
+        sqlx::query(
+            "INSERT INTO knowledge_note_snapshots (id, note_id, content, captured_at) \
+             VALUES ($1, $2, 'original content', now())",
+        )
+        .bind(snapshot_id)
+        .bind(note_id)
+        .execute(&pool)
+        .await
+        .expect("insert knowledge_note_snapshot failed");
+
+        let envelope = make_envelope(
+            EntityType::KnowledgeNoteSnapshot,
+            snapshot_id,
+            make_update(Some(serde_json::json!({ "content": "modified" })), None),
+        );
+        let auth = make_auth_user(user_id);
+
+        let result = apply_mutations(&pool, vec![envelope], auth).await;
+        assert!(
+            matches!(result, Err(AppError::BadRequest(ref msg)) if msg.contains("immutable")),
+            "update on KnowledgeNoteSnapshot must return BadRequest with 'immutable'; got: {:?}",
+            result
+        );
+    }
+
+    // ------------------------------------------------------------------
+    // S021-T: ownership checks for Household, TrackingItem, TrackingItemEvent (FA-005)
+    // ------------------------------------------------------------------
+
+    #[sqlx::test(migrations = "../../../infra/migrations")]
+    async fn non_member_update_household_returns_forbidden(pool: PgPool) {
+        let owner = Uuid::new_v4();
+        let outsider = Uuid::new_v4();
+        insert_test_user(&pool, owner, "hh_own@example.com").await;
+        insert_test_user(&pool, outsider, "hh_out@example.com").await;
+
+        let hh_id = Uuid::new_v4();
+        insert_test_household(&pool, hh_id, owner).await;
+
+        // outsider is NOT a member of this household.
+        let envelope = make_envelope(
+            EntityType::Household,
+            hh_id,
+            make_update(
+                Some(serde_json::json!({ "name": "Hacked Household" })),
+                None,
+            ),
+        );
+        let auth = make_auth_user(outsider);
+
+        let result = apply_mutations(&pool, vec![envelope], auth).await;
+        assert!(
+            matches!(result, Err(AppError::Forbidden)),
+            "non-owner must get Forbidden on Household update; got: {:?}",
+            result
+        );
+    }
+
+    #[sqlx::test(migrations = "../../../infra/migrations")]
+    async fn non_member_update_tracking_item_returns_forbidden(pool: PgPool) {
+        let owner = Uuid::new_v4();
+        let outsider = Uuid::new_v4();
+        insert_test_user(&pool, owner, "ti_own@example.com").await;
+        insert_test_user(&pool, outsider, "ti_out@example.com").await;
+
+        let hh_id = Uuid::new_v4();
+        insert_test_household(&pool, hh_id, owner).await;
+        // owner is member of household but outsider is not.
+
+        let item_id = Uuid::new_v4();
+        sqlx::query(
+            "INSERT INTO tracking_items (id, name, user_id, household_id) VALUES ($1, 'Milk', $2, $3)",
+        )
+        .bind(item_id)
+        .bind(owner)
+        .bind(hh_id)
+        .execute(&pool)
+        .await
+        .expect("insert tracking_item failed");
+
+        let envelope = make_envelope(
+            EntityType::TrackingItem,
+            item_id,
+            make_update(Some(serde_json::json!({ "name": "Stolen Milk" })), None),
+        );
+        let auth = make_auth_user(outsider);
+
+        let result = apply_mutations(&pool, vec![envelope], auth).await;
+        assert!(
+            matches!(result, Err(AppError::Forbidden)),
+            "non-member must get Forbidden on TrackingItem update; got: {:?}",
+            result
+        );
+    }
+
+    #[sqlx::test(migrations = "../../../infra/migrations")]
+    async fn non_member_update_tracking_item_event_returns_forbidden(pool: PgPool) {
+        let owner = Uuid::new_v4();
+        let outsider = Uuid::new_v4();
+        insert_test_user(&pool, owner, "tie_own@example.com").await;
+        insert_test_user(&pool, outsider, "tie_out@example.com").await;
+
+        let hh_id = Uuid::new_v4();
+        insert_test_household(&pool, hh_id, owner).await;
+
+        let item_id = Uuid::new_v4();
+        sqlx::query(
+            "INSERT INTO tracking_items (id, name, user_id, household_id) VALUES ($1, 'Sugar', $2, $3)",
+        )
+        .bind(item_id)
+        .bind(owner)
+        .bind(hh_id)
+        .execute(&pool)
+        .await
+        .expect("insert tracking_item failed");
+
+        let event_id = Uuid::new_v4();
+        sqlx::query(
+            "INSERT INTO tracking_item_events \
+             (id, item_id, event_type, quantity_change, occurred_at) \
+             VALUES ($1, $2, 'use', 1, now())",
+        )
+        .bind(event_id)
+        .bind(item_id)
+        .execute(&pool)
+        .await
+        .expect("insert tracking_item_event failed");
+
+        // outsider attempts to update notes on the event — no household membership.
+        let envelope = make_envelope(
+            EntityType::TrackingItemEvent,
+            event_id,
+            make_update(Some(serde_json::json!({ "notes": "sneaky note" })), None),
+        );
+        let auth = make_auth_user(outsider);
+
+        let result = apply_mutations(&pool, vec![envelope], auth).await;
+        assert!(
+            matches!(result, Err(AppError::Forbidden)),
+            "non-member must get Forbidden on TrackingItemEvent update; got: {:?}",
+            result
+        );
+    }
+
+    // ------------------------------------------------------------------
+    // S022-T: resolve endpoint edge cases (P5-019)
+    // ------------------------------------------------------------------
+
+    #[sqlx::test(migrations = "../../../infra/migrations")]
+    async fn resolving_already_resolved_conflict_returns_conflict_error(pool: PgPool) {
+        let user_id = Uuid::new_v4();
+        insert_test_user(&pool, user_id, "rslv_again@example.com").await;
+        let note_id = Uuid::new_v4();
+        let old_updated_at = insert_test_note(&pool, note_id, user_id, "Already Resolved").await;
+
+        // Trigger a conflict to create a sync_conflicts row.
+        sqlx::query(
+            "UPDATE knowledge_notes SET updated_at = now() + interval '5 seconds' WHERE id = $1",
+        )
+        .bind(note_id)
+        .execute(&pool)
+        .await
+        .expect("simulated update failed");
+
+        // Use a non-KnowledgeNote entity to get a 'pending' conflict (not 'conflict_copy').
+        // Insert a guidance_quest for this purpose.
+        let quest_id = Uuid::new_v4();
+        sqlx::query("INSERT INTO guidance_quests (id, title, user_id) VALUES ($1, 'Quest A', $2)")
+            .bind(quest_id)
+            .bind(user_id)
+            .execute(&pool)
+            .await
+            .expect("insert guidance_quest failed");
+
+        sqlx::query(
+            "UPDATE guidance_quests SET updated_at = now() + interval '5 seconds' WHERE id = $1",
+        )
+        .bind(quest_id)
+        .execute(&pool)
+        .await
+        .expect("simulated update failed");
+
+        // Submit a stale update (LWW reject → pending conflict).
+        let envelope = MutationEnvelope {
+            mutation_id: Uuid::new_v4(),
+            device_id: Uuid::new_v4(),
+            entity_type: EntityType::GuidanceQuest,
+            entity_id: quest_id,
+            operation: MutationPayload::Update {
+                payload: Some(serde_json::json!({ "title": "Stale Quest" })),
+                base_version: Some(old_updated_at),
+            },
+            occurred_at: old_updated_at - chrono::Duration::seconds(1),
+        };
+        let auth = make_auth_user(user_id);
+        let results = apply_mutations(&pool, vec![envelope], auth)
+            .await
+            .expect("apply_mutations failed");
+
+        let conflict_id = match results[0].status {
+            MutationStatus::Conflicted { conflict_id } => conflict_id,
+            _ => panic!("expected Conflicted; got: {:?}", results[0].status),
+        };
+
+        // First resolution — should succeed.
+        resolve_conflict(&pool, conflict_id, user_id, "accepted")
+            .await
+            .expect("first resolve should succeed");
+
+        // Second resolution — should return Conflict (already resolved).
+        let second = resolve_conflict(&pool, conflict_id, user_id, "rejected").await;
+        assert!(
+            matches!(second, Err(AppError::Conflict(_))),
+            "re-resolving must return Conflict; got: {:?}",
+            second
+        );
+    }
+
+    #[test]
+    fn invalid_resolution_string_rejected_by_serde() {
+        // ConflictResolution only deserializes "accepted" or "rejected".
+        // Any other string must fail at the serde boundary (not silently accepted).
+        use crate::sync::models::ResolveConflictRequest;
+
+        let bad_json = serde_json::json!({ "resolution": "garbage" });
+        let result: Result<ResolveConflictRequest, _> = serde_json::from_value(bad_json);
+        assert!(
+            result.is_err(),
+            "unknown resolution string 'garbage' must be rejected by serde"
+        );
+
+        let good_json = serde_json::json!({ "resolution": "accepted" });
+        let result: Result<ResolveConflictRequest, _> = serde_json::from_value(good_json);
+        assert!(result.is_ok(), "'accepted' must deserialize successfully");
+    }
+
+    // ------------------------------------------------------------------
+    // S025-T: non-KnowledgeNote LWW Rejected path (FA-008) — GuidanceQuest
+    // ------------------------------------------------------------------
+
+    #[sqlx::test(migrations = "../../../infra/migrations")]
+    async fn guidance_quest_stale_update_yields_conflicted_and_row_unchanged(pool: PgPool) {
+        let user_id = Uuid::new_v4();
+        insert_test_user(&pool, user_id, "quest_lww@example.com").await;
+
+        // Insert a guidance_quest.
+        let quest_id = Uuid::new_v4();
+        let row: (DateTime<Utc>,) = sqlx::query_as(
+            "INSERT INTO guidance_quests (id, title, user_id) \
+             VALUES ($1, 'Original Quest Title', $2) RETURNING updated_at",
+        )
+        .bind(quest_id)
+        .bind(user_id)
+        .fetch_one(&pool)
+        .await
+        .expect("insert guidance_quest failed");
+        let original_updated_at = row.0;
+
+        // Simulate a concurrent server update — bump updated_at forward.
+        sqlx::query(
+            "UPDATE guidance_quests SET updated_at = now() + interval '1 hour', \
+             title = 'Server Updated Title' WHERE id = $1",
+        )
+        .bind(quest_id)
+        .execute(&pool)
+        .await
+        .expect("simulated server update failed");
+
+        // Client submits an update with occurred_at BEFORE the server's updated_at → LWW reject.
+        let stale_occurred_at = original_updated_at - chrono::Duration::seconds(5);
+        let envelope = MutationEnvelope {
+            mutation_id: Uuid::new_v4(),
+            device_id: Uuid::new_v4(),
+            entity_type: EntityType::GuidanceQuest,
+            entity_id: quest_id,
+            operation: MutationPayload::Update {
+                payload: Some(serde_json::json!({ "title": "Stale Client Title" })),
+                base_version: Some(original_updated_at),
+            },
+            occurred_at: stale_occurred_at,
+        };
+        let auth = make_auth_user(user_id);
+
+        let results = apply_mutations(&pool, vec![envelope], auth)
+            .await
+            .expect("apply_mutations failed");
+
+        // Assert: response status is Conflicted.
+        assert!(
+            matches!(results[0].status, MutationStatus::Conflicted { .. }),
+            "stale GuidanceQuest update must yield Conflicted; got: {:?}",
+            results[0].status
+        );
+
+        // Assert: row data is unchanged (server's title wins under LWW).
+        let current_title: (String,) =
+            sqlx::query_as("SELECT title FROM guidance_quests WHERE id = $1")
+                .bind(quest_id)
+                .fetch_one(&pool)
+                .await
+                .expect("fetch quest failed");
+        assert_eq!(
+            current_title.0, "Server Updated Title",
+            "row title must be unchanged (server wins under LWW reject)"
+        );
+
+        // Assert: sync_conflicts row exists with resolution = 'pending'.
+        let conflict_row: Option<(String,)> =
+            sqlx::query_as("SELECT resolution FROM sync_conflicts WHERE entity_id = $1")
+                .bind(quest_id)
+                .fetch_optional(&pool)
+                .await
+                .expect("conflict query failed");
+
+        assert!(conflict_row.is_some(), "sync_conflicts row must exist");
+        assert_eq!(
+            conflict_row.unwrap().0,
+            ConflictStatus::Pending.as_str(),
+            "sync_conflicts resolution must be 'pending'"
         );
     }
 }

@@ -6,7 +6,7 @@ use crate::AppState;
 use axum::Router;
 
 pub fn router() -> Router<AppState> {
-    use axum::routing::{delete, get, post};
+    use axum::routing::{delete, get};
     Router::new()
         .route("/api/tags", get(handlers::list).post(handlers::create))
         .route("/api/tags/{id}", delete(handlers::delete))

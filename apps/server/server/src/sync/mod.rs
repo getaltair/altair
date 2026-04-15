@@ -14,7 +14,7 @@ pub fn router() -> Router<AppState> {
         .route("/api/sync/push", post(handlers::push_handler))
         .route("/api/sync/conflicts", get(handlers::list_conflicts_handler))
         .route(
-            "/api/sync/conflicts/:id/resolve",
+            "/api/sync/conflicts/{id}/resolve",
             post(handlers::resolve_conflict_handler),
         )
 }

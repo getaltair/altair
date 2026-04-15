@@ -37,9 +37,15 @@ pub async fn list_conflicts_handler(
     auth: AuthUser,
     Query(params): Query<ConflictPageParams>,
 ) -> Result<Json<ConflictListResponse>, AppError> {
-    let limit = params.limit.unwrap_or(20).min(100).max(1);
-    let conflicts = service::list_conflicts(&state.db, auth.user_id, params.cursor, limit).await?;
-    let next_cursor = if conflicts.len() == limit as usize {
+    let limit = params.limit.unwrap_or(20).clamp(1, 100);
+    // Fetch limit+1 to detect whether a next page exists without a separate COUNT query.
+    let mut conflicts =
+        service::list_conflicts(&state.db, auth.user_id, params.cursor, limit + 1).await?;
+    let has_next = conflicts.len() > limit as usize;
+    if has_next {
+        conflicts.truncate(limit as usize);
+    }
+    let next_cursor = if has_next {
         conflicts.last().map(|c| c.id)
     } else {
         None
