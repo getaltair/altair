@@ -6,8 +6,7 @@ use crate::error::AppError;
 use crate::guidance::epics::models::EpicStatus;
 use crate::guidance::epics::service::check_initiative_ownership;
 
-const QUEST_COLUMNS: &str =
-    "id, user_id, initiative_id, epic_id, routine_id, title, description, \
+const QUEST_COLUMNS: &str = "id, user_id, initiative_id, epic_id, routine_id, title, description, \
      status, priority, due_date, created_at, updated_at, deleted_at";
 
 pub async fn list_quests(
@@ -108,8 +107,7 @@ pub async fn update_quest(
         check_initiative_ownership(pool, init_id, user_id).await?;
     }
 
-    let transitioning_to_completed =
-        matches!(&req.status, Some(s) if *s == QuestStatus::Completed);
+    let transitioning_to_completed = matches!(&req.status, Some(s) if *s == QuestStatus::Completed);
     let transitioning_to_in_progress =
         matches!(&req.status, Some(s) if *s == QuestStatus::InProgress);
 
@@ -652,7 +650,10 @@ mod tests {
         )
         .await
         .unwrap();
-        assert!(after.is_empty(), "soft-deleted quest must not appear in list");
+        assert!(
+            after.is_empty(),
+            "soft-deleted quest must not appear in list"
+        );
     }
 
     // A-G-15: list?due_date=today returns only due today and non-terminal status

@@ -7,12 +7,10 @@ use super::models::{CreateRoutineRequest, FrequencyConfig, Routine, UpdateRoutin
 use crate::error::AppError;
 use crate::guidance::quests::models::Quest;
 
-const ROUTINE_COLUMNS: &str =
-    "id, user_id, title, description, frequency_type, frequency_config, \
+const ROUTINE_COLUMNS: &str = "id, user_id, title, description, frequency_type, frequency_config, \
      status, created_at, updated_at, deleted_at";
 
-const QUEST_COLUMNS: &str =
-    "id, user_id, initiative_id, epic_id, routine_id, title, description, \
+const QUEST_COLUMNS: &str = "id, user_id, initiative_id, epic_id, routine_id, title, description, \
      status, priority, due_date, created_at, updated_at, deleted_at";
 
 pub async fn list_routines(pool: &PgPool, user_id: Uuid) -> Result<Vec<Routine>, AppError> {

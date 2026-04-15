@@ -105,11 +105,9 @@ pub async fn add_shopping_list_item(
 
     match result {
         Ok(row) => Ok(TrackingShoppingListItem::from(row)),
-        Err(sqlx::Error::Database(ref e)) if e.code().as_deref() == Some("23505") => {
-            Err(AppError::Conflict(
-                "shopping list item already exists".to_string(),
-            ))
-        }
+        Err(sqlx::Error::Database(ref e)) if e.code().as_deref() == Some("23505") => Err(
+            AppError::Conflict("shopping list item already exists".to_string()),
+        ),
         Err(e) => Err(e.into()),
     }
 }
@@ -184,7 +182,10 @@ pub async fn update_shopping_list_item(
 
             if !item_exists {
                 if let Err(rb_err) = tx.rollback().await {
-                    tracing::warn!("rollback failed (postgres will auto-rollback on drop): {:?}", rb_err);
+                    tracing::warn!(
+                        "rollback failed (postgres will auto-rollback on drop): {:?}",
+                        rb_err
+                    );
                 }
                 return Err(AppError::NotFound);
             }
@@ -205,7 +206,10 @@ pub async fn update_shopping_list_item(
                 Some(r) => r,
                 None => {
                     if let Err(rb_err) = tx.rollback().await {
-                        tracing::warn!("rollback failed (postgres will auto-rollback on drop): {:?}", rb_err);
+                        tracing::warn!(
+                            "rollback failed (postgres will auto-rollback on drop): {:?}",
+                            rb_err
+                        );
                     }
                     return Err(AppError::NotFound);
                 }
@@ -217,7 +221,10 @@ pub async fn update_shopping_list_item(
 
             if let Err(e) = event_result {
                 if let Err(rb_err) = tx.rollback().await {
-                    tracing::warn!("rollback failed (postgres will auto-rollback on drop): {:?}", rb_err);
+                    tracing::warn!(
+                        "rollback failed (postgres will auto-rollback on drop): {:?}",
+                        rb_err
+                    );
                 }
                 return Err(e);
             }
@@ -243,7 +250,10 @@ pub async fn update_shopping_list_item(
 
             if !item_exists {
                 if let Err(rb_err) = tx.rollback().await {
-                    tracing::warn!("rollback failed (postgres will auto-rollback on drop): {:?}", rb_err);
+                    tracing::warn!(
+                        "rollback failed (postgres will auto-rollback on drop): {:?}",
+                        rb_err
+                    );
                 }
                 return Err(AppError::NotFound);
             }
@@ -263,7 +273,10 @@ pub async fn update_shopping_list_item(
                 Some(r) => r,
                 None => {
                     if let Err(rb_err) = tx.rollback().await {
-                        tracing::warn!("rollback failed (postgres will auto-rollback on drop): {:?}", rb_err);
+                        tracing::warn!(
+                            "rollback failed (postgres will auto-rollback on drop): {:?}",
+                            rb_err
+                        );
                     }
                     return Err(AppError::NotFound);
                 }
@@ -275,7 +288,10 @@ pub async fn update_shopping_list_item(
 
             if let Err(e) = event_result {
                 if let Err(rb_err) = tx.rollback().await {
-                    tracing::warn!("rollback failed (postgres will auto-rollback on drop): {:?}", rb_err);
+                    tracing::warn!(
+                        "rollback failed (postgres will auto-rollback on drop): {:?}",
+                        rb_err
+                    );
                 }
                 return Err(e);
             }

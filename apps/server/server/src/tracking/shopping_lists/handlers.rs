@@ -52,9 +52,13 @@ pub async fn update(
     Json(req): Json<UpdateShoppingListRequest>,
 ) -> Result<impl IntoResponse, AppError> {
     match &req.name {
-        None => return Err(AppError::BadRequest("at least one field must be provided".to_string())),
+        None => {
+            return Err(AppError::BadRequest(
+                "at least one field must be provided".to_string(),
+            ));
+        }
         Some(name) if name.trim().is_empty() => {
-            return Err(AppError::BadRequest("name must not be empty".to_string()))
+            return Err(AppError::BadRequest("name must not be empty".to_string()));
         }
         Some(_) => {}
     }

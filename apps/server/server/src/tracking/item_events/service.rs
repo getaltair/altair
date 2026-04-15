@@ -94,7 +94,10 @@ pub async fn create_item_event(
     if !item_exists {
         // Item was soft-deleted between the initial check and locking.
         if let Err(rb_err) = tx.rollback().await {
-            tracing::warn!("rollback failed (postgres will auto-rollback on drop): {:?}", rb_err);
+            tracing::warn!(
+                "rollback failed (postgres will auto-rollback on drop): {:?}",
+                rb_err
+            );
         }
         return Err(AppError::UnprocessableEntity(
             "item has been deleted".to_string(),
@@ -113,7 +116,10 @@ pub async fn create_item_event(
     // Invariant E-7: quantity must not go below zero.
     if current_qty + req.quantity_delta < 0.0 {
         if let Err(rb_err) = tx.rollback().await {
-            tracing::warn!("rollback failed (postgres will auto-rollback on drop): {:?}", rb_err);
+            tracing::warn!(
+                "rollback failed (postgres will auto-rollback on drop): {:?}",
+                rb_err
+            );
         }
         return Err(AppError::UnprocessableEntity(
             "quantity would go below zero".to_string(),
@@ -150,7 +156,10 @@ pub async fn create_item_event(
         }
         Err(sqlx::Error::Database(ref e)) if e.code().as_deref() == Some("23505") => {
             if let Err(rb_err) = tx.rollback().await {
-                tracing::warn!("rollback failed (postgres will auto-rollback on drop): {:?}", rb_err);
+                tracing::warn!(
+                    "rollback failed (postgres will auto-rollback on drop): {:?}",
+                    rb_err
+                );
             }
             Err(AppError::Conflict(
                 "event with this id already exists".to_string(),
@@ -158,7 +167,10 @@ pub async fn create_item_event(
         }
         Err(e) => {
             if let Err(rb_err) = tx.rollback().await {
-                tracing::warn!("rollback failed (postgres will auto-rollback on drop): {:?}", rb_err);
+                tracing::warn!(
+                    "rollback failed (postgres will auto-rollback on drop): {:?}",
+                    rb_err
+                );
             }
             Err(e.into())
         }

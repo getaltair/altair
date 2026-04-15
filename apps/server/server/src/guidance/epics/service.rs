@@ -156,8 +156,8 @@ pub async fn delete_epic(pool: &PgPool, id: Uuid, user_id: Uuid) -> Result<(), A
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::guidance::epics::models::{CreateEpicRequest, EpicStatus, UpdateEpicRequest};
     use crate::error::AppError;
+    use crate::guidance::epics::models::{CreateEpicRequest, EpicStatus, UpdateEpicRequest};
     use sqlx::PgPool;
 
     async fn insert_test_user(pool: &PgPool, user_id: Uuid, email: &str) {
@@ -273,7 +273,11 @@ mod tests {
         .await
         .expect("create_epic should succeed");
 
-        assert_eq!(epic.status, EpicStatus::InProgress, "status should match provided value");
+        assert_eq!(
+            epic.status,
+            EpicStatus::InProgress,
+            "status should match provided value"
+        );
         assert_eq!(epic.sort_order, 5, "sort_order should match provided value");
         assert!(epic.id != Uuid::nil(), "id must be set");
         assert!(epic.created_at <= epic.updated_at || epic.created_at == epic.updated_at);
@@ -334,14 +338,23 @@ mod tests {
         .expect("create_epic should succeed");
 
         // Verify it appears in list before deletion.
-        let before = list_epics(&pool, user_id, None).await.expect("list_epics failed");
+        let before = list_epics(&pool, user_id, None)
+            .await
+            .expect("list_epics failed");
         assert_eq!(before.len(), 1);
 
-        delete_epic(&pool, epic.id, user_id).await.expect("delete_epic failed");
+        delete_epic(&pool, epic.id, user_id)
+            .await
+            .expect("delete_epic failed");
 
         // After deletion it must be excluded from list.
-        let after = list_epics(&pool, user_id, None).await.expect("list_epics failed");
-        assert!(after.is_empty(), "soft-deleted epic must not appear in list");
+        let after = list_epics(&pool, user_id, None)
+            .await
+            .expect("list_epics failed");
+        assert!(
+            after.is_empty(),
+            "soft-deleted epic must not appear in list"
+        );
 
         // Confirm deleted_at is set in DB.
         let deleted_at: Option<chrono::DateTime<chrono::Utc>> =
@@ -350,7 +363,10 @@ mod tests {
                 .fetch_one(&pool)
                 .await
                 .expect("Row must still exist after soft delete");
-        assert!(deleted_at.is_some(), "deleted_at must be non-null after soft delete");
+        assert!(
+            deleted_at.is_some(),
+            "deleted_at must be non-null after soft delete"
+        );
     }
 
     // partial update leaves unspecified fields unchanged
@@ -396,7 +412,11 @@ mod tests {
             Some("Original description".to_string()),
             "description must remain unchanged"
         );
-        assert_eq!(updated.status, EpicStatus::NotStarted, "status must remain unchanged");
+        assert_eq!(
+            updated.status,
+            EpicStatus::NotStarted,
+            "status must remain unchanged"
+        );
         assert_eq!(updated.sort_order, 3, "sort_order must remain unchanged");
     }
 }

@@ -1,4 +1,6 @@
-use altair_server::{auth, build_app_state, config, core, db, guidance, knowledge, routes, sync, tracking};
+use altair_server::{
+    auth, build_app_state, config, core, db, guidance, knowledge, routes, sync, tracking,
+};
 use anyhow::Context;
 use axum::Router;
 use tracing::info;

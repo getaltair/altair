@@ -18,11 +18,7 @@ pub async fn list_checkins(pool: &PgPool, user_id: Uuid) -> Result<Vec<DailyChec
     Ok(rows)
 }
 
-pub async fn get_checkin(
-    pool: &PgPool,
-    id: Uuid,
-    user_id: Uuid,
-) -> Result<DailyCheckin, AppError> {
+pub async fn get_checkin(pool: &PgPool, id: Uuid, user_id: Uuid) -> Result<DailyCheckin, AppError> {
     let row = sqlx::query_as::<_, DailyCheckin>(
         "SELECT id, user_id, checkin_date, energy_level, mood, notes, created_at, updated_at, deleted_at \
          FROM guidance_daily_checkins \
@@ -62,11 +58,9 @@ pub async fn create_checkin(
 
     match result {
         Ok(row) => Ok(row),
-        Err(sqlx::Error::Database(ref db_err)) if db_err.code().as_deref() == Some("23505") => {
-            Err(AppError::Conflict(
-                "Check-in already exists for this date".to_string(),
-            ))
-        }
+        Err(sqlx::Error::Database(ref db_err)) if db_err.code().as_deref() == Some("23505") => Err(
+            AppError::Conflict("Check-in already exists for this date".to_string()),
+        ),
         Err(e) => Err(e.into()),
     }
 }
@@ -106,11 +100,9 @@ pub async fn update_checkin(
     match result {
         Ok(Some(row)) => Ok(row),
         Ok(None) => Err(AppError::NotFound),
-        Err(sqlx::Error::Database(ref db_err)) if db_err.code().as_deref() == Some("23505") => {
-            Err(AppError::Conflict(
-                "Check-in already exists for this date".to_string(),
-            ))
-        }
+        Err(sqlx::Error::Database(ref db_err)) if db_err.code().as_deref() == Some("23505") => Err(
+            AppError::Conflict("Check-in already exists for this date".to_string()),
+        ),
         Err(e) => Err(e.into()),
     }
 }
@@ -140,8 +132,8 @@ pub async fn delete_checkin(pool: &PgPool, id: Uuid, user_id: Uuid) -> Result<()
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::guidance::daily_checkins::models::{CreateCheckinRequest, UpdateCheckinRequest};
     use crate::error::AppError;
+    use crate::guidance::daily_checkins::models::{CreateCheckinRequest, UpdateCheckinRequest};
     use chrono::NaiveDate;
     use sqlx::PgPool;
 

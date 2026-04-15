@@ -41,7 +41,9 @@ fn build_test_app(pool: PgPool) -> (Router, AppState) {
     let pem = generate_test_rsa_pem();
     let state: AppState =
         build_app_state(pool, &pem, false).expect("Failed to build AppState for test");
-    let app = Router::new().merge(guidance::router()).with_state(state.clone());
+    let app = Router::new()
+        .merge(guidance::router())
+        .with_state(state.clone());
     (app, state)
 }
 
@@ -226,13 +228,8 @@ async fn test_list_quests_returns_only_authed_users_quests(pool: PgPool) {
     // Create a quest for user A
     let auth_a = bearer(&state, user_a, "user_a@example.com");
     let quest_a_body = serde_json::json!({"title": "User A Quest"}).to_string();
-    let create_a = post_json_auth(
-        app.clone(),
-        "/api/guidance/quests",
-        &quest_a_body,
-        &auth_a,
-    )
-    .await;
+    let create_a =
+        post_json_auth(app.clone(), "/api/guidance/quests", &quest_a_body, &auth_a).await;
     assert_eq!(
         create_a.status(),
         StatusCode::CREATED,
@@ -242,13 +239,8 @@ async fn test_list_quests_returns_only_authed_users_quests(pool: PgPool) {
     // Create a quest for user B
     let auth_b = bearer(&state, user_b, "user_b@example.com");
     let quest_b_body = serde_json::json!({"title": "User B Quest"}).to_string();
-    let create_b = post_json_auth(
-        app.clone(),
-        "/api/guidance/quests",
-        &quest_b_body,
-        &auth_b,
-    )
-    .await;
+    let create_b =
+        post_json_auth(app.clone(), "/api/guidance/quests", &quest_b_body, &auth_b).await;
     assert_eq!(
         create_b.status(),
         StatusCode::CREATED,
@@ -303,13 +295,8 @@ async fn test_daily_checkin_duplicate_date_returns_409(pool: PgPool) {
     .to_string();
 
     // First call must succeed with 201
-    let first_resp = post_json_auth(
-        app.clone(),
-        "/api/guidance/daily-checkins",
-        &body,
-        &auth,
-    )
-    .await;
+    let first_resp =
+        post_json_auth(app.clone(), "/api/guidance/daily-checkins", &body, &auth).await;
     assert_eq!(
         first_resp.status(),
         StatusCode::CREATED,
@@ -317,13 +304,7 @@ async fn test_daily_checkin_duplicate_date_returns_409(pool: PgPool) {
     );
 
     // Second call with same date must return 409
-    let second_resp = post_json_auth(
-        app,
-        "/api/guidance/daily-checkins",
-        &body,
-        &auth,
-    )
-    .await;
+    let second_resp = post_json_auth(app, "/api/guidance/daily-checkins", &body, &auth).await;
     assert_eq!(
         second_resp.status(),
         StatusCode::CONFLICT,
@@ -352,13 +333,8 @@ async fn test_quest_completion_transitions_return_200(pool: PgPool) {
 
     // Create a quest (starts as not_started)
     let create_body = serde_json::json!({"title": "My Quest"}).to_string();
-    let create_resp = post_json_auth(
-        app.clone(),
-        "/api/guidance/quests",
-        &create_body,
-        &auth,
-    )
-    .await;
+    let create_resp =
+        post_json_auth(app.clone(), "/api/guidance/quests", &create_body, &auth).await;
     assert_eq!(
         create_resp.status(),
         StatusCode::CREATED,
@@ -373,13 +349,7 @@ async fn test_quest_completion_transitions_return_200(pool: PgPool) {
     // PATCH not_started → in_progress (required intermediate step)
     let patch_uri = format!("/api/guidance/quests/{quest_id}");
     let in_progress_body = serde_json::json!({"status": "in_progress"}).to_string();
-    let patch1_resp = patch_json_auth(
-        app.clone(),
-        &patch_uri,
-        &in_progress_body,
-        &auth,
-    )
-    .await;
+    let patch1_resp = patch_json_auth(app.clone(), &patch_uri, &in_progress_body, &auth).await;
     assert_eq!(
         patch1_resp.status(),
         StatusCode::OK,
@@ -395,13 +365,7 @@ async fn test_quest_completion_transitions_return_200(pool: PgPool) {
 
     // PATCH in_progress → completed (emits QuestCompleted tracing event in service.rs)
     let completed_body = serde_json::json!({"status": "completed"}).to_string();
-    let patch2_resp = patch_json_auth(
-        app,
-        &patch_uri,
-        &completed_body,
-        &auth,
-    )
-    .await;
+    let patch2_resp = patch_json_auth(app, &patch_uri, &completed_body, &auth).await;
     assert_eq!(
         patch2_resp.status(),
         StatusCode::OK,

@@ -4,8 +4,7 @@ use uuid::Uuid;
 use super::models::{CreateFocusSessionRequest, FocusSession, UpdateFocusSessionRequest};
 use crate::error::AppError;
 
-const SESSION_COLUMNS: &str =
-    "id, quest_id, started_at, ended_at, duration_minutes, user_id, created_at, updated_at, deleted_at";
+const SESSION_COLUMNS: &str = "id, quest_id, started_at, ended_at, duration_minutes, user_id, created_at, updated_at, deleted_at";
 
 pub async fn list_sessions(
     pool: &PgPool,
@@ -180,12 +179,7 @@ mod tests {
         .expect("Failed to insert test user");
     }
 
-    async fn insert_test_quest(
-        pool: &PgPool,
-        quest_id: Uuid,
-        user_id: Uuid,
-        status: &str,
-    ) {
+    async fn insert_test_quest(pool: &PgPool, quest_id: Uuid, user_id: Uuid, status: &str) {
         sqlx::query(
             "INSERT INTO guidance_quests \
                 (id, user_id, title, status, priority) \
@@ -407,7 +401,10 @@ mod tests {
         delete_session(&pool, session.id, user_id).await.unwrap();
 
         let after = list_sessions(&pool, user_id, None).await.unwrap();
-        assert!(after.is_empty(), "soft-deleted session must not appear in list");
+        assert!(
+            after.is_empty(),
+            "soft-deleted session must not appear in list"
+        );
     }
 
     // create_session returns NotFound when quest belongs to a different user.
