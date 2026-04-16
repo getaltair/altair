@@ -1,6 +1,10 @@
 package com.getaltair.altair.navigation
 
+import android.util.Log
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -9,10 +13,13 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import androidx.navigation.navArgument
 import androidx.navigation.navDeepLink
+import com.getaltair.altair.data.local.dao.TrackingItemDao
 import com.getaltair.altair.ui.auth.LoginScreen
 import com.getaltair.altair.ui.auth.RegisterScreen
+import com.getaltair.altair.ui.guidance.EpicDetailScreen
 import com.getaltair.altair.ui.guidance.FocusSessionScreen
 import com.getaltair.altair.ui.guidance.GuidanceScreen
+import com.getaltair.altair.ui.guidance.InitiativeDetailScreen
 import com.getaltair.altair.ui.guidance.InitiativeListScreen
 import com.getaltair.altair.ui.guidance.QuestDetailScreen
 import com.getaltair.altair.ui.guidance.QuestListScreen
@@ -22,12 +29,16 @@ import com.getaltair.altair.ui.knowledge.NoteListScreen
 import com.getaltair.altair.ui.knowledge.QuickNoteScreen
 import com.getaltair.altair.ui.settings.SettingsScreen
 import com.getaltair.altair.ui.today.TodayScreen
+import com.getaltair.altair.ui.tracking.BarcodeScannerScreen
 import com.getaltair.altair.ui.tracking.CategoryScreen
 import com.getaltair.altair.ui.tracking.ItemCreationScreen
 import com.getaltair.altair.ui.tracking.ItemDetailScreen
 import com.getaltair.altair.ui.tracking.LocationScreen
 import com.getaltair.altair.ui.tracking.ShoppingListScreen
 import com.getaltair.altair.ui.tracking.TrackingScreen
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.launch
+import org.koin.compose.koinInject
 
 @Composable
 fun NavGraph(
@@ -94,6 +105,22 @@ fun NavGraph(
             composable(route = "today_graph/guidance/routines") {
                 RoutineListScreen(navController = navController)
             }
+            composable(
+                route = Screen.InitiativeDetail.route,
+                arguments = listOf(navArgument("id") { type = NavType.StringType }),
+            ) { backStackEntry ->
+                InitiativeDetailScreen(navController = navController, backStackEntry = backStackEntry)
+            }
+            composable(
+                route = Screen.EpicDetail.route,
+                arguments =
+                    listOf(
+                        navArgument("initiativeId") { type = NavType.StringType },
+                        navArgument("id") { type = NavType.StringType },
+                    ),
+            ) { backStackEntry ->
+                EpicDetailScreen(navController = navController, backStackEntry = backStackEntry)
+            }
         }
 
         // Knowledge graph (tab 2)
@@ -147,6 +174,38 @@ fun NavGraph(
             }
             composable(route = "tracking/categories") {
                 CategoryScreen(navController = navController)
+            }
+            composable(route = Screen.BarcodeScanner.route) {
+                val trackingItemDao = koinInject<TrackingItemDao>()
+                val scope = rememberCoroutineScope()
+                val handled = remember { mutableStateOf(false) }
+
+                BarcodeScannerScreen(
+                    onBarcodeScanned = { barcode ->
+                        if (handled.value) return@BarcodeScannerScreen
+                        handled.value = true
+                        scope.launch {
+                            try {
+                                val found = trackingItemDao.findByBarcode(barcode)
+                                if (found != null) {
+                                    navController.popBackStack()
+                                    navController.navigate(Screen.ItemDetail.route(found.id))
+                                } else {
+                                    navController.previousBackStackEntry
+                                        ?.savedStateHandle
+                                        ?.set("scanned_barcode", barcode)
+                                    navController.popBackStack()
+                                }
+                            } catch (e: CancellationException) {
+                                throw e
+                            } catch (e: Exception) {
+                                Log.e("NavGraph", "Barcode lookup failed", e)
+                                handled.value = false
+                            }
+                        }
+                    },
+                    onDismiss = { navController.popBackStack() },
+                )
             }
         }
 

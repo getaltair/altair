@@ -1,10 +1,8 @@
 package com.getaltair.altair.ui.today
 
 import app.cash.turbine.test
-import com.getaltair.altair.data.local.dao.DailyCheckinDao
 import com.getaltair.altair.data.local.dao.QuestDao
 import com.getaltair.altair.data.local.dao.RoutineDao
-import com.getaltair.altair.data.local.dao.UserDao
 import com.getaltair.altair.data.local.entity.QuestEntity
 import com.powersync.PowerSyncDatabase
 import com.powersync.sync.SyncStatusData
@@ -23,7 +21,6 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -38,8 +35,6 @@ class TodayViewModelTest {
 
     private lateinit var questDao: QuestDao
     private lateinit var routineDao: RoutineDao
-    private lateinit var dailyCheckinDao: DailyCheckinDao
-    private lateinit var userDao: UserDao
     private lateinit var db: PowerSyncDatabase
     private lateinit var viewModel: TodayViewModel
 
@@ -49,8 +44,6 @@ class TodayViewModelTest {
 
         questDao = mockk(relaxed = true)
         routineDao = mockk(relaxed = true)
-        dailyCheckinDao = mockk(relaxed = true)
-        userDao = mockk(relaxed = true)
         db = mockk(relaxed = true)
 
         every { questDao.watchAll(any()) } returns flowOf(emptyList())
@@ -70,10 +63,8 @@ class TodayViewModelTest {
 
         viewModel =
             TodayViewModel(
-                userDao = userDao,
                 questDao = questDao,
                 routineDao = routineDao,
-                dailyCheckinDao = dailyCheckinDao,
                 db = db,
             )
     }
@@ -154,7 +145,6 @@ class TodayViewModelTest {
                     listOf(
                         com.getaltair.altair.data.local.entity.UserEntity(
                             id = "user-1",
-                            passwordHash = null,
                             email = "test@test.com",
                             displayName = "Test User",
                             isAdmin = 0,
@@ -175,10 +165,8 @@ class TodayViewModelTest {
 
             val vm =
                 TodayViewModel(
-                    userDao = userDao,
                     questDao = questDao,
                     routineDao = routineDao,
-                    dailyCheckinDao = dailyCheckinDao,
                     db = db,
                 )
 

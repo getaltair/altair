@@ -1,5 +1,7 @@
 package com.getaltair.altair.data.sync
 
+private const val SYNC_DEBOUNCE_WINDOW_MS = 5 * 60 * 1_000L
+
 import android.content.Context
 import androidx.work.Constraints
 import androidx.work.ExistingWorkPolicy
@@ -20,6 +22,7 @@ class SyncCoordinator(
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var syncJob: Job? = null
+    private var lastSyncTime: Long = 0L
 
     fun startSync() {
         syncJob?.cancel()
@@ -42,6 +45,7 @@ class SyncCoordinator(
     }
 
     fun enqueueExpedited(context: Context) {
+        if (System.currentTimeMillis() - lastSyncTime < SYNC_DEBOUNCE_WINDOW_MS) return
         WorkManager.getInstance(context).enqueueUniqueWork(
             "sync_expedited",
             ExistingWorkPolicy.REPLACE,
@@ -55,5 +59,6 @@ class SyncCoordinator(
                 ).addTag("sync_expedited")
                 .build(),
         )
+        lastSyncTime = System.currentTimeMillis()
     }
 }

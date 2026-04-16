@@ -33,4 +33,24 @@ sealed class Screen(
     }
 
     object DailyCheckin : Screen("checkin")
+
+    object InitiativeDetail : Screen("today_graph/guidance/initiatives/{id}") {
+        fun route(id: String): String {
+            require(id.isNotBlank()) { "InitiativeDetail.route() requires a non-blank id" }
+            return "today_graph/guidance/initiatives/$id"
+        }
+    }
+
+    object EpicDetail : Screen("today_graph/guidance/initiatives/{initiativeId}/epics/{id}") {
+        fun route(
+            initiativeId: String,
+            id: String,
+        ): String {
+            require(initiativeId.isNotBlank()) { "EpicDetail.route() requires a non-blank initiativeId" }
+            require(id.isNotBlank()) { "EpicDetail.route() requires a non-blank id" }
+            return "today_graph/guidance/initiatives/$initiativeId/epics/$id"
+        }
+    }
+
+    object BarcodeScanner : Screen("barcode_scanner")
 }

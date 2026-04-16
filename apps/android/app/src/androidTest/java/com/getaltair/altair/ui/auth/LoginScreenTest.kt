@@ -1,6 +1,10 @@
 package com.getaltair.altair.ui.auth
 
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasProgressBarRangeInfo
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNode
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
@@ -45,5 +49,45 @@ class LoginScreenTest {
         composeTestRule.onNodeWithText("Sign In").performClick()
 
         verify { viewModel.login("email@example.com", "password123") }
+    }
+
+    @Test
+    fun loginScreen_loadingState_showsProgressIndicator() {
+        val viewModel = mockk<AuthViewModel>(relaxed = true)
+        every { viewModel.uiState } returns MutableStateFlow(AuthUiState.Loading)
+
+        val navController = mockk<NavController>(relaxed = true)
+
+        composeTestRule.setContent {
+            AltairTheme {
+                LoginScreen(
+                    navController = navController,
+                    viewModel = viewModel,
+                )
+            }
+        }
+
+        composeTestRule
+            .onNode(hasProgressBarRangeInfo(ProgressBarRangeInfo.Indeterminate))
+            .assertIsDisplayed()
+    }
+
+    @Test
+    fun loginScreen_errorState_showsErrorMessage() {
+        val viewModel = mockk<AuthViewModel>(relaxed = true)
+        every { viewModel.uiState } returns MutableStateFlow(AuthUiState.Error("Invalid credentials"))
+
+        val navController = mockk<NavController>(relaxed = true)
+
+        composeTestRule.setContent {
+            AltairTheme {
+                LoginScreen(
+                    navController = navController,
+                    viewModel = viewModel,
+                )
+            }
+        }
+
+        composeTestRule.onNodeWithText("Invalid credentials").assertIsDisplayed()
     }
 }

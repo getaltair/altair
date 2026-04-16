@@ -1,5 +1,11 @@
 package com.getaltair.altair.ui.guidance
 
+import android.Manifest
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -13,13 +19,23 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import com.getaltair.altair.service.FocusTimerService
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -29,6 +45,8 @@ fun FocusSessionScreen(
     viewModel: FocusSessionViewModel = koinViewModel(),
     modifier: Modifier = Modifier,
 ) {
+    val context = LocalContext.current
+
     LaunchedEffect(questId) {
         viewModel.init(questId)
         viewModel.start()
@@ -39,6 +57,52 @@ fun FocusSessionScreen(
 
     LaunchedEffect(isFinished) {
         if (isFinished) navController.popBackStack()
+    }
+
+    // Hoisted so the permission callback can access it after the dialog returns
+    var pendingEndTimeMs by remember { mutableStateOf(0L) }
+
+    val postNotifLauncher =
+        rememberLauncherForActivityResult(
+            ActivityResultContracts.RequestPermission(),
+        ) { granted ->
+            if (granted) startFocusService(context, pendingEndTimeMs)
+        }
+
+    DisposableEffect(Unit) {
+        val observer =
+            LifecycleEventObserver { _, event ->
+                when (event) {
+                    Lifecycle.Event.ON_STOP -> {
+                        // Read directly from ViewModel to avoid stale closure values
+                        if (viewModel.isRunning.value) {
+                            val endTimeMs = System.currentTimeMillis() + viewModel.remainingMs.value
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                if (ContextCompat.checkSelfPermission(
+                                        context,
+                                        Manifest.permission.POST_NOTIFICATIONS,
+                                    ) == PackageManager.PERMISSION_GRANTED
+                                ) {
+                                    startFocusService(context, endTimeMs)
+                                } else {
+                                    pendingEndTimeMs = endTimeMs
+                                    postNotifLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                }
+                            } else {
+                                startFocusService(context, endTimeMs)
+                            }
+                        }
+                    }
+
+                    Lifecycle.Event.ON_START -> {
+                        context.stopService(Intent(context, FocusTimerService::class.java))
+                    }
+
+                    else -> {}
+                }
+            }
+        ProcessLifecycleOwner.get().lifecycle.addObserver(observer)
+        onDispose { ProcessLifecycleOwner.get().lifecycle.removeObserver(observer) }
     }
 
     val minutes = remainingMs / 60_000
@@ -73,6 +137,7 @@ fun FocusSessionScreen(
         Button(
             onClick = {
                 viewModel.end()
+                context.stopService(Intent(context, FocusTimerService::class.java))
                 navController.popBackStack()
             },
             shape = RoundedCornerShape(50),
@@ -85,4 +150,15 @@ fun FocusSessionScreen(
             Text("End Session")
         }
     }
+}
+
+private fun startFocusService(
+    context: android.content.Context,
+    endTimeEpochMs: Long,
+) {
+    val intent =
+        Intent(context, FocusTimerService::class.java).apply {
+            putExtra(FocusTimerService.EXTRA_END_TIME_EPOCH_MS, endTimeEpochMs)
+        }
+    context.startForegroundService(intent)
 }

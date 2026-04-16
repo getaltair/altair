@@ -16,6 +16,9 @@ interface TrackingItemDao {
     @Query("SELECT * FROM tracking_items WHERE id = :id")
     fun watchById(id: String): Flow<TrackingItemEntity?>
 
+    @Query("SELECT * FROM tracking_items WHERE barcode = :barcode AND deleted_at IS NULL LIMIT 1")
+    suspend fun findByBarcode(barcode: String): TrackingItemEntity?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(entity: TrackingItemEntity)
 
