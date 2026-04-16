@@ -173,5 +173,8 @@ cd apps/server && cargo run
 - **Feature:** Feature 005 Guidance Domain — complete
 - **Status:** Quests, routines, epics, focus sessions, and daily check-ins implemented across server, web, and Android clients.
 
-- **Feature:** Feature 007 Tracking Domain — in progress
-- **Status:** Server implementation in progress. Module path: `apps/server/src/tracking/`
+- **Feature:** Feature 007 Tracking Domain — complete
+- **Status:** Server implementation complete. Web client integration done as part of Feature 008. Module path: `apps/server/src/tracking/`
+
+- **Feature:** Feature 008 Web Client — in progress
+- **Status:** Domain screens, admin, and testing complete. Pending final validation pass.
