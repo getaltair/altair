@@ -53,7 +53,7 @@ export function allItems(filters?: { categoryId?: string; locationId?: string })
         if (!active) break;
         _items = (result.rows?._array ?? []) as TrackingItem[];
       }
-    })();
+    })().catch((err) => console.error('[item] watch failed:', err));
 
     return () => {
       active = false;
@@ -87,7 +87,7 @@ export function itemById(id: string): { readonly item: TrackingItem | null } {
         const rows = (result.rows?._array ?? []) as TrackingItem[];
         _item = rows[0] ?? null;
       }
-    })();
+    })().catch((err) => console.error('[item] watch failed:', err));
 
     return () => {
       active = false;
@@ -122,7 +122,7 @@ $effect(() => {
       if (!active) break;
       _lowStockItems = (result.rows?._array ?? []) as TrackingItem[];
     }
-  })();
+  })().catch((err) => console.error('[item] watch failed:', err));
 
   return () => {
     active = false;

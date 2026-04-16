@@ -3,9 +3,13 @@ import type { ServerLoadEvent, RequestEvent } from '@sveltejs/kit';
 import { PUBLIC_API_BASE_URL } from '$env/static/public';
 
 export const load = async ({ fetch }: ServerLoadEvent) => {
-  const res = await fetch('/api/auth/me');
-  const profile = res.ok ? await res.json() as { display_name?: string; email?: string } : {};
-  return { displayName: profile.display_name ?? '', email: profile.email ?? '' };
+  try {
+    const res = await fetch('/api/auth/me');
+    const profile = res.ok ? await res.json() as { display_name?: string; email?: string } : {};
+    return { displayName: profile.display_name ?? '', email: profile.email ?? '' };
+  } catch {
+    return { displayName: '', email: '' };
+  }
 };
 
 export const actions = {
@@ -75,8 +79,8 @@ export const actions = {
   logout: async ({ fetch, cookies }: RequestEvent) => {
     try {
       await fetch(`${PUBLIC_API_BASE_URL}/api/auth/logout`, { method: 'POST' });
-    } catch {
-      // Best-effort — clear cookies regardless
+    } catch (err) {
+      console.error('[settings] Server-side logout failed:', err);
     }
 
     cookies.delete('access_token', { path: '/' });

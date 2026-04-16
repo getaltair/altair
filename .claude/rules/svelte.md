@@ -39,6 +39,8 @@ Applies to: `apps/web/`
 - Prefer fine-grained reactivity over coarse state objects
 - Avoid mutating state objects directly; use explicit update functions
 - Keep effects minimal; derive where possible
+- Any `$effect()` containing an async iterator (`for await`) must include an `AbortController` and return a cleanup function that calls `controller.abort()`. This prevents iterator accumulation when the effect re-triggers (e.g. HMR, parent component remount). The cleanup return is also required even when using an `active` boolean flag.
+- All async IIFEs inside `$effect()` must be followed by `.catch((err) => console.error('[module] watch failed:', err))` to surface PowerSync or SQLite errors rather than silently discarding them.
 
 ## Error Handling
 

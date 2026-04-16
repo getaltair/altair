@@ -7,10 +7,16 @@ import {
 
 export class AltairConnector implements PowerSyncBackendConnector {
   async fetchCredentials(): Promise<PowerSyncCredentials | null> {
-    const response = await fetch('/api/auth/powersync-token', {
-      method: 'GET',
-      credentials: 'include',
-    });
+    let response: Response;
+    try {
+      response = await fetch('/api/auth/powersync-token', {
+        method: 'GET',
+        credentials: 'include',
+      });
+    } catch (err) {
+      console.error('[connector] fetchCredentials network error:', err);
+      throw err;
+    }
     if (!response.ok) {
       if (response.status === 401) {
         return null;
@@ -31,39 +37,44 @@ export class AltairConnector implements PowerSyncBackendConnector {
       return;
     }
 
-    for (const entry of batch.crud) {
-      const { table, op, id, opData } = entry;
+    try {
+      for (const entry of batch.crud) {
+        const { table, op, id, opData } = entry;
 
-      switch (op) {
-        case UpdateType.PUT: {
-          await fetch(`/api/${table}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({ id, ...opData }),
-          }).then(throwIfNotOk);
-          break;
-        }
-        case UpdateType.PATCH: {
-          await fetch(`/api/${table}/${id}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify(opData),
-          }).then(throwIfNotOk);
-          break;
-        }
-        case UpdateType.DELETE: {
-          await fetch(`/api/${table}/${id}`, {
-            method: 'DELETE',
-            credentials: 'include',
-          }).then(throwIfNotOk);
-          break;
+        switch (op) {
+          case UpdateType.PUT: {
+            await fetch(`/api/${table}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'include',
+              body: JSON.stringify({ id, ...opData }),
+            }).then(throwIfNotOk);
+            break;
+          }
+          case UpdateType.PATCH: {
+            await fetch(`/api/${table}/${id}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'include',
+              body: JSON.stringify(opData),
+            }).then(throwIfNotOk);
+            break;
+          }
+          case UpdateType.DELETE: {
+            await fetch(`/api/${table}/${id}`, {
+              method: 'DELETE',
+              credentials: 'include',
+            }).then(throwIfNotOk);
+            break;
+          }
         }
       }
-    }
 
-    await batch.complete();
+      await batch.complete();
+    } catch (err) {
+      console.error('[connector] uploadData failed:', err);
+      throw err;
+    }
   }
 }
 

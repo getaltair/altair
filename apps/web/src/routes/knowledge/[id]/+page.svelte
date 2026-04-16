@@ -57,6 +57,7 @@
   // Editor state
   // ----------------------------------------------------------------
   let editorContent = $state('');
+  let editorTextarea: HTMLTextAreaElement | null = $state(null);
 
   $effect(() => {
     // Initialise content when note loads or changes
@@ -245,6 +246,7 @@
       <div class="editor-column">
         <div class="editor-wrap">
           <textarea
+            bind:this={editorTextarea}
             class="editor"
             value={editorContent}
             oninput={handleTextareaInput}
@@ -263,8 +265,7 @@
                     class="link-option"
                     onmousedown={(e) => {
                       e.preventDefault();
-                      const ta = document.querySelector<HTMLTextAreaElement>('.editor');
-                      if (ta) selectLinkedNote(result, ta);
+                      if (editorTextarea) selectLinkedNote(result, editorTextarea);
                     }}
                   >
                     {result.title}

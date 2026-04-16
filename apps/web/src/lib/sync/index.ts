@@ -32,7 +32,12 @@ export function getSyncClient(): PowerSyncDatabase {
  * the client connects once and receives all buckets it is entitled to.
  */
 export async function subscribeToStreams(client: PowerSyncDatabase): Promise<void> {
-  await client.connect(new AltairConnector());
+  try {
+    await client.connect(new AltairConnector());
+  } catch (err) {
+    console.error('[sync] PowerSync connection failed:', err);
+    throw err;
+  }
 }
 
 export { AppSchema } from './schema.js';

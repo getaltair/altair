@@ -6,16 +6,18 @@ export const load: LayoutServerLoad = async (event) => {
     throw redirect(303, '/auth/login');
   }
 
-  const response = await event.fetch('/api/auth/me');
-  if (!response.ok) {
-    // If we can't fetch the profile, fall back to non-admin
+  try {
+    const response = await event.fetch('/api/auth/me');
+    if (!response.ok) {
+      return { isAdmin: false, user: null };
+    }
+    const profile = (await response.json()) as { is_admin?: boolean; display_name?: string };
+    return {
+      isAdmin: profile.is_admin ?? false,
+      user: { display_name: profile.display_name ?? null },
+    };
+  } catch {
+    // Network error or malformed response — degrade gracefully
     return { isAdmin: false, user: null };
   }
-
-  const profile = (await response.json()) as { is_admin?: boolean; display_name?: string };
-
-  return {
-    isAdmin: profile.is_admin ?? false,
-    user: { display_name: profile.display_name ?? null },
-  };
 };

@@ -9,7 +9,7 @@
 
   let { data }: { data: PageData } = $props();
 
-  const greeting = $derived(() => {
+  const greeting = $derived.by(() => {
     const hour = new Date().getHours();
     if (hour < 12) return 'Good morning';
     if (hour < 17) return 'Good afternoon';
@@ -25,14 +25,19 @@
   $effect(() => {
     const client = getSyncClient();
     const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+    const controller = new AbortController();
+
     (async () => {
       for await (const result of client.watch(
         'SELECT id FROM daily_checkins WHERE checkin_date = ? AND deleted_at IS NULL LIMIT 1',
-        [today]
+        [today],
+        { signal: controller.signal }
       )) {
         hasCheckedIn = (result.rows?._array ?? []).length > 0;
       }
-    })();
+    })().catch((err) => console.error('[today] checkin watch failed:', err));
+
+    return () => controller.abort();
   });
 
   const quests = $derived(todayQuests());
@@ -74,7 +79,7 @@
 
 <div class="today">
   <header class="today__header">
-    <h1 class="greeting">{greeting()}, {name}.</h1>
+    <h1 class="greeting">{greeting}, {name}.</h1>
   </header>
 
   {#if !hasCheckedIn}

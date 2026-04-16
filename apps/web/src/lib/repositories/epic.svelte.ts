@@ -32,7 +32,7 @@ $effect(() => {
     )) {
       _allEpics = (result.rows?._array ?? []) as Epic[];
     }
-  })();
+  })().catch((err) => console.error('[epic] watch failed:', err));
 });
 
 // ============================================================

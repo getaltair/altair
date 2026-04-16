@@ -36,7 +36,7 @@ $effect(() => {
     )) {
       _allQuests = (result.rows?._array ?? []) as Quest[];
     }
-  })();
+  })().catch((err) => console.error('[quest] watch failed:', err));
 });
 
 // ============================================================

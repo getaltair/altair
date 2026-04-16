@@ -36,7 +36,7 @@ export function eventsForItem(itemId: string): { readonly events: TrackingItemEv
         if (!active) break;
         _events = (result.rows?._array ?? []) as TrackingItemEvent[];
       }
-    })();
+    })().catch((err) => console.error('[item-event] watch failed:', err));
 
     return () => {
       active = false;

@@ -43,7 +43,7 @@ $effect(() => {
       if (!active) break;
       _allShoppingLists = (result.rows?._array ?? []) as ShoppingList[];
     }
-  })();
+  })().catch((err) => console.error('[shopping-list] watch failed:', err));
 
   return () => {
     active = false;
@@ -72,7 +72,7 @@ export function shoppingListById(id: string): { readonly list: ShoppingList | nu
         const rows = (result.rows?._array ?? []) as ShoppingList[];
         _list = rows[0] ?? null;
       }
-    })();
+    })().catch((err) => console.error('[shopping-list] watch failed:', err));
 
     return () => {
       active = false;
@@ -105,7 +105,7 @@ export function itemsForShoppingList(listId: string): { readonly items: Shopping
         if (!active) break;
         _items = (result.rows?._array ?? []) as ShoppingListItem[];
       }
-    })();
+    })().catch((err) => console.error('[shopping-list] watch failed:', err));
 
     return () => {
       active = false;

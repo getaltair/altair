@@ -53,7 +53,7 @@ export function allNotes(): Note[] {
       for await (const result of stream) {
         notes = (result.rows?._array ?? []) as Note[];
       }
-    })();
+    })().catch((err) => console.error('[note] watch failed:', err));
 
     return () => controller.abort();
   });
@@ -81,7 +81,7 @@ export function noteById(id: string): Note | null {
       for await (const result of stream) {
         note = ((result.rows?._array ?? [])[0] ?? null) as Note | null;
       }
-    })();
+    })().catch((err) => console.error('[note] watch failed:', err));
 
     return () => controller.abort();
   });
@@ -113,7 +113,7 @@ export function searchNotes(query: string): Note[] {
       for await (const result of stream) {
         notes = (result.rows?._array ?? []) as Note[];
       }
-    })();
+    })().catch((err) => console.error('[note] watch failed:', err));
 
     return () => controller.abort();
   });
@@ -146,7 +146,7 @@ export function backlinksFor(noteId: string): EntityRelation[] {
       for await (const result of stream) {
         relations = (result.rows?._array ?? []) as EntityRelation[];
       }
-    })();
+    })().catch((err) => console.error('[note] watch failed:', err));
 
     return () => controller.abort();
   });

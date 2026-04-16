@@ -31,7 +31,7 @@ $effect(() => {
     )) {
       _allInitiatives = (result.rows?._array ?? []) as Initiative[];
     }
-  })();
+  })().catch((err) => console.error('[initiative] watch failed:', err));
 });
 
 // ============================================================

@@ -40,7 +40,7 @@ export function allTags(): Tag[] {
       for await (const result of stream) {
         tags = (result.rows?._array ?? []) as Tag[];
       }
-    })();
+    })().catch((err) => console.error('[tag] watch failed:', err));
 
     return () => controller.abort();
   });
@@ -72,7 +72,7 @@ export function tagsForEntity(entityId: string, entityType: string): Tag[] {
       for await (const result of stream) {
         tags = (result.rows?._array ?? []) as Tag[];
       }
-    })();
+    })().catch((err) => console.error('[tag] watch failed:', err));
 
     return () => controller.abort();
   });

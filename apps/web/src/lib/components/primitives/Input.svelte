@@ -25,7 +25,7 @@
     <label for={inputId} class="label">{label}</label>
   {/if}
   <input
-    {id}
+    id={inputId}
     {type}
     bind:value
     class="input"

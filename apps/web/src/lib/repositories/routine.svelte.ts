@@ -32,7 +32,7 @@ $effect(() => {
     )) {
       _allRoutines = (result.rows?._array ?? []) as Routine[];
     }
-  })();
+  })().catch((err) => console.error('[routine] watch failed:', err));
 });
 
 // ============================================================
