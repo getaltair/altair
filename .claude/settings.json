@@ -24,18 +24,6 @@
     "ask": []
   },
   "hooks": {
-    "SessionStart": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "uv run --directory claude-memory-compiler python hooks/session-start.py",
-            "timeout": 15
-          }
-        ]
-      }
-    ],
     "UserPromptSubmit": [
       {
         "hooks": [
@@ -57,23 +45,6 @@
             "type": "command",
             "command": "bun run .claude/hooks/context-recovery/conv-backup.ts",
             "async": true
-          },
-          {
-            "type": "command",
-            "command": "uv run --directory claude-memory-compiler python hooks/pre-compact.py",
-            "timeout": 10
-          }
-        ]
-      }
-    ],
-    "SessionEnd": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "uv run --directory claude-memory-compiler python hooks/session-end.py",
-            "timeout": 10
           }
         ]
       }
