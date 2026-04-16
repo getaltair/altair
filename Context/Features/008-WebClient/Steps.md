@@ -398,32 +398,32 @@ Tasks S018–S020 are independent and run in parallel. S021–S023 depend on S02
 
 ### Phase 7: Post-Review Test Fixes (from PR #9 review)
 
-- [ ] S026-T: Fix NoteEditor component test to render the actual page component
+- [x] S026-T: Fix NoteEditor component test to render the actual page component
   - Delete or rewrite `apps/web/src/routes/knowledge/NoteEditor.spec.ts` tests that call `db.execute()` directly without rendering the component. Instead render the `knowledge/[id]/+page.svelte` component and simulate `[[` keyboard input to trigger the dropdown. Assert `entity_relations` INSERT is called with the correct `relation_type` and entity IDs. If the component tests are too costly to refactor, delete them and rely on the E2E coverage in `sync-integration.e2e.ts`.
   - **Relates to:** FA-006 (wiki-link autocomplete creates entity_relations row)
   - **Review finding:** P9-012
 
-- [ ] S027-T: Fix ItemDetail validation test to use shared utility or render the component
+- [x] S027-T: Fix ItemDetail validation test to use shared utility or render the component
   - Extract the consumption validation logic from `apps/web/src/routes/tracking/items/[id]/ItemDetail.spec.ts` into `apps/web/src/lib/utils/validate-consumption.ts` and import it in both the component and the test. Alternatively, render the component and drive the input directly. Ensures FA-009 is verified against the component's actual boundary condition, not a copy.
   - **Relates to:** FA-009 (consumption block before outbox entry)
   - **Review finding:** P9-013
 
-- [ ] S028-T: Replace ShoppingList CSS no-op unit tests with Playwright E2E
+- [x] S028-T: Replace ShoppingList CSS no-op unit tests with Playwright E2E
   - Delete the two visual CSS tests in `apps/web/src/routes/tracking/shopping-lists/ShoppingList.spec.ts` that fall back to `expect(container).toBeTruthy()`. Add a Playwright E2E test in `apps/web/src/routes/ui.e2e.ts` that uses `getComputedStyle` on the checkbox element to verify `border-radius: 9999px` and checks that checked items render at Ghost Border Ash opacity.
   - **Relates to:** FA-010 (shopping list pill checkbox visual)
   - **Review finding:** P9-014
 
-- [ ] S029-T: Expand FA-003 sync stream test to cover all 5 streams unconditionally
+- [x] S029-T: Expand FA-003 sync stream test to cover all 5 streams unconditionally
   - Update `apps/web/src/lib/sync/sync-integration.e2e.ts` FA-003 block: assert all 5 streams (`quests`, `notes`, `tracking_items`, `routines`, `initiatives` or the actual stream names) individually rather than in an aggregate. Remove the `if (syncClientPresent)` gate — `window.__altairSync` is now always assigned in `getSyncClient()`. Assert each table's count is `> 0` separately, not as a combined total.
   - **Relates to:** FA-003 (PowerSync sync round-trip, all streams)
   - **Review finding:** P9-015
 
-- [ ] S030-T: Add E2E test for non-admin redirect from `/admin`
+- [x] S030-T: Add E2E test for non-admin redirect from `/admin`
   - Add a short Playwright test to `apps/web/src/routes/auth/auth-flow.e2e.ts` or a new `admin.e2e.ts` file: log in as a non-admin user, navigate to `/admin`, and assert `page.url()` redirects to `/`.
   - **Relates to:** FA-002 (non-admin redirect), S014 (is_admin risk gate)
   - **Review finding:** P9-016
 
-- [ ] S031-T: Add `uploadData` partial-failure path test
+- [x] S031-T: Add `uploadData` partial-failure path test
   - Add a test in `apps/web/src/lib/sync/schema.spec.ts` (or a new `connector.spec.ts`) where `getCrudBatch` returns a 2-entry batch and the `fetch` mock rejects on the second entry. Assert `batch.complete()` is never called. This verifies the P9-004 fix is correct and regression-proof.
   - **Relates to:** P9-004 fix (uploadData error handling)
   - **Review finding:** P9-017
