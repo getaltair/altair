@@ -19,11 +19,17 @@ sealed class Screen(
 
     // Deep-linkable destinations
     object QuestDetail : Screen("quest/{id}") {
-        fun route(id: String) = "quest/$id"
+        fun route(id: String): String {
+            require(id.isNotBlank()) { "QuestDetail.route() requires a non-blank id" }
+            return "quest/$id"
+        }
     }
 
     object ItemDetail : Screen("item/{id}") {
-        fun route(id: String) = "item/$id"
+        fun route(id: String): String {
+            require(id.isNotBlank()) { "ItemDetail.route() requires a non-blank id" }
+            return "item/$id"
+        }
     }
 
     object DailyCheckin : Screen("checkin")

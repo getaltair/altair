@@ -160,8 +160,8 @@ fun TodayScreen(
                     DailyCheckinCard(
                         energy = checkinEnergy,
                         mood = checkinMood,
-                        onEnergyChange = { viewModel.checkinEnergy.value = it },
-                        onMoodChange = { viewModel.checkinMood.value = it },
+                        onEnergyChange = { viewModel.setCheckinEnergy(it) },
+                        onMoodChange = { viewModel.setCheckinMood(it) },
                         onSubmit = { viewModel.submitCheckin(checkinEnergy, checkinMood) },
                     )
                 }

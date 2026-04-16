@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.getaltair.altair.data.auth.TokenPreferences
 import com.getaltair.altair.domain.repository.AuthRepository
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -27,7 +28,8 @@ class AuthViewModel(
     private val _uiState = MutableStateFlow<AuthUiState>(AuthUiState.Idle)
     val uiState: StateFlow<AuthUiState> = _uiState
 
-    val isAuthenticated: MutableStateFlow<Boolean> = MutableStateFlow(tokenPreferences.accessToken != null)
+    // Derived from token presence so logout/token-clear automatically updates this
+    val isAuthenticated: StateFlow<Boolean> = tokenPreferences.isLoggedInFlow
 
     fun login(
         email: String,
@@ -37,8 +39,9 @@ class AuthViewModel(
             _uiState.value = AuthUiState.Loading
             try {
                 authRepository.login(email, password)
-                isAuthenticated.value = true
                 _uiState.value = AuthUiState.Success
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _uiState.value = AuthUiState.Error(e.message ?: "Login failed")
             }
@@ -54,8 +57,9 @@ class AuthViewModel(
             _uiState.value = AuthUiState.Loading
             try {
                 authRepository.register(email, password, displayName)
-                isAuthenticated.value = true
                 _uiState.value = AuthUiState.Success
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _uiState.value = AuthUiState.Error(e.message ?: "Registration failed")
             }

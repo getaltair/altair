@@ -396,10 +396,85 @@ Phase 4 tasks can be assigned and executed in parallel across builder-guidance, 
 
 - [ ] S025-D: Update planning artifacts on feature complete
   - Update this `Steps.md`: mark all completed tasks, set status to Complete, record final milestone date.
-  - Add ADR-022, ADR-023 links to `Context/Decisions/` index if one exists.
+  - Add ADR-022 through ADR-028 links to `Context/Decisions/` index if one exists.
   - **Assigned:** builder-android
   - **Depends:** Milestone 5
   - **Parallel:** false
+
+---
+
+### Phase 6: Post-Review Test Coverage
+
+Tasks added from PR review P10 findings.
+
+- [ ] S026-T: `AuthViewModel` unit tests — login/register success and error paths (P10-020)
+  - `login_success_setsIsAuthenticatedTrue`, `login_failure_emitsErrorState`, `register_failure_emitsErrorState`
+  - Verify `isAuthenticated` derives from `tokenPreferences.isLoggedInFlow`, not a separate field
+  - **Relates to:** FA-001, FA-002
+  - **Assigned:** builder-tests
+  - **Parallel:** true
+
+- [ ] S027-T: `AltairPowerSyncConnector.uploadData` unit tests (P10-021)
+  - Verify `SyncApi.upsert()` called for PUT/PATCH ops, `SyncApi.delete()` called for DELETE ops
+  - Verify `batch.complete(null)` called on success; not called if `SyncApi` throws
+  - **Relates to:** FA-003, FA-005
+  - **Assigned:** builder-tests
+  - **Parallel:** true
+
+- [ ] S028-T: `FocusSessionViewModel` timer-completion test (P10-022)
+  - Add instrumented `FocusSessionScreenTest.kt` verifying `_isFinished = true` state transition
+  - Test the `onFinish() → recordSession()` path with a mock `db`
+  - **Relates to:** FA-007
+  - **Assigned:** builder-tests
+  - **Parallel:** true
+
+- [ ] S029-T: `SyncCoordinator` and `SyncWorker` unit tests (P10-023)
+  - `SyncWorker`: `doWork` returns `Result.retry()` for `IOException`, `Result.failure()` for `Exception`, rethrows `CancellationException`
+  - `SyncCoordinator`: `triggerSync()` propagates exceptions from `powerSyncDatabase.connect()`
+  - **Relates to:** FA-003, FA-005, FA-017, FA-018, FA-020
+  - **Assigned:** builder-tests
+  - **Parallel:** true
+
+- [ ] S030-T: FA-002 unauthenticated redirect instrumented test (P10-024)
+  - Verify that clearing tokens causes `MainActivity` to navigate to Login and clear back stack
+  - **Relates to:** FA-002
+  - **Assigned:** builder-tests
+  - **Parallel:** true
+
+- [ ] S031-T: `TokenPreferences.clearTokens()` unit test (P10-025)
+  - Use fake `SharedPreferences`; verify both `accessToken` and `refreshToken` become null after `clearTokens()`
+  - Verify `isLoggedInFlow` emits `false`
+  - **Relates to:** FA-001
+  - **Assigned:** builder-tests
+  - **Parallel:** true
+
+- [ ] S032-T: `TodayViewModel` integration test for SQL guard behavior (P10-026)
+  - Replace string-inspection tests with Robolectric + in-memory Room tests
+  - Verify `completeQuest` does not affect a `not_started` quest at the database level
+  - **Relates to:** FA-006
+  - **Assigned:** builder-tests
+  - **Parallel:** true
+
+- [ ] S033-T: `LoginScreenTest` Loading and Error UI state coverage (P10-027)
+  - Add tests verifying loading spinner renders on `AuthUiState.Loading`
+  - Add test verifying error message renders on `AuthUiState.Error`
+  - **Relates to:** FA-001
+  - **Assigned:** builder-tests
+  - **Parallel:** true
+
+- [ ] S034: Debounce expedited sync on rapid network reconnect events (P10-039)
+  - Track last sync timestamp; skip expedited enqueue if a sync completed within the last 5 minutes
+  - Prevents worker stacking on flaky WiFi / cell transitions
+  - **Relates to:** FA-003, FA-005
+  - **Assigned:** builder-android
+  - **Parallel:** true
+
+- [ ] S035-T: `QuestDetailScreenTest` with real ViewModel state machine (P10-041)
+  - Add a test that uses the real `QuestDetailViewModel` (not a stub `validTransitions` map)
+  - Verify the screen renders only the permitted transitions for a given status
+  - **Relates to:** FA-004
+  - **Assigned:** builder-tests
+  - **Parallel:** true
 
 ---
 

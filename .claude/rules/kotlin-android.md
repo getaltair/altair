@@ -29,8 +29,8 @@ Applies to: `apps/android/`
 ## Coroutines & Flow
 
 - Structured concurrency only: no `GlobalScope.launch` or `GlobalScope.async`
-- No `runBlocking` outside of main function or tests
-- Catch blocks must not swallow `CancellationException`
+- No `runBlocking` outside of main function or tests (exception: OkHttp `Authenticator` — see ADR-025)
+- When catching `Exception` broadly, always add `catch (e: CancellationException) { throw e }` as the first catch clause. Bare `catch (e: Exception)` that silently swallows cancellation breaks structured concurrency. A `rethrowCancellation()` extension or the pattern `if (e is CancellationException) throw e` are also acceptable.
 - Use `delay()` in coroutine context, never `Thread.sleep()`
 - `Flow.collect` must be lifecycle-aware (use `repeatOnLifecycle` or `collectAsState`)
 - Use `SupervisorJob` for isolated error handling in child coroutines
@@ -49,15 +49,17 @@ Applies to: `apps/android/`
 - Prefer `val` over `var`; flag unnecessary `var` declarations
 - No `!!` (non-null assertion) except in rare justified cases
 - No `lateinit var` for nullable types; use nullable instead
-- Use `kotlinx-datetime` or `java.time`, never `java.util.Date`
+- Always use `kotlinx-datetime` (`Clock.System.now().toString()`) for timestamp generation. `LocalDateTime.now()` is prohibited — it strips timezone information and produces incorrect `updated_at` ordering against server `timestamptz` columns.
 - Use a logging framework, never `println()` for logging
 - Concrete types behind interfaces in constructors (dependency inversion)
 
 ## Error Handling
 
 - Sealed classes or sealed interfaces for error states
-- `UiState` pattern: `Loading`, `Success(data)`, `Error(message)`
+- `UiState` pattern: `Loading`, `Success(data)`, `Error(message)` — all three states are required; omitting `Loading` leaves write operations with no in-flight feedback
+- Every `viewModelScope.launch` block that performs a database write or network call must include a `try/catch` that: (1) rethrows `CancellationException`, (2) logs the failure with `Log.e`, and (3) emits to a `_uiState` error state. Unhandled coroutine exceptions produce opaque crash-level logs with no UI feedback.
 - Never swallow exceptions silently in catch blocks
+- ViewModel state must be exposed as `StateFlow<T>` (read-only). Back all mutable state with `private val _field: MutableStateFlow` and expose `val field: StateFlow` via `_field.asStateFlow()`. Composables must never write directly to ViewModel state fields — `MutableStateFlow` must never be `public`.
 
 ## Testing
 

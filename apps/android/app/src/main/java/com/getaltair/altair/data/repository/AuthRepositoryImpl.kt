@@ -1,11 +1,14 @@
 package com.getaltair.altair.data.repository
 
+import android.util.Log
 import com.getaltair.altair.data.auth.TokenPreferences
 import com.getaltair.altair.data.network.AuthApi
 import com.getaltair.altair.data.network.LoginRequest
 import com.getaltair.altair.data.network.RegisterRequest
 import com.getaltair.altair.data.sync.SyncCoordinator
 import com.getaltair.altair.domain.repository.AuthRepository
+
+private const val TAG = "AuthRepositoryImpl"
 
 class AuthRepositoryImpl(
     private val authApi: AuthApi,
@@ -34,7 +37,12 @@ class AuthRepositoryImpl(
     }
 
     override suspend fun logout() {
-        syncCoordinator.stopSync()
-        tokenPreferences.clearTokens()
+        try {
+            syncCoordinator.stopSync()
+        } catch (e: Exception) {
+            Log.w(TAG, "stopSync failed during logout", e)
+        } finally {
+            tokenPreferences.clearTokens()
+        }
     }
 }

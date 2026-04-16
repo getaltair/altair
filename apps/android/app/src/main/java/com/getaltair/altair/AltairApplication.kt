@@ -5,6 +5,7 @@ import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
+import android.util.Log
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.NetworkType
@@ -23,33 +24,44 @@ import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.startKoin
 import java.util.concurrent.TimeUnit
 
+private const val TAG = "AltairApplication"
+
 class AltairApplication : Application() {
     override fun onCreate() {
         super.onCreate()
-        startKoin {
-            androidContext(this@AltairApplication)
-            modules(
-                databaseModule,
-                syncModule,
-                preferencesModule,
-                networkModule,
-                repositoryModule,
-                viewModelModule,
-            )
+        try {
+            startKoin {
+                androidContext(this@AltairApplication)
+                modules(
+                    databaseModule,
+                    syncModule,
+                    preferencesModule,
+                    networkModule,
+                    repositoryModule,
+                    viewModelModule,
+                )
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Koin initialization failed", e)
+            return
         }
 
-        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
-            "sync_periodic",
-            ExistingPeriodicWorkPolicy.KEEP,
-            PeriodicWorkRequestBuilder<SyncWorker>(15, TimeUnit.MINUTES)
-                .setConstraints(
-                    Constraints
-                        .Builder()
-                        .setRequiredNetworkType(NetworkType.CONNECTED)
-                        .build(),
-                ).addTag("sync_periodic")
-                .build(),
-        )
+        try {
+            WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+                "sync_periodic",
+                ExistingPeriodicWorkPolicy.KEEP,
+                PeriodicWorkRequestBuilder<SyncWorker>(15, TimeUnit.MINUTES)
+                    .setConstraints(
+                        Constraints
+                            .Builder()
+                            .setRequiredNetworkType(NetworkType.CONNECTED)
+                            .build(),
+                    ).addTag("sync_periodic")
+                    .build(),
+            )
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to schedule periodic sync", e)
+        }
 
         val connectivityManager = getSystemService(CONNECTIVITY_SERVICE) as ConnectivityManager
         val request =
@@ -61,7 +73,11 @@ class AltairApplication : Application() {
             request,
             object : ConnectivityManager.NetworkCallback() {
                 override fun onAvailable(network: Network) {
-                    get<SyncCoordinator>().enqueueExpedited(this@AltairApplication)
+                    try {
+                        get<SyncCoordinator>().enqueueExpedited(this@AltairApplication)
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Failed to enqueue expedited sync on network available", e)
+                    }
                 }
             },
         )

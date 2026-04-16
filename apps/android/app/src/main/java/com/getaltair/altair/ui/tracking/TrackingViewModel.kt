@@ -1,5 +1,6 @@
 package com.getaltair.altair.ui.tracking
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.getaltair.altair.data.local.dao.ShoppingListDao
@@ -15,19 +16,26 @@ import com.getaltair.altair.data.local.entity.TrackingItemEntity
 import com.getaltair.altair.data.local.entity.TrackingItemEventEntity
 import com.getaltair.altair.data.local.entity.TrackingLocationEntity
 import com.powersync.PowerSyncDatabase
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import java.time.Instant
+import kotlinx.datetime.Clock
 import java.util.UUID
+
+private const val TAG = "TrackingViewModel"
 
 sealed class TrackingUiState {
     object Idle : TrackingUiState()
+
+    object Loading : TrackingUiState()
 
     data class Error(
         val message: String,
@@ -43,8 +51,6 @@ class TrackingViewModel(
     private val shoppingListDao: ShoppingListDao,
     private val shoppingListItemDao: ShoppingListItemDao,
     private val db: PowerSyncDatabase,
-    // TODO: wire from session — currently read from the household associated with the signed-in user
-    private val householdId: String = "",
 ) : ViewModel() {
     val searchQuery = MutableStateFlow("")
     val selectedLocation = MutableStateFlow<String?>(null)
@@ -53,11 +59,27 @@ class TrackingViewModel(
     private val _uiState = MutableStateFlow<TrackingUiState>(TrackingUiState.Idle)
     val uiState: StateFlow<TrackingUiState> = _uiState
 
+    private val currentHouseholdId: StateFlow<String?> =
+        db
+            .watch<String?>(
+                sql =
+                    """
+                    SELECT hm.household_id FROM household_memberships hm
+                    INNER JOIN users u ON hm.user_id = u.id
+                    WHERE u.deleted_at IS NULL AND hm.deleted_at IS NULL
+                    LIMIT 1
+                    """.trimIndent(),
+                parameters = emptyList(),
+            ) { cursor -> cursor.getString(0) }
+            .map { it.firstOrNull() }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
     // Eagerly started so items.value is available in command handlers (logConsumption, etc.)
     val items: StateFlow<List<TrackingItemEntity>> =
-        trackingItemDao
-            .watchAll(householdId)
-            .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+        currentHouseholdId
+            .flatMapLatest { hid ->
+                if (hid == null) flowOf(emptyList()) else trackingItemDao.watchAll(hid)
+            }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     val filteredItems: StateFlow<List<TrackingItemEntity>> =
         combine(items, searchQuery, selectedLocation, selectedCategory) { list, query, loc, cat ->
@@ -69,21 +91,23 @@ class TrackingViewModel(
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     val locations: StateFlow<List<TrackingLocationEntity>> =
-        trackingLocationDao
-            .watchAll(householdId)
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+        currentHouseholdId
+            .flatMapLatest { hid ->
+                if (hid == null) flowOf(emptyList()) else trackingLocationDao.watchAll(hid)
+            }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     val categories: StateFlow<List<TrackingCategoryEntity>> =
-        trackingCategoryDao
-            .watchAll(householdId)
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+        currentHouseholdId
+            .flatMapLatest { hid ->
+                if (hid == null) flowOf(emptyList()) else trackingCategoryDao.watchAll(hid)
+            }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     val shoppingLists: StateFlow<List<ShoppingListEntity>> =
-        shoppingListDao
-            .watchAll(householdId)
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+        currentHouseholdId
+            .flatMapLatest { hid ->
+                if (hid == null) flowOf(emptyList()) else shoppingListDao.watchAll(hid)
+            }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    // Convenience: expose items for a specific item id (used by detail screen)
     fun watchItemEvents(itemId: String): StateFlow<List<TrackingItemEventEntity>> =
         trackingItemEventDao
             .watchAll(itemId)
@@ -102,16 +126,25 @@ class TrackingViewModel(
         barcode: String? = null,
     ) {
         viewModelScope.launch {
+            val hid =
+                currentHouseholdId.value ?: run {
+                    _uiState.value = TrackingUiState.Error("Not in a household")
+                    return@launch
+                }
+            _uiState.value = TrackingUiState.Loading
             try {
-                val now = Instant.now().toString()
+                val now = Clock.System.now().toString()
                 val id = UUID.randomUUID().toString()
                 db.execute(
                     "INSERT INTO tracking_items (id, name, quantity, barcode, location_id, category_id, user_id, household_id, created_at, updated_at) " +
                         "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                    listOf(id, name, quantity, barcode, locationId, categoryId, "", householdId, now, now),
+                    listOf(id, name, quantity, barcode, locationId, categoryId, "", hid, now, now),
                 )
                 _uiState.value = TrackingUiState.Idle
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
+                Log.e(TAG, "Failed to create item", e)
                 _uiState.value = TrackingUiState.Error(e.message ?: "Failed to create item")
             }
         }
@@ -135,8 +168,9 @@ class TrackingViewModel(
                     )
                 return@launch
             }
+            _uiState.value = TrackingUiState.Loading
             try {
-                val now = Instant.now().toString()
+                val now = Clock.System.now().toString()
                 val eventId = UUID.randomUUID().toString()
                 db.execute(
                     "INSERT INTO tracking_item_events (id, item_id, event_type, quantity_change, occurred_at, created_at) " +
@@ -148,7 +182,10 @@ class TrackingViewModel(
                     listOf(amount, now, itemId),
                 )
                 _uiState.value = TrackingUiState.Idle
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
+                Log.e(TAG, "Failed to log consumption", e)
                 _uiState.value = TrackingUiState.Error(e.message ?: "Failed to log consumption")
             }
         }
@@ -156,14 +193,24 @@ class TrackingViewModel(
 
     fun createLocation(name: String) {
         viewModelScope.launch {
+            val hid =
+                currentHouseholdId.value ?: run {
+                    _uiState.value = TrackingUiState.Error("Not in a household")
+                    return@launch
+                }
+            _uiState.value = TrackingUiState.Loading
             try {
-                val now = Instant.now().toString()
+                val now = Clock.System.now().toString()
                 val id = UUID.randomUUID().toString()
                 db.execute(
                     "INSERT INTO tracking_locations (id, name, household_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
-                    listOf(id, name, householdId, now, now),
+                    listOf(id, name, hid, now, now),
                 )
+                _uiState.value = TrackingUiState.Idle
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
+                Log.e(TAG, "Failed to create location", e)
                 _uiState.value = TrackingUiState.Error(e.message ?: "Failed to create location")
             }
         }
@@ -171,14 +218,24 @@ class TrackingViewModel(
 
     fun createCategory(name: String) {
         viewModelScope.launch {
+            val hid =
+                currentHouseholdId.value ?: run {
+                    _uiState.value = TrackingUiState.Error("Not in a household")
+                    return@launch
+                }
+            _uiState.value = TrackingUiState.Loading
             try {
-                val now = Instant.now().toString()
+                val now = Clock.System.now().toString()
                 val id = UUID.randomUUID().toString()
                 db.execute(
                     "INSERT INTO tracking_categories (id, name, household_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
-                    listOf(id, name, householdId, now, now),
+                    listOf(id, name, hid, now, now),
                 )
+                _uiState.value = TrackingUiState.Idle
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
+                Log.e(TAG, "Failed to create category", e)
                 _uiState.value = TrackingUiState.Error(e.message ?: "Failed to create category")
             }
         }
@@ -186,14 +243,24 @@ class TrackingViewModel(
 
     fun createShoppingList(name: String) {
         viewModelScope.launch {
+            val hid =
+                currentHouseholdId.value ?: run {
+                    _uiState.value = TrackingUiState.Error("Not in a household")
+                    return@launch
+                }
+            _uiState.value = TrackingUiState.Loading
             try {
-                val now = Instant.now().toString()
+                val now = Clock.System.now().toString()
                 val id = UUID.randomUUID().toString()
                 db.execute(
                     "INSERT INTO shopping_lists (id, name, household_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
-                    listOf(id, name, householdId, now, now),
+                    listOf(id, name, hid, now, now),
                 )
+                _uiState.value = TrackingUiState.Idle
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
+                Log.e(TAG, "Failed to create shopping list", e)
                 _uiState.value = TrackingUiState.Error(e.message ?: "Failed to create shopping list")
             }
         }
@@ -205,15 +272,20 @@ class TrackingViewModel(
         quantity: Double = 1.0,
     ) {
         viewModelScope.launch {
+            _uiState.value = TrackingUiState.Loading
             try {
-                val now = Instant.now().toString()
+                val now = Clock.System.now().toString()
                 val id = UUID.randomUUID().toString()
                 db.execute(
                     "INSERT INTO shopping_list_items (id, shopping_list_id, name, quantity, status, created_at, updated_at) " +
                         "VALUES (?, ?, ?, ?, ?, ?, ?)",
                     listOf(id, shoppingListId, name, quantity, "pending", now, now),
                 )
+                _uiState.value = TrackingUiState.Idle
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
+                Log.e(TAG, "Failed to add shopping list item", e)
                 _uiState.value = TrackingUiState.Error(e.message ?: "Failed to add shopping list item")
             }
         }
@@ -221,14 +293,19 @@ class TrackingViewModel(
 
     fun toggleShoppingListItem(item: ShoppingListItemEntity) {
         viewModelScope.launch {
+            _uiState.value = TrackingUiState.Loading
             try {
                 val newStatus = if (item.status == "completed") "pending" else "completed"
-                val now = Instant.now().toString()
+                val now = Clock.System.now().toString()
                 db.execute(
                     "UPDATE shopping_list_items SET status = ?, updated_at = ? WHERE id = ?",
                     listOf(newStatus, now, item.id),
                 )
+                _uiState.value = TrackingUiState.Idle
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
+                Log.e(TAG, "Failed to toggle shopping list item", e)
                 _uiState.value = TrackingUiState.Error(e.message ?: "Failed to update item")
             }
         }

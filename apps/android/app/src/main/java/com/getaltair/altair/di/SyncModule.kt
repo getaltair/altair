@@ -28,7 +28,7 @@ val syncModule =
             AltairPowerSyncConnector(
                 powerSyncUrl = BuildConfig.POWERSYNC_URL,
                 getToken = { get<com.getaltair.altair.data.auth.TokenPreferences>().accessToken ?: "" },
-                uploadToServer = { _, _, _, _ -> /* wired in S016 (WorkManager sync) */ },
+                syncApi = get(),
             )
         }
 

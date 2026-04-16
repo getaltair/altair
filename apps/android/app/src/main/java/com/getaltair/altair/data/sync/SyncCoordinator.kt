@@ -37,10 +37,8 @@ class SyncCoordinator(
         }
     }
 
-    fun triggerSync() {
-        scope.launch {
-            powerSyncDatabase.connect(connector)
-        }
+    suspend fun triggerSync() {
+        powerSyncDatabase.connect(connector)
     }
 
     fun enqueueExpedited(context: Context) {

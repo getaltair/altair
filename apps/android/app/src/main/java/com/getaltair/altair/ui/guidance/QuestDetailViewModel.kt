@@ -1,16 +1,20 @@
 package com.getaltair.altair.ui.guidance
 
+import android.util.Log
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.getaltair.altair.data.local.dao.QuestDao
 import com.getaltair.altair.data.local.entity.QuestEntity
 import com.powersync.PowerSyncDatabase
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
+
+private const val TAG = "QuestDetailViewModel"
 
 // Valid transitions per 06-state-machines.md
 private val VALID_TRANSITIONS: Map<String, List<String>> =
@@ -23,33 +27,39 @@ private val VALID_TRANSITIONS: Map<String, List<String>> =
     )
 
 class QuestDetailViewModel(
+    savedStateHandle: SavedStateHandle,
     private val questDao: QuestDao,
     private val db: PowerSyncDatabase,
 ) : ViewModel() {
-    private var questId: String = ""
+    private val questId: String = checkNotNull(savedStateHandle["id"])
 
-    lateinit var quest: StateFlow<QuestEntity?>
+    val quest: StateFlow<QuestEntity?> =
+        questDao
+            .watchById(questId)
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
-    fun init(id: String) {
-        if (questId == id) return
-        questId = id
-        quest =
-            questDao
-                .watchById(id)
-                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
-    }
+    private val _error = MutableStateFlow<String?>(null)
+    val error: StateFlow<String?> = _error
 
     fun validTransitions(currentStatus: String): List<String> = VALID_TRANSITIONS[currentStatus] ?: emptyList()
 
     fun transitionStatus(newStatus: String) {
         viewModelScope.launch {
-            val now = nowIso()
-            db.execute(
-                "UPDATE quests SET status = ?, updated_at = ? WHERE id = ?",
-                listOf(newStatus, now, questId),
-            )
+            try {
+                val now =
+                    kotlinx.datetime.Clock.System
+                        .now()
+                        .toString()
+                db.execute(
+                    "UPDATE quests SET status = ?, updated_at = ? WHERE id = ?",
+                    listOf(newStatus, now, questId),
+                )
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to transition quest status", e)
+                _error.value = e.message ?: "Failed to update quest"
+            }
         }
     }
-
-    private fun nowIso(): String = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
 }

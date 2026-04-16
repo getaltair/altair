@@ -10,7 +10,6 @@ val AltairPowerSyncSchema =
             Table(
                 "users",
                 listOf(
-                    Column.text("password_hash"),
                     Column.text("email"),
                     Column.text("display_name"),
                     Column.integer("is_admin"),

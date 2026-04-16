@@ -1,7 +1,10 @@
 package com.getaltair.altair.data.auth
 
+import android.util.Log
 import okhttp3.Interceptor
 import okhttp3.Response
+
+private const val TAG = "AuthInterceptor"
 
 class AuthInterceptor(
     private val tokenPreferences: TokenPreferences,
@@ -16,6 +19,7 @@ class AuthInterceptor(
                     .header("Authorization", "Bearer $token")
                     .build()
             } else {
+                Log.d(TAG, "Sending request without access token to ${chain.request().url}")
                 chain.request()
             }
         return chain.proceed(request)

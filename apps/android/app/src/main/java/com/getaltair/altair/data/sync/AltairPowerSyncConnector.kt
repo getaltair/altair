@@ -1,5 +1,7 @@
 package com.getaltair.altair.data.sync
 
+import com.getaltair.altair.data.network.SyncApi
+import com.getaltair.altair.data.network.UpsertRequest
 import com.powersync.PowerSyncDatabase
 import com.powersync.connectors.PowerSyncBackendConnector
 import com.powersync.connectors.PowerSyncCredentials
@@ -8,7 +10,7 @@ import com.powersync.db.crud.UpdateType
 class AltairPowerSyncConnector(
     private val powerSyncUrl: String,
     private val getToken: suspend () -> String,
-    private val uploadToServer: suspend (table: String, id: String, data: Map<String, String?>, isDelete: Boolean) -> Unit,
+    private val syncApi: SyncApi,
 ) : PowerSyncBackendConnector() {
     override suspend fun fetchCredentials(): PowerSyncCredentials =
         PowerSyncCredentials(
@@ -18,16 +20,12 @@ class AltairPowerSyncConnector(
 
     override suspend fun uploadData(database: PowerSyncDatabase) {
         val batch = database.getCrudBatch(100) ?: return
-        try {
-            for (op in batch.crud) {
-                when (op.op) {
-                    UpdateType.PUT, UpdateType.PATCH -> uploadToServer(op.table, op.id, op.opData ?: emptyMap(), false)
-                    UpdateType.DELETE -> uploadToServer(op.table, op.id, emptyMap(), true)
-                }
+        for (op in batch.crud) {
+            when (op.op) {
+                UpdateType.PUT, UpdateType.PATCH -> syncApi.upsert(op.table, op.id, UpsertRequest(op.opData ?: emptyMap()))
+                UpdateType.DELETE -> syncApi.delete(op.table, op.id)
             }
-            batch.complete(null)
-        } catch (e: Exception) {
-            throw e
         }
+        batch.complete(null)
     }
 }
