@@ -3,7 +3,6 @@ pluginManagement {
         google {
             content {
                 includeGroupByRegex("com\\.android.*")
-                includeGroupByRegex("com\\.google.*")
                 includeGroupByRegex("androidx.*")
             }
         }
@@ -19,6 +18,14 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        gradlePluginPortal()
+        maven {
+            url = uri("https://maven.pkg.github.com/powersync-ja/powersync-kotlin")
+            credentials {
+                username = providers.gradleProperty("gpr.user").orElse(System.getenv("GITHUB_ACTOR") ?: "").get()
+                password = providers.gradleProperty("gpr.key").orElse(System.getenv("GITHUB_TOKEN") ?: "").get()
+            }
+        }
     }
 }
 
