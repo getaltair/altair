@@ -8,6 +8,7 @@ export const RelationType = {
   Duplicates: "duplicates",
   SimilarTo: "similar_to",
   GeneratedFrom: "generated_from",
+  NoteLink: "note_link",
 } as const;
 
 export type RelationTypeValue =

@@ -1,1 +1,115 @@
 @import "tailwindcss";
+
+/* ============================================================
+   Ethereal Canvas Design System — CSS Custom Properties
+   Source: docs/specs/09-PLAT-002-web.md
+   ============================================================ */
+
+:root {
+  /* ---- Surfaces ---- */
+  --surface: #f8fafa;               /* Foggy Canvas White */
+  --surface-base: #f8fafa;          /* Foggy Canvas White */
+  --surface-card: #ffffff;          /* Gossamer White */
+  --surface-zone: #f0f4f5;          /* Pale Seafoam Mist */
+  --surface-group: #e9eff0;         /* Cool Linen Gray */
+  --surface-elevated: #e1eaeb;      /* Faded Glacier */
+  --surface-highest: #dae5e6;       /* Dusty Mineral Blue */
+  --surface-dim: #cfddde;           /* Soft Slate Haze */
+  --surface-container: #f0f4f5;     /* Pale Seafoam Mist — tonal container bg */
+
+  /* ---- Accent / Primary ---- */
+  --primary: #446273;               /* Deep Muted Teal-Navy */
+  --primary-container: #c7e7fa;     /* Sky-Washed Aqua */
+  --secondary-container: #f0f4f5;   /* Pale Seafoam Mist — alias for active nav */
+
+  /* ---- Semantic States ---- */
+  --error: #9f403d;                 /* Sophisticated Terracotta */
+
+  /* ---- Text ---- */
+  --on-surface: #2a3435;            /* Midnight Charcoal — max contrast text */
+  --on-surface-variant: #566162;    /* Weathered Slate */
+  --outline: #727d7e;               /* Pewter Teal */
+  --outline-variant: #a9b4b5;       /* Ghost Border Ash */
+
+  /* ---- Typography ---- */
+  --font-display: 'Manrope', sans-serif;
+  --font-body: 'Plus Jakarta Sans', sans-serif;
+
+  /* ---- Motion ---- */
+  --motion-standard: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-standard: 300ms cubic-bezier(0.4, 0, 0.2, 1); /* alias */
+}
+
+/* ---- Dark mode (placeholder — override as needed) ---- */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --surface: #121c1d;
+    --surface-base: #121c1d;
+    --surface-card: #1e2829;
+    --surface-zone: #232f30;
+    --surface-group: #2a3738;
+    --surface-elevated: #303f40;
+    --surface-highest: #374748;
+    --surface-dim: #0e1718;
+    --surface-container: #232f30;
+
+    --primary: #89b8cc;
+    --primary-container: #1e4459;
+    --secondary-container: #232f30;
+
+    --error: #ffb4ab;
+
+    --on-surface: #e0eaeb;
+    --on-surface-variant: #8fa6a8;
+    --outline: #6a8081;
+    --outline-variant: #3d5152;
+  }
+}
+
+/* ---- Minimal CSS Reset ---- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-family: var(--font-body);
+  color: var(--on-surface);
+  background-color: var(--surface-base);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  min-height: 100vh;
+  line-height: 1.5;
+}
+
+img,
+picture,
+video,
+canvas,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+input,
+button,
+textarea,
+select {
+  font: inherit;
+}
+
+p,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  overflow-wrap: break-word;
+}

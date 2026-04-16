@@ -12,8 +12,8 @@ describe("EntityType", () => {
 });
 
 describe("RelationType", () => {
-  it("has exactly 8 values", () => {
-    expect(Object.values(RelationType)).toHaveLength(8);
+  it("has exactly 9 values", () => {
+    expect(Object.values(RelationType)).toHaveLength(9);
   });
 
   it("RelatedTo equals related_to", () => {

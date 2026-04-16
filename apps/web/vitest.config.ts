@@ -8,10 +8,14 @@ export default defineConfig({
     globals: true,
     include: ['src/**/*.spec.ts'],
     passWithNoTests: true,
+    setupFiles: ['src/test-setup.ts'],
   },
   resolve: {
+    conditions: ['browser'],
     alias: {
       $lib: '/src/lib',
+      '$app/environment': '/src/lib/sync/__mocks__/app-environment.ts',
+      '$app/state': '/src/lib/sync/__mocks__/app-state.ts',
     },
   },
 });
