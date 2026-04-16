@@ -4,6 +4,7 @@
   import { itemById } from '$lib/repositories/item.svelte';
   import { eventsForItem } from '$lib/repositories/item-event.svelte';
   import Button from '$lib/components/primitives/Button.svelte';
+  import { validateConsumption as checkConsumption } from '$lib/utils/validate-consumption';
 
   const id = $derived(page.params.id!);
   const itemRepo = $derived(itemById(id));
@@ -18,16 +19,13 @@
 
   function validateConsumption(): number | null {
     const amount = Number(consumptionInput);
-    if (!consumptionInput || isNaN(amount) || amount <= 0) {
-      consumptionError = 'Enter a positive quantity to consume.';
-      return null;
-    }
     if (!item) {
       consumptionError = 'Item not found.';
       return null;
     }
-    if (item.quantity - amount < 0) {
-      consumptionError = `Cannot consume ${amount} — only ${item.quantity} in stock.`;
+    const result = checkConsumption(item.quantity, amount);
+    if (!result.valid) {
+      consumptionError = result.error;
       return null;
     }
     consumptionError = '';

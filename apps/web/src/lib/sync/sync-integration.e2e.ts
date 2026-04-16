@@ -81,25 +81,26 @@ test('FA-003: PowerSync initial sync populates IndexedDB after login', async ({ 
   );
   expect(hasSyncDb).toBe(true);
 
-  // If the global sync client is exposed, verify each domain stream has data.
-  // The client is optional — the IndexedDB check above is the primary assertion.
-  const syncClientPresent = await page.evaluate(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    () => !!(window as any).__altairSync,
-  );
+  // Verify each domain stream has data via the global sync client.
+  // window.__altairSync is always assigned in getSyncClient() in the browser
+  // environment, so this block runs unconditionally.
 
-  if (syncClientPresent) {
-    // Guidance stream
-    const questCount = await countRows(page, 'quests');
-    // Knowledge stream
-    const noteCount = await countRows(page, 'notes');
-    // Tracking stream
-    const itemCount = await countRows(page, 'tracking_items');
+  // Guidance stream — quests, routines, initiatives
+  const questCount = await countRows(page, 'quests');
+  const routineCount = await countRows(page, 'routines');
+  const initiativeCount = await countRows(page, 'initiatives');
+  // Knowledge stream
+  const noteCount = await countRows(page, 'notes');
+  // Tracking stream
+  const itemCount = await countRows(page, 'tracking_items');
 
-    // At least one of the domain tables must have data (the test user's
-    // household must have been set up by the CI seed script).
-    expect(questCount + noteCount + itemCount).toBeGreaterThan(0);
-  }
+  // Each domain table must have data independently (the CI seed script must
+  // populate at least one row per table for the test user's household).
+  expect(questCount).toBeGreaterThan(0);
+  expect(routineCount).toBeGreaterThan(0);
+  expect(initiativeCount).toBeGreaterThan(0);
+  expect(noteCount).toBeGreaterThan(0);
+  expect(itemCount).toBeGreaterThan(0);
 });
 
 // ---------------------------------------------------------------------------

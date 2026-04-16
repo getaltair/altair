@@ -366,3 +366,68 @@ test.describe('FA-020 — Tracking CRUD (location create, edit, delete)', () => 
     await expect(page.getByText(updatedName)).not.toBeVisible();
   });
 });
+
+// ---------------------------------------------------------------------------
+// FA-010 — Shopping list pill checkbox shape and purchased-item opacity
+// ---------------------------------------------------------------------------
+test.describe('FA-010 — shopping list pill checkbox visual', () => {
+  test('pill checkbox has border-radius 9999px and checked item is dimmed', async ({ page }) => {
+    await login(page);
+    await page.goto('/tracking/shopping-lists');
+
+    // If there are no lists, the empty state renders — skip visual assertions.
+    const emptyState = page.locator('p.empty-state');
+    const listContent = page.locator('.list-content');
+
+    // Wait for either the empty state or the list content to appear.
+    await Promise.race([
+      emptyState.waitFor({ state: 'visible', timeout: 5000 }).catch(() => null),
+      listContent.waitFor({ state: 'visible', timeout: 5000 }).catch(() => null),
+    ]);
+
+    const hasLists = await listContent.isVisible();
+    if (!hasLists) {
+      // No shopping lists in test environment — skip visual assertions.
+      test.skip();
+      return;
+    }
+
+    // ---- Pill shape ----
+    // The first item row must have a pill-checkbox rendered.
+    const pillCheckbox = page.locator('input.pill-checkbox').first();
+    await expect(pillCheckbox).toBeVisible();
+
+    const borderRadius = await pillCheckbox.evaluate(
+      (el) => window.getComputedStyle(el).borderRadius,
+    );
+    // 9999px may normalise to a clamped pixel value depending on element size,
+    // so we accept either the literal string or any value ≥ the element's half-height.
+    // We check that the raw border-radius resolves to a large radius (≥ 600px or '9999px').
+    const borderRadiusPx = parseFloat(borderRadius);
+    expect(borderRadiusPx >= 600 || borderRadius === '9999px').toBe(true);
+
+    // ---- Checked item opacity ----
+    // Uncheck state: find the first item row and assert it is NOT at purchased opacity.
+    const firstItemRow = page.locator('li.item-row').first();
+    await expect(firstItemRow).toBeVisible();
+
+    const initialOpacity = await firstItemRow.evaluate(
+      (el) => window.getComputedStyle(el).opacity,
+    );
+    // Before checking, the item should be fully opaque (opacity === '1').
+    expect(initialOpacity).toBe('1');
+
+    // Click the pill checkbox to mark the item purchased.
+    await pillCheckbox.click();
+
+    // After checking, the item-row should receive the .purchased class
+    // and opacity should drop to 0.45 (Ghost Border Ash dimmed state).
+    await expect(firstItemRow).toHaveClass(/purchased/);
+    const purchasedOpacity = await firstItemRow.evaluate(
+      (el) => window.getComputedStyle(el).opacity,
+    );
+    expect(parseFloat(purchasedOpacity)).toBeCloseTo(0.45, 1);
+
+    await checkAccessibility(page);
+  });
+});

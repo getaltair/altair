@@ -132,6 +132,69 @@ describe('AltairConnector interface', () => {
     // Should resolve without error
     await expect(connector.uploadData(mockDatabase as never)).resolves.toBeUndefined();
   });
+
+  it('uploadData does NOT call batch.complete() when a mid-batch fetch fails (P9-004)', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValueOnce({ ok: true, status: 200 } as Response)
+        .mockRejectedValueOnce(new TypeError('Network error')),
+    );
+
+    const mod = await import('./connector.js');
+    const connector = new mod.AltairConnector();
+
+    const completeFn = vi.fn().mockResolvedValue(undefined);
+    const mockBatch = {
+      crud: [
+        { table: 'quests', op: 'PUT', id: 'id-1', opData: { title: 'A' } },
+        { table: 'quests', op: 'PUT', id: 'id-2', opData: { title: 'B' } },
+      ],
+      haveMore: false,
+      complete: completeFn,
+    };
+
+    const mockDatabase = {
+      getCrudBatch: vi.fn().mockResolvedValue(mockBatch),
+    };
+
+    await expect(connector.uploadData(mockDatabase as never)).rejects.toThrow();
+    expect(completeFn).not.toHaveBeenCalled();
+
+    vi.unstubAllGlobals();
+  });
+
+  it('uploadData calls batch.complete() exactly once when all entries succeed (P9-004)', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValue({ ok: true, status: 200 } as Response),
+    );
+
+    const mod = await import('./connector.js');
+    const connector = new mod.AltairConnector();
+
+    const completeFn = vi.fn().mockResolvedValue(undefined);
+    const mockBatch = {
+      crud: [
+        { table: 'quests', op: 'PUT', id: 'id-1', opData: { title: 'A' } },
+        { table: 'quests', op: 'PUT', id: 'id-2', opData: { title: 'B' } },
+      ],
+      haveMore: false,
+      complete: completeFn,
+    };
+
+    const mockDatabase = {
+      getCrudBatch: vi.fn().mockResolvedValue(mockBatch),
+    };
+
+    await connector.uploadData(mockDatabase as never);
+    expect(completeFn).toHaveBeenCalledOnce();
+
+    vi.unstubAllGlobals();
+  });
 });
 
 // ============================================================

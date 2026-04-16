@@ -1,31 +1,14 @@
 import { describe, it, expect, vi } from 'vitest';
+import { validateConsumption } from '$lib/utils/validate-consumption';
 
 // ============================================================
 // ItemDetail — quantity validation tests
 //
-// These tests exercise the validation logic directly, avoiding
-// component render complexity from PowerSync's browser-only
-// getSyncClient(). The validation rules are pure functions
-// extracted from the component's logic.
+// These tests exercise the shared validateConsumption utility
+// imported by the component, ensuring FA-009 (negative-quantity
+// block before outbox write) is verified against the actual
+// boundary condition used at runtime.
 // ============================================================
-
-// Validate whether a consumption amount is allowed given current stock.
-// Mirrors the component logic: item.quantity - amount >= 0
-function validateConsumption(
-  currentQty: number,
-  consumptionAmount: number,
-): { valid: boolean; error: string } {
-  if (!consumptionAmount || isNaN(consumptionAmount) || consumptionAmount <= 0) {
-    return { valid: false, error: 'Enter a positive quantity to consume.' };
-  }
-  if (currentQty - consumptionAmount < 0) {
-    return {
-      valid: false,
-      error: `Cannot consume ${consumptionAmount} — only ${currentQty} in stock.`,
-    };
-  }
-  return { valid: true, error: '' };
-}
 
 describe('ItemDetail quantity validation', () => {
   describe('validateConsumption', () => {
