@@ -379,7 +379,7 @@ UUID columns map to `Column.text()`. Timestamps map to `Column.text()` (ISO-8601
   - **Mitigation:** Acceptable for an admin panel (low traffic, not latency-sensitive). Cache the result in the root layout data (SvelteKit layout data is available to all child layouts without refetching). Add `Cache-Control: private, max-age=60` to the `/api/auth/me` response if needed.
 
 - **Unknown:** Does the server currently expose `is_admin` on the `/api/auth/me` response?
-  - **Resolution:** Read `apps/server/src/auth/handlers.rs` me handler to confirm. If `is_admin` is absent, it must be added to the `UserProfile` response type (minor server change, out of this feature's primary scope but blocking). Resolve in task S901 (admin guard setup).
+  - **Resolution (S014 — resolved):** Confirmed present. `UserProfile` in `apps/server/server/src/auth/models.rs` includes `is_admin: bool` (line 71). The `me` handler in `apps/server/server/src/auth/handlers.rs` queries `SELECT id, email, display_name, is_admin FROM users WHERE id = $1` and maps the field directly onto the response struct (lines 273–285). No server changes needed. The field path in the JSON response is `profile.is_admin` (boolean).
 
 - **Unknown:** Does `infra/compose/sync_rules.yaml` include the `tracking` stream for all six tracking tables? Feature 007 is still in progress.
   - **Resolution:** Verify sync rules include tracking tables before S901 (data layer). If tracking tables are absent from sync rules, add them as part of the data layer task or coordinate with the tracking domain completion. The PowerSync schema in this feature must include them.
