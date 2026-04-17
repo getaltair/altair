@@ -22,6 +22,7 @@ private const val SYNC_DEBOUNCE_WINDOW_MS = 5 * 60 * 1_000L
 class SyncCoordinator(
     private val powerSyncDatabase: PowerSyncDatabase,
     private val connector: AltairPowerSyncConnector,
+    private val clock: () -> Long = System::currentTimeMillis,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var syncJob: Job? = null
@@ -60,7 +61,7 @@ class SyncCoordinator(
     }
 
     fun enqueueExpedited(context: Context) {
-        if (System.currentTimeMillis() - lastSyncTime < SYNC_DEBOUNCE_WINDOW_MS) return
+        if (clock() - lastSyncTime < SYNC_DEBOUNCE_WINDOW_MS) return
         WorkManager.getInstance(context).enqueueUniqueWork(
             "sync_expedited",
             ExistingWorkPolicy.REPLACE,
@@ -74,6 +75,6 @@ class SyncCoordinator(
                 ).addTag("sync_expedited")
                 .build(),
         )
-        lastSyncTime = System.currentTimeMillis()
+        lastSyncTime = clock()
     }
 }
