@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -17,6 +18,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -38,6 +42,8 @@ import androidx.navigation.NavController
 import com.getaltair.altair.service.FocusTimerService
 import org.koin.androidx.compose.koinViewModel
 
+private const val TAG = "FocusSessionScreen"
+
 @Composable
 fun FocusSessionScreen(
     questId: String,
@@ -54,9 +60,16 @@ fun FocusSessionScreen(
 
     val remainingMs by viewModel.remainingMs.collectAsStateWithLifecycle()
     val isFinished by viewModel.isFinished.collectAsStateWithLifecycle()
+    val errorMsg by viewModel.error.collectAsStateWithLifecycle()
+
+    val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(isFinished) {
         if (isFinished) navController.popBackStack()
+    }
+
+    LaunchedEffect(errorMsg) {
+        errorMsg?.let { snackbarHostState.showSnackbar(it) }
     }
 
     // Hoisted so the permission callback can access it after the dialog returns
@@ -66,7 +79,11 @@ fun FocusSessionScreen(
         rememberLauncherForActivityResult(
             ActivityResultContracts.RequestPermission(),
         ) { granted ->
-            if (granted) startFocusService(context, pendingEndTimeMs)
+            if (granted) {
+                startFocusService(context, pendingEndTimeMs)
+            } else {
+                Log.w(TAG, "POST_NOTIFICATIONS denied — timer will run silently in background")
+            }
         }
 
     DisposableEffect(Unit) {
@@ -109,45 +126,51 @@ fun FocusSessionScreen(
     val seconds = (remainingMs % 60_000) / 1_000
     val timerText = "%02d:%02d".format(minutes, seconds)
 
-    Column(
-        modifier =
-            modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.surfaceContainerLow)
-                .padding(32.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Text(
-            text = "Focus",
-            style = MaterialTheme.typography.titleLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-
-        Spacer(Modifier.height(32.dp))
-
-        Text(
-            text = timerText,
-            style = MaterialTheme.typography.displayLarge,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
-
-        Spacer(Modifier.height(64.dp))
-
-        Button(
-            onClick = {
-                viewModel.end()
-                context.stopService(Intent(context, FocusTimerService::class.java))
-                navController.popBackStack()
-            },
-            shape = RoundedCornerShape(50),
-            colors =
-                ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.errorContainer,
-                    contentColor = MaterialTheme.colorScheme.onErrorContainer,
-                ),
+    Scaffold(
+        modifier = modifier,
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+    ) { paddingValues ->
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.surfaceContainerLow)
+                    .padding(paddingValues)
+                    .padding(32.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Text("End Session")
+            Text(
+                text = "Focus",
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+
+            Spacer(Modifier.height(32.dp))
+
+            Text(
+                text = timerText,
+                style = MaterialTheme.typography.displayLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+
+            Spacer(Modifier.height(64.dp))
+
+            Button(
+                onClick = {
+                    viewModel.end()
+                    context.stopService(Intent(context, FocusTimerService::class.java))
+                    navController.popBackStack()
+                },
+                shape = RoundedCornerShape(50),
+                colors =
+                    ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                        contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                    ),
+            ) {
+                Text("End Session")
+            }
         }
     }
 }
@@ -160,5 +183,9 @@ private fun startFocusService(
         Intent(context, FocusTimerService::class.java).apply {
             putExtra(FocusTimerService.EXTRA_END_TIME_EPOCH_MS, endTimeEpochMs)
         }
-    context.startForegroundService(intent)
+    try {
+        context.startForegroundService(intent)
+    } catch (e: Exception) {
+        Log.e(TAG, "Failed to start FocusTimerService", e)
+    }
 }

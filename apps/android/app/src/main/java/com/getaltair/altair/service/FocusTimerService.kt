@@ -14,6 +14,7 @@ class FocusTimerService : LifecycleService() {
     companion object {
         const val EXTRA_END_TIME_EPOCH_MS = "end_time_epoch_ms"
         private const val NOTIF_ID = 1001
+        private const val COMPLETION_NOTIF_ID = NOTIF_ID + 1
     }
 
     private val handler = Handler(Looper.getMainLooper())
@@ -33,6 +34,7 @@ class FocusTimerService : LifecycleService() {
         } else {
             startForeground(NOTIF_ID, notification)
         }
+        handler.removeCallbacks(tickRunnable)
         handler.post(tickRunnable)
         return START_NOT_STICKY
     }
@@ -61,7 +63,7 @@ class FocusTimerService : LifecycleService() {
                 .setContentTitle("Focus session complete")
                 .setAutoCancel(true)
                 .build()
-        NotificationManagerCompat.from(this).notify(NOTIF_ID + 1, completionNotif)
+        NotificationManagerCompat.from(this).notify(COMPLETION_NOTIF_ID, completionNotif)
         stopSelf()
     }
 

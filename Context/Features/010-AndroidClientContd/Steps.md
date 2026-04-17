@@ -373,6 +373,34 @@ All tasks in this phase write new test files or extend existing ones. They can r
 
 ---
 
+### Phase 8: Post-Review Fixes (from PR#11 review)
+
+- [ ] S027: Refactor `InitiativeDetailViewModel` and `EpicDetailViewModel` to expose `StateFlow<UiState<T>>`
+  Replace `StateFlow<Entity?>` with `StateFlow<UiState<Entity>>` in both ViewModels. Apply `.map { UiState.Success(it) }.catch { emit(UiState.Error(...)) }` before `stateIn`. Update corresponding screens to handle `Loading`, `Success`, and `Error` states. `null` from DAO currently conflates Loading and NotFound — this makes deleted-record hang impossible.
+  - **Relates to:** P11-013, kotlin-android.md UiState convention, Spec US-01
+
+- [ ] S027-T: Unit test `InitiativeDetailViewModel` and `EpicDetailViewModel` UiState transitions
+  Use in-memory Room. Test: `Loading` on init, `Success` when entity present, `Error` on DAO exception, and graceful behavior when id is empty string (not-found path).
+  - **Relates to:** P11-013
+
+- [ ] S028-T: Write Robolectric unit tests for `FocusTimerService`
+  Use `ServiceController` to drive: `onStartCommand` calls `startForeground`; `tickRunnable` reschedules every 1s via `Handler.postDelayed`; `onTimerFinished` posts completion notification then `stopSelf()`; `onDestroy` removes callbacks.
+  - **Relates to:** P11-014, Spec US-04, US-05
+
+- [ ] S029-T: Write Compose UI test for `BarcodeScannerScreen` permission-denied branch
+  Use `createComposeRule`, seed `permissionDenied = true`. Assert `AlertDialog` with "Camera permission required" title is shown. Covers FA-038/FA-039 permission gating.
+  - **Relates to:** P11-015, Spec US-03
+
+- [ ] S030-T: Extend `AltairPowerSyncConnectorTest` with PATCH and multi-entry batch coverage
+  Add: (1) two-entry PUT batch (verifies loop iterates past first), (2) mixed PUT+DELETE batch, (3) `UpdateType.PATCH` entry — verify no silent fall-through. Also add `getCredentials()` test.
+  - **Relates to:** P11-016
+
+- [ ] S031-T: Extend `AuthViewModelTest` with logout and register-success paths
+  Add: `logout_clearsTokens` (verify `clearTokens()` called); `register_success_setsAuthenticated` (verify UiState transitions to authenticated). Both are user-facing flows with direct auth impact.
+  - **Relates to:** P11-022
+
+---
+
 ## Acceptance Criteria
 - [ ] FA-020 through FA-041: all testable assertions addressed
 - [ ] `./gradlew :app:test` passes (unit + Robolectric tests)

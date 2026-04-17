@@ -114,7 +114,7 @@ class FocusSessionViewModel(
     }
 
     override fun onCleared() {
-        timer?.cancel()
+        if (_isRunning.value) end()
         super.onCleared()
     }
 }

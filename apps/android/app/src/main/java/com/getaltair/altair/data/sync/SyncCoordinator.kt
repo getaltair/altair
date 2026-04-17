@@ -1,5 +1,6 @@
 package com.getaltair.altair.data.sync
 
+private const val TAG = "SyncCoordinator"
 private const val SYNC_DEBOUNCE_WINDOW_MS = 5 * 60 * 1_000L
 
 import android.content.Context
@@ -10,6 +11,8 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.OutOfQuotaPolicy
 import androidx.work.WorkManager
 import com.powersync.PowerSyncDatabase
+import android.util.Log
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -28,7 +31,13 @@ class SyncCoordinator(
         syncJob?.cancel()
         syncJob =
             scope.launch {
-                powerSyncDatabase.connect(connector)
+                try {
+                    powerSyncDatabase.connect(connector)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    Log.e(TAG, "PowerSync connect failed", e)
+                }
             }
     }
 
@@ -36,7 +45,13 @@ class SyncCoordinator(
         syncJob?.cancel()
         syncJob = null
         scope.launch {
-            powerSyncDatabase.disconnect()
+            try {
+                powerSyncDatabase.disconnect()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.e(TAG, "PowerSync disconnect failed", e)
+            }
         }
     }
 

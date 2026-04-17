@@ -2,6 +2,7 @@ package com.getaltair.altair.ui.tracking
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.CameraSelector
@@ -37,6 +38,8 @@ import com.getaltair.altair.ui.theme.DeepMutedTealNavy
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.common.InputImage
 import java.util.concurrent.Executors
+
+private const val TAG = "BarcodeScannerScreen"
 
 @Composable
 fun BarcodeScannerScreen(
@@ -91,10 +94,14 @@ fun BarcodeScannerScreen(
     }
 
     val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
+    val executor = remember { Executors.newSingleThreadExecutor() }
+    val barcodeClient = remember { BarcodeScanning.getClient() }
 
     DisposableEffect(lifecycleOwner) {
         onDispose {
-            cameraProviderFuture.get().unbindAll()
+            executor.shutdown()
+            barcodeClient.close()
+            if (cameraProviderFuture.isDone) cameraProviderFuture.get().unbindAll()
         }
     }
 
@@ -111,9 +118,6 @@ fun BarcodeScannerScreen(
                             Preview.Builder().build().also {
                                 it.surfaceProvider = previewView.surfaceProvider
                             }
-
-                        val barcodeClient = BarcodeScanning.getClient()
-                        val executor = Executors.newSingleThreadExecutor()
 
                         val imageAnalysis =
                             ImageAnalysis
@@ -133,8 +137,10 @@ fun BarcodeScannerScreen(
                                     .process(inputImage)
                                     .addOnSuccessListener { barcodes ->
                                         if (barcodes.isNotEmpty()) {
-                                            onBarcodeScanned(barcodes.first().rawValue ?: "")
+                                            barcodes.first().rawValue?.let { onBarcodeScanned(it) }
                                         }
+                                    }.addOnFailureListener { e ->
+                                        Log.e(TAG, "Barcode processing failed", e)
                                     }.addOnCompleteListener {
                                         imageProxy.close()
                                     }

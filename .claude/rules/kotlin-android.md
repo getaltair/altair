@@ -57,6 +57,7 @@ Applies to: `apps/android/`
 
 - Sealed classes or sealed interfaces for error states
 - `UiState` pattern: `Loading`, `Success(data)`, `Error(message)` — all three states are required; omitting `Loading` leaves write operations with no in-flight feedback
+- ViewModels that observe a single entity by ID via DAO **must** wrap the result in `UiState<T>`. `StateFlow<T?>` is insufficient because `null` conflates "Loading" and "Not Found" (e.g., a record deleted server-side and synced). Use the pattern: `daoFlow.map { UiState.Success(it) }.catch { emit(UiState.Error(it.message ?: "Unknown error")) }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), UiState.Loading)`
 - Every `viewModelScope.launch` block that performs a database write or network call must include a `try/catch` that: (1) rethrows `CancellationException`, (2) logs the failure with `Log.e`, and (3) emits to a `_uiState` error state. Unhandled coroutine exceptions produce opaque crash-level logs with no UI feedback.
 - Never swallow exceptions silently in catch blocks
 - ViewModel state must be exposed as `StateFlow<T>` (read-only). Back all mutable state with `private val _field: MutableStateFlow` and expose `val field: StateFlow` via `_field.asStateFlow()`. Composables must never write directly to ViewModel state fields — `MutableStateFlow` must never be `public`.

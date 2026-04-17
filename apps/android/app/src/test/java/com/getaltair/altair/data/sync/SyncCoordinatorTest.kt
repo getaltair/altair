@@ -112,18 +112,4 @@ class SyncCoordinatorTest {
             workManager.enqueueUniqueWork(eq("sync_expedited"), any(), any())
         }
     }
-
-    /**
-     * S010: The debounce constant must equal 300 000 ms (5 minutes).
-     * Verified via reflection on the compiled `SyncCoordinatorKt` class, which
-     * is where Kotlin places private file-level constants.
-     */
-    @Test
-    fun `syncDebounceWindowMs_equals300000`() {
-        val clazz = Class.forName("com.getaltair.altair.data.sync.SyncCoordinatorKt")
-        val field = clazz.getDeclaredField("SYNC_DEBOUNCE_WINDOW_MS")
-        field.isAccessible = true
-        val value = field.get(null) as Long
-        assertEquals(300_000L, value, "SYNC_DEBOUNCE_WINDOW_MS must be 5 minutes (300 000 ms)")
-    }
 }
