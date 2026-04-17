@@ -1,5 +1,6 @@
 package com.getaltair.altair.service
 
+import android.annotation.SuppressLint
 import android.app.Notification
 import android.content.Intent
 import android.content.pm.ServiceInfo
@@ -41,6 +42,7 @@ class FocusTimerService : LifecycleService() {
 
     private val tickRunnable: Runnable =
         object : Runnable {
+            @SuppressLint("MissingPermission")
             override fun run() {
                 val remaining = endTimeEpochMs - System.currentTimeMillis()
                 if (remaining <= 0) {
@@ -54,6 +56,7 @@ class FocusTimerService : LifecycleService() {
             }
         }
 
+    @SuppressLint("MissingPermission")
     private fun onTimerFinished() {
         NotificationManagerCompat.from(this).cancel(NOTIF_ID)
         val completionNotif =
@@ -67,6 +70,7 @@ class FocusTimerService : LifecycleService() {
         stopSelf()
     }
 
+    @SuppressLint("MissingPermission")
     override fun onDestroy() {
         handler.removeCallbacks(tickRunnable)
         NotificationManagerCompat.from(this).cancel(NOTIF_ID)
