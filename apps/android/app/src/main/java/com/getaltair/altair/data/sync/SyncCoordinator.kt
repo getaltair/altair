@@ -1,9 +1,7 @@
 package com.getaltair.altair.data.sync
 
-private const val TAG = "SyncCoordinator"
-private const val SYNC_DEBOUNCE_WINDOW_MS = 5 * 60 * 1_000L
-
 import android.content.Context
+import android.util.Log
 import androidx.work.Constraints
 import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
@@ -11,13 +9,15 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.OutOfQuotaPolicy
 import androidx.work.WorkManager
 import com.powersync.PowerSyncDatabase
-import android.util.Log
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+
+private const val TAG = "SyncCoordinator"
+private const val SYNC_DEBOUNCE_WINDOW_MS = 5 * 60 * 1_000L
 
 class SyncCoordinator(
     private val powerSyncDatabase: PowerSyncDatabase,
