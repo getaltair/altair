@@ -95,6 +95,14 @@ dependencies {
     implementation(libs.security.crypto)
     implementation(libs.androidx.compose.ui.text.google.fonts)
 
+    // CameraX & ML Kit
+    implementation(libs.camerax.core)
+    implementation(libs.camerax.camera2)
+    implementation(libs.camerax.lifecycle)
+    implementation(libs.camerax.view)
+    implementation(libs.mlkit.barcode.scanning)
+    implementation(libs.lifecycle.service)
+
     // Test
     testImplementation(kotlin("reflect"))
     testImplementation(libs.junit5.api)

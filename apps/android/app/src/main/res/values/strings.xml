@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">Altair</string>
+    <string name="focus_timer_service_description">Countdown timer for focus sessions</string>
 </resources>

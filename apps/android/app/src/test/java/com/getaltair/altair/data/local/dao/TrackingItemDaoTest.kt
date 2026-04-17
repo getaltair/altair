@@ -117,6 +117,65 @@ class TrackingItemDaoTest {
             }
         }
 
+    // ─── findByBarcode ────────────────────────────────────────────────────────
+
+    /**
+     * Verifies that findByBarcode returns the matching entity when the barcode exists
+     * and the item is not soft-deleted.
+     */
+    @Test
+    fun findByBarcode_returnsMatchingEntity_whenBarcodeExists() =
+        runTest {
+            val item = makeTrackingItem("item-bc-1", quantity = 1.0).copy(barcode = "1234567890")
+            trackingItemDao.upsert(item)
+
+            val result = trackingItemDao.findByBarcode("1234567890")
+            assertEquals(item, result)
+        }
+
+    /**
+     * Verifies that findByBarcode returns null when no item with the given barcode has been inserted.
+     */
+    @Test
+    fun findByBarcode_returnsNull_whenNoBarcodeMatch() =
+        runTest {
+            val result = trackingItemDao.findByBarcode("nonexistent-barcode")
+            assertNull(result)
+        }
+
+    /**
+     * Verifies that findByBarcode returns null for an item with a matching barcode but with
+     * a non-null deleted_at timestamp (soft-deleted).
+     */
+    @Test
+    fun findByBarcode_returnsNull_forSoftDeletedItem() =
+        runTest {
+            val item =
+                makeTrackingItem("item-bc-2", quantity = 1.0).copy(
+                    barcode = "soft-deleted-barcode",
+                    deletedAt = "2026-01-02T00:00:00Z",
+                )
+            trackingItemDao.upsert(item)
+
+            val result = trackingItemDao.findByBarcode("soft-deleted-barcode")
+            assertNull(result)
+        }
+
+    /**
+     * Verifies that findByBarcode returns null when querying with an empty string and
+     * the stored item has a null barcode. In SQLite, NULL = '' evaluates to NULL (not TRUE),
+     * so the row does not match.
+     */
+    @Test
+    fun findByBarcode_returnsNull_forEmptyStringBarcode() =
+        runTest {
+            // barcode is null (default from makeTrackingItem)
+            trackingItemDao.upsert(makeTrackingItem("item-bc-3", quantity = 1.0))
+
+            val result = trackingItemDao.findByBarcode("")
+            assertNull(result)
+        }
+
     // ─── Helpers ──────────────────────────────────────────────────────────────
 
     private fun makeTrackingItem(

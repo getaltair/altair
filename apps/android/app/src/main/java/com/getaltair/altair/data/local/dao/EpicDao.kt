@@ -16,6 +16,9 @@ interface EpicDao {
     @Query("SELECT * FROM epics WHERE id = :id")
     fun watchById(id: String): Flow<EpicEntity?>
 
+    @Query("SELECT * FROM epics WHERE initiative_id = :initiativeId AND deleted_at IS NULL")
+    fun watchByInitiativeId(initiativeId: String): Flow<List<EpicEntity>>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(entity: EpicEntity)
 

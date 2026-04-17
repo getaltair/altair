@@ -61,7 +61,7 @@ class TrackingViewModel(
 
     private val currentHouseholdId: StateFlow<String?> =
         db
-            .watch<String?>(
+            .watch<String>(
                 sql =
                     """
                     SELECT hm.household_id FROM household_memberships hm
@@ -70,8 +70,8 @@ class TrackingViewModel(
                     LIMIT 1
                     """.trimIndent(),
                 parameters = emptyList(),
-            ) { cursor -> cursor.getString(0) }
-            .map { it.firstOrNull() }
+            ) { cursor -> cursor.getString(0) ?: "" }
+            .map { list -> list.firstOrNull()?.takeIf { it.isNotEmpty() } }
             .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     // Eagerly started so items.value is available in command handlers (logConsumption, etc.)

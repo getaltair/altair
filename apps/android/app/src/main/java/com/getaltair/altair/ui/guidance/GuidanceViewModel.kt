@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.datetime.Clock
 
 class GuidanceViewModel(
     private val initiativeDao: InitiativeDao,
@@ -80,10 +81,7 @@ class GuidanceViewModel(
 
     fun markRoutineDone(routineId: String) {
         viewModelScope.launch {
-            val now =
-                java.time.LocalDateTime
-                    .now()
-                    .format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+            val now = Clock.System.now().toString()
             db.execute(
                 "UPDATE routines SET updated_at = ? WHERE id = ?",
                 listOf(now, routineId),

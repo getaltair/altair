@@ -15,6 +15,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenuItem
@@ -29,6 +30,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -38,6 +40,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.getaltair.altair.navigation.Screen
 import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -58,6 +61,15 @@ fun ItemCreationScreen(
     var barcode by remember { mutableStateOf("") }
     var locationExpanded by remember { mutableStateOf(false) }
     var categoryExpanded by remember { mutableStateOf(false) }
+
+    // Populate barcode from scanner if returning from BarcodeScanner destination
+    val savedStateHandle = navController.currentBackStackEntry?.savedStateHandle
+    LaunchedEffect(savedStateHandle) {
+        savedStateHandle?.get<String>("scanned_barcode")?.let { scanned ->
+            barcode = scanned
+            savedStateHandle.remove<String>("scanned_barcode")
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -205,6 +217,11 @@ fun ItemCreationScreen(
                 onValueChange = { barcode = it },
                 label = { Text("Barcode (optional)") },
                 singleLine = true,
+                trailingIcon = {
+                    IconButton(onClick = { navController.navigate(Screen.BarcodeScanner.route) }) {
+                        Icon(Icons.Default.QrCodeScanner, contentDescription = "Scan barcode")
+                    }
+                },
                 modifier = Modifier.fillMaxWidth(),
             )
 

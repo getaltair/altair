@@ -2,7 +2,6 @@ package com.getaltair.altair.ui.knowledge
 
 import androidx.lifecycle.SavedStateHandle
 import app.cash.turbine.test
-import com.getaltair.altair.data.auth.TokenPreferences
 import com.getaltair.altair.data.local.dao.EntityRelationDao
 import com.getaltair.altair.data.local.dao.NoteDao
 import com.getaltair.altair.data.local.dao.NoteSnapshotDao
@@ -37,7 +36,6 @@ class NoteDetailViewModelTest {
     private lateinit var entityRelationDao: EntityRelationDao
     private lateinit var noteSnapshotDao: NoteSnapshotDao
     private lateinit var db: PowerSyncDatabase
-    private lateinit var tokenPreferences: TokenPreferences
 
     @BeforeEach
     fun setUp() {
@@ -48,13 +46,11 @@ class NoteDetailViewModelTest {
         entityRelationDao = mockk(relaxed = true)
         noteSnapshotDao = mockk(relaxed = true)
         db = mockk(relaxed = true)
-        tokenPreferences = mockk(relaxed = true)
 
         every { savedStateHandle.get<String>("id") } returns "note-1"
         every { noteDao.watchById(any()) } returns flowOf(null)
         every { entityRelationDao.watchBacklinksForNote(any()) } returns flowOf(emptyList())
         every { noteSnapshotDao.watchAll(any()) } returns flowOf(emptyList())
-        every { tokenPreferences.accessToken } returns null
     }
 
     @AfterEach
@@ -69,7 +65,6 @@ class NoteDetailViewModelTest {
             entityRelationDao = entityRelationDao,
             noteSnapshotDao = noteSnapshotDao,
             db = db,
-            tokenPreferences = tokenPreferences,
         )
 
     /**

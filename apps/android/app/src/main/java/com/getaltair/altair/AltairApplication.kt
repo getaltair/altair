@@ -1,6 +1,8 @@
 package com.getaltair.altair
 
 import android.app.Application
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
@@ -61,6 +63,14 @@ class AltairApplication : Application() {
             )
         } catch (e: Exception) {
             Log.e(TAG, "Failed to schedule periodic sync", e)
+        }
+
+        NotificationChannel(
+            "FOCUS_TIMER_CHANNEL",
+            "Focus Timer",
+            NotificationManager.IMPORTANCE_LOW,
+        ).also { channel ->
+            getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
         }
 
         val connectivityManager = getSystemService(CONNECTIVITY_SERVICE) as ConnectivityManager

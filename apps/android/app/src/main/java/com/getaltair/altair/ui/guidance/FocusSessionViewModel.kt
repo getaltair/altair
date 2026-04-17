@@ -42,11 +42,11 @@ class FocusSessionViewModel(
     // Eagerly fetch userId so it's available when the timer fires
     private val currentUserId: StateFlow<String?> =
         db
-            .watch<String?>(
+            .watch<String>(
                 sql = "SELECT id FROM users WHERE deleted_at IS NULL LIMIT 1",
                 parameters = emptyList(),
-            ) { cursor -> cursor.getString(0) }
-            .map { it.firstOrNull() }
+            ) { cursor -> cursor.getString(0) ?: "" }
+            .map { list -> list.firstOrNull()?.takeIf { it.isNotEmpty() } }
             .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     fun init(qId: String) {
@@ -114,7 +114,7 @@ class FocusSessionViewModel(
     }
 
     override fun onCleared() {
-        timer?.cancel()
+        if (_isRunning.value) end()
         super.onCleared()
     }
 }

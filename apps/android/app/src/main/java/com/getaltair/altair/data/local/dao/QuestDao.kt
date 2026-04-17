@@ -16,6 +16,9 @@ interface QuestDao {
     @Query("SELECT * FROM quests WHERE id = :id")
     fun watchById(id: String): Flow<QuestEntity?>
 
+    @Query("SELECT * FROM quests WHERE epic_id = :epicId AND deleted_at IS NULL")
+    fun watchByEpicId(epicId: String): Flow<List<QuestEntity>>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(entity: QuestEntity)
 
