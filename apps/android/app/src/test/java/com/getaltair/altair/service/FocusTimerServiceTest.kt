@@ -161,7 +161,7 @@ class FocusTimerServiceTest {
             )
         val notifs = nm.allNotifications
         val completionNotifId = 1002 // NOTIF_ID(1001) + 1
-        val hasCompletion = notifs.any { (id, _) -> id == completionNotifId }
+        val hasCompletion = notifs.any { it.key == completionNotifId }
         assertTrue(
             "A completion notification (id=$completionNotifId) must be posted when timer expires",
             hasCompletion,

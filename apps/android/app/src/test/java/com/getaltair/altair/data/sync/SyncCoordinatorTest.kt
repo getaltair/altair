@@ -67,7 +67,7 @@ class SyncCoordinatorTest {
         coordinator.enqueueExpedited(context)
 
         verify(exactly = 1) {
-            workManager.enqueueUniqueWork(eq("sync_expedited"), any(), any())
+            workManager.enqueueUniqueWork(eq<String>("sync_expedited"), any(), any())
         }
     }
 
@@ -88,7 +88,7 @@ class SyncCoordinatorTest {
         coordinator.enqueueExpedited(context)
 
         verify(exactly = 1) {
-            workManager.enqueueUniqueWork(eq("sync_expedited"), any(), any())
+            workManager.enqueueUniqueWork(eq<String>("sync_expedited"), any(), any())
         }
     }
 
@@ -109,7 +109,7 @@ class SyncCoordinatorTest {
         coordinator.enqueueExpedited(context)
 
         verify(exactly = 2) {
-            workManager.enqueueUniqueWork(eq("sync_expedited"), any(), any())
+            workManager.enqueueUniqueWork(eq<String>("sync_expedited"), any(), any())
         }
     }
 }

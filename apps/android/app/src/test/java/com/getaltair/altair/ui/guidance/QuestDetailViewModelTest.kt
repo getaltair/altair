@@ -1,5 +1,6 @@
 package com.getaltair.altair.ui.guidance
 
+import androidx.lifecycle.SavedStateHandle
 import com.getaltair.altair.data.local.dao.QuestDao
 import com.powersync.PowerSyncDatabase
 import io.mockk.every
@@ -24,6 +25,7 @@ import org.junit.jupiter.api.Test
 class QuestDetailViewModelTest {
     private val testDispatcher = StandardTestDispatcher()
 
+    private lateinit var savedStateHandle: SavedStateHandle
     private lateinit var questDao: QuestDao
     private lateinit var db: PowerSyncDatabase
     private lateinit var viewModel: QuestDetailViewModel
@@ -32,12 +34,12 @@ class QuestDetailViewModelTest {
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
 
+        savedStateHandle = SavedStateHandle(mapOf("id" to "quest-1"))
         questDao = mockk(relaxed = true)
         db = mockk(relaxed = true)
         every { questDao.watchById(any()) } returns flowOf(null)
 
-        viewModel = QuestDetailViewModel(questDao = questDao, db = db)
-        viewModel.init("quest-1")
+        viewModel = QuestDetailViewModel(savedStateHandle = savedStateHandle, questDao = questDao, db = db)
     }
 
     @AfterEach

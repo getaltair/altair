@@ -75,7 +75,6 @@ class TrackingViewModelTest {
                 shoppingListDao = shoppingListDao,
                 shoppingListItemDao = shoppingListItemDao,
                 db = db,
-                householdId = "hh-1",
             )
     }
 

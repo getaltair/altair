@@ -139,14 +139,14 @@ class AltairPowerSyncConnectorTest {
                     every { op } returns UpdateType.PUT
                     every { table } returns "quests"
                     every { id } returns "quest-id-a"
-                    every { opData } returns mapOf("title" to "Quest A")
+                    every { opData } returns null
                 }
             val entry2 =
                 mockk<CrudEntry> {
                     every { op } returns UpdateType.PUT
                     every { table } returns "notes"
                     every { id } returns "note-id-b"
-                    every { opData } returns mapOf("body" to "Note B")
+                    every { opData } returns null
                 }
             val batch =
                 mockk<CrudBatch> {
@@ -158,8 +158,8 @@ class AltairPowerSyncConnectorTest {
 
             connector.uploadData(database)
 
-            coVerify(exactly = 1) { syncApi.upsert("quests", "quest-id-a", UpsertRequest(mapOf("title" to "Quest A"))) }
-            coVerify(exactly = 1) { syncApi.upsert("notes", "note-id-b", UpsertRequest(mapOf("body" to "Note B"))) }
+            coVerify(exactly = 1) { syncApi.upsert("quests", "quest-id-a", UpsertRequest(emptyMap())) }
+            coVerify(exactly = 1) { syncApi.upsert("notes", "note-id-b", UpsertRequest(emptyMap())) }
             coVerify(exactly = 2) { syncApi.upsert(any(), any(), any()) }
             coVerify(exactly = 0) { syncApi.delete(any(), any()) }
             coVerify(exactly = 1) { batch.complete(null) }
@@ -178,7 +178,7 @@ class AltairPowerSyncConnectorTest {
                     every { op } returns UpdateType.PUT
                     every { table } returns "quests"
                     every { id } returns "quest-id-c"
-                    every { opData } returns mapOf("title" to "Quest C")
+                    every { opData } returns null
                 }
             val deleteEntry =
                 mockk<CrudEntry> {
@@ -198,7 +198,7 @@ class AltairPowerSyncConnectorTest {
 
             connector.uploadData(database)
 
-            coVerify(exactly = 1) { syncApi.upsert("quests", "quest-id-c", UpsertRequest(mapOf("title" to "Quest C"))) }
+            coVerify(exactly = 1) { syncApi.upsert("quests", "quest-id-c", UpsertRequest(emptyMap())) }
             coVerify(exactly = 1) { syncApi.delete("quests", "quest-id-d") }
             coVerify(exactly = 1) { batch.complete(null) }
         }
@@ -219,7 +219,7 @@ class AltairPowerSyncConnectorTest {
                     every { op } returns UpdateType.PATCH
                     every { table } returns "quests"
                     every { id } returns "quest-id-e"
-                    every { opData } returns mapOf("title" to "Updated Quest")
+                    every { opData } returns null
                 }
             val batch =
                 mockk<CrudBatch> {
@@ -232,7 +232,7 @@ class AltairPowerSyncConnectorTest {
             connector.uploadData(database)
 
             // PATCH routes to upsert — same branch as PUT in the when expression
-            coVerify(exactly = 1) { syncApi.upsert("quests", "quest-id-e", UpsertRequest(mapOf("title" to "Updated Quest"))) }
+            coVerify(exactly = 1) { syncApi.upsert("quests", "quest-id-e", UpsertRequest(emptyMap())) }
             coVerify(exactly = 0) { syncApi.delete(any(), any()) }
             coVerify(exactly = 1) { batch.complete(null) }
         }
