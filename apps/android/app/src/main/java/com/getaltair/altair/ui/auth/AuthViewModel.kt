@@ -65,4 +65,18 @@ class AuthViewModel(
             }
         }
     }
+
+    fun logout() {
+        viewModelScope.launch {
+            try {
+                authRepository.logout()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                android.util.Log.e("AuthViewModel", "Logout failed: ${e.message}", e)
+            } finally {
+                tokenPreferences.clearTokens()
+            }
+        }
+    }
 }

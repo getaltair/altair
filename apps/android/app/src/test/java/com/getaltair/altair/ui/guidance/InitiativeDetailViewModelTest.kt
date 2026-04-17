@@ -1,133 +1,249 @@
 package com.getaltair.altair.ui.guidance
 
+import android.content.Context
+import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.lifecycle.SavedStateHandle
+import androidx.room.Room
+import androidx.test.core.app.ApplicationProvider
 import app.cash.turbine.test
+import com.getaltair.altair.data.local.AltairDatabase
 import com.getaltair.altair.data.local.dao.EpicDao
 import com.getaltair.altair.data.local.dao.InitiativeDao
 import com.getaltair.altair.data.local.entity.EpicEntity
 import com.getaltair.altair.data.local.entity.InitiativeEntity
-import com.powersync.PowerSyncDatabase
+import com.getaltair.altair.ui.UiState
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
-import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
-import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNull
-import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
+import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Before
+import org.junit.Rule
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
 /**
- * Unit tests for [InitiativeDetailViewModel].
- * Covers DAO-to-StateFlow wiring for initiative and epic lists.
+ * Unit tests for [InitiativeDetailViewModel], covering UiState transitions per Feature 010.
+ *
+ * Most tests use an in-memory Room database so queries execute against real SQL.
+ * The exception is the DAO-exception test, which uses a mockk DAO to trigger the
+ * `.catch { }` error path that cannot be provoked through a real Room DAO.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34], application = android.app.Application::class)
 class InitiativeDetailViewModelTest {
+    @get:Rule
+    val instantTaskExecutorRule = InstantTaskExecutorRule()
+
     private val testDispatcher = UnconfinedTestDispatcher()
 
-    private lateinit var savedStateHandle: SavedStateHandle
+    private lateinit var db: AltairDatabase
     private lateinit var initiativeDao: InitiativeDao
     private lateinit var epicDao: EpicDao
-    private lateinit var db: PowerSyncDatabase
 
-    @BeforeEach
+    @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
-
-        savedStateHandle = mockk()
-        initiativeDao = mockk(relaxed = true)
-        epicDao = mockk(relaxed = true)
-        db = mockk(relaxed = true)
-
-        // Default stubs — overridden per-test as needed
-        every { savedStateHandle.get<String>("id") } returns "initiative-1"
-        every { initiativeDao.watchById(any()) } returns flowOf(null)
-        every { epicDao.watchByInitiativeId(any()) } returns flowOf(emptyList())
+        val context: Context = ApplicationProvider.getApplicationContext()
+        db =
+            Room
+                .inMemoryDatabaseBuilder(context, AltairDatabase::class.java)
+                .allowMainThreadQueries()
+                .build()
+        initiativeDao = db.initiativeDao()
+        epicDao = db.epicDao()
     }
 
-    @AfterEach
+    @After
     fun tearDown() {
+        db.close()
         Dispatchers.resetMain()
     }
 
-    private fun makeViewModel() =
+    // ─── initiative StateFlow ──────────────────────────────────────────────────
+
+    /**
+     * The initial value of `initiative` must be [UiState.Loading] before the Room
+     * flow has emitted anything.
+     *
+     * `stateIn` uses [UiState.Loading] as the initial value, so the first item
+     * collected from the StateFlow is always Loading regardless of DB state.
+     */
+    @Test
+    fun initiative_emitsLoading_initially() =
+        runTest {
+            val vm = buildViewModel(initiativeId = "init-1")
+
+            vm.initiative.test {
+                assertTrue(
+                    "First emission must be UiState.Loading",
+                    awaitItem() is UiState.Loading,
+                )
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    /**
+     * When an [InitiativeEntity] with the matching id is present in the database,
+     * the `initiative` flow must emit [UiState.Success] containing that entity.
+     */
+    @Test
+    fun initiative_emitsSuccess_whenEntityPresent() =
+        runTest {
+            val entity = makeInitiative("init-1")
+            initiativeDao.upsert(entity)
+
+            val vm = buildViewModel(initiativeId = "init-1")
+
+            vm.initiative.test {
+                // Discard Loading (stateIn initial value)
+                val first = awaitItem()
+                val success =
+                    if (first is UiState.Success) {
+                        first
+                    } else {
+                        // Loading → Success
+                        awaitItem() as UiState.Success
+                    }
+                assertEquals("init-1", success.data?.id)
+                assertEquals("Initiative init-1", success.data?.title)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    /**
+     * When the DAO's `watchById` flow throws an exception, the `initiative` flow
+     * must emit [UiState.Error] with a non-blank message.
+     *
+     * This path exercises the `.catch { emit(UiState.Error(…)) }` operator in the
+     * ViewModel.  A real Room DAO cannot be made to throw after subscribe, so a
+     * mockk DAO is used here.
+     */
+    @Test
+    fun initiative_emitsError_onDaoException() =
+        runTest {
+            val failingInitiativeDao = mockk<InitiativeDao>()
+            every { failingInitiativeDao.watchById(any()) } returns
+                flow { throw RuntimeException("DB failure") }
+
+            val failingEpicDao = mockk<EpicDao>()
+            every { failingEpicDao.watchByInitiativeId(any()) } returns flowOf(emptyList())
+
+            val vm =
+                InitiativeDetailViewModel(
+                    savedStateHandle = SavedStateHandle(mapOf("id" to "init-1")),
+                    initiativeDao = failingInitiativeDao,
+                    epicDao = failingEpicDao,
+                )
+
+            vm.initiative.test {
+                val first = awaitItem()
+                val error =
+                    if (first is UiState.Error) {
+                        first
+                    } else {
+                        awaitItem() as UiState.Error
+                    }
+                assertTrue(
+                    "Error message must not be blank",
+                    error.message.isNotBlank(),
+                )
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    /**
+     * When the requested id is not present in the database, [InitiativeDao.watchById]
+     * emits `null`.  The ViewModel maps this to [UiState.Success] with `data = null`,
+     * documenting that "not found" and "found" are both represented as Success — null
+     * vs. non-null data is the distinguishing factor.
+     *
+     * This is intentional: the ViewModel's `.map { UiState.Success(it) }` wraps
+     * whatever the DAO emits, including null, so callers must check `data != null`.
+     */
+    @Test
+    fun initiative_emitsSuccessWithNull_whenIdNotFound() =
+        runTest {
+            // No entity inserted — DB is empty
+            val vm = buildViewModel(initiativeId = "nonexistent-id")
+
+            vm.initiative.test {
+                val first = awaitItem()
+                val success =
+                    if (first is UiState.Success) {
+                        first
+                    } else {
+                        awaitItem() as UiState.Success
+                    }
+                assertNull(
+                    "data must be null when the entity does not exist in the DB",
+                    success.data,
+                )
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    // ─── epics StateFlow ───────────────────────────────────────────────────────
+
+    /**
+     * When epics with a matching `initiative_id` are present in the database,
+     * the `epics` flow must emit [UiState.Success] containing those epics.
+     */
+    @Test
+    fun epics_emitsSuccess_withList() =
+        runTest {
+            val initiative = makeInitiative("init-1")
+            initiativeDao.upsert(initiative)
+            epicDao.upsert(makeEpic("epic-1", initiativeId = "init-1"))
+            epicDao.upsert(makeEpic("epic-2", initiativeId = "init-1"))
+            // Epic for a different initiative — must not appear
+            epicDao.upsert(makeEpic("epic-3", initiativeId = "init-other"))
+
+            val vm = buildViewModel(initiativeId = "init-1")
+
+            vm.epics.test {
+                val first = awaitItem()
+                val success =
+                    if (first is UiState.Success) {
+                        first
+                    } else {
+                        awaitItem() as UiState.Success
+                    }
+                assertEquals(
+                    "Only epics belonging to init-1 must be returned",
+                    2,
+                    success.data.size,
+                )
+                assertTrue(success.data.all { it.initiativeId == "init-1" })
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    // ─── Helpers ──────────────────────────────────────────────────────────────
+
+    private fun buildViewModel(initiativeId: String): InitiativeDetailViewModel =
         InitiativeDetailViewModel(
-            savedStateHandle = savedStateHandle,
+            savedStateHandle = SavedStateHandle(mapOf("id" to initiativeId)),
             initiativeDao = initiativeDao,
             epicDao = epicDao,
-            db = db,
         )
-
-    /**
-     * When initiativeDao.watchById(id) emits an InitiativeEntity,
-     * the ViewModel's initiative StateFlow must expose that entity.
-     */
-    @Test
-    fun `initiative_loadsFromDao_whenInitiativeIdPresent`() =
-        runTest {
-            val fixture = makeInitiative("initiative-1")
-            every { initiativeDao.watchById("initiative-1") } returns MutableStateFlow(fixture)
-
-            val viewModel = makeViewModel()
-            advanceUntilIdle()
-
-            viewModel.initiative.test {
-                assertEquals(fixture, awaitItem())
-                cancelAndIgnoreRemainingEvents()
-            }
-        }
-
-    /**
-     * When epicDao.watchByInitiativeId(id) emits a list of EpicEntity,
-     * the ViewModel's epics StateFlow must expose that list.
-     */
-    @Test
-    fun `epics_populateFromEpicDao_watchByInitiativeId`() =
-        runTest {
-            val epic1 = makeEpic("epic-1", initiativeId = "initiative-1")
-            val epic2 = makeEpic("epic-2", initiativeId = "initiative-1")
-            every { epicDao.watchByInitiativeId("initiative-1") } returns MutableStateFlow(listOf(epic1, epic2))
-
-            val viewModel = makeViewModel()
-            advanceUntilIdle()
-
-            viewModel.epics.test {
-                val items = awaitItem()
-                assertEquals(2, items.size)
-                assertEquals("epic-1", items[0].id)
-                assertEquals("epic-2", items[1].id)
-                cancelAndIgnoreRemainingEvents()
-            }
-        }
-
-    /**
-     * When SavedStateHandle does not contain an "id" key, the ViewModel constructor
-     * throws IllegalStateException via checkNotNull. The null-id case is not a valid
-     * runtime state — the VM is always navigated to with an explicit id.
-     */
-    @Test
-    fun `initiative_isNull_whenSavedStateHandleIdIsNull`() {
-        every { savedStateHandle.get<String>("id") } returns null
-
-        assertThrows<IllegalStateException> {
-            makeViewModel()
-        }
-    }
-
-    // ─── Helpers ────────────────────────────────────────────────────────────
 
     private fun makeInitiative(id: String) =
         InitiativeEntity(
             id = id,
-            title = "Test Initiative",
+            title = "Initiative $id",
             description = null,
             status = "active",
             userId = "user-1",
@@ -143,7 +259,7 @@ class InitiativeDetailViewModelTest {
     ) = EpicEntity(
         id = id,
         initiativeId = initiativeId,
-        title = "Test Epic",
+        title = "Epic $id",
         description = null,
         status = "active",
         sortOrder = 0,

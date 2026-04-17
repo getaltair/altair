@@ -33,6 +33,7 @@ import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavController
 import com.getaltair.altair.data.local.entity.EpicEntity
 import com.getaltair.altair.navigation.Screen
+import com.getaltair.altair.ui.UiState
 import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -43,13 +44,19 @@ fun InitiativeDetailScreen(
     modifier: Modifier = Modifier,
 ) {
     val vm: InitiativeDetailViewModel = koinViewModel()
-    val initiative by vm.initiative.collectAsStateWithLifecycle()
-    val epics by vm.epics.collectAsStateWithLifecycle()
+    val initiativeState by vm.initiative.collectAsStateWithLifecycle()
+    val epicsState by vm.epics.collectAsStateWithLifecycle()
+
+    val titleText =
+        when (val s = initiativeState) {
+            is UiState.Success -> s.data?.title ?: "Initiative"
+            else -> "Initiative"
+        }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(initiative?.title ?: "Initiative") },
+                title = { Text(titleText) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -59,56 +66,88 @@ fun InitiativeDetailScreen(
         },
         modifier = modifier,
     ) { innerPadding ->
-        val init = initiative
-        if (init == null) {
-            Box(
-                modifier = Modifier.fillMaxSize().padding(innerPadding),
-                contentAlignment = Alignment.Center,
-            ) {
-                CircularProgressIndicator()
-            }
-            return@Scaffold
-        }
-
-        LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(innerPadding),
-            verticalArrangement = Arrangement.spacedBy(0.dp),
-        ) {
-            item {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+        when (val state = initiativeState) {
+            is UiState.Loading -> {
+                Box(
+                    modifier = Modifier.fillMaxSize().padding(innerPadding),
+                    contentAlignment = Alignment.Center,
                 ) {
-                    Text(init.title, style = MaterialTheme.typography.headlineLarge)
-
-                    if (!init.description.isNullOrBlank()) {
-                        Text(
-                            init.description,
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-
-                    StatusChip(status = init.status)
+                    CircularProgressIndicator()
                 }
+            }
 
-                if (epics.isNotEmpty()) {
+            is UiState.Error -> {
+                Box(
+                    modifier = Modifier.fillMaxSize().padding(innerPadding),
+                    contentAlignment = Alignment.Center,
+                ) {
                     Text(
-                        "Epics",
-                        style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                        text = state.message,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.error,
                     )
                 }
             }
 
-            items(epics, key = { it.id }) { epic ->
-                EpicRow(
-                    epic = epic,
-                    onClick = {
-                        navController.navigate(Screen.EpicDetail.route(init.id, epic.id))
-                    },
-                )
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+            is UiState.Success -> {
+                val init = state.data
+                if (init == null) {
+                    Box(
+                        modifier = Modifier.fillMaxSize().padding(innerPadding),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                    return@Scaffold
+                }
+
+                val epics =
+                    when (val es = epicsState) {
+                        is UiState.Success -> es.data
+                        else -> emptyList()
+                    }
+
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize().padding(innerPadding),
+                    verticalArrangement = Arrangement.spacedBy(0.dp),
+                ) {
+                    item {
+                        Column(
+                            modifier = Modifier.padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            Text(init.title, style = MaterialTheme.typography.headlineLarge)
+
+                            if (!init.description.isNullOrBlank()) {
+                                Text(
+                                    init.description,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+
+                            StatusChip(status = init.status)
+                        }
+
+                        if (epics.isNotEmpty()) {
+                            Text(
+                                "Epics",
+                                style = MaterialTheme.typography.titleMedium,
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                            )
+                        }
+                    }
+
+                    items(epics, key = { it.id }) { epic ->
+                        EpicRow(
+                            epic = epic,
+                            onClick = {
+                                navController.navigate(Screen.EpicDetail.route(init.id, epic.id))
+                            },
+                        )
+                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                    }
+                }
             }
         }
     }

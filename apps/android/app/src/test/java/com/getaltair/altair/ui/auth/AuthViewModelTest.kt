@@ -6,6 +6,7 @@ import com.getaltair.altair.domain.repository.AuthRepository
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,6 +16,7 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
@@ -157,6 +159,64 @@ class AuthViewModelTest {
 
                 val second = awaitItem()
                 assertTrue(second, "isAuthenticated must emit true when isLoggedInFlow flips to true")
+
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    /**
+     * logout() clears tokens and sets isAuthenticated to false.
+     * After logout, TokenPreferences.clearTokens() must be invoked and isAuthenticated must emit false.
+     */
+    @Test
+    fun `logout_clearsTokens - clearTokens is called and isAuthenticated emits false`() =
+        runTest {
+            // Start in authenticated state
+            isLoggedInFlow.value = true
+
+            // Stub clearTokens to mirror the real production side-effect on isLoggedInFlow
+            every { tokenPreferences.clearTokens() } answers {
+                isLoggedInFlow.value = false
+            }
+
+            viewModel.isAuthenticated.test {
+                // Consume the current true value
+                val initial = awaitItem()
+                assertTrue(initial, "isAuthenticated must start as true for this test")
+
+                viewModel.logout()
+                advanceUntilIdle()
+
+                val afterLogout = awaitItem()
+                assertFalse(afterLogout, "isAuthenticated must emit false after logout")
+
+                cancelAndIgnoreRemainingEvents()
+            }
+
+            verify(exactly = 1) { tokenPreferences.clearTokens() }
+        }
+
+    /**
+     * Successful registration sets isAuthenticated to true.
+     * The token preferences flow mirrors what the repository sets after register.
+     */
+    @Test
+    fun `register_success_setsAuthenticated - isAuthenticated emits true after successful register`() =
+        runTest {
+            coEvery { authRepository.register(any(), any(), any()) } coAnswers {
+                // Simulate token being saved, which would flip isLoggedInFlow in production
+                isLoggedInFlow.value = true
+            }
+
+            viewModel.isAuthenticated.test {
+                // Initial value is false
+                awaitItem()
+
+                viewModel.register("newuser@example.com", "password123", "New User")
+                advanceUntilIdle()
+
+                val authenticated = awaitItem()
+                assertTrue(authenticated, "isAuthenticated must emit true after successful registration")
 
                 cancelAndIgnoreRemainingEvents()
             }
