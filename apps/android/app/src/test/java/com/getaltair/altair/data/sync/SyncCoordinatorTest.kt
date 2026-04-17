@@ -1,6 +1,8 @@
 package com.getaltair.altair.data.sync
 
 import android.content.Context
+import androidx.work.ExistingWorkPolicy
+import androidx.work.OneTimeWorkRequest
 import androidx.work.WorkManager
 import com.powersync.PowerSyncDatabase
 import io.mockk.every
@@ -67,7 +69,7 @@ class SyncCoordinatorTest {
         coordinator.enqueueExpedited(context)
 
         verify(exactly = 1) {
-            workManager.enqueueUniqueWork(eq<String>("sync_expedited"), any(), any())
+            workManager.enqueueUniqueWork(eq<String>("sync_expedited"), any<ExistingWorkPolicy>(), any<OneTimeWorkRequest>())
         }
     }
 
@@ -88,7 +90,7 @@ class SyncCoordinatorTest {
         coordinator.enqueueExpedited(context)
 
         verify(exactly = 1) {
-            workManager.enqueueUniqueWork(eq<String>("sync_expedited"), any(), any())
+            workManager.enqueueUniqueWork(eq<String>("sync_expedited"), any<ExistingWorkPolicy>(), any<OneTimeWorkRequest>())
         }
     }
 
@@ -109,7 +111,7 @@ class SyncCoordinatorTest {
         coordinator.enqueueExpedited(context)
 
         verify(exactly = 2) {
-            workManager.enqueueUniqueWork(eq<String>("sync_expedited"), any(), any())
+            workManager.enqueueUniqueWork(eq<String>("sync_expedited"), any<ExistingWorkPolicy>(), any<OneTimeWorkRequest>())
         }
     }
 }

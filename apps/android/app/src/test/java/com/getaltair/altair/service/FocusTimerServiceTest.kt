@@ -153,15 +153,12 @@ class FocusTimerServiceTest {
         assertTrue("Service must have called stopSelf() when timer expired", shadowService.isStoppedBySelf)
 
         // The completion notification (COMPLETION_NOTIF_ID = 1002) must be posted.
-        val nm =
-            shadowOf(
-                RuntimeEnvironment
-                    .getApplication()
-                    .getSystemService(NotificationManager::class.java),
-            )
-        val notifs = nm.allNotifications
+        val notifManager =
+            RuntimeEnvironment
+                .getApplication()
+                .getSystemService(NotificationManager::class.java)
         val completionNotifId = 1002 // NOTIF_ID(1001) + 1
-        val hasCompletion = notifs.any { it.key == completionNotifId }
+        val hasCompletion = notifManager.activeNotifications.any { it.id == completionNotifId }
         assertTrue(
             "A completion notification (id=$completionNotifId) must be posted when timer expires",
             hasCompletion,
