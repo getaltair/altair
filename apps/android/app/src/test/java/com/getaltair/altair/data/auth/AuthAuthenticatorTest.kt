@@ -1,16 +1,20 @@
 package com.getaltair.altair.data.auth
 
+import android.util.Log
 import com.getaltair.altair.data.network.AuthApi
 import com.getaltair.altair.data.network.AuthResponse
 import com.getaltair.altair.data.network.RefreshRequest
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkStatic
+import io.mockk.unmockkAll
 import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import okhttp3.Protocol
 import okhttp3.Request
 import okhttp3.Response
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
@@ -30,9 +34,15 @@ class AuthAuthenticatorTest {
 
     @BeforeEach
     fun setUp() {
+        mockkStatic(Log::class)
         tokenPreferences = mockk(relaxed = true)
         authApi = mockk()
         authenticator = AuthAuthenticator(tokenPreferences, authApi)
+    }
+
+    @AfterEach
+    fun tearDown() {
+        unmockkAll()
     }
 
     /**

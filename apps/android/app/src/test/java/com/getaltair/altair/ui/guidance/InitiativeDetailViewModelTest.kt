@@ -16,6 +16,7 @@ import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -24,7 +25,6 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
@@ -84,7 +84,16 @@ class InitiativeDetailViewModelTest {
     @Test
     fun initiative_emitsLoading_initially() =
         runTest {
-            val vm = buildViewModel(initiativeId = "init-1")
+            val neverInitiativeDao = mockk<InitiativeDao>()
+            every { neverInitiativeDao.watchById(any()) } returns flow { awaitCancellation() }
+            val neverEpicDao = mockk<EpicDao>()
+            every { neverEpicDao.watchByInitiativeId(any()) } returns flow { awaitCancellation() }
+            val vm =
+                InitiativeDetailViewModel(
+                    savedStateHandle = SavedStateHandle(mapOf("id" to "init-1")),
+                    initiativeDao = neverInitiativeDao,
+                    epicDao = neverEpicDao,
+                )
 
             vm.initiative.test {
                 assertTrue(
@@ -166,30 +175,25 @@ class InitiativeDetailViewModelTest {
 
     /**
      * When the requested id is not present in the database, [InitiativeDao.watchById]
-     * emits `null`.  The ViewModel maps this to [UiState.Success] with `data = null`,
-     * documenting that "not found" and "found" are both represented as Success — null
-     * vs. non-null data is the distinguishing factor.
-     *
-     * This is intentional: the ViewModel's `.map { UiState.Success(it) }` wraps
-     * whatever the DAO emits, including null, so callers must check `data != null`.
+     * emits `null`.  The ViewModel maps null to [UiState.Error] ("Not found").
      */
     @Test
-    fun initiative_emitsSuccessWithNull_whenIdNotFound() =
+    fun initiative_emitsError_whenIdNotFound() =
         runTest {
             // No entity inserted — DB is empty
             val vm = buildViewModel(initiativeId = "nonexistent-id")
 
             vm.initiative.test {
                 val first = awaitItem()
-                val success =
-                    if (first is UiState.Success) {
+                val error =
+                    if (first is UiState.Error) {
                         first
                     } else {
-                        awaitItem() as UiState.Success
+                        awaitItem() as UiState.Error
                     }
-                assertNull(
-                    "data must be null when the entity does not exist in the DB",
-                    success.data,
+                assertTrue(
+                    "Error message must not be blank when entity does not exist",
+                    error.message.isNotBlank(),
                 )
                 cancelAndIgnoreRemainingEvents()
             }

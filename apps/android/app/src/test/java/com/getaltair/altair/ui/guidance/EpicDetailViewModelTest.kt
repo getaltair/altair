@@ -16,6 +16,7 @@ import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -83,7 +84,16 @@ class EpicDetailViewModelTest {
     @Test
     fun epic_emitsLoading_initially() =
         runTest {
-            val vm = buildViewModel(epicId = "epic-1")
+            val neverEpicDao = mockk<EpicDao>()
+            every { neverEpicDao.watchById(any()) } returns flow { awaitCancellation() }
+            val neverQuestDao = mockk<QuestDao>()
+            every { neverQuestDao.watchByEpicId(any()) } returns flow { awaitCancellation() }
+            val vm =
+                EpicDetailViewModel(
+                    savedStateHandle = SavedStateHandle(mapOf("id" to "epic-1")),
+                    epicDao = neverEpicDao,
+                    questDao = neverQuestDao,
+                )
 
             vm.epic.test {
                 assertTrue(

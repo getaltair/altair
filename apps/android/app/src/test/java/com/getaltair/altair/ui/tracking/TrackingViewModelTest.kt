@@ -62,6 +62,7 @@ class TrackingViewModelTest {
 
         itemsFlow = MutableStateFlow(emptyList())
         every { trackingItemDao.watchAll(any()) } returns itemsFlow
+        every { db.watch<String>(sql = any(), parameters = any(), mapper = any()) } returns flowOf(listOf("hh-1"))
         every { trackingLocationDao.watchAll(any()) } returns flowOf(emptyList())
         every { trackingCategoryDao.watchAll(any()) } returns flowOf(emptyList())
         every { shoppingListDao.watchAll(any()) } returns flowOf(emptyList())
