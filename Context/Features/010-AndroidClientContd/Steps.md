@@ -6,7 +6,7 @@
 ## Progress
 - **Status:** Complete
 - **Current task:** --
-- **Last milestone:** FINAL (S026 validation passed 2026-04-16)
+- **Last milestone:** Phase 8 complete (all post-review tasks done 2026-04-16)
 
 ## Team Orchestration
 
