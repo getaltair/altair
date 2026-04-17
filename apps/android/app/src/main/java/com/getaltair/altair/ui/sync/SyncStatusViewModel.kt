@@ -15,5 +15,5 @@ class SyncStatusViewModel(
         db.currentStatus
             .asFlow()
             .map { status -> status.uploading || !status.connected }
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 }

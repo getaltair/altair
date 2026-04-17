@@ -5,9 +5,7 @@ import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequest
 import androidx.work.WorkManager
 import com.powersync.PowerSyncDatabase
-import io.mockk.every
 import io.mockk.mockk
-import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import io.mockk.verify
 import org.junit.jupiter.api.AfterEach
@@ -32,9 +30,6 @@ class SyncCoordinatorTest {
     fun setUp() {
         context = mockk(relaxed = true)
         workManager = mockk(relaxed = true)
-
-        mockkStatic(WorkManager::class)
-        every { WorkManager.getInstance(any()) } returns workManager
     }
 
     @AfterEach
@@ -47,7 +42,7 @@ class SyncCoordinatorTest {
     private fun newCoordinator(clock: () -> Long): SyncCoordinator {
         val db = mockk<PowerSyncDatabase>(relaxed = true)
         val connector = mockk<AltairPowerSyncConnector>(relaxed = true)
-        return SyncCoordinator(db, connector, clock)
+        return SyncCoordinator(db, connector, clock, { _ -> workManager })
     }
 
     // ─── Tests ────────────────────────────────────────────────────────────────

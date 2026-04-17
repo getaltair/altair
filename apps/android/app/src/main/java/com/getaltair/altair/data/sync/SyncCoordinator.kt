@@ -23,6 +23,7 @@ class SyncCoordinator(
     private val powerSyncDatabase: PowerSyncDatabase,
     private val connector: AltairPowerSyncConnector,
     private val clock: () -> Long = System::currentTimeMillis,
+    private val workManagerProvider: (Context) -> WorkManager = WorkManager::getInstance,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var syncJob: Job? = null
@@ -62,7 +63,7 @@ class SyncCoordinator(
 
     fun enqueueExpedited(context: Context) {
         if (clock() - lastSyncTime < SYNC_DEBOUNCE_WINDOW_MS) return
-        WorkManager.getInstance(context).enqueueUniqueWork(
+        workManagerProvider(context).enqueueUniqueWork(
             "sync_expedited",
             ExistingWorkPolicy.REPLACE,
             OneTimeWorkRequestBuilder<SyncWorker>()
