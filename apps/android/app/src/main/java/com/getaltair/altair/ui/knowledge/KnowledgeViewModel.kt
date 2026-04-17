@@ -35,11 +35,11 @@ class KnowledgeViewModel(
     // Reactive user ID from DB — avoids stale JWT at construction and null fallback
     private val currentUserId: StateFlow<String?> =
         db
-            .watch<String?>(
+            .watch<String>(
                 sql = "SELECT id FROM users WHERE deleted_at IS NULL LIMIT 1",
                 parameters = emptyList(),
-            ) { cursor -> cursor.getString(0) }
-            .map { it.firstOrNull() }
+            ) { cursor -> cursor.getString(0) ?: "" }
+            .map { list -> list.firstOrNull()?.takeIf { it.isNotEmpty() } }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     val notes: StateFlow<List<NoteEntity>> =

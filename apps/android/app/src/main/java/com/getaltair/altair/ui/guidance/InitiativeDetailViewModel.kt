@@ -31,8 +31,9 @@ class InitiativeDetailViewModel(
     val initiative: StateFlow<UiState<InitiativeEntity>> =
         initiativeDao
             .watchById(initiativeId)
-            .map<InitiativeEntity?, UiState<InitiativeEntity>> { UiState.Success(it) }
-            .catch { emit(UiState.Error(it.message ?: "Unknown error")) }
+            .map<InitiativeEntity?, UiState<InitiativeEntity>> { entity ->
+                entity?.let { UiState.Success(it) } ?: UiState.Error("Not found")
+            }.catch { emit(UiState.Error(it.message ?: "Unknown error")) }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), UiState.Loading)
 
     val epics: StateFlow<UiState<List<EpicEntity>>> =

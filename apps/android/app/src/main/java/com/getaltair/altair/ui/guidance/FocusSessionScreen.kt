@@ -36,7 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.ProcessLifecycleOwner
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.getaltair.altair.service.FocusTimerService
@@ -52,6 +52,7 @@ fun FocusSessionScreen(
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
 
     LaunchedEffect(questId) {
         viewModel.init(questId)
@@ -86,7 +87,7 @@ fun FocusSessionScreen(
             }
         }
 
-    DisposableEffect(Unit) {
+    DisposableEffect(lifecycleOwner) {
         val observer =
             LifecycleEventObserver { _, event ->
                 when (event) {
@@ -118,8 +119,8 @@ fun FocusSessionScreen(
                     else -> {}
                 }
             }
-        ProcessLifecycleOwner.get().lifecycle.addObserver(observer)
-        onDispose { ProcessLifecycleOwner.get().lifecycle.removeObserver(observer) }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
     val minutes = remainingMs / 60_000

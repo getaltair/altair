@@ -1,8 +1,8 @@
 package com.getaltair.altair.service
 
 import android.app.Notification
-import android.app.ServiceInfo
 import android.content.Intent
+import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
