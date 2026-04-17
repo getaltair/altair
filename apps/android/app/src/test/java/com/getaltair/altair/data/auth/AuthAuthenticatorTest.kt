@@ -35,6 +35,9 @@ class AuthAuthenticatorTest {
     @BeforeEach
     fun setUp() {
         mockkStatic(Log::class)
+        every { Log.w(any(), any<String>(), any()) } returns 0
+        every { Log.w(any(), any<String>()) } returns 0
+        every { Log.e(any(), any<String>(), any()) } returns 0
         tokenPreferences = mockk(relaxed = true)
         authApi = mockk()
         authenticator = AuthAuthenticator(tokenPreferences, authApi)
