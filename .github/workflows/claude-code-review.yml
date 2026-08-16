@@ -2,26 +2,40 @@ name: Claude Code Review
 
 on:
   pull_request:
-    types: [opened, synchronize, ready_for_review, reopened]
-    # Optional: Only run on specific file changes
-    # paths:
-    #   - "src/**/*.ts"
-    #   - "src/**/*.tsx"
-    #   - "src/**/*.js"
-    #   - "src/**/*.jsx"
+    # Deliberately NOT `synchronize`. That fires on every push, so a branch
+    # rebased or fixed up five times is reviewed five times, and it is also the
+    # edge a review-to-push loop would run around. Review happens when a pull
+    # request is put forward for review, and afterwards on request by commenting
+    # `@claude` on it.
+    types: [opened, ready_for_review, reopened]
+
+# One review per pull request at a time. A rapid open-then-ready sequence
+# supersedes rather than stacks.
+concurrency:
+  group: claude-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
 
 jobs:
   claude-review:
-    # Optional: Filter by PR author
-    # if: |
-    #   github.event.pull_request.user.login == 'external-contributor' ||
-    #   github.event.pull_request.user.login == 'new-developer' ||
-    #   github.event.pull_request.author_association == 'FIRST_TIME_CONTRIBUTOR'
+    # Drafts are opened early on purpose here (see CLAUDE.md on GitHub Flow),
+    # so reviewing them on arrival would spend a review on work that is
+    # knowingly unfinished. `ready_for_review` above is the moment that counts.
+    #
+    # The actor check is the loop guard. It is redundant while this workflow can
+    # only comment and `claude.yml` cannot push, and it is what stops a loop
+    # forming if either of those ever changes.
+    if: |
+      github.event.pull_request.draft == false
+      && github.actor != 'claude[bot]'
+      && github.actor != 'github-actions[bot]'
 
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      pull-requests: read
+      # write, not read: the prompt below posts inline review comments, and
+      # read lets the review run to completion and then silently fail to
+      # deliver it.
+      pull-requests: write
       issues: read
       id-token: write
 
@@ -42,4 +56,3 @@ jobs:
           claude_args: '--allowedTools "mcp__github_inline_comment__create_inline_comment"'
           # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
           # or https://code.claude.com/docs/en/cli-reference for available options
-
