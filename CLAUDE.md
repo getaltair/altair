@@ -100,6 +100,17 @@ Built with Claude Code + hyperskills. The plan maps situations to skills: `plan`
 
 At every wave boundary ask: what did this wave teach that the next wave's plan does not know, which deferred decision just hit its trigger, and has the shape drifted from the component model? The third catches sprawl that green tests do not.
 
+## Branching and pull requests
+
+This repository uses [GitHub Flow](https://docs.github.com/en/get-started/using-github/github-flow): `main` is the single trunk, always in a working state, and every change reaches it through a pull request from a short-lived branch.
+
+- Branch off `main` for any change, including a documents-only edit. Name branches for what they contain (`docs/...`, `wave-0/...`, or similar) — there is no enforced prefix scheme.
+- Open the pull request early, even in draft, once the branch has something worth showing — GitHub Flow treats the PR as the place discussion happens, not just a final gate.
+- `main` is protected on GitHub: pushes go through a pull request (no direct pushes, no force-pushes, no branch deletion), enforced for every user including admins. Review approval is not currently required — the repository is a solo effort right now; revisit `required_approving_review_count` on the `main protection` ruleset when that changes.
+- Merge with **squash** only — `main` keeps one commit per PR. The merge commit title/body default to the PR's title/body, so keep PR titles and descriptions accurate; they become the permanent commit message. Merge commits and rebase-merges are disabled at the repository level.
+- Branches are deleted automatically on merge (`delete_branch_on_merge`). Don't rely on a merged branch still existing on the remote.
+- Merging into `main` is not a substitute for [document authority](#document-authority) — a PR that changes `docs/` still owes the review the hierarchy above implies, independent of the GitHub review count.
+
 ## Standing constraints
 
 From `docs/altair-v0-implementation-plan.md`. These are the ones cheapest to violate and most expensive to repair, and they apply to prose changes as much as to code:
