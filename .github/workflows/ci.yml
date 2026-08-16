@@ -14,7 +14,20 @@ jobs:
       DATABASE_URL: postgres://postgres:altair@localhost:5432/altair
     steps:
       - uses: actions/checkout@v4
+      # mise installs rust by delegating to rustup, so the toolchain itself
+      # lives in ~/.rustup and only a symlink lives under mise. Caching one
+      # without the other leaves mise reporting "all tools are installed"
+      # over a toolchain whose components are gone, so both are cached
+      # together, under one key, or neither is.
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.local/share/mise
+            ~/.rustup
+          key: toolchain-${{ runner.os }}-${{ hashFiles('mise.toml') }}
       - uses: jdx/mise-action@v2
+        with:
+          cache: false
       - uses: Swatinem/rust-cache@v2
       - run: docker compose up -d --wait
       - run: cargo test --workspace
@@ -23,8 +36,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # See the note in the test job. This one is where a half-restored
+      # toolchain actually bites: cargo and rustc survive it, cargo-fmt and
+      # cargo-clippy do not.
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.local/share/mise
+            ~/.rustup
+          key: toolchain-${{ runner.os }}-${{ hashFiles('mise.toml') }}
       - uses: jdx/mise-action@v2
+        with:
+          cache: false
       - uses: Swatinem/rust-cache@v2
       # Runs the same hooks configured in .pre-commit-config.yaml, so CI and
       # the local pre-commit path can never drift apart.
       - run: prek run --all-files
+      # The hooks above are only as good as the toolchain behind them, and a
+      # missing component makes them pass by not running. Assert the parts
+      # that have gone missing are actually there.
+      - run: cargo fmt --version && cargo clippy --version
