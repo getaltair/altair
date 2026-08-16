@@ -7,3 +7,14 @@ rust-analyzer = "latest"
 [tasks.test]
 description = "Bring up Postgres and run the workspace test suite"
 run = "docker compose up -d --wait && cargo test --workspace"
+
+# Expected to fail, on purpose, until Wave 4.1 writes the outbox. The scenarios
+# are gated off in the default suite so `main` stays mergeable; this is how the
+# red is looked at. See crates/altair-conformance/README.md.
+#
+# --nocapture so a skipped scenario is visible rather than silently green, and
+# --test-threads=1 because several scenarios measure how long the client took
+# to answer.
+[tasks.conformance]
+description = "Run the outbox conformance scenarios (red until Wave 4.1)"
+run = "cargo test -p altair-conformance --features run-conformance --test scenarios -- --nocapture --test-threads=1"

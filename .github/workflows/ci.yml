@@ -32,6 +32,36 @@ jobs:
       - run: docker compose up -d --wait
       - run: cargo test --workspace
 
+  # The outbox conformance scenarios, which are SUPPOSED to fail.
+  #
+  # `conformance/scenarios.md` specifies an outbox that Wave 4.1 writes; Wave
+  # 1.5 wrote the suite that judges it. Until the outbox exists every scenario
+  # runs against a stub client and fails, and that red is the deliverable. It is
+  # `continue-on-error` so it never blocks a merge, and it is here rather than
+  # nowhere so the red stays visible on every pull request and the count is
+  # watched as it comes down. Do not "fix" it by deleting it — see
+  # crates/altair-conformance/README.md.
+  conformance:
+    name: conformance (red until Wave 4.1)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      # See the note in the test job.
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.local/share/mise
+            ~/.rustup
+          key: toolchain-${{ runner.os }}-${{ hashFiles('mise.toml') }}
+      - uses: jdx/mise-action@v2
+        with:
+          cache: false
+      - uses: Swatinem/rust-cache@v2
+      # No database, no Authentik, no real instance: the suite stands up its own
+      # fake instance on a local port and needs nothing else.
+      - run: mise run conformance
+
   lint:
     runs-on: ubuntu-latest
     steps:
