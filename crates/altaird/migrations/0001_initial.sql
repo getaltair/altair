@@ -31,8 +31,6 @@
 -- What is not created here, and why, is at the foot of the file, along with
 -- the recommendations and the gaps this pass found.
 
-BEGIN;
-
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 CREATE EXTENSION IF NOT EXISTS vector;
 
@@ -831,8 +829,6 @@ CREATE INDEX derivation_queue_idx ON derivation_queue (kind, id);
 
 CREATE INDEX embedding_entity_idx ON embedding (entity_id);
 CREATE INDEX embedding_model_idx ON embedding (model);
-
-COMMIT;
 
 -- ---------------------------------------------------------------------------
 -- What is not created here
