@@ -18,6 +18,8 @@ mise run conformance
 
 CI runs the same thing in a job named `conformance (red until Wave 4.1)`, marked `continue-on-error`, so the red is visible on every pull request without blocking a merge.
 
+libtest has no third verdict, so a scenario a client legitimately skips — the substrate puts everything above the capture floor at the client's discretion — would otherwise be reported `ok` next to one that passed. The task prints a ledger at the end saying which each was, and anything absent from it failed.
+
 What runs in the *default* suite, and is expected to be green:
 
 - `tests/coverage.rs` — every scenario in the document has exactly one test, every test names a real scenario, and each test is named for its id.
