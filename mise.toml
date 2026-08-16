@@ -1,7 +1,7 @@
 [tools]
 "github:akiomik/mado" = "latest"
 prek = "latest"
-rust = "latest"
+rust = { version = "latest", profile = "default" }
 rust-analyzer = "latest"
 
 [tasks.test]
