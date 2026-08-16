@@ -3,3 +3,7 @@
 prek = "latest"
 rust = "latest"
 rust-analyzer = "latest"
+
+[tasks.test]
+description = "Bring up Postgres and run the workspace test suite"
+run = "docker compose up -d --wait && cargo test --workspace"

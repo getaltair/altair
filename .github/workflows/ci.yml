@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      # Matches compose.yaml. Set directly rather than via .env so the
+      # workflow has no dependency on the gitignored local override file.
+      DATABASE_URL: postgres://postgres:altair@localhost:5432/altair
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jdx/mise-action@v2
+      - uses: Swatinem/rust-cache@v2
+      - run: docker compose up -d --wait
+      - run: cargo test --workspace
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jdx/mise-action@v2
+      - uses: Swatinem/rust-cache@v2
+      # Runs the same hooks configured in .pre-commit-config.yaml, so CI and
+      # the local pre-commit path can never drift apart.
+      - run: prek run --all-files
