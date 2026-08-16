@@ -1,3 +1,4 @@
+pub mod auth;
 pub mod store;
 
 #[cfg(feature = "testing")]
