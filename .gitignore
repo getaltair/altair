@@ -1,3 +1,17 @@
 # Transient human-approval marker for the docs/ guard (.claude/hooks/protect-docs.sh).
 # Created by hand to open a time-boxed window for changing docs/; never committed.
 .claude/.docs-unlock
+
+# Rust build output (includes protoc/tonic codegen written to OUT_DIR)
+/target
+**/target
+
+# Local environment overrides — .env.example is the template and stays tracked
+.env
+.env.*
+!.env.example
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
