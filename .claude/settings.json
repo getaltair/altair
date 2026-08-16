@@ -1,0 +1,30 @@
+{
+  "enabledPlugins": {
+    "hyperskills@hyperb1iss": true
+  },
+  "permissions": {
+    "ask": [
+      "Edit(./docs/**)"
+    ]
+  },
+  "autoMode": {
+    "soft_deny": [
+      "$defaults",
+      "Creating, editing, moving, renaming, or deleting any file under docs/ in this repository, by any means including shell redirection, sed -i, rm, mv, cp, git checkout/restore, or a script. These are the project's normative design documents and are the authority the implementation is checked against; changing one is the work, not a side effect of it. Reading them is always fine."
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|MultiEdit|Write|NotebookEdit|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/protect-docs.sh\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

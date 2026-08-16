@@ -1,0 +1,3 @@
+# Transient human-approval marker for the docs/ guard (.claude/hooks/protect-docs.sh).
+# Created by hand to open a time-boxed window for changing docs/; never committed.
+.claude/.docs-unlock
