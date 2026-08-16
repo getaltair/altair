@@ -9,7 +9,7 @@ pub mod entity;
 pub mod ids;
 pub mod tx;
 
-pub use audience::{Bind, CandidateQuery, LifecycleScope};
+pub use audience::{Bind, CandidateQuery, LifecycleScope, ReadScope, WriteScope};
 pub use ids::{EntityId, MemberId};
 pub use tx::{ReadTx, WriteTx, begin_read, begin_write};
 

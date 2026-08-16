@@ -16,20 +16,26 @@
 //! household can see this" — and from the schema, where `audience_member_ids`
 //! is an enumerated `uuid[]` whose empty default means private to the author.
 //!
-//! Four things it deliberately does not do:
+//! **An unattributed entity is visible to nobody, and the predicate says so
+//! itself.** The leading `author_member_id IS NOT NULL` is not redundant. The
+//! substrate is clear that an entity captured before its device was bound
+//! "has none and cannot be shared", but the schema does not tie the two
+//! columns together, so a row with a null author and a populated audience is
+//! representable. Without the guard, `$1 = ANY (audience)` would admit it, and
+//! the closed answer would depend on a write-path invariant this layer cannot
+//! see. It is one conjunct, it fails closed, and it makes the claim true here
+//! rather than two components away. Nothing may be softened into `COALESCE` or
+//! `IS NOT DISTINCT FROM`.
 //!
-//! - **It does not treat a null author as visible.** An entity captured before
-//!   its device was bound has no author yet, and the substrate says an
-//!   unattributed entity "has none and cannot be shared". `NULL = $1` is NULL
-//!   rather than true, so such a row is visible to nobody until binding gives
-//!   it an author. That is the intended answer and it is also the closed one,
-//!   so the failure mode of this expression is silence rather than a leak.
-//!   Nothing here may be softened into `COALESCE` or `IS NOT DISTINCT FROM`.
+//! Three things it deliberately does not do:
+//!
 //! - **It does not consult lifecycle.** See [`LifecycleScope`].
 //! - **It does not consult `membership.administrator`.** The architecture is
 //!   explicit that the flag "does not touch audience, and an administrator does
 //!   not see another member's private entities".
-//! - **It does not re-check participation.** See [`MemberId`].
+//! - **It does not re-check participation.** That is checked once, where the
+//!   member is resolved; see [`MemberId`] for what is and is not enforced
+//!   about that.
 //!
 //! # Why it is a fragment and not a filter
 //!
@@ -56,7 +62,7 @@ use super::ids::MemberId;
 /// by binding it first and starting every other bind at `$2`.
 ///
 /// `e` is the fixed alias for `entity`.
-const AUDIENCE_PREDICATE: &str = "(e.author_member_id = $1 OR $1 = ANY (e.audience_member_ids))";
+const AUDIENCE_PREDICATE: &str = "(e.author_member_id IS NOT NULL AND (e.author_member_id = $1 OR $1 = ANY (e.audience_member_ids)))";
 
 /// The column's name, and the only spelling of it in the tree.
 ///
@@ -104,6 +110,10 @@ pub fn predicate_sql() -> &'static str {
 /// being enforced.
 ///
 /// There is no default. Every caller states which it means.
+///
+/// This is the unrestricted primitive, because [`CandidateQuery`] is. The two
+/// path-shaped functions in [`super::entity`] do not accept it: they take
+/// [`ReadScope`] and [`WriteScope`], which differ by exactly one variant.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum LifecycleScope {
     /// Ordinary surfaces: lists, search, traversal.
@@ -112,9 +122,62 @@ pub enum LifecycleScope {
     Holding,
     /// Active or deleted. Everything that still has content.
     Extant,
-    /// Including tombstones. The write path needs this to tell a recreation
-    /// from a create; a read surface almost certainly does not.
+    /// Including tombstones.
     AnyIncludingErased,
+}
+
+/// What a read surface may ask for. **There is no erased variant, and that is
+/// the point.**
+///
+/// A tombstone is a row whose content the write path has stripped, retained so
+/// that an edit arriving from a device that was away is recognisable as a
+/// recreation and so the change sequence can say the entity is gone. Neither
+/// is a reading. Nothing on the read path has a use for one, and until Wave 2
+/// implements stripping, a tombstone still carries its title — so a read
+/// surface that could ask for one would be reading content somebody erased.
+///
+/// Spelling the variant awkwardly was a hint. Removing it from the type the
+/// read path accepts is a control.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ReadScope {
+    Active,
+    Holding,
+    Extant,
+}
+
+/// What the write path may ask for.
+///
+/// It differs from [`ReadScope`] by [`WriteScope::AnyIncludingErased`], which
+/// the write path genuinely needs: deciding whether an arriving edit is a
+/// recreation rather than a create means finding the tombstone.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum WriteScope {
+    Active,
+    Holding,
+    Extant,
+    /// Reaches tombstones. For the recreation check, and nothing else.
+    AnyIncludingErased,
+}
+
+impl From<ReadScope> for LifecycleScope {
+    fn from(s: ReadScope) -> Self {
+        match s {
+            ReadScope::Active => Self::Active,
+            ReadScope::Holding => Self::Holding,
+            ReadScope::Extant => Self::Extant,
+        }
+    }
+}
+
+impl From<WriteScope> for LifecycleScope {
+    fn from(s: WriteScope) -> Self {
+        match s {
+            WriteScope::Active => Self::Active,
+            WriteScope::Holding => Self::Holding,
+            WriteScope::Extant => Self::Extant,
+            WriteScope::AnyIncludingErased => Self::AnyIncludingErased,
+        }
+    }
 }
 
 impl LifecycleScope {
@@ -144,10 +207,17 @@ pub enum Bind {
 /// no sequence of calls on this type that produces a query over `entity`
 /// without the predicate in it.
 ///
-/// The select list and any added fragment are caller-supplied SQL. This type
-/// cannot stop someone writing a second `FROM entity` inside a subquery there;
-/// the one-place test is what stops that, by refusing any other file that names
-/// the audience column.
+/// The select list and any added fragment are caller-supplied SQL, so the
+/// obvious escape is a second, unscoped reference to `entity` — a `UNION ALL
+/// SELECT … FROM entity e2` in a tail, or a subquery in the projection. Two
+/// things close that: [`CandidateQuery::render`] refuses a fragment that names
+/// the table again, and `tests/one_predicate.rs` refuses any source outside
+/// `store/` that does. A second reference to `entity` is a second candidate
+/// set, and it needs its own `CandidateQuery`.
+///
+/// Neither is a sandbox. Caller-supplied SQL can always be bent by someone
+/// determined; these stop the mistake, which is the thing that actually
+/// happens.
 pub struct CandidateQuery {
     sql: String,
     member: Uuid,
@@ -157,6 +227,10 @@ pub struct CandidateQuery {
 impl CandidateQuery {
     /// `select_list` is the projection, written against the alias `e`.
     pub fn new(member: MemberId, lifecycle: LifecycleScope, select_list: &str) -> Self {
+        // The projection is the other place a second, unscoped reference to
+        // `entity` fits.
+        Self::refuse_raw_placeholders(select_list);
+        Self::refuse_a_second_entity_reference(select_list);
         let sql = format!(
             "SELECT {select_list} FROM entity e WHERE {AUDIENCE_PREDICATE} AND {}",
             lifecycle.sql()
@@ -173,9 +247,11 @@ impl CandidateQuery {
     ///
     /// # Panics
     ///
-    /// If the number of `$?` markers does not match the number of binds. That
-    /// is a programming error in a string literal, and a mismatch would
-    /// otherwise surface as a runtime type error far from its cause.
+    /// If the number of `$?` markers does not match the number of binds, if
+    /// the fragment writes a raw `$1`-style position, or if it names the
+    /// `entity` table again. Each is a programming error in a string literal,
+    /// and each would otherwise surface as a wrong answer or as a runtime
+    /// error far from its cause.
     pub fn and_where(mut self, condition: &str, binds: impl IntoIterator<Item = Bind>) -> Self {
         let (rendered, binds) = self.render(condition, binds);
         self.sql.push_str(" AND ");
@@ -184,9 +260,53 @@ impl CandidateQuery {
         self
     }
 
+    /// A caller writes `$?` and never `$1`. Position `$1` is the requesting
+    /// member, so `.and_where("e.author_member_id = $1", [])` would compile,
+    /// run, and quietly compare against the requester — a wrong answer rather
+    /// than an error. A higher raw position is merely unbound and fails at
+    /// execution, a long way from the literal that caused it. Both are refused
+    /// here, at the mistake.
+    fn refuse_raw_placeholders(fragment: &str) {
+        let mut rest = fragment;
+        while let Some(at) = rest.find('$') {
+            let after = &rest[at + 1..];
+            assert!(
+                !after.starts_with(|c: char| c.is_ascii_digit()),
+                "fragment writes a raw positional parameter: {fragment:?}. \
+                 Write `$?` and pass the value as a bind; positions are \
+                 assigned here because `$1` is always the requesting member."
+            );
+            rest = after;
+        }
+    }
+
+    /// A fragment naming `entity` again is a second candidate set, and nothing
+    /// in this builder would put the audience predicate on it. It needs its
+    /// own `CandidateQuery`, whose constructor does.
+    fn refuse_a_second_entity_reference(fragment: &str) {
+        let flat = fragment.to_ascii_lowercase();
+        let flat: String = flat.split_whitespace().collect::<Vec<_>>().join(" ");
+        for shape in [
+            "from entity",
+            "join entity",
+            "from public.entity",
+            "join public.entity",
+        ] {
+            assert!(
+                !flat.contains(shape),
+                "fragment names the entity table again ({shape:?}): {fragment:?}. \
+                 A second reference to `entity` is a second candidate set and \
+                 carries no audience predicate. Build it as its own \
+                 CandidateQuery."
+            );
+        }
+    }
+
     /// Substitutes `$?` for the positions these binds will occupy. `$1` is the
     /// member, so the first substitution here is `$2`.
     fn render(&self, fragment: &str, binds: impl IntoIterator<Item = Bind>) -> (String, Vec<Bind>) {
+        Self::refuse_raw_placeholders(fragment);
+        Self::refuse_a_second_entity_reference(fragment);
         let binds: Vec<Bind> = binds.into_iter().collect();
         let mut rendered = String::with_capacity(fragment.len());
         let mut used = 0usize;

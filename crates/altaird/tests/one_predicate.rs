@@ -12,7 +12,17 @@
 //! true in month four, and by then the divergence is a leak rather than a
 //! refactor.
 //!
-//! Neither needle is written as a literal here, or this file would count as an
+//! A third check closes the escape the builder cannot: a second, unscoped
+//! `FROM` over `entity` outside the store layer. That one also covers most of what the
+//! first two would miss, because a second implementation has to reach the table
+//! however cleverly it spells the column.
+//!
+//! **The known limit.** A determined developer wins: a computed table name, a
+//! view, or a second implementation written inside `store/audience.rs` itself
+//! would all pass. These are aimed at the paste and the paraphrase, which are
+//! what actually happen. The gap is known rather than missed.
+//!
+//! No needle is written as a literal here, or this file would count as an
 //! occurrence of itself.
 
 use std::path::{Path, PathBuf};
@@ -125,4 +135,49 @@ fn nothing_else_in_the_tree_names_the_audience_column() {
     // And the one place still does.
     let home = std::fs::read_to_string(root.join(HOME)).expect("audience.rs");
     assert!(home.contains(&column), "{HOME} no longer names the column");
+}
+
+#[test]
+fn nothing_outside_the_store_layer_queries_the_entity_table() {
+    // `CandidateQuery` puts the predicate on the candidate set it builds. It
+    // cannot put one on a second `FROM` over `entity` smuggled into a projection or a
+    // UNION arm — it refuses such a fragment at runtime, and this refuses one
+    // at rest, anywhere in the tree.
+    //
+    // This is also the check that survives a cleverly spelled column: a second
+    // implementation still has to reach the table.
+    //
+    // Writes are deliberately not caught. `INSERT INTO entity` and
+    // `UPDATE entity` are the write path's, and audience on a write is enforced
+    // by looking the entity up first, not by a predicate on the statement.
+    let store = ["crates", "altaird", "src", "store"].join(std::path::MAIN_SEPARATOR_STR);
+
+    let root = repo_root();
+    let mut offenders: Vec<String> = Vec::new();
+    for path in sources(&root) {
+        if path.to_string_lossy().contains(&store) {
+            continue;
+        }
+        let Ok(text) = std::fs::read_to_string(&path) else {
+            continue;
+        };
+        let flat: String = text
+            .to_ascii_lowercase()
+            .split_whitespace()
+            .collect::<Vec<_>>()
+            .join(" ");
+        // Assembled, not written, like the other needles.
+        for shape in [["from", "entity"].join(" "), ["join", "entity"].join(" ")] {
+            if flat.contains(&shape) {
+                offenders.push(format!("{} ({shape})", path.display()));
+            }
+        }
+    }
+
+    assert!(
+        offenders.is_empty(),
+        "{offenders:?} query the entity table outside the store layer. Every \
+         candidate set over `entity` carries the audience predicate, and the \
+         only thing that puts it there is CandidateQuery, beside {HOME}."
+    );
 }

@@ -6,8 +6,8 @@
 use sqlx::Row;
 use sqlx::postgres::PgRow;
 
-use super::audience::{AUDIENCE_COLUMN, Bind, CandidateQuery, LifecycleScope};
-use super::ids::{EntityId, MemberId};
+use super::audience::{AUDIENCE_COLUMN, Bind, CandidateQuery, ReadScope, WriteScope};
+use super::ids::{EntityId, MemberId, MemberRef};
 use super::tx::{ReadTx, WriteTx};
 
 /// The shared model, as much of it as lives on the `entity` row itself.
@@ -17,10 +17,15 @@ pub struct EntityRow {
     pub entity_type: EntityType,
     pub title: Option<String>,
     /// Absent on an entity captured before its device was bound. Such a row is
-    /// visible to nobody until binding gives it one.
-    pub author: Option<MemberId>,
-    /// Who else can see it. Empty is private to the author.
-    pub audience: Vec<MemberId>,
+    /// visible to nobody until binding gives it one, which the predicate
+    /// enforces itself.
+    ///
+    /// A [`MemberRef`] rather than a [`MemberId`]: an author may since have
+    /// departed, and the value carries no claim that they still participate.
+    pub author: Option<MemberRef>,
+    /// Who else can see it. Empty is private to the author. Entries survive
+    /// departure, so these too are references and not requesters.
+    pub audience: Vec<MemberRef>,
     pub lifecycle: LifecycleState,
     /// Advances on every accepted write. Never shown to anyone.
     pub counter: i64,
@@ -67,11 +72,11 @@ fn row(r: &PgRow) -> sqlx::Result<EntityRow> {
         title: r.try_get("title")?,
         author: r
             .try_get::<Option<uuid::Uuid>, _>("author_member_id")?
-            .map(MemberId::from_uuid),
+            .map(MemberRef::from_uuid),
         audience: r
             .try_get::<Vec<uuid::Uuid>, _>("audience")?
             .into_iter()
-            .map(MemberId::from_uuid)
+            .map(MemberRef::from_uuid)
             .collect(),
         lifecycle: r.try_get("lifecycle")?,
         counter: r.try_get("counter")?,
@@ -89,16 +94,17 @@ fn row(r: &PgRow) -> sqlx::Result<EntityRow> {
 /// them here would put the distinction one `match` away from the wire.
 ///
 /// `lifecycle` is stated by the caller because the write path means different
-/// things at different moments: an edit is [`LifecycleScope::Active`], a
-/// restore is [`LifecycleScope::Holding`], and deciding whether an arriving
-/// edit is a recreation needs [`LifecycleScope::AnyIncludingErased`].
+/// things at different moments: an edit is [`WriteScope::Active`], a restore is
+/// [`WriteScope::Holding`], and deciding whether an arriving edit is a
+/// recreation needs [`WriteScope::AnyIncludingErased`]. That last variant does
+/// not exist on [`ReadScope`], so no read surface can ask for a tombstone.
 pub async fn available_for_write(
     tx: &mut WriteTx,
     member: MemberId,
     id: EntityId,
-    lifecycle: LifecycleScope,
+    lifecycle: WriteScope,
 ) -> sqlx::Result<Option<EntityRow>> {
-    let q = CandidateQuery::new(member, lifecycle, &columns())
+    let q = CandidateQuery::new(member, lifecycle.into(), &columns())
         .and_where("e.id = $?", [Bind::Uuid(id.as_uuid())]);
     let found = q.build().fetch_optional(tx.conn()).await?;
     found.as_ref().map(row).transpose()
@@ -114,10 +120,10 @@ pub async fn available_for_write(
 pub async fn candidates(
     tx: &mut ReadTx,
     member: MemberId,
-    lifecycle: LifecycleScope,
+    lifecycle: ReadScope,
     limit: i64,
 ) -> sqlx::Result<Vec<EntityRow>> {
-    let q = CandidateQuery::new(member, lifecycle, &columns()).tail(
+    let q = CandidateQuery::new(member, lifecycle.into(), &columns()).tail(
         "ORDER BY e.created_at DESC, e.id LIMIT $?",
         [Bind::Int(limit)],
     );

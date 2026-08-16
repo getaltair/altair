@@ -12,7 +12,7 @@
 
 use altaird::store::audience::AUDIENCE_COLUMN;
 use altaird::store::entity::{self, LifecycleState};
-use altaird::store::{EntityId, LifecycleScope, MemberId};
+use altaird::store::{EntityId, MemberId, ReadScope, WriteScope};
 use altaird::store::{begin_read, begin_write};
 use altaird::testing::TestDb;
 use sqlx::PgPool;
@@ -41,7 +41,7 @@ async fn member(pool: &PgPool, household_id: Uuid, administrator: bool) -> Membe
     .execute(pool)
     .await
     .expect("membership");
-    MemberId::from_uuid(id)
+    MemberId::for_test(id)
 }
 
 /// `author` is `None` for an entity captured before its device was bound.
@@ -79,24 +79,48 @@ async fn note(
 }
 
 /// Both shapes, one answer. `(write path saw it, read path saw it)`.
+///
+/// The two scopes are separate arguments because the read path can no longer
+/// name the erased scope at all; where they mean the same thing the wrappers
+/// below say so.
 async fn seen(
     pool: &PgPool,
     member: MemberId,
     id: EntityId,
-    scope: LifecycleScope,
+    write_scope: WriteScope,
+    read_scope: ReadScope,
 ) -> (bool, bool) {
     let mut w = begin_write(pool).await.expect("begin write");
-    let by_write = entity::available_for_write(&mut w, member, id, scope)
+    let by_write = entity::available_for_write(&mut w, member, id, write_scope)
         .await
         .expect("write path lookup");
     w.rollback().await.expect("rollback");
 
     let mut r = begin_read(pool).await.expect("begin read");
-    let by_read = entity::candidates(&mut r, member, scope, 100)
+    let by_read = entity::candidates(&mut r, member, read_scope, 100)
         .await
         .expect("read path candidates");
 
     (by_write.is_some(), by_read.iter().any(|e| e.id == id))
+}
+
+/// The scopes that mean the same thing on both sides.
+async fn seen_active(pool: &PgPool, member: MemberId, id: EntityId) -> (bool, bool) {
+    seen(pool, member, id, WriteScope::Active, ReadScope::Active).await
+}
+
+/// As far as each path is permitted to reach. The write path reaches
+/// tombstones; the read path's widest scope stops short of them, which is the
+/// point of the split.
+async fn seen_anywhere(pool: &PgPool, member: MemberId, id: EntityId) -> (bool, bool) {
+    seen(
+        pool,
+        member,
+        id,
+        WriteScope::AnyIncludingErased,
+        ReadScope::Extant,
+    )
+    .await
 }
 
 #[tokio::test]
@@ -108,14 +132,14 @@ async fn an_author_reads_their_own_entity_back_through_both_paths() {
     let id = note(&db.pool, Some(author), &[], LifecycleState::Active).await;
 
     let mut w = begin_write(&db.pool).await.expect("begin write");
-    let by_write = entity::available_for_write(&mut w, author, id, LifecycleScope::Active)
+    let by_write = entity::available_for_write(&mut w, author, id, WriteScope::Active)
         .await
         .expect("write path lookup")
         .expect("author may act on their own entity");
     w.rollback().await.expect("rollback");
 
     let mut r = begin_read(&db.pool).await.expect("begin read");
-    let by_read = entity::candidates(&mut r, author, LifecycleScope::Active, 100)
+    let by_read = entity::candidates(&mut r, author, ReadScope::Active, 100)
         .await
         .expect("read path candidates");
 
@@ -128,7 +152,10 @@ async fn an_author_reads_their_own_entity_back_through_both_paths() {
         &by_write, found,
         "the two paths disagree about the same row"
     );
-    assert_eq!(by_write.author, Some(author));
+    // `is` rather than `==`: an author is a stored reference and a requester
+    // is a participating member, and the types are separate so that one cannot
+    // be handed to the predicate as the other.
+    assert!(by_write.author.is_some_and(|a| author.is(a)));
     assert_eq!(by_write.counter, 1);
 }
 
@@ -142,14 +169,11 @@ async fn a_private_entity_is_invisible_to_everyone_else_through_both_paths() {
     let id = note(&db.pool, Some(author), &[], LifecycleState::Active).await;
 
     assert_eq!(
-        seen(&db.pool, other, id, LifecycleScope::Active).await,
+        seen_active(&db.pool, other, id).await,
         (false, false),
         "a private entity reached somebody who is not its author"
     );
-    assert_eq!(
-        seen(&db.pool, author, id, LifecycleScope::Active).await,
-        (true, true)
-    );
+    assert_eq!(seen_active(&db.pool, author, id).await, (true, true));
 }
 
 #[tokio::test]
@@ -163,10 +187,10 @@ async fn refusal_on_audience_is_the_same_answer_as_refusal_on_nonexistence() {
     let absent = EntityId::from_uuid(Uuid::new_v4());
 
     let mut w = begin_write(&db.pool).await.expect("begin write");
-    let for_hidden = entity::available_for_write(&mut w, other, hidden, LifecycleScope::Active)
+    let for_hidden = entity::available_for_write(&mut w, other, hidden, WriteScope::Active)
         .await
         .expect("lookup");
-    let for_absent = entity::available_for_write(&mut w, other, absent, LifecycleScope::Active)
+    let for_absent = entity::available_for_write(&mut w, other, absent, WriteScope::Active)
         .await
         .expect("lookup");
     w.rollback().await.expect("rollback");
@@ -194,14 +218,8 @@ async fn an_audience_entry_makes_it_visible_through_both_paths() {
     )
     .await;
 
-    assert_eq!(
-        seen(&db.pool, shared_with, id, LifecycleScope::Active).await,
-        (true, true)
-    );
-    assert_eq!(
-        seen(&db.pool, outsider, id, LifecycleScope::Active).await,
-        (false, false)
-    );
+    assert_eq!(seen_active(&db.pool, shared_with, id).await, (true, true));
+    assert_eq!(seen_active(&db.pool, outsider, id).await, (false, false));
 }
 
 #[tokio::test]
@@ -219,7 +237,7 @@ async fn an_unattributed_entity_is_visible_to_nobody() {
 
     for m in [a, b] {
         assert_eq!(
-            seen(&db.pool, m, id, LifecycleScope::AnyIncludingErased).await,
+            seen_anywhere(&db.pool, m, id).await,
             (false, false),
             "an entity with no author reached a member"
         );
@@ -238,7 +256,7 @@ async fn an_administrator_does_not_see_another_members_private_entity() {
     let id = note(&db.pool, Some(author), &[], LifecycleState::Active).await;
 
     assert_eq!(
-        seen(&db.pool, admin, id, LifecycleScope::AnyIncludingErased).await,
+        seen_anywhere(&db.pool, admin, id).await,
         (false, false),
         "the administrator flag has become a permission over entities"
     );
@@ -259,41 +277,87 @@ async fn lifecycle_scopes_the_query_and_audience_decides_visibility() {
     let erased = note(&db.pool, Some(author), &[], LifecycleState::Erased).await;
 
     assert_eq!(
-        seen(&db.pool, author, deleted, LifecycleScope::Active).await,
+        seen(
+            &db.pool,
+            author,
+            deleted,
+            WriteScope::Active,
+            ReadScope::Active
+        )
+        .await,
         (false, false),
         "a deleted entity appeared on an active surface"
     );
     assert_eq!(
-        seen(&db.pool, author, deleted, LifecycleScope::Holding).await,
+        seen(
+            &db.pool,
+            author,
+            deleted,
+            WriteScope::Holding,
+            ReadScope::Holding
+        )
+        .await,
         (true, true),
         "the holding surface cannot see what it holds"
     );
     assert_eq!(
-        seen(&db.pool, author, erased, LifecycleScope::Extant).await,
+        seen(
+            &db.pool,
+            author,
+            erased,
+            WriteScope::Extant,
+            ReadScope::Extant
+        )
+        .await,
         (false, false),
         "a tombstone appeared among entities that still have content"
     );
+
+    // The write path reaches the tombstone. The read path has no scope that
+    // can, which is why this asymmetry is spelled out rather than hidden in a
+    // wrapper.
     assert_eq!(
-        seen(&db.pool, author, erased, LifecycleScope::AnyIncludingErased).await,
-        (true, true),
+        seen_anywhere(&db.pool, author, erased).await,
+        (true, false),
         "the write path cannot reach a tombstone, so an edit to an erased \
          entity would read as a create rather than a recreation"
     );
 
-    // And no scope lets audience through.
-    for scope in [
-        LifecycleScope::Active,
-        LifecycleScope::Holding,
-        LifecycleScope::Extant,
-        LifecycleScope::AnyIncludingErased,
+    // And no scope on either path lets audience through.
+    for (w, r) in [
+        (WriteScope::Active, ReadScope::Active),
+        (WriteScope::Holding, ReadScope::Holding),
+        (WriteScope::Extant, ReadScope::Extant),
+        (WriteScope::AnyIncludingErased, ReadScope::Extant),
     ] {
         assert_eq!(
-            seen(&db.pool, outsider, deleted, scope).await,
+            seen(&db.pool, outsider, deleted, w, r).await,
             (false, false)
         );
-        assert_eq!(
-            seen(&db.pool, outsider, erased, scope).await,
-            (false, false)
+        assert_eq!(seen(&db.pool, outsider, erased, w, r).await, (false, false));
+    }
+}
+
+#[tokio::test]
+async fn no_read_scope_reaches_a_tombstone() {
+    // The erased variant does not exist on `ReadScope`, so this is the whole
+    // of what a read surface can ask for. A tombstone retains its title until
+    // Wave 2 strips it, so reaching one from the read path would be serving
+    // content somebody erased.
+    let db = TestDb::new().await;
+    let h = household(&db.pool).await;
+    let author = member(&db.pool, h, false).await;
+
+    let erased = note(&db.pool, Some(author), &[], LifecycleState::Erased).await;
+
+    for scope in [ReadScope::Active, ReadScope::Holding, ReadScope::Extant] {
+        let mut r = begin_read(&db.pool).await.expect("begin read");
+        let rows = entity::candidates(&mut r, author, scope, 100)
+            .await
+            .expect("candidates");
+        assert!(
+            !rows.iter().any(|e| e.id == erased),
+            "a read surface reached a tombstone through {scope:?}"
         );
     }
 }
@@ -309,7 +373,7 @@ async fn the_read_transaction_refuses_a_write() {
     let attempted = sqlx::query(
         "INSERT INTO household (id, name, created_at) VALUES (gen_random_uuid(), 'x', now())",
     )
-    .execute(r.conn())
+    .execute(r.conn_for_test())
     .await;
 
     let err = attempted.expect_err("the read path was allowed to write");
@@ -325,12 +389,33 @@ async fn the_read_transaction_refuses_a_write() {
 }
 
 #[tokio::test]
-async fn a_candidate_query_cannot_be_built_without_the_predicate() {
+async fn an_unattributed_entity_is_not_shareable_by_its_audience_array() {
+    // The state the schema permits and the substrate forbids: no author, but a
+    // populated audience. Nothing ties the two columns together, so the write
+    // path could produce this and the predicate would have to answer for it.
+    // The predicate's leading `author_member_id IS NOT NULL` is what makes the
+    // answer closed here rather than two components away.
+    let db = TestDb::new().await;
+    let h = household(&db.pool).await;
+    let named = member(&db.pool, h, false).await;
+
+    let id = note(&db.pool, None, &[named], LifecycleState::Active).await;
+
+    assert_eq!(
+        seen_anywhere(&db.pool, named, id).await,
+        (false, false),
+        "an entity with no author was shared by its audience array. The \
+         substrate: an unattributed entity 'has none and cannot be shared'"
+    );
+}
+
+#[test]
+fn a_candidate_query_cannot_be_built_without_the_predicate() {
     // Structural rather than behavioural: whatever a caller adds is conjoined
     // onto what the constructor already emitted.
-    use altaird::store::{Bind, CandidateQuery};
+    use altaird::store::{Bind, CandidateQuery, LifecycleScope};
 
-    let m = MemberId::from_uuid(Uuid::new_v4());
+    let m = MemberId::for_test(Uuid::new_v4());
     let q = CandidateQuery::new(m, LifecycleScope::Active, "e.id")
         .and_where("e.type = $?::entity_type", [Bind::Text("note".into())])
         .tail("LIMIT $?", [Bind::Int(10)]);
@@ -342,4 +427,53 @@ async fn a_candidate_query_cannot_be_built_without_the_predicate() {
     );
     assert!(q.sql().contains("$2::entity_type"), "{}", q.sql());
     assert!(q.sql().ends_with("LIMIT $3"), "{}", q.sql());
+}
+
+#[test]
+#[should_panic(expected = "names the entity table again")]
+fn a_tail_cannot_bolt_on_an_unscoped_second_arm() {
+    // The escape the builder used to concede and not control: a second arm
+    // over `entity` carries no predicate, and returns everything.
+    use altaird::store::{CandidateQuery, LifecycleScope};
+
+    let m = MemberId::for_test(Uuid::new_v4());
+    let _ = CandidateQuery::new(m, LifecycleScope::Active, "e.id")
+        // Assembled rather than written: `tests/one_predicate.rs` scans for
+        // exactly this shape at rest, and a negative test should not read as
+        // the thing it forbids.
+        .tail(&format!("UNION ALL SELECT e2.id {} entity e2", "FROM"), []);
+}
+
+#[test]
+#[should_panic(expected = "names the entity table again")]
+fn a_projection_cannot_hide_an_unscoped_subquery() {
+    use altaird::store::{CandidateQuery, LifecycleScope};
+
+    let m = MemberId::for_test(Uuid::new_v4());
+    let _ = CandidateQuery::new(
+        m,
+        LifecycleScope::Active,
+        &format!("e.id, (SELECT count(*) {} entity) AS total", "FROM"),
+    );
+}
+
+#[test]
+#[should_panic(expected = "raw positional parameter")]
+fn a_fragment_cannot_write_a_raw_position_and_silently_get_the_requester() {
+    // `$1` is the member. Writing it by hand compiles, runs, and compares
+    // against the requester — a wrong answer rather than an error.
+    use altaird::store::{CandidateQuery, LifecycleScope};
+
+    let m = MemberId::for_test(Uuid::new_v4());
+    let _ = CandidateQuery::new(m, LifecycleScope::Active, "e.id")
+        .and_where("e.author_member_id = $1", []);
+}
+
+#[test]
+#[should_panic(expected = "raw positional parameter")]
+fn a_fragment_cannot_write_a_raw_position_that_would_be_unbound() {
+    use altaird::store::{CandidateQuery, LifecycleScope};
+
+    let m = MemberId::for_test(Uuid::new_v4());
+    let _ = CandidateQuery::new(m, LifecycleScope::Active, "e.id").tail("LIMIT $2", []);
 }
