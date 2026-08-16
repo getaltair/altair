@@ -10,9 +10,24 @@
 //! the interface hands one out, and callers do the rest innocently. Or a
 //! caller can *reach around* — it never asks the store for anything and opens
 //! the file itself.
+//!
+//! Which crates the reaching-around check covers, and what that scope
+//! deliberately gives up, is on `crates_that_could_hold_an_object_store`. Read
+//! it before adding a crate to the workspace that touches the filesystem.
 
 use std::fs;
 use std::path::{Path, PathBuf};
+
+/// The crate the interface lives in, and the one this is a test of.
+const INSTANCE: &str = "altaird";
+
+/// Crates that are scanned even though they do not link the instance.
+///
+/// Empty, and here so that the answer to "my crate holds the object root but
+/// does not depend on `altaird`" is an entry rather than a puzzle. See
+/// [`crates_that_could_hold_an_object_store`] for when that applies. Names are
+/// directory names under `crates/`.
+const ALSO_SCANNED: &[&str] = &[];
 
 /// Files that may name a filesystem path or perform filesystem I/O.
 ///
@@ -53,14 +68,71 @@ fn crates_dir() -> PathBuf {
         .to_path_buf()
 }
 
-/// Every `.rs` file under `crates/*/src` and `crates/*/tests`, which is all
-/// the code that runs as part of the instance or its tests. Build scripts are
-/// out of scope on purpose: they run before anything exists and cannot reach a
-/// body.
+/// Which crates are scanned, and why it is not simply all of them.
+///
+/// In scope is every crate that could hold an [`ObjectStore`]: `altaird`,
+/// where the four operations live, and any workspace crate that depends on it.
+/// Cargo forbids dependency cycles, so a crate that does not depend on
+/// `altaird` cannot name the interface at all, which makes "this went round
+/// the interface" a sentence that cannot be said about it. Its filesystem work
+/// is its own business and belongs to whatever it is a component of.
+///
+/// `altair-conformance` is the live example and the reason this scope is
+/// written down. It runs a client under test as a subprocess and hands it a
+/// durable state directory and an ephemeral runtime one — a distinction that
+/// is load bearing for the scenario that tells a device restart from a process
+/// kill. That is filesystem work with nothing to do with file bodies, in a
+/// crate that links `altair-proto` and not the instance.
+///
+/// **What this deliberately gives up.** A crate that never links `altaird` and
+/// reads the body directory anyway — a backup or migration tool handed the
+/// object root — is not scanned and would not be caught. That is a different
+/// mistake from the one DR-003 is guarding here, which is the instance going
+/// round its own boundary, and it is a harder one to make by accident: such a
+/// tool has to be given the root from configuration, and being given it is
+/// itself the reviewable moment. If one is ever written, name it in
+/// [`ALSO_SCANNED`] and this check covers it again.
+fn crates_that_could_hold_an_object_store() -> Vec<PathBuf> {
+    let mut scanned = Vec::new();
+    for entry in fs::read_dir(crates_dir()).expect("read crates/") {
+        let dir = entry.expect("entry").path();
+        let Ok(manifest) = fs::read_to_string(dir.join("Cargo.toml")) else {
+            continue;
+        };
+        let name = dir
+            .file_name()
+            .expect("a crate directory has a name")
+            .to_string_lossy()
+            .to_string();
+
+        if name == INSTANCE || ALSO_SCANNED.contains(&name.as_str()) || links_instance(&manifest) {
+            scanned.push(dir);
+        }
+    }
+    assert!(
+        scanned.iter().any(|dir| dir.ends_with(INSTANCE)),
+        "the crate holding the interface is not being scanned, so this test asserts nothing"
+    );
+    scanned
+}
+
+/// Whether a manifest declares a dependency on the instance, in any of the
+/// three tables. Deliberately generous: a manifest that mentions `altaird` at
+/// all is scanned, because over-scanning costs someone an explanation and
+/// under-scanning costs the boundary.
+fn links_instance(manifest: &str) -> bool {
+    manifest.lines().map(str::trim).any(|line| {
+        (line.starts_with(INSTANCE) && line.contains('='))
+            || (line.starts_with('[') && line.contains(INSTANCE))
+    })
+}
+
+/// Every `.rs` file under `src` and `tests` of the crates in scope. Build
+/// scripts are excluded on purpose: they run before anything exists and cannot
+/// reach a body.
 fn instance_sources() -> Vec<PathBuf> {
     let mut found = Vec::new();
-    for crate_dir in fs::read_dir(crates_dir()).expect("read crates/") {
-        let crate_dir = crate_dir.expect("entry").path();
+    for crate_dir in crates_that_could_hold_an_object_store() {
         for area in ["src", "tests"] {
             collect(&crate_dir.join(area), &mut found);
         }
@@ -126,11 +198,36 @@ fn nothing_outside_the_object_store_touches_the_bytes() {
     assert!(
         violations.is_empty(),
         "the object store's four operations are the whole boundary (DR-003), and this code goes \
-         round them. Use `altaird::objects::ObjectStore`, or, if this file genuinely has business \
-         with the filesystem that is not a file body, add it to ALLOWED in {} and say why.\n\n{}",
+         round them. These files are scanned because their crate links `{INSTANCE}` and can \
+         therefore hold an ObjectStore. Use `altaird::objects::ObjectStore`, or, if the file \
+         genuinely has business with the filesystem that is not a file body, add it to ALLOWED in \
+         {} and say why.\n\n{}",
         file!(),
         violations.join("\n")
     );
+}
+
+/// The scope follows the dependency, so nothing is excluded by name and a
+/// crate joins the scan the moment it can hold an `ObjectStore`. A crate added
+/// to the workspace next year does not need anyone to remember this test
+/// exists.
+#[test]
+fn a_crate_is_scanned_the_moment_it_links_the_instance() {
+    assert!(links_instance(
+        "[dependencies]\naltaird = { path = \"../altaird\" }\n"
+    ));
+    assert!(links_instance(
+        "[dev-dependencies]\naltaird = { path = \"../altaird\", features = [\"testing\"] }\n"
+    ));
+    assert!(links_instance(
+        "[dependencies.altaird]\npath = \"../altaird\"\n"
+    ));
+
+    // And a crate that links only the contract is a component of something
+    // else, whose filesystem work is not this boundary's business.
+    assert!(!links_instance(
+        "[dependencies]\naltair-proto = { path = \"../altair-proto\" }\ntokio = \"1\"\n"
+    ));
 }
 
 fn object_store_source(name: &str) -> String {
