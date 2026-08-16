@@ -1,0 +1,841 @@
+// Altair public interface, version 1.
+//
+// Status: Draft. Field numbers are not permanent until this file is accepted.
+// Governed by: DR-004, Altair Component Model, Altair Substrate Specification,
+//              Altair Data Model, Altair Architecture Foundations.
+//
+// This schema is the client contract, not the internal model. It carries shape.
+// It does not carry a type fixed at creation, properties permitted only on
+// relation types that declare them, or audience rules. Those are enforced by
+// the write path.
+//
+// Points that are recommendations rather than transcription, and the gaps this
+// assembly found, are listed at the end of the file.
+
+syntax = "proto3";
+
+package altair.v1;
+
+import "google/protobuf/timestamp.proto";
+
+// ---------------------------------------------------------------------------
+// Service
+// ---------------------------------------------------------------------------
+
+service Altair {
+  // The only write entry point. A submission is always a list, so partial
+  // success is the only shape available and no client can build an all or
+  // nothing path by accident.
+  rpc Submit(SubmitRequest) returns (SubmitResponse);
+
+  // Retrieval. Provisional: DR-004 leaves the shape of query scoping to
+  // retrieval design, so only what is certain is declared here.
+  rpc Query(QueryRequest) returns (QueryResponse);
+
+  // What changed since a stated position. Polled. The instance holds no
+  // cursor, so a client that never returns costs nothing.
+  rpc Changes(ChangesRequest) returns (ChangesResponse);
+
+  // Instance health, read only.
+  rpc GetHealth(HealthRequest) returns (HealthResponse);
+
+  // File bodies. Bytes are uploaded before the intent that refers to them,
+  // which is the same ordering the instance keeps internally.
+  rpc PutBody(stream BodyChunk) returns (PutBodyAck);
+  rpc GetBody(BodyRequest) returns (stream BodyChunk);
+}
+
+// ---------------------------------------------------------------------------
+// Identity and shared scalars
+// ---------------------------------------------------------------------------
+
+// Every identifier below is a UUID, sixteen bytes. Identifiers are assigned by
+// whatever created the thing, before the instance has seen it.
+//
+// The JSON encoding renders them as base64 rather than in the hyphenated form,
+// which is the cost of this and is paid by inspection tooling rather than by
+// the wire. Bytes also match what the structured store holds, so an identifier
+// is not reformatted at every crossing.
+
+// A position in the instance level change sequence. Opaque to clients. Not
+// wall clock, and not the per entity write counter.
+message Position {
+  uint64 value = 1;
+}
+
+// ---------------------------------------------------------------------------
+// Submission
+// ---------------------------------------------------------------------------
+
+message SubmitRequest {
+  repeated Intent intents = 1;
+}
+
+message SubmitResponse {
+  // One acknowledgement per intent, in the order submitted. Two hundred files
+  // where the hundredth fails leaves ninety nine captured.
+  repeated Acknowledgement acknowledgements = 1;
+}
+
+message Intent {
+  // The intent's own identity, distinct from any entity's. Resubmitting an
+  // intent returns the acknowledgement the instance already issued for it,
+  // unchanged, rather than producing a second effect.
+  bytes intent_id = 1;
+
+  oneof action {
+    Create create = 2;
+    Edit edit = 3;
+    Remove remove = 4;
+    Erase erase = 5;
+    Restore restore = 6;
+  }
+}
+
+message Create {
+  oneof subject {
+    CreateEntity entity = 1;
+    CreateRelation relation = 2;
+  }
+}
+
+message CreateEntity {
+  bytes entity_id = 1;
+
+  // Set once by the creating client. Settles the order of nothing.
+  google.protobuf.Timestamp created_at = 2;
+
+  // How the entity came to exist. An open set, so a string rather than an
+  // enum: clients add ways to create things and the set grows without a
+  // schema change.
+  string capture_method = 3;
+
+  // The type is the tag of content.specific. There is no parallel type field
+  // for it to disagree with.
+  EntityContent content = 4;
+}
+
+message CreateRelation {
+  bytes relation_id = 1;
+  RelationContent content = 2;
+}
+
+message Edit {
+  oneof subject {
+    EditEntity entity = 1;
+    EditRelation relation = 2;
+  }
+}
+
+message EditEntity {
+  bytes entity_id = 1;
+
+  // The counter this edit was based on. It detects concurrency. It does not
+  // gate admission, and no edit is ever returned to be retried because of it.
+  uint64 base_counter = 2;
+
+  EntityContent content = 3;
+}
+
+message EditRelation {
+  bytes relation_id = 1;
+  RelationContent content = 2;
+}
+
+message Remove {
+  // Removal is the ordinary affordance and is reversible. Everything named in
+  // one Remove is one act, and that grouping is retained so that restoring any
+  // one of them can bring back the rest.
+  repeated bytes entity_ids = 1;
+  repeated bytes relation_ids = 2;
+}
+
+message Erase {
+  repeated bytes entity_ids = 1;
+}
+
+message Restore {
+  bytes entity_id = 1;
+
+  // Whether to bring back the rest of the act this entity was removed in.
+  // Restoring is never blocked by something else still being removed.
+  bool include_group = 2;
+}
+
+// ---------------------------------------------------------------------------
+// Acknowledgement
+// ---------------------------------------------------------------------------
+
+message Acknowledgement {
+  bytes intent_id = 1;
+
+  oneof outcome {
+    Applied applied = 2;
+    Refused refused = 3;
+    Recreated recreated = 4;
+  }
+}
+
+message Applied {
+  // Identities the intent affected. A create echoes what the client assigned,
+  // so a client never learns an identity from the instance.
+  repeated bytes entity_ids = 1;
+  repeated bytes relation_ids = 2;
+
+  // The counter after the write, for the single entity case.
+  uint64 counter = 3;
+
+  // Present where a stale base overlapped what moved since. Both values are
+  // retained and the write still applied; this is not a failure and nothing
+  // is sent back.
+  ConflictRetained conflict = 4;
+}
+
+message ConflictRetained {
+  // Field numbers within EntityContent, or within the type specific content,
+  // whose values are both retained.
+  repeated uint32 content_fields = 1;
+  repeated uint32 specific_fields = 2;
+
+  // Blocks of a body whose values are both retained.
+  repeated bytes block_ids = 3;
+}
+
+message Refused {
+  RefusalReason reason = 1;
+
+  // Free text for a person reading a log. Never parsed by a client, and never
+  // carrying anything a refusal is not permitted to reveal.
+  string detail = 2;
+}
+
+enum RefusalReason {
+  REFUSAL_REASON_UNSPECIFIED = 0;
+
+  // Covers both an entity that does not exist and one the submitting member
+  // cannot see. Nothing anywhere distinguishes the two, including the gRPC
+  // status, so a refusal never reveals that something is there.
+  REFUSAL_REASON_NOT_AVAILABLE = 1;
+
+  // The intent could not be read as a well formed intent: a field both set
+  // and listed as cleared, an edit changing an entity's type, a relation
+  // property on a type that declares none.
+  REFUSAL_REASON_MALFORMED = 2;
+}
+
+// An edit arriving for an entity that was erased. The erasure stands and so
+// does the person's work: the entity is recreated under a new identity, which
+// is stated here rather than left to be inferred. Relations the client held
+// come back where both ends still exist. Audience is private to the author
+// whatever it was before.
+message Recreated {
+  bytes original_entity_id = 1;
+  bytes new_entity_id = 2;
+  uint64 counter = 3;
+}
+
+// ---------------------------------------------------------------------------
+// Entity content
+// ---------------------------------------------------------------------------
+
+// The writable parts of an entity.
+//
+// How an edit says what it touched, which is the same rule everywhere:
+//
+//   present            set to this value
+//   listed in cleared  cleared, or emptied where the field is repeated
+//   neither            untouched
+//
+// The parts a write addresses are the fields of this message other than
+// specific, plus the fields of the type specific message inside it. Anything
+// nested below those is replaced whole, because the part is the field.
+message EntityContent {
+  optional string title = 1;
+
+  repeated LabelledDate dates = 2;
+
+  // At most one. Containment, not a relation.
+  optional bytes category_id = 3;
+
+  // Position within that category. Assigned by the instance on entry, which
+  // appends, and submitted by a client only when the person reorders. An
+  // order belongs to a container rather than to an entity.
+  optional uint32 category_position = 8;
+
+  repeated bytes assigned_member_ids = 4;
+
+  // The members who can see this. Empty and not cleared means untouched;
+  // cleared means private to the author, which is also the default at
+  // creation. Membership is enumerated rather than standing, so a shared
+  // thing does not silently narrow when somebody leaves.
+  repeated bytes audience_member_ids = 5;
+
+  // Was the entity level arrangement key. An order now belongs to a
+  // container, so it is a position beside each containment field.
+  reserved 6;
+
+  // Whether the entity is still filterable as bulk captured. Its initial
+  // value derives from capture_method; it diverges from there and the person
+  // may override it in both directions.
+  optional bool bulk = 7;
+
+  oneof specific {
+    CampaignContent campaign = 20;
+    ArcContent arc = 21;
+    QuestContent quest = 22;
+    RoutineContent routine = 23;
+    FocusSessionContent focus_session = 24;
+    CheckInContent check_in = 25;
+    NoteContent note = 26;
+    FileContent file = 27;
+    ItemContent item = 28;
+    LocationContent location = 29;
+    ShoppingListContent shopping_list = 30;
+    CategoryContent category = 31;
+  }
+
+  // Field numbers above, in this message, that this edit clears. Ignored on
+  // a create.
+  repeated uint32 cleared = 100;
+}
+
+// An exact decimal. Protobuf has no decimal type and binary floating point is
+// the wrong place to put a household's stock: availability is the asserted
+// amount minus what live relations commit, negative availability is meaningful
+// information, and drift would make the system state something false about a
+// cupboard. Units and nanos carry the same sign, as a duration does.
+message Decimal {
+  int64 units = 1;
+  sfixed32 nanos = 2;
+}
+
+message LabelledDate {
+  // The person's word for it. Read by the person, interpreted by nothing.
+  // May come from a template, and is an ordinary date if it does.
+  string label = 1;
+
+  google.protobuf.Timestamp when = 2;
+
+  // Whether the person wants this brought forward ahead of time. Their
+  // statement, never inferred.
+  bool bring_forward = 3;
+}
+
+// ---------------------------------------------------------------------------
+// Guidance
+// ---------------------------------------------------------------------------
+
+// The person's own state, never a summary of anything beneath.
+enum GuidanceState {
+  GUIDANCE_STATE_UNSPECIFIED = 0;
+  GUIDANCE_STATE_WAITING = 1;
+  GUIDANCE_STATE_WORKING = 2;
+  GUIDANCE_STATE_WORKED = 3;
+}
+
+message CampaignContent {
+  optional GuidanceState state = 1;
+  repeated uint32 cleared = 100;
+}
+
+message ArcContent {
+  optional GuidanceState state = 1;
+
+  // At most one campaign, and none is required.
+  optional bytes campaign_id = 2;
+
+  // Position beneath that campaign. A campaign is one container, so arcs and
+  // quests are ordered together within it.
+  optional uint32 ladder_position = 3;
+
+  repeated uint32 cleared = 100;
+}
+
+message QuestContent {
+  optional GuidanceState state = 1;
+
+  // At most one ladder parent in total, an arc or a campaign, never both.
+  oneof parent {
+    bytes arc_id = 2;
+    bytes campaign_id = 3;
+  }
+
+  // Held independently of the ladder parent. A quest that loses its routine
+  // is an ordinary quest.
+  optional bytes routine_id = 4;
+
+  // Position beneath whichever ladder parent it has.
+  optional uint32 ladder_position = 5;
+
+  repeated uint32 cleared = 100;
+}
+
+message RoutineContent {
+  Schedule schedule = 1;
+
+  // What an occurrence is stamped with at spawn. Never reaches an occurrence
+  // that already exists. Replaced whole by an edit, like anything nested.
+  OccurrenceDescription occurrence = 2;
+
+  repeated uint32 cleared = 100;
+}
+
+message Schedule {
+  // Reserved: the schedule's expression is a Guidance concern that the PRD
+  // has not settled, beyond anchoring either to the calendar or to the last
+  // completion.
+  reserved 1 to 20;
+}
+
+message OccurrenceDescription {
+  string title = 1;
+  oneof parent {
+    bytes arc_id = 2;
+    bytes campaign_id = 3;
+  }
+  bytes category_id = 4;
+  repeated bytes assigned_member_ids = 5;
+  repeated bytes audience_member_ids = 6;
+  repeated RelationContent relations = 7;
+}
+
+// Deferred domains. Content is immutable once written and a correction is
+// appended rather than applied; what each holds beyond the shared set awaits
+// its domain design.
+message FocusSessionContent {
+  reserved 1 to 20;
+  repeated uint32 cleared = 100;
+}
+
+message CheckInContent {
+  reserved 1 to 20;
+  repeated uint32 cleared = 100;
+}
+
+// ---------------------------------------------------------------------------
+// Knowledge
+// ---------------------------------------------------------------------------
+
+message NoteContent {
+  // The whole body, markdown, plain text with no relation markers in it. A
+  // client never divides it: the instance recomputes the boundaries, matches
+  // them against the blocks it holds, and writes only what changed. One
+  // implementation of the division rule, so devices cannot disagree about the
+  // units reconciliation is decided in.
+  optional string body = 1;
+
+  repeated uint32 cleared = 100;
+}
+
+message FileContent {
+  // The identity of a body already uploaded through PutBody. Bytes before the
+  // record that points at them.
+  optional bytes body_id = 1;
+
+  // Media type as captured. Display follows it; the entity stores no display
+  // preference.
+  optional string media_type = 2;
+
+  // A person's correction to extracted text. Derived text itself is produced
+  // by the instance and is not written through this field; an edit here
+  // outranks any later pass.
+  optional string extracted_text = 3;
+
+  repeated uint32 cleared = 100;
+}
+
+// ---------------------------------------------------------------------------
+// Tracking
+// ---------------------------------------------------------------------------
+
+message ItemContent {
+  // What the person last said is there. Changed by nothing except an explicit
+  // act. Never computed from history.
+  optional Decimal asserted_amount = 1;
+
+  // The person's word for the unit, interpreted by nothing.
+  optional string unit = 2;
+
+  // When the amount was last asserted.
+  optional google.protobuf.Timestamp asserted_at = 3;
+
+  optional bytes location_id = 4;
+  optional bytes template_id = 5;
+
+  // Values live here. A followed template contributes names, never content.
+  repeated PropertyValue property_values = 6;
+
+  repeated uint32 cleared = 100;
+}
+
+message LocationContent {
+  optional bytes parent_location_id = 1;
+  optional bytes template_id = 2;
+  repeated PropertyValue property_values = 3;
+  repeated uint32 cleared = 100;
+}
+
+message PropertyValue {
+  // The name as the template currently states it. Renaming a template
+  // property reaches everything following it.
+  string name = 1;
+
+  // A kind is not a constraint, so every value crosses as text and the kind
+  // says how a surface should treat it.
+  string value = 2;
+}
+
+message ShoppingListContent {
+  // Entries are blocks of the list's body, so the body is submitted whole and
+  // divided by the instance exactly as a note's is. An entry pointing at an
+  // item does so by a relation from the list anchored at the entry's block,
+  // not by a field here.
+  optional string body = 1;
+
+  repeated uint32 cleared = 100;
+}
+
+// ---------------------------------------------------------------------------
+// Cross domain
+// ---------------------------------------------------------------------------
+
+message CategoryContent {
+  optional bytes parent_category_id = 1;
+
+  // Acts once, at creation of an entity placed in this category. Not a
+  // standing rule, and never inherited.
+  repeated bytes creation_default_audience_member_ids = 2;
+
+  repeated uint32 cleared = 100;
+}
+
+// ---------------------------------------------------------------------------
+// Relations
+// ---------------------------------------------------------------------------
+
+message RelationContent {
+  // One record joining two entities. Direction is a property of this record
+  // and is read from either end; there is no reverse row. Where the type is
+  // symmetric or absent, the write path puts the endpoints in canonical
+  // order, so the same connection cannot be recorded twice.
+  optional bytes from_entity_id = 1;
+  optional bytes to_entity_id = 2;
+
+  // Empty means untyped, which is the common case. An untyped relation is
+  // untyped, not possibly typed.
+  optional bytes relation_type_id = 3;
+
+  // Where the relation was formed. Belongs to the relation, not to the body.
+  Anchor anchor = 4;
+
+  // Properties the type declares, and no others. Present only where the type
+  // declares them; anything else is refused as malformed.
+  UsesProperties uses = 5;
+
+  repeated uint32 cleared = 100;
+}
+
+message Anchor {
+  // Which endpoint's body this anchors into.
+  bytes entity_id = 1;
+
+  // The block. A block anchor holds while its block remains.
+  bytes block_id = 2;
+
+  // The phrase within the block, where the relation was formed at one. Empty
+  // means the anchor is the block itself. A phrase anchor is lost when its
+  // text is edited, and the relation survives without it.
+  string phrase = 3;
+}
+
+message UsesProperties {
+  Decimal quantity = 1;
+
+  UsesResolution resolution = 2;
+}
+
+enum UsesResolution {
+  // Unresolved while the quest is live. This is a real state rather than an
+  // absent one, which is why zero is named.
+  USES_RESOLUTION_UNRESOLVED = 0;
+  USES_RESOLUTION_RETURNED = 1;
+  USES_RESOLUTION_CONSUMED = 2;
+}
+
+// ---------------------------------------------------------------------------
+// What comes back
+// ---------------------------------------------------------------------------
+
+// An entity as the instance holds it. Everything the client does not write is
+// here rather than in EntityContent.
+message Entity {
+  bytes entity_id = 1;
+  EntityContent content = 2;
+
+  // Absent on an entity created before its device was bound to a household,
+  // and acquired at binding.
+  bytes author_member_id = 3;
+
+  google.protobuf.Timestamp created_at = 4;
+  google.protobuf.Timestamp updated_at = 5;
+  string capture_method = 6;
+
+  uint64 counter = 7;
+  LifecycleState lifecycle = 8;
+
+  // The body's blocks in order, where the type has a body. Identities are
+  // needed by a client that wants to detect a conflict before the instance
+  // does.
+  repeated Block blocks = 9;
+
+  // Both retained sides of a same part concurrent edit. Non blocking: the
+  // entity is readable, editable and relatable throughout.
+  repeated ConflictedPart conflicts = 10;
+}
+
+enum LifecycleState {
+  LIFECYCLE_STATE_UNSPECIFIED = 0;
+  LIFECYCLE_STATE_ACTIVE = 1;
+  LIFECYCLE_STATE_DELETED = 2;
+  LIFECYCLE_STATE_ERASED = 3;
+}
+
+message Block {
+  bytes block_id = 1;
+  string text = 2;
+}
+
+message ConflictedPart {
+  oneof part {
+    uint32 content_field = 1;
+    uint32 specific_field = 2;
+    bytes block_id = 3;
+  }
+
+  // Whose each value is, which is a fact rather than a judgement, and which
+  // changes the decision a person is making. It ends when the conflict does.
+  ConflictSide mine = 4;
+  ConflictSide theirs = 5;
+}
+
+message ConflictSide {
+  bytes member_id = 1;
+  string value = 2;
+}
+
+message Relation {
+  bytes relation_id = 1;
+  RelationContent content = 2;
+  bytes author_member_id = 3;
+  google.protobuf.Timestamp created_at = 4;
+}
+
+// ---------------------------------------------------------------------------
+// The change stream
+// ---------------------------------------------------------------------------
+
+message ChangesRequest {
+  // Held by the client, never by the instance.
+  Position since = 1;
+
+  // A client need not hold everything. A display showing today's quests is a
+  // legitimate consumer of a scoped subset.
+  reserved 2 to 20;
+}
+
+message ChangesResponse {
+  oneof outcome {
+    ChangeSet changes = 1;
+
+    // The stated position is past the horizon. An outcome, not an error: the
+    // client's correct response is to rebuild, which is always available and
+    // always correct.
+    PositionUnanswerable unanswerable = 2;
+  }
+}
+
+message PositionUnanswerable {}
+
+message ChangeSet {
+  repeated Change changes = 1;
+
+  // Where the client now is. Reported even when changes is empty.
+  Position position = 2;
+
+  // Whether more is waiting beyond this response.
+  bool more = 3;
+}
+
+// Assembled for one member. Broadening an audience makes something appear to
+// a member for the first time and narrowing makes it vanish, and to that
+// member these are creation and disappearance, so they arrive as such and
+// have no variants of their own.
+message Change {
+  Position position = 1;
+
+  oneof what {
+    // Created, edited, removed, or restored. Removal is a change carrying a
+    // lifecycle state, not an absence.
+    Entity entity = 2;
+
+    // Erased, or no longer visible to this member. Nothing distinguishes the
+    // two, for the same reason nothing distinguishes the two refusals.
+    bytes gone_entity_id = 3;
+
+    Relation relation = 4;
+    bytes gone_relation_id = 5;
+  }
+
+  // Where an entity's body moved, the blocks that changed. The instance has
+  // already divided, so these are facts it holds, and they are what lets a
+  // client compare against its own unsent edits without holding the division
+  // rule.
+  repeated bytes changed_block_ids = 6;
+}
+
+// ---------------------------------------------------------------------------
+// Retrieval
+// ---------------------------------------------------------------------------
+//
+// Provisional. DR-004 leaves the shape of query scoping to retrieval design,
+// which the documents call the hardest problem here, so only what is already
+// committed to is declared. The reserved ranges keep the numbers free.
+
+message QueryRequest {
+  string text = 1;
+
+  // Scope belongs to the person asking. Breadth is available, never
+  // obligatory, and a narrow query is not a degraded one.
+  reserved 2 to 40;
+
+  uint32 limit = 41;
+}
+
+message QueryResponse {
+  repeated Result results = 1;
+
+  // Nothing matched, retrieval could not be performed, and derivation has not
+  // yet covered everything captured are three different situations, and an
+  // empty result alone does not tell them apart.
+  AnswerState state = 2;
+}
+
+message Result {
+  Entity entity = 1;
+
+  // Enough to tell why this is in front of you. Not an explanation of the
+  // order, and not a justification of it: the connection between a result and
+  // what was asked has to be recoverable rather than opaque.
+  reserved 2 to 20;
+}
+
+message AnswerState {
+  // Whether the semantic arm answered. Literal matching is a permanent arm
+  // and not a fallback, so its absence is not a mode the person switches.
+  bool semantic_available = 1;
+
+  // Outstanding derivation, where it bears on this answer. A condition of the
+  // instance, not a judgement about the person.
+  bool derivation_outstanding = 2;
+}
+
+// ---------------------------------------------------------------------------
+// Health
+// ---------------------------------------------------------------------------
+
+message HealthRequest {}
+
+message HealthResponse {
+  bool object_store_reachable = 1;
+  bool bi_encoder_present = 2;
+  bool cross_encoder_present = 3;
+
+  // Work the derivation worker has not reached. A fact about the store rather
+  // than about a queue, so it survives losing one.
+  uint64 derivation_outstanding = 4;
+
+  // The instance describing itself, which is what a count is permitted to do
+  // here. How many intents it refused, never how many are waiting to send.
+  uint64 intents_refused = 5;
+
+  uint64 storage_bytes_free = 6;
+}
+
+// ---------------------------------------------------------------------------
+// File bodies
+// ---------------------------------------------------------------------------
+
+message BodyChunk {
+  // Client assigned, on the first chunk of a stream. Re uploading the same
+  // body_id is idempotent, so a retry after a broken connection is ordinary.
+  bytes body_id = 1;
+  bytes data = 2;
+}
+
+message PutBodyAck {
+  bytes body_id = 1;
+  uint64 bytes_received = 2;
+}
+
+message BodyRequest {
+  bytes entity_id = 1;
+}
+
+// ---------------------------------------------------------------------------
+// The operator plane
+// ---------------------------------------------------------------------------
+//
+// Its capabilities are reachable through this interface like every other
+// capability; the friction it exists to create is the separation of the
+// surface, not a gap in the contract. v0 does not require the plane and
+// nothing here is drafted, because what it configures is mostly absent in v0
+// and inventing the shapes now would fix field numbers against nothing.
+
+// ---------------------------------------------------------------------------
+// Decisions this file embodies, and gaps that remain open
+// ---------------------------------------------------------------------------
+//
+// Decisions:
+//
+// 1. Edits say what they touched with a cleared list of field numbers, one
+//    per message that holds parts. Set, cleared, untouched, everywhere.
+// 2. Identifiers are sixteen byte UUIDs.
+// 3. Quantities are an exact decimal of units and nanos. Not a float, and not
+//    text.
+// 4. File bodies are uploaded by a separate stream before the intent that
+//    refers to them, rather than carried inside it. An intent stays one
+//    durable outbox item, and a body of arbitrary size does not have to fit
+//    in one message.
+// 5. There is no single intent RPC. A submission is always a list.
+//
+// Three things stay text, each for a reason in the documents rather than for
+// convenience: capture_method, because the substrate states the set of methods
+// is open and grows as clients add ways to create things, which an enum cannot
+// carry across a client nobody here wrote; a template property value, because
+// a declared kind is not a constraint and the person may put anything in one;
+// and a retained conflict value, which is gap (g) below.
+//
+// Gaps this assembly found, none of them closed here:
+//
+// a. Relations carry no write counter anywhere in the documents, so a
+//    relation edit is unconditional and a concurrent one is last write wins.
+//    Moot in v0. Not moot afterwards.
+// b. LabelledDate uses a timestamp. Whether a date is a calendar date or an
+//    instant is not stated, and expiry and renewal read as calendar dates.
+// c. Only categories and the ladder carry a position. Nested locations,
+//    nested categories, and the schedule surface's day are containers by the
+//    substrate's definition and have none, because nothing yet states that
+//    their contents are hand ordered.
+// d. Audience is enumerated members here. Whether a standing whole household
+//    audience exists is not stated, and the two differ as members arrive.
+// e. A phrase anchor carries its text only. How it is located within a block
+//    is not settled.
+// f. Guidance state names are an open question in the Guidance PRD.
+// g. Both retained sides of a conflict cross as text, whatever the part's
+//    own kind is. Correct for a block and loose for a date or an amount. The
+//    honest shape is a oneof over the kinds a part can be, which is a small
+//    amount of work and is not done here.
+// h. A template property value of the member kind holds an identifier the
+//    person chose, inside a text field, while every identifier the wire owns
+//    is now bytes. That is consistent with a kind not being a constraint, and
+//    it is worth knowing that the two look different for that reason.
