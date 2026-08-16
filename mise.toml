@@ -1,5 +1,9 @@
 [tools]
 "github:akiomik/mado" = "latest"
 prek = "latest"
-rust = "latest"
+rust = { version = "latest", profile = "default" }
 rust-analyzer = "latest"
+
+[tasks.test]
+description = "Bring up Postgres and run the workspace test suite"
+run = "docker compose up -d --wait && cargo test --workspace"

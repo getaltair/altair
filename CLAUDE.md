@@ -42,9 +42,9 @@ Rules that follow from this and are easy to violate:
 
 ## Documents that are already accepted as artefacts
 
-- `docs/altair-schema.sql` — the structured store, adopted as **migration one**. Applied and exercised on PostgreSQL 18.6 with pgvector 0.8.6. Do not re-derive it.
-- `docs/altair.proto` — the public interface (`package altair.v1`). **Field numbers are permanent; removed fields are reserved, never reused.** Closing one of its recorded gaps means adding a field, not editing one.
-- `docs/altair-outbox-conformance.md` — the outbox specification made executable, written once and run against every implementation (Rust and Kotlin). Scenarios observe behaviour at two boundaries only: what the person sees, and what reaches the instance.
+- `crates/altaird/migrations/0001_initial.sql` — the structured store, adopted as **migration one**. Applied and exercised on PostgreSQL 18.6 with pgvector 0.8.6. Do not re-derive it.
+- `proto/altair/v1/altair.proto` — the public interface (`package altair.v1`). **Field numbers are permanent; removed fields are reserved, never reused.** Closing one of its recorded gaps means adding a field, not editing one.
+- `conformance/scenarios.md` — the outbox specification made executable, written once and run against every implementation (Rust and Kotlin). Scenarios observe behaviour at two boundaries only: what the person sees, and what reaches the instance.
 
 ## Architecture in one pass
 
