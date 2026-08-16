@@ -1,0 +1,63 @@
+[lint]
+respect-ignore = true
+respect-gitignore = true
+rules = [
+  "MD001",
+  "MD002",
+  "MD003",
+  "MD004",
+  "MD005",
+  "MD006",
+  "MD009",
+  "MD010",
+  "MD012",
+  "MD014",
+  "MD018",
+  "MD019",
+  "MD020",
+  "MD021",
+  "MD022",
+  "MD023",
+  "MD024",
+  "MD025",
+  "MD026",
+  "MD027",
+  "MD028",
+  "MD029",
+  "MD030",
+  "MD031",
+  "MD032",
+  "MD033",
+  "MD034",
+  "MD035",
+  "MD037",
+  "MD038",
+  "MD039",
+  "MD040",
+  "MD041",
+  "MD046",
+  "MD047",
+]
+
+# MD007 (list indentation) is dropped: it misfires on the lists nested inside
+# blockquotes that these docs use for callouts, and there is no real nested-list
+# convention here to enforce.
+#
+# MD013 (line length) is dropped: prose paragraphs are deliberately left
+# unwrapped (see CLAUDE.md's writing conventions) rather than hard-wrapped.
+#
+# MD036 (emphasis instead of a heading) is dropped: "Claims are bolded
+# lead-ins followed by the reasoning" is this project's documented style
+# (CLAUDE.md, "Writing conventions in docs/"), not a mistake to flag.
+
+[lint.md029]
+style = "ordered"
+
+[lint.md030]
+ul-single = 1
+ol-single = 1
+ul-multi = 1
+ol-multi = 1
+
+[lint.md046]
+style = "fenced"

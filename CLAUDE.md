@@ -16,7 +16,7 @@ Consequences for working here:
 
 The documents form a strict hierarchy. **Every document names its own position in its header** (`Status`, `Date`, `Governed by`, `Related`) — read that header before editing anything.
 
-```
+```text
 altair-vision.md                          normative, permanent product identity
   ├── altair-substrate-spec.md            cross-cutting behaviour (the layer under all three domains)
   ├── altair-guidance-prd.md              \

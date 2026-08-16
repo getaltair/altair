@@ -166,6 +166,8 @@ It exists for browsing rather than for retrieval. Retrieval answers a question y
 
 > ⚠️ **The restraint here is not enforced, and cannot be.** Nothing prevents someone creating two hundred categories, at which point the one-per-entity limit protects nothing and the tag failure has been rebuilt. The defence is that nothing encourages it: no prompt to categorise, no suggestion to subdivide, and no surface that reads a small set as incomplete. This is a defence by restraint rather than a solved problem, which is worth stating plainly so that a later feature quietly encouraging growth is recognisable as the thing that breaks it.
 
+<!-- -->
+
 > ℹ️ **Not a folder tree.** The vision document excludes filesystem-shaped navigation, which is a rule about how a person gets to things rather than about containment existing. Optional single-parent grouping is permitted. A surface where the tree is the primary route to anything is not.
 
 ---
@@ -208,6 +210,8 @@ This descends from *no barriers to re-entry*. Predictability is what makes retur
 - **The order is total and stable.** Two entities never sort ambiguously, and the same container produces the same order every time, on every device.
 
 > ℹ️ **Sorting by arrangement is not ranking.** Ranking is an order carrying a judgement the person did not ask for. An arrangement is a judgement the person did ask for, and made themselves.
+
+<!-- -->
 
 > ⚠️ **The accepted cost is that an order does not survive a move.** A quest carefully placed in one arc arrives at the end of the next one. The alternative is an order belonging to the entity, which either lands a moved entity in a position it inherited from a set it is no longer part of, or shifts the entity in every other view it appears in. Both are the system moving something the person did not move, and the person is the only one permitted to change an order.
 

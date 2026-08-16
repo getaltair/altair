@@ -49,6 +49,7 @@ Most tools deliver value proportional to how thoroughly they are maintained. Tha
 Altair inverts this. Partial data is the **expected** state, not a degraded one.
 
 **In practice:**
+
 - "I don't know how much is left, just mark it lower" is a supported operation.
 - A campaign with no arcs is valid. A quest with no parent is valid.
 - Six tracked items out of four hundred is a working inventory, not a broken one.
@@ -62,6 +63,7 @@ Altair inverts this. Partial data is the **expected** state, not a degraded one.
 For the people Altair is built for, coming back is the hardest moment. It is also the moment most software punishes hardest, with overdue counts, broken streaks, notification backlogs, and a board that quietly became a lie while you were gone.
 
 **In practice:**
+
 - Nothing accumulates that must be cleared before the tool becomes usable again.
 - No streak, score, or status that degrades through absence.
 - Nothing reorganises itself while you are away, so muscle memory still works when you return.
@@ -332,6 +334,7 @@ If Altair loses any of these, it is no longer Altair.
 Strongly wanted. Their absence is a gap, not an identity crisis.
 
 **Working without a network**
+
 - Reading, browsing, and searching offline
 - Editing offline, with changes reconciled on reconnection
 - Full local availability of every entity and its relations
@@ -339,23 +342,27 @@ Strongly wanted. Their absence is a gap, not an identity crisis.
 > ℹ️ **Why this is a Should and not a Must:** full offline operation is a large and permanent cost, requiring a complete local replica and a merge story for every entity. Altair commits absolutely to the part that is unrecoverable when it fails, which is capture, and treats the rest as something to grow into. Expanding outward from a guaranteed capture path is a viable route to full offline operation. Starting there is not a prerequisite for the product to be itself.
 
 **Guidance**
+
 - Focus sessions with timing
 - Routines that spawn quests on a schedule
 - A "today" surface that suggests without deciding
 - Energy- or context-aware filtering
 
 **Knowledge**
+
 - Snapshot diffing and restore
 - Dangling-link surfacing
 - Text extraction from files, making their contents searchable
 
 **Tracking**
+
 - Low-stock thresholds and alerts
 - Barcode scanning for capture
 - Expiry tracking
 - Batch consumption logging
 
 **Cross-cutting**
+
 - One first-party importer covering the common case, lossily and immediately
 - Notifications with quiet hours
 - Read-only calendar ingestion for context
@@ -418,6 +425,8 @@ These are settled. A proposal that contradicts one of these is out of scope rega
 - ❌ No unprompted stream of suggestions, digests, or recommendations
 
 > ℹ️ Surfacing is the opposite of a feed. A feed decides what you see next. Surfacing answers a question you are already asking, in the place you are already asking it.
+
+<!-- -->
 
 > ℹ️ **Ordering a result set is not a feed.** A search the user just ran is ordered by relevance to what they asked, which may include how recent something is. That is a property of the material, identical for everyone, and it does not change until the user asks again. A feed reorders itself while you are looking at it.
 

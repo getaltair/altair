@@ -1,4 +1,5 @@
 [tools]
+"github:akiomik/mado" = "latest"
 prek = "latest"
 rust = "latest"
 rust-analyzer = "latest"

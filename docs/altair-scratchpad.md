@@ -5,7 +5,6 @@
 
 ---
 
-
 ## What this is
 
 A holding area for things that have been discussed, sometimes at length, but that do not belong in a normative document yet. Usually because they are mechanism rather than behaviour, presentation rather than methodology, or genuinely unresolved.
@@ -91,7 +90,6 @@ The gap: A resolves a conflict, picks their own value, and B's text is gone with
 **An event log as the store's source of truth.** The attraction is real: the change stream becomes nearly free and version history a natural consequence. Rejected because current content would depend on its own history in order to exist, contradicting the commitment that a household may decline version history without content ever being at risk. This is the second time that commitment has constrained a storage instinct. At the boundary a log is fine, since full reconciliation always exists.
 
 **Provisional local acceptance**, where a client holds a write pending a verdict. Rejected because a write awaiting approval is not an accepted write, and capture succeeding means a created entity will reach the instance.
-
 
 Gating questions taken 2026-08-06, before drafting. Recorded because three of them changed shape under pushback and the reasoning is what stops them being relitigated.
 
@@ -425,7 +423,6 @@ The practical argument is simpler and would have been enough on its own. Nothing
 
 **Watch for it returning sideways.** The set of capture methods is open and grows as clients add ways to create things. Methods that identify a particular device rather than a way of creating something would reconstitute this by another route.
 
-
 **Full offline operation as a Must.** Rejected as too large a permanent commitment: a complete local replica plus a merge story for every entity. Narrowed to *capture never fails*, with offline reading and editing as a Should. The reasoning is that a narrow commitment always kept beats a broad one quietly broken, and expanding outward from a guaranteed capture path is a viable route to the larger goal.
 
 **A sync engine.** Rejected as a consequence of the above. Offline capture is create-only, so two devices creating different things is not a disagreement and there is nothing to merge. What remains is a durable outbound queue, not a bidirectional reconciliation system.
@@ -511,7 +508,6 @@ Consequence accepted: with no tags and no folders, retrieval and optional catego
 **A Lattice findings document.** Dropped. It was proposed to preserve knowledge assumed to be fading, but Lattice is still in daily use and its conclusions were already distilled into the vision document. The exercise would have re-derived what had just been derived.
 
 ---
-
 
 **Status:** parked, permanently as far as normative documents are concerned
 **Destination:** design system

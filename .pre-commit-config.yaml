@@ -33,3 +33,10 @@ repos:
         language: system
         types: [rust]
         pass_filenames: false
+
+      - id: mado
+        name: mado
+        description: Lint markdown (see mado.toml for the rules tuned to this repo's doc conventions).
+        entry: mado check
+        language: system
+        types: [markdown]
