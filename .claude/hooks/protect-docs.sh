@@ -45,6 +45,61 @@ guard() {
   deny "$1 docs/ holds this project's design authority and is gated. A human must approve by running: touch .claude/.docs-unlock (valid ${UNLOCK_TTL}s), then retry."
 }
 
+# Heredoc bodies are prose where the heredoc feeds a command that carries prose:
+# a commit message, a pull request or issue body, a tag annotation. Those
+# routinely quote the very rules this guard enforces — the commit that
+# introduced the sibling guard was refused for naming this file — and a guard
+# that fires on writing about a rule makes evading it routine.
+#
+# The body is stripped ONLY for those commands. A heredoc feeding a shell or an
+# interpreter keeps its body, because that body is code that runs:
+#
+#   git commit -F - <<EOF ... EOF    body is prose, stripped
+#   bash <<EOF ... rm docs/x.md      body is code, kept and caught
+#
+# The line opening the heredoc is always kept, so a redirect written on it
+# (cat > docs/x.md <<EOF) is still seen.
+strip_prose_heredocs() {
+  awk '
+    BEGIN { skip = 0 }
+    skip == 0 {
+      if (match($0, /<<-?[[:space:]]*'"'"'?"?[A-Za-z_][A-Za-z0-9_]*'"'"'?"?/) &&
+          $0 ~ /(git[[:space:]]+(commit|tag|notes)|gh[[:space:]]+(pr|issue|release))/) {
+        tag = substr($0, RSTART, RLENGTH)
+        gsub(/^<<-?[[:space:]]*|['"'"'"]/, "", tag)
+        skip = 1
+      }
+      print; next
+    }
+    skip == 1 { if ($0 ~ "^[[:space:]]*" tag "[[:space:]]*$") { skip = 0 }; next }
+  '
+}
+
+# A heredoc feeding an interpreter is code, and its body is not searched by the
+# line-oriented checks below in any useful way: `python3 - <<EOF` sits on one
+# line and `os.remove("docs/x.md")` on the next, so no single line carries both
+# a mutating token and the target. The shell case only trips the guard by luck,
+# because `rm` and the path share a line.
+#
+# So interpreter bodies are pulled out and judged on their own: if one names
+# docs/ at all, that is enough. An interpreter handed a docs/ path is not doing
+# something this guard should be squinting at.
+interpreter_heredoc_bodies() {
+  awk '
+    BEGIN { skip = 0 }
+    skip == 0 {
+      if (match($0, /<<-?[[:space:]]*'"'"'?"?[A-Za-z_][A-Za-z0-9_]*'"'"'?"?/) &&
+          $0 ~ /(^|[[:space:]|(])(ba|z|k)?sh([[:space:]]|$)|python3?|node|ruby|perl|php|deno|bun/) {
+        tag = substr($0, RSTART, RLENGTH)
+        gsub(/^<<-?[[:space:]]*|['"'"'"]/, "", tag)
+        skip = 1
+      }
+      next
+    }
+    skip == 1 { if ($0 ~ "^[[:space:]]*" tag "[[:space:]]*$") { skip = 0; next }; print }
+  '
+}
+
 # True when $cmd writes to something matching regex $1. The mutating token must
 # reach the target without crossing a command separator, so reading one path
 # while writing an unrelated one does not trip the guard:
@@ -83,7 +138,7 @@ case "$tool" in
     esac
     ;;
   Bash)
-    cmd=$(jq -r '.tool_input.command // ""' <<<"$input")
+    cmd=$(jq -r '.tool_input.command // ""' <<<"$input" | strip_prose_heredocs)
 
     writes_to '\.docs-unlock'   && self_defence ".docs-unlock"
     writes_to 'protect-docs\.sh' && self_defence "protect-docs.sh"
@@ -92,6 +147,12 @@ case "$tool" in
     # a word character is not, so mydocs/ and subdocs/ are left alone.
     if grep -qE '(^|[^[:alnum:]_.-])docs/' <<<"$cmd" && writes_to '[^[:alnum:]_.-]?docs/'; then
       guard "Refusing a command that may modify docs/."
+    fi
+
+    # An interpreter handed a docs/ path inside its heredoc body. See the note
+    # above interpreter_heredoc_bodies for why this cannot be a line match.
+    if grep -qE '(^|[^[:alnum:]_.-])docs/' <<<"$(interpreter_heredoc_bodies <<<"$cmd")"; then
+      guard "Refusing an interpreter whose script names docs/."
     fi
 
     # Same, for a working-directory change into docs/ followed by a write:

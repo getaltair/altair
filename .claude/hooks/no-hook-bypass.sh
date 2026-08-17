@@ -84,21 +84,37 @@ esac
 cmd=$(jq -r '.tool_input.command // ""' <<<"$input")
 [ -n "$cmd" ] || exit 0
 
-# Heredoc bodies are prose. Commit messages and pull request bodies discuss
-# these flags — this script's own commit message names the marker it protects —
-# and a guard that fires on writing about it would be worse than no guard,
-# because the way round it would become routine. Everything below matches the
-# stripped text, self-defence included.
-stripped=$(awk '
-  BEGIN { skip = 0 }
-  skip == 0 && match($0, /<<-?[[:space:]]*'"'"'?"?[A-Za-z_][A-Za-z0-9_]*'"'"'?"?/) {
-    tag = substr($0, RSTART, RLENGTH)
-    gsub(/^<<-?[[:space:]]*|['"'"'"]/, "", tag)
-    skip = 1; print; next
-  }
-  skip == 1 { if ($0 ~ "^[[:space:]]*" tag "[[:space:]]*$") skip = 0; next }
-  { print }
-' <<<"$cmd") || fail_closed $LINENO
+# Heredoc bodies are prose where the heredoc feeds a command that carries prose:
+# a commit message, a pull request or issue body, a tag annotation. Those
+# routinely quote the very rules this guard enforces — the commit that
+# introduced the sibling guard was refused for naming this file — and a guard
+# that fires on writing about a rule makes evading it routine.
+#
+# The body is stripped ONLY for those commands. A heredoc feeding a shell or an
+# interpreter keeps its body, because that body is code that runs:
+#
+#   git commit -F - <<EOF ... EOF    body is prose, stripped
+#   bash <<EOF ... rm docs/x.md      body is code, kept and caught
+#
+# The line opening the heredoc is always kept, so a redirect written on it
+# (cat > docs/x.md <<EOF) is still seen.
+strip_prose_heredocs() {
+  awk '
+    BEGIN { skip = 0 }
+    skip == 0 {
+      if (match($0, /<<-?[[:space:]]*'"'"'?"?[A-Za-z_][A-Za-z0-9_]*'"'"'?"?/) &&
+          $0 ~ /(git[[:space:]]+(commit|tag|notes)|gh[[:space:]]+(pr|issue|release))/) {
+        tag = substr($0, RSTART, RLENGTH)
+        gsub(/^<<-?[[:space:]]*|['"'"'"]/, "", tag)
+        skip = 1
+      }
+      print; next
+    }
+    skip == 1 { if ($0 ~ "^[[:space:]]*" tag "[[:space:]]*$") { skip = 0 }; next }
+  '
+}
+
+stripped=$(strip_prose_heredocs <<<"$cmd") || fail_closed $LINENO
 
 # True when the command writes to something matching regex $1. Mirrors
 # protect-docs.sh: the mutating token must reach the target without crossing a
