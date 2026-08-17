@@ -1,5 +1,14 @@
 # Altair
 
+[![CI](https://github.com/getaltair/altair/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/getaltair/altair/actions/workflows/ci.yml)
+[![Conformance: red until Wave 4.1](https://img.shields.io/badge/conformance-red%20until%20wave%204.1-red)](crates/altair-conformance/README.md)
+[![Licence: AGPL-3.0-or-later](https://img.shields.io/badge/licence-AGPL--3.0--or--later-blue)](LICENSE)
+
+[![Status: pre-alpha](https://img.shields.io/badge/status-pre--alpha-orange)](#status)
+[![Waves 0 and 1 complete](https://img.shields.io/badge/waves-0%20and%201%20complete-yellowgreen)](docs/altair-v0-implementation-plan.md)
+[![Rust edition 2024](https://img.shields.io/badge/rust-edition%202024-dea584)](Cargo.toml)
+[![PostgreSQL 18 with pgvector](https://img.shields.io/badge/postgresql-18%20with%20pgvector-336791)](docs/DR-002-postgresql-structured-store.md)
+
 **A self-hosted system where the things you are working toward, the things you know, and the things you own live in one connected place you own permanently, and where a thought can always be captured whatever the network is doing.**
 
 One instance serves one household. Nobody else can raise the price, change the terms, read the contents, or switch it off.
