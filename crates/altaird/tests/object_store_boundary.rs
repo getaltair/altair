@@ -34,6 +34,23 @@ const ALSO_SCANNED: &[&str] = &[];
 /// Adding to this list is the deliberate act the whole test exists to make
 /// visible: a reviewer sees the entry in the diff and has to agree that the
 /// file has business touching the disk. Paths are relative to `crates/`.
+///
+/// **Source-scanning tests are a category, and they are listed rather than
+/// recognised.** This repository enforces several structural rules by walking
+/// its own sources — that the audience predicate exists exactly once, that
+/// nothing goes round the four operations — and every such test reads `.rs`
+/// files for a living, so each one trips every other one. That is a pattern
+/// now and it will keep happening, which is an argument for detecting the
+/// kind rather than naming the members. It is not detectable precisely
+/// enough. The nearest rule, "a test that reads `CARGO_MANIFEST_DIR`", would
+/// also exempt a write-path test that opens a body to check the bytes landed,
+/// and *that* test reaching round the interface is among the likeliest ways
+/// this boundary ever leaks. A false negative here is a leak; a false
+/// positive is one line and a sentence.
+///
+/// So the category is named here and its members are named below. When you
+/// add a source-scanning test, add it under that heading with what it scans
+/// and why it never touches a body.
 const ALLOWED: &[&str] = &[
     // The store itself, which is the only thing permitted to know where the
     // bytes are.
@@ -41,8 +58,17 @@ const ALLOWED: &[&str] = &[
     // Its own tests, which create the roots they hand to `open`, and check
     // that a failed upload left nothing on disk.
     "altaird/tests/object_store.rs",
+    //
+    // Source-scanning tests. Each reads this repository's own `.rs` files as
+    // text to assert a structural rule, and none of them opens anything under
+    // an object root.
+    //
     // This file, which reads sources in order to make the assertion.
     "altaird/tests/object_store_boundary.rs",
+    // Walks the tree asserting the audience predicate appears in exactly one
+    // place. Same technique as this file, for the same reason, on a different
+    // rule.
+    "altaird/tests/one_predicate.rs",
 ];
 
 /// Reaching the bytes needs one of these. Naming a path is enough on its own:
@@ -201,7 +227,8 @@ fn nothing_outside_the_object_store_touches_the_bytes() {
          round them. These files are scanned because their crate links `{INSTANCE}` and can \
          therefore hold an ObjectStore. Use `altaird::objects::ObjectStore`, or, if the file \
          genuinely has business with the filesystem that is not a file body, add it to ALLOWED in \
-         {} and say why.\n\n{}",
+         {} and say why. If it is a test that scans this repository's own sources to assert a \
+         structural rule, that is a known category with a heading of its own in that list.\n\n{}",
         file!(),
         violations.join("\n")
     );
