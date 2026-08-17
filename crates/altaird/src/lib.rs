@@ -1,5 +1,6 @@
 pub mod auth;
 pub mod body;
+pub mod objects;
 pub mod store;
 
 #[cfg(feature = "testing")]

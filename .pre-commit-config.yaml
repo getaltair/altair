@@ -19,6 +19,25 @@ repos:
 
   - repo: local
     hooks:
+      # Runs before the two cargo hooks below, because both of them also
+      # rewrite a stale Cargo.lock as a side effect of doing their real job.
+      # When that happened the run failed under the name `cargo clippy`, with
+      # the actual cause — a lockfile that did not match the manifests —
+      # buried in thirty lines of dependency downloads. Failing here instead
+      # puts the right name on it.
+      #
+      # `cargo metadata` resolves dependencies without building, so it is the
+      # cheapest command that brings the lockfile back into step. If it
+      # changes the file, prek fails the run and the fix is to stage
+      # Cargo.lock and commit again.
+      - id: cargo-lock
+        name: cargo lock
+        description: Keep Cargo.lock in step with the manifests.
+        entry: bash -c 'cargo metadata --format-version 1 >/dev/null'
+        language: system
+        files: (^|/)Cargo\.(toml|lock)$
+        pass_filenames: false
+
       - id: cargo-fmt
         name: cargo fmt
         description: Format Rust sources with rustfmt.
