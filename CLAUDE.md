@@ -4,13 +4,34 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this repository is right now
 
-**Design documents only. There is no source code, no build system, and no tests yet.** Everything in `docs/` specifies a self-hosted personal system ("Altair") that has not been built. The first code lands as Wave 0 of `docs/altair-v0-implementation-plan.md`.
+**Design documents plus the first two waves of the instance.** Everything in `docs/` specifies a self-hosted personal system ("Altair"); `crates/` is the beginning of it. Wave 0 and all five Wave 1 lanes have landed — store bootstrap and the audience predicate, block division, the object store, token validation, and the outbox conformance suite. **Wave 2, the write path, is next and is not started.** There is no running instance and no client.
 
 Consequences for working here:
 
-- There is nothing to build, lint, or run. Do not invent commands or claim to have verified behaviour.
-- Changing a document is the work. Treat prose with the care normally reserved for code: these documents are the authority the implementation will be checked against.
-- When implementation starts, it starts at Wave 0 — see [The codebase that will be built](#the-codebase-that-will-be-built).
+- **Changing a document is the work.** Treat prose with the care normally reserved for code: these documents are the authority the implementation is checked against.
+- **Verify code changes by running the suite** — see [Commands](#commands). Do not claim to have verified behaviour you did not run.
+- `README.md` is the human-facing summary of much of this file. If one changes, check the other.
+
+## Commands
+
+```bash
+mise install                 # toolchain: rust, prek, mado. Docker is the only other prerequisite
+cp .env.example .env         # DATABASE_URL, read by the test harness only
+mise run test                # docker compose up -d --wait, then cargo test --workspace
+mise run conformance         # the outbox scenarios — RED ON PURPOSE, see below
+prek run --all-files         # rustfmt, clippy -D warnings, mado, hygiene. CI runs these same hooks
+```
+
+- **No `protoc` is needed.** Codegen goes through `protox`, which is pure Rust.
+- **Tests need a real PostgreSQL**, never a mock: the audience predicate, both indexes, and `SKIP LOCKED` are Postgres behaviour. Migrations are applied once into a template database and each test branches it with `CREATE DATABASE … TEMPLATE`.
+- **Set `ALTAIR_TEST_PREFIX` per worktree** when lanes run in parallel against one Postgres, or they fight over the template name.
+
+## Two guards that will deny your tool calls
+
+Both are `PreToolUse` hooks in `.claude/settings.json`, both deny rather than ask, and both are unlocked out-of-band by a human for 30 minutes.
+
+- **`docs/` is gated.** Any create, edit, move, or delete under `docs/`, by any means including shell redirection, `sed -i`, or `git restore`, is refused. Reading is always fine. To proceed, ask the user to run `touch .claude/.docs-unlock` — do not attempt a workaround, and do not create the marker yourself; the guard defends it and itself.
+- **Pre-commit hooks may not be skipped.** `--no-verify`, `-n`, `SKIP=`, and `core.hooksPath` are refused. A merge commit made with `--no-verify` once shipped a `Cargo.lock` matching neither branch, and CI failed two pushes later under an unrelated hook's name. The human unlock is `touch .claude/.hooks-unlock`.
 
 ## Document authority
 
@@ -67,11 +88,22 @@ Rules that follow from this and are easy to violate:
 
 `docs/altair-v0-implementation-plan.md` sequences it. **It prescribes no file list and no directory layout** — every item is an outcome with a verification condition ("Done when: …"), and the layout is decided while implementing. Preserve that: do not invent a canonical module tree and treat it as settled.
 
+What has actually been built so far, which is observation rather than a settled tree:
+
+```text
+crates/altaird/            the instance: store/ (audience, tx, entity, ids), body/, objects/, auth/
+crates/altaird/migrations/ 0001_initial.sql, migration one, not re-derived
+crates/altair-proto/       generated contract types (protox + tonic)
+crates/altair-conformance/ the outbox harness and a null client stub
+```
+
+**The conformance suite is red on purpose and must stay that way until Wave 4.1.** It sits behind the `run-conformance` feature so `cargo test --workspace` stays green and `main` stays mergeable, and its CI job is `continue-on-error`. Scenarios turn green one at a time as the outbox lands; anything that makes one pass without an outbox behind it destroys the deliverable. Read `crates/altair-conformance/README.md` before touching it.
+
 Seven waves. Waves 1–3 are planned against reality; Wave 5 onward names outcomes and deliberately leaves shape open. **Re-plan at each wave boundary, and only the next wave.**
 
 | Wave | Produces | Notes |
 |---|---|---|
-| 0 · Plumbing | Cargo workspace, proto codegen in the build, migration runner (`altair-schema.sql` as migration one), integration harness, CI | Harness stands up a **real PostgreSQL**, not a mock — the audience predicate, both indexes and `SKIP LOCKED` are Postgres behaviour. Done when a fresh checkout runs one command and passes an empty suite. |
+| 0 · Plumbing | Cargo workspace, proto codegen in the build, migration runner (`0001_initial.sql` as migration one), integration harness, CI | Harness stands up a **real PostgreSQL**, not a mock — the audience predicate, both indexes and `SKIP LOCKED` are Postgres behaviour. Done when a fresh checkout runs one command and passes an empty suite. |
 | 1 · Foundations | 1.1 store bootstrap · 1.2 block division · 1.3 object store · 1.4 token validation · 1.5 outbox conformance suite | Five genuinely independent lanes, one worktree each. 1.5's deliverable is a **red suite** — every scenario runs and fails. |
 | 2 · Write path | 2.1 intent spine, **including relations and the served submission call** · 2.2 type content, all three domains · 2.3 file bodies · 2.4 reclamation | 2.1 is sequential and load-bearing; do not parallelise the spine, do parallelise what hangs off it. Re-planned at the Wave 1 boundary: **migration two** opens 2.1, adding per-part write provenance and a lifecycle on a relation. |
 | 3 · Read path | 3.1 literal retrieval arm · 3.2 change stream and horizon · 3.3 health | Literal only. Build the instance half of the change stream even though the TUI need not consume it — omitting the instance side is one-way. |
@@ -87,9 +119,9 @@ Specifics worth knowing before touching the relevant lane:
 - **Block division is a pure function over text**, run only at the instance (DR-004). Atomic constructs never split (fenced code, tables, diagrams); list items do split; identity survives edits to a block and to its neighbours. A long unbroken stretch of prose being one block is correct, not a bug.
 - **The intent spine**: idempotent replay returns the original acknowledgement, the intent row is written in the transaction it acknowledges, a stale base is never a rejection (reject-and-retry is the familiar pattern and it is wrong), both values are retained on a same-part conflict, and refusal on audience is indistinguishable from refusal on nonexistence.
 - **The change sequence allocates from a single position row in the write transaction, so every write serialises on it. That is intended** — a sequence leaves gaps and a poller can read past an uncommitted position and never see it. Record why prominently near the code; this is exactly the shape of thing a future reader removes as an obvious bottleneck.
-- **`altair-schema.sql` already contains Wave 2's test plan**, under *"Checks this file cannot make, which the write path owes."* Turn that list into the suite. It spans the whole wave rather than 2.1 alone — the plan says which item closes which lines.
+- **`crates/altaird/migrations/0001_initial.sql` already contains Wave 2's test plan**, under *"Checks this file cannot make, which the write path owes"* (line 886). Turn that list into the suite. The plan document still calls this file `altair-schema.sql`; the name changed when it was adopted as migration one. **The list spans the whole wave rather than 2.1 alone** — the plan says which item closes which lines.
 - **The schema's `ON DELETE CASCADE`s never fire under erasure**, because every one hangs off a delete of the `entity` row and erasure leaves a tombstone. The erase path removes blocks, dates, assignments, property values, side-table rows, event records, embeddings, derived text, and the relations at either end explicitly.
-- **Two schema gaps close in Wave 0**: the embedding dimension stays a placeholder in its own late migration, and cycle prevention in nested locations and categories becomes a write-path check rather than a constraint.
+- **Two schema gaps were named for Wave 0 and neither closed there, correctly.** The embedding dimension stays a placeholder until Wave 5 chooses the model, which is its own trigger; cycle prevention in nested locations and categories is a write-path check owned by 2.2, because both are type content.
 - **Outstanding derivation is computed from provenance in the store, never from the queue.** Losing the queue costs time, not reportability.
 - **The horizon is null, or longer than every other retention window. A middle value is a bug**, not a tuning choice.
 
