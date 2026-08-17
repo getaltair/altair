@@ -30,7 +30,19 @@ jobs:
           cache: false
       - uses: Swatinem/rust-cache@v2
       - run: docker compose up -d --wait
-      - run: cargo test --workspace
+      # --locked, so a lockfile that does not match the manifests is an error
+      # rather than something cargo quietly repairs on the way past. Without it
+      # a stale lockfile passes here and surfaces later somewhere unrelated,
+      # which is exactly how one reached main: the merge resolved Cargo.lock to
+      # one side, every local `cargo test` rewrote it and passed, and the lint
+      # job reported it under the name of the clippy hook.
+      #
+      # This is the copy of that check that does not depend on the committer.
+      # The pre-commit hook runs on a developer's machine and is skippable, and
+      # neither it nor any other local hook runs on a merge commit GitHub builds
+      # itself — where a Cargo.lock conflict can only be resolved by choosing a
+      # side, and both sides are wrong.
+      - run: cargo test --workspace --locked
 
   # The outbox conformance scenarios, which are SUPPOSED to fail.
   #
