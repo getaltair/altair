@@ -27,7 +27,9 @@ One instance serves one household. Nobody else can raise the price, change the t
 | Wave 0 · plumbing | Landed. Workspace, proto codegen, migration runner, a real-Postgres test harness, CI |
 | Wave 1 · foundations | Landed. Store bootstrap and the audience predicate, block division, the object store, token validation, and the outbox conformance suite |
 | Wave 2 · write path | Next. The intent spine, type content, file bodies, reclamation |
+| Wave 3 · read path | Literal retrieval, the change stream and its horizon, health |
 | Wave 4 · terminal client | The first useful day. Nothing before it is usable software |
+| Waves 5 and 6 | Semantic retrieval, then the message bridge and operations |
 
 The outbox conformance suite is **deliberately red** and will stay red until Wave 4.1 writes the outbox it judges. See [`crates/altair-conformance/README.md`](crates/altair-conformance/README.md) before touching it.
 
