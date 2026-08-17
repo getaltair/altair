@@ -139,6 +139,22 @@ impl IntentArrival {
         )
     }
 
+    /// The counter the instance acknowledged, where it applied the intent.
+    ///
+    /// C4 compares this against the counter the next edit for the same entity
+    /// declares it was based on.
+    #[must_use]
+    pub fn applied_counter(&self) -> Option<u64> {
+        match self
+            .acknowledgement
+            .as_ref()
+            .and_then(|ack| ack.outcome.as_ref())
+        {
+            Some(v1::acknowledgement::Outcome::Applied(applied)) => Some(applied.counter),
+            _ => None,
+        }
+    }
+
     /// The recreation the instance answered with, where it answered with one.
     #[must_use]
     pub fn recreated(&self) -> Option<v1::Recreated> {
@@ -204,6 +220,10 @@ struct Inner {
     /// Entity identities the instance has actually committed. D1 and D4 count
     /// these to prove one entity rather than two.
     committed: HashSet<Vec<u8>>,
+    /// Per entity write counter, advanced on an accepted write and on nothing
+    /// else. A constant would have done for every scenario but C4, which is
+    /// about a client carrying the value it was last told.
+    counters: HashMap<Vec<u8>, u64>,
     /// How many intents have been decided, ever. `RefuseNth` counts here.
     decided: usize,
 }
@@ -432,6 +452,18 @@ pub fn body_id_of(intent: &v1::Intent) -> Option<Vec<u8>> {
     }
 }
 
+/// The counter an edit declares it was based on, where the intent is an edit.
+#[must_use]
+pub fn base_counter_of(intent: &v1::Intent) -> Option<u64> {
+    match intent.action.as_ref()? {
+        v1::intent::Action::Edit(edit) => match edit.subject.as_ref()? {
+            v1::edit::Subject::Entity(entity) => Some(entity.base_counter),
+            v1::edit::Subject::Relation(_) => None,
+        },
+        _ => None,
+    }
+}
+
 /// Whether the intent creates an entity.
 #[must_use]
 pub fn is_create(intent: &v1::Intent) -> bool {
@@ -482,17 +514,19 @@ impl Service {
                 detail,
             })),
         };
+        // The counter is filled in below, once the outcome is known, because
+        // it advances on an accepted write and on nothing else.
         let applied = |conflict: Option<v1::ConflictRetained>| v1::Acknowledgement {
             intent_id: intent.intent_id.clone(),
             outcome: Some(v1::acknowledgement::Outcome::Applied(v1::Applied {
                 entity_ids: entity_id_of(intent).into_iter().collect(),
                 relation_ids: Vec::new(),
-                counter: 1,
+                counter: 0,
                 conflict,
             })),
         };
 
-        let acknowledgement = match behaviour {
+        let mut acknowledgement = match behaviour {
             Behaviour::RefuseNth(k) if nth == *k => {
                 refused(v1::RefusalReason::NotAvailable, String::new())
             }
@@ -525,6 +559,16 @@ impl Service {
         };
 
         let mut inner = self.state.inner.lock().unwrap();
+        // Assigned here rather than where the acknowledgement was built, so
+        // that a refusal does not advance a counter it never wrote against.
+        if let Some(v1::acknowledgement::Outcome::Applied(applied)) =
+            acknowledgement.outcome.as_mut()
+            && let Some(id) = entity_id_of(intent)
+        {
+            let counter = inner.counters.entry(id).or_insert(0);
+            *counter += 1;
+            applied.counter = *counter;
+        }
         inner
             .issued
             .insert(intent.intent_id.clone(), acknowledgement.clone());
