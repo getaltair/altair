@@ -2,6 +2,10 @@
 # Created by hand to open a time-boxed window for changing docs/; never committed.
 .claude/.docs-unlock
 
+# Same, for the hook-bypass guard (.claude/hooks/no-hook-bypass.sh). Created by
+# hand to allow --no-verify and friends for a window; never committed.
+.claude/.hooks-unlock
+
 # Rust build output (includes protoc/tonic codegen written to OUT_DIR)
 /target
 **/target
