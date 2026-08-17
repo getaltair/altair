@@ -32,11 +32,13 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      # write, not read: the prompt below posts inline review comments, and
-      # read lets the review run to completion and then silently fail to
-      # deliver it.
+      # Both write, not read. A review that cannot publish is a review that
+      # runs to completion, costs what it costs, and is thrown away — which is
+      # what happened on every run of this workflow before now, while the check
+      # reported success. A pull request comment is an issue comment, so both
+      # scopes are load-bearing.
       pull-requests: write
-      issues: read
+      issues: write
       id-token: write
 
     steps:
@@ -50,14 +52,13 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ github.token }}
           plugin_marketplaces: 'https://github.com/anthropics/claude-code.git'
           plugins: 'code-review@claude-code-plugins'
-          prompt: '/code-review:code-review --comment ${{ github.repository }}/pull/${{ github.event.pull_request.number }}'
-          # No `claude_args` allow-list. Restricting it to the single inline
-          # comment tool is what silently discarded every review this workflow
-          # ran: the plugin's own delivery path needs more than that one tool,
-          # so the review completed and every attempt to publish it was denied.
-          # The job holds `contents: read`, so the widest thing it can do here
-          # is comment — which is the entire point of running it.
+          # No --comment. That asks the skill to publish the review itself,
+          # which is the path that kept being denied. track_progress lets the
+          # action own the comment instead, which is the path that works.
+          prompt: '/code-review:code-review ${{ github.repository }}/pull/${{ github.event.pull_request.number }}'
+          track_progress: true
           # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
           # or https://code.claude.com/docs/en/cli-reference for available options
