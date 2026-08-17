@@ -7,3 +7,32 @@ rust-analyzer = "latest"
 [tasks.test]
 description = "Bring up Postgres and run the workspace test suite"
 run = "docker compose up -d --wait && cargo test --workspace"
+
+# Expected to fail, on purpose, until Wave 4.1 writes the outbox. The scenarios
+# are gated off in the default suite so `main` stays mergeable; this is how the
+# red is looked at. See crates/altair-conformance/README.md.
+#
+# --nocapture so a skipped scenario is visible rather than silently green, and
+# --test-threads=1 because several scenarios measure how long the client took
+# to answer.
+#
+# libtest has no third verdict, so a scenario a client legitimately skips is
+# reported "ok" alongside one that passed. The ledger is how the two are told
+# apart: every scenario that did not fail writes a line to it saying which it
+# was, and the summary at the end is printed whatever the exit status.
+[tasks.conformance]
+description = "Run the outbox conformance scenarios (red until Wave 4.1)"
+run = """
+# Absolute: cargo runs an integration test with the package directory as its
+# working directory, not the workspace root.
+ledger="$PWD/target/conformance-outcomes.tsv"
+mkdir -p "$(dirname "$ledger")"
+rm -f "$ledger"
+status=0
+ALTAIR_CONFORMANCE_LEDGER="$ledger" cargo test -p altair-conformance \
+  --features run-conformance --test scenarios -- --nocapture --test-threads=1 || status=$?
+echo
+echo "--- scenarios that did not fail; anything absent here failed ---"
+sort "$ledger" 2>/dev/null || echo "(none)"
+exit $status
+"""

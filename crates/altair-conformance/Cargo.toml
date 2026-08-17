@@ -1,0 +1,27 @@
+[package]
+name = "altair-conformance"
+version = "0.0.0"
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[features]
+# The scenarios are gated off by default; the crate's own tests are not.
+#
+# `conformance/scenarios.md` specifies an outbox that Wave 4.1 writes. Until it
+# exists every scenario fails, and that red is the deliverable of Wave 1.5. A
+# red suite inside the default `cargo test --workspace` would make `main`
+# unmergeable, so the scenarios sit behind this feature and are run on purpose:
+# `mise run conformance`.
+run-conformance = []
+
+[dependencies]
+altair-proto = { path = "../altair-proto" }
+prost = "0.14.4"
+prost-types = "0.14.4"
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.145"
+tokio = { version = "1.53.1", features = ["rt-multi-thread", "macros", "net", "io-util", "time", "sync"] }
+tokio-stream = { version = "0.1.18", features = ["net"] }
+tonic = "0.14.6"
+uuid = { version = "1.24.1", features = ["v4"] }
