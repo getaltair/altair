@@ -1,7 +1,7 @@
 # Altair Scratchpad
 
 **Status:** Non-normative. Nothing here is decided.
-**Last touched:** 2026-08-13
+**Last touched:** 2026-08-17
 
 ---
 
@@ -548,6 +548,35 @@ The rest, each with its reasoning stated in the component model: the write path 
 **What stays deferred:** surfacing, which is the proactive behaviour rather than the retrieval, and text extraction from files. A cross-encoder is not required, since inference is several models and each is independently absent.
 
 **Recorded as an error rather than a decision.** The v0 absence list, written earlier the same day, stated that embeddings were deferred and the derivation worker absent in whole. The scope page defers semantic retrieval and text extraction and says nothing about embedding generation, so that third claim was supplied rather than found. It was reasoned from in a store evaluation before being caught, which is the cost of the error and the reason it is recorded here.
+
+### Wave 2.1 decisions, taken at the wave boundary
+
+**Status:** settled, 2026-08-17. One of them amends the substrate spec and the data model, and those amendments are made. The rest constrain how the intent spine is built.
+
+Reading Wave 2.1 against the documents before writing any of it found two things the implementation plan did not know: the store cannot answer the question conflict detection asks, and the wire can name a relation in a removal that the store has nowhere to hold. Both were decided here rather than discovered halfway through the write path.
+
+**Per-part write provenance is a side table.** `entity_part_counter`, keyed by entity and part, holding the counter the part last moved at and the member who moved it, in migration two. The rule is that a stale base touching parts disjoint from what moved since applies without conflict, and evaluating it needs to know which parts moved between two counter values. Nothing held that: the change sequence carries block identities but no field list and no counter, an intent row carries the counter after a write but not what it wrote, and versions are Knowledge-only and declinable. The member is there because a conflict names whose the other value was, and an entity's author is its creator and never changes.
+
+**Rejected: a map of parts to counters as a document column on the entity row.** Fewer moving parts, and it would die with the row rather than needing its own removal on erasure. Against it: the shape is unenforced by the store, and a document column in a schema that rejected one — for content, on reasoning that does not reach this — invites the argument every time somebody reads it. A fourth side table beside dates, assignments, and property values is the idiom already in use.
+
+**Rejected: the changed parts and the counter on the change row.** It reuses a write the transaction already makes and adds no table. Against it: the change sequence is trimmed below the horizon, so conflict correctness would decay as history is trimmed, and the component model is explicit that everything reclamation removes is already gone by predicate. Making the write path depend on a trimmer having not yet run is the wrong direction, and it is the shape of thing that surfaces months later.
+
+**Rejected: deferring conflict detection to multi-device.** The v0 scope defers sync and integrity as moot with one instance and no replicas, so there is cover for it. Against it: the foundations mark the three-outcome rule load-bearing, the machinery is small now, and a counter that advances while nothing reads it is a half-built mechanism whose errors are found years later with a corpus behind them.
+
+**Relations join the holding state.** Removing a relation is reversible, it returns with the act that removed it, and there is no restoring one on its own. Migration two gives a relation a lifecycle, the time it was removed, and the act that removed it. This needs no change to the wire: a removal is already the relation-gone signal, a restoration is an ordinary relation write, and restoring an entity with its group reaches the relations in that group.
+
+**Rejected: a hard delete, documented as such.** It is what the store and the wire already implied, and it would have cost one sentence. Against it: it would be the only permanent destructive act in the design with no holding state and no announcement, in a document that says anything becoming permanent does so visibly and never as a side effect. A removal also groups relations into the same act as entities, which reads as a promise that restoring the act restores all of it.
+
+**Rejected: refusing a removal that names relations, until the question was answered.** Honest, and cheap. Against it: it puts a hole in an accepted contract that a client can reach, and the thing that would find it is a terminal client gesture in Wave 4.
+
+**Wave 2.1 stands up the submission call end to end**, with the other five calls answering unimplemented. Two of the item's requirements are only observable at the wire: a batch that is never all-or-nothing, and a refusal that reveals nothing, which DR-004 extends to the status code, so a submission where every intent is refused answers success with the refusals inside it. Neither is testable from an internal function. It also gives Wave 1.4's token validation its first caller, which is otherwise built and unused.
+
+**Two findings recorded rather than decided.**
+
+- **The schema's cascading deletes do not fire under erasure.** Every one of them hangs off a delete of the entity row, and erasure strips content and leaves a tombstone rather than deleting it. So the erase path removes blocks, dates, assignments, property values, side-table rows, event records, embeddings, and derived text explicitly. The comment above the event record table describing its cascade as erasure describes something that never happens.
+- **A single client can conflict with itself**, by composing two edits to one entity offline against the same counter. Closed by a new outbox conformance scenario requiring a client to send the counter it was last acknowledged rather than the one it composed against. Device identity is not available as an instance-side answer to this, being rejected outright above.
+
+**One consequence for the implementation plan, not taken here.** Relation removal cannot be exercised without relation creation, so relation create, remove, erase, and restore belong in 2.1 rather than 2.2, which leaves 2.2 holding anchors and type-declared properties — both of which need bodies and the relation type table anyway. Destination: the v0 implementation plan, at the Wave 2 re-plan.
 
 ### Notification content and transport
 

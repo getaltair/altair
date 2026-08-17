@@ -1,6 +1,6 @@
 # Altair Data Model
 
-**Status:** Assembled. The gaps this assembly found were settled by amendment on 2026-08-13 and no flags remain.
+**Status:** Assembled. The gaps this assembly found were settled by amendment on 2026-08-13 and no flags remain. Amended 2026-08-17: a relation carries a lifecycle.
 **Date:** 2026-08-13
 **Governed by:** Altair Substrate Specification, Altair Guidance PRD, Altair Knowledge PRD, Altair Tracking PRD, Altair Relation Types Specification
 **Related:** Altair Vision & Scope, Altair Architecture Foundations
@@ -159,6 +159,7 @@ A relation is one record joining two entities by identity. Beyond its endpoints 
 - **Direction, as a property of the single record.** An asymmetric type is one relation read from either end: Blocks and blocked by are the same record, never two.
 - **Properties its type defines, and no others.** Uses carries a quantity, and its resolution: unresolved while the quest is live, then returned or consumed when the terminal prompt is answered. There is no facility for arbitrary fields on a relation.
 - **An optional anchor** into one endpoint's body, recording where the relation was formed. It belongs to the relation, not the body, is available typed or untyped, and carries no behaviour of its own. Editing anchored text leaves the relation intact without its anchor. An anchor attaches at a phrase within a block or at the block itself; a phrase anchor is lost when its text is edited, a block anchor holds while its block remains.
+- **A lifecycle state, which is active or deleted.** Removing a relation is reversible on the same terms as removing an entity: it leaves traversal, holds, and returns with the act that removed it, since there is no restoring one on its own. Where a single act removed several things, that grouping is retained on the relation as it is on an entity. There is no erased state, because erasing either endpoint removes the relation outright.
 
 ---
 
