@@ -1,7 +1,7 @@
 # Altair Outbox Conformance Scenarios
 
 **Status:** Draft
-**Date:** 2026-08-16
+**Date:** 2026-08-17
 **Related:** Altair Substrate Specification, Altair Component Model, Altair v0 Scope, DR-004, DR-005, DR-006
 
 ---
@@ -109,6 +109,11 @@ And nothing is required about where B's create falls relative to either.
 Given the person captures a file.
 When the client sends.
 Then the body stream completes before the intent naming that body arrives.
+
+**C4. A queued edit is sent against the counter the instance last acknowledged.**
+Given an entity is created and then edited twice while the instance is unreachable, so both edits were composed against the same counter.
+When the instance becomes reachable.
+Then every edit that arrives for that entity carries the counter the instance acknowledged for the previous write to it, rather than the counter the edit was composed against.
 
 ---
 
@@ -236,7 +241,9 @@ Then the client shows the same thing whether the entity is absent or invisible t
 
 ## What these scenarios decide that the documents do not
 
-Three behaviours follow from combining requirements rather than from any single statement, and they are recorded here because a conformance suite has to be decidable.
+Four behaviours follow from combining requirements rather than from any single statement, and they are recorded here because a conformance suite has to be decidable.
+
+**C4, rebasing a queued edit.** Ordered per entity and a base counter that detects concurrency meet when a person edits the same entity twice while the instance is unreachable. Both edits are composed before either acknowledgement returns, so both name the counter the client last knew. Sent as composed, the second arrives stale against the first and touches the same part, and the substrate's rule for that is to retain both values — a person conflicting with themselves over a sequence they performed in a known order, on a single device, with nobody else involved. The client is the only party that knows that order, so carrying it is its obligation. Coalescing the two into one intent satisfies this equally; what is not permitted is sending a counter the client has already been told is superseded.
 
 **E3, holding later intents for a faulted entity.** Ordered per entity and non-blocking are both required, and they meet when a create is refused and an edit is queued behind it. Sending the edit would break ordering and would name an entity the instance does not hold. Holding it is what these scenarios require.
 

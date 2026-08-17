@@ -2,7 +2,7 @@
 //!
 //! One test per scenario, named for its id. The id literal in each
 //! `scenario!` invocation is what `tests/coverage.rs` reads back to prove the
-//! document and this file name the same thirty four scenarios.
+//! document and this file name the same thirty five scenarios.
 //!
 //! **These fail, and that is the deliverable of Wave 1.5.** The outbox is
 //! Wave 4.1's work. Until it exists, [`NullClient`] is what these run against
@@ -577,6 +577,71 @@ scenario!("C3", c3_a_body_precedes_the_intent_that_refers_to_it, {
 
     Outcome::Passed
 });
+
+scenario!(
+    "C4",
+    c4_a_queued_edit_is_sent_against_the_acknowledged_counter,
+    {
+        let mut world = world().await;
+        skip_unless!(
+            world.offers().offline_edit,
+            "this client does not edit while offline"
+        );
+        world.instance.set_behaviour(Behaviour::Unreachable);
+        world.launch();
+        world.accept("A");
+        world.edit("A", "A/1");
+        world.edit("A", "A/2");
+
+        world.instance.set_behaviour(Behaviour::Accept);
+        assert!(
+            world.instance.wait_for_intents(3, SETTLE).await,
+            "all three intents send"
+        );
+
+        let arrivals = world.instance.intents();
+        let create = arrivals
+            .iter()
+            .find(|arrival| instance::is_create(&arrival.intent))
+            .expect("the create must arrive");
+        let subject = instance::entity_id_of(&create.intent).expect("the create names an entity");
+
+        // Walk this entity's writes in arrival order. Each edit must declare
+        // the counter the instance answered with for the write before it. A
+        // client that coalesces its two edits into one intent passes this too:
+        // what fails is sending a counter it has already been told is
+        // superseded.
+        let mut acknowledged = create
+            .applied_counter()
+            .expect("the create is applied, so it is answered with a counter");
+
+        let mut edits = 0;
+        for arrival in arrivals
+            .iter()
+            .filter(|arrival| instance::entity_id_of(&arrival.intent).as_ref() == Some(&subject))
+            .filter(|arrival| instance::is_edit(&arrival.intent))
+        {
+            let base = instance::base_counter_of(&arrival.intent)
+                .expect("an edit declares the counter it was based on");
+            assert_eq!(
+                base, acknowledged,
+                "an edit for A arrived against counter {base}, and the instance \
+                 had already answered {acknowledged} for the write before it. \
+                 Both edits were composed offline against the same counter, so \
+                 the client owes the rebase; sending as composed makes the \
+                 person conflict with themselves."
+            );
+            acknowledged = arrival
+                .applied_counter()
+                .expect("the edit is applied, so it is answered with a counter");
+            edits += 1;
+        }
+
+        assert!(edits > 0, "at least one edit for A must arrive");
+
+        Outcome::Passed
+    }
+);
 
 // ---------------------------------------------------------------------------
 // D. Idempotence

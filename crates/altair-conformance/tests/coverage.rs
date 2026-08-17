@@ -8,10 +8,10 @@
 use std::collections::BTreeSet;
 use std::path::PathBuf;
 
-/// `conformance/scenarios.md` states thirty four scenarios across sections A
-/// to G: A1–A5, B1–B5, C1–C3, D1–D4, E1–E4, F1–F9, G1–G4. If that number
+/// `conformance/scenarios.md` states thirty five scenarios across sections A
+/// to G: A1–A5, B1–B5, C1–C4, D1–D4, E1–E4, F1–F9, G1–G4. If that number
 /// changes, the document changed, and this constant is where it is noticed.
-const EXPECTED: usize = 34;
+const EXPECTED: usize = 35;
 
 fn repository_root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
