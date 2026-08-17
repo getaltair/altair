@@ -141,6 +141,10 @@ flowchart LR
 
 **On deletion:** relations to a deleted entity are retained, not removed. Deletion is recoverable, so a restore that came back with no connections would be data loss dressed as a feature. A relation to a deleted entity is hidden from traversal while that entity is deleted.
 
+**Removing a relation is itself reversible**, on the same terms as removing an entity. Somebody removing a connection is reaching for the ordinary destructive affordance, and the reasoning that put deletion behind a holding state does not weaken because the thing removed is a link rather than a thing: the moment a person is most certain is frequently the moment they are wrong, and connections are what this product is for. So the relation leaves traversal and can come back.
+
+**A relation comes back with the act that removed it.** Where a single act removed several things, that grouping is retained, so restoring it brings the connections back alongside the entities. There is no restoring one on its own, and that asymmetry with entities is deliberate: nothing lists removed connections for a person to notice one missing from, and forming a connection again costs a gesture, which is not true of an entity whose content nobody can retype from memory. Erasing either endpoint removes the relation outright, which is what erasure means everywhere.
+
 **Relations do not carry permissions.** Linking a private note to a shared quest does not make the note visible. See [Audience](#audience).
 
 ---
@@ -509,7 +513,7 @@ stateDiagram-v2
 
 **Recovery is of entities, and a deletion of several is remembered as one.** An entity is what carries the deleted state, and any deleted entity can be restored on its own. This is the floor because it is the only model that survives an absence: someone who returns after weeks, notices something missing, and wants it back is thinking about the thing, not about an act they no longer remember performing.
 
-Where a single act removed several entities at once, that grouping is retained, and restoring any of them can bring back the rest without the person reconstructing the list themselves. Recovering a container into an empty shell is the recoverability this section promises in name only.
+Where a single act removed several entities at once, that grouping is retained, and restoring any of them can bring back the rest without the person reconstructing the list themselves. Recovering a container into an empty shell is the recoverability this section promises in name only. A relation removed by that same act returns with it, on the terms stated under [Relations](#relations).
 
 Restoring is never blocked by something else still being deleted. A quest whose campaign is gone comes back as a quest with no campaign, which is a valid thing to be. Nor does restoring a container drag back entities that were deleted separately, since they were not part of the same act.
 
