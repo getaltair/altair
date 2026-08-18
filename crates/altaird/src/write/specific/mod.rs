@@ -61,6 +61,7 @@ use crate::store::ids::EntityId;
 
 use super::content::{Malformed, Written, malformed};
 use super::entity::{Applied, Ctx, Refusal};
+use super::parts::Part;
 
 // ---------------------------------------------------------------------------
 // What a type-specific field is
@@ -754,6 +755,13 @@ pub async fn search_text(
 // What a type-specific container lets go of when it is erased
 // ---------------------------------------------------------------------------
 
+/// One entity a vanished container let go of, and the part of it that moved.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Released {
+    pub entity: EntityId,
+    pub part: Part,
+}
+
 /// What an erased container let go of.
 ///
 /// **Three answers, not two, because an empty list is ambiguous.** A container
@@ -767,9 +775,16 @@ pub enum Detachment {
     /// This type holds nothing that points back at it. There is no container
     /// here and there never will be.
     NoContainer,
-    /// The entities that pointed at this container and now point at nothing.
-    /// Empty means the container was empty, which is an answer.
-    Released(Vec<EntityId>),
+    /// The entities that pointed at this container and now point at nothing,
+    /// each with **the part of it that moved**. Empty means the container was
+    /// empty, which is an answer.
+    ///
+    /// The part is carried because a release is a write to the entity that lost
+    /// its container — its counter advances — and a write that advances a
+    /// counter owes provenance. Which part moved is the type's knowledge: a
+    /// child location lost its parent, an item lost its shelf, and those are
+    /// different fields of different messages.
+    Released(Vec<Released>),
     /// **This type has a container and the release is not built yet.**
     /// Distinct from `Released(vec![])` on purpose: wiring the call while a type
     /// still answers this way would silently leave that container's contents
@@ -826,10 +841,19 @@ pub async fn detach_contained(
         EntityType::Item | EntityType::Location | EntityType::ShoppingList => {
             tracking::detach_contained(ctx, entity, kind).await
         }
-        // **LANE: Knowledge and categories.** A category is a container, but its
-        // release is the shared model's and Wave 2.1 already built it — the
-        // erase path calls `uncategorise_all` directly. Nothing is owed here.
-        EntityType::Category => Ok(Detachment::NoContainer),
+        // **LANE: Knowledge and categories.** A category is a container twice
+        // over and only one of them is handled. `uncategorise_all` releases its
+        // *membership* — the entities filed in it — and Wave 2.1 built that. It
+        // does nothing about its *nesting*: `category.parent_category_id` on a
+        // child category is released by nobody, so erasing a parent category
+        // leaves its children pointing at a tombstone, exactly as an erased
+        // location once left its own.
+        //
+        // Answering `NotBuilt` rather than `NoContainer` is the whole reason the
+        // two are different answers. The comment in the erase path names "the
+        // ladder and nested locations" and silently omits this third case; this
+        // is where that omission stops being silent.
+        EntityType::Category => Ok(Detachment::NotBuilt),
         // A note and a file hold nothing. The three the schema has no table for
         // hold nothing either, and cannot be created at all.
         EntityType::Note

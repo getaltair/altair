@@ -38,7 +38,7 @@ use crate::store::{WriteScope, WriteTx};
 use super::changes::{self, EntityChange};
 use super::content::{Date, Malformed, PartWrite, Written};
 use super::outcome::{ConflictParts, Outcome};
-use super::parts::Part;
+use super::parts::{ContentPart, Part};
 use super::specific::{self, SpecificPart};
 use super::{body, provenance};
 
@@ -629,17 +629,37 @@ pub async fn edit(
             validate_and_place(ctx, id, kind, row.category_id, part, &addressed).await?;
         let stored = current(ctx, &row, part).await?;
         touching.push((part.part(), part.text(), stored.text()));
+        // **A write that changed nothing did not move the part.** The same
+        // comparison that decides a conflict decides this, and it has to: a
+        // part's provenance row carries *who* last moved it, so recording a
+        // no-op would hand ownership to a member who wrote nothing and erase the
+        // one who did. A later conflict would then name the wrong person, and
+        // `conflict.theirs_member_id` is stored and crosses the wire — the
+        // substrate requires that whose edit each value was is known and may be
+        // shown, and after a same-value write it would be known and wrong.
+        //
+        // The entity's own counter still advances below, which is what tells a
+        // client there was a write at all. Only the per-part record is withheld,
+        // and a part a write does not address already goes unrecorded — so this
+        // is the existing shape rather than a new rule.
+        //
+        // `specific::guidance` already does this in the upward climb, reading the
+        // current state and returning before recording when nothing moves. The
+        // general edit path now agrees with it.
+        let mut record = |part: &PartWrite, stored: &PartWrite| {
+            if part.text() != stored.text() {
+                moved.push(part.part());
+            }
+        };
+        record(part, &stored);
         // Each companion is compared like any other part, and against what the
         // store holds *now* — which is why this runs before the write below.
         for placement in &placements {
             let stored = current(ctx, &row, placement).await?;
             touching.push((placement.part(), placement.text(), stored.text()));
+            record(placement, &stored);
         }
         apply_part(ctx, id, kind, part, &placements).await?;
-        moved.push(part.part());
-        for placement in &placements {
-            moved.push(placement.part());
-        }
     }
 
     // A body reads what is stored and writes what changed in one step, because
@@ -966,12 +986,31 @@ pub async fn erase(ctx: &mut Ctx<'_>, ids: &[EntityId]) -> Applied<(Vec<EntityId
         // do — Guidance's arcs and quests still point at their tombstone, and
         // that is visible rather than silent.
         let contained = match specific::detach_contained(ctx, *id, row.entity_type).await? {
-            specific::Detachment::Released(ids) => ids,
+            specific::Detachment::Released(released) => released,
             specific::Detachment::NoContainer | specific::Detachment::NotBuilt => Vec::new(),
         };
-        for orphan in
-            crate::store::entity::detached_from_container(ctx.tx, &contained, ctx.at).await?
-        {
+        let ids: Vec<EntityId> = contained.iter().map(|r| r.entity).collect();
+        for orphan in crate::store::entity::detached_from_container(ctx.tx, &ids, ctx.at).await? {
+            // **A release is a write, so it owes provenance.** The counter
+            // advanced, and a part that moves a counter without recording which
+            // part moved is invisible to conflict detection: a later stale edit
+            // to the same field would merge silently, losing the fact that the
+            // container went away underneath it. `restore` already records the
+            // position it moves as a consequence of something else; this is the
+            // same shape and now gets the same treatment.
+            //
+            // Attributed to the member who erased the container, because that is
+            // who caused it.
+            for r in contained.iter().filter(|r| r.entity == orphan.id) {
+                provenance::record(
+                    ctx.tx,
+                    orphan.id,
+                    std::slice::from_ref(&r.part),
+                    orphan.counter,
+                    ctx.member,
+                )
+                .await?;
+            }
             changes::entity_written(
                 ctx.tx,
                 ctx.at,
@@ -989,6 +1028,28 @@ pub async fn erase(ctx: &mut Ctx<'_>, ids: &[EntityId]) -> Applied<(Vec<EntityId
 
         if row.entity_type == EntityType::Category {
             for orphan in crate::store::entity::uncategorise_all(ctx.tx, *id, ctx.at).await? {
+                // The same reasoning, for the membership half. Two parts move —
+                // the category and the position within it — and both are
+                // recorded, because the counter advanced and something has to be
+                // able to say what changed.
+                //
+                // **The alternative reading was considered and rejected**: that
+                // uncategorising is a consequence rather than an authored
+                // placement and so should not conflict. It cannot be had for
+                // free — the counter already advances here, and a write that
+                // moves a counter and records nothing is the silent case. Either
+                // it is a write to this entity or it is not; it is, so it pays.
+                provenance::record(
+                    ctx.tx,
+                    orphan.id,
+                    &[
+                        Part::Content(ContentPart::Category),
+                        Part::Content(ContentPart::CategoryPosition),
+                    ],
+                    orphan.counter,
+                    ctx.member,
+                )
+                .await?;
                 changes::entity_written(
                     ctx.tx,
                     ctx.at,

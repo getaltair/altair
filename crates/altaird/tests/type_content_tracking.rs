@@ -27,6 +27,7 @@ use altaird::store::begin_write;
 use altaird::store::entity::EntityType;
 use altaird::store::ids::{EntityId, MemberId};
 use altaird::write::entity::Ctx;
+use altaird::write::parts::Part;
 use altaird::write::specific::{self, Detachment};
 use chrono::Utc;
 use common::*;
@@ -1809,11 +1810,19 @@ async fn detach(world: &World, container: EntityId, kind: EntityType) -> Detachm
 
 fn released(answer: &Detachment) -> Vec<EntityId> {
     match answer {
-        Detachment::Released(ids) => {
-            let mut ids = ids.clone();
+        Detachment::Released(rows) => {
+            let mut ids: Vec<EntityId> = rows.iter().map(|r| r.entity).collect();
             ids.sort_by_key(|i| i.as_uuid());
             ids
         }
+        other => panic!("expected a release, got {other:?}"),
+    }
+}
+
+/// Which part each released entity reports as having moved.
+fn released_parts(answer: &Detachment) -> Vec<(EntityId, Part)> {
+    match answer {
+        Detachment::Released(rows) => rows.iter().map(|r| (r.entity, r.part.clone())).collect(),
         other => panic!("expected a release, got {other:?}"),
     }
 }
@@ -1971,11 +1980,28 @@ async fn guidances_containers_report_their_release_is_not_built() {
     }
 }
 
-/// A category's release is the shared model's and Wave 2.1 already built it —
-/// the erase path calls `uncategorise_all` directly, so nothing is owed on this
-/// seam. A note and a file hold nothing at all.
+/// A note and a file hold nothing at all, which is an answer.
 #[tokio::test]
-async fn the_types_whose_release_is_not_this_seams_owe_it_nothing() {
+async fn the_types_that_hold_nothing_say_they_have_no_container() {
+    let world = World::new().await;
+    let note = world.note(&world.one, "holds nothing").await;
+    assert_eq!(
+        detach(&world, note, EntityType::Note).await,
+        Detachment::NoContainer
+    );
+}
+
+/// **A category is a container twice over and only one half is built.**
+///
+/// `uncategorise_all` releases its *membership* — the entities filed in it — and
+/// Wave 2.1 built that. Its *nesting* is released by nobody, so erasing a parent
+/// category still leaves its children pointing at a tombstone. Answering
+/// `NotBuilt` is what stops that being invisible.
+///
+/// **LANE: Knowledge and categories.** `category.rs` is not this lane's;
+/// this asserts the gap is reported rather than closing it.
+#[tokio::test]
+async fn a_categorys_nesting_reports_its_release_is_not_built() {
     let world = World::new().await;
     let category = world
         .create(
@@ -1986,13 +2012,7 @@ async fn the_types_whose_release_is_not_this_seams_owe_it_nothing() {
         .await;
     assert_eq!(
         detach(&world, category, EntityType::Category).await,
-        Detachment::NoContainer
-    );
-
-    let note = world.note(&world.one, "holds nothing").await;
-    assert_eq!(
-        detach(&world, note, EntityType::Note).await,
-        Detachment::NoContainer
+        Detachment::NotBuilt
     );
 }
 
@@ -2153,4 +2173,262 @@ async fn a_conflict_on_a_client_stated_time_retains_the_time_the_client_sent() {
     assert_eq!(time.mine.as_deref(), Some(mine.to_rfc3339().as_str()));
     assert_eq!(time.theirs.as_deref(), Some(theirs.to_rfc3339().as_str()));
     assert_eq!(item_row(&world, id).await.asserted_at, Some(mine));
+}
+
+// ---------------------------------------------------------------------------
+// A release is a write, so it owes provenance
+// ---------------------------------------------------------------------------
+
+/// **Which part moved travels with the identity**, because a child location
+/// lost its parent and an item lost its shelf, and those are different fields of
+/// different messages. Without it the release could not record provenance, and a
+/// counter would advance with nothing saying what changed.
+#[tokio::test]
+async fn a_release_reports_which_part_of_each_entity_moved() {
+    let world = World::new().await;
+    let cupboard = a_location(&world, &world.one, "the cupboard").await;
+    let shelf = a_location(&world, &world.one, "the shelf").await;
+    nest(&world, shelf, cupboard).await;
+    let tin = world
+        .create(
+            &world.one,
+            item(v1::ItemContent {
+                location_id: Some(id_bytes(cupboard)),
+                ..Default::default()
+            }),
+            v1::EntityContent::default(),
+        )
+        .await;
+
+    let parts = released_parts(&detach(&world, cupboard, EntityType::Location).await);
+    assert!(parts.contains(&(shelf, Part::Specific(1))), "{parts:?}");
+    assert!(parts.contains(&(tin, Part::Specific(4))), "{parts:?}");
+}
+
+/// A released entity records the part that moved, at the counter it moved at.
+///
+/// Otherwise a later stale edit to the same field merges silently, losing the
+/// fact that the container went away underneath it.
+#[tokio::test]
+async fn an_erase_records_provenance_for_what_it_released() {
+    let world = World::new().await;
+    let cupboard = a_location(&world, &world.one, "the cupboard").await;
+    let shelf = a_location(&world, &world.one, "the shelf").await;
+    nest(&world, shelf, cupboard).await;
+
+    world.submit(&world.one, erase(&[cupboard])).await;
+
+    let after = world.counter(shelf).await;
+    let moved = moved_parts(&world, shelf).await;
+    assert!(
+        moved
+            .iter()
+            .any(|(name, counter)| name == "specific.1" && *counter == after),
+        "the released parent recorded nothing at counter {after}: {moved:?}"
+    );
+}
+
+/// The membership half owes the same thing. Two parts move — the category and
+/// the position within it — and the counter advances, so both are recorded.
+#[tokio::test]
+async fn erasing_a_category_records_provenance_for_what_it_uncategorised() {
+    let world = World::new().await;
+    let category = world
+        .create(
+            &world.one,
+            v1::entity_content::Specific::Category(v1::CategoryContent::default()),
+            v1::EntityContent::default(),
+        )
+        .await;
+    let filed = world
+        .create(
+            &world.one,
+            item(v1::ItemContent::default()),
+            v1::EntityContent {
+                title: Some("filed".into()),
+                category_id: Some(id_bytes(category)),
+                ..Default::default()
+            },
+        )
+        .await;
+
+    world.submit(&world.one, erase(&[category])).await;
+
+    let after = world.counter(filed).await;
+    let moved = moved_parts(&world, filed).await;
+    for part in ["category_id", "category_position"] {
+        assert!(
+            moved
+                .iter()
+                .any(|(name, counter)| name == part && *counter == after),
+            "{part} moved with the counter and recorded nothing: {moved:?}"
+        );
+    }
+}
+
+// ---------------------------------------------------------------------------
+// A write that changed nothing did not move the part
+// ---------------------------------------------------------------------------
+
+/// **The member who wrote nothing must not own the part.**
+///
+/// `entity_part_counter` carries who last moved a part. A same-value write is
+/// correctly not a conflict — but if it also claimed the part, a later conflict
+/// would name a member who authored nothing and erase the one who did, and
+/// `theirs_member_id` crosses the wire for a client to render.
+#[tokio::test]
+async fn a_write_that_changed_nothing_does_not_take_ownership_of_the_part() {
+    let world = World::new().await;
+    let id = shared_item(
+        &world,
+        v1::ItemContent {
+            unit: Some("tins".into()),
+            ..Default::default()
+        },
+    )
+    .await;
+    let base = world.counter(id).await;
+
+    // Two really moves it.
+    world
+        .submit(
+            &world.two,
+            edit_specific(
+                id,
+                base,
+                item(v1::ItemContent {
+                    unit: Some("jars".into()),
+                    ..Default::default()
+                }),
+            ),
+        )
+        .await;
+    // One, stale, submits the same value. Not a conflict — and not a move.
+    world
+        .submit(
+            &world.one,
+            edit_specific(
+                id,
+                base,
+                item(v1::ItemContent {
+                    unit: Some("jars".into()),
+                    ..Default::default()
+                }),
+            ),
+        )
+        .await;
+
+    assert!(
+        world.conflicts(id).await.is_empty(),
+        "agreement was recorded as a disagreement"
+    );
+
+    let owner: Option<Uuid> = sqlx::query(
+        "SELECT member_id FROM entity_part_counter \
+         WHERE entity_id = $1 AND field_name = 'specific.2'",
+    )
+    .bind(id.as_uuid())
+    .fetch_one(&world.db.pool)
+    .await
+    .expect("part counter")
+    .try_get("member_id")
+    .expect("member");
+    assert_eq!(
+        owner,
+        Some(world.two.membership_id()),
+        "the no-op write took ownership of a part it did not change"
+    );
+}
+
+/// And the consequence the ownership bug actually produces: a later conflict
+/// naming the wrong person.
+#[tokio::test]
+async fn a_later_conflict_names_the_member_who_really_wrote_the_value() {
+    let world = World::new().await;
+    let id = shared_item(
+        &world,
+        v1::ItemContent {
+            unit: Some("tins".into()),
+            ..Default::default()
+        },
+    )
+    .await;
+    let base = world.counter(id).await;
+
+    for member in [&world.two, &world.one] {
+        world
+            .submit(
+                member,
+                edit_specific(
+                    id,
+                    base,
+                    item(v1::ItemContent {
+                        unit: Some("jars".into()),
+                        ..Default::default()
+                    }),
+                ),
+            )
+            .await;
+    }
+
+    // Now a third write, still from the old base, that genuinely disagrees.
+    world
+        .submit(
+            &world.two,
+            edit_specific(
+                id,
+                base,
+                item(v1::ItemContent {
+                    unit: Some("bottles".into()),
+                    ..Default::default()
+                }),
+            ),
+        )
+        .await;
+
+    let conflicts = world.conflicts(id).await;
+    let unit = conflicts
+        .iter()
+        .find(|c| c.field.as_deref() == Some("specific.2"))
+        .expect("bottles disagrees with jars from a stale base");
+    assert_eq!(
+        unit.theirs_member,
+        Some(world.two.membership_id()),
+        "the displaced value is attributed to the member whose no-op touched it \
+         rather than the one who wrote it"
+    );
+}
+
+/// **The counter still advances on a no-op.** Clients learn that a write
+/// happened from the entity's counter; only the per-part record is withheld.
+#[tokio::test]
+async fn a_no_op_write_still_advances_the_entitys_counter() {
+    let world = World::new().await;
+    let id = world
+        .create(
+            &world.one,
+            item(v1::ItemContent {
+                unit: Some("tins".into()),
+                ..Default::default()
+            }),
+            v1::EntityContent::default(),
+        )
+        .await;
+    let before = world.counter(id).await;
+
+    world
+        .submit(
+            &world.one,
+            edit_specific(
+                id,
+                before,
+                item(v1::ItemContent {
+                    unit: Some("tins".into()),
+                    ..Default::default()
+                }),
+            ),
+        )
+        .await;
+
+    assert_eq!(world.counter(id).await, before + 1);
 }

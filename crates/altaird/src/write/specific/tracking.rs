@@ -73,9 +73,10 @@ use crate::store::ids::EntityId;
 
 use super::super::content::{Malformed, Written, identifier, instant, malformed};
 use super::super::entity::{Applied, Ctx, Failed, Refusal, type_name};
+use super::super::parts::Part;
 use super::{
-    Decimal, Detachment, Field, Held, Property, Reader, SpecificPart, SpecificValue, nesting,
-    read_column, read_properties, unbuilt, write_column, write_properties,
+    Decimal, Detachment, Field, Held, Property, Reader, Released, SpecificPart, SpecificValue,
+    nesting, read_column, read_properties, unbuilt, write_column, write_properties,
 };
 
 // ---------------------------------------------------------------------------
@@ -667,10 +668,20 @@ pub async fn detach_contained(
     }
 
     let mut released = Vec::new();
-    // The two columns that name a location, each in its own table.
-    for (table, column) in [
-        (table_of(EntityType::Location)?, PARENT_LOCATION),
-        (table_of(EntityType::Item)?, ITEM_LOCATION_COLUMN),
+    // The two columns that name a location, each in its own table, each its own
+    // part of its own type's message — which is why the field number travels
+    // with the identity.
+    for (table, column, field) in [
+        (
+            table_of(EntityType::Location)?,
+            PARENT_LOCATION,
+            LOCATION_PARENT,
+        ),
+        (
+            table_of(EntityType::Item)?,
+            ITEM_LOCATION_COLUMN,
+            ITEM_LOCATION,
+        ),
     ] {
         let sql =
             format!("UPDATE {table} SET {column} = NULL WHERE {column} = $1 RETURNING entity_id");
@@ -679,7 +690,10 @@ pub async fn detach_contained(
             .fetch_all(ctx.tx.conn())
             .await?;
         for r in &rows {
-            released.push(EntityId::from_uuid(r.try_get("entity_id")?));
+            released.push(Released {
+                entity: EntityId::from_uuid(r.try_get("entity_id")?),
+                part: Part::Specific(field),
+            });
         }
     }
 
