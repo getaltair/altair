@@ -559,3 +559,136 @@ async fn removing_a_relation_this_member_cannot_see_converges() {
     assert!(applied(&ack).relation_ids.is_empty());
     assert_eq!(w.relation_lifecycle(id).await.as_deref(), Some("active"));
 }
+
+// --- what a cross-model review found -------------------------------------
+
+#[tokio::test]
+async fn an_edit_cannot_make_a_relation_into_a_duplicate() {
+    // Two relations between one pair are legitimate while one of them carries a
+    // type. Clearing that type leaves two untyped unanchored records of one
+    // connection, which the create path refuses and the edit path used not to.
+    let w = World::new().await;
+    let (a, b) = two_notes(&w).await;
+    let kind = w.declare_type("elaborates", true, false).await;
+
+    w.submit(
+        &w.one,
+        create_relation(Uuid::new_v4(), relation_between(a, b)),
+    )
+    .await;
+    let typed = relation_id(
+        &w.submit(
+            &w.one,
+            create_relation(
+                Uuid::new_v4(),
+                v1::RelationContent {
+                    relation_type_id: Some(kind.as_bytes().to_vec()),
+                    ..relation_between(a, b)
+                },
+            ),
+        )
+        .await,
+    );
+
+    let ack = w
+        .submit(&w.one, edit_relation(typed, relation_between(a, b)))
+        .await;
+    assert_eq!(refused(&ack).reason, v1::RefusalReason::Malformed as i32);
+}
+
+#[tokio::test]
+async fn an_edit_that_changes_nothing_does_not_refuse_itself() {
+    // The duplicate check has to exclude the relation being edited, or every
+    // no-op edit of an untyped relation collides with itself.
+    let w = World::new().await;
+    let (a, b) = two_notes(&w).await;
+    let id = relation_id(
+        &w.submit(
+            &w.one,
+            create_relation(Uuid::new_v4(), relation_between(a, b)),
+        )
+        .await,
+    );
+    let ack = w
+        .submit(&w.one, edit_relation(id, relation_between(a, b)))
+        .await;
+    assert!(matches!(
+        ack.outcome,
+        Some(v1::acknowledgement::Outcome::Applied(_))
+    ));
+}
+
+#[tokio::test]
+async fn a_decimal_that_cannot_be_read_is_refused_rather_than_reinterpreted() {
+    let w = World::new().await;
+    let (a, b) = two_notes(&w).await;
+    let quantified = w.declare_type("commits", true, true).await;
+
+    // A fraction of a whole unit or more. Rendered into a fixed nine-place
+    // field this became 1.15, which is a different number stated confidently.
+    // And opposite signs, which the wire forbids and which read as either 0.75
+    // or -1.25 depending on which half you believe.
+    for bad in [
+        v1::Decimal {
+            units: 1,
+            nanos: 1_500_000_000,
+        },
+        v1::Decimal {
+            units: 1,
+            nanos: -250_000_000,
+        },
+        v1::Decimal {
+            units: -1,
+            nanos: 250_000_000,
+        },
+    ] {
+        let ack = w
+            .submit(
+                &w.one,
+                create_relation(
+                    Uuid::new_v4(),
+                    v1::RelationContent {
+                        relation_type_id: Some(quantified.as_bytes().to_vec()),
+                        uses: Some(v1::UsesProperties {
+                            quantity: Some(bad),
+                            resolution: v1::UsesResolution::Unresolved as i32,
+                        }),
+                        ..relation_between(a, b)
+                    },
+                ),
+            )
+            .await;
+        assert_eq!(
+            refused(&ack).reason,
+            v1::RefusalReason::Malformed as i32,
+            "{bad:?} was accepted and rendered as something else"
+        );
+    }
+}
+
+#[tokio::test]
+async fn a_relation_create_naming_an_invisible_identity_is_refused_and_never_faults() {
+    let w = World::new().await;
+    let (theirs_a, theirs_b) = (w.note(&w.two, "a").await, w.note(&w.two, "b").await);
+    let taken = relation_id(
+        &w.submit(
+            &w.two,
+            create_relation(Uuid::new_v4(), relation_between(theirs_a, theirs_b)),
+        )
+        .await,
+    );
+
+    let (mine_a, mine_b) = two_notes(&w).await;
+    let acks = w
+        .write
+        .submit(
+            &w.one,
+            &[v1::Intent {
+                intent_id: Uuid::new_v4().as_bytes().to_vec(),
+                action: Some(create_relation(taken, relation_between(mine_a, mine_b))),
+            }],
+        )
+        .await
+        .expect("an identifier somebody else holds is an answer, not a fault");
+    assert!(is_not_available(&acks[0]));
+}

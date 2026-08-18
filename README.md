@@ -23,10 +23,10 @@ One instance serves one household. Nobody else can raise the price, change the t
 |---|---|
 | Design documents (`docs/`) | Written. The vision, three domain PRDs, the substrate, the architecture, and seven decision records |
 | Wire contract (`proto/altair/v1/altair.proto`) | Accepted. Field numbers are permanent |
-| Structured store schema (`crates/altaird/migrations/0001_initial.sql`) | Accepted as migration one. Applied and exercised on PostgreSQL 18.6 with pgvector 0.8.6 |
+| Structured store schema (`crates/altaird/migrations/`) | `0001_initial.sql` is migration one, applied and exercised on PostgreSQL 18.6 with pgvector 0.8.6. `0002_write_provenance.sql` adds per-part write provenance and a lifecycle on a relation |
 | Wave 0 · plumbing | Landed. Workspace, proto codegen, migration runner, a real-Postgres test harness, CI |
 | Wave 1 · foundations | Landed. Store bootstrap and the audience predicate, block division, the object store, token validation, and the outbox conformance suite |
-| Wave 2 · write path | Next. The intent spine, type content, file bodies, reclamation |
+| Wave 2 · write path | 2.1, the intent spine, has landed: identity and idempotent replay, the counter and conflict detection, the change sequence, relations, lifecycle, and the served submission call. Type content, file bodies, and reclamation are next |
 | Wave 3 · read path | Literal retrieval, the change stream and its horizon, health |
 | Wave 4 · terminal client | The first useful day. Nothing before it is usable software |
 | Waves 5 and 6 | Semantic retrieval, then the message bridge and operations |
@@ -139,7 +139,7 @@ docs/                      Design documents. The authority the implementation is
 proto/altair/v1/           The public interface. Field numbers are permanent
 conformance/scenarios.md   The outbox specification, made executable, run against every implementation
 crates/
-  altaird/                 The instance: store, block division, object store, token validation
+  altaird/                 The instance: store, block division, object store, token validation, write path
     migrations/            0001_initial.sql is migration one, and is not re-derived
   altair-proto/            Generated contract types (protox + tonic, no protoc needed)
   altair-conformance/      The conformance harness. Red on purpose until Wave 4.1

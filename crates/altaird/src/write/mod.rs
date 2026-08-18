@@ -182,19 +182,49 @@ impl WritePath {
                     Refusal::Malformed(detail) => Outcome::malformed(detail),
                 };
                 let mut tx = begin_write(&self.pool).await.map_err(Fault)?;
-                intent::hold(&mut tx, id, member.membership_id(), at, &outcome)
+                let held = intent::hold(&mut tx, id, member.membership_id(), at, &outcome)
                     .await
                     .map_err(Fault)?;
+                if !held {
+                    tx.rollback().await.map_err(Fault)?;
+                    return self.replay(id, member).await;
+                }
                 tx.commit().await.map_err(Fault)?;
                 return Ok(outcome);
             }
         };
 
-        intent::hold(&mut tx, id, member.membership_id(), at, &outcome)
+        // Somebody else acknowledged this intent while this transaction was
+        // working. Their answer is the answer, and everything written here is
+        // discarded — which is what keeps "a second effect" impossible rather
+        // than merely unlikely.
+        if !intent::hold(&mut tx, id, member.membership_id(), at, &outcome)
             .await
-            .map_err(Fault)?;
+            .map_err(Fault)?
+        {
+            tx.rollback().await.map_err(Fault)?;
+            return self.replay(id, member).await;
+        }
         tx.commit().await.map_err(Fault)?;
         Ok(outcome)
+    }
+
+    /// The acknowledgement already issued for an intent, read on its own.
+    ///
+    /// Reached only when a concurrent submission of the same identity won the
+    /// race. It cannot find nothing: the insert that lost only lost because a
+    /// committed row is there.
+    async fn replay(&self, id: Uuid, member: &Member) -> Result<Outcome, Fault> {
+        let mut tx = begin_write(&self.pool).await.map_err(Fault)?;
+        let held = intent::held(&mut tx, id, member.membership_id())
+            .await
+            .map_err(Fault)?;
+        tx.rollback().await.map_err(Fault)?;
+        Ok(match held {
+            intent::Held::Mine(outcome) => outcome,
+            // Another member holds it, which is the same nothing as always.
+            intent::Held::SomebodyElses | intent::Held::Absent => Outcome::not_available(),
+        })
     }
 }
 

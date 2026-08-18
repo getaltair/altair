@@ -381,11 +381,17 @@ pub async fn create(
         }
         return Ok(Outcome::applied_entity(id, existing.counter));
     }
-    // Either it is not there, or it is there and invisible. The second is a
-    // refusal and the first is a create, and the two are told apart by trying
-    // the insert: an identifier the member cannot see still collides on the
-    // primary key, and the collision is caught by the spine as a fault-free
-    // refusal rather than by asking a question that would answer it.
+    // Either it is not there, or it is there and invisible. The lookup above
+    // cannot tell those apart — that is what the audience predicate is for —
+    // so the insert does, and it does it without ever raising a store fault.
+    //
+    // `ON CONFLICT DO NOTHING` with the row count read is the whole mechanism.
+    // A bare insert makes the invisible case a primary-key violation, which
+    // reaches the caller as a store fault while an unused identifier reaches
+    // them as a success, and a fault that appears only when something is there
+    // is an oracle for whether something is there. This is the exact
+    // disclosure the single refusal reason exists to prevent, arriving through
+    // the error channel rather than through the answer.
 
     let created_at = created_at.unwrap_or(ctx.at);
 
@@ -402,9 +408,10 @@ pub async fn create(
         "INSERT INTO entity \
          (id, type, title, author_member_id, created_at, updated_at, capture_method, \
           bulk, {AUDIENCE_COLUMN}, lifecycle, counter, search_text) \
-         VALUES ($1, $2::entity_type, NULL, $3, $4, $5, $6, false, '{{}}', 'active', 1, '')"
+         VALUES ($1, $2::entity_type, NULL, $3, $4, $5, $6, false, '{{}}', 'active', 1, '') \
+         ON CONFLICT (id) DO NOTHING"
     );
-    sqlx::query(sqlx::AssertSqlSafe(sql))
+    let inserted = sqlx::query(sqlx::AssertSqlSafe(sql))
         .bind(id.as_uuid())
         .bind(type_name(kind))
         .bind(ctx.member.as_uuid())
@@ -413,6 +420,9 @@ pub async fn create(
         .bind(capture_method)
         .execute(ctx.tx.conn())
         .await?;
+    if inserted.rows_affected() == 0 {
+        return Err(Refusal::NotAvailable.into());
+    }
 
     make_type_row(ctx, id, kind).await?;
 

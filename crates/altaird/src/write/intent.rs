@@ -121,13 +121,31 @@ pub async fn held(tx: &mut WriteTx, intent: Uuid, member: Uuid) -> sqlx::Result<
 ///
 /// Every column beyond the outcome belongs to one outcome and is null for the
 /// others, which is the price migration one paid for one table over three.
+///
+/// # Returns false when somebody else got there first
+///
+/// Two submissions of one intent identity can both find it absent and both
+/// proceed. They meet here, and `ON CONFLICT DO NOTHING` is what makes the
+/// loser's answer *the acknowledgement already issued* rather than a store
+/// fault. A bare insert makes a concurrent replay indistinguishable from the
+/// instance being down, which is precisely backwards: the instance is fine and
+/// the answer already exists. A retry after a stalled or dropped submission is
+/// exactly this shape, and it is what an outbox does by design.
+///
+/// The row count is trustworthy. Postgres blocks a conflicting insert until
+/// the transaction holding the key ends, and lets it through if that
+/// transaction rolls back — so zero rows means a *committed* row is there, not
+/// a racing one that may yet vanish.
+///
+/// The caller must discard whatever it wrote before answering: the effect
+/// belongs to the transaction that won.
 pub async fn hold(
     tx: &mut WriteTx,
     intent: Uuid,
     member: Uuid,
     at: DateTime<Utc>,
     outcome: &Outcome,
-) -> sqlx::Result<()> {
+) -> sqlx::Result<bool> {
     let (name, entities, relations, counter, conflict, refusal, detail, original, new) =
         match outcome {
             Outcome::Applied {
@@ -178,13 +196,14 @@ pub async fn hold(
         };
 
     let conflict = conflict.unwrap_or_default();
-    sqlx::query(
+    let held = sqlx::query(
         "INSERT INTO intent \
          (id, member_id, received_at, outcome, entity_ids, relation_ids, counter, \
           conflict_content_fields, conflict_specific_fields, conflict_block_ids, \
           refusal, refusal_detail, original_entity_id, new_entity_id) \
          VALUES ($1, $2, $3, $4::intent_outcome, $5, $6, $7, $8, $9, $10, \
-                 $11::refusal_reason, $12, $13, $14)",
+                 $11::refusal_reason, $12, $13, $14) \
+         ON CONFLICT (id) DO NOTHING",
     )
     .bind(intent)
     .bind(member)
@@ -202,7 +221,7 @@ pub async fn hold(
     .bind(new)
     .execute(tx.conn())
     .await?;
-    Ok(())
+    Ok(held.rows_affected() == 1)
 }
 
 /// The schema stores field numbers as `integer[]` and the wire carries them as

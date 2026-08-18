@@ -865,3 +865,116 @@ async fn concurrent_writes_produce_dense_positions_and_a_total_container_order()
         "two entities shared a position, so the container's order is not total"
     );
 }
+
+// --- what a cross-model review found -------------------------------------
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 8)]
+async fn two_submissions_of_one_intent_at_once_both_get_the_acknowledgement() {
+    // The promise is that resubmitting an intent returns the acknowledgement
+    // the instance already issued, unchanged, rather than producing a second
+    // effect. Sequential replay is the easy half. The half that was wrong: two
+    // submissions of the same identity in flight together both find it absent,
+    // both work, and the loser used to answer with a store fault — the instance
+    // saying it is down while holding the answer.
+    //
+    // A retry after a stalled or dropped submission is exactly this shape, and
+    // it is what the outbox does by design.
+    let w = std::sync::Arc::new(World::new().await);
+    let id = w.note(&w.one, "first").await;
+    let intent = Uuid::new_v4();
+
+    let barrier = std::sync::Arc::new(tokio::sync::Barrier::new(2));
+    let mut running = Vec::new();
+    for _ in 0..2 {
+        let w = w.clone();
+        let barrier = barrier.clone();
+        running.push(tokio::spawn(async move {
+            barrier.wait().await;
+            w.submit_as(&w.one, intent, edit_entity(id, 1, note_content("second")))
+                .await
+        }));
+    }
+    let mut acks = Vec::new();
+    for handle in running {
+        acks.push(handle.await.expect("neither call is a fault"));
+    }
+
+    assert_eq!(
+        acks[0], acks[1],
+        "both callers are owed the acknowledgement the instance issued"
+    );
+    assert_eq!(w.counter(id).await, 2, "the effect happened once");
+    assert_eq!(
+        w.changes().await.len(),
+        2,
+        "one create and one edit, not one create and two edits"
+    );
+}
+
+#[tokio::test]
+async fn holding_an_acknowledgement_a_second_time_says_so_rather_than_failing() {
+    // The mechanism the test above exercises end to end, asserted directly,
+    // because the refusal path holds its acknowledgement in a second
+    // transaction that never takes the sequence lock — so its race is real and
+    // cannot be forced from outside the instance. What can be asserted is what
+    // the spine relies on: the second hold reports that it lost, instead of
+    // raising a primary-key violation that reaches a caller as the instance
+    // being down while it is holding their answer.
+    use altaird::store::begin_write;
+    use altaird::write::intent;
+    use altaird::write::outcome::Outcome;
+
+    let w = World::new().await;
+    let id = Uuid::new_v4();
+    let member = w.one.membership_id();
+    let at = chrono::Utc::now();
+    let outcome = Outcome::not_available();
+
+    let mut tx = begin_write(&w.db.pool).await.expect("a transaction");
+    assert!(
+        intent::hold(&mut tx, id, member, at, &outcome)
+            .await
+            .expect("held")
+    );
+    tx.commit().await.expect("committed");
+
+    let mut tx = begin_write(&w.db.pool).await.expect("a transaction");
+    assert!(
+        !intent::hold(&mut tx, id, member, at, &outcome)
+            .await
+            .expect("a second hold is an answer, not a store error"),
+        "the loser has to be told it lost, or it cannot return the \
+         acknowledgement the instance already issued"
+    );
+    tx.rollback().await.expect("rolled back");
+}
+
+#[tokio::test]
+async fn a_create_naming_an_invisible_identity_is_refused_and_never_faults() {
+    // The lookup cannot tell "not there" from "there and not yours" — that is
+    // what the audience predicate is for — so the insert has to, without ever
+    // reaching the error channel. A store fault where an unused identifier
+    // would have succeeded is an oracle for whether something is there,
+    // arriving through the one channel nobody thinks of as an answer.
+    let w = World::new().await;
+    let theirs = w.note(&w.two, "private").await;
+
+    let taken = w
+        .write
+        .submit(
+            &w.one,
+            &[v1::Intent {
+                intent_id: Uuid::new_v4().as_bytes().to_vec(),
+                action: Some(create_entity(theirs.as_uuid(), note_content("mine now"))),
+            }],
+        )
+        .await
+        .expect("an identifier somebody else holds is an answer, not a fault");
+
+    assert!(is_not_available(&taken[0]));
+    assert_eq!(
+        w.title(theirs).await.as_deref(),
+        Some("private"),
+        "and it did not overwrite what was there"
+    );
+}

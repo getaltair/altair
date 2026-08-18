@@ -69,16 +69,46 @@ struct Resolved {
 
 /// An exact decimal, as text, for a `numeric` column.
 ///
-/// Units and nanos carry the same sign, as a duration does, so the two are
-/// composed rather than concatenated: a negative amount is meaningful
-/// information about a cupboard and rendering it as `-3.500000000` by string
-/// surgery is where that goes wrong.
-fn decimal(d: &v1::Decimal) -> String {
+/// **Range is checked here**, which is one of the schema's owed checks —
+/// *everything the wire shape implies: identifier length, decimal range, a
+/// field both present and cleared, a cleared number naming no field*. Two
+/// shapes are refusable rather than renderable, and both were silently
+/// mis-rendered until a cross-model review found them:
+///
+/// - **A fraction of a billion or more.** `{ units: 1, nanos: 1_500_000_000 }`
+///   is not 2.5, and formatting it into a fixed nine-place field produces
+///   `1.15` — a different number, stated with total confidence. A household's
+///   stock is the last place to guess.
+/// - **Opposite signs.** The wire says units and nanos carry the same sign, as
+///   a duration does. `{ units: 1, nanos: -250_000_000 }` is either 0.75 or
+///   -1.25 depending on which half you believe, so it is neither.
+///
+/// A negative amount itself is ordinary and is rendered: availability is the
+/// asserted amount minus what live relations commit, and negative availability
+/// is meaningful information about a cupboard.
+fn decimal(d: &v1::Decimal) -> Result<String, Refusal> {
+    const BILLION: i64 = 1_000_000_000;
     let nanos = i64::from(d.nanos);
+
+    if nanos.abs() >= BILLION {
+        return Err(Refusal::Malformed(
+            "a decimal's nanos are a fraction of one unit, and this one is a whole unit or more"
+                .into(),
+        ));
+    }
+    if (d.units > 0 && nanos < 0) || (d.units < 0 && nanos > 0) {
+        return Err(Refusal::Malformed(
+            "a decimal's units and nanos carry the same sign, as a duration does".into(),
+        ));
+    }
+
     let negative = d.units < 0 || nanos < 0;
     let whole = d.units.unsigned_abs();
     let fraction = nanos.unsigned_abs();
-    format!("{}{whole}.{fraction:09}", if negative { "-" } else { "" })
+    Ok(format!(
+        "{}{whole}.{fraction:09}",
+        if negative { "-" } else { "" }
+    ))
 }
 
 /// Endpoints, type, and type-declared properties, checked against everything
@@ -142,7 +172,7 @@ async fn resolve(ctx: &mut Ctx<'_>, content: &v1::RelationContent) -> Applied<Re
                 Ok(v1::UsesResolution::Consumed) => "consumed",
                 _ => "unresolved",
             };
-            (Some(decimal(q)), Some(resolution))
+            (Some(decimal(q)?), Some(resolution))
         }
         (Some(_), _) => {
             return Err(Refusal::Malformed(
@@ -183,7 +213,7 @@ async fn resolve(ctx: &mut Ctx<'_>, content: &v1::RelationContent) -> Applied<Re
 ///
 /// Only active relations count. One sitting in holding is not a connection that
 /// exists, and forming it again is the person's answer to having removed it.
-async fn is_duplicate(ctx: &mut Ctx<'_>, r: &Resolved) -> Applied<bool> {
+async fn is_duplicate(ctx: &mut Ctx<'_>, r: &Resolved, itself: Option<Uuid>) -> Applied<bool> {
     if r.relation_type.is_some() {
         return Ok(false);
     }
@@ -191,13 +221,23 @@ async fn is_duplicate(ctx: &mut Ctx<'_>, r: &Resolved) -> Applied<bool> {
         "SELECT 1 AS found FROM relation \
          WHERE from_entity_id = $1 AND to_entity_id = $2 \
            AND relation_type_id IS NULL AND anchor_entity_id IS NULL \
-           AND lifecycle = 'active' LIMIT 1",
+           AND lifecycle = 'active' AND ($3::uuid IS NULL OR id <> $3) LIMIT 1",
     )
     .bind(r.from.as_uuid())
     .bind(r.to.as_uuid())
+    .bind(itself)
     .fetch_optional(ctx.tx.conn())
     .await?;
     Ok(row.is_some())
+}
+
+/// The refusal a duplicate produces, in one place because two verbs raise it.
+fn already_recorded() -> Refusal {
+    Refusal::Malformed(
+        "this connection is already recorded, and an untyped unanchored relation is \
+         the same connection however it is submitted"
+            .into(),
+    )
 }
 
 /// Create a relation.
@@ -209,20 +249,23 @@ pub async fn create(ctx: &mut Ctx<'_>, id: Uuid, content: &v1::RelationContent) 
     }
 
     let r = resolve(ctx, content).await?;
-    if is_duplicate(ctx, &r).await? {
-        return Err(Refusal::Malformed(
-            "this connection is already recorded, and an untyped unanchored relation is \
-             the same connection however it is submitted"
-                .into(),
-        )
-        .into());
+    if is_duplicate(ctx, &r, None).await? {
+        return Err(already_recorded().into());
     }
 
-    sqlx::query(
+    // `ON CONFLICT DO NOTHING`, with the row count read rather than ignored.
+    // `load` above answered `None` both for an identifier nothing holds and for
+    // one held by a relation this member cannot see, and only the first of
+    // those may be created. A bare insert turns the second into a primary-key
+    // violation, which leaves this path as a store fault where an unused
+    // identifier would have succeeded — and a fault that appears only when
+    // something is there is an oracle for whether something is there.
+    let inserted = sqlx::query(
         "INSERT INTO relation \
          (id, from_entity_id, to_entity_id, relation_type_id, quantity, resolution, \
           author_member_id, created_at) \
-         VALUES ($1, $2, $3, $4, $5::numeric, $6::uses_resolution, $7, $8)",
+         VALUES ($1, $2, $3, $4, $5::numeric, $6::uses_resolution, $7, $8) \
+         ON CONFLICT (id) DO NOTHING",
     )
     .bind(id)
     .bind(r.from.as_uuid())
@@ -234,6 +277,9 @@ pub async fn create(ctx: &mut Ctx<'_>, id: Uuid, content: &v1::RelationContent) 
     .bind(ctx.at)
     .execute(ctx.tx.conn())
     .await?;
+    if inserted.rows_affected() == 0 {
+        return Err(Refusal::NotAvailable.into());
+    }
 
     changes::relation_written(ctx.tx, ctx.at, id).await?;
     Ok(id)
@@ -274,6 +320,14 @@ pub async fn edit(ctx: &mut Ctx<'_>, id: Uuid, content: &v1::RelationContent) ->
         return Err(Refusal::NotAvailable.into());
     }
     let r = resolve(ctx, content).await?;
+
+    // An edit can make a relation into a duplicate as easily as a create can:
+    // clearing the type off one of two relations between the same pair leaves
+    // two untyped unanchored records of one connection. The relation being
+    // edited is excluded, or an edit that changes nothing would refuse itself.
+    if is_duplicate(ctx, &r, Some(id)).await? {
+        return Err(already_recorded().into());
+    }
 
     sqlx::query(
         "UPDATE relation SET from_entity_id = $2, to_entity_id = $3, relation_type_id = $4, \

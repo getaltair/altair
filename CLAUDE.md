@@ -173,3 +173,13 @@ Match the existing register — these documents have a deliberate and consistent
 - Decisions are marked **one-way** (reversing it means rewriting dependants) or **reversible** (changeable behind a boundary). Where something is common industry practice rather than a judgement call, it says so.
 - Documents end with "Deliberately not decided" and "Open questions". Move something out of "Open questions" only when it has actually been decided somewhere normative.
 - Decision records are `DR-NNN-kebab-title.md` with Context / Decision / Alternatives considered / Consequences / Deliberately not decided here.
+
+## What Wave 2.1 settled, for the lanes that follow
+
+Observations from building the intent spine that 2.2, 2.3, and 2.4 would otherwise re-derive.
+
+- **A part is named in one place.** `crates/altaird/src/write/parts.rs` holds the wire field number, the store's text name, and the conflict row's spelling, and `tests/write_parts.rs` keeps them in step. Adding a type-specific part in 2.2 means adding it there, not beside the code that writes it.
+- **Type content is not applied yet, deliberately.** 2.1 creates each type's side-table row with defaults; the fields inside `content.specific` are read for the type tag and nothing else. That is the plan's division, and it is invisible in v0 because no client exists before Wave 4.
+- **Three refusals expire.** A file create, an anchor on a relation, and an explicit `category_position` are all refused as malformed with a detail saying why. Each waits on a lane that is named: 2.3, 2.2, and whatever first reorders.
+- **Erasure's dependent-table list is a constant**, `DEPENDENT_TABLES` in `write/entity.rs`. A new table holding entity content is one line there and one line in `tests/write_lifecycle.rs`, and forgetting is silent because the schema's cascades never fire.
+- **The guards are blunt on purpose and were sharpened twice here.** `WritePath::new` tripped the object-store boundary on `Path::`, and the wire's audience field tripped the one-predicate column check. Both now match at a word boundary, and the two whole-tree checks that reason about the instance skip test sources — a test asserting that both paths call one predicate has to be able to read past it. Watch a guard fail on a deliberate violation before and after touching one.
