@@ -118,6 +118,27 @@ fn malformed(what: impl Into<String>) -> Malformed {
     Malformed(what.into())
 }
 
+/// An instant, as the wire carries one.
+///
+/// **Refused rather than absorbed.** A timestamp whose nanos do not fit, or
+/// whose seconds name no representable instant, is a message that cannot be
+/// read — the same class as an identifier of the wrong length, and one of the
+/// schema's owed checks for the same reason: *everything the wire shape
+/// implies*.
+///
+/// This exists as one function because two callers parse the same shape and
+/// they were not agreeing. A labelled date refused a garbled instant; a
+/// create's `created_at` silently substituted the instance's own clock, so a
+/// client with a broken clock conversion was told its capture had been
+/// accepted with a time it never sent. Whichever of those is right, they
+/// cannot both be, and refusing is the one that tells the client something.
+pub fn instant(t: &altair_proto::prost_types::Timestamp) -> Result<DateTime<Utc>, Malformed> {
+    let nanos = u32::try_from(t.nanos)
+        .map_err(|_| malformed("a timestamp's nanos are not a fraction of a second"))?;
+    DateTime::from_timestamp(t.seconds, nanos)
+        .ok_or_else(|| malformed("a timestamp naming no representable instant"))
+}
+
 /// A sixteen-byte identifier, or nothing.
 ///
 /// Length is one of the checks the schema names as *everything the wire shape
@@ -213,10 +234,8 @@ pub fn parts_written(content: &v1::EntityContent) -> Result<Vec<PartWrite>, Malf
             let when = d
                 .when
                 .as_ref()
-                .and_then(|t| {
-                    DateTime::from_timestamp(t.seconds, u32::try_from(t.nanos).unwrap_or(0))
-                })
-                .ok_or_else(|| malformed("a labelled date carries no usable instant"))?;
+                .ok_or_else(|| malformed("a labelled date carries no instant"))?;
+            let when = instant(when)?;
             dates.push(Date {
                 label: d.label.clone(),
                 occurs_at: when,

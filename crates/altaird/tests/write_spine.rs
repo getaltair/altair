@@ -978,3 +978,95 @@ async fn a_create_naming_an_invisible_identity_is_refused_and_never_faults() {
         "and it did not overwrite what was there"
     );
 }
+
+#[tokio::test]
+async fn a_timestamp_that_cannot_be_read_is_refused_wherever_it_arrives() {
+    // Two callers parse the same wire shape, and they used to disagree: a
+    // labelled date refused a garbled instant while a create's `created_at`
+    // silently substituted the instance's clock. A client with a broken clock
+    // conversion was then told its capture had been accepted carrying a time it
+    // never sent, which is the quietest way to be wrong about when something
+    // happened.
+    let w = World::new().await;
+
+    let unreadable = [
+        // Nanos that are not a fraction of a second.
+        altair_proto::prost_types::Timestamp {
+            seconds: 1_780_000_000,
+            nanos: -1,
+        },
+        // Seconds naming no representable instant.
+        altair_proto::prost_types::Timestamp {
+            seconds: i64::MAX,
+            nanos: 0,
+        },
+    ];
+
+    for stamp in unreadable {
+        let ack = w
+            .submit(
+                &w.one,
+                v1::intent::Action::Create(v1::Create {
+                    subject: Some(v1::create::Subject::Entity(v1::CreateEntity {
+                        entity_id: Uuid::new_v4().as_bytes().to_vec(),
+                        created_at: Some(stamp),
+                        capture_method: "test".into(),
+                        content: Some(note_content("when?")),
+                    })),
+                }),
+            )
+            .await;
+        assert_eq!(
+            refused(&ack).reason,
+            v1::RefusalReason::Malformed as i32,
+            "{stamp:?} was absorbed rather than refused"
+        );
+
+        let id = w.note(&w.one, "a note").await;
+        let ack = w
+            .submit(
+                &w.one,
+                edit_entity(
+                    id,
+                    1,
+                    v1::EntityContent {
+                        dates: vec![v1::LabelledDate {
+                            label: "due".into(),
+                            when: Some(stamp),
+                            bring_forward: false,
+                        }],
+                        ..Default::default()
+                    },
+                ),
+            )
+            .await;
+        assert_eq!(refused(&ack).reason, v1::RefusalReason::Malformed as i32);
+    }
+
+    // An absent created_at is ordinary, not malformed: it means the instance's
+    // own clock, which is what a capture with nothing but an identity gets.
+    let id = w.note(&w.one, "no stated time").await;
+    assert_eq!(w.counter(id).await, 1);
+}
+
+#[tokio::test]
+async fn a_base_counter_this_instance_could_not_have_issued_is_refused() {
+    // Clamping it was worse than it looks. A base larger than any counter the
+    // store can hold reads as current against every entity, so the write skips
+    // conflict detection entirely — silently, and only for the input nobody
+    // should be sending.
+    let w = World::new().await;
+    let id = shared_note(&w, "start").await;
+    w.submit(&w.two, edit_entity(id, 1, note_content("theirs")))
+        .await;
+
+    let ack = w
+        .submit(&w.one, edit_entity(id, u64::MAX, note_content("mine")))
+        .await;
+    assert_eq!(refused(&ack).reason, v1::RefusalReason::Malformed as i32);
+    assert_eq!(
+        w.title(id).await.as_deref(),
+        Some("theirs"),
+        "and it did not apply while skipping the conflict it should have found"
+    );
+}

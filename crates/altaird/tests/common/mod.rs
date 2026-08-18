@@ -382,8 +382,8 @@ pub fn relation_id(ack: &v1::Acknowledgement) -> Uuid {
     Uuid::from_bytes(bytes)
 }
 
-pub fn timestamp(at: DateTime<Utc>) -> prost_types::Timestamp {
-    prost_types::Timestamp {
+pub fn timestamp(at: DateTime<Utc>) -> altair_proto::prost_types::Timestamp {
+    altair_proto::prost_types::Timestamp {
         seconds: at.timestamp(),
         nanos: at.timestamp_subsec_nanos() as i32,
     }

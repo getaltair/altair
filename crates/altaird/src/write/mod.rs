@@ -49,7 +49,7 @@ use crate::auth::Member;
 use crate::store::begin_write;
 use crate::store::ids::{EntityId, MemberId};
 
-use content::{entity_type, identifier, parts_written};
+use content::{entity_type, identifier, instant, parts_written};
 use entity::{Ctx, Failed, Refusal};
 use outcome::{Outcome, RefusalReason};
 
@@ -241,9 +241,11 @@ async fn act(ctx: &mut Ctx<'_>, intent: &v1::Intent) -> Result<Outcome, Failed> 
                 let kind = entity_type(content)?;
                 let parts = parts_written(content)?;
                 let id = EntityId::from_uuid(identifier(&e.entity_id)?);
-                let created_at = e.created_at.as_ref().and_then(|t| {
-                    chrono::DateTime::from_timestamp(t.seconds, u32::try_from(t.nanos).unwrap_or(0))
-                });
+                // Absent is ordinary and means "the instance's clock". Present
+                // and unreadable is a malformed message, and it goes through the
+                // same parser a labelled date does — see `content::instant` for
+                // why the two used to disagree.
+                let created_at = e.created_at.as_ref().map(instant).transpose()?;
                 entity::create(ctx, id, created_at, &e.capture_method, parts, kind).await
             }
             Some(v1::create::Subject::Relation(r)) => {
@@ -276,7 +278,17 @@ async fn act(ctx: &mut Ctx<'_>, intent: &v1::Intent) -> Result<Outcome, Failed> 
                     .transpose()?;
                 let parts = parts_written(content)?;
                 let id = EntityId::from_uuid(identifier(&e.entity_id)?);
-                let base = i64::try_from(e.base_counter).unwrap_or(i64::MAX);
+                // Clamping was worse than it looks. A base counter larger than
+                // any counter the store can hold reads as *current* against
+                // every entity, so a garbled value silently skipped conflict
+                // detection entirely — the one mechanism this item exists to
+                // build — rather than being refused as the unreadable message
+                // it is.
+                let base = i64::try_from(e.base_counter).map_err(|_| {
+                    Refusal::Malformed(
+                        "a base counter is a counter this instance could have issued".into(),
+                    )
+                })?;
                 entity::edit(ctx, id, base, parts, stated).await
             }
             Some(v1::edit::Subject::Relation(r)) => {
