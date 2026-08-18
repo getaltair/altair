@@ -340,6 +340,13 @@ pub async fn validate_and_place(
         // three* — and it moves the stamp while leaving the amount where it was.
         // That is what makes freshness recordable at all, given that a count is
         // only as good as the last time somebody looked.
+        //
+        // Which is why two people counting the same shelf at once, and
+        // agreeing, must not surface a conflict on the stamp: their two
+        // `ctx.at` readings genuinely differ and would never compare equal.
+        // Nothing here has to arrange that — a placement is not a part the
+        // write addressed, so it does not reach conflict detection at all. The
+        // rule and the reasoning are in `write::entity::edit`.
         (EntityType::Item, ITEM_AMOUNT) => {
             let asserted = matches!(part.value, SpecificValue::Number(Some(_)));
             Ok(Some(SpecificPart {

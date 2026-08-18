@@ -592,12 +592,37 @@ pub async fn edit(
         let placement = validate_and_place(ctx, id, kind, row.category_id, part).await?;
         let stored = current(ctx, &row, part).await?;
         touching.push((part.part(), part.text(), stored.text()));
-        if let Some(placement) = &placement {
-            let stored = current(ctx, &row, placement).await?;
-            touching.push((placement.part(), placement.text(), stored.text()));
-        }
         apply_part(ctx, id, kind, part, placement.as_ref()).await?;
         moved.push(part.part());
+        // **A placement moves, and does not conflict.** It goes into `moved` —
+        // it did move, and which member moved it is a fact provenance owes an
+        // answer to — but deliberately not into `touching`, which is what the
+        // write *addressed*. The client addressed the part beside it; the
+        // instance chose this one.
+        //
+        // The distinction is load-bearing rather than tidy, because a placement
+        // is a part the client is refused permission to state — an explicit
+        // `category_position` and an `asserted_at` are both malformed. A
+        // conflict is something a person is shown and asked to settle, and
+        // settling one means restating the part. So a conflict on a placement
+        // is one nothing can clear.
+        //
+        // It would also be a conflict carrying no information. A placement
+        // moves only when the part it accompanies moves, so it overlaps what
+        // moved since exactly when that part does, and there are only two
+        // outcomes: the two writes disagree about the amount, and the amount
+        // already conflicts with the time beside it saying nothing further; or
+        // the two writes agree — *both counted four tins* — and the amount
+        // rightly does not conflict while two `Utc::now()` readings a
+        // millisecond apart never compare equal and would raise a conflict out
+        // of agreement. That second case is the machinery working against its
+        // own purpose, on the one field a person could otherwise have acted on.
+        //
+        // **Not a claim that these parts can never conflict.** Reordering is
+        // not served yet; when it is, a write that names a position addresses
+        // it, and it enters `touching` through the loop above like any other
+        // part and conflicts normally. The rule is about what a write said, not
+        // about which parts are special.
         if let Some(placement) = &placement {
             moved.push(placement.part());
         }

@@ -578,9 +578,13 @@ async fn stating_an_assertion_time_is_refused_with_the_reason() {
 
 /// Both halves of the pair record their movement.
 ///
-/// `entity_part_counter` is per part and conflict detection asks which parts
-/// moved between two counter values. A part that does not record its movement is
-/// invisible to that, and the failure is silent.
+/// `entity_part_counter` is per part, and it answers two questions. For a part
+/// a write addressed, it is what conflict detection reads to ask which parts
+/// moved between two counter values. For the stamp, which no write addresses
+/// and which therefore never conflicts, it is the only record of *when the
+/// count was last taken and by whom* — the time is in the column, the member is
+/// only here. A part that does not record its movement is invisible to both,
+/// and the failure is silent.
 #[tokio::test]
 async fn the_amount_and_its_time_each_record_the_counter_they_moved_at() {
     let world = World::new().await;
@@ -603,7 +607,8 @@ async fn the_amount_and_its_time_each_record_the_counter_they_moved_at() {
             moved
                 .iter()
                 .any(|(name, counter)| name == part && *counter == 1),
-            "{part} recorded no movement, so nothing can conflict on it: {moved:?}"
+            "{part} recorded no movement, so it is invisible to everything that \
+             reads provenance: {moved:?}"
         );
     }
 }
@@ -614,6 +619,11 @@ async fn the_amount_and_its_time_each_record_the_counter_they_moved_at() {
 
 /// Binary floating point is the wrong place for this, so nothing rounds on the
 /// way through the store either.
+///
+/// **A negative amount is carried, not refused**, and the last two rows are
+/// what make that a decision rather than an omission. *Two eggs short* is
+/// something a person means, and the range check next door refuses a decimal
+/// that names no number rather than one that names an inconvenient one.
 #[tokio::test]
 async fn an_amount_keeps_its_precision_through_the_store() {
     let world = World::new().await;
@@ -622,6 +632,8 @@ async fn an_amount_keeps_its_precision_through_the_store() {
         (1, 750_000_000, "1.750000000"),
         (999_999_999, 999_999_999, "999999999.999999999"),
         (0, 0, "0.000000000"),
+        (-2, 0, "-2.000000000"),
+        (-1, -500_000_000, "-1.500000000"),
     ] {
         let id = world
             .create(
@@ -1374,11 +1386,32 @@ async fn a_same_part_conflict_on_an_amount_retains_both_values() {
         item_row(&world, id).await.amount.as_deref(),
         Some("5.000000000")
     );
+
+    // The stamp beside the amount says nothing the amount has not already said,
+    // so it is not a second conflict. Here that only tidies; the test below is
+    // where it decides the answer.
+    assert!(
+        !conflicts
+            .iter()
+            .any(|c| c.field.as_deref() == Some("specific.3")),
+        "the stamp raised a conflict of its own beside the amount's: {:?}",
+        conflicts
+            .iter()
+            .map(|c| c.field.clone())
+            .collect::<Vec<_>>()
+    );
 }
 
 /// **Writes producing the same value are not divergent.** Two people counting
 /// the same shelf and agreeing is the likely case, and forming a conflict out of
 /// agreement is the machinery working against its own purpose.
+///
+/// The stamp is where that is easiest to lose. It moves on every amount write,
+/// including a re-assertion of the same amount, and it carries the instance's
+/// `Utc::now()` — so two members who agree perfectly about the count still hold
+/// two instants that never compare equal. Were the stamp a part conflict
+/// detection saw, agreement would produce a conflict on a field the client is
+/// refused permission to state and therefore cannot settle by restating.
 #[tokio::test]
 async fn two_members_asserting_the_same_amount_do_not_conflict_on_it() {
     let world = World::new().await;
@@ -1419,9 +1452,118 @@ async fn two_members_asserting_the_same_amount_do_not_conflict_on_it() {
             .any(|c| c.field.as_deref() == Some("specific.2")),
         "agreement about the unit was recorded as a disagreement"
     );
+    // The load-bearing one: asserting the amount stamped a fresh instant for
+    // each member, and the two differ by however long the second write took.
+    // Nothing may make a conflict out of that.
+    assert!(
+        !conflicts
+            .iter()
+            .any(|c| c.field.as_deref() == Some("specific.3")),
+        "two people who agreed about the count were handed a conflict on the \
+         stamp, which neither of them wrote and neither can settle"
+    );
+    assert!(
+        conflicts.is_empty(),
+        "agreement produced a conflict somewhere: {:?}",
+        conflicts
+            .iter()
+            .map(|c| c.field.clone())
+            .collect::<Vec<_>>()
+    );
     assert_eq!(
         item_row(&world, id).await.amount.as_deref(),
         Some("4.000000000")
+    );
+}
+
+/// **A placement is not a part the write addressed**, so two members filing one
+/// item into two different shelves conflict over the shelf and not over where
+/// on it the instance put them.
+///
+/// The stamp beside an amount is one instance-assigned companion; the position
+/// inside a category is the other, and it is the shared model's rather than a
+/// type's — so it is the case that proves the rule is general and not a special
+/// arrangement tracking made for itself. Each member enters a container, each
+/// append reads its own next position, and the two differ for exactly the reason
+/// the two stamps do. Neither member named a position; an explicit one is
+/// refused outright. So a conflict here would be as unsettleable as the stamp's,
+/// and it would sit beside a `category_id` conflict that already says the whole
+/// of what happened.
+#[tokio::test]
+async fn two_members_filing_one_item_onto_two_shelves_conflict_only_over_the_shelf() {
+    let world = World::new().await;
+    let id = shared_item(&world, v1::ItemContent::default()).await;
+    let base = world.counter(id).await;
+
+    let mut shelves = Vec::new();
+    for title in ["the cupboard", "the cellar"] {
+        shelves.push(
+            world
+                .create(
+                    &world.one,
+                    v1::entity_content::Specific::Category(v1::CategoryContent::default()),
+                    v1::EntityContent {
+                        title: Some(title.into()),
+                        audience_member_ids: vec![world.two.membership_id().as_bytes().to_vec()],
+                        ..Default::default()
+                    },
+                )
+                .await,
+        );
+    }
+
+    // The cellar already holds something, so the two appends land on different
+    // numbers. Without this they would both be the first thing in an empty
+    // container, the two positions would agree, and the test would pass on a
+    // coincidence rather than on the rule.
+    world
+        .create(
+            &world.one,
+            item(v1::ItemContent::default()),
+            v1::EntityContent {
+                title: Some("a jar of something older".into()),
+                category_id: Some(id_bytes(shelves[1])),
+                ..Default::default()
+            },
+        )
+        .await;
+
+    for (member, shelf) in [(&world.one, shelves[0]), (&world.two, shelves[1])] {
+        world
+            .submit(
+                member,
+                edit_entity(
+                    id,
+                    base as u64,
+                    v1::EntityContent {
+                        category_id: Some(id_bytes(shelf)),
+                        ..Default::default()
+                    },
+                ),
+            )
+            .await;
+    }
+
+    let conflicts = world.conflicts(id).await;
+    let named = || {
+        conflicts
+            .iter()
+            .map(|c| c.field.clone())
+            .collect::<Vec<_>>()
+    };
+    assert!(
+        conflicts
+            .iter()
+            .any(|c| c.field.as_deref() == Some("category_id")),
+        "two shelves were named and neither was recorded as displaced: {:?}",
+        named()
+    );
+    assert!(
+        !conflicts
+            .iter()
+            .any(|c| c.field.as_deref() == Some("category_position")),
+        "the instance's own append raised a conflict the client cannot settle: {:?}",
+        named()
     );
 }
 
