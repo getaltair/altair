@@ -906,7 +906,7 @@ async fn a_phrase_that_is_no_longer_there_forms_the_relation_without_an_anchor()
     assert_eq!(w.relation_lifecycle(id).await.as_deref(), Some("active"));
     // ...and the block goes with the phrase rather than the anchor falling back
     // to it. Where it was formed is still true and stays.
-    assert_eq!(anchor_of(&w, id).await, (Some(note.as_uuid()), None, None));
+    assert_eq!(anchor_of(&w, id).await, (None, None, None));
 }
 
 /// An edit carries an anchor, and an edit that does not carry one clears it.
@@ -1018,10 +1018,7 @@ async fn removing_a_block_never_fails_beside_an_identical_unanchored_relation() 
         w.relation_lifecycle(anchored_id).await.as_deref(),
         Some("active")
     );
-    assert_eq!(
-        anchor_of(&w, anchored_id).await,
-        (Some(note.as_uuid()), None, None)
-    );
+    assert_eq!(anchor_of(&w, anchored_id).await, (None, None, None));
 }
 
 /// A block anchor holds while its block remains, including through edits to
@@ -1092,7 +1089,7 @@ async fn a_phrase_anchor_is_lost_when_its_text_is_edited() {
     .await;
 
     assert_eq!(w.relation_lifecycle(id).await.as_deref(), Some("active"));
-    assert_eq!(anchor_of(&w, id).await, (Some(note.as_uuid()), None, None));
+    assert_eq!(anchor_of(&w, id).await, (None, None, None));
 }
 
 /// An edit that leaves the phrase standing leaves the anchor standing. The rule
@@ -1174,10 +1171,7 @@ async fn after_a_conflict_over_one_block_the_surviving_phrase_keeps_its_anchor()
     );
     // "eggs" is not, and its relation survives without an anchor.
     assert_eq!(w.relation_lifecycle(eggs).await.as_deref(), Some("active"));
-    assert_eq!(
-        anchor_of(&w, eggs).await,
-        (Some(note.as_uuid()), None, None)
-    );
+    assert_eq!(anchor_of(&w, eggs).await, (None, None, None));
 }
 
 /// The same guarantee on the other path that takes an anchor away.
@@ -1224,33 +1218,39 @@ async fn losing_a_phrase_never_fails_beside_an_identical_unanchored_relation() {
         w.relation_lifecycle(phrase).await.as_deref(),
         Some("active")
     );
-    assert_eq!(
-        anchor_of(&w, phrase).await,
-        (Some(note.as_uuid()), None, None)
-    );
+    assert_eq!(anchor_of(&w, phrase).await, (None, None, None));
 }
 
-/// **No body write can make a relation a duplicate, because no body write ever
-/// makes one fully unanchored.**
+/// **A relation that loses its anchor becomes a duplicate of one already
+/// recorded, and both stay.**
 ///
-/// The reason migration one's collision cannot arise, stated as a property
-/// rather than left implicit in the two tests above: both paths that take an
-/// anchor away keep `anchor_entity_id`, and `is_duplicate` counts that as an
-/// anchor. Where the connection was formed outlives the words and the block.
+/// The case migration one names, reachable at last. It was not, while a lost
+/// anchor left an entity behind: `is_duplicate` counted that residue and the
+/// collision could not form. Removing the residue restores the state the schema
+/// comment reasons about, so the outcome it requires can finally be observed
+/// rather than argued.
 ///
-/// This does not replace those tests. They assert the outcome the sentence
-/// requires — a body edit that lands — which stays true even if this property
-/// stops holding, because the body path consults no duplicate check at all.
+/// *"A relation that loses its anchor when its block is removed becomes
+/// unanchored, collides with an existing relation between the same pair, and
+/// the block removal fails. A body edit must never fail because a relation lost
+/// an anchor, and that outranks refusing a duplicate structurally."* So the
+/// body edit lands, two identical untyped unanchored relations coexist, and
+/// nothing tries to reconcile them.
 #[tokio::test]
-async fn no_body_write_leaves_a_relation_without_where_it_was_formed() {
+async fn a_relation_that_loses_its_anchor_becomes_a_duplicate_and_both_stay() {
     let w = World::new().await;
     let (note, blocks) = note_with_blocks(&w, "buy eggs today\n- milk\n").await;
     let other = w.note(&w.one, "the other end").await;
 
-    let phrase = relation_id(&anchored(&w, note, other, at(note, blocks[0], "eggs")).await);
-    let block = relation_id(&anchored(&w, note, other, at(note, blocks[1], "")).await);
+    let plain = relation_id(
+        &w.submit(
+            &w.one,
+            create_relation(Uuid::new_v4(), relation_between(note, other)),
+        )
+        .await,
+    );
+    let was_anchored = relation_id(&anchored(&w, note, other, at(note, blocks[1], "")).await);
 
-    // One write that edits the phrase away and removes the other block outright.
     let base = w.counter(note).await;
     applied(
         &w.submit(
@@ -1260,7 +1260,7 @@ async fn no_body_write_leaves_a_relation_without_where_it_was_formed() {
                 base as u64,
                 v1::EntityContent {
                     specific: Some(v1::entity_content::Specific::Note(v1::NoteContent {
-                        body: Some("buy bread today\n".into()),
+                        body: Some("buy eggs today\n".into()),
                         cleared: Vec::new(),
                     })),
                     ..Default::default()
@@ -1270,9 +1270,73 @@ async fn no_body_write_leaves_a_relation_without_where_it_was_formed() {
         .await,
     );
 
-    for id in [phrase, block] {
-        let (entity, b, p) = anchor_of(&w, id).await;
-        assert_eq!(entity, Some(note.as_uuid()), "where it was formed was lost");
-        assert_eq!((b, p), (None, None));
+    // Two records of one connection, both active, neither reconciled.
+    for id in [plain, was_anchored] {
+        assert_eq!(w.relation_lifecycle(id).await.as_deref(), Some("active"));
     }
+    assert_eq!(anchor_of(&w, was_anchored).await, (None, None, None));
+
+    // And the one that lost its anchor is now an ordinary unanchored relation,
+    // so forming a third is refused exactly as it would have been all along.
+    let ack = w
+        .submit(
+            &w.one,
+            create_relation(Uuid::new_v4(), relation_between(note, other)),
+        )
+        .await;
+    assert_eq!(refused(&ack).reason, v1::RefusalReason::Malformed as i32);
+}
+
+/// **A relation that lost its anchor is editable like any other.**
+///
+/// The defect that decided the residue's fate, kept as the test that would
+/// catch it coming back. While a lost anchor left an entity standing, an
+/// ordinary edit to such a relation had two bad outcomes and no good one: it
+/// erased that entity in silence, or — beside an identical unanchored relation
+/// — it was refused as *this connection is already recorded*, naming a
+/// connection the person had not mentioned. Neither needed a read path; the
+/// client only needs the identifier it minted itself.
+#[tokio::test]
+async fn a_relation_that_lost_its_anchor_can_still_be_edited() {
+    let w = World::new().await;
+    let (note, blocks) = note_with_blocks(&w, "buy eggs today\n").await;
+    let other = w.note(&w.one, "the other end").await;
+    let mentions = w.declare_type("mentions", true, false).await;
+
+    let id = relation_id(&anchored(&w, note, other, at(note, blocks[0], "")).await);
+
+    let base = w.counter(note).await;
+    applied(
+        &w.submit(
+            &w.one,
+            edit_entity(
+                note,
+                base as u64,
+                v1::EntityContent {
+                    specific: Some(v1::entity_content::Specific::Note(v1::NoteContent {
+                        body: Some("- milk\n".into()),
+                        cleared: Vec::new(),
+                    })),
+                    ..Default::default()
+                },
+            ),
+        )
+        .await,
+    );
+
+    // An ordinary edit, carrying no anchor because the relation has none.
+    let ack = w
+        .submit(
+            &w.one,
+            edit_relation(
+                id,
+                v1::RelationContent {
+                    relation_type_id: Some(mentions.as_bytes().to_vec()),
+                    ..relation_between(note, other)
+                },
+            ),
+        )
+        .await;
+    applied(&ack);
+    assert_eq!(anchor_of(&w, id).await, (None, None, None));
 }

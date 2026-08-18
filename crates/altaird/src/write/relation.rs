@@ -83,19 +83,25 @@ struct Resolved {
 }
 
 /// An anchor as the store holds one: three columns, and only the combinations
-/// the schema admits.
+/// anything ever puts there.
 ///
-/// `0001_initial.sql` states them as three checks — the anchor entity is one of
-/// the two endpoints, a block requires an entity, a phrase requires a block —
-/// so the reachable shapes are: nothing at all; an entity alone; an entity and
-/// a block; all three.
+/// `0001_initial.sql` states its own limits as three checks — the anchor entity
+/// is one of the two endpoints, a block requires an entity, a phrase requires a
+/// block — which admit four shapes: nothing at all; an entity alone; an entity
+/// and a block; all three.
 ///
-/// **An entity alone is a residue, never a submission.** It is what a removed
-/// block leaves behind, because `anchor_block_id ... ON DELETE SET NULL` takes
-/// the block and leaves where the relation was formed standing. [`anchor`]
-/// refuses it on the way in and produces it on the way out, which is not an
-/// inconsistency: one is a client inventing a third kind of anchor, the other
-/// is this instance saying an anchor used to be here.
+/// **An entity alone is admitted by the schema and produced by nothing.** The
+/// substrate says a lost anchor leaves the relation *"without its anchor"* and
+/// migration one says it *"becomes unanchored"*, so every path that takes an
+/// anchor away takes all three columns — see `write::body`. An entity alone was
+/// briefly a residue here, left standing because `ON DELETE SET NULL` reaches
+/// one column of three, and it cost a shape no client could resubmit, an
+/// ordinary edit that erased it in silence, and a duplicate refusal naming a
+/// connection nobody had mentioned. It holds one bit — which end — about a
+/// place that no longer exists, and nothing reads it.
+///
+/// So [`anchor`] refuses it on the way in and nothing produces it on the way
+/// out. The shape is not a state this system has.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 struct Anchored {
     entity: Option<Uuid>,
@@ -274,13 +280,13 @@ async fn resolve(ctx: &mut Ctx<'_>, content: &v1::RelationContent) -> Applied<Re
 /// *"an anchor whose text survives holds, and one whose text does not leaves
 /// the relation intact without an anchor."*
 ///
-/// **The block goes with the phrase rather than the anchor falling back to
-/// it.** Both places the substrate states this say *without an anchor*, not
-/// "with a coarser one". Somebody pointed at particular words; re-pointing the
-/// connection at the whole paragraph would be this file making up a place the
-/// person never chose, which is the error `body::identity` refuses to make
-/// with over-eager matching. Where it was formed — the entity — is still true
-/// and stays.
+/// **Without one means without one, all three columns.** Both places the
+/// substrate states this say *without an anchor*, not "with a coarser one".
+/// Somebody pointed at particular words; re-pointing the connection at the
+/// whole paragraph would be this file making up a place the person never chose,
+/// which is the error `body::identity` refuses to make with over-eager
+/// matching. Keeping the entity alone would be the same invention in miniature,
+/// and it would leave behind precisely the shape refused a few lines above.
 async fn anchor(
     ctx: &mut Ctx<'_>,
     a: &v1::Anchor,
@@ -349,11 +355,7 @@ async fn anchor(
     // the blank line after the block, which belongs to the body's shape rather
     // than to anything a person wrote.
     if !crate::body::content_of(&text).contains(&a.phrase) {
-        return Ok(Anchored {
-            entity: Some(entity.as_uuid()),
-            block: None,
-            phrase: None,
-        });
+        return Ok(Anchored::default());
     }
 
     Ok(Anchored {
@@ -385,11 +387,18 @@ async fn anchor(
 /// about where they made theirs.
 ///
 /// So the arriving side is checked here and the stored side in the query, and
-/// **an anchor of any kind is enough** — including the residue of one, an
-/// entity with no block left. That is deliberate rather than an oversight of
-/// the residue case: it is still a record of where a connection was formed, and
-/// it is what keeps a body edit that removes a block from turning a relation
-/// into somebody else's duplicate.
+/// the two ask the same thing because there is only one kind of anchored to be:
+/// every path that takes an anchor away takes all three columns, so a relation
+/// is anchored or it is not, and nothing is half of one.
+///
+/// **A relation that loses its anchor can therefore become a duplicate of one
+/// already recorded, and that is correct.** It is what migration one describes
+/// and accepts — *"a relation that loses its anchor when its block is removed
+/// becomes unanchored, collides with an existing relation between the same
+/// pair, and the block removal fails. A body edit must never fail because a
+/// relation lost an anchor, and that outranks refusing a duplicate
+/// structurally."* Nothing on the body path consults this function, so the two
+/// simply coexist, which is the price that sentence agrees to pay.
 async fn is_duplicate(ctx: &mut Ctx<'_>, r: &Resolved, itself: Option<Uuid>) -> Applied<bool> {
     if r.relation_type.is_some() || r.anchor.entity.is_some() {
         return Ok(false);

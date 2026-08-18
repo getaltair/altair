@@ -636,14 +636,20 @@ async fn rewording_a_block_leaves_an_anchor_into_it_alone() {
 /// Removing a block leaves the relation, without its anchor — and, critically,
 /// **the body write does not fail**.
 ///
-/// The store detaches half the anchor by itself and refuses the row that
-/// produces: `anchor_phrase` may not outlive `anchor_block_id`, so the delete
-/// raises `relation_check3` from inside the cascading update and the whole
-/// intent becomes a store fault. Migration one declines a unique index over the
-/// unanchored pair for exactly this reason — *a body edit must never fail
-/// because a relation lost an anchor* — and this is the same failure by another
-/// route. `write/body.rs` clears the phrase first; without that line this test
-/// is a fault rather than a failure.
+/// *Without its anchor* means all three columns, which is what the substrate
+/// says and what migration one reasons from: a relation that loses its anchor
+/// *becomes unanchored*. Nothing keeps a record of where the anchor used to be.
+///
+/// Leaving any of it to the store does not work, which is the second half of
+/// this test. `anchor_block_id` is `ON DELETE SET NULL`, and the row that
+/// referential action produces is refused by `anchor_phrase`'s own check — the
+/// delete raises `relation_check3` from inside the cascading update and the
+/// whole intent becomes a store fault. Migration one declines a unique index
+/// over the unanchored pair to avoid exactly that outcome — *a body edit must
+/// never fail because a relation lost an anchor* — and this is the same failure
+/// by another route. `write/body.rs` clears all three itself, so the cascade
+/// finds nothing to do; without that this test is a fault rather than a
+/// failure.
 #[tokio::test]
 async fn removing_a_block_leaves_the_relation_without_its_anchor_and_does_not_fail() {
     let world = World::new().await;
@@ -659,8 +665,9 @@ async fn removing_a_block_leaves_the_relation_without_its_anchor_and_does_not_fa
 
     assert_eq!(
         anchor_of(&world, relation).await,
-        (Some(note.as_uuid()), None, None),
-        "the relation did not survive its block, or kept a phrase locating into nothing"
+        (None, None, None),
+        "the relation did not survive its block, or kept part of an anchor \
+         locating into nothing"
     );
     assert_eq!(
         world.relation_lifecycle(relation).await.as_deref(),
