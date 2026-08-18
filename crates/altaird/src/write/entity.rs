@@ -486,9 +486,14 @@ pub async fn create(
 
     // A body is many parts and they are not known until it is divided against
     // what is stored, which on a create is nothing.
+    //
+    // `Creating` is what withholds bulk graduation: a body arriving with a
+    // creation was captured rather than authored, and nothing readable from
+    // inside `body::apply` distinguishes the two. See `body::Occasion`, which
+    // records why each of the obvious in-file signals is silently wrong.
     let mut changed_blocks = Vec::new();
     if let Some(text) = &written.body {
-        let touch = body::apply(ctx, id, kind, text).await?;
+        let touch = body::apply(ctx, id, kind, text, body::Occasion::Creating).await?;
         moved.extend(touch.written);
         changed_blocks.extend(touch.changed);
     }
@@ -601,9 +606,19 @@ pub async fn edit(
     // A body reads what is stored and writes what changed in one step, because
     // which blocks a body write touches is decided by the match between the two
     // and cannot be asked before the write is prepared.
+    //
+    // A write that states `bulk` withholds graduation, because the person said
+    // what they wanted and a derived value does not outrank an authored one.
+    // The parts above have already been applied, so without this the statement
+    // would be overwritten a few lines later by a rule meant to guess at it.
+    let states_bulk = written
+        .parts
+        .iter()
+        .any(|p| matches!(p, PartWrite::Bulk(_)));
     let mut changed_blocks = Vec::new();
     if let Some(text) = &written.body {
-        let touch = body::apply(ctx, id, kind, text).await?;
+        let touch =
+            body::apply(ctx, id, kind, text, body::Occasion::Editing { states_bulk }).await?;
         touching.extend(touch.touching);
         moved.extend(touch.written);
         changed_blocks.extend(touch.changed);
