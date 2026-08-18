@@ -30,6 +30,27 @@ use std::path::{Path, PathBuf};
 /// Where the predicate is allowed to live.
 const HOME: &str = "crates/altaird/src/store/audience.rs";
 
+/// Whether a source is test code rather than the instance.
+///
+/// **Two of the three checks below apply to the instance only, and this is the
+/// line.** The claim being protected is that the write path and the read path
+/// call one predicate; a test asserting that they do has to be able to see
+/// past it. A test that could only read the store through the audience-scoped
+/// surface would be checking the predicate against itself, and it would report
+/// success for a predicate that admitted everybody.
+///
+/// So a test may query `entity` directly and may name the column, and the
+/// suite is where the ground truth an assertion compares against comes from.
+///
+/// The first check — the predicate's own SQL, counted across the whole tree —
+/// is deliberately **not** scoped this way, because a literal paste is a
+/// literal paste wherever it lands and a test has no business holding one.
+fn is_test_source(path: &Path) -> bool {
+    let separator = std::path::MAIN_SEPARATOR_STR;
+    path.to_string_lossy()
+        .contains(&["", "tests", ""].join(separator))
+}
+
 fn repo_root() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR"))
         .ancestors()
@@ -142,6 +163,7 @@ fn nothing_else_in_the_tree_names_the_audience_column() {
     let offenders: Vec<String> = sources(&root)
         .into_iter()
         .filter(|p| !p.ends_with(HOME))
+        .filter(|p| !is_test_source(p))
         .filter(|p| {
             std::fs::read_to_string(p)
                 .map(|t| t.contains(&column) && issues_sql(&t))
@@ -181,7 +203,7 @@ fn nothing_outside_the_store_layer_queries_the_entity_table() {
     let root = repo_root();
     let mut offenders: Vec<String> = Vec::new();
     for path in sources(&root) {
-        if path.to_string_lossy().contains(&store) {
+        if path.to_string_lossy().contains(&store) || is_test_source(&path) {
             continue;
         }
         let Ok(text) = std::fs::read_to_string(&path) else {

@@ -159,7 +159,18 @@ async fn current(ctx: &mut Ctx<'_>, row: &EntityRow, part: &PartWrite) -> Applie
 }
 
 /// Apply one part to the store. Assumes it has already been validated.
-async fn apply_part(ctx: &mut Ctx<'_>, entity: EntityId, part: &PartWrite) -> Applied<()> {
+///
+/// `placement` is the position the instance assigned as a consequence, which is
+/// only ever set alongside a category. **The two move in one statement**,
+/// because the store's own check says a category and a position are either both
+/// there or both absent: writing them in sequence puts the row through a state
+/// the schema refuses, whichever order the sequence is in.
+async fn apply_part(
+    ctx: &mut Ctx<'_>,
+    entity: EntityId,
+    part: &PartWrite,
+    placement: Option<&PartWrite>,
+) -> Applied<()> {
     match part {
         PartWrite::Title(v) => {
             // search_text is maintained by the write path from the title and
@@ -193,9 +204,14 @@ async fn apply_part(ctx: &mut Ctx<'_>, entity: EntityId, part: &PartWrite) -> Ap
             }
         }
         PartWrite::Category(v) => {
-            sqlx::query("UPDATE entity SET category_id = $2 WHERE id = $1")
+            let position = match placement {
+                Some(PartWrite::CategoryPosition(p)) => *p,
+                _ => None,
+            };
+            sqlx::query("UPDATE entity SET category_id = $2, category_position = $3 WHERE id = $1")
                 .bind(entity.as_uuid())
                 .bind(v.map(EntityId::as_uuid))
+                .bind(position)
                 .execute(ctx.tx.conn())
                 .await?;
         }
@@ -402,12 +418,12 @@ pub async fn create(
 
     let mut written = Vec::new();
     for part in &parts {
-        if let Some(extra) = validate_and_place(ctx, None, part).await? {
-            apply_part(ctx, id, &extra).await?;
-            written.push(extra.part());
-        }
-        apply_part(ctx, id, part).await?;
+        let placement = validate_and_place(ctx, None, part).await?;
+        apply_part(ctx, id, part, placement.as_ref()).await?;
         written.push(part.part());
+        if let Some(placement) = &placement {
+            written.push(placement.part());
+        }
     }
 
     if !stated_audience && let Some(category) = category {
@@ -417,7 +433,7 @@ pub async fn create(
                 return Err(Refusal::NotAvailable.into());
             }
             let part = PartWrite::Audience(default);
-            apply_part(ctx, id, &part).await?;
+            apply_part(ctx, id, &part, None).await?;
             written.push(part.part());
         }
     }
@@ -496,16 +512,18 @@ pub async fn edit(
     let counter = row.counter + 1;
 
     for part in &parts {
-        if let Some(extra) = validate_and_place(ctx, row.category_id, part).await? {
-            let stored = current(ctx, &row, &extra).await?;
-            touching.push((extra.part(), extra.text(), stored.text()));
-            apply_part(ctx, id, &extra).await?;
-            written.push(extra.part());
-        }
+        let placement = validate_and_place(ctx, row.category_id, part).await?;
         let stored = current(ctx, &row, part).await?;
         touching.push((part.part(), part.text(), stored.text()));
-        apply_part(ctx, id, part).await?;
+        if let Some(placement) = &placement {
+            let stored = current(ctx, &row, placement).await?;
+            touching.push((placement.part(), placement.text(), stored.text()));
+        }
+        apply_part(ctx, id, part, placement.as_ref()).await?;
         written.push(part.part());
+        if let Some(placement) = &placement {
+            written.push(placement.part());
+        }
     }
 
     // A stale base is never a rejection. What it can be is a conflict, and only
@@ -684,7 +702,7 @@ pub async fn restore(
         if let Some(category) = row.category_id {
             let next = crate::store::entity::next_category_position(ctx.tx, category).await?;
             let part = PartWrite::CategoryPosition(Some(next));
-            apply_part(ctx, row.id, &part).await?;
+            apply_part(ctx, row.id, &part, None).await?;
             provenance::record(ctx.tx, row.id, &[part.part()], row.counter + 1, ctx.member).await?;
         }
 

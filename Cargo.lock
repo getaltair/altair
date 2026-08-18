@@ -63,6 +63,7 @@ dependencies = [
  "hyper-util",
  "jsonwebtoken",
  "proptest",
+ "prost-types",
  "pulldown-cmark",
  "ring",
  "serde",
