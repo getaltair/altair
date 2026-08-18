@@ -49,10 +49,12 @@ dependencies = [
 name = "altaird"
 version = "0.0.0"
 dependencies = [
+ "altair-proto",
  "altaird",
  "anyhow",
  "async-trait",
  "base64",
+ "chrono",
  "dotenvy",
  "futures",
  "http-body-util",
@@ -69,6 +71,8 @@ dependencies = [
  "tempfile",
  "thiserror",
  "tokio",
+ "tokio-stream",
+ "tonic",
  "uuid",
 ]
 

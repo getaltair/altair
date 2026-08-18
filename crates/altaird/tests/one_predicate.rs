@@ -107,6 +107,32 @@ fn the_predicate_sql_exists_once_in_the_tree() {
     );
 }
 
+/// Whether a source issues SQL at all.
+///
+/// The wire calls its audience field by the same word the column uses, because
+/// they are the same word, so the write path's reader of `EntityContent` names
+/// it while having nothing to do with the store. That is a transcription and
+/// not a predicate, and the thing that tells the two apart is that a predicate
+/// has to reach the database.
+///
+/// **What this catches and what it does not.** A paraphrased predicate has to
+/// run, so it has to be in a file that queries; such a file naming the column
+/// fails. A file that only *defines* a paraphrase as a constant for another
+/// file to run would slip through, and that is a known gap of the same kind as
+/// the ones the module documentation already records.
+fn issues_sql(text: &str) -> bool {
+    let flat = text.to_ascii_lowercase();
+    // Two needles, both unmistakable. Every query in this workspace goes
+    // through sqlx, and a bare SQL constant carries a bound position. Prose
+    // needles were tried and rejected: "where" is an ordinary English word and
+    // these files are written in prose.
+    //
+    // Assembled rather than written, like the other needles here.
+    ["sqlx".to_owned(), ["$", "1"].concat()]
+        .iter()
+        .any(|needle| flat.contains(needle))
+}
+
 #[test]
 fn nothing_else_in_the_tree_names_the_audience_column() {
     // Assembled rather than written, so the scan does not find this file.
@@ -118,7 +144,7 @@ fn nothing_else_in_the_tree_names_the_audience_column() {
         .filter(|p| !p.ends_with(HOME))
         .filter(|p| {
             std::fs::read_to_string(p)
-                .map(|t| t.contains(&column))
+                .map(|t| t.contains(&column) && issues_sql(&t))
                 .unwrap_or(false)
         })
         .map(|p| p.display().to_string())
@@ -126,10 +152,10 @@ fn nothing_else_in_the_tree_names_the_audience_column() {
 
     assert!(
         offenders.is_empty(),
-        "{offenders:?} name the audience column. Reasoning about audience \
-         belongs in {HOME}, and a paraphrase of the predicate is a second \
-         implementation whatever it is spelled like. If a query needs the \
-         column's value, select it through the constant there."
+        "{offenders:?} name the audience column and issue SQL. Reasoning about \
+         audience belongs in {HOME}, and a paraphrase of the predicate is a \
+         second implementation whatever it is spelled like. If a query needs \
+         the column's value, select it through the constant there."
     );
 
     // And the one place still does.
@@ -167,9 +193,22 @@ fn nothing_outside_the_store_layer_queries_the_entity_table() {
             .collect::<Vec<_>>()
             .join(" ");
         // Assembled, not written, like the other needles.
+        //
+        // Matched at a word boundary. `FROM entity_date` and
+        // `FROM entity_part_counter` are queries over other tables that happen
+        // to start with the same word, and a substring scan calls them
+        // offenders — which is a false alarm that would be silenced by moving
+        // real work into the store layer for no reason.
         for shape in [["from", "entity"].join(" "), ["join", "entity"].join(" ")] {
-            if flat.contains(&shape) {
-                offenders.push(format!("{} ({shape})", path.display()));
+            let mut rest = flat.as_str();
+            while let Some(at) = rest.find(&shape) {
+                let after = &rest[at + shape.len()..];
+                let continues = after.starts_with(|c: char| c.is_ascii_alphanumeric() || c == '_');
+                if !continues {
+                    offenders.push(format!("{} ({shape})", path.display()));
+                    break;
+                }
+                rest = after;
             }
         }
     }
