@@ -102,6 +102,18 @@ async fn item_row(world: &World, id: EntityId) -> ItemRow {
     }
 }
 
+/// The container an entity is in and where it sits inside it, which the schema
+/// requires to be both present or both absent.
+async fn category_of(world: &World, id: EntityId) -> (Option<Uuid>, Option<i32>) {
+    let r =
+        sqlx::query("SELECT category_id AS c, category_position AS p FROM entity WHERE id = $1")
+            .bind(id.as_uuid())
+            .fetch_one(&world.db.pool)
+            .await
+            .expect("entity row");
+    (r.try_get("c").unwrap(), r.try_get("p").unwrap())
+}
+
 async fn location_row(world: &World, id: EntityId) -> (Option<Uuid>, Option<Uuid>) {
     let r = sqlx::query(
         "SELECT parent_location_id AS p, template_id AS t FROM location WHERE entity_id = $1",
@@ -1565,6 +1577,55 @@ async fn two_members_filing_one_item_onto_two_shelves_conflict_only_over_the_she
         "the instance's own append raised a conflict the client cannot settle: {:?}",
         named()
     );
+}
+
+/// **Naming the container an entity is already in is not a move.** A client that
+/// resends the whole of `EntityContent` on every edit states the category each
+/// time, and the instance must leave the position it assigned alone rather than
+/// clear it — the schema's `(category_id IS NULL) = (category_position IS NULL)`
+/// makes clearing it the whole transaction failing, not a quiet reordering.
+#[tokio::test]
+async fn restating_the_category_an_item_is_already_in_keeps_its_position() {
+    let world = World::new().await;
+    let id = shared_item(&world, v1::ItemContent::default()).await;
+    let shelf = world
+        .create(
+            &world.one,
+            v1::entity_content::Specific::Category(v1::CategoryContent::default()),
+            v1::EntityContent {
+                title: Some("the cupboard".into()),
+                ..Default::default()
+            },
+        )
+        .await;
+
+    let mut placed = None;
+    for _ in 0..2 {
+        let base = world.counter(id).await;
+        world
+            .submit(
+                &world.one,
+                edit_entity(
+                    id,
+                    base as u64,
+                    v1::EntityContent {
+                        category_id: Some(id_bytes(shelf)),
+                        ..Default::default()
+                    },
+                ),
+            )
+            .await;
+        let (category, position) = category_of(&world, id).await;
+        assert_eq!(category, Some(shelf.as_uuid()));
+        let position = position.expect("the item is in a container and sits nowhere in it");
+        match placed {
+            None => placed = Some(position),
+            Some(first) => assert_eq!(
+                position, first,
+                "restating the container moved the item within it"
+            ),
+        }
+    }
 }
 
 /// **A stale base is never a rejection**, and different parts merge with nobody

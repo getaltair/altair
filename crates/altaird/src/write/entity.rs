@@ -213,16 +213,38 @@ async fn apply_part(
             }
         }
         PartWrite::Category(v) => {
-            let position = match placement {
-                Some(PartWrite::CategoryPosition(p)) => *p,
-                _ => None,
-            };
-            sqlx::query("UPDATE entity SET category_id = $2, category_position = $3 WHERE id = $1")
-                .bind(entity.as_uuid())
-                .bind(v.map(EntityId::as_uuid))
-                .bind(position)
-                .execute(ctx.tx.conn())
-                .await?;
+            match placement {
+                // Entering a container, or leaving one. The instance decided a
+                // position either way, and the two columns move in one
+                // statement because the schema refuses the state between them.
+                Some(PartWrite::CategoryPosition(p)) => {
+                    sqlx::query(
+                        "UPDATE entity SET category_id = $2, category_position = $3 \
+                         WHERE id = $1",
+                    )
+                    .bind(entity.as_uuid())
+                    .bind(v.map(EntityId::as_uuid))
+                    .bind(*p)
+                    .execute(ctx.tx.conn())
+                    .await?;
+                }
+                // **Naming the container it is already in leaves it where it
+                // sits.** A client that resends the whole of `EntityContent` on
+                // every edit — which is the ordinary shape of a client, not an
+                // odd one — states the category each time without meaning to
+                // move anything. Writing a null position here would be the
+                // schema's `(category_id IS NULL) = (category_position IS
+                // NULL)` violated, so this was not a silent reordering waiting
+                // to happen; it was the whole transaction failing on the second
+                // edit that mentioned a category.
+                _ => {
+                    sqlx::query("UPDATE entity SET category_id = $2 WHERE id = $1")
+                        .bind(entity.as_uuid())
+                        .bind(v.map(EntityId::as_uuid))
+                        .execute(ctx.tx.conn())
+                        .await?;
+                }
+            }
         }
         PartWrite::CategoryPosition(v) => {
             sqlx::query("UPDATE entity SET category_position = $2 WHERE id = $1")
