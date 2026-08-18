@@ -25,9 +25,13 @@
 mod common;
 
 use altair_proto::v1;
+use altaird::store::begin_write;
 use altaird::store::entity::EntityType;
-use altaird::store::ids::EntityId;
-use altaird::write::specific::{self, Held};
+use altaird::store::ids::{EntityId, MemberId};
+use altaird::write::entity::Ctx;
+use altaird::write::parts::Part;
+use altaird::write::specific::{self, Detachment, Held};
+use chrono::Utc;
 use common::*;
 use sqlx::Row;
 use uuid::Uuid;
@@ -1018,4 +1022,219 @@ async fn a_file_still_cannot_be_created() {
     let refused = refused(&ack);
     assert_eq!(refused.reason, v1::RefusalReason::Malformed as i32);
     assert!(refused.detail.contains("PutBody"), "{}", refused.detail);
+}
+
+// ---------------------------------------------------------------------------
+// What an erased category lets go of, one level up from membership
+// ---------------------------------------------------------------------------
+//
+// **A category is a container in two senses and only one was ever released.**
+// Membership — an entity filed *in* a category — is the `entity` row's
+// `category_id`, and `uncategorise_all` has released it since Wave 2.1.
+// Nesting — a category sitting *under* another — is this type's own
+// `parent_category_id`, and nothing released it: the erase path's comment names
+// "the ladder and nested locations" and silently omits the third case.
+//
+// Reached directly here, by the module path rather than the dispatch, because
+// `specific::detach_contained`'s `Category` arm still answers `NotBuilt`.
+// Wiring that arm is one line in a file this lane does not own.
+// `the_dispatch_still_answers_not_built` below is the test to invert when it
+// lands, and it is written to say so.
+
+/// Run the release against a category, outside any write of its own.
+async fn detach(world: &World, container: EntityId) -> Detachment {
+    let mut tx = begin_write(&world.db.pool).await.expect("a transaction");
+    let mut ctx = Ctx {
+        tx: &mut tx,
+        member: MemberId::for_test(world.one.membership_id()),
+        at: Utc::now(),
+    };
+    let answer = specific::category::detach_contained(&mut ctx, container)
+        .await
+        .unwrap_or_else(|_| panic!("the store was reachable"));
+    tx.commit().await.expect("commit");
+    answer
+}
+
+fn released_ids(answer: &Detachment) -> Vec<EntityId> {
+    match answer {
+        Detachment::Released(rows) => {
+            let mut ids: Vec<EntityId> = rows.iter().map(|r| r.entity).collect();
+            ids.sort_by_key(|e: &EntityId| e.as_uuid());
+            ids
+        }
+        other => panic!("expected a release, got {other:?}"),
+    }
+}
+
+#[tokio::test]
+async fn an_erased_category_releases_the_categories_nested_under_it() {
+    let world = World::new().await;
+    let parent = category(&world, None, &[]).await;
+    let mut children = [
+        category(&world, Some(parent), &[]).await,
+        category(&world, Some(parent), &[]).await,
+    ];
+    children.sort_by_key(|e: &EntityId| e.as_uuid());
+
+    let answer = detach(&world, parent).await;
+
+    assert_eq!(released_ids(&answer), children.to_vec());
+    for child in children {
+        assert_eq!(
+            parent_of(&world, child).await,
+            None,
+            "a released child points at nothing"
+        );
+    }
+}
+
+/// **A release is a write, so it owes provenance**, and which part moved is the
+/// type's knowledge. A child category lost its parent — field 1 — rather than
+/// its shelf.
+#[tokio::test]
+async fn a_release_names_the_part_that_moved() {
+    let world = World::new().await;
+    let parent = category(&world, None, &[]).await;
+    let child = category(&world, Some(parent), &[]).await;
+
+    let Detachment::Released(rows) = detach(&world, parent).await else {
+        panic!("expected a release");
+    };
+    assert_eq!(rows.len(), 1);
+    assert_eq!(rows[0].entity, child);
+    assert_eq!(rows[0].part, Part::Specific(1));
+}
+
+/// **Parentless, not promoted.** A child does not inherit its erased parent's
+/// parent. Guidance settled this for the ladder and the reasoning carries:
+/// promotion would be the system moving something into a container the person
+/// never put it in.
+#[tokio::test]
+async fn a_child_is_left_parentless_rather_than_promoted() {
+    let world = World::new().await;
+    let grandparent = category(&world, None, &[]).await;
+    let parent = category(&world, Some(grandparent), &[]).await;
+    let child = category(&world, Some(parent), &[]).await;
+
+    detach(&world, parent).await;
+
+    assert_eq!(parent_of(&world, child).await, None);
+    assert_eq!(
+        parent_of(&world, grandparent).await,
+        None,
+        "and the grandparent is untouched"
+    );
+}
+
+/// **Deliberately unscoped**, for `uncategorise_all`'s reason and no smaller
+/// here: the container is gone for everybody, so a child the erasing member
+/// cannot see must still be released — otherwise the dangling reference
+/// survives precisely where nobody can find it.
+#[tokio::test]
+async fn a_child_the_erasing_member_cannot_see_is_still_released() {
+    let world = World::new().await;
+    // The container is visible to two, or two could not nest under it at all.
+    let parent = shared_category(&world, &[]).await;
+    // The child is two's own and states no audience, so it is private to two
+    // and member one cannot see it.
+    let hidden = world
+        .create(
+            &world.two,
+            category_content(Some(parent), &[], Vec::new()),
+            v1::EntityContent::default(),
+        )
+        .await;
+    assert!(
+        audience_of(&world, hidden).await.is_empty(),
+        "the child is private to its author, or this proves nothing"
+    );
+
+    // The release runs as member one, who cannot see it.
+    let answer = detach(&world, parent).await;
+
+    assert_eq!(released_ids(&answer), vec![hidden]);
+    assert_eq!(parent_of(&world, hidden).await, None);
+}
+
+/// An empty container releases nothing, and that is an answer rather than an
+/// omission — distinct from a type that has no container and from one whose
+/// release is unbuilt.
+#[tokio::test]
+async fn a_category_with_nothing_nested_under_it_releases_nothing() {
+    let world = World::new().await;
+    let lonely = category(&world, None, &[]).await;
+
+    assert_eq!(
+        detach(&world, lonely).await,
+        Detachment::Released(Vec::new())
+    );
+}
+
+/// **The two senses do not double-count.** A category nested under the erased
+/// one *and* filed in it is released once by each, of two different columns,
+/// and ends with neither a parent nor a filing. Nothing is written twice
+/// because nothing writes the same column twice.
+#[tokio::test]
+async fn nesting_and_membership_are_different_sets() {
+    let world = World::new().await;
+    let parent = category(&world, None, &[]).await;
+    // Nested under it and filed in it at the same time.
+    let both = world
+        .create(
+            &world.one,
+            category_content(Some(parent), &[], Vec::new()),
+            v1::EntityContent {
+                category_id: Some(parent.as_uuid().as_bytes().to_vec()),
+                ..Default::default()
+            },
+        )
+        .await;
+    // Filed in it but not nested under it.
+    let filed = note_in(&world, parent).await;
+
+    let answer = detach(&world, parent).await;
+
+    assert_eq!(
+        released_ids(&answer),
+        vec![both],
+        "nesting releases the nested one only; the filed note is membership's"
+    );
+    assert_eq!(parent_of(&world, both).await, None);
+    // Membership is still the shared model's and is untouched by this call.
+    assert!(
+        world.category_position(filed).await.is_some(),
+        "the filed note is still filed until uncategorise_all runs"
+    );
+}
+
+/// **The one line this lane could not write.** `specific/mod.rs` is another
+/// lane's file, so the dispatch still answers `NotBuilt` for a category and the
+/// release above is unreachable from the erase path. Invert this the moment the
+/// arm calls `category::detach_contained`, and the end-to-end assertions — a
+/// change entry per released child, and removal releasing nothing — belong
+/// beside it.
+#[tokio::test]
+async fn the_dispatch_still_answers_not_built() {
+    let world = World::new().await;
+    let parent = category(&world, None, &[]).await;
+    let child = category(&world, Some(parent), &[]).await;
+
+    let mut tx = begin_write(&world.db.pool).await.expect("a transaction");
+    let mut ctx = Ctx {
+        tx: &mut tx,
+        member: MemberId::for_test(world.one.membership_id()),
+        at: Utc::now(),
+    };
+    let answer = specific::detach_contained(&mut ctx, parent, EntityType::Category)
+        .await
+        .unwrap_or_else(|_| panic!("the store was reachable"));
+    tx.rollback().await.expect("rollback");
+
+    assert_eq!(answer, Detachment::NotBuilt);
+    assert_eq!(
+        parent_of(&world, child).await,
+        Some(parent.as_uuid()),
+        "so an erase still leaves a nested category pointing at a tombstone"
+    );
 }
