@@ -1905,7 +1905,7 @@ async fn a_child_the_eraser_cannot_see_is_still_released() {
 /// **This assertion inverts when the dispatch arm calls the module.** Whoever
 /// wires it should delete the first half and keep the second.
 #[tokio::test]
-async fn the_dispatch_has_not_been_pointed_at_this_yet() {
+async fn the_dispatch_reaches_the_ladders_release() {
     let world = World::new().await;
     let c = world
         .create(&world.one, campaign(None), v1::EntityContent::default())
@@ -1924,22 +1924,26 @@ async fn the_dispatch_has_not_been_pointed_at_this_yet() {
         member: MemberId::for_test(world.one.membership_id()),
         at: Utc::now(),
     };
-    let through_dispatch = specific::detach_contained(&mut ctx, c, EntityType::Campaign).await;
-    let through_module =
-        specific::guidance::detach_contained(&mut ctx, c, EntityType::Campaign).await;
-    let (through_dispatch, through_module) = match (through_dispatch, through_module) {
-        (Ok(d), Ok(m)) => (d, m),
-        _ => panic!("the store was reachable"),
+    // **Once, not twice.** While the arm was unpointed this called the dispatch
+    // and then the module, because the dispatch was a no-op and the module could
+    // still find the arc to release. Now that the arm is wired the first call
+    // does the release and the second correctly finds nothing left, so asking
+    // both in one transaction measures the order of the calls rather than the
+    // dispatch.
+    let Ok(through_dispatch) = specific::detach_contained(&mut ctx, c, EntityType::Campaign).await
+    else {
+        panic!("the store was reachable")
     };
     tx.rollback().await.expect("rollback");
 
-    assert_eq!(through_dispatch, specific::Detachment::NotBuilt);
     assert_eq!(
-        through_module,
+        through_dispatch,
         specific::Detachment::Released(vec![specific::Released {
             entity: a,
             part: Part::Specific(2),
         }]),
-        "the module releases; only the dispatch arm is still unpointed"
+        "the dispatch reaches the ladder's release — this assertion read \
+         `NotBuilt` while the arm was unpointed, which is what made the gap \
+         visible rather than silent"
     );
 }

@@ -1059,10 +1059,15 @@ async fn a_ladder_parent_records_itself_and_the_position_it_moved() {
 /// `a_write_addressing_a_part_without_changing_it_records_nothing`, so both
 /// mistakes are caught.
 ///
-/// **LANE: Guidance.** Remove the `#[ignore]` when the vacated parent is handed
-/// back; nothing else about this test should need to change.
+/// **This test found the hole it now guards.** On its first run, against a tree
+/// where a quest moving from an arc to a campaign cleared `arc_id` in the same
+/// statement and recorded nothing for it, it failed with
+/// `changed but unrecorded: ["Specific(2)"]` — naming the part from behaviour.
+/// The Guidance lane had predicted the same hole hours earlier by reading the
+/// code, without knowing this suite existed. It was `#[ignore]`d rather than
+/// weakened while the fix was owed, and nothing about it changed when the fix
+/// landed, which is the whole claim of an invariant written before its subject.
 #[tokio::test]
-#[ignore = "known hole: the vacated ladder parent records no provenance — Guidance's, on the widened seam"]
 async fn a_vacated_ladder_parent_records_that_it_moved() {
     let world = World::new().await;
     let campaign_id = world
