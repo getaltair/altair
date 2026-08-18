@@ -587,29 +587,80 @@ pub fn parts_written(specific: &v1::entity_content::Specific) -> Result<Written,
     }
 }
 
-/// What a type-specific part owes before it is applied, and the companion part
+/// What a type-specific part owes before it is applied, and the companion parts
 /// the instance moves as a consequence.
 ///
 /// The companion exists for the same reason the shared model's does: a
 /// container and a position within it are constrained together, so writing them
 /// in sequence puts the row through a state the schema refuses.
+///
+/// # Why the whole addressed set, and why many companions
+///
+/// Both halves were widened once, because two lanes needed one each and the
+/// pair of special cases would have been worse than the general seam.
+///
+/// **`addressed` — the whole set of parts this message writes.** A type
+/// sometimes cannot decide one part without seeing another. An item's amount
+/// and the moment it was asserted are constrained against each other, so they
+/// move in one statement; the instance stamps the moment only when the client
+/// did not state one, and *whether the client stated one* is a fact about a
+/// different part of the same message. Deciding it from one part alone means
+/// either refusing a field the wire exists to carry, or writing the two columns
+/// in sequence and tripping the table's check.
+///
+/// **A `Vec` — as many companions as the write actually moved.** A companion is
+/// not only a column written alongside; it is *any part this write moved that
+/// the addressed part does not name*. A quest moving from an arc to a campaign
+/// clears the arc in the same statement, and the vacated column is a part like
+/// any other: a part that does not record the counter it moved at is invisible
+/// to conflict detection, so a concurrent edit to the vacated parent would merge
+/// silently instead of retaining both values. Returning it here is what puts it
+/// in provenance.
+///
+/// **A companion is owed only when the part genuinely moved.** Handing back a
+/// vacated parent that was already null would not manufacture a conflict —
+/// [`super::provenance::detect`] compares rendered text, and arriving equals
+/// stored — but it *would* write an `entity_part_counter` row claiming that part
+/// moved, and a later unrelated edit would read that as an overlap. Silent, and
+/// exactly what the per-part counter exists to prevent.
+///
+/// # The adapters below are the migration point
+///
+/// Three lanes still take one part and return at most one companion, and their
+/// modules are not this lane's to edit. They are adapted here rather than
+/// reshaped in place, which is what makes this a widening: nothing about their
+/// behaviour changes, and a lane moves to the wide form by changing its own
+/// module and the one line here that calls it.
 pub async fn validate_and_place(
     ctx: &mut Ctx<'_>,
     entity: EntityId,
     kind: EntityType,
     part: &SpecificPart,
-) -> Applied<Option<SpecificPart>> {
+    addressed: &[SpecificPart],
+) -> Applied<Vec<SpecificPart>> {
     match kind {
+        // **LANE: Guidance.** Still narrow. The vacated ladder parent is the
+        // reason the `Vec` exists, and it is filled in by moving this arm to
+        // pass `addressed` through once that module returns more than one.
         EntityType::Campaign | EntityType::Arc | EntityType::Quest => {
-            guidance::validate_and_place(ctx, entity, kind, part).await
+            Ok(guidance::validate_and_place(ctx, entity, kind, part)
+                .await?
+                .into_iter()
+                .collect())
         }
         EntityType::Note | EntityType::File => {
-            knowledge::validate_and_place(ctx, entity, kind, part).await
+            Ok(knowledge::validate_and_place(ctx, entity, kind, part)
+                .await?
+                .into_iter()
+                .collect())
         }
         EntityType::Item | EntityType::Location | EntityType::ShoppingList => {
-            tracking::validate_and_place(ctx, entity, kind, part).await
+            tracking::validate_and_place(ctx, entity, kind, part, addressed).await
         }
-        EntityType::Category => category::validate_and_place(ctx, entity, part).await,
+        EntityType::Category => Ok(category::validate_and_place(ctx, entity, part)
+            .await?
+            .into_iter()
+            .collect()),
         EntityType::Routine | EntityType::FocusSession | EntityType::CheckIn => {
             Err(Refusal::Malformed(not_yet_built(kind).0).into())
         }
@@ -641,26 +692,33 @@ pub async fn current(
 
 /// Apply one type-specific part.
 ///
-/// `placement` is whatever [`validate_and_place`] returned, passed through so a
+/// `placements` is whatever [`validate_and_place`] returned, passed through so a
 /// module can write a field and its companion in one statement.
+///
+/// **A module finds the companion it needs by field number, never by
+/// position.** The order a lane returns companions in is that lane's business,
+/// and a write that depended on it would break the first time one returned two.
+/// The three narrow lanes below return at most one, so passing the first is
+/// exactly today's behaviour for them and nothing changes.
 pub async fn apply(
     ctx: &mut Ctx<'_>,
     entity: EntityId,
     kind: EntityType,
     part: &SpecificPart,
-    placement: Option<&SpecificPart>,
+    placements: &[SpecificPart],
 ) -> Applied<()> {
+    let first = placements.first();
     match kind {
         EntityType::Campaign | EntityType::Arc | EntityType::Quest => {
-            guidance::apply(ctx, entity, kind, part, placement).await
+            guidance::apply(ctx, entity, kind, part, first).await
         }
         EntityType::Note | EntityType::File => {
-            knowledge::apply(ctx, entity, kind, part, placement).await
+            knowledge::apply(ctx, entity, kind, part, first).await
         }
         EntityType::Item | EntityType::Location | EntityType::ShoppingList => {
-            tracking::apply(ctx, entity, kind, part, placement).await
+            tracking::apply(ctx, entity, kind, part, placements).await
         }
-        EntityType::Category => category::apply(ctx, entity, part, placement).await,
+        EntityType::Category => category::apply(ctx, entity, part, first).await,
         EntityType::Routine | EntityType::FocusSession | EntityType::CheckIn => {
             Err(Refusal::Malformed(not_yet_built(kind).0).into())
         }
@@ -780,23 +838,6 @@ pub async fn detach_contained(
         | EntityType::FocusSession
         | EntityType::CheckIn => Ok(Detachment::NoContainer),
     }
-}
-
-/// Advance the counter on each entity a vanished container let go of.
-///
-/// Shared by every lane's release so that *what a detach does to the entity row*
-/// has one implementation. A release that forgot this would leave a client
-/// holding a counter that never moved, and it would never learn the container
-/// was gone.
-pub async fn note_detached(ctx: &mut Ctx<'_>, released: &[EntityId]) -> Applied<()> {
-    for id in released {
-        sqlx::query("UPDATE entity SET counter = counter + 1, updated_at = $2 WHERE id = $1")
-            .bind(id.as_uuid())
-            .bind(ctx.at)
-            .execute(ctx.tx.conn())
-            .await?;
-    }
-    Ok(())
 }
 
 // ---------------------------------------------------------------------------

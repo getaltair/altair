@@ -536,49 +536,246 @@ async fn re_asserting_the_same_amount_moves_the_time() {
     );
 }
 
-/// The assertion time is the instance's to set, and the refusal says what a
-/// client is waiting on rather than that its message was wrong.
+/// **A client's own assertion time is honoured, not replaced.**
+///
+/// The wire carries `asserted_at` so a client can say when the person looked,
+/// and acceptance is local and durable with the outbox replaying later — so a
+/// count taken at nine and reaching the instance at six must read nine. Wave 2.1
+/// settled the same question for a create's `created_at`; substituting the
+/// instance's clock tells a client its capture landed with a time it never sent.
 #[tokio::test]
-async fn stating_an_assertion_time_is_refused_with_the_reason() {
+async fn a_client_stated_assertion_time_is_what_the_store_keeps() {
+    let world = World::new().await;
+    let stated = "2026-03-04T09:15:00Z"
+        .parse::<chrono::DateTime<chrono::Utc>>()
+        .unwrap();
+
+    let id = world
+        .create(
+            &world.one,
+            item(v1::ItemContent {
+                asserted_amount: Some(decimal(3, 0)),
+                asserted_at: Some(timestamp(stated)),
+                ..Default::default()
+            }),
+            v1::EntityContent::default(),
+        )
+        .await;
+
+    let row = item_row(&world, id).await;
+    assert_eq!(row.amount.as_deref(), Some("3.000000000"));
+    assert_eq!(
+        row.asserted_at,
+        Some(stated),
+        "the instance substituted its own clock for a time the client sent"
+    );
+}
+
+/// And on an edit, which is the path a replayed outbox actually takes.
+#[tokio::test]
+async fn a_client_stated_assertion_time_is_honoured_on_an_edit_too() {
+    let world = World::new().await;
+    let id = world
+        .create(
+            &world.one,
+            item(v1::ItemContent {
+                asserted_amount: Some(decimal(1, 0)),
+                ..Default::default()
+            }),
+            v1::EntityContent::default(),
+        )
+        .await;
+    let base = world.counter(id).await;
+    let stated = "2026-03-04T09:15:00Z"
+        .parse::<chrono::DateTime<chrono::Utc>>()
+        .unwrap();
+
+    world
+        .submit(
+            &world.one,
+            edit_specific(
+                id,
+                base,
+                item(v1::ItemContent {
+                    asserted_amount: Some(decimal(7, 0)),
+                    asserted_at: Some(timestamp(stated)),
+                    ..Default::default()
+                }),
+            ),
+        )
+        .await;
+
+    let row = item_row(&world, id).await;
+    assert_eq!(row.amount.as_deref(), Some("7.000000000"));
+    assert_eq!(row.asserted_at, Some(stated));
+}
+
+/// **Stating the time alone still works, when there is an amount for it to
+/// belong to.** *I looked again, still three* — the count is unchanged and only
+/// the freshness moved.
+#[tokio::test]
+async fn an_assertion_time_may_be_restated_alone_when_an_amount_is_already_there() {
+    let world = World::new().await;
+    let id = world
+        .create(
+            &world.one,
+            item(v1::ItemContent {
+                asserted_amount: Some(decimal(3, 0)),
+                ..Default::default()
+            }),
+            v1::EntityContent::default(),
+        )
+        .await;
+    let base = world.counter(id).await;
+    let looked_again = "2026-05-01T18:00:00Z"
+        .parse::<chrono::DateTime<chrono::Utc>>()
+        .unwrap();
+
+    world
+        .submit(
+            &world.one,
+            edit_specific(
+                id,
+                base,
+                item(v1::ItemContent {
+                    asserted_at: Some(timestamp(looked_again)),
+                    ..Default::default()
+                }),
+            ),
+        )
+        .await;
+
+    let row = item_row(&world, id).await;
+    assert_eq!(row.asserted_at, Some(looked_again));
+    assert_eq!(
+        row.amount.as_deref(),
+        Some("3.000000000"),
+        "restating the time must not disturb the count"
+    );
+}
+
+/// **The refusal that remains, and it is about the row rather than the field.**
+///
+/// The table's check refuses a time with no amount beside it. All three of these
+/// name that row: a time on an item that holds no amount, a time in the same
+/// message that clears the amount, and clearing the time while an amount stands.
+/// Each is malformed rather than a constraint violation that takes the whole
+/// transaction down with a message nobody can act on.
+#[tokio::test]
+async fn an_assertion_time_with_no_amount_to_belong_to_is_malformed() {
     let world = World::new().await;
     let at = timestamp(chrono::Utc::now());
 
-    // Alone, and alongside the amount it belongs to. Both are the same refusal.
-    for content in [
-        v1::ItemContent {
-            asserted_at: Some(at),
-            ..Default::default()
-        },
-        v1::ItemContent {
-            asserted_amount: Some(decimal(3, 0)),
-            asserted_at: Some(at),
-            ..Default::default()
-        },
-        v1::ItemContent {
-            cleared: vec![3],
-            ..Default::default()
-        },
-    ] {
-        let ack = world
-            .submit(
-                &world.one,
-                create_entity(
-                    Uuid::new_v4(),
-                    v1::EntityContent {
-                        specific: Some(item(content)),
+    // On a fresh item that states no amount.
+    let ack = world
+        .submit(
+            &world.one,
+            create_entity(
+                Uuid::new_v4(),
+                v1::EntityContent {
+                    specific: Some(item(v1::ItemContent {
+                        asserted_at: Some(at),
                         ..Default::default()
-                    },
-                ),
-            )
-            .await;
-        let r = refused(&ack);
-        assert_eq!(r.reason, v1::RefusalReason::Malformed as i32, "{r:?}");
-        assert!(
-            r.detail.contains("the amount's own") && r.detail.contains("not served yet"),
-            "{}",
-            r.detail
-        );
-    }
+                    })),
+                    ..Default::default()
+                },
+            ),
+        )
+        .await;
+    let r = refused(&ack);
+    assert_eq!(r.reason, v1::RefusalReason::Malformed as i32, "{r:?}");
+    assert!(r.detail.contains("belongs to an amount"), "{}", r.detail);
+
+    // Clearing the amount and stating a time in one message.
+    let ack = world
+        .submit(
+            &world.one,
+            create_entity(
+                Uuid::new_v4(),
+                v1::EntityContent {
+                    specific: Some(item(v1::ItemContent {
+                        asserted_at: Some(at),
+                        cleared: vec![1],
+                        ..Default::default()
+                    })),
+                    ..Default::default()
+                },
+            ),
+        )
+        .await;
+    assert_eq!(
+        refused(&ack).reason,
+        v1::RefusalReason::Malformed as i32,
+        "clearing the amount while stating a time was accepted"
+    );
+
+    // And clearing the time out from under an amount that stands.
+    let id = world
+        .create(
+            &world.one,
+            item(v1::ItemContent {
+                asserted_amount: Some(decimal(3, 0)),
+                ..Default::default()
+            }),
+            v1::EntityContent::default(),
+        )
+        .await;
+    let base = world.counter(id).await;
+    let ack = world
+        .submit(
+            &world.one,
+            edit_specific(
+                id,
+                base,
+                item(v1::ItemContent {
+                    cleared: vec![3],
+                    ..Default::default()
+                }),
+            ),
+        )
+        .await;
+    assert_eq!(refused(&ack).reason, v1::RefusalReason::Malformed as i32);
+    // The refusal left the row alone.
+    assert!(item_row(&world, id).await.asserted_at.is_some());
+}
+
+/// **The stated time reaches the store in one statement with the amount, and
+/// records its movement exactly once.**
+///
+/// The client states field 3 and the instance also moves it as the amount's
+/// companion, so the same part is touched twice in one write. Provenance upserts
+/// and `detect` drops a comparison where arriving equals stored, so the result
+/// must be one counter row and no phantom conflict — this is the test that says
+/// the redundancy is harmless rather than assuming it.
+#[tokio::test]
+async fn a_stated_time_and_its_companion_record_one_movement_and_no_conflict() {
+    let world = World::new().await;
+    let stated = "2026-03-04T09:15:00Z"
+        .parse::<chrono::DateTime<chrono::Utc>>()
+        .unwrap();
+    let id = world
+        .create(
+            &world.one,
+            item(v1::ItemContent {
+                asserted_amount: Some(decimal(3, 0)),
+                asserted_at: Some(timestamp(stated)),
+                ..Default::default()
+            }),
+            v1::EntityContent {
+                audience_member_ids: vec![world.two.membership_id().as_bytes().to_vec()],
+                ..Default::default()
+            },
+        )
+        .await;
+
+    let moved = moved_parts(&world, id).await;
+    let times: Vec<_> = moved.iter().filter(|(n, _)| n == "specific.3").collect();
+    assert_eq!(
+        times.len(),
+        1,
+        "the assertion time recorded twice: {moved:?}"
+    );
+    assert!(world.conflicts(id).await.is_empty());
 }
 
 /// Both halves of the pair record their movement.
@@ -1679,6 +1876,11 @@ async fn an_erased_location_releases_its_children_and_its_items() {
 /// A released entity's counter advances, because losing a container is an
 /// accepted write to it. A client holding the old counter has to learn the
 /// container went away.
+///
+/// **The bump is `store::entity::detached_from_container`'s, not the seam's** —
+/// it happens on the same statement that reads the audience a change entry
+/// needs, and that statement may only live in the store layer. So this goes
+/// through the erase path rather than calling the seam directly.
 #[tokio::test]
 async fn releasing_an_entity_advances_its_counter() {
     let world = World::new().await;
@@ -1687,7 +1889,7 @@ async fn releasing_an_entity_advances_its_counter() {
     nest(&world, shelf, cupboard).await;
 
     let before = world.counter(shelf).await;
-    detach(&world, cupboard, EntityType::Location).await;
+    world.submit(&world.one, erase(&[cupboard])).await;
     assert_eq!(world.counter(shelf).await, before + 1);
 }
 
@@ -1794,18 +1996,14 @@ async fn the_types_whose_release_is_not_this_seams_owe_it_nothing() {
     );
 }
 
-/// **The seam is declared and not wired, and this says so out loud.**
+/// **Wired.** An erased location releases what it held, and the change sequence
+/// learns about each one.
 ///
-/// `write/entity.rs` erases the side-table row and calls `uncategorise_all` for
-/// a category, and nothing releases a type-specific container. So an erased
-/// location still leaves its children and its items pointing at the tombstone.
-///
-/// This is a characterisation test rather than an approval: it pins the current
-/// behaviour so that wiring the call is a visible, deliberate change rather than
-/// something that quietly alters what erasure does. **When the call is wired,
-/// invert this** — the assertions become `None`.
+/// This is the test that was a characterisation of the unwired state one commit
+/// ago; the assertions inverted when the call landed, which is exactly what it
+/// was written to make visible.
 #[tokio::test]
-async fn an_erase_does_not_yet_release_what_a_location_held() {
+async fn an_erase_releases_what_a_location_held_and_says_so_in_the_change_sequence() {
     let world = World::new().await;
     let cupboard = a_location(&world, &world.one, "the cupboard").await;
     let shelf = a_location(&world, &world.one, "the shelf").await;
@@ -1824,14 +2022,135 @@ async fn an_erase_does_not_yet_release_what_a_location_held() {
     world.submit(&world.one, erase(&[cupboard])).await;
     assert_eq!(world.lifecycle(cupboard).await, "erased");
 
+    // Neither points at the tombstone. Both states are complete rather than
+    // damaged: a top-level location, and an item with no location.
+    assert_eq!(location_row(&world, shelf).await.0, None);
+    assert_eq!(item_row(&world, tin).await.location, None);
+
+    // **A change nobody learns about is the hole this closes.** Each released
+    // entity gets an entry of its own, the way an uncategorised one does.
+    let changes = world.changes().await;
+    for released in [shelf, tin] {
+        assert!(
+            changes
+                .iter()
+                .any(|c| c.entity == Some(released.as_uuid()) && c.kind == "entity_written"),
+            "{released:?} lost its container with no change entry"
+        );
+    }
+}
+
+/// An erased location that held nothing releases nothing, and the erase is
+/// unaffected.
+#[tokio::test]
+async fn erasing_an_empty_location_releases_nothing() {
+    let world = World::new().await;
+    let empty = a_location(&world, &world.one, "the empty drawer").await;
+    world.submit(&world.one, erase(&[empty])).await;
+    assert_eq!(world.lifecycle(empty).await, "erased");
+}
+
+/// **The release reaches entities the erasing member cannot see.**
+///
+/// Deliberately unscoped, for the reason `uncategorise_all` gives: the container
+/// is gone for everybody, so leaving the rows one member cannot see still
+/// pointing at it would keep a dangling reference alive precisely where nobody
+/// can find it.
+#[tokio::test]
+async fn the_release_is_unscoped_because_the_container_is_gone_for_everybody() {
+    let world = World::new().await;
+    // One owns the cupboard and can erase it; two shelves inside it are two's
+    // own and private, so one cannot see them.
+    let cupboard = a_location(&world, &world.one, "the shared cupboard").await;
+    let theirs = world
+        .create(
+            &world.two,
+            location(v1::LocationContent::default()),
+            v1::EntityContent {
+                title: Some("their shelf".into()),
+                ..Default::default()
+            },
+        )
+        .await;
+    // Placed by its own member, so the nesting is legitimate.
+    sqlx::query("UPDATE location SET parent_location_id = $2 WHERE entity_id = $1")
+        .bind(theirs.as_uuid())
+        .bind(cupboard.as_uuid())
+        .execute(&world.db.pool)
+        .await
+        .expect("nest");
+
+    world.submit(&world.one, erase(&[cupboard])).await;
+
     assert_eq!(
-        location_row(&world, shelf).await.0,
-        Some(cupboard.as_uuid()),
-        "wired already? invert this test — the release is no longer pending"
+        location_row(&world, theirs).await.0,
+        None,
+        "a child the erasing member cannot see kept pointing at the tombstone"
     );
+}
+
+/// **Where the companion's value actually matters: the conflict comparison.**
+///
+/// A client states the time, and the instance also moves that part as the
+/// amount's companion. Both sides of the conflict render through the same code,
+/// so the companion must carry *the client's* instant — if it carried the
+/// instance's clock instead, this write would touch the part twice with two
+/// different arriving values and retain a value the client never sent.
+///
+/// Two members, one stale base, both stating their own times.
+#[tokio::test]
+async fn a_conflict_on_a_client_stated_time_retains_the_time_the_client_sent() {
+    let world = World::new().await;
+    let id = shared_item(
+        &world,
+        v1::ItemContent {
+            asserted_amount: Some(decimal(1, 0)),
+            ..Default::default()
+        },
+    )
+    .await;
+    let base = world.counter(id).await;
+    let theirs = "2026-03-04T09:00:00Z"
+        .parse::<chrono::DateTime<chrono::Utc>>()
+        .unwrap();
+    let mine = "2026-03-05T17:30:00Z"
+        .parse::<chrono::DateTime<chrono::Utc>>()
+        .unwrap();
+
+    for (member, amount, at) in [
+        (&world.one, decimal(2, 0), theirs),
+        (&world.two, decimal(5, 0), mine),
+    ] {
+        world
+            .submit(
+                member,
+                edit_specific(
+                    id,
+                    base,
+                    item(v1::ItemContent {
+                        asserted_amount: Some(amount),
+                        asserted_at: Some(timestamp(at)),
+                        ..Default::default()
+                    }),
+                ),
+            )
+            .await;
+    }
+
+    let conflicts = world.conflicts(id).await;
+    let time = conflicts
+        .iter()
+        .find(|c| c.field.as_deref() == Some("specific.3"))
+        .expect("two members asserted at different times from one base");
+    // Exactly one row for this part, and both sides are times a client sent.
     assert_eq!(
-        item_row(&world, tin).await.location,
-        Some(cupboard.as_uuid()),
-        "wired already? invert this test — the release is no longer pending"
+        conflicts
+            .iter()
+            .filter(|c| c.field.as_deref() == Some("specific.3"))
+            .count(),
+        1
     );
+    assert_eq!(time.mine.as_deref(), Some(mine.to_rfc3339().as_str()));
+    assert_eq!(time.theirs.as_deref(), Some(theirs.to_rfc3339().as_str()));
+    assert_eq!(item_row(&world, id).await.asserted_at, Some(mine));
 }
