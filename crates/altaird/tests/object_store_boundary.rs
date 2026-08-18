@@ -197,6 +197,35 @@ fn is_allowed(path: &Path) -> bool {
     ALLOWED.iter().any(|allowed| relative.starts_with(allowed))
 }
 
+/// Whether a line names a token, rather than merely containing its letters.
+///
+/// **Matched at a word boundary on the left.** `WritePath::new` contains
+/// `Path::`, and the write path is a component of the instance with nothing to
+/// say about bytes. A substring scan calls it a violation, and the only ways
+/// out of that would be to rename a thing after the guard that misreads it, or
+/// to add it to the exceptions — which would spend the list's credibility on a
+/// false alarm.
+///
+/// Only the left boundary is checked. The tokens are prefixes on purpose:
+/// `fs::` has to catch `fs::read`, and `File::open` has to catch it wherever it
+/// is called.
+fn names(line: &str, token: &str) -> bool {
+    let identifier = |c: char| c.is_ascii_alphanumeric() || c == '_';
+    if !token.starts_with(identifier) {
+        return line.contains(token);
+    }
+    let mut from = 0;
+    while let Some(at) = line[from..].find(token) {
+        let at = from + at;
+        let preceded = line[..at].chars().next_back().is_some_and(identifier);
+        if !preceded {
+            return true;
+        }
+        from = at + token.len();
+    }
+    false
+}
+
 /// Reach around the interface and this fails, naming the file and the line.
 #[test]
 fn nothing_outside_the_object_store_touches_the_bytes() {
@@ -209,7 +238,7 @@ fn nothing_outside_the_object_store_touches_the_bytes() {
         let source = fs::read_to_string(&path).expect("read a source file");
         for (number, line) in source.lines().enumerate() {
             for token in REACHING_AROUND {
-                if line.contains(token) {
+                if names(line, token) {
                     violations.push(format!(
                         "{}:{}: `{token}` in `{}`",
                         relative(&path),

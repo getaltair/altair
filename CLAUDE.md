@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this repository is right now
 
-**Design documents plus the first two waves of the instance.** Everything in `docs/` specifies a self-hosted personal system ("Altair"); `crates/` is the beginning of it. Wave 0 and all five Wave 1 lanes have landed — store bootstrap and the audience predicate, block division, the object store, token validation, and the outbox conformance suite. **Wave 2, the write path, is next and is not started.** There is no running instance and no client.
+**Design documents plus the first two waves of the instance.** Everything in `docs/` specifies a self-hosted personal system ("Altair"); `crates/` is the beginning of it. Wave 0, all five Wave 1 lanes, and Wave 2.1 have landed — store bootstrap and the audience predicate, block division, the object store, token validation, the outbox conformance suite, and the intent spine. **Wave 2.2 onward — type content, file bodies, reclamation — is next and is not started.** There is no client, and the instance serves `Submit` and nothing else.
 
 Consequences for working here:
 
@@ -64,6 +64,7 @@ Rules that follow from this and are easy to violate:
 ## Documents that are already accepted as artefacts
 
 - `crates/altaird/migrations/0001_initial.sql` — the structured store, adopted as **migration one**. Applied and exercised on PostgreSQL 18.6 with pgvector 0.8.6. Do not re-derive it.
+- `crates/altaird/migrations/0002_write_provenance.sql` — **migration two**, taken at the start of 2.1. `entity_part_counter` holds, per part, the counter it last moved at and the member who moved it, because conflict detection asks which parts moved between two counter values and nothing else could answer it. A relation gains a lifecycle, the time it was removed, and the act that removed it. Both shapes rejected for the first are recorded in the file.
 - `proto/altair/v1/altair.proto` — the public interface (`package altair.v1`). **Field numbers are permanent; removed fields are reserved, never reused.** Closing one of its recorded gaps means adding a field, not editing one.
 - `conformance/scenarios.md` — the outbox specification made executable, written once and run against every implementation (Rust and Kotlin). Scenarios observe behaviour at two boundaries only: what the person sees, and what reaches the instance.
 
@@ -91,8 +92,10 @@ Rules that follow from this and are easy to violate:
 What has actually been built so far, which is observation rather than a settled tree:
 
 ```text
-crates/altaird/            the instance: store/ (audience, tx, entity, ids), body/, objects/, auth/
-crates/altaird/migrations/ 0001_initial.sql, migration one, not re-derived
+crates/altaird/            the instance: store/ (audience, tx, entity, ids), body/, objects/,
+                           auth/, write/ (parts, provenance, changes, intent, entity, relation),
+                           service.rs (Submit served, the other five unimplemented)
+crates/altaird/migrations/ 0001_initial.sql and 0002_write_provenance.sql, not re-derived
 crates/altair-proto/       generated contract types (protox + tonic)
 crates/altair-conformance/ the outbox harness and a null client stub
 ```
@@ -105,7 +108,7 @@ Seven waves. Waves 1–3 are planned against reality; Wave 5 onward names outcom
 |---|---|---|
 | 0 · Plumbing | Cargo workspace, proto codegen in the build, migration runner (`0001_initial.sql` as migration one), integration harness, CI | Harness stands up a **real PostgreSQL**, not a mock — the audience predicate, both indexes and `SKIP LOCKED` are Postgres behaviour. Done when a fresh checkout runs one command and passes an empty suite. |
 | 1 · Foundations | 1.1 store bootstrap · 1.2 block division · 1.3 object store · 1.4 token validation · 1.5 outbox conformance suite | Five genuinely independent lanes, one worktree each. 1.5's deliverable is a **red suite** — every scenario runs and fails. |
-| 2 · Write path | 2.1 intent spine, **including relations and the served submission call** · 2.2 type content, all three domains · 2.3 file bodies · 2.4 reclamation | 2.1 is sequential and load-bearing; do not parallelise the spine, do parallelise what hangs off it. Re-planned at the Wave 1 boundary: **migration two** opens 2.1, adding per-part write provenance and a lifecycle on a relation. |
+| 2 · Write path | 2.1 intent spine, **including relations and the served submission call** — landed · 2.2 type content, all three domains · 2.3 file bodies · 2.4 reclamation | 2.1 is sequential and load-bearing; do not parallelise the spine, do parallelise what hangs off it. Re-planned at the Wave 1 boundary: **migration two** opens 2.1, adding per-part write provenance and a lifecycle on a relation. |
 | 3 · Read path | 3.1 literal retrieval arm · 3.2 change stream and horizon · 3.3 health | Literal only. Build the instance half of the change stream even though the TUI need not consume it — omitting the instance side is one-way. |
 | 4 · Terminal client | 4.1 Rust outbox (turns 1.5 green) · 4.2 ratatui client | **First useful day.** The TUI carries the whole editing surface; there is no browser and no second client. |
 | 5 · Semantic | derivation worker · inference boundary and bi-encoder · semantic arm and fusion | The embedding model is chosen **here**, against a real corpus, and fixes the schema dimension. |
@@ -173,3 +176,13 @@ Match the existing register — these documents have a deliberate and consistent
 - Decisions are marked **one-way** (reversing it means rewriting dependants) or **reversible** (changeable behind a boundary). Where something is common industry practice rather than a judgement call, it says so.
 - Documents end with "Deliberately not decided" and "Open questions". Move something out of "Open questions" only when it has actually been decided somewhere normative.
 - Decision records are `DR-NNN-kebab-title.md` with Context / Decision / Alternatives considered / Consequences / Deliberately not decided here.
+
+## What Wave 2.1 settled, for the lanes that follow
+
+Observations from building the intent spine that 2.2, 2.3, and 2.4 would otherwise re-derive.
+
+- **A part is named in one place.** `crates/altaird/src/write/parts.rs` holds the wire field number, the store's text name, and the conflict row's spelling, and `tests/write_parts.rs` keeps them in step. Adding a type-specific part in 2.2 means adding it there, not beside the code that writes it.
+- **Type content is not applied yet, deliberately.** 2.1 creates each type's side-table row with defaults; the fields inside `content.specific` are read for the type tag and nothing else. That is the plan's division, and it is invisible in v0 because no client exists before Wave 4.
+- **Three refusals expire.** A file create, an anchor on a relation, and an explicit `category_position` are all refused as malformed with a detail saying why. Each waits on a lane that is named: 2.3, 2.2, and whatever first reorders.
+- **Erasure's dependent-table list is a constant**, `DEPENDENT_TABLES` in `write/entity.rs`. A new table holding entity content is one line there and one line in `tests/write_lifecycle.rs`, and forgetting is silent because the schema's cascades never fire.
+- **The guards are blunt on purpose and were sharpened twice here.** `WritePath::new` tripped the object-store boundary on `Path::`, and the wire's audience field tripped the one-predicate column check. Both now match at a word boundary, and the two whole-tree checks that reason about the instance skip test sources — a test asserting that both paths call one predicate has to be able to read past it. Watch a guard fail on a deliberate violation before and after touching one.
