@@ -772,6 +772,153 @@ async fn a_files_media_type_round_trips() {
     assert_eq!(media_type_of(&world, id).await, None, "and it clears");
 }
 
+// ---------------------------------------------------------------------------
+// A note's words reach the one place a literal search can find them
+// ---------------------------------------------------------------------------
+
+async fn search_text_of(world: &World, id: EntityId) -> String {
+    sqlx::query("SELECT search_text FROM entity WHERE id = $1")
+        .bind(id.as_uuid())
+        .fetch_one(&world.db.pool)
+        .await
+        .expect("entity")
+        .try_get("search_text")
+        .expect("search_text")
+}
+
+/// A note with a title and a body, through the ordinary write path.
+async fn note_with_body(world: &World, title: &str, body: &str) -> EntityId {
+    world
+        .create(
+            &world.one,
+            v1::entity_content::Specific::Note(v1::NoteContent {
+                body: Some(body.into()),
+                cleared: Vec::new(),
+            }),
+            v1::EntityContent {
+                title: Some(title.into()),
+                ..Default::default()
+            },
+        )
+        .await
+}
+
+async fn edit_body(world: &World, id: EntityId, body: Option<&str>, cleared: Vec<u32>) {
+    let base = world.counter(id).await as u64;
+    let ack = world
+        .submit(
+            &world.one,
+            edit_entity(
+                id,
+                base,
+                v1::EntityContent {
+                    specific: Some(v1::entity_content::Specific::Note(v1::NoteContent {
+                        body: body.map(ToOwned::to_owned),
+                        cleared,
+                    })),
+                    ..Default::default()
+                },
+            ),
+        )
+        .await;
+    assert!(
+        matches!(ack.outcome, Some(v1::acknowledgement::Outcome::Applied(_))),
+        "{:?}",
+        ack.outcome
+    );
+}
+
+/// **The whole of a note's literal searchability.** Both literal indexes are on
+/// the `entity` row and `block` carries none, so a body that does not reach
+/// `search_text` reaches no index by any route — and the standing claim that a
+/// just-captured entity is findable by its words would be false for exactly the
+/// type whose whole content is words.
+#[tokio::test]
+async fn a_notes_body_reaches_search_text() {
+    let world = World::new().await;
+    let id = note_with_body(
+        &world,
+        "descaling",
+        "The kettle is descaled twice a year.\n\nVinegar, an hour, then two rinses.",
+    )
+    .await;
+
+    let text = search_text_of(&world, id).await;
+    assert!(
+        text.contains("descaling"),
+        "the title is still there: {text}"
+    );
+    assert!(
+        text.contains("Vinegar") && text.contains("rinses"),
+        "a word from the body is findable: {text}"
+    );
+}
+
+/// **In the order the body reads.** A set of paragraphs is not a body, and the
+/// column holds text a person may read and an export may carry.
+#[tokio::test]
+async fn the_blocks_reach_it_in_order() {
+    let world = World::new().await;
+    let id = note_with_body(
+        &world,
+        "steps",
+        "First step.\n\nSecond step.\n\nThird step.",
+    )
+    .await;
+
+    let text = search_text_of(&world, id).await;
+    let first = text.find("First").expect("first block");
+    let second = text.find("Second").expect("second block");
+    let third = text.find("Third").expect("third block");
+    assert!(first < second && second < third, "out of order: {text}");
+}
+
+/// **It refreshes when the body changes**, not only at creation. A word the
+/// person deleted must stop being findable, or the index outlives the text.
+#[tokio::test]
+async fn editing_a_body_moves_what_is_searchable() {
+    let world = World::new().await;
+    let id = note_with_body(&world, "descaling", "Vinegar, an hour, then two rinses.").await;
+    assert!(search_text_of(&world, id).await.contains("Vinegar"));
+
+    edit_body(
+        &world,
+        id,
+        Some("Citric acid, an hour, then two rinses."),
+        Vec::new(),
+    )
+    .await;
+
+    let text = search_text_of(&world, id).await;
+    assert!(text.contains("Citric"), "the new words arrived: {text}");
+    assert!(
+        !text.contains("Vinegar"),
+        "a deleted word is still findable: {text}"
+    );
+    assert!(text.contains("descaling"), "the title survived: {text}");
+}
+
+/// Clearing a body takes its words with it and leaves the title standing.
+#[tokio::test]
+async fn clearing_a_body_leaves_the_title_alone() {
+    let world = World::new().await;
+    let id = note_with_body(&world, "descaling", "Vinegar, an hour.").await;
+
+    edit_body(&world, id, None, vec![1]).await;
+
+    assert_eq!(search_text_of(&world, id).await, "descaling");
+}
+
+/// **No body is no contribution, not an empty one.** `concat_ws` drops a null,
+/// so a note without a body keeps exactly the `search_text` it had before this
+/// seam was filled in — no separator, no trailing space.
+#[tokio::test]
+async fn a_note_with_no_body_is_exactly_its_title() {
+    let world = World::new().await;
+    let id = world.note(&world.one, "just a title").await;
+    assert_eq!(search_text_of(&world, id).await, "just a title");
+}
+
 /// A media type is a machine label rather than the person's words, so it stays
 /// out of the text a literal search matches. The title still reaches it.
 #[tokio::test]

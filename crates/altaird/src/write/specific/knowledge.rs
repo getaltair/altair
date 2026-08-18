@@ -40,6 +40,7 @@
 //! bytes.
 
 use altair_proto::v1;
+use sqlx::Row;
 
 use crate::store::entity::EntityType;
 use crate::store::ids::EntityId;
@@ -198,23 +199,77 @@ fn unreachable_part(kind: EntityType, part: &SpecificPart) -> Refusal {
     ))
 }
 
+/// The separator the blocks of a body are joined with.
+///
+/// Both indexes treat any run of non-alphanumeric text as a separator, so this
+/// changes nothing about what matches. It is a newline rather than a space
+/// because the column holds plain text that a person may read and an export may
+/// carry, and paragraphs that ran together would be worse to look at for no
+/// gain.
+const BETWEEN_BLOCKS: &str = "\n";
+
 /// What Knowledge contributes to searchable text.
 ///
-/// **LANE: Knowledge.** A note's words are the obvious candidate and they are
-/// deliberately not taken here: a body's blocks are written by
-/// [`super::super::body`], which this lane also fills, and taking half the
-/// answer now would settle the shape of the other half. Contributing nothing is
-/// a valid answer, and the literal arm still finds a note by its title.
+/// # A note's words, because otherwise nothing has them
 ///
-/// A media type is deliberately not contributed either. It is a machine label
-/// rather than the person's words, and putting `image/png` into the text a
-/// literal search matches would make every photograph answer a search for
-/// *image*.
+/// **This is the whole of a note's literal searchability.** Both literal
+/// indexes are on the `entity` row — `entity_search_vector_idx` over the
+/// generated `tsvector` and `entity_search_trgm_idx` over the plain text — and
+/// `block` carries no search index at all. So a body that does not reach
+/// `search_text` reaches no index by any route, and a note captured with three
+/// paragraphs about descaling a kettle would be findable only by its title.
+/// That would make the standing claim false for exactly the type whose whole
+/// content is words: *literal matching is a permanent arm, not a fallback,
+/// which is why a just-captured entity is findable by its words before
+/// derivation runs.*
+///
+/// Migration one's own comment on the column describes this case in as many
+/// words — maintained by the write path "from the title and whatever the type
+/// contributes, because those live in side tables and a generated column cannot
+/// reach them". A body is a side table and this is the seam for it.
+///
+/// # Why the text is copied rather than the blocks indexed
+///
+/// A second index on `block.text` would put the literal arm on two tables with
+/// two candidate sets to fuse, which is the read path's decision at 3.1 and not
+/// one this lane should force. It would also put a candidate set on a table
+/// that carries no audience: the predicate must sit **inside** the candidate
+/// query, and `entity` is where the audience column is. One index on one table
+/// keeps that true without a join.
+///
+/// The cost is that a long body is stored twice. It is real and it is the price
+/// of the two properties above; see the note on refresh cost in the lane's
+/// report.
+///
+/// # What is deliberately still not contributed
+///
+/// **A media type.** It is a machine label rather than the person's words, and
+/// putting `image/png` into the text a literal search matches would make every
+/// photograph answer a search for *image*. A file therefore contributes
+/// nothing, which is still a valid answer.
 pub async fn search_text(
     ctx: &mut Ctx<'_>,
     entity: EntityId,
     kind: EntityType,
 ) -> Applied<Option<String>> {
-    let _ = (ctx, entity, kind);
-    Ok(None)
+    if kind != EntityType::Note {
+        return Ok(None);
+    }
+    // In the order the body reads. A set of paragraphs is not a body, and the
+    // column holds text a person may read.
+    let rows = sqlx::query("SELECT text FROM block WHERE entity_id = $1 ORDER BY position")
+        .bind(entity.as_uuid())
+        .fetch_all(ctx.tx.conn())
+        .await?;
+    if rows.is_empty() {
+        // No body is no contribution, not an empty one. `concat_ws` drops a
+        // null, so a note without a body keeps a `search_text` of exactly its
+        // title — which is what it was before this lane filled the seam in.
+        return Ok(None);
+    }
+    let mut words: Vec<String> = Vec::with_capacity(rows.len());
+    for r in &rows {
+        words.push(r.try_get("text")?);
+    }
+    Ok(Some(words.join(BETWEEN_BLOCKS)))
 }
