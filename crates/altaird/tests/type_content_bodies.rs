@@ -355,6 +355,60 @@ async fn editing_one_block_does_not_write_its_neighbours() {
     assert_eq!(last_changed_blocks(&world, note).await, vec![before[1].id]);
 }
 
+/// **Pressing return underneath a block is not an edit to it**, in all three of
+/// the senses that matter.
+///
+/// A block's row holds the verbatim slice, and whitespace between two blocks is
+/// attributed to the block before it — so a blank line added under a paragraph
+/// changes that paragraph's stored text while changing nothing a person wrote.
+/// The row is rewritten and the *part* does not move, and this test is what
+/// stops the two comparisons being collapsed into one: comparing verbatim would
+/// silently make a blank line conflict with a concurrent edit, name the block in
+/// the change sequence, and graduate a bulk entity nobody wrote a word into.
+/// The last of those is the one that would have been hardest to trace back.
+#[tokio::test]
+async fn a_blank_line_beneath_a_block_moves_the_row_and_not_the_part() {
+    let world = World::new().await;
+    let note = shared_with_body(&world, "alpha.\n\nbravo.\n").await;
+    set_bulk(&world, &world.one, note, true).await;
+    let before = blocks(&world, note).await;
+    let base = world.counter(note).await;
+
+    // One extra blank line, nothing else.
+    write_body(&world, &world.one, note, base, "alpha.\n\n\nbravo.\n").await;
+
+    let after = blocks(&world, note).await;
+    assert_eq!(after[0].id, before[0].id);
+    assert_eq!(
+        after[0].text, "alpha.\n\n\n",
+        "the row does not hold what arrived"
+    );
+    assert_ne!(
+        after[0].version, before[0].version,
+        "the row was not written"
+    );
+
+    // ...and none of the three things a moved part causes.
+    assert!(
+        last_changed_blocks(&world, note).await.is_empty(),
+        "a blank line named a block in the change sequence"
+    );
+    assert!(
+        bulk(&world, note).await,
+        "a blank line graduated a bulk entity"
+    );
+
+    // The part never moved, so an edit from before the blank line does not
+    // meet it. This is the consequence a verbatim comparison would invert.
+    let ack = write_body(&world, &world.two, note, base, "alpha, his.\n\n\nbravo.\n").await;
+    assert!(
+        applied(&ack).conflict.is_none(),
+        "a blank line conflicted with somebody's edit: {:?}",
+        applied(&ack).conflict
+    );
+    assert!(block_conflicts(&world, note).await.is_empty());
+}
+
 /// Rewriting the body with the same text writes nothing at all. A client
 /// resending what it already sent is not an edit.
 #[tokio::test]
