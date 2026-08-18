@@ -73,7 +73,6 @@ use crate::store::ids::EntityId;
 
 use super::super::content::{Malformed, Written, identifier, instant, malformed};
 use super::super::entity::{Applied, Ctx, Failed, Refusal, type_name};
-use super::super::parts::Part;
 use super::{
     Decimal, Detachment, Field, Held, Property, Reader, Released, SpecificPart, SpecificValue,
     nesting, read_column, read_properties, unbuilt, write_column, write_properties,
@@ -668,21 +667,16 @@ pub async fn detach_contained(
     }
 
     let mut released = Vec::new();
-    // The two columns that name a location, each in its own table, each its own
-    // part of its own type's message — which is why the field number travels
-    // with the identity.
-    for (table, column, field) in [
-        (
-            table_of(EntityType::Location)?,
-            PARENT_LOCATION,
-            LOCATION_PARENT,
-        ),
-        (
-            table_of(EntityType::Item)?,
-            ITEM_LOCATION_COLUMN,
-            ITEM_LOCATION,
-        ),
+    // The two columns that name a location, each in its own table and each its
+    // own part of its own type's message. **The table and the part are both
+    // derived from the type**, so nothing here restates a pairing the field
+    // declarations already make — the second copy is the one that goes stale.
+    for (held_by, column) in [
+        (EntityType::Location, PARENT_LOCATION),
+        (EntityType::Item, ITEM_LOCATION_COLUMN),
     ] {
+        let table = table_of(held_by)?;
+        let field = super::part_held_in(held_by, column)?;
         let sql =
             format!("UPDATE {table} SET {column} = NULL WHERE {column} = $1 RETURNING entity_id");
         let rows = sqlx::query(sqlx::AssertSqlSafe(sql))
@@ -692,7 +686,7 @@ pub async fn detach_contained(
         for r in &rows {
             released.push(Released {
                 entity: EntityId::from_uuid(r.try_get("entity_id")?),
-                part: Part::Specific(field),
+                part: field.clone(),
             });
         }
     }

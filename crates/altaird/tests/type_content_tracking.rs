@@ -1801,9 +1801,15 @@ async fn detach(world: &World, container: EntityId, kind: EntityType) -> Detachm
         member: MemberId::for_test(world.one.membership_id()),
         at: Utc::now(),
     };
+    // Either a store fault or a refusal. A release refuses when a column it
+    // clears is declared by no field of the type, which is a mispairing rather
+    // than anything a client sent — so the message must not claim the store
+    // failed.
     let answer = specific::detach_contained(&mut ctx, container, kind)
         .await
-        .unwrap_or_else(|_| panic!("the store was reachable"));
+        .unwrap_or_else(|_| {
+            panic!("the release of a {kind:?} neither answered nor reached the store")
+        });
     tx.commit().await.expect("commit");
     answer
 }

@@ -792,6 +792,33 @@ pub enum Detachment {
     NotBuilt,
 }
 
+/// The part a type holds in a named column.
+///
+/// **One statement of the pairing, derived rather than restated.** A release
+/// clears a column and has to name the part that moved, and the field number is
+/// already declared beside that column in the type's own `*_FIELDS`. Carrying
+/// the number alongside the column at the call site states the same pairing
+/// twice, and the second copy is the one that goes stale — the shape both
+/// callers of [`nesting::would_cycle`] drifted into before it was noticed.
+///
+/// Refuses rather than guesses. A column no field declares is a caller naming
+/// something that is not a part, which is a programming error rather than a
+/// message anyone sent, and answering with the wrong part number would put a
+/// counter against a field that never moved.
+pub fn part_held_in(kind: EntityType, column: &str) -> Applied<Part> {
+    fields(kind)
+        .iter()
+        .find(|f| matches!(f.held, Held::Column(c) if c == column))
+        .map(|f| Part::Specific(f.number))
+        .ok_or_else(|| {
+            Refusal::Malformed(format!(
+                "no field of a {} is held in {column}",
+                crate::write::entity::type_name(kind)
+            ))
+            .into()
+        })
+}
+
 /// Let go of everything a type-specific container held, because it is gone.
 ///
 /// # Why this exists, and why it is not called yet
