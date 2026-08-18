@@ -1453,3 +1453,211 @@ async fn two_members_moving_different_guidance_parts_merge() {
     assert_eq!(state_of(&world, "quest", q).await, "worked");
     assert_eq!(quest_row(&world, q).await.campaign, Some(c.as_uuid()));
 }
+
+// ---------------------------------------------------------------------------
+// The parent a move vacated
+// ---------------------------------------------------------------------------
+
+/// **The vacated parent records the counter it moved at.**
+///
+/// A quest holds at most one ladder parent, so setting an arc clears the
+/// campaign in the same statement. That vacated column is a part like any
+/// other, and a part that records no counter movement is invisible to conflict
+/// detection.
+#[tokio::test]
+async fn a_quest_moving_between_parents_records_the_parent_it_vacated() {
+    let world = World::new().await;
+    let c = world
+        .create(&world.one, campaign(None), v1::EntityContent::default())
+        .await;
+    let a = world
+        .create(
+            &world.one,
+            as_arc(arc(None, Some(c))),
+            v1::EntityContent::default(),
+        )
+        .await;
+    let q = world
+        .create(
+            &world.one,
+            as_quest(quest(None, beneath_arc(a))),
+            v1::EntityContent::default(),
+        )
+        .await;
+
+    let base = world.counter(q).await;
+    world
+        .submit(
+            &world.one,
+            edit_specific(q, base, as_quest(quest(None, beneath_campaign(c)))),
+        )
+        .await;
+    let after = world.counter(q).await;
+
+    assert_eq!(
+        part_counter(&world, q, "specific.3").await,
+        Some(after),
+        "the campaign it entered"
+    );
+    assert_eq!(
+        part_counter(&world, q, "specific.2").await,
+        Some(after),
+        "the arc it left, which nothing addressed and the statement still cleared"
+    );
+    assert_eq!(
+        part_counter(&world, q, "specific.5").await,
+        Some(after),
+        "the position that moved with them"
+    );
+}
+
+/// The payoff, and the reason the vacated parent is worth recording at all.
+///
+/// One member moves the quest off its arc and onto a campaign. Another, from
+/// the same base, sets a different arc. Both writes are about which parent the
+/// quest has, so **both values are retained** rather than the second silently
+/// winning. Without the vacated parent in provenance this merges with nobody
+/// involved, and a standing constraint is quietly broken.
+#[tokio::test]
+async fn a_concurrent_edit_to_the_vacated_parent_conflicts_rather_than_merging() {
+    let world = World::new().await;
+    let c = world
+        .create(&world.one, campaign(None), shared_with(&world))
+        .await;
+    let first = world
+        .create(&world.one, as_arc(arc(None, Some(c))), shared_with(&world))
+        .await;
+    let second = world
+        .create(&world.one, as_arc(arc(None, Some(c))), shared_with(&world))
+        .await;
+    let q = world
+        .create(
+            &world.one,
+            as_quest(quest(None, beneath_arc(first))),
+            shared_with(&world),
+        )
+        .await;
+    let base = world.counter(q).await;
+
+    // One moves it off the arc and onto the campaign, vacating `arc_id`.
+    world
+        .submit(
+            &world.one,
+            edit_specific(q, base, as_quest(quest(None, beneath_campaign(c)))),
+        )
+        .await;
+    // Two, still on the base it last saw, points the arc somewhere else.
+    let ack = world
+        .submit(
+            &world.two,
+            edit_specific(q, base, as_quest(quest(None, beneath_arc(second)))),
+        )
+        .await;
+
+    let applied = applied(&ack);
+    let conflict = applied
+        .conflict
+        .as_ref()
+        .expect("both writes moved the quest's arc, which is one part twice");
+    assert!(
+        conflict.specific_fields.contains(&2),
+        "the vacated arc is the conflicted part: {:?}",
+        conflict.specific_fields
+    );
+
+    let conflicts = world.conflicts(q).await;
+    let vacated = conflicts
+        .iter()
+        .find(|c| c.field.as_deref() == Some("specific.2"))
+        .expect("the arc is retained on both sides");
+    assert_eq!(vacated.mine.as_deref(), Some(second.as_uuid().to_string()).as_deref());
+    assert_eq!(
+        vacated.theirs, None,
+        "the value it displaced was the arc the first write cleared"
+    );
+    assert_eq!(vacated.mine_member, Some(world.two.membership_id()));
+    assert_eq!(vacated.theirs_member, Some(world.one.membership_id()));
+
+    // And the write still applied.
+    let row = quest_row(&world, q).await;
+    assert_eq!(row.arc, Some(second.as_uuid()));
+    assert_eq!(row.campaign, None);
+}
+
+/// **A companion is owed only when the part genuinely moved.**
+///
+/// A quest that had no campaign gains an arc. Nothing was vacated, so nothing
+/// about `campaign_id` is recorded. Recording it would not manufacture a
+/// conflict — arriving equals stored — but it would leave an
+/// `entity_part_counter` row claiming that part moved, which a later unrelated
+/// edit reads as an overlap. Silent, and exactly what the per-part counter
+/// exists to prevent.
+#[tokio::test]
+async fn a_parent_that_was_already_empty_records_nothing() {
+    let world = World::new().await;
+    let c = world
+        .create(&world.one, campaign(None), v1::EntityContent::default())
+        .await;
+    let a = world
+        .create(
+            &world.one,
+            as_arc(arc(None, Some(c))),
+            v1::EntityContent::default(),
+        )
+        .await;
+    let q = world
+        .create(
+            &world.one,
+            as_quest(quest(None, None)),
+            v1::EntityContent::default(),
+        )
+        .await;
+
+    let base = world.counter(q).await;
+    world
+        .submit(
+            &world.one,
+            edit_specific(q, base, as_quest(quest(None, beneath_arc(a)))),
+        )
+        .await;
+
+    assert_eq!(part_counter(&world, q, "specific.2").await, Some(base + 1));
+    assert_eq!(part_counter(&world, q, "specific.5").await, Some(base + 1));
+    assert_eq!(
+        part_counter(&world, q, "specific.3").await,
+        None,
+        "a campaign that was never there did not move"
+    );
+}
+
+/// Restating the container something is already in vacates nothing either, and
+/// the sibling that was already empty stays unrecorded.
+#[tokio::test]
+async fn restating_the_same_parent_vacates_nothing() {
+    let world = World::new().await;
+    let c = world
+        .create(&world.one, campaign(None), v1::EntityContent::default())
+        .await;
+    let q = world
+        .create(
+            &world.one,
+            as_quest(quest(None, beneath_campaign(c))),
+            v1::EntityContent::default(),
+        )
+        .await;
+
+    let base = world.counter(q).await;
+    world
+        .submit(
+            &world.one,
+            edit_specific(q, base, as_quest(quest(None, beneath_campaign(c)))),
+        )
+        .await;
+
+    assert_eq!(
+        part_counter(&world, q, "specific.2").await,
+        None,
+        "no arc was ever held, so none was vacated"
+    );
+    assert_eq!(quest_row(&world, q).await.position, Some(0));
+}
