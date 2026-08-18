@@ -391,13 +391,20 @@ async fn create_file_row(
         Err(e) => return Err(e.into()),
     };
 
+    // A length no `bigint` column can hold is not a size any real body has —
+    // clamping it would silently record a wrong number, so it is refused
+    // instead of guessed at.
+    let byte_size = i64::try_from(body.len).map_err(|_| {
+        Refusal::Malformed("a file names a body too large for this store to record".into())
+    })?;
+
     sqlx::query(
         "INSERT INTO file (entity_id, body_id, media_type, byte_size) VALUES ($1, $2, $3, $4)",
     )
     .bind(entity.as_uuid())
     .bind(file.body_id)
     .bind(file.media_type)
-    .bind(i64::try_from(body.len).unwrap_or(i64::MAX))
+    .bind(byte_size)
     .execute(ctx.tx.conn())
     .await?;
     Ok(())
