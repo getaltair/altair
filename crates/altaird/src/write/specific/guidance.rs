@@ -101,7 +101,8 @@ use super::super::entity::{Applied, Ctx, Refusal, type_name};
 use super::super::parts::Part;
 use super::super::provenance;
 use super::{
-    Field, GuidanceState, Held, Reader, SpecificPart, SpecificValue, read_column, write_column,
+    Detachment, Field, GuidanceState, Held, Reader, Released, SpecificPart, SpecificValue,
+    part_held_in, read_column, write_column,
 };
 
 /// The state field. **The same number in all three messages**, which is what
@@ -122,38 +123,51 @@ const QUEST_CAMPAIGN: u32 = 3;
 const QUEST_ROUTINE: u32 = 4;
 const QUEST_POSITION: u32 = 5;
 
+/// The columns this file names in a statement as well as in a declaration.
+///
+/// **Named once because two things must not drift.** [`detach_contained`] and
+/// [`apply`] write these columns by name, and the `FIELDS` tables below declare
+/// the same columns as where a wire field is held; `tests/type_content.rs`
+/// checks the declarations against the store but cannot see a statement that
+/// spells one differently. Following the convention Tracking arrived at for
+/// exactly this reason.
+const STATE_COLUMN: &str = "state";
+const CAMPAIGN_COLUMN: &str = "campaign_id";
+const ARC_COLUMN: &str = "arc_id";
+const LADDER_POSITION_COLUMN: &str = "ladder_position";
+
 pub const CAMPAIGN_FIELDS: &[Field] = &[Field {
     number: CAMPAIGN_STATE,
-    held: Held::Column("state"),
+    held: Held::Column(STATE_COLUMN),
 }];
 
 pub const ARC_FIELDS: &[Field] = &[
     Field {
         number: STATE,
-        held: Held::Column("state"),
+        held: Held::Column(STATE_COLUMN),
     },
     Field {
         number: ARC_CAMPAIGN,
-        held: Held::Column("campaign_id"),
+        held: Held::Column(CAMPAIGN_COLUMN),
     },
     Field {
         number: ARC_POSITION,
-        held: Held::Column("ladder_position"),
+        held: Held::Column(LADDER_POSITION_COLUMN),
     },
 ];
 
 pub const QUEST_FIELDS: &[Field] = &[
     Field {
         number: STATE,
-        held: Held::Column("state"),
+        held: Held::Column(STATE_COLUMN),
     },
     Field {
         number: QUEST_ARC,
-        held: Held::Column("arc_id"),
+        held: Held::Column(ARC_COLUMN),
     },
     Field {
         number: QUEST_CAMPAIGN,
-        held: Held::Column("campaign_id"),
+        held: Held::Column(CAMPAIGN_COLUMN),
     },
     Field {
         number: QUEST_ROUTINE,
@@ -161,9 +175,19 @@ pub const QUEST_FIELDS: &[Field] = &[
     },
     Field {
         number: QUEST_POSITION,
-        held: Held::Column("ladder_position"),
+        held: Held::Column(LADDER_POSITION_COLUMN),
     },
 ];
+
+/// The side table a type keeps its content in.
+///
+/// Taken from [`super::side_table`] rather than written out, so the statements
+/// here cannot disagree with the one place that decides which table a type has.
+fn table_of(kind: EntityType) -> Applied<&'static str> {
+    super::side_table(kind).ok_or_else(|| {
+        Refusal::Malformed(format!("a {} has no table of its own", type_name(kind))).into()
+    })
+}
 
 // ---------------------------------------------------------------------------
 // Reading the three messages
@@ -361,7 +385,8 @@ fn explicit_position_refusal() -> Refusal {
     )
 }
 
-/// The ladder position a parent part carries with it.
+/// The companions a parent part carries with it: the ladder position always,
+/// and the parent it vacated where it vacated one.
 ///
 /// **The parent and the position are one movement.** Both of the schema's
 /// checks tie them together — an arc's
@@ -369,36 +394,60 @@ fn explicit_position_refusal() -> Refusal {
 /// `CHECK ((num_nonnulls(arc_id, campaign_id) = 0) = (ladder_position IS NULL))`
 /// — so writing them in sequence puts the row through a state the schema
 /// refuses, whichever order the sequence is in. This is the same shape
-/// `write::entity` solves for a category and its position, and the companion
-/// travels the same channel.
+/// `write::entity` solves for a category and its position.
+///
+/// **The vacated parent is a companion too, and it is provenance rather than
+/// placement.** A quest has two parent columns and may hold only one, so
+/// setting an arc clears the campaign — in the same statement, by the `CASE`
+/// in [`apply`], because the row may never hold two. That vacated column is a
+/// part like any other: a part that does not record the counter it moved at is
+/// invisible to conflict detection, so a concurrent edit to it would merge
+/// silently instead of retaining both values. Returning it here is what puts it
+/// in provenance. It is already written by the statement that clears it, so it
+/// never needs to reach [`apply`].
+///
+/// **A companion is owed only when the part genuinely moved.** Handing back a
+/// vacated parent that was already null would not manufacture a conflict —
+/// `provenance::detect` compares rendered text, and arriving equals stored —
+/// but it *would* write an `entity_part_counter` row claiming that part moved,
+/// and a later unrelated edit would read that as an overlap.
+///
+/// **The position comes first, and [`write_parent`] checks that rather than
+/// trusting it.** The dispatch hands a narrow lane only the first companion, so
+/// the one `apply` needs has to lead; the check turns an ordering assumption
+/// into a refusal somebody sees.
 async fn parent_placement(
     ctx: &mut Ctx<'_>,
     entity: EntityId,
     kind: EntityType,
     part: &SpecificPart,
     container_kind: EntityType,
-) -> Applied<Option<SpecificPart>> {
+) -> Applied<Vec<SpecificPart>> {
     let SpecificValue::Id(target) = part.value else {
         return Err(Refusal::Malformed("a ladder parent is an identifier".into()).into());
     };
     let ladder = ladder_of(ctx, entity, kind).await?;
-    let position = |p: Option<i32>| {
-        Some(SpecificPart {
-            field: position_field(kind),
-            value: SpecificValue::Count(p),
-        })
+    let position = |p: Option<i32>| SpecificPart {
+        field: position_field(kind),
+        value: SpecificValue::Count(p),
+    };
+
+    // The other parent column, which setting this one clears in the same
+    // statement, paired with what it holds now. Only a quest has one; an arc's
+    // single parent has nothing to displace.
+    let sibling = match (kind, container_kind) {
+        (EntityType::Quest, EntityType::Arc) => Some((QUEST_CAMPAIGN, ladder.campaign)),
+        (EntityType::Quest, EntityType::Campaign) => Some((QUEST_ARC, ladder.arc)),
+        _ => None,
     };
 
     let Some(target) = target else {
         // Leaving a container forgets the position — unless the *other* parent
         // column still holds one. Clearing an arc a quest never had must not
-        // strip the position its campaign gave it.
-        let other = match (kind, container_kind) {
-            (EntityType::Quest, EntityType::Arc) => ladder.campaign,
-            (EntityType::Quest, EntityType::Campaign) => ladder.arc,
-            _ => None,
-        };
-        return Ok(position(other.and(ladder.position)));
+        // strip the position its campaign gave it. Nothing is vacated here:
+        // clearing leaves the sibling exactly as it was.
+        let held = sibling.and_then(|(_, holds)| holds);
+        return Ok(vec![position(held.and(ladder.position))]);
     };
 
     // The container has to be one this member can see, and it has to be the
@@ -422,11 +471,21 @@ async fn parent_placement(
     };
     if already == Some(target.as_uuid()) {
         // Not an entry. The position stands, and is handed back anyway so the
-        // parent and the position still move in one statement.
-        return Ok(position(ladder.position));
+        // parent and the position still move in one statement. Nothing is
+        // vacated: the two parents are exclusive, so the sibling is already
+        // null.
+        return Ok(vec![position(ladder.position)]);
     }
+
     let next = next_ladder_position(ctx, target, container_kind).await?;
-    Ok(position(Some(next)))
+    let mut companions = vec![position(Some(next))];
+    if let Some((field, Some(_))) = sibling {
+        companions.push(SpecificPart {
+            field,
+            value: SpecificValue::Id(None),
+        });
+    }
+    Ok(companions)
 }
 
 // ---------------------------------------------------------------------------
@@ -558,12 +617,12 @@ pub async fn validate_and_place(
     entity: EntityId,
     kind: EntityType,
     part: &SpecificPart,
-) -> Applied<Option<SpecificPart>> {
+) -> Applied<Vec<SpecificPart>> {
     match (kind, part.field) {
         // A state owes nothing before it is written. No transition is refused;
         // see the head of this module for why the diagram's undrawn arrow is
         // not a prohibition.
-        (EntityType::Campaign | EntityType::Arc | EntityType::Quest, STATE) => Ok(None),
+        (EntityType::Campaign | EntityType::Arc | EntityType::Quest, STATE) => Ok(Vec::new()),
         (EntityType::Arc, ARC_CAMPAIGN) => {
             parent_placement(ctx, entity, kind, part, EntityType::Campaign).await
         }
@@ -575,7 +634,7 @@ pub async fn validate_and_place(
         }
         // Stored and never interpreted, because the routine it would name has
         // no table to be checked against. See the head of this module.
-        (EntityType::Quest, QUEST_ROUTINE) => Ok(None),
+        (EntityType::Quest, QUEST_ROUTINE) => Ok(Vec::new()),
         (EntityType::Arc, ARC_POSITION) | (EntityType::Quest, QUEST_POSITION) => {
             Err(explicit_position_refusal().into())
         }
@@ -626,28 +685,21 @@ pub async fn apply(
             }
             Ok(())
         }
+        // An arc has one parent and nothing to displace.
         (EntityType::Arc, ARC_CAMPAIGN) => {
-            write_parent(
-                ctx,
-                entity,
-                "UPDATE arc SET campaign_id = $2, ladder_position = $3 WHERE entity_id = $1",
-                part,
-                placement,
-            )
-            .await
+            write_parent(ctx, entity, kind, CAMPAIGN_COLUMN, None, part, placement).await
         }
+        // Setting one ladder parent clears the other, in the same statement and
+        // for the same reason the position moves in it: the row may never hold
+        // two. Clearing this one leaves the other alone, because clearing an arc
+        // a quest never had is not a request to detach it from its campaign.
         (EntityType::Quest, QUEST_ARC) => {
-            // Setting one ladder parent clears the other, in the same statement
-            // and for the same reason the position moves in it: the row may
-            // never hold two. Clearing this one leaves the other alone, because
-            // clearing an arc a quest never had is not a request to detach it
-            // from its campaign.
             write_parent(
                 ctx,
                 entity,
-                "UPDATE quest SET arc_id = $2, \
-                 campaign_id = CASE WHEN $2::uuid IS NULL THEN campaign_id ELSE NULL END, \
-                 ladder_position = $3 WHERE entity_id = $1",
+                kind,
+                ARC_COLUMN,
+                Some(CAMPAIGN_COLUMN),
                 part,
                 placement,
             )
@@ -657,9 +709,9 @@ pub async fn apply(
             write_parent(
                 ctx,
                 entity,
-                "UPDATE quest SET campaign_id = $2, \
-                 arc_id = CASE WHEN $2::uuid IS NULL THEN arc_id ELSE NULL END, \
-                 ladder_position = $3 WHERE entity_id = $1",
+                kind,
+                CAMPAIGN_COLUMN,
+                Some(ARC_COLUMN),
                 part,
                 placement,
             )
@@ -680,20 +732,41 @@ pub async fn apply(
 
 /// Write a ladder parent and the position that belongs with it, in one
 /// statement.
+///
+/// `sibling` is the other parent column where the type has one, cleared in this
+/// same statement because the row may never hold two. It is left alone when the
+/// addressed parent is being cleared: clearing a parent a quest never had is not
+/// a request to detach it from the one it does have.
 async fn write_parent(
     ctx: &mut Ctx<'_>,
     entity: EntityId,
-    sql: &'static str,
+    kind: EntityType,
+    column: &'static str,
+    sibling: Option<&'static str>,
     part: &SpecificPart,
     placement: Option<&SpecificPart>,
 ) -> Applied<()> {
     let SpecificValue::Id(parent) = part.value else {
         return Err(Refusal::Malformed("a ladder parent is an identifier".into()).into());
     };
-    // The companion is produced by `parent_placement` for every parent part, so
-    // an absent one means this file has grown a second path into the column.
-    let position = match placement.map(|p| &p.value) {
-        Some(SpecificValue::Count(p)) => *p,
+    // **The companion is identified by field number, not by having arrived.**
+    // `parent_placement` can return two — the position and a vacated parent —
+    // and the dispatch hands a narrow lane only the first, so this checks that
+    // what arrived is the position rather than assuming it. An absent or
+    // mismatched companion means the ordering there changed, or that this file
+    // has grown a second path into the column; either is a refusal somebody
+    // sees rather than a position silently written from the wrong part.
+    let expected = position_field(kind);
+    let position = match placement {
+        Some(p) if p.field == expected => match p.value {
+            SpecificValue::Count(v) => v,
+            _ => {
+                return Err(Refusal::Malformed(
+                    "a ladder position is a whole number of places".into(),
+                )
+                .into());
+            }
+        },
         _ => {
             return Err(Refusal::Malformed(
                 "a ladder parent moves with the position that belongs to it".into(),
@@ -701,6 +774,15 @@ async fn write_parent(
             .into());
         }
     };
+    let table = table_of(kind)?;
+    let clear_sibling = match sibling {
+        Some(other) => format!("{other} = CASE WHEN $2::uuid IS NULL THEN {other} ELSE NULL END, "),
+        None => String::new(),
+    };
+    let sql = format!(
+        "UPDATE {table} SET {column} = $2, {clear_sibling}{LADDER_POSITION_COLUMN} = $3 \
+         WHERE entity_id = $1"
+    );
     sqlx::query(sqlx::AssertSqlSafe(sql))
         .bind(entity.as_uuid())
         .bind(parent)
@@ -721,6 +803,134 @@ fn unknown_field(kind: EntityType, part: &SpecificPart) -> Refusal {
         part.field,
         type_name(kind)
     ))
+}
+
+// ---------------------------------------------------------------------------
+// What an erased ladder container lets go of
+// ---------------------------------------------------------------------------
+
+/// Release everything that hung beneath an erased campaign or arc.
+///
+/// # Erasure only, never removal
+///
+/// **Removal is recoverable and grouped**, and 2.1 retains the grouping so that
+/// restoring one member of an act brings back the rest. A removed campaign is
+/// coming back; a child detached on removal would come back parentless with its
+/// position forgotten, which quietly destroys the thing the deletion group
+/// exists to preserve. Erasure is the case with no prompt, no group and no
+/// return — the container is gone for everybody and permanently — which is what
+/// makes detaching correct there and only there. 2.1 placed `uncategorise_all`
+/// the same way, on the erase path and not on remove.
+///
+/// The PRD's *"the children survive as standalone quests and arcs"* is about the
+/// **declines** branch of a deletion prompt, where the person has chosen that
+/// they stand alone. It is not a licence to detach whenever a parent leaves.
+///
+/// # A detached child is parentless, not promoted
+///
+/// A quest whose arc is erased does **not** inherit that arc's campaign, even
+/// though the campaign usually still exists. Promotion would be the system
+/// moving something into a container the person never put it in, and appending
+/// it at the end of an order they did not choose — which is the one thing the
+/// substrate's Arrangement rules refuse to do anywhere else. The PRD agrees:
+/// *"nothing required them to have one in the first place, and they remain
+/// reachable rather than stranded inside something that is gone."*
+///
+/// # Deliberately unscoped
+///
+/// The reason [`crate::store::entity::uncategorise_all`] gives, and it is no
+/// smaller here: **the container is gone for everybody.** Leaving behind the
+/// children the erasing member cannot see would keep a dangling reference alive
+/// precisely where nobody can find it. Nothing leaves this function that a
+/// caller can show anyone — the identities become change entries, and those are
+/// assembled per member by the read path, which applies the predicate then.
+/// Do not add a predicate here.
+///
+/// # Why the position moves with the parent
+///
+/// Same reason as everywhere else in this file: an arc's
+/// `CHECK ((campaign_id IS NULL) = (ladder_position IS NULL))` and a quest's
+/// `CHECK ((num_nonnulls(arc_id, campaign_id) = 0) = (ladder_position IS NULL))`
+/// tie the two together, so a release that cleared only the parent would trip
+/// the check on the way. A quest beneath an arc holds no campaign and a quest
+/// beneath a campaign holds no arc, so nulling the addressed parent always takes
+/// the row to no parent at all, and the position must go with it.
+///
+/// The counter and the change entry are
+/// [`crate::store::entity::detached_from_container`]'s, because a change entry
+/// needs the audience and this file may not name that column.
+pub async fn detach_contained(
+    ctx: &mut Ctx<'_>,
+    entity: EntityId,
+    kind: EntityType,
+) -> Applied<Detachment> {
+    // Which child tables carry a column naming this kind of container. A
+    // campaign is one container over mixed kinds, so it releases across both.
+    let children: &[(EntityType, &str)] = match kind {
+        EntityType::Campaign => &[
+            (EntityType::Arc, CAMPAIGN_COLUMN),
+            (EntityType::Quest, CAMPAIGN_COLUMN),
+        ],
+        EntityType::Arc => &[(EntityType::Quest, ARC_COLUMN)],
+        // A quest is a leaf of the ladder: nothing names one as a parent, and
+        // nothing ever will.
+        _ => return Ok(Detachment::NoContainer),
+    };
+
+    let mut released = Vec::new();
+    for (child, column) in children {
+        let table = table_of(*child)?;
+        // **Which parts moved are read out of the declaration, not written
+        // here.** A release advances the child's counter, so it owes
+        // provenance, and provenance needs the parts. The `FIELDS` lists above
+        // already say which field each column holds and `tests/type_content.rs`
+        // checks them against the store; naming the numbers again beside the
+        // statement would put them in two places, and the copy that drifts is
+        // the one nothing checks. The same reasoning that gave `would_cycle`
+        // one implementation.
+        //
+        // **Two columns are cleared, so two parts moved.** The position is not
+        // incidental to the parent going away — it is a part of its own, and a
+        // part that moves a counter without saying so is invisible to conflict
+        // detection. A member holding a base from before the erasure who then
+        // moves the child under a new parent writes the position as a
+        // companion; with only the parent recorded, the two writes overlap on
+        // the position and merge in silence. The membership half of the erase
+        // path records exactly this pair for the same reason — *the category
+        // and the position within it, and both are recorded, because the
+        // counter advanced and something has to be able to say what changed*.
+        let parts = [
+            part_held_in(*child, column)?,
+            part_held_in(*child, LADDER_POSITION_COLUMN)?,
+        ];
+        let sql = format!(
+            "UPDATE {table} SET {column} = NULL, {LADDER_POSITION_COLUMN} = NULL \
+             WHERE {column} = $1 RETURNING entity_id"
+        );
+        let rows = sqlx::query(sqlx::AssertSqlSafe(sql))
+            .bind(entity.as_uuid())
+            .fetch_all(ctx.tx.conn())
+            .await?;
+        for r in &rows {
+            let child_id = EntityId::from_uuid(r.try_get("entity_id")?);
+            // **Both parts genuinely moved, and the schema is what guarantees
+            // it.** Elsewhere in this file a companion is owed only when the
+            // column it names was actually holding something, because recording
+            // a part that did not move is its own silent fault. No runtime check
+            // is needed here: an arc's `CHECK ((campaign_id IS NULL) =
+            // (ladder_position IS NULL))` and a quest's
+            // `CHECK ((num_nonnulls(arc_id, campaign_id) = 0) = (ladder_position
+            // IS NULL))` mean a row this statement matched had a parent, and so
+            // had a position.
+            for part in &parts {
+                released.push(Released {
+                    entity: child_id,
+                    part: part.clone(),
+                });
+            }
+        }
+    }
+    Ok(Detachment::Released(released))
 }
 
 /// Guidance contributes nothing to searchable text.

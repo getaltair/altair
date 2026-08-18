@@ -38,8 +38,8 @@ use crate::store::{WriteScope, WriteTx};
 use super::changes::{self, EntityChange};
 use super::content::{Date, Malformed, PartWrite, Written};
 use super::outcome::{ConflictParts, Outcome};
-use super::parts::Part;
-use super::specific;
+use super::parts::{ContentPart, Part};
+use super::specific::{self, SpecificPart};
 use super::{body, provenance};
 
 /// One intent's worth of context: the transaction, who is writing, and when.
@@ -169,17 +169,22 @@ async fn current(ctx: &mut Ctx<'_>, row: &EntityRow, part: &PartWrite) -> Applie
 
 /// Apply one part to the store. Assumes it has already been validated.
 ///
-/// `placement` is the position the instance assigned as a consequence, which is
-/// only ever set alongside a category. **The two move in one statement**,
-/// because the store's own check says a category and a position are either both
-/// there or both absent: writing them in sequence puts the row through a state
-/// the schema refuses, whichever order the sequence is in.
+/// `placements` are the parts the instance moved as a consequence. The shared
+/// model produces at most one — the position assigned alongside a category, and
+/// **the two move in one statement**, because the store's own check says a
+/// category and a position are either both there or both absent: writing them in
+/// sequence puts the row through a state the schema refuses, whichever order the
+/// sequence is in.
+///
+/// A type's content may produce more than one, so this takes a slice. **Each
+/// arm finds what it needs by kind rather than by position**, because the order
+/// a lane returns companions in is that lane's business.
 async fn apply_part(
     ctx: &mut Ctx<'_>,
     entity: EntityId,
     kind: EntityType,
     part: &PartWrite,
-    placement: Option<&PartWrite>,
+    placements: &[PartWrite],
 ) -> Applied<()> {
     match part {
         PartWrite::Title(v) => {
@@ -213,38 +218,17 @@ async fn apply_part(
             }
         }
         PartWrite::Category(v) => {
-            match placement {
-                // Entering a container, or leaving one. The instance decided a
-                // position either way, and the two columns move in one
-                // statement because the schema refuses the state between them.
-                Some(PartWrite::CategoryPosition(p)) => {
-                    sqlx::query(
-                        "UPDATE entity SET category_id = $2, category_position = $3 \
-                         WHERE id = $1",
-                    )
-                    .bind(entity.as_uuid())
-                    .bind(v.map(EntityId::as_uuid))
-                    .bind(*p)
-                    .execute(ctx.tx.conn())
-                    .await?;
-                }
-                // **Naming the container it is already in leaves it where it
-                // sits.** A client that resends the whole of `EntityContent` on
-                // every edit — which is the ordinary shape of a client, not an
-                // odd one — states the category each time without meaning to
-                // move anything. Writing a null position here would be the
-                // schema's `(category_id IS NULL) = (category_position IS
-                // NULL)` violated, so this was not a silent reordering waiting
-                // to happen; it was the whole transaction failing on the second
-                // edit that mentioned a category.
-                _ => {
-                    sqlx::query("UPDATE entity SET category_id = $2 WHERE id = $1")
-                        .bind(entity.as_uuid())
-                        .bind(v.map(EntityId::as_uuid))
-                        .execute(ctx.tx.conn())
-                        .await?;
-                }
-            }
+            let position = placements.iter().find_map(|p| match p {
+                PartWrite::CategoryPosition(v) => Some(*v),
+                _ => None,
+            });
+            let position = position.flatten();
+            sqlx::query("UPDATE entity SET category_id = $2, category_position = $3 WHERE id = $1")
+                .bind(entity.as_uuid())
+                .bind(v.map(EntityId::as_uuid))
+                .bind(position)
+                .execute(ctx.tx.conn())
+                .await?;
         }
         PartWrite::CategoryPosition(v) => {
             sqlx::query("UPDATE entity SET category_position = $2 WHERE id = $1")
@@ -290,11 +274,14 @@ async fn apply_part(
             // amount — and is handed through so the module can write both in
             // one statement, for the same reason a category and its position
             // move together here.
-            let placement = placement.and_then(|p| match p {
-                PartWrite::Specific(s) => Some(s),
-                _ => None,
-            });
-            specific::apply(ctx, entity, kind, s, placement).await?;
+            let companions: Vec<SpecificPart> = placements
+                .iter()
+                .filter_map(|p| match p {
+                    PartWrite::Specific(s) => Some(s.clone()),
+                    _ => None,
+                })
+                .collect();
+            specific::apply(ctx, entity, kind, s, &companions).await?;
         }
     }
     Ok(())
@@ -320,27 +307,37 @@ async fn refresh_search_text(ctx: &mut Ctx<'_>, entity: EntityId, kind: EntityTy
     Ok(())
 }
 
-/// Checks a part owes before it is applied, and the placement the instance
+/// Checks a part owes before it is applied, and the placements the instance
 /// makes rather than the client.
 ///
-/// Returns any extra part the instance moved as a consequence — a position,
-/// when a category changed.
+/// Returns every extra part the instance moved as a consequence — a position,
+/// when a category changed, and whatever a type's content moved beside the part
+/// the write named.
+///
+/// `addressed` is every type-specific part this same message writes, handed
+/// down because a type sometimes cannot decide one part without seeing another.
+/// See [`specific::validate_and_place`] for the two cases that need it.
 async fn validate_and_place(
     ctx: &mut Ctx<'_>,
     entity: EntityId,
     kind: EntityType,
     entering: Option<EntityId>,
     part: &PartWrite,
-) -> Applied<Option<PartWrite>> {
+    addressed: &[SpecificPart],
+) -> Applied<Vec<PartWrite>> {
     match part {
-        PartWrite::Specific(s) => Ok(specific::validate_and_place(ctx, entity, kind, s)
-            .await?
-            .map(PartWrite::Specific)),
+        PartWrite::Specific(s) => Ok(
+            specific::validate_and_place(ctx, entity, kind, s, addressed)
+                .await?
+                .into_iter()
+                .map(PartWrite::Specific)
+                .collect(),
+        ),
         PartWrite::Audience(ids) | PartWrite::Assignments(ids) => {
             if !memberships_exist(ctx.tx, ids).await? {
                 return Err(Refusal::NotAvailable.into());
             }
-            Ok(None)
+            Ok(Vec::new())
         }
         PartWrite::CategoryPosition(_) => Err(Refusal::Malformed(
             "position is assigned by the instance, which appends on entry to a container; \
@@ -364,15 +361,30 @@ async fn validate_and_place(
             let entering_this = entering != Some(*category);
             if entering_this {
                 let next = crate::store::entity::next_category_position(ctx.tx, *category).await?;
-                return Ok(Some(PartWrite::CategoryPosition(Some(next))));
+                return Ok(vec![PartWrite::CategoryPosition(Some(next))]);
             }
-            Ok(None)
+            Ok(Vec::new())
         }
         // Leaving a container forgets the position. Nothing is carried and
         // nothing needs repair.
-        PartWrite::Category(None) => Ok(Some(PartWrite::CategoryPosition(None))),
-        _ => Ok(None),
+        PartWrite::Category(None) => Ok(vec![PartWrite::CategoryPosition(None)]),
+        _ => Ok(Vec::new()),
     }
+}
+
+/// Every type-specific part one message writes.
+///
+/// Built once per write rather than per part: it is the same set for every part
+/// in the loop, and a type asking about a sibling field is asking about this.
+fn addressed_specifics(written: &Written) -> Vec<SpecificPart> {
+    written
+        .parts
+        .iter()
+        .filter_map(|p| match p {
+            PartWrite::Specific(s) => Some(s.clone()),
+            _ => None,
+        })
+        .collect()
 }
 
 /// The side-table row a type carries beyond the shared model, with its
@@ -496,12 +508,13 @@ pub async fn create(
 
     make_type_row(ctx, id, kind).await?;
 
+    let addressed = addressed_specifics(&written);
     let mut moved = Vec::new();
     for part in &written.parts {
-        let placement = validate_and_place(ctx, id, kind, None, part).await?;
-        apply_part(ctx, id, kind, part, placement.as_ref()).await?;
+        let placements = validate_and_place(ctx, id, kind, None, part, &addressed).await?;
+        apply_part(ctx, id, kind, part, &placements).await?;
         moved.push(part.part());
-        if let Some(placement) = &placement {
+        for placement in &placements {
             moved.push(placement.part());
         }
     }
@@ -527,7 +540,7 @@ pub async fn create(
                 return Err(Refusal::NotAvailable.into());
             }
             let part = PartWrite::Audience(default);
-            apply_part(ctx, id, kind, &part, None).await?;
+            apply_part(ctx, id, kind, &part, &[]).await?;
             moved.push(part.part());
         }
     }
@@ -610,44 +623,43 @@ pub async fn edit(
     let mut moved = Vec::new();
     let counter = row.counter + 1;
 
+    let addressed = addressed_specifics(&written);
     for part in &written.parts {
-        let placement = validate_and_place(ctx, id, kind, row.category_id, part).await?;
+        let placements =
+            validate_and_place(ctx, id, kind, row.category_id, part, &addressed).await?;
         let stored = current(ctx, &row, part).await?;
         touching.push((part.part(), part.text(), stored.text()));
-        apply_part(ctx, id, kind, part, placement.as_ref()).await?;
-        moved.push(part.part());
-        // **A placement moves, and does not conflict.** It goes into `moved` —
-        // it did move, and which member moved it is a fact provenance owes an
-        // answer to — but deliberately not into `touching`, which is what the
-        // write *addressed*. The client addressed the part beside it; the
-        // instance chose this one.
+        // **A write that changed nothing did not move the part.** The same
+        // comparison that decides a conflict decides this, and it has to: a
+        // part's provenance row carries *who* last moved it, so recording a
+        // no-op would hand ownership to a member who wrote nothing and erase the
+        // one who did. A later conflict would then name the wrong person, and
+        // `conflict.theirs_member_id` is stored and crosses the wire — the
+        // substrate requires that whose edit each value was is known and may be
+        // shown, and after a same-value write it would be known and wrong.
         //
-        // The distinction is load-bearing rather than tidy, because a placement
-        // is a part the client is refused permission to state — an explicit
-        // `category_position` and an `asserted_at` are both malformed. A
-        // conflict is something a person is shown and asked to settle, and
-        // settling one means restating the part. So a conflict on a placement
-        // is one nothing can clear.
+        // The entity's own counter still advances below, which is what tells a
+        // client there was a write at all. Only the per-part record is withheld,
+        // and a part a write does not address already goes unrecorded — so this
+        // is the existing shape rather than a new rule.
         //
-        // It would also be a conflict carrying no information. A placement
-        // moves only when the part it accompanies moves, so it overlaps what
-        // moved since exactly when that part does, and there are only two
-        // outcomes: the two writes disagree about the amount, and the amount
-        // already conflicts with the time beside it saying nothing further; or
-        // the two writes agree — *both counted four tins* — and the amount
-        // rightly does not conflict while two `Utc::now()` readings a
-        // millisecond apart never compare equal and would raise a conflict out
-        // of agreement. That second case is the machinery working against its
-        // own purpose, on the one field a person could otherwise have acted on.
-        //
-        // **Not a claim that these parts can never conflict.** Reordering is
-        // not served yet; when it is, a write that names a position addresses
-        // it, and it enters `touching` through the loop above like any other
-        // part and conflicts normally. The rule is about what a write said, not
-        // about which parts are special.
-        if let Some(placement) = &placement {
-            moved.push(placement.part());
+        // `specific::guidance` already does this in the upward climb, reading the
+        // current state and returning before recording when nothing moves. The
+        // general edit path now agrees with it.
+        let mut record = |part: &PartWrite, stored: &PartWrite| {
+            if part.text() != stored.text() {
+                moved.push(part.part());
+            }
+        };
+        record(part, &stored);
+        // Each companion is compared like any other part, and against what the
+        // store holds *now* — which is why this runs before the write below.
+        for placement in &placements {
+            let stored = current(ctx, &row, placement).await?;
+            touching.push((placement.part(), placement.text(), stored.text()));
+            record(placement, &stored);
         }
+        apply_part(ctx, id, kind, part, &placements).await?;
     }
 
     // A body reads what is stored and writes what changed in one step, because
@@ -848,7 +860,7 @@ pub async fn restore(
         if let Some(category) = row.category_id {
             let next = crate::store::entity::next_category_position(ctx.tx, category).await?;
             let part = PartWrite::CategoryPosition(Some(next));
-            apply_part(ctx, row.id, row.entity_type, &part, None).await?;
+            apply_part(ctx, row.id, row.entity_type, &part, &[]).await?;
             provenance::record(ctx.tx, row.id, &[part.part()], row.counter + 1, ctx.member).await?;
         }
 
@@ -961,10 +973,92 @@ pub async fn erase(ctx: &mut Ctx<'_>, ids: &[EntityId]) -> Applied<(Vec<EntityId
         // fortiori to an erased one, and leaving the reference would point
         // every member of the category at a tombstone.
         //
-        // The type-specific containers, the ladder and nested locations, are
-        // Wave 2.2's for the same reason their content is.
+        // **That is category *membership*, and it is only half of what a
+        // category holds.** The other half is category *nesting* —
+        // `category.parent_category_id` — and `uncategorise_all` does not touch
+        // it. An earlier version of this comment named "the ladder and nested
+        // locations" and omitted the third case, which is where the blind spot
+        // started; it is spelled out here so the next reader does not inherit
+        // it.
+        //
+        // The type-specific containers — the ladder, nested locations, and
+        // nested categories — release through the type-content seam, because
+        // the column that points at the container is a column of the type's own
+        // side table. The seam hands back identities and which part of each
+        // moved; the counter and the audience a change entry needs come from the
+        // store layer, which is the only place entitled to read that column. See
+        // `specific::detach_contained`.
+        //
+        // **A type that has not built its release must not look like an empty
+        // one.** `Detachment::NotBuilt` is a distinct answer for exactly that
+        // reason, and it is stepped over here rather than treated as nothing to
+        // do. Two types still answer that way and both are visible rather than
+        // silent: Guidance's arcs and quests, and a nested category.
+        let contained = match specific::detach_contained(ctx, *id, row.entity_type).await? {
+            specific::Detachment::Released(released) => released,
+            specific::Detachment::NoContainer | specific::Detachment::NotBuilt => Vec::new(),
+        };
+        let ids: Vec<EntityId> = contained.iter().map(|r| r.entity).collect();
+        for orphan in crate::store::entity::detached_from_container(ctx.tx, &ids, ctx.at).await? {
+            // **A release is a write, so it owes provenance.** The counter
+            // advanced, and a part that moves a counter without recording which
+            // part moved is invisible to conflict detection: a later stale edit
+            // to the same field would merge silently, losing the fact that the
+            // container went away underneath it. `restore` already records the
+            // position it moves as a consequence of something else; this is the
+            // same shape and now gets the same treatment.
+            //
+            // Attributed to the member who erased the container, because that is
+            // who caused it.
+            for r in contained.iter().filter(|r| r.entity == orphan.id) {
+                provenance::record(
+                    ctx.tx,
+                    orphan.id,
+                    std::slice::from_ref(&r.part),
+                    orphan.counter,
+                    ctx.member,
+                )
+                .await?;
+            }
+            changes::entity_written(
+                ctx.tx,
+                ctx.at,
+                &EntityChange {
+                    entity: orphan.id,
+                    audience_before: Some(orphan.audience.clone()),
+                    audience_after: Some(orphan.audience),
+                    author_before: orphan.author,
+                    author_after: orphan.author,
+                    changed_blocks: Vec::new(),
+                },
+            )
+            .await?;
+        }
+
         if row.entity_type == EntityType::Category {
             for orphan in crate::store::entity::uncategorise_all(ctx.tx, *id, ctx.at).await? {
+                // The same reasoning, for the membership half. Two parts move —
+                // the category and the position within it — and both are
+                // recorded, because the counter advanced and something has to be
+                // able to say what changed.
+                //
+                // **The alternative reading was considered and rejected**: that
+                // uncategorising is a consequence rather than an authored
+                // placement and so should not conflict. It cannot be had for
+                // free — the counter already advances here, and a write that
+                // moves a counter and records nothing is the silent case. Either
+                // it is a write to this entity or it is not; it is, so it pays.
+                provenance::record(
+                    ctx.tx,
+                    orphan.id,
+                    &[
+                        Part::Content(ContentPart::Category),
+                        Part::Content(ContentPart::CategoryPosition),
+                    ],
+                    orphan.counter,
+                    ctx.member,
+                )
+                .await?;
                 changes::entity_written(
                     ctx.tx,
                     ctx.at,

@@ -103,3 +103,64 @@ pub async fn would_cycle(
         }
     }
 }
+
+/// Everything that named `parent` as its container, released and handed back.
+///
+/// # Why this is here rather than in the calling module
+///
+/// The same reason [`would_cycle`] is: two containers nest, they are owned by
+/// two lanes, and a graph operation written twice is two chances to get it
+/// wrong. It is generic over the table and the parent column for the same
+/// reason too, and both are `&'static str` from a [`super::Field`] declaration,
+/// so neither is ever built from anything a caller sent.
+///
+/// There is a second reason particular to categories, and it is a guard rather
+/// than taste. `tests/one_predicate.rs` refuses any source outside
+/// `store/audience.rs` that both names the audience column and issues SQL, and
+/// **it matches by substring**. The wire's name for a category's creation
+/// default ends in the audience column's own name, and [`super::category`] must
+/// spell that field out because reading the wire is what the module is for — so
+/// any query written in that file is an offence, whatever it queries. The
+/// categories lane therefore cannot write this statement where it uses it.
+/// Watch the guard fail on a query added to `category.rs` before deciding this
+/// indirection is unnecessary.
+///
+/// The same bluntness is why this paragraph describes that field rather than
+/// naming it: spelling it here would make *this* file the offender instead.
+///
+/// # What this does not do
+///
+/// **Identities only.** The counter on each released entity and the audience a
+/// change entry needs are `store::entity::detached_from_container`'s, because a
+/// change entry needs the audience column and only the store layer may name it.
+///
+/// **Deliberately unscoped.** No audience predicate, for the reason
+/// `uncategorise_all` gives and which is no smaller here: the container is gone
+/// for everybody, so leaving behind the rows the erasing member cannot see
+/// would keep a dangling reference alive precisely where nobody can find it.
+/// Nothing leaves here that a caller can show anyone — these are identities the
+/// caller already has the container for.
+///
+/// # Errors
+///
+/// Only where the store could not be written.
+pub async fn detach_children(
+    tx: &mut WriteTx,
+    table: &'static str,
+    parent_column: &'static str,
+    parent: EntityId,
+) -> sqlx::Result<Vec<EntityId>> {
+    let sql = format!(
+        "UPDATE {table} SET {parent_column} = NULL \
+         WHERE {parent_column} = $1 RETURNING entity_id"
+    );
+    let rows = sqlx::query(sqlx::AssertSqlSafe(sql))
+        .bind(parent.as_uuid())
+        .fetch_all(tx.conn())
+        .await?;
+    let mut released = Vec::with_capacity(rows.len());
+    for r in &rows {
+        released.push(EntityId::from_uuid(r.try_get("entity_id")?));
+    }
+    Ok(released)
+}

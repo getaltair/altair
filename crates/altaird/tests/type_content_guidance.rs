@@ -21,7 +21,13 @@
 mod common;
 
 use altair_proto::v1;
-use altaird::store::ids::EntityId;
+use altaird::store::begin_write;
+use altaird::store::entity::EntityType;
+use altaird::store::ids::{EntityId, MemberId};
+use altaird::write::entity::Ctx;
+use altaird::write::parts::{Part, PartKey};
+use altaird::write::specific;
+use chrono::Utc;
 use common::*;
 use sqlx::Row;
 use uuid::Uuid;
@@ -1452,4 +1458,600 @@ async fn two_members_moving_different_guidance_parts_merge() {
     );
     assert_eq!(state_of(&world, "quest", q).await, "worked");
     assert_eq!(quest_row(&world, q).await.campaign, Some(c.as_uuid()));
+}
+
+// ---------------------------------------------------------------------------
+// The parent a move vacated
+// ---------------------------------------------------------------------------
+
+/// **The vacated parent records the counter it moved at.**
+///
+/// A quest holds at most one ladder parent, so setting an arc clears the
+/// campaign in the same statement. That vacated column is a part like any
+/// other, and a part that records no counter movement is invisible to conflict
+/// detection.
+#[tokio::test]
+async fn a_quest_moving_between_parents_records_the_parent_it_vacated() {
+    let world = World::new().await;
+    let c = world
+        .create(&world.one, campaign(None), v1::EntityContent::default())
+        .await;
+    let a = world
+        .create(
+            &world.one,
+            as_arc(arc(None, Some(c))),
+            v1::EntityContent::default(),
+        )
+        .await;
+    let q = world
+        .create(
+            &world.one,
+            as_quest(quest(None, beneath_arc(a))),
+            v1::EntityContent::default(),
+        )
+        .await;
+
+    let base = world.counter(q).await;
+    world
+        .submit(
+            &world.one,
+            edit_specific(q, base, as_quest(quest(None, beneath_campaign(c)))),
+        )
+        .await;
+    let after = world.counter(q).await;
+
+    assert_eq!(
+        part_counter(&world, q, "specific.3").await,
+        Some(after),
+        "the campaign it entered"
+    );
+    assert_eq!(
+        part_counter(&world, q, "specific.2").await,
+        Some(after),
+        "the arc it left, which nothing addressed and the statement still cleared"
+    );
+    assert_eq!(
+        part_counter(&world, q, "specific.5").await,
+        Some(after),
+        "the position that moved with them"
+    );
+}
+
+/// The payoff, and the reason the vacated parent is worth recording at all.
+///
+/// One member moves the quest off its arc and onto a campaign. Another, from
+/// the same base, sets a different arc. Both writes are about which parent the
+/// quest has, so **both values are retained** rather than the second silently
+/// winning. Without the vacated parent in provenance this merges with nobody
+/// involved, and a standing constraint is quietly broken.
+#[tokio::test]
+async fn a_concurrent_edit_to_the_vacated_parent_conflicts_rather_than_merging() {
+    let world = World::new().await;
+    let c = world
+        .create(&world.one, campaign(None), shared_with(&world))
+        .await;
+    let first = world
+        .create(&world.one, as_arc(arc(None, Some(c))), shared_with(&world))
+        .await;
+    let second = world
+        .create(&world.one, as_arc(arc(None, Some(c))), shared_with(&world))
+        .await;
+    let q = world
+        .create(
+            &world.one,
+            as_quest(quest(None, beneath_arc(first))),
+            shared_with(&world),
+        )
+        .await;
+    let base = world.counter(q).await;
+
+    // One moves it off the arc and onto the campaign, vacating `arc_id`.
+    world
+        .submit(
+            &world.one,
+            edit_specific(q, base, as_quest(quest(None, beneath_campaign(c)))),
+        )
+        .await;
+    // Two, still on the base it last saw, points the arc somewhere else.
+    let ack = world
+        .submit(
+            &world.two,
+            edit_specific(q, base, as_quest(quest(None, beneath_arc(second)))),
+        )
+        .await;
+
+    let applied = applied(&ack);
+    let conflict = applied
+        .conflict
+        .as_ref()
+        .expect("both writes moved the quest's arc, which is one part twice");
+    assert!(
+        conflict.specific_fields.contains(&2),
+        "the vacated arc is the conflicted part: {:?}",
+        conflict.specific_fields
+    );
+
+    let conflicts = world.conflicts(q).await;
+    let vacated = conflicts
+        .iter()
+        .find(|c| c.field.as_deref() == Some("specific.2"))
+        .expect("the arc is retained on both sides");
+    assert_eq!(
+        vacated.mine.as_deref(),
+        Some(second.as_uuid().to_string()).as_deref()
+    );
+    assert_eq!(
+        vacated.theirs, None,
+        "the value it displaced was the arc the first write cleared"
+    );
+    assert_eq!(vacated.mine_member, Some(world.two.membership_id()));
+    assert_eq!(vacated.theirs_member, Some(world.one.membership_id()));
+
+    // And the write still applied.
+    let row = quest_row(&world, q).await;
+    assert_eq!(row.arc, Some(second.as_uuid()));
+    assert_eq!(row.campaign, None);
+}
+
+/// **A companion is owed only when the part genuinely moved.**
+///
+/// A quest that had no campaign gains an arc. Nothing was vacated, so nothing
+/// about `campaign_id` is recorded. Recording it would not manufacture a
+/// conflict — arriving equals stored — but it would leave an
+/// `entity_part_counter` row claiming that part moved, which a later unrelated
+/// edit reads as an overlap. Silent, and exactly what the per-part counter
+/// exists to prevent.
+#[tokio::test]
+async fn a_parent_that_was_already_empty_records_nothing() {
+    let world = World::new().await;
+    let c = world
+        .create(&world.one, campaign(None), v1::EntityContent::default())
+        .await;
+    let a = world
+        .create(
+            &world.one,
+            as_arc(arc(None, Some(c))),
+            v1::EntityContent::default(),
+        )
+        .await;
+    let q = world
+        .create(
+            &world.one,
+            as_quest(quest(None, None)),
+            v1::EntityContent::default(),
+        )
+        .await;
+
+    let base = world.counter(q).await;
+    world
+        .submit(
+            &world.one,
+            edit_specific(q, base, as_quest(quest(None, beneath_arc(a)))),
+        )
+        .await;
+
+    assert_eq!(part_counter(&world, q, "specific.2").await, Some(base + 1));
+    assert_eq!(part_counter(&world, q, "specific.5").await, Some(base + 1));
+    assert_eq!(
+        part_counter(&world, q, "specific.3").await,
+        None,
+        "a campaign that was never there did not move"
+    );
+}
+
+/// Restating the container something is already in vacates nothing either, and
+/// the sibling that was already empty stays unrecorded.
+#[tokio::test]
+async fn restating_the_same_parent_vacates_nothing() {
+    let world = World::new().await;
+    let c = world
+        .create(&world.one, campaign(None), v1::EntityContent::default())
+        .await;
+    let q = world
+        .create(
+            &world.one,
+            as_quest(quest(None, beneath_campaign(c))),
+            v1::EntityContent::default(),
+        )
+        .await;
+
+    let base = world.counter(q).await;
+    world
+        .submit(
+            &world.one,
+            edit_specific(q, base, as_quest(quest(None, beneath_campaign(c)))),
+        )
+        .await;
+
+    assert_eq!(
+        part_counter(&world, q, "specific.2").await,
+        None,
+        "no arc was ever held, so none was vacated"
+    );
+    assert_eq!(quest_row(&world, q).await.position, Some(0));
+}
+
+// ---------------------------------------------------------------------------
+// What an erased ladder container lets go of
+// ---------------------------------------------------------------------------
+
+/// Call the release directly.
+///
+/// **Exercised directly because the dispatch still answers `NotBuilt`**, which
+/// is the one line between this and the wired erase path. `nesting::would_cycle`
+/// was tested the same way for the same reason, and the erase path itself is
+/// already written: it calls `specific::detach_contained`, hands what comes back
+/// to `store::entity::detached_from_container`, and emits a change entry each.
+///
+/// **Each release carries the part that moved, and these tests assert it.** A
+/// release advances the child's counter, so it owes provenance, and provenance
+/// needs to know which field went away — a released arc lost its campaign, a
+/// released quest lost whichever of its two parents it had. Asserting the
+/// identity alone would let the wrong field number through silently.
+async fn release_from(world: &World, container: EntityId, kind: EntityType) -> Vec<(Uuid, String)> {
+    let mut tx = begin_write(&world.db.pool).await.expect("a transaction");
+    let mut ctx = Ctx {
+        tx: &mut tx,
+        member: MemberId::for_test(world.one.membership_id()),
+        at: Utc::now(),
+    };
+    let answer = match specific::guidance::detach_contained(&mut ctx, container, kind).await {
+        Ok(answer) => answer,
+        Err(_) => panic!("the store was reachable"),
+    };
+    tx.commit().await.expect("commit");
+    match answer {
+        specific::Detachment::Released(rows) => rows
+            .into_iter()
+            .map(|r| (r.entity.as_uuid(), part_name(&r.part)))
+            .collect(),
+        other => panic!("a ladder container releases what it held, got {other:?}"),
+    }
+}
+
+/// The spelling `entity_part_counter` and the `conflict` row both key a part by,
+/// which is what provenance will write.
+fn part_name(part: &Part) -> String {
+    match part.key() {
+        PartKey::Field(name) => name,
+        PartKey::Block(id) => panic!("a ladder parent is a field, not block {id}"),
+    }
+}
+
+/// **A campaign is one container over mixed kinds**, so it releases across both
+/// tables — and the position goes with the parent, in one statement, because
+/// the paired checks tie them together.
+#[tokio::test]
+async fn an_erased_campaign_releases_its_arcs_and_its_quests() {
+    let world = World::new().await;
+    let c = world
+        .create(&world.one, campaign(None), v1::EntityContent::default())
+        .await;
+    let a = world
+        .create(
+            &world.one,
+            as_arc(arc(None, Some(c))),
+            v1::EntityContent::default(),
+        )
+        .await;
+    let q = world
+        .create(
+            &world.one,
+            as_quest(quest(None, beneath_campaign(c))),
+            v1::EntityContent::default(),
+        )
+        .await;
+    // Something under a different campaign, which must not be touched.
+    let other = world
+        .create(&world.one, campaign(None), v1::EntityContent::default())
+        .await;
+    let untouched = world
+        .create(
+            &world.one,
+            as_arc(arc(None, Some(other))),
+            v1::EntityContent::default(),
+        )
+        .await;
+
+    // **Two parts per child, and the numbers mean different things per type.**
+    // Each child lost its parent *and* its position, so each reports both. An
+    // arc's campaign is field 2 and its position field 3; a quest's campaign is
+    // field 3 and its position field 5 — so `specific.3` here names a position
+    // on the arc and a campaign on the quest. That is exactly why the part has
+    // to travel with the identity rather than be inferred by the caller.
+    let mut released = release_from(&world, c, EntityType::Campaign).await;
+    released.sort();
+    let mut expected = vec![
+        (a.as_uuid(), "specific.2".to_owned()),
+        (a.as_uuid(), "specific.3".to_owned()),
+        (q.as_uuid(), "specific.3".to_owned()),
+        (q.as_uuid(), "specific.5".to_owned()),
+    ];
+    expected.sort();
+    assert_eq!(released, expected);
+
+    assert_eq!(arc_row(&world, a).await, (None, None));
+    let row = quest_row(&world, q).await;
+    assert_eq!((row.arc, row.campaign, row.position), (None, None, None));
+    assert_eq!(
+        arc_row(&world, untouched).await,
+        (Some(other.as_uuid()), Some(0)),
+        "another campaign's arc is not its business"
+    );
+}
+
+/// An erased arc releases its quests only. **A released quest is parentless,
+/// not promoted** — it does not inherit the arc's campaign, even though that
+/// campaign still exists. Promotion would be the system moving something into a
+/// container the person never put it in, and appending it at the end of an order
+/// they did not choose.
+#[tokio::test]
+async fn an_erased_arc_releases_its_quests_without_promoting_them() {
+    let world = World::new().await;
+    let c = world
+        .create(&world.one, campaign(None), v1::EntityContent::default())
+        .await;
+    let a = world
+        .create(
+            &world.one,
+            as_arc(arc(None, Some(c))),
+            v1::EntityContent::default(),
+        )
+        .await;
+    let q = world
+        .create(
+            &world.one,
+            as_quest(quest(None, beneath_arc(a))),
+            v1::EntityContent::default(),
+        )
+        .await;
+
+    // A quest's arc is field 2 of its message and its position field 5, and
+    // both moved.
+    assert_eq!(
+        release_from(&world, a, EntityType::Arc).await,
+        vec![
+            (q.as_uuid(), "specific.2".to_owned()),
+            (q.as_uuid(), "specific.5".to_owned()),
+        ]
+    );
+
+    let row = quest_row(&world, q).await;
+    assert_eq!(row.arc, None);
+    assert_eq!(
+        row.campaign, None,
+        "the quest is parentless; it did not inherit the arc's campaign"
+    );
+    assert_eq!(row.position, None, "and the position went with the parent");
+}
+
+/// An empty container releases nothing, which is an answer rather than an
+/// absence — the seam keeps `Released(vec![])` and `NotBuilt` apart precisely so
+/// this case cannot be mistaken for an unbuilt one.
+#[tokio::test]
+async fn an_empty_container_releases_nothing_and_says_so() {
+    let world = World::new().await;
+    let c = world
+        .create(&world.one, campaign(None), v1::EntityContent::default())
+        .await;
+    assert!(
+        release_from(&world, c, EntityType::Campaign)
+            .await
+            .is_empty()
+    );
+}
+
+/// **A quest is a leaf of the ladder.** Nothing names one as a parent, so it is
+/// no container at all rather than an empty one.
+#[tokio::test]
+async fn a_quest_is_not_a_container() {
+    let world = World::new().await;
+    let q = world
+        .create(
+            &world.one,
+            as_quest(quest(None, None)),
+            v1::EntityContent::default(),
+        )
+        .await;
+
+    let mut tx = begin_write(&world.db.pool).await.expect("a transaction");
+    let mut ctx = Ctx {
+        tx: &mut tx,
+        member: MemberId::for_test(world.one.membership_id()),
+        at: Utc::now(),
+    };
+    let answer = specific::guidance::detach_contained(&mut ctx, q, EntityType::Quest).await;
+    let answer = match answer {
+        Ok(a) => a,
+        Err(_) => panic!("the store was reachable"),
+    };
+    tx.rollback().await.expect("rollback");
+    assert_eq!(answer, specific::Detachment::NoContainer);
+}
+
+/// **The release is unscoped, and this is the test that says so.**
+///
+/// A child owned by a member the eraser cannot see is still released. The
+/// container is gone for everybody, so leaving it behind would keep a dangling
+/// reference alive precisely where nobody can find it — the reason
+/// `uncategorise_all` gives, and no smaller here. A predicate added to the walk
+/// fails this.
+#[tokio::test]
+async fn a_child_the_eraser_cannot_see_is_still_released() {
+    let world = World::new().await;
+    // The campaign is shared, so member two can hang something beneath it.
+    let c = world
+        .create(&world.one, campaign(None), shared_with(&world))
+        .await;
+    // Two's own quest beneath it, private to two: one cannot see this.
+    let hidden = world
+        .create(
+            &world.two,
+            as_quest(quest(None, beneath_campaign(c))),
+            v1::EntityContent::default(),
+        )
+        .await;
+
+    // One erases the campaign, and releases a child it was never entitled to see.
+    assert_eq!(
+        release_from(&world, c, EntityType::Campaign).await,
+        vec![
+            (hidden.as_uuid(), "specific.3".to_owned()),
+            (hidden.as_uuid(), "specific.5".to_owned()),
+        ]
+    );
+    let row = quest_row(&world, hidden).await;
+    assert_eq!((row.campaign, row.position), (None, None));
+}
+
+/// The one line between this implementation and the erase path, pinned so it is
+/// visible rather than assumed.
+///
+/// `specific::detach_contained` still answers `NotBuilt` for Guidance's three
+/// types while `guidance::detach_contained` answers `Released`. `NotBuilt` is a
+/// distinct answer for exactly this reason: the erase path steps over it rather
+/// than treating it as nothing to do, so an arc goes on pointing at its
+/// tombstone visibly instead of silently.
+///
+/// **This assertion inverts when the dispatch arm calls the module.** Whoever
+/// wires it should delete the first half and keep the second.
+#[tokio::test]
+async fn the_dispatch_reaches_the_ladders_release() {
+    let world = World::new().await;
+    let c = world
+        .create(&world.one, campaign(None), v1::EntityContent::default())
+        .await;
+    let a = world
+        .create(
+            &world.one,
+            as_arc(arc(None, Some(c))),
+            v1::EntityContent::default(),
+        )
+        .await;
+
+    let mut tx = begin_write(&world.db.pool).await.expect("a transaction");
+    let mut ctx = Ctx {
+        tx: &mut tx,
+        member: MemberId::for_test(world.one.membership_id()),
+        at: Utc::now(),
+    };
+    // **Once, not twice.** While the arm was unpointed this called the dispatch
+    // and then the module, because the dispatch was a no-op and the module could
+    // still find the arc to release. Now that the arm is wired the first call
+    // does the release and the second correctly finds nothing left, so asking
+    // both in one transaction measures the order of the calls rather than the
+    // dispatch.
+    let Ok(through_dispatch) = specific::detach_contained(&mut ctx, c, EntityType::Campaign).await
+    else {
+        panic!("the store was reachable")
+    };
+    tx.rollback().await.expect("rollback");
+
+    assert_eq!(
+        through_dispatch,
+        specific::Detachment::Released(vec![
+            specific::Released {
+                entity: a,
+                part: Part::Specific(2),
+            },
+            specific::Released {
+                entity: a,
+                part: Part::Specific(3),
+            },
+        ]),
+        "the dispatch reaches the ladder's release — this assertion read \
+         `NotBuilt` while the arm was unpointed, which is what made the gap \
+         visible rather than silent"
+    );
+}
+
+/// **The consequence a release recording only its parent would hide.**
+///
+/// The erasure clears the child's parent *and* its ladder position. A member
+/// holding a base from before the erasure then moves that child under a new
+/// parent — which writes the position as a companion. Both writes changed the
+/// position, so both values are owed retention.
+///
+/// With only the parent recorded, `moved_since` reports the parent alone, the
+/// stale write touches the parent it is setting plus the position, the two sets
+/// do not intersect on anything, and a collision on the position merges in
+/// silence. *Both values retained on a same-part conflict* is a standing
+/// constraint, so that is a hole rather than a rough edge.
+///
+/// Asserted as the consequence rather than as "two parts are recorded", because
+/// the consequence is what the constraint is about and it is what fails first.
+#[tokio::test]
+async fn a_stale_move_after_a_release_conflicts_on_the_position() {
+    let world = World::new().await;
+    let c = world
+        .create(&world.one, campaign(None), shared_with(&world))
+        .await;
+    let q = world
+        .create(
+            &world.one,
+            as_quest(quest(None, beneath_campaign(c))),
+            shared_with(&world),
+        )
+        .await;
+    // Somewhere else for the stale write to put it.
+    let a = world
+        .create(&world.one, as_arc(arc(None, None)), shared_with(&world))
+        .await;
+    assert_eq!(quest_row(&world, q).await.position, Some(0));
+
+    // Two last saw the quest here.
+    let base = world.counter(q).await;
+
+    // One erases the campaign. The quest keeps existing and loses both its
+    // parent and its position.
+    world.submit(&world.one, erase(&[c])).await;
+    let row = quest_row(&world, q).await;
+    assert_eq!((row.campaign, row.position), (None, None));
+
+    // Two, still on the old base, moves the quest under an arc. Entering a
+    // container appends, so this writes a position as a companion — the same
+    // part the release cleared.
+    let ack = world
+        .submit(
+            &world.two,
+            edit_specific(q, base, as_quest(quest(None, beneath_arc(a)))),
+        )
+        .await;
+
+    let applied = applied(&ack);
+    let conflict = applied
+        .conflict
+        .as_ref()
+        .expect("the release and the move both changed the ladder position");
+    assert!(
+        conflict.specific_fields.contains(&5),
+        "the position is the conflicted part: {:?}",
+        conflict.specific_fields
+    );
+
+    let conflicts = world.conflicts(q).await;
+    let position = conflicts
+        .iter()
+        .find(|c| c.field.as_deref() == Some("specific.5"))
+        .expect("both positions are retained");
+    assert_eq!(
+        position.mine.as_deref(),
+        Some("0"),
+        "the arriving value: entering the arc appends at its end"
+    );
+    assert_eq!(
+        position.theirs, None,
+        "the value it displaced: the release had forgotten the position"
+    );
+    assert_eq!(position.mine_member, Some(world.two.membership_id()));
+    assert_eq!(
+        position.theirs_member,
+        Some(world.one.membership_id()),
+        "attributed to whoever erased the container, because that is who caused it"
+    );
+
+    // And the move still applied. A stale base is never a rejection.
+    let row = quest_row(&world, q).await;
+    assert_eq!(row.arc, Some(a.as_uuid()));
+    assert_eq!(row.position, Some(0));
 }

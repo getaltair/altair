@@ -61,6 +61,7 @@ use crate::store::ids::EntityId;
 
 use super::content::{Malformed, Written, malformed};
 use super::entity::{Applied, Ctx, Refusal};
+use super::parts::Part;
 
 // ---------------------------------------------------------------------------
 // What a type-specific field is
@@ -587,29 +588,80 @@ pub fn parts_written(specific: &v1::entity_content::Specific) -> Result<Written,
     }
 }
 
-/// What a type-specific part owes before it is applied, and the companion part
+/// What a type-specific part owes before it is applied, and the companion parts
 /// the instance moves as a consequence.
 ///
 /// The companion exists for the same reason the shared model's does: a
 /// container and a position within it are constrained together, so writing them
 /// in sequence puts the row through a state the schema refuses.
+///
+/// # Why the whole addressed set, and why many companions
+///
+/// Both halves were widened once, because two lanes needed one each and the
+/// pair of special cases would have been worse than the general seam.
+///
+/// **`addressed` — the whole set of parts this message writes.** A type
+/// sometimes cannot decide one part without seeing another. An item's amount
+/// and the moment it was asserted are constrained against each other, so they
+/// move in one statement; the instance stamps the moment only when the client
+/// did not state one, and *whether the client stated one* is a fact about a
+/// different part of the same message. Deciding it from one part alone means
+/// either refusing a field the wire exists to carry, or writing the two columns
+/// in sequence and tripping the table's check.
+///
+/// **A `Vec` — as many companions as the write actually moved.** A companion is
+/// not only a column written alongside; it is *any part this write moved that
+/// the addressed part does not name*. A quest moving from an arc to a campaign
+/// clears the arc in the same statement, and the vacated column is a part like
+/// any other: a part that does not record the counter it moved at is invisible
+/// to conflict detection, so a concurrent edit to the vacated parent would merge
+/// silently instead of retaining both values. Returning it here is what puts it
+/// in provenance.
+///
+/// **A companion is owed only when the part genuinely moved.** Handing back a
+/// vacated parent that was already null would not manufacture a conflict —
+/// [`super::provenance::detect`] compares rendered text, and arriving equals
+/// stored — but it *would* write an `entity_part_counter` row claiming that part
+/// moved, and a later unrelated edit would read that as an overlap. Silent, and
+/// exactly what the per-part counter exists to prevent.
+///
+/// # The adapters below are the migration point
+///
+/// Three lanes still take one part and return at most one companion, and their
+/// modules are not this lane's to edit. They are adapted here rather than
+/// reshaped in place, which is what makes this a widening: nothing about their
+/// behaviour changes, and a lane moves to the wide form by changing its own
+/// module and the one line here that calls it.
 pub async fn validate_and_place(
     ctx: &mut Ctx<'_>,
     entity: EntityId,
     kind: EntityType,
     part: &SpecificPart,
-) -> Applied<Option<SpecificPart>> {
+    addressed: &[SpecificPart],
+) -> Applied<Vec<SpecificPart>> {
     match kind {
+        // **LANE: Guidance.** Still narrow. The vacated ladder parent is the
+        // reason the `Vec` exists, and it is filled in by moving this arm to
+        // pass `addressed` through once that module returns more than one.
         EntityType::Campaign | EntityType::Arc | EntityType::Quest => {
-            guidance::validate_and_place(ctx, entity, kind, part).await
+            Ok(guidance::validate_and_place(ctx, entity, kind, part)
+                .await?
+                .into_iter()
+                .collect())
         }
         EntityType::Note | EntityType::File => {
-            knowledge::validate_and_place(ctx, entity, kind, part).await
+            Ok(knowledge::validate_and_place(ctx, entity, kind, part)
+                .await?
+                .into_iter()
+                .collect())
         }
         EntityType::Item | EntityType::Location | EntityType::ShoppingList => {
-            tracking::validate_and_place(ctx, entity, kind, part).await
+            tracking::validate_and_place(ctx, entity, kind, part, addressed).await
         }
-        EntityType::Category => category::validate_and_place(ctx, entity, part).await,
+        EntityType::Category => Ok(category::validate_and_place(ctx, entity, part)
+            .await?
+            .into_iter()
+            .collect()),
         EntityType::Routine | EntityType::FocusSession | EntityType::CheckIn => {
             Err(Refusal::Malformed(not_yet_built(kind).0).into())
         }
@@ -641,26 +693,33 @@ pub async fn current(
 
 /// Apply one type-specific part.
 ///
-/// `placement` is whatever [`validate_and_place`] returned, passed through so a
+/// `placements` is whatever [`validate_and_place`] returned, passed through so a
 /// module can write a field and its companion in one statement.
+///
+/// **A module finds the companion it needs by field number, never by
+/// position.** The order a lane returns companions in is that lane's business,
+/// and a write that depended on it would break the first time one returned two.
+/// The three narrow lanes below return at most one, so passing the first is
+/// exactly today's behaviour for them and nothing changes.
 pub async fn apply(
     ctx: &mut Ctx<'_>,
     entity: EntityId,
     kind: EntityType,
     part: &SpecificPart,
-    placement: Option<&SpecificPart>,
+    placements: &[SpecificPart],
 ) -> Applied<()> {
+    let first = placements.first();
     match kind {
         EntityType::Campaign | EntityType::Arc | EntityType::Quest => {
-            guidance::apply(ctx, entity, kind, part, placement).await
+            guidance::apply(ctx, entity, kind, part, first).await
         }
         EntityType::Note | EntityType::File => {
-            knowledge::apply(ctx, entity, kind, part, placement).await
+            knowledge::apply(ctx, entity, kind, part, first).await
         }
         EntityType::Item | EntityType::Location | EntityType::ShoppingList => {
-            tracking::apply(ctx, entity, kind, part, placement).await
+            tracking::apply(ctx, entity, kind, part, placements).await
         }
-        EntityType::Category => category::apply(ctx, entity, part, placement).await,
+        EntityType::Category => category::apply(ctx, entity, part, first).await,
         EntityType::Routine | EntityType::FocusSession | EntityType::CheckIn => {
             Err(Refusal::Malformed(not_yet_built(kind).0).into())
         }
@@ -689,6 +748,168 @@ pub async fn search_text(
         }
         EntityType::Category => category::search_text(ctx, entity).await,
         EntityType::Routine | EntityType::FocusSession | EntityType::CheckIn => Ok(None),
+    }
+}
+
+// ---------------------------------------------------------------------------
+// What a type-specific container lets go of when it is erased
+// ---------------------------------------------------------------------------
+
+/// One entity a vanished container let go of, and the part of it that moved.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Released {
+    pub entity: EntityId,
+    pub part: Part,
+}
+
+/// What an erased container let go of.
+///
+/// **Three answers, not two, because an empty list is ambiguous.** A container
+/// that held nothing and a type that has no container both release nothing, and
+/// a container whose lane has not built the release yet also releases nothing —
+/// and that last one is a leak rather than an answer. Whoever wires this must be
+/// able to tell them apart, or a campaign's arcs go on pointing at a tombstone
+/// and the suite stays green.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Detachment {
+    /// This type holds nothing that points back at it. There is no container
+    /// here and there never will be.
+    NoContainer,
+    /// The entities that pointed at this container and now point at nothing,
+    /// each with **the part of it that moved**. Empty means the container was
+    /// empty, which is an answer.
+    ///
+    /// The part is carried because a release is a write to the entity that lost
+    /// its container — its counter advances — and a write that advances a
+    /// counter owes provenance. Which part moved is the type's knowledge: a
+    /// child location lost its parent, an item lost its shelf, and those are
+    /// different fields of different messages.
+    Released(Vec<Released>),
+    /// **This type has a container and the release is not built yet.**
+    /// Distinct from `Released(vec![])` on purpose: wiring the call while a type
+    /// still answers this way would silently leave that container's contents
+    /// pointing at a tombstone.
+    NotBuilt,
+}
+
+/// The part a type holds in a named column.
+///
+/// **One statement of the pairing, derived rather than restated.** A release
+/// clears a column and has to name the part that moved, and the field number is
+/// already declared beside that column in the type's own `*_FIELDS`. Carrying
+/// the number alongside the column at the call site states the same pairing
+/// twice, and the second copy is the one that goes stale — the shape both
+/// callers of [`nesting::would_cycle`] drifted into before it was noticed.
+///
+/// Refuses rather than guesses. A column no field declares is a caller naming
+/// something that is not a part, which is a programming error rather than a
+/// message anyone sent, and answering with the wrong part number would put a
+/// counter against a field that never moved.
+pub fn part_held_in(kind: EntityType, column: &str) -> Applied<Part> {
+    fields(kind)
+        .iter()
+        .find(|f| matches!(f.held, Held::Column(c) if c == column))
+        .map(|f| Part::Specific(f.number))
+        .ok_or_else(|| {
+            Refusal::Malformed(format!(
+                "no field of a {} is held in {column}",
+                crate::write::entity::type_name(kind)
+            ))
+            .into()
+        })
+}
+
+/// Let go of everything a type-specific container held, because it is gone.
+///
+/// # Why this exists, and why it is not called yet
+///
+/// [`super::entity`]'s erase path says outright that *the type-specific
+/// containers, the ladder and nested locations, are Wave 2.2's for the same
+/// reason their content is*. Wave 2.1 built the shared-model half —
+/// `uncategorise_all`, for a category — and left these. Today an erased
+/// campaign leaves its arcs and quests pointing at a tombstone, and an erased
+/// location leaves both its child locations and the items shelved in it doing
+/// the same.
+///
+/// The substrate's rule for the category case is that *an entity whose category
+/// is deleted becomes uncategorised, which is a valid state requiring no
+/// repair*, and erasure is the stronger form of the same thing. Nothing about
+/// that reasoning is specific to categories.
+///
+/// **Declared here and deliberately unwired.** The call belongs in the erase
+/// path, which this lane does not own. Adding the seam without the call is the
+/// half that can be built in isolation; the other half is one line in a file
+/// another lane holds.
+///
+/// # What the caller still owes
+///
+/// The identities come back and nothing else. A change entry needs the
+/// audience, and `tests/one_predicate.rs` refuses any source outside
+/// `store/audience.rs` that names the audience column and issues SQL — rightly,
+/// because reasoning about audience belongs there. So the release happens here
+/// and the change sequence is assembled by the caller, from the store layer,
+/// exactly as the category case already does it.
+///
+/// The counter on each released entity is advanced here, because that is part
+/// of the release rather than part of the bookkeeping: it is an accepted write
+/// to those entities, and a client holding one has to learn the container went
+/// away.
+pub async fn detach_contained(
+    ctx: &mut Ctx<'_>,
+    entity: EntityId,
+    kind: EntityType,
+) -> Applied<Detachment> {
+    match kind {
+        // **LANE: Guidance.** An arc hangs beneath a campaign and a quest
+        // beneath either, so all three are containers and all three owe a
+        // release. Answering `NotBuilt` rather than an empty list is what kept
+        // that visible while it was unbuilt — an erased campaign left its arcs
+        // and quests on a tombstone, and the variant said so rather than
+        // reporting an empty release.
+        EntityType::Campaign | EntityType::Arc | EntityType::Quest => {
+            guidance::detach_contained(ctx, entity, kind).await
+        }
+        EntityType::Item | EntityType::Location | EntityType::ShoppingList => {
+            tracking::detach_contained(ctx, entity, kind).await
+        }
+        // **LANE: Knowledge and categories.** A category is a container in two
+        // distinct senses and only one of them is released.
+        //
+        // *Membership* — the entities filed in it — is the shared model's, and
+        // Wave 2.1 built it: `uncategorise_all` clears `entity.category_id` on
+        // everything inside. *Nesting* — `category.parent_category_id`, how one
+        // category sits under another — is a column of this side table, exactly
+        // like `location.parent_location_id`, and nothing releases it.
+        //
+        // What that leaves, concretely. Erase category A with category B nested
+        // inside it: A's `category` row goes, A's `entity` row survives as a
+        // tombstone so the composite foreign key stays satisfied, and **B's
+        // `parent_category_id` names A for ever**. No client can repair it
+        // either — re-parenting B means naming A, and `available_for_write` on
+        // an erased A refuses. It does not hang: [`nesting::would_cycle`] reads
+        // A's deleted row, finds none, and returns false. It is a coherence
+        // problem, which is the quieter kind.
+        //
+        // Answering `NotBuilt` rather than `NoContainer` is the whole reason the
+        // two are different answers. This arm once claimed nothing was owed
+        // here, and **a comment asserting a gap does not exist is worse than the
+        // gap** — it converts an open question into a settled one and talks the
+        // next reader out of checking. The erase path's own comment named "the
+        // ladder and nested locations" and silently omitted this third case.
+        //
+        // **Built now.** The two senses stay separate rather than merging: this
+        // releases the nesting, `uncategorise_all` goes on releasing the
+        // membership, and they write two different columns — so a category both
+        // nested under the erased one and filed in it is let go once by each,
+        // and neither overwrites what the other did.
+        EntityType::Category => category::detach_contained(ctx, entity).await,
+        // A note and a file hold nothing. The three the schema has no table for
+        // hold nothing either, and cannot be created at all.
+        EntityType::Note
+        | EntityType::File
+        | EntityType::Routine
+        | EntityType::FocusSession
+        | EntityType::CheckIn => Ok(Detachment::NoContainer),
     }
 }
 

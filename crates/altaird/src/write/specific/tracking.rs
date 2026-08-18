@@ -61,6 +61,7 @@
 //! either path: *an item with a name and nothing else is a complete item*. Every
 //! column below is nullable and has no default, and nothing here supplies one.
 
+use chrono::{DateTime, Utc};
 use sqlx::Row;
 use uuid::Uuid;
 
@@ -73,8 +74,8 @@ use crate::store::ids::EntityId;
 use super::super::content::{Malformed, Written, identifier, instant, malformed};
 use super::super::entity::{Applied, Ctx, Failed, Refusal, type_name};
 use super::{
-    Decimal, Field, Held, Property, Reader, SpecificPart, SpecificValue, nesting, read_column,
-    read_properties, unbuilt, write_column, write_properties,
+    Decimal, Detachment, Field, Held, Property, Reader, Released, SpecificPart, SpecificValue,
+    nesting, read_column, read_properties, unbuilt, write_column, write_properties,
 };
 
 // ---------------------------------------------------------------------------
@@ -102,6 +103,11 @@ const UNIT: &str = "unit";
 /// same way, deliberately: two callers of one walk feeding it two different
 /// ways is how the walk ends up running against a column one of them renamed.
 const PARENT_LOCATION: &str = "parent_location_id";
+
+/// The store's spelling of the column an item's shelf is held in, named once
+/// for the same reason as the one above: [`detach_contained`] names it in a
+/// statement, and [`ITEM_FIELDS`] declares it, and the two must not drift.
+const ITEM_LOCATION_COLUMN: &str = "location_id";
 
 /// The side table a type keeps its content in.
 ///
@@ -138,7 +144,7 @@ pub const ITEM_FIELDS: &[Field] = &[
     },
     Field {
         number: ITEM_LOCATION,
-        held: Held::Column("location_id"),
+        held: Held::Column(ITEM_LOCATION_COLUMN),
     },
     Field {
         number: ITEM_TEMPLATE,
@@ -179,30 +185,24 @@ pub const SHOPPING_LIST_FIELDS: &[Field] = &[Field {
     held: Held::NotServed(SHOPPING_LIST_DEFERRED),
 }];
 
-/// Why an item's assertion time is not a field a client states.
+/// Why an item's assertion time may be stated but never stated alone.
 ///
-/// **An expiring refusal, in the register of the three Wave 2.1 makes.** The
-/// field exists on the wire and will exist forever — field numbers are
-/// permanent — so this says what a client is waiting on rather than that its
-/// message was wrong.
+/// **The wire carries it and the instance honours it.** `ItemContent`'s field 3
+/// is *when the amount was last asserted*, and it exists so a client can say so:
+/// acceptance is local and durable on the device and the outbox replays later,
+/// so a count taken at nine and replayed at six is the ordinary case, not the
+/// exotic one. Wave 2.1 settled the same question one level up — a create's
+/// `created_at` is the client's, and substituting the instance's clock told a
+/// client its capture had landed with a time it never sent.
 ///
-/// The instance assigns it, for the same reason it assigns a category position:
-/// the column is constrained against another column, so the two move in one
-/// statement, and [`validate_and_place`] can see only one part at a time. A
-/// client free to state the time independently could put the row through the
-/// state `CHECK ((asserted_amount IS NULL) = (asserted_at IS NULL))` refuses —
-/// by clearing the amount and stating a time in one message, or by stating a
-/// time on an item that has no amount — and the answer would be a constraint
-/// violation that takes the transaction down rather than a refusal anybody can
-/// act on.
-///
-/// **It expires when a device's own assertion time can cross.** A count taken
-/// offline at nine and replayed at six should read nine, not six. Today no
-/// client exists to have taken one, and the outbox that will carry it is Wave
-/// 4.1's; when it lands this becomes a companion carrying the stated instant
-/// rather than a refusal, and the pairing below is already where it goes.
-const ASSERTED_AT_IS_THE_INSTANCES: &str = "the time an amount was asserted is the amount's own and moves with it, so the instance \
-     sets it when the amount is written; stating it separately is not served yet";
+/// What is still refused is a time with no amount to belong to. The column is
+/// constrained by `CHECK ((asserted_amount IS NULL) = (asserted_at IS NULL))`,
+/// so an assertion time on an item holding no amount, or stated in the same
+/// message that clears one, names a row the store cannot hold. Refused as
+/// malformed here rather than left to the constraint, which would take the whole
+/// transaction down with a message nobody can act on.
+const ASSERTED_AT_WITHOUT_AN_AMOUNT: &str = "the time an amount was asserted belongs to an amount, and this item would have none: \
+     state the amount in the same write, or leave the time alone";
 
 // ---------------------------------------------------------------------------
 // Reading the wire
@@ -323,43 +323,93 @@ fn properties(values: &[v1::PropertyValue]) -> Result<Vec<Property>, Malformed> 
 // What a part owes before it is applied
 // ---------------------------------------------------------------------------
 
+/// The instant a message states for field 3, if it states one.
+///
+/// **This is why the seam carries the whole addressed set.** The amount's
+/// companion has to be the client's own time where there is one and the
+/// instance's clock otherwise, and *whether the client stated one* is a fact
+/// about a different part of the same message.
+fn stated_assertion_time(addressed: &[SpecificPart]) -> Option<DateTime<Utc>> {
+    addressed.iter().find_map(|p| match (p.field, &p.value) {
+        (ITEM_ASSERTED_AT, SpecificValue::Instant(at)) => *at,
+        _ => None,
+    })
+}
+
+/// Whether a message says anything at all about the amount.
+fn addresses_amount(addressed: &[SpecificPart]) -> bool {
+    addressed.iter().any(|p| p.field == ITEM_AMOUNT)
+}
+
 pub async fn validate_and_place(
     ctx: &mut Ctx<'_>,
     entity: EntityId,
     kind: EntityType,
     part: &SpecificPart,
-) -> Applied<Option<SpecificPart>> {
+    addressed: &[SpecificPart],
+) -> Applied<Vec<SpecificPart>> {
     match (kind, part.field) {
         // **The companion.** An amount and the time it was asserted are
-        // constrained against each other, so they move in one statement and the
-        // instance supplies the time. Asserting an amount stamps now; clearing
-        // one clears the stamp with it, because a time an amount was asserted at
-        // is not something an item with no amount has.
+        // constrained against each other, so they move in one statement.
+        //
+        // The time is the client's where the client stated one, and the
+        // instance's clock otherwise. Both are the same act — *this is what is
+        // on the shelf, and this is when I looked* — and a device that counted
+        // at nine and reached the instance at six must record nine.
+        //
+        // Clearing the amount clears the stamp with it, because a time an
+        // amount was asserted at is not something an item with no amount has.
+        // A message that clears the amount and states a time is refused below
+        // rather than silently resolved either way.
         //
         // Re-stating the same amount is a real act — *I looked again, still
         // three* — and it moves the stamp while leaving the amount where it was.
         // That is what makes freshness recordable at all, given that a count is
         // only as good as the last time somebody looked.
-        //
-        // Which is why two people counting the same shelf at once, and
-        // agreeing, must not surface a conflict on the stamp: their two
-        // `ctx.at` readings genuinely differ and would never compare equal.
-        // Nothing here has to arrange that — a placement is not a part the
-        // write addressed, so it does not reach conflict detection at all. The
-        // rule and the reasoning are in `write::entity::edit`.
         (EntityType::Item, ITEM_AMOUNT) => {
             let asserted = matches!(part.value, SpecificValue::Number(Some(_)));
-            Ok(Some(SpecificPart {
+            let stated = stated_assertion_time(addressed);
+            if !asserted && stated.is_some() {
+                return Err(Refusal::Malformed(ASSERTED_AT_WITHOUT_AN_AMOUNT.into()).into());
+            }
+            Ok(vec![SpecificPart {
                 field: ITEM_ASSERTED_AT,
-                value: SpecificValue::Instant(asserted.then_some(ctx.at)),
-            }))
+                value: SpecificValue::Instant(asserted.then(|| stated.unwrap_or(ctx.at))),
+            }])
         }
 
-        // **Not a general modified time.** Renaming an item or correcting its
-        // notes does not confirm what is on the shelf, so nothing but the amount
-        // moves this, and a client may not move it by hand.
+        // **Stated, but never stated alone.** Where the amount is in the same
+        // message, this part's value has already travelled as that part's
+        // companion and landed in one statement with it; applying it again is
+        // the same value written twice and changes nothing.
+        //
+        // Where the amount is *not* in the message, the item must already hold
+        // one — otherwise the row would have a time and no amount, which the
+        // table refuses. Checked here so the answer is a refusal a client can
+        // act on rather than a constraint violation that takes the transaction
+        // down.
         (EntityType::Item, ITEM_ASSERTED_AT) => {
-            Err(Refusal::Malformed(ASSERTED_AT_IS_THE_INSTANCES.into()).into())
+            if !addresses_amount(addressed) {
+                let stored = read_column(
+                    ctx,
+                    entity,
+                    kind,
+                    &SpecificPart {
+                        field: ITEM_AMOUNT,
+                        value: SpecificValue::Number(None),
+                    },
+                )
+                .await?;
+                let holds_amount = matches!(stored.value, SpecificValue::Number(Some(_)));
+                let clearing = matches!(part.value, SpecificValue::Instant(None));
+                if !holds_amount && !clearing {
+                    return Err(Refusal::Malformed(ASSERTED_AT_WITHOUT_AN_AMOUNT.into()).into());
+                }
+                if holds_amount && clearing {
+                    return Err(Refusal::Malformed(ASSERTED_AT_WITHOUT_AN_AMOUNT.into()).into());
+                }
+            }
+            Ok(Vec::new())
         }
 
         // A location has to be one this member can see, and it has to be a
@@ -369,7 +419,7 @@ pub async fn validate_and_place(
             if let SpecificValue::Id(Some(id)) = part.value {
                 must_be(ctx, EntityId::from_uuid(id), EntityType::Location).await?;
             }
-            Ok(None)
+            Ok(Vec::new())
         }
 
         (EntityType::Location, LOCATION_PARENT) => {
@@ -392,7 +442,7 @@ pub async fn validate_and_place(
                     .into());
                 }
             }
-            Ok(None)
+            Ok(Vec::new())
         }
 
         // A template is not an entity and carries no audience: one shared set
@@ -404,13 +454,13 @@ pub async fn validate_and_place(
             if let SpecificValue::Id(Some(id)) = part.value {
                 template_exists(ctx, id).await?;
             }
-            Ok(None)
+            Ok(Vec::new())
         }
 
         // Words the person wrote. Nothing to check that reading them did not
         // already check.
         (EntityType::Item, ITEM_UNIT | ITEM_PROPERTIES)
-        | (EntityType::Location, LOCATION_PROPERTIES) => Ok(None),
+        | (EntityType::Location, LOCATION_PROPERTIES) => Ok(Vec::new()),
 
         (EntityType::ShoppingList, _) => {
             Err(Refusal::Malformed(SHOPPING_LIST_DEFERRED.into()).into())
@@ -506,18 +556,20 @@ pub async fn apply(
     entity: EntityId,
     kind: EntityType,
     part: &SpecificPart,
-    placement: Option<&SpecificPart>,
+    placements: &[SpecificPart],
 ) -> Applied<()> {
     match (kind, part.field) {
         // **One statement, both columns.** The table refuses the state in
         // between, so writing them in sequence fails whichever order the
         // sequence is in.
         (EntityType::Item, ITEM_AMOUNT) => {
-            let Some(SpecificPart {
-                field: ITEM_ASSERTED_AT,
-                value: SpecificValue::Instant(at),
-            }) = placement
-            else {
+            // **By field number, never by position.** A lane returning two
+            // companions must not depend on the order it returned them in.
+            let at = placements.iter().find_map(|p| match (p.field, &p.value) {
+                (ITEM_ASSERTED_AT, SpecificValue::Instant(at)) => Some(*at),
+                _ => None,
+            });
+            let Some(at) = at else {
                 // Unreachable: `validate_and_place` always produces the
                 // companion for this part. Refused rather than written alone,
                 // because the alternative is a statement the table rejects with
@@ -542,7 +594,7 @@ pub async fn apply(
             sqlx::query(sqlx::AssertSqlSafe(sql))
                 .bind(entity.as_uuid())
                 .bind(amount.as_ref().map(Decimal::text))
-                .bind(*at)
+                .bind(at)
                 .execute(ctx.tx.conn())
                 .await?;
             Ok(())
@@ -552,25 +604,103 @@ pub async fn apply(
             let SpecificValue::Properties(values) = &part.value else {
                 return Err(unaddressable(kind, part.field));
             };
-            debug_assert!(placement.is_none());
+            debug_assert!(placements.is_empty());
             write_properties(ctx, entity, values).await
         }
 
         (EntityType::Item, ITEM_UNIT | ITEM_LOCATION | ITEM_TEMPLATE)
         | (EntityType::Location, LOCATION_PARENT | LOCATION_TEMPLATE) => {
-            debug_assert!(placement.is_none());
+            debug_assert!(placements.is_empty());
             write_column(ctx, entity, kind, part).await
         }
 
-        // Refused before it could reach here; see `ASSERTED_AT_IS_THE_INSTANCES`.
-        (EntityType::Item, ITEM_ASSERTED_AT) => {
-            Err(Refusal::Malformed(ASSERTED_AT_IS_THE_INSTANCES.into()).into())
-        }
+        // Validated above, and written here as its own column. Where the amount
+        // was in the same message this is the second write of a value that
+        // already landed with it, which is idempotent by construction: the
+        // companion carried this same instant.
+        (EntityType::Item, ITEM_ASSERTED_AT) => write_column(ctx, entity, kind, part).await,
         (EntityType::ShoppingList, _) => {
             Err(Refusal::Malformed(SHOPPING_LIST_DEFERRED.into()).into())
         }
         _ => Err(unaddressable(kind, part.field)),
     }
+}
+
+// ---------------------------------------------------------------------------
+// What an erased location lets go of
+// ---------------------------------------------------------------------------
+
+/// Release everything a vanished location held.
+///
+/// **LANE: Tracking.** A location holds two different things and both point
+/// back at it by identity:
+///
+/// - **Child locations**, through `parent_location_id`. Nesting is optional, so
+///   a child that loses its parent becomes a top-level location, which is a
+///   complete state needing no repair — *an item whose location is a single
+///   unnested thing is complete, and so is an item with no location at all*.
+/// - **Items shelved in it**, through `location_id`. The same rule: *nothing
+///   insists the location be right*, and an item with no location is complete.
+///
+/// **Both, not just the first.** The nesting case is the one that gets
+/// remembered because the container is the same type as the thing contained;
+/// the items are easier to forget and are the larger set. Missing either leaves
+/// rows pointing at a tombstone.
+///
+/// **The schema will not catch this.** Both columns are typed foreign keys into
+/// `entity`, and erasure leaves the entity row standing as a tombstone — so
+/// nothing is violated, no constraint fires, and the dangling reference is
+/// silent. That is the same reason the cycle check had to be written here
+/// rather than declared.
+///
+/// An item and a shopping list contain nothing, which is an answer rather than
+/// an omission.
+pub async fn detach_contained(
+    ctx: &mut Ctx<'_>,
+    entity: EntityId,
+    kind: EntityType,
+) -> Applied<Detachment> {
+    if kind != EntityType::Location {
+        // An item is a leaf. A shopping list's entries are blocks of its own
+        // body rather than entities pointing at it, and are deferred besides.
+        return Ok(Detachment::NoContainer);
+    }
+
+    let mut released = Vec::new();
+    // The two columns that name a location, each in its own table and each its
+    // own part of its own type's message. **The table and the part are both
+    // derived from the type**, so nothing here restates a pairing the field
+    // declarations already make — the second copy is the one that goes stale.
+    for (held_by, column) in [
+        (EntityType::Location, PARENT_LOCATION),
+        (EntityType::Item, ITEM_LOCATION_COLUMN),
+    ] {
+        let table = table_of(held_by)?;
+        let field = super::part_held_in(held_by, column)?;
+        let sql =
+            format!("UPDATE {table} SET {column} = NULL WHERE {column} = $1 RETURNING entity_id");
+        let rows = sqlx::query(sqlx::AssertSqlSafe(sql))
+            .bind(entity.as_uuid())
+            .fetch_all(ctx.tx.conn())
+            .await?;
+        for r in &rows {
+            released.push(Released {
+                entity: EntityId::from_uuid(r.try_get("entity_id")?),
+                part: field.clone(),
+            });
+        }
+    }
+
+    // **Deliberately unscoped**, for the reason `uncategorise_all` gives and
+    // which is no smaller here: the container is gone for everybody, so leaving
+    // behind the rows the erasing member cannot see would keep a dangling
+    // reference alive precisely where nobody can find it. Do not add a
+    // predicate. Nothing leaves here that a caller can show anyone.
+    //
+    // The counter and the change entry are `store::entity::detached_from_container`'s,
+    // because a change entry needs the audience and this file may not name that
+    // column. See that function for the split.
+    Ok(Detachment::Released(released))
 }
 
 // ---------------------------------------------------------------------------
