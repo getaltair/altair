@@ -25,6 +25,7 @@ use altaird::store::begin_write;
 use altaird::store::entity::EntityType;
 use altaird::store::ids::{EntityId, MemberId};
 use altaird::write::entity::Ctx;
+use altaird::write::parts::{Part, PartKey};
 use altaird::write::specific;
 use chrono::Utc;
 use common::*;
@@ -1679,9 +1680,15 @@ async fn restating_the_same_parent_vacates_nothing() {
 /// **Exercised directly because the dispatch still answers `NotBuilt`**, which
 /// is the one line between this and the wired erase path. `nesting::would_cycle`
 /// was tested the same way for the same reason, and the erase path itself is
-/// already written: it calls `specific::detach_contained`, hands the identities
+/// already written: it calls `specific::detach_contained`, hands what comes back
 /// to `store::entity::detached_from_container`, and emits a change entry each.
-async fn release_from(world: &World, container: EntityId, kind: EntityType) -> Vec<Uuid> {
+///
+/// **Each release carries the part that moved, and these tests assert it.** A
+/// release advances the child's counter, so it owes provenance, and provenance
+/// needs to know which field went away — a released arc lost its campaign, a
+/// released quest lost whichever of its two parents it had. Asserting the
+/// identity alone would let the wrong field number through silently.
+async fn release_from(world: &World, container: EntityId, kind: EntityType) -> Vec<(Uuid, String)> {
     let mut tx = begin_write(&world.db.pool).await.expect("a transaction");
     let mut ctx = Ctx {
         tx: &mut tx,
@@ -1694,8 +1701,20 @@ async fn release_from(world: &World, container: EntityId, kind: EntityType) -> V
     };
     tx.commit().await.expect("commit");
     match answer {
-        specific::Detachment::Released(ids) => ids.into_iter().map(EntityId::as_uuid).collect(),
+        specific::Detachment::Released(rows) => rows
+            .into_iter()
+            .map(|r| (r.entity.as_uuid(), part_name(&r.part)))
+            .collect(),
         other => panic!("a ladder container releases what it held, got {other:?}"),
+    }
+}
+
+/// The spelling `entity_part_counter` and the `conflict` row both key a part by,
+/// which is what provenance will write.
+fn part_name(part: &Part) -> String {
+    match part.key() {
+        PartKey::Field(name) => name,
+        PartKey::Block(id) => panic!("a ladder parent is a field, not block {id}"),
     }
 }
 
@@ -1734,9 +1753,16 @@ async fn an_erased_campaign_releases_its_arcs_and_its_quests() {
         )
         .await;
 
+    // **The two kinds lost different fields.** An arc's campaign is field 2 of
+    // its message and a quest's is field 3, so one container releasing across
+    // two tables produces two different parts — which is exactly why the part
+    // has to travel with the identity rather than be inferred by the caller.
     let mut released = release_from(&world, c, EntityType::Campaign).await;
     released.sort();
-    let mut expected = vec![a.as_uuid(), q.as_uuid()];
+    let mut expected = vec![
+        (a.as_uuid(), "specific.2".to_owned()),
+        (q.as_uuid(), "specific.3".to_owned()),
+    ];
     expected.sort();
     assert_eq!(released, expected);
 
@@ -1776,9 +1802,10 @@ async fn an_erased_arc_releases_its_quests_without_promoting_them() {
         )
         .await;
 
+    // A quest's arc is field 2 of its message, where its campaign is field 3.
     assert_eq!(
         release_from(&world, a, EntityType::Arc).await,
-        vec![q.as_uuid()]
+        vec![(q.as_uuid(), "specific.2".to_owned())]
     );
 
     let row = quest_row(&world, q).await;
@@ -1860,7 +1887,7 @@ async fn a_child_the_eraser_cannot_see_is_still_released() {
     // One erases the campaign, and releases a child it was never entitled to see.
     assert_eq!(
         release_from(&world, c, EntityType::Campaign).await,
-        vec![hidden.as_uuid()]
+        vec![(hidden.as_uuid(), "specific.3".to_owned())]
     );
     let row = quest_row(&world, hidden).await;
     assert_eq!((row.campaign, row.position), (None, None));
@@ -1909,7 +1936,10 @@ async fn the_dispatch_has_not_been_pointed_at_this_yet() {
     assert_eq!(through_dispatch, specific::Detachment::NotBuilt);
     assert_eq!(
         through_module,
-        specific::Detachment::Released(vec![a]),
+        specific::Detachment::Released(vec![specific::Released {
+            entity: a,
+            part: Part::Specific(2),
+        }]),
         "the module releases; only the dispatch arm is still unpointed"
     );
 }

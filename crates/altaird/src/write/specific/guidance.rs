@@ -101,8 +101,8 @@ use super::super::entity::{Applied, Ctx, Refusal, type_name};
 use super::super::parts::Part;
 use super::super::provenance;
 use super::{
-    Detachment, Field, GuidanceState, Held, Reader, SpecificPart, SpecificValue, read_column,
-    write_column,
+    Detachment, Field, GuidanceState, Held, Reader, Released, SpecificPart, SpecificValue,
+    read_column, write_column,
 };
 
 /// The state field. **The same number in all three messages**, which is what
@@ -880,6 +880,14 @@ pub async fn detach_contained(
     let mut released = Vec::new();
     for (child, column) in children {
         let table = table_of(*child)?;
+        // **Which part moved is read out of the declaration, not written here.**
+        // A release advances the child's counter, so it owes provenance, and
+        // provenance needs the part. The `FIELDS` lists above already say which
+        // field each column holds and `tests/type_content.rs` checks them
+        // against the store; naming the number again beside the statement would
+        // put it in two places, and the copy that drifts is the one nothing
+        // checks. The same reasoning that gave `would_cycle` one implementation.
+        let part = part_held_in(*child, column)?;
         let sql = format!(
             "UPDATE {table} SET {column} = NULL, {LADDER_POSITION_COLUMN} = NULL \
              WHERE {column} = $1 RETURNING entity_id"
@@ -889,10 +897,34 @@ pub async fn detach_contained(
             .fetch_all(ctx.tx.conn())
             .await?;
         for r in &rows {
-            released.push(EntityId::from_uuid(r.try_get("entity_id")?));
+            released.push(Released {
+                entity: EntityId::from_uuid(r.try_get("entity_id")?),
+                part: part.clone(),
+            });
         }
     }
     Ok(Detachment::Released(released))
+}
+
+/// The part of a type's message that a column holds.
+///
+/// One lookup over the type's own [`Field`] declarations, so a column and the
+/// field number that names it cannot disagree. `None` is impossible for the
+/// three columns [`detach_contained`] asks about — each is declared — and is a
+/// refusal rather than a panic because everything else in this file answers
+/// that way.
+fn part_held_in(kind: EntityType, column: &str) -> Applied<Part> {
+    super::fields(kind)
+        .iter()
+        .find(|f| matches!(f.held, Held::Column(c) if c == column))
+        .map(|f| Part::Specific(f.number))
+        .ok_or_else(|| {
+            Refusal::Malformed(format!(
+                "no field of a {} is held in {column}",
+                type_name(kind)
+            ))
+            .into()
+        })
 }
 
 /// Guidance contributes nothing to searchable text.
