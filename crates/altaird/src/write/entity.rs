@@ -973,18 +973,27 @@ pub async fn erase(ctx: &mut Ctx<'_>, ids: &[EntityId]) -> Applied<(Vec<EntityId
         // fortiori to an erased one, and leaving the reference would point
         // every member of the category at a tombstone.
         //
-        // The type-specific containers — the ladder, and nested locations —
-        // release through the type-content seam, because the column that points
-        // at the container is a column of the type's own side table. The seam
-        // hands back identities; the counter and the audience a change entry
-        // needs come from the store layer, which is the only place entitled to
-        // read that column. See `specific::detach_contained`.
+        // **That is category *membership*, and it is only half of what a
+        // category holds.** The other half is category *nesting* —
+        // `category.parent_category_id` — and `uncategorise_all` does not touch
+        // it. An earlier version of this comment named "the ladder and nested
+        // locations" and omitted the third case, which is where the blind spot
+        // started; it is spelled out here so the next reader does not inherit
+        // it.
+        //
+        // The type-specific containers — the ladder, nested locations, and
+        // nested categories — release through the type-content seam, because
+        // the column that points at the container is a column of the type's own
+        // side table. The seam hands back identities and which part of each
+        // moved; the counter and the audience a change entry needs come from the
+        // store layer, which is the only place entitled to read that column. See
+        // `specific::detach_contained`.
         //
         // **A type that has not built its release must not look like an empty
         // one.** `Detachment::NotBuilt` is a distinct answer for exactly that
         // reason, and it is stepped over here rather than treated as nothing to
-        // do — Guidance's arcs and quests still point at their tombstone, and
-        // that is visible rather than silent.
+        // do. Two types still answer that way and both are visible rather than
+        // silent: Guidance's arcs and quests, and a nested category.
         let contained = match specific::detach_contained(ctx, *id, row.entity_type).await? {
             specific::Detachment::Released(released) => released,
             specific::Detachment::NoContainer | specific::Detachment::NotBuilt => Vec::new(),

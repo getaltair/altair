@@ -841,18 +841,28 @@ pub async fn detach_contained(
         EntityType::Item | EntityType::Location | EntityType::ShoppingList => {
             tracking::detach_contained(ctx, entity, kind).await
         }
-        // **LANE: Knowledge and categories.** A category is a container twice
-        // over and only one of them is handled. `uncategorise_all` releases its
-        // *membership* — the entities filed in it — and Wave 2.1 built that. It
-        // does nothing about its *nesting*: `category.parent_category_id` on a
-        // child category is released by nobody, so erasing a parent category
-        // leaves its children pointing at a tombstone, exactly as an erased
-        // location once left its own.
+        // **LANE: Knowledge and categories.** A category is a container in two
+        // distinct senses and only one of them is released.
+        //
+        // *Membership* — the entities filed in it — is the shared model's, and
+        // Wave 2.1 built it: `uncategorise_all` clears `entity.category_id` on
+        // everything inside. *Nesting* — `category.parent_category_id`, how one
+        // category sits under another — is a column of this side table, exactly
+        // like `location.parent_location_id`, and nothing releases it.
+        //
+        // What that leaves, concretely. Erase category A with category B nested
+        // inside it: A's `category` row goes, A's `entity` row survives as a
+        // tombstone so the composite foreign key stays satisfied, and **B's
+        // `parent_category_id` names A for ever**. No client can repair it
+        // either — re-parenting B means naming A, and `available_for_write` on
+        // an erased A refuses. It does not hang: [`nesting::would_cycle`] reads
+        // A's deleted row, finds none, and returns false. It is a coherence
+        // problem, which is the quieter kind.
         //
         // Answering `NotBuilt` rather than `NoContainer` is the whole reason the
-        // two are different answers. The comment in the erase path names "the
-        // ladder and nested locations" and silently omits this third case; this
-        // is where that omission stops being silent.
+        // two are different answers. This arm previously claimed nothing was
+        // owed here, and a comment asserting a gap does not exist is worse than
+        // the gap.
         EntityType::Category => Ok(Detachment::NotBuilt),
         // A note and a file hold nothing. The three the schema has no table for
         // hold nothing either, and cannot be created at all.

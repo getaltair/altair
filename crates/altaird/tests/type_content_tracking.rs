@@ -2432,3 +2432,64 @@ async fn a_no_op_write_still_advances_the_entitys_counter() {
 
     assert_eq!(world.counter(id).await, before + 1);
 }
+
+/// **What the unbuilt half actually leaves behind**, pinned so the fix is
+/// visible when it lands.
+///
+/// Erase category A with category B nested inside it. A's `category` row goes,
+/// A's `entity` row survives as a tombstone so the composite foreign key stays
+/// satisfied, and B's `parent_category_id` names A for ever. No client can
+/// repair it: re-parenting B means naming A, and `available_for_write` on an
+/// erased A refuses.
+///
+/// It is not a hang — `would_cycle` reads A's deleted row, finds none, and
+/// returns false — which is why it went unnoticed. A coherence problem is the
+/// quieter kind.
+///
+/// **LANE: Knowledge and categories.** This is a characterisation test, not an
+/// approval. When that lane implements the release, **invert this** — the
+/// assertion becomes `None`, exactly as the location one did.
+#[tokio::test]
+async fn erasing_a_parent_category_still_strands_its_nested_children() {
+    let world = World::new().await;
+    let outer = world
+        .create(
+            &world.one,
+            v1::entity_content::Specific::Category(v1::CategoryContent::default()),
+            v1::EntityContent {
+                title: Some("outer".into()),
+                ..Default::default()
+            },
+        )
+        .await;
+    let inner = world
+        .create(
+            &world.one,
+            v1::entity_content::Specific::Category(v1::CategoryContent {
+                parent_category_id: Some(id_bytes(outer)),
+                ..Default::default()
+            }),
+            v1::EntityContent {
+                title: Some("inner".into()),
+                ..Default::default()
+            },
+        )
+        .await;
+
+    world.submit(&world.one, erase(&[outer])).await;
+    assert_eq!(world.lifecycle(outer).await, "erased");
+
+    let stranded: Option<Uuid> =
+        sqlx::query("SELECT parent_category_id AS p FROM category WHERE entity_id = $1")
+            .bind(inner.as_uuid())
+            .fetch_one(&world.db.pool)
+            .await
+            .expect("category row")
+            .try_get("p")
+            .expect("parent");
+    assert_eq!(
+        stranded,
+        Some(outer.as_uuid()),
+        "wired already? invert this test — nested categories are released now"
+    );
+}
