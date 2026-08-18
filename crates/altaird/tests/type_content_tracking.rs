@@ -1945,39 +1945,98 @@ async fn a_type_that_contains_nothing_says_it_has_no_container() {
     );
 }
 
-/// **The distinction the third variant exists for.** Guidance's three types are
-/// containers whose release is not built, and they must not answer the way an
-/// empty container answers — otherwise wiring the call would leave every arc and
-/// quest pointing at a tombstone with the suite green.
+/// **Every container is built, and this is what says so.**
 ///
-/// **LANE: Guidance.** When that lane builds the release, this test changes to
-/// assert a `Released`, and its failure here is the reminder.
+/// This replaces two tests that asserted Guidance's types and a category's
+/// nesting each answered `NotBuilt`. They were right while those releases were
+/// owed and they are wrong now, and the honest replacement is not to delete the
+/// idea but to invert it: **no type may report an unbuilt release.**
+///
+/// # Why the variant stays, when nothing answers it
+///
+/// `NotBuilt` never changed behaviour — the erase path steps over it exactly as
+/// it steps over `NoContainer`, and it always did. Its whole value was being
+/// *visible*: a container whose release was owed said so, in a form a test could
+/// assert and a comment could not drift away from. It caught two gaps that way,
+/// both of them this lane's own.
+///
+/// With every container built it has no inhabitant, and an uninhabited variant
+/// is the kind of thing a later reader removes as obviously dead. So this test
+/// is what keeps it alive and honest: it fails the moment a type starts
+/// answering `NotBuilt` again, which is exactly when somebody has added a
+/// container and not yet released it. That is a fine state to be in while
+/// building — the point is that it must be **stated here deliberately** rather
+/// than discovered at a merge.
+///
+/// # What this does not cover
+///
+/// The list is written out. A new `EntityType` must gain an arm in
+/// `detach_contained` — the match is exhaustive, so the compiler forces that —
+/// but it will not appear here until someone adds it. That is a real gap and it
+/// is smaller than the one it replaces.
 #[tokio::test]
-async fn guidances_containers_report_their_release_is_not_built() {
+async fn no_type_reports_an_unbuilt_release() {
     let world = World::new().await;
-    for (kind, specific) in [
-        (
-            EntityType::Campaign,
-            v1::entity_content::Specific::Campaign(v1::CampaignContent::default()),
-        ),
-        (
-            EntityType::Arc,
-            v1::entity_content::Specific::Arc(v1::ArcContent::default()),
-        ),
-        (
-            EntityType::Quest,
-            v1::entity_content::Specific::Quest(v1::QuestContent::default()),
-        ),
+    // `detach_contained` dispatches on the type rather than reading the entity,
+    // so an identity that names nothing is enough to ask every arm the question.
+    let nobody = EntityId::from_uuid(Uuid::new_v4());
+    for kind in [
+        EntityType::Campaign,
+        EntityType::Arc,
+        EntityType::Quest,
+        EntityType::Note,
+        EntityType::File,
+        EntityType::Item,
+        EntityType::Location,
+        EntityType::ShoppingList,
+        EntityType::Category,
+        EntityType::Routine,
+        EntityType::FocusSession,
+        EntityType::CheckIn,
     ] {
-        let id = world
-            .create(&world.one, specific, v1::EntityContent::default())
-            .await;
-        assert_eq!(
-            detach(&world, id, kind).await,
+        assert_ne!(
+            detach(&world, nobody, kind).await,
             Detachment::NotBuilt,
-            "{kind:?} answered as though it held nothing"
+            "{kind:?} reports its release is not built. If that is true, it is a \
+             container whose contents will point at a tombstone — say so here \
+             deliberately rather than letting a merge find it."
         );
     }
+}
+
+/// Guidance's ladder releases what it held. The positive half of what the
+/// `NotBuilt` assertion used to stand in for.
+#[tokio::test]
+async fn an_erased_campaign_releases_the_arc_beneath_it() {
+    let world = World::new().await;
+    let campaign = world
+        .create(
+            &world.one,
+            v1::entity_content::Specific::Campaign(v1::CampaignContent::default()),
+            v1::EntityContent::default(),
+        )
+        .await;
+    let arc = world
+        .create(
+            &world.one,
+            v1::entity_content::Specific::Arc(v1::ArcContent {
+                campaign_id: Some(id_bytes(campaign)),
+                ..Default::default()
+            }),
+            v1::EntityContent::default(),
+        )
+        .await;
+
+    world.submit(&world.one, erase(&[campaign])).await;
+
+    let parent: Option<Uuid> = sqlx::query("SELECT campaign_id AS c FROM arc WHERE entity_id = $1")
+        .bind(arc.as_uuid())
+        .fetch_one(&world.db.pool)
+        .await
+        .expect("arc row")
+        .try_get("c")
+        .expect("campaign_id");
+    assert_eq!(parent, None, "the arc still points at its erased campaign");
 }
 
 /// A note and a file hold nothing at all, which is an answer.
@@ -1991,28 +2050,37 @@ async fn the_types_that_hold_nothing_say_they_have_no_container() {
     );
 }
 
-/// **A category is a container twice over and only one half is built.**
+/// A category is a container in two senses and **both are now released**:
+/// `uncategorise_all` for its membership, and the type-content seam for its
+/// nesting.
 ///
-/// `uncategorise_all` releases its *membership* — the entities filed in it — and
-/// Wave 2.1 built that. Its *nesting* is released by nobody, so erasing a parent
-/// category still leaves its children pointing at a tombstone. Answering
-/// `NotBuilt` is what stops that being invisible.
-///
-/// **LANE: Knowledge and categories.** `category.rs` is not this lane's;
-/// this asserts the gap is reported rather than closing it.
+/// This asserts the second, which was the half nothing handled for a wave.
 #[tokio::test]
-async fn a_categorys_nesting_reports_its_release_is_not_built() {
+async fn a_nested_category_is_released_when_its_parent_is_erased() {
     let world = World::new().await;
-    let category = world
+    let outer = world
         .create(
             &world.one,
             v1::entity_content::Specific::Category(v1::CategoryContent::default()),
             v1::EntityContent::default(),
         )
         .await;
+    let inner = world
+        .create(
+            &world.one,
+            v1::entity_content::Specific::Category(v1::CategoryContent {
+                parent_category_id: Some(id_bytes(outer)),
+                ..Default::default()
+            }),
+            v1::EntityContent::default(),
+        )
+        .await;
+
+    let released = released(&detach(&world, outer, EntityType::Category).await);
     assert_eq!(
-        detach(&world, category, EntityType::Category).await,
-        Detachment::NotBuilt
+        released,
+        vec![inner],
+        "the nested category was not released"
     );
 }
 
@@ -2433,24 +2501,21 @@ async fn a_no_op_write_still_advances_the_entitys_counter() {
     assert_eq!(world.counter(id).await, before + 1);
 }
 
-/// **What the unbuilt half actually leaves behind**, pinned so the fix is
-/// visible when it lands.
+/// **Inverted, as its own message said to be.**
 ///
-/// Erase category A with category B nested inside it. A's `category` row goes,
-/// A's `entity` row survives as a tombstone so the composite foreign key stays
-/// satisfied, and B's `parent_category_id` names A for ever. No client can
-/// repair it: re-parenting B means naming A, and `available_for_write` on an
-/// erased A refuses.
+/// This was a characterisation test. It pinned what an erased parent category
+/// left behind — the child's `parent_category_id` naming a tombstone for ever,
+/// unrepairable because re-parenting means naming the erased one and
+/// `available_for_write` refuses it, and silent because `would_cycle` reads the
+/// deleted row, finds none and returns false. A coherence problem is the quieter
+/// kind, which is why it survived a wave.
 ///
-/// It is not a hang — `would_cycle` reads A's deleted row, finds none, and
-/// returns false — which is why it went unnoticed. A coherence problem is the
-/// quieter kind.
-///
-/// **LANE: Knowledge and categories.** This is a characterisation test, not an
-/// approval. When that lane implements the release, **invert this** — the
-/// assertion becomes `None`, exactly as the location one did.
+/// It failed the moment the categories lane wired the release, with the message
+/// it was written to carry. **The assertion is now `None`** and nothing else
+/// about the test changed, which is the whole point of writing the pin rather
+/// than a comment: the fix had to walk past it.
 #[tokio::test]
-async fn erasing_a_parent_category_still_strands_its_nested_children() {
+async fn erasing_a_parent_category_releases_its_nested_children() {
     let world = World::new().await;
     let outer = world
         .create(
@@ -2479,7 +2544,7 @@ async fn erasing_a_parent_category_still_strands_its_nested_children() {
     world.submit(&world.one, erase(&[outer])).await;
     assert_eq!(world.lifecycle(outer).await, "erased");
 
-    let stranded: Option<Uuid> =
+    let parent: Option<Uuid> =
         sqlx::query("SELECT parent_category_id AS p FROM category WHERE entity_id = $1")
             .bind(inner.as_uuid())
             .fetch_one(&world.db.pool)
@@ -2488,8 +2553,7 @@ async fn erasing_a_parent_category_still_strands_its_nested_children() {
             .try_get("p")
             .expect("parent");
     assert_eq!(
-        stranded,
-        Some(outer.as_uuid()),
-        "wired already? invert this test — nested categories are released now"
+        parent, None,
+        "the nested category still points at its erased parent"
     );
 }
