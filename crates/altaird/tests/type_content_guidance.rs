@@ -1753,15 +1753,19 @@ async fn an_erased_campaign_releases_its_arcs_and_its_quests() {
         )
         .await;
 
-    // **The two kinds lost different fields.** An arc's campaign is field 2 of
-    // its message and a quest's is field 3, so one container releasing across
-    // two tables produces two different parts — which is exactly why the part
-    // has to travel with the identity rather than be inferred by the caller.
+    // **Two parts per child, and the numbers mean different things per type.**
+    // Each child lost its parent *and* its position, so each reports both. An
+    // arc's campaign is field 2 and its position field 3; a quest's campaign is
+    // field 3 and its position field 5 — so `specific.3` here names a position
+    // on the arc and a campaign on the quest. That is exactly why the part has
+    // to travel with the identity rather than be inferred by the caller.
     let mut released = release_from(&world, c, EntityType::Campaign).await;
     released.sort();
     let mut expected = vec![
         (a.as_uuid(), "specific.2".to_owned()),
+        (a.as_uuid(), "specific.3".to_owned()),
         (q.as_uuid(), "specific.3".to_owned()),
+        (q.as_uuid(), "specific.5".to_owned()),
     ];
     expected.sort();
     assert_eq!(released, expected);
@@ -1802,10 +1806,14 @@ async fn an_erased_arc_releases_its_quests_without_promoting_them() {
         )
         .await;
 
-    // A quest's arc is field 2 of its message, where its campaign is field 3.
+    // A quest's arc is field 2 of its message and its position field 5, and
+    // both moved.
     assert_eq!(
         release_from(&world, a, EntityType::Arc).await,
-        vec![(q.as_uuid(), "specific.2".to_owned())]
+        vec![
+            (q.as_uuid(), "specific.2".to_owned()),
+            (q.as_uuid(), "specific.5".to_owned()),
+        ]
     );
 
     let row = quest_row(&world, q).await;
@@ -1887,7 +1895,10 @@ async fn a_child_the_eraser_cannot_see_is_still_released() {
     // One erases the campaign, and releases a child it was never entitled to see.
     assert_eq!(
         release_from(&world, c, EntityType::Campaign).await,
-        vec![(hidden.as_uuid(), "specific.3".to_owned())]
+        vec![
+            (hidden.as_uuid(), "specific.3".to_owned()),
+            (hidden.as_uuid(), "specific.5".to_owned()),
+        ]
     );
     let row = quest_row(&world, hidden).await;
     assert_eq!((row.campaign, row.position), (None, None));
@@ -1938,12 +1949,109 @@ async fn the_dispatch_reaches_the_ladders_release() {
 
     assert_eq!(
         through_dispatch,
-        specific::Detachment::Released(vec![specific::Released {
-            entity: a,
-            part: Part::Specific(2),
-        }]),
+        specific::Detachment::Released(vec![
+            specific::Released {
+                entity: a,
+                part: Part::Specific(2),
+            },
+            specific::Released {
+                entity: a,
+                part: Part::Specific(3),
+            },
+        ]),
         "the dispatch reaches the ladder's release — this assertion read \
          `NotBuilt` while the arm was unpointed, which is what made the gap \
          visible rather than silent"
     );
+}
+
+/// **The consequence a release recording only its parent would hide.**
+///
+/// The erasure clears the child's parent *and* its ladder position. A member
+/// holding a base from before the erasure then moves that child under a new
+/// parent — which writes the position as a companion. Both writes changed the
+/// position, so both values are owed retention.
+///
+/// With only the parent recorded, `moved_since` reports the parent alone, the
+/// stale write touches the parent it is setting plus the position, the two sets
+/// do not intersect on anything, and a collision on the position merges in
+/// silence. *Both values retained on a same-part conflict* is a standing
+/// constraint, so that is a hole rather than a rough edge.
+///
+/// Asserted as the consequence rather than as "two parts are recorded", because
+/// the consequence is what the constraint is about and it is what fails first.
+#[tokio::test]
+async fn a_stale_move_after_a_release_conflicts_on_the_position() {
+    let world = World::new().await;
+    let c = world
+        .create(&world.one, campaign(None), shared_with(&world))
+        .await;
+    let q = world
+        .create(
+            &world.one,
+            as_quest(quest(None, beneath_campaign(c))),
+            shared_with(&world),
+        )
+        .await;
+    // Somewhere else for the stale write to put it.
+    let a = world
+        .create(&world.one, as_arc(arc(None, None)), shared_with(&world))
+        .await;
+    assert_eq!(quest_row(&world, q).await.position, Some(0));
+
+    // Two last saw the quest here.
+    let base = world.counter(q).await;
+
+    // One erases the campaign. The quest keeps existing and loses both its
+    // parent and its position.
+    world.submit(&world.one, erase(&[c])).await;
+    let row = quest_row(&world, q).await;
+    assert_eq!((row.campaign, row.position), (None, None));
+
+    // Two, still on the old base, moves the quest under an arc. Entering a
+    // container appends, so this writes a position as a companion — the same
+    // part the release cleared.
+    let ack = world
+        .submit(
+            &world.two,
+            edit_specific(q, base, as_quest(quest(None, beneath_arc(a)))),
+        )
+        .await;
+
+    let applied = applied(&ack);
+    let conflict = applied
+        .conflict
+        .as_ref()
+        .expect("the release and the move both changed the ladder position");
+    assert!(
+        conflict.specific_fields.contains(&5),
+        "the position is the conflicted part: {:?}",
+        conflict.specific_fields
+    );
+
+    let conflicts = world.conflicts(q).await;
+    let position = conflicts
+        .iter()
+        .find(|c| c.field.as_deref() == Some("specific.5"))
+        .expect("both positions are retained");
+    assert_eq!(
+        position.mine.as_deref(),
+        Some("0"),
+        "the arriving value: entering the arc appends at its end"
+    );
+    assert_eq!(
+        position.theirs, None,
+        "the value it displaced: the release had forgotten the position"
+    );
+    assert_eq!(position.mine_member, Some(world.two.membership_id()));
+    assert_eq!(
+        position.theirs_member,
+        Some(world.one.membership_id()),
+        "attributed to whoever erased the container, because that is who caused it"
+    );
+
+    // And the move still applied. A stale base is never a rejection.
+    let row = quest_row(&world, q).await;
+    assert_eq!(row.arc, Some(a.as_uuid()));
+    assert_eq!(row.position, Some(0));
 }

@@ -880,14 +880,29 @@ pub async fn detach_contained(
     let mut released = Vec::new();
     for (child, column) in children {
         let table = table_of(*child)?;
-        // **Which part moved is read out of the declaration, not written here.**
-        // A release advances the child's counter, so it owes provenance, and
-        // provenance needs the part. The `FIELDS` lists above already say which
-        // field each column holds and `tests/type_content.rs` checks them
-        // against the store; naming the number again beside the statement would
-        // put it in two places, and the copy that drifts is the one nothing
-        // checks. The same reasoning that gave `would_cycle` one implementation.
-        let part = part_held_in(*child, column)?;
+        // **Which parts moved are read out of the declaration, not written
+        // here.** A release advances the child's counter, so it owes
+        // provenance, and provenance needs the parts. The `FIELDS` lists above
+        // already say which field each column holds and `tests/type_content.rs`
+        // checks them against the store; naming the numbers again beside the
+        // statement would put them in two places, and the copy that drifts is
+        // the one nothing checks. The same reasoning that gave `would_cycle`
+        // one implementation.
+        //
+        // **Two columns are cleared, so two parts moved.** The position is not
+        // incidental to the parent going away — it is a part of its own, and a
+        // part that moves a counter without saying so is invisible to conflict
+        // detection. A member holding a base from before the erasure who then
+        // moves the child under a new parent writes the position as a
+        // companion; with only the parent recorded, the two writes overlap on
+        // the position and merge in silence. The membership half of the erase
+        // path records exactly this pair for the same reason — *the category
+        // and the position within it, and both are recorded, because the
+        // counter advanced and something has to be able to say what changed*.
+        let parts = [
+            part_held_in(*child, column)?,
+            part_held_in(*child, LADDER_POSITION_COLUMN)?,
+        ];
         let sql = format!(
             "UPDATE {table} SET {column} = NULL, {LADDER_POSITION_COLUMN} = NULL \
              WHERE {column} = $1 RETURNING entity_id"
@@ -897,10 +912,22 @@ pub async fn detach_contained(
             .fetch_all(ctx.tx.conn())
             .await?;
         for r in &rows {
-            released.push(Released {
-                entity: EntityId::from_uuid(r.try_get("entity_id")?),
-                part: part.clone(),
-            });
+            let child_id = EntityId::from_uuid(r.try_get("entity_id")?);
+            // **Both parts genuinely moved, and the schema is what guarantees
+            // it.** Elsewhere in this file a companion is owed only when the
+            // column it names was actually holding something, because recording
+            // a part that did not move is its own silent fault. No runtime check
+            // is needed here: an arc's `CHECK ((campaign_id IS NULL) =
+            // (ladder_position IS NULL))` and a quest's
+            // `CHECK ((num_nonnulls(arc_id, campaign_id) = 0) = (ladder_position
+            // IS NULL))` mean a row this statement matched had a parent, and so
+            // had a position.
+            for part in &parts {
+                released.push(Released {
+                    entity: child_id,
+                    part: part.clone(),
+                });
+            }
         }
     }
     Ok(Detachment::Released(released))
