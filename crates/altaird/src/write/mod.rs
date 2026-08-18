@@ -286,6 +286,30 @@ async fn act(ctx: &mut Ctx<'_>, intent: &v1::Intent) -> Result<Outcome, Failed> 
                 // detection entirely — the one mechanism this item exists to
                 // build — rather than being refused as the unreadable message
                 // it is.
+                //
+                // **Zero is refused for the same reason, from the other end.**
+                // The first counter an entity has is 1, issued by its own
+                // create, so zero is not a counter this instance could have
+                // issued either — and it is the value the wire produces when a
+                // client omits the field, because `base_counter` is a proto3
+                // `uint64` whose default is indistinguishable from unset.
+                //
+                // Accepting it was not harmless. A create records the parts it
+                // applied without comparing them, because on a create there is
+                // no prior value to compare against; so an entity created with
+                // its title explicitly cleared carries provenance for a title
+                // that never changed. An edit arriving with base zero reads
+                // `0 < 1`, asks what moved since, finds that record, and retains
+                // a conflict over a part only the second write ever touched.
+                // The client that hits this is one that forgot a field, not one
+                // doing anything exotic.
+                if e.base_counter == 0 {
+                    return Err(Refusal::Malformed(
+                        "a base counter is a counter this instance could have issued,                          and the first one is 1"
+                            .into(),
+                    )
+                    .into());
+                }
                 let base = i64::try_from(e.base_counter).map_err(|_| {
                     Refusal::Malformed(
                         "a base counter is a counter this instance could have issued".into(),
