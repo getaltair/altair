@@ -1035,11 +1035,12 @@ async fn a_file_still_cannot_be_created() {
 // `parent_category_id`, and nothing released it: the erase path's comment names
 // "the ladder and nested locations" and silently omits the third case.
 //
-// Reached directly here, by the module path rather than the dispatch, because
-// `specific::detach_contained`'s `Category` arm still answers `NotBuilt`.
-// Wiring that arm is one line in a file this lane does not own.
-// `the_dispatch_still_answers_not_built` below is the test to invert when it
-// lands, and it is written to say so.
+// The release below is reached two ways, deliberately. Most of these call it by
+// the module path, because that is where its own rules live and a direct call
+// keeps the assertion about the release rather than about the erase. The last
+// two go through `Erase` end to end, because the arm is wired now and the
+// things only the erase path can show — a change entry per released child, and
+// removal releasing nothing — are exactly the things a direct call cannot.
 
 /// Run the release against a category, outside any write of its own.
 async fn detach(world: &World, container: EntityId) -> Detachment {
@@ -1208,14 +1209,13 @@ async fn nesting_and_membership_are_different_sets() {
     );
 }
 
-/// **The one line this lane could not write.** `specific/mod.rs` is another
-/// lane's file, so the dispatch still answers `NotBuilt` for a category and the
-/// release above is unreachable from the erase path. Invert this the moment the
-/// arm calls `category::detach_contained`, and the end-to-end assertions — a
-/// change entry per released child, and removal releasing nothing — belong
-/// beside it.
+/// The dispatch reaches the release, which is the line that turns everything
+/// above from a function nobody calls into behaviour.
+///
+/// This was the inverse assertion while `specific/mod.rs` still answered
+/// `NotBuilt` — the gap recorded as a passing test so it could not be forgotten.
 #[tokio::test]
-async fn the_dispatch_still_answers_not_built() {
+async fn the_dispatch_reaches_the_release() {
     let world = World::new().await;
     let parent = category(&world, None, &[]).await;
     let child = category(&world, Some(parent), &[]).await;
@@ -1229,12 +1229,131 @@ async fn the_dispatch_still_answers_not_built() {
     let answer = specific::detach_contained(&mut ctx, parent, EntityType::Category)
         .await
         .unwrap_or_else(|_| panic!("the store was reachable"));
-    tx.rollback().await.expect("rollback");
+    tx.commit().await.expect("commit");
 
-    assert_eq!(answer, Detachment::NotBuilt);
+    assert_eq!(released_ids(&answer), vec![child]);
+    assert_eq!(parent_of(&world, child).await, None);
+}
+
+// ---------------------------------------------------------------------------
+// End to end, through the erase path
+// ---------------------------------------------------------------------------
+
+/// **A change entry per released category.** A child that silently loses its
+/// parent is a change no client ever learns about — the counter moved, so a
+/// poller holding the old one has to be told, and the entry is what tells it.
+#[tokio::test]
+async fn erasing_a_parent_category_releases_its_children_and_says_so() {
+    let world = World::new().await;
+    let parent = category(&world, None, &[]).await;
+    let child = category(&world, Some(parent), &[]).await;
+    let before = world.counter(child).await;
+
+    let ack = world.submit(&world.one, erase(&[parent])).await;
+    assert!(matches!(
+        ack.outcome,
+        Some(v1::acknowledgement::Outcome::Applied(_))
+    ));
+
+    assert_eq!(
+        parent_of(&world, child).await,
+        None,
+        "the child no longer names the tombstone"
+    );
+    assert!(
+        world.counter(child).await > before,
+        "a release is a write to the child, so its counter moves"
+    );
+    assert!(
+        world
+            .changes()
+            .await
+            .iter()
+            .any(|c| c.entity == Some(child.as_uuid()) && c.kind != "entity_gone"),
+        "the release owes the child a change entry of its own"
+    );
+}
+
+/// **A release records which part moved.** The counter advanced, and a part
+/// that moves a counter without recording itself is invisible to conflict
+/// detection — a later stale edit naming the same field would merge silently,
+/// losing the fact that the container went away underneath it.
+#[tokio::test]
+async fn a_released_child_records_the_part_that_moved() {
+    let world = World::new().await;
+    let parent = category(&world, None, &[]).await;
+    let child = category(&world, Some(parent), &[]).await;
+
+    world.submit(&world.one, erase(&[parent])).await;
+
+    let moved: Vec<String> = sqlx::query(
+        "SELECT field_name FROM entity_part_counter WHERE entity_id = $1 AND field_name IS NOT NULL",
+    )
+    .bind(child.as_uuid())
+    .fetch_all(&world.db.pool)
+    .await
+    .expect("query")
+    .iter()
+    .map(|r| r.try_get::<String, _>("field_name").expect("field_name"))
+    .collect();
+
+    assert!(
+        moved.contains(&"specific.1".to_owned()),
+        "the released parent field is recorded as having moved: {moved:?}"
+    );
+}
+
+/// **Erasure only, never removal.** Removal is recoverable and grouped, and
+/// restoring the group is meant to put back what was there. A child detached on
+/// removal would come back parentless, so the release would quietly destroy
+/// exactly what the deletion group exists to preserve.
+#[tokio::test]
+async fn removing_a_parent_category_releases_nothing() {
+    let world = World::new().await;
+    let parent = category(&world, None, &[]).await;
+    let child = category(&world, Some(parent), &[]).await;
+
+    world.submit(&world.one, remove(&[parent], &[])).await;
+
     assert_eq!(
         parent_of(&world, child).await,
         Some(parent.as_uuid()),
-        "so an erase still leaves a nested category pointing at a tombstone"
+        "removal is recoverable, so the nesting is kept for the restore"
+    );
+
+    // And it survives the round trip, which is the point of keeping it.
+    world.submit(&world.one, restore(parent, true)).await;
+    assert_eq!(parent_of(&world, child).await, Some(parent.as_uuid()));
+}
+
+/// The two senses stay separate through the erase path too: the nested category
+/// loses its parent and the filed note loses its filing, each by its own
+/// release, and the entity that is both loses both.
+#[tokio::test]
+async fn an_erase_releases_nesting_and_membership_without_either_doing_the_others_work() {
+    let world = World::new().await;
+    let parent = category(&world, None, &[]).await;
+    let both = world
+        .create(
+            &world.one,
+            category_content(Some(parent), &[], Vec::new()),
+            v1::EntityContent {
+                category_id: Some(parent.as_uuid().as_bytes().to_vec()),
+                ..Default::default()
+            },
+        )
+        .await;
+    let filed = note_in(&world, parent).await;
+
+    world.submit(&world.one, erase(&[parent])).await;
+
+    assert_eq!(parent_of(&world, both).await, None, "nesting released");
+    assert!(
+        world.category_position(both).await.is_none(),
+        "and membership released, by the other half"
+    );
+    assert!(
+        world.category_position(filed).await.is_none(),
+        "the note was only ever filed, and is uncategorised"
     );
 }

@@ -860,10 +860,18 @@ pub async fn detach_contained(
         // problem, which is the quieter kind.
         //
         // Answering `NotBuilt` rather than `NoContainer` is the whole reason the
-        // two are different answers. This arm previously claimed nothing was
-        // owed here, and a comment asserting a gap does not exist is worse than
-        // the gap.
-        EntityType::Category => Ok(Detachment::NotBuilt),
+        // two are different answers. This arm once claimed nothing was owed
+        // here, and **a comment asserting a gap does not exist is worse than the
+        // gap** — it converts an open question into a settled one and talks the
+        // next reader out of checking. The erase path's own comment named "the
+        // ladder and nested locations" and silently omitted this third case.
+        //
+        // **Built now.** The two senses stay separate rather than merging: this
+        // releases the nesting, `uncategorise_all` goes on releasing the
+        // membership, and they write two different columns — so a category both
+        // nested under the erased one and filed in it is let go once by each,
+        // and neither overwrites what the other did.
+        EntityType::Category => category::detach_contained(ctx, entity).await,
         // A note and a file hold nothing. The three the schema has no table for
         // hold nothing either, and cannot be created at all.
         EntityType::Note
