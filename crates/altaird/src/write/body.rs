@@ -294,9 +294,9 @@ async fn graduate(ctx: &mut Ctx<'_>, entity: EntityId) -> Applied<()> {
 /// That is the exact failure migration one declines a unique index to avoid —
 /// *"a body edit must never fail because a relation lost an anchor, and that
 /// outranks refusing a duplicate structurally"* — reintroduced by another
-/// route. It is unreachable today only because `write::relation` still refuses
-/// an anchor; it becomes reachable the moment that refusal expires, which is
-/// the item that follows this lane.
+/// route. It became reachable the moment `write::relation` began forming
+/// anchors, which is why the test that covers it lives beside the anchor suite
+/// as well as here.
 ///
 /// Clearing the phrase is also what the substrate means rather than a way
 /// around a check: *"where the block itself is removed the relation survives
@@ -308,6 +308,50 @@ async fn detach_anchors(ctx: &mut Ctx<'_>, removed: &[Uuid]) -> Applied<()> {
         .bind(removed)
         .execute(ctx.tx.conn())
         .await?;
+    Ok(())
+}
+
+/// Let go of the phrases whose words this write took out of a block.
+///
+/// **The rule that separates the two kinds of anchor.** A block anchor holds
+/// while its block remains, through any rewording of it; a phrase anchor holds
+/// only while its words do. *"A relation anchored to a phrase survives such an
+/// edit and loses its anchor; one anchored to a block keeps its anchor while
+/// the block remains."*
+///
+/// Stated a second time for the case where two people edit one block and one
+/// version is chosen: *"an anchor whose text survives holds, and one whose text
+/// does not leaves the relation intact without an anchor."* So the test is
+/// whether the phrase is still in the block, not whether the block was touched.
+///
+/// **The block goes with the phrase.** Both places the substrate states this
+/// say *without an anchor*, not "with a coarser one". Falling back to a block
+/// anchor would re-point somebody's connection from the words they chose at the
+/// whole paragraph — a place they never picked, which is the error
+/// [`crate::body::identity`] refuses to make with over-eager matching.
+/// `anchor_entity_id` stays: where the relation was formed is still true.
+///
+/// Both columns move in one statement, which is also what keeps this clear of
+/// the check `detach_anchors` exists to get around. Matched against the block's
+/// content rather than its verbatim slice, for the reason at the top of this
+/// module.
+///
+/// Only blocks whose content moved are considered. A phrase cannot stop
+/// occurring in text that did not change, so the others have nothing to lose.
+async fn lose_phrases_that_did_not_survive(
+    ctx: &mut Ctx<'_>,
+    block: Uuid,
+    text: &str,
+) -> Applied<()> {
+    sqlx::query(
+        "UPDATE relation SET anchor_block_id = NULL, anchor_phrase = NULL \
+         WHERE anchor_block_id = $1 AND anchor_phrase IS NOT NULL \
+           AND position(anchor_phrase in $2) = 0",
+    )
+    .bind(block)
+    .bind(text)
+    .execute(ctx.tx.conn())
+    .await?;
     Ok(())
 }
 
@@ -408,6 +452,12 @@ pub async fn apply(
         authored = true;
         touch.written.push(Part::Block(block.id));
         touch.changed.push(block.id);
+
+        // The words moved, so any phrase anchored into them may not have
+        // survived. A created block cannot be anchored into yet, but the
+        // statement is harmless there and leaving it unconditional keeps this
+        // from acquiring a case to get wrong later.
+        lose_phrases_that_did_not_survive(ctx, block.id, arriving).await?;
 
         // Only a carried block can be one side of a disagreement. A created
         // block's identity was minted a few lines above and no earlier write
