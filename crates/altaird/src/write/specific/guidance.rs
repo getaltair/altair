@@ -101,8 +101,8 @@ use super::super::entity::{Applied, Ctx, Refusal, type_name};
 use super::super::parts::Part;
 use super::super::provenance;
 use super::{
-    Detachment,
-    Field, GuidanceState, Held, Reader, SpecificPart, SpecificValue, read_column, write_column,
+    Detachment, Field, GuidanceState, Held, Reader, SpecificPart, SpecificValue, read_column,
+    write_column,
 };
 
 /// The state field. **The same number in all three messages**, which is what

@@ -21,7 +21,12 @@
 mod common;
 
 use altair_proto::v1;
-use altaird::store::ids::EntityId;
+use altaird::store::begin_write;
+use altaird::store::entity::EntityType;
+use altaird::store::ids::{EntityId, MemberId};
+use altaird::write::entity::Ctx;
+use altaird::write::specific;
+use chrono::Utc;
 use common::*;
 use sqlx::Row;
 use uuid::Uuid;
@@ -1570,7 +1575,10 @@ async fn a_concurrent_edit_to_the_vacated_parent_conflicts_rather_than_merging()
         .iter()
         .find(|c| c.field.as_deref() == Some("specific.2"))
         .expect("the arc is retained on both sides");
-    assert_eq!(vacated.mine.as_deref(), Some(second.as_uuid().to_string()).as_deref());
+    assert_eq!(
+        vacated.mine.as_deref(),
+        Some(second.as_uuid().to_string()).as_deref()
+    );
     assert_eq!(
         vacated.theirs, None,
         "the value it displaced was the arc the first write cleared"
@@ -1660,4 +1668,248 @@ async fn restating_the_same_parent_vacates_nothing() {
         "no arc was ever held, so none was vacated"
     );
     assert_eq!(quest_row(&world, q).await.position, Some(0));
+}
+
+// ---------------------------------------------------------------------------
+// What an erased ladder container lets go of
+// ---------------------------------------------------------------------------
+
+/// Call the release directly.
+///
+/// **Exercised directly because the dispatch still answers `NotBuilt`**, which
+/// is the one line between this and the wired erase path. `nesting::would_cycle`
+/// was tested the same way for the same reason, and the erase path itself is
+/// already written: it calls `specific::detach_contained`, hands the identities
+/// to `store::entity::detached_from_container`, and emits a change entry each.
+async fn release_from(world: &World, container: EntityId, kind: EntityType) -> Vec<Uuid> {
+    let mut tx = begin_write(&world.db.pool).await.expect("a transaction");
+    let mut ctx = Ctx {
+        tx: &mut tx,
+        member: MemberId::for_test(world.one.membership_id()),
+        at: Utc::now(),
+    };
+    let answer = match specific::guidance::detach_contained(&mut ctx, container, kind).await {
+        Ok(answer) => answer,
+        Err(_) => panic!("the store was reachable"),
+    };
+    tx.commit().await.expect("commit");
+    match answer {
+        specific::Detachment::Released(ids) => ids.into_iter().map(EntityId::as_uuid).collect(),
+        other => panic!("a ladder container releases what it held, got {other:?}"),
+    }
+}
+
+/// **A campaign is one container over mixed kinds**, so it releases across both
+/// tables — and the position goes with the parent, in one statement, because
+/// the paired checks tie them together.
+#[tokio::test]
+async fn an_erased_campaign_releases_its_arcs_and_its_quests() {
+    let world = World::new().await;
+    let c = world
+        .create(&world.one, campaign(None), v1::EntityContent::default())
+        .await;
+    let a = world
+        .create(
+            &world.one,
+            as_arc(arc(None, Some(c))),
+            v1::EntityContent::default(),
+        )
+        .await;
+    let q = world
+        .create(
+            &world.one,
+            as_quest(quest(None, beneath_campaign(c))),
+            v1::EntityContent::default(),
+        )
+        .await;
+    // Something under a different campaign, which must not be touched.
+    let other = world
+        .create(&world.one, campaign(None), v1::EntityContent::default())
+        .await;
+    let untouched = world
+        .create(
+            &world.one,
+            as_arc(arc(None, Some(other))),
+            v1::EntityContent::default(),
+        )
+        .await;
+
+    let mut released = release_from(&world, c, EntityType::Campaign).await;
+    released.sort();
+    let mut expected = vec![a.as_uuid(), q.as_uuid()];
+    expected.sort();
+    assert_eq!(released, expected);
+
+    assert_eq!(arc_row(&world, a).await, (None, None));
+    let row = quest_row(&world, q).await;
+    assert_eq!((row.arc, row.campaign, row.position), (None, None, None));
+    assert_eq!(
+        arc_row(&world, untouched).await,
+        (Some(other.as_uuid()), Some(0)),
+        "another campaign's arc is not its business"
+    );
+}
+
+/// An erased arc releases its quests only. **A released quest is parentless,
+/// not promoted** — it does not inherit the arc's campaign, even though that
+/// campaign still exists. Promotion would be the system moving something into a
+/// container the person never put it in, and appending it at the end of an order
+/// they did not choose.
+#[tokio::test]
+async fn an_erased_arc_releases_its_quests_without_promoting_them() {
+    let world = World::new().await;
+    let c = world
+        .create(&world.one, campaign(None), v1::EntityContent::default())
+        .await;
+    let a = world
+        .create(
+            &world.one,
+            as_arc(arc(None, Some(c))),
+            v1::EntityContent::default(),
+        )
+        .await;
+    let q = world
+        .create(
+            &world.one,
+            as_quest(quest(None, beneath_arc(a))),
+            v1::EntityContent::default(),
+        )
+        .await;
+
+    assert_eq!(
+        release_from(&world, a, EntityType::Arc).await,
+        vec![q.as_uuid()]
+    );
+
+    let row = quest_row(&world, q).await;
+    assert_eq!(row.arc, None);
+    assert_eq!(
+        row.campaign, None,
+        "the quest is parentless; it did not inherit the arc's campaign"
+    );
+    assert_eq!(row.position, None, "and the position went with the parent");
+}
+
+/// An empty container releases nothing, which is an answer rather than an
+/// absence — the seam keeps `Released(vec![])` and `NotBuilt` apart precisely so
+/// this case cannot be mistaken for an unbuilt one.
+#[tokio::test]
+async fn an_empty_container_releases_nothing_and_says_so() {
+    let world = World::new().await;
+    let c = world
+        .create(&world.one, campaign(None), v1::EntityContent::default())
+        .await;
+    assert!(
+        release_from(&world, c, EntityType::Campaign)
+            .await
+            .is_empty()
+    );
+}
+
+/// **A quest is a leaf of the ladder.** Nothing names one as a parent, so it is
+/// no container at all rather than an empty one.
+#[tokio::test]
+async fn a_quest_is_not_a_container() {
+    let world = World::new().await;
+    let q = world
+        .create(
+            &world.one,
+            as_quest(quest(None, None)),
+            v1::EntityContent::default(),
+        )
+        .await;
+
+    let mut tx = begin_write(&world.db.pool).await.expect("a transaction");
+    let mut ctx = Ctx {
+        tx: &mut tx,
+        member: MemberId::for_test(world.one.membership_id()),
+        at: Utc::now(),
+    };
+    let answer = specific::guidance::detach_contained(&mut ctx, q, EntityType::Quest).await;
+    let answer = match answer {
+        Ok(a) => a,
+        Err(_) => panic!("the store was reachable"),
+    };
+    tx.rollback().await.expect("rollback");
+    assert_eq!(answer, specific::Detachment::NoContainer);
+}
+
+/// **The release is unscoped, and this is the test that says so.**
+///
+/// A child owned by a member the eraser cannot see is still released. The
+/// container is gone for everybody, so leaving it behind would keep a dangling
+/// reference alive precisely where nobody can find it — the reason
+/// `uncategorise_all` gives, and no smaller here. A predicate added to the walk
+/// fails this.
+#[tokio::test]
+async fn a_child_the_eraser_cannot_see_is_still_released() {
+    let world = World::new().await;
+    // The campaign is shared, so member two can hang something beneath it.
+    let c = world
+        .create(&world.one, campaign(None), shared_with(&world))
+        .await;
+    // Two's own quest beneath it, private to two: one cannot see this.
+    let hidden = world
+        .create(
+            &world.two,
+            as_quest(quest(None, beneath_campaign(c))),
+            v1::EntityContent::default(),
+        )
+        .await;
+
+    // One erases the campaign, and releases a child it was never entitled to see.
+    assert_eq!(
+        release_from(&world, c, EntityType::Campaign).await,
+        vec![hidden.as_uuid()]
+    );
+    let row = quest_row(&world, hidden).await;
+    assert_eq!((row.campaign, row.position), (None, None));
+}
+
+/// The one line between this implementation and the erase path, pinned so it is
+/// visible rather than assumed.
+///
+/// `specific::detach_contained` still answers `NotBuilt` for Guidance's three
+/// types while `guidance::detach_contained` answers `Released`. `NotBuilt` is a
+/// distinct answer for exactly this reason: the erase path steps over it rather
+/// than treating it as nothing to do, so an arc goes on pointing at its
+/// tombstone visibly instead of silently.
+///
+/// **This assertion inverts when the dispatch arm calls the module.** Whoever
+/// wires it should delete the first half and keep the second.
+#[tokio::test]
+async fn the_dispatch_has_not_been_pointed_at_this_yet() {
+    let world = World::new().await;
+    let c = world
+        .create(&world.one, campaign(None), v1::EntityContent::default())
+        .await;
+    let a = world
+        .create(
+            &world.one,
+            as_arc(arc(None, Some(c))),
+            v1::EntityContent::default(),
+        )
+        .await;
+
+    let mut tx = begin_write(&world.db.pool).await.expect("a transaction");
+    let mut ctx = Ctx {
+        tx: &mut tx,
+        member: MemberId::for_test(world.one.membership_id()),
+        at: Utc::now(),
+    };
+    let through_dispatch = specific::detach_contained(&mut ctx, c, EntityType::Campaign).await;
+    let through_module =
+        specific::guidance::detach_contained(&mut ctx, c, EntityType::Campaign).await;
+    let (through_dispatch, through_module) = match (through_dispatch, through_module) {
+        (Ok(d), Ok(m)) => (d, m),
+        _ => panic!("the store was reachable"),
+    };
+    tx.rollback().await.expect("rollback");
+
+    assert_eq!(through_dispatch, specific::Detachment::NotBuilt);
+    assert_eq!(
+        through_module,
+        specific::Detachment::Released(vec![a]),
+        "the module releases; only the dispatch arm is still unpointed"
+    );
 }
