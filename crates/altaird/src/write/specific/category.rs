@@ -22,31 +22,71 @@
 //!
 //! Add a bespoke query here and the guard fails on the next run. That is the
 //! guard working. Read its module documentation before deciding it is in the
-//! way.
+//! way. The same rule is why the two checks below reach the store through
+//! [`available_for_write`], [`memberships_exist`] and
+//! [`nesting::would_cycle`] rather than through a statement of their own.
 //!
-//! # What is not decided here
+//! # What a creation default is, and the three things it is not
 //!
-//! **Cycle prevention in nested categories.** Migration one refuses
-//! self-reference and records a longer loop as its gap (h).
-//! [`super::nesting::would_cycle`] is the check, and it is written once because
+//! `altair-substrate-spec.md` states it in one sentence and the schema repeats
+//! it: **it acts once, at the creation of an entity placed in this category.
+//! Not a standing rule, and never inherited.** Each clause is a separate claim,
+//! and none of them is enforced here — they are all consequences of where the
+//! value is *read*, which is [`super::super::entity`]'s create and nowhere
+//! else:
+//!
+//! - **Once, at creation.** Only the create path asks a category for its
+//!   default, so an edit moving an existing entity into this category cannot
+//!   apply one.
+//! - **Not a standing rule.** The value is copied onto the entity at creation
+//!   and never consulted again, so editing it here reaches nothing already
+//!   placed.
+//! - **Never inherited.** The read is of one row and walks no ancestry, so a
+//!   child category with no default of its own has none.
+//!
+//! Writing it is therefore an ordinary column write, and the care goes into not
+//! accidentally making it anything more than that. A category **never sets an
+//! audience** as a standing rule, which is exactly why the default is this
+//! narrow.
+//!
+//! # Cycle prevention in nested categories
+//!
+//! Migration one refuses self-reference and records a longer loop as its gap
+//! (h). [`nesting::would_cycle`] is the check, and it is written once because
 //! nested locations need exactly the same one.
 
 use altair_proto::v1;
 
-use crate::store::entity::EntityType;
+use crate::store::WriteScope;
+use crate::store::entity::{EntityType, available_for_write};
 use crate::store::ids::EntityId;
 
-use super::super::content::{Malformed, Written};
-use super::super::entity::{Applied, Ctx, Refusal};
-use super::{Field, Held, SpecificPart, not_yet_built, unbuilt};
+use super::super::content::{Malformed, Written, identifier};
+use super::super::entity::{Applied, Ctx, Refusal, memberships_exist};
+use super::{Field, Held, Reader, SpecificPart, SpecificValue, nesting, read_column, write_column};
+
+/// A category's field 1, the category it nests inside.
+pub const CATEGORY_PARENT: u32 = 1;
+
+/// A category's field 2, the audience a newly created entity placed here takes
+/// when the write states none of its own.
+pub const CATEGORY_CREATION_DEFAULT: u32 = 2;
+
+/// The store's spelling of the parent column, named once.
+///
+/// [`nesting::would_cycle`] is generic over the column so that one walk serves
+/// nested categories and nested locations, and it takes a `&'static str` so
+/// that nothing a caller sent can ever reach it. This is that string, and it is
+/// the same one [`CATEGORY_FIELDS`] declares.
+const PARENT_COLUMN: &str = "parent_category_id";
 
 pub const CATEGORY_FIELDS: &[Field] = &[
     Field {
-        number: 1,
-        held: Held::Column("parent_category_id"),
+        number: CATEGORY_PARENT,
+        held: Held::Column(PARENT_COLUMN),
     },
     Field {
-        number: 2,
+        number: CATEGORY_CREATION_DEFAULT,
         held: Held::Column("creation_default_audience"),
     },
 ];
@@ -56,24 +96,104 @@ pub const CATEGORY_FIELDS: &[Field] = &[
 /// **LANE: Knowledge + categories.** Wave 2.1 already *reads* the creation
 /// default when it places a newly created entity, so filling this in is what
 /// makes that path reachable by anything other than a hand-written row.
+///
+/// Emptying the member list is how the default is cleared, which is the
+/// repeated field's rule and not a special case: a category with no default and
+/// one whose default was emptied are the same category, and the column is
+/// `NOT NULL DEFAULT '{}'` so there is no third state for them to differ in.
 pub fn category(c: &v1::CategoryContent) -> Result<Written, Malformed> {
-    unbuilt(
-        EntityType::Category,
-        &c.cleared,
-        &[
-            (1, c.parent_category_id.is_some()),
-            (2, !c.creation_default_audience_member_ids.is_empty()),
-        ],
-    )
+    let read = Reader::new(EntityType::Category, &c.cleared)?;
+    let mut parts = Vec::new();
+    read.singular(
+        &mut parts,
+        CATEGORY_PARENT,
+        c.parent_category_id.as_deref(),
+        |v| Ok(SpecificValue::Id(v.map(identifier).transpose()?)),
+    )?;
+    read.repeated(
+        &mut parts,
+        CATEGORY_CREATION_DEFAULT,
+        &c.creation_default_audience_member_ids,
+        |v| {
+            let mut ids = Vec::with_capacity(v.len());
+            for member in v {
+                ids.push(identifier(member)?);
+            }
+            Ok(SpecificValue::Members(ids))
+        },
+    )?;
+    Ok(Written::from_specific(parts))
 }
 
+/// What a category's parts owe before they are applied.
+///
+/// **No companion part.** Entering a category places an entity at the end of
+/// it, and that is the shared model's `category_id` and `category_position`
+/// moving together. Nesting a category inside another is not that: migration
+/// one's gap (g) records that nested categories carry no position, because
+/// nothing yet states that their contents are hand ordered. So this returns
+/// `None` always, and the day something states otherwise is the day this grows
+/// a companion, exactly as an arc's ladder position is one.
 pub async fn validate_and_place(
     ctx: &mut Ctx<'_>,
     entity: EntityId,
     part: &SpecificPart,
 ) -> Applied<Option<SpecificPart>> {
-    let _ = (ctx, entity, part);
-    Err(Refusal::Malformed(not_yet_built(EntityType::Category).0).into())
+    match (part.field, &part.value) {
+        // Leaving the nesting owes nothing. There is no position to forget, and
+        // a category at the top is an ordinary category.
+        (CATEGORY_PARENT, SpecificValue::Id(None)) => Ok(None),
+        (CATEGORY_PARENT, SpecificValue::Id(Some(parent))) => {
+            let parent = EntityId::from_uuid(*parent);
+            // The parent has to be one this member can see, and it has to be a
+            // category. **Both refusals are the same nothing**, which is the
+            // same answer the shared model gives for the category an entity is
+            // placed in: a category the member cannot see and one that does not
+            // exist are indistinguishable from outside, or the refusal is an
+            // oracle for what else the household holds.
+            let found = available_for_write(ctx.tx, ctx.member, parent, WriteScope::Active)
+                .await?
+                .ok_or(Refusal::NotAvailable)?;
+            if found.entity_type != EntityType::Category {
+                return Err(Refusal::NotAvailable.into());
+            }
+            // And the nesting has to terminate. The schema refuses the one-step
+            // case and can see no further; this is its gap (h), closed where
+            // the write is decided because a constraint cannot walk a chain.
+            //
+            // **Malformed rather than not-available**, and that is not a leak:
+            // the member has already been told the parent is there — the check
+            // above passed — so saying the nesting would close a loop discloses
+            // nothing further, and telling them the category is merely
+            // unavailable would send them looking for a permission problem that
+            // is not there.
+            let table = super::side_table(EntityType::Category)
+                .ok_or_else(|| Refusal::Malformed("a category has no table".into()))?;
+            if nesting::would_cycle(ctx.tx, table, PARENT_COLUMN, entity, parent).await? {
+                return Err(Refusal::Malformed(
+                    "nesting this category there would close a loop, and a category cannot \
+                     contain itself at any distance"
+                        .into(),
+                )
+                .into());
+            }
+            Ok(None)
+        }
+        // **Every member named must answer to a real membership.** A foreign
+        // key cannot reach inside an array, which is why the schema lists this
+        // among the checks it cannot make. The refusal is the same nothing
+        // again: a membership in another household and one that was never
+        // created are both simply not there.
+        (CATEGORY_CREATION_DEFAULT, SpecificValue::Members(ids)) => {
+            if !memberships_exist(ctx.tx, ids).await? {
+                return Err(Refusal::NotAvailable.into());
+            }
+            Ok(None)
+        }
+        _ => Err(
+            Refusal::Malformed(format!("field {} is not a part of a category", part.field)).into(),
+        ),
+    }
 }
 
 pub async fn current(
@@ -81,8 +201,7 @@ pub async fn current(
     entity: EntityId,
     part: &SpecificPart,
 ) -> Applied<SpecificPart> {
-    let _ = (ctx, entity, part);
-    Err(Refusal::Malformed(not_yet_built(EntityType::Category).0).into())
+    read_column(ctx, entity, EntityType::Category, part).await
 }
 
 pub async fn apply(
@@ -91,14 +210,18 @@ pub async fn apply(
     part: &SpecificPart,
     placement: Option<&SpecificPart>,
 ) -> Applied<()> {
-    let _ = (ctx, entity, part, placement);
-    Err(Refusal::Malformed(not_yet_built(EntityType::Category).0).into())
+    // A category nests without a position, so nothing moves alongside either of
+    // its parts. See [`validate_and_place`].
+    debug_assert!(placement.is_none());
+    write_column(ctx, entity, EntityType::Category, part).await
 }
 
 /// A category contributes nothing to searchable text.
 ///
 /// Its own title is the shared model's and is already searchable; what it holds
-/// is other entities, and each of those carries its own words.
+/// is other entities, and each of those carries its own words. A category is an
+/// entity rather than a label — describable, relatable, and returned by
+/// retrieval in its own right — and the title is what makes that true.
 pub async fn search_text(ctx: &mut Ctx<'_>, entity: EntityId) -> Applied<Option<String>> {
     let _ = (ctx, entity);
     Ok(None)
