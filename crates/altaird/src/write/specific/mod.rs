@@ -862,9 +862,13 @@ pub async fn detach_contained(
     match kind {
         // **LANE: Guidance.** An arc hangs beneath a campaign and a quest
         // beneath either, so all three are containers and all three owe a
-        // release. Answering `NotBuilt` rather than an empty list is what stops
-        // that being invisible once this is wired.
-        EntityType::Campaign | EntityType::Arc | EntityType::Quest => Ok(Detachment::NotBuilt),
+        // release. Answering `NotBuilt` rather than an empty list is what kept
+        // that visible while it was unbuilt — an erased campaign left its arcs
+        // and quests on a tombstone, and the variant said so rather than
+        // reporting an empty release.
+        EntityType::Campaign | EntityType::Arc | EntityType::Quest => {
+            guidance::detach_contained(ctx, entity, kind).await
+        }
         EntityType::Item | EntityType::Location | EntityType::ShoppingList => {
             tracking::detach_contained(ctx, entity, kind).await
         }
