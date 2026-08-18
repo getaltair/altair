@@ -13,15 +13,30 @@ use tokio::sync::OnceCell;
 
 static TEMPLATE: OnceCell<String> = OnceCell::const_new();
 
-fn admin_url() -> String {
-    // Nothing reads .env at runtime, so load it here. dotenvy walks up from
-    // the working directory, which is what lets `cargo test` work from a
-    // crate directory as well as from the repo root.
+/// Load `.env` before anything reads the environment.
+///
+/// **Every reader of the environment calls this first, not just the first one
+/// that happened to need it.** `prefix` used to read `ALTAIR_TEST_PREFIX`
+/// without loading, and `ensure_template` calls `prefix` before `admin_url` —
+/// so the template name was computed from an environment `.env` had not
+/// reached yet, and every worktree got the default name however its `.env` was
+/// written. Five lanes then shared one template, and each one starting a run
+/// dropped it with FORCE out from under the others: a suite that had passed
+/// twice would fail with *template database "altair_test_template" does not
+/// exist*, blaming the lane that was already running rather than the one that
+/// had just started.
+///
+/// dotenvy walks up from the working directory, which is what lets `cargo
+/// test` work from a crate directory as well as from the repo root.
+fn load_env() {
     static LOAD: std::sync::Once = std::sync::Once::new();
     LOAD.call_once(|| {
         dotenvy::dotenv().ok();
     });
+}
 
+fn admin_url() -> String {
+    load_env();
     std::env::var("DATABASE_URL")
         .expect("DATABASE_URL is not set. Check .env at the repo root, and that compose is up.")
 }
@@ -29,6 +44,7 @@ fn admin_url() -> String {
 /// Worktrees share one Postgres. Without a prefix, five parallel lanes fight
 /// over one template name.
 fn prefix() -> String {
+    load_env();
     std::env::var("ALTAIR_TEST_PREFIX").unwrap_or_else(|_| "altair_test".into())
 }
 
