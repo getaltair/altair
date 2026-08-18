@@ -313,8 +313,18 @@ async fn anchor(
     let block = identifier(&a.block_id)?;
 
     // One read answers both questions: whether this entity holds the block, and
-    // what the block says. Scoped by entity, so a block of something else is
-    // the same nothing as a block of nothing.
+    // what the block says.
+    //
+    // **Scoped by entity, and the refusal below says nothing. Do not make it
+    // helpful.** The obvious improvement is to look the block up on its own and
+    // tell the client whether it does not exist or merely belongs to something
+    // else. That improvement is a disclosure: a block belongs to an entity, so
+    // an answer confirming a block identifier exists confirms that an entity
+    // exists — and it arrives through a field nobody thinks of as naming one,
+    // which is why it would survive a reading that was watching the endpoints.
+    // A block of something else and a block of nothing are one answer, with no
+    // detail, exactly as an entity nobody may see and an entity that is not
+    // there are one answer.
     let text: String = sqlx::query("SELECT text FROM block WHERE id = $1 AND entity_id = $2")
         .bind(block)
         .bind(entity.as_uuid())

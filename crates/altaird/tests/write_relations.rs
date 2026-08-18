@@ -1179,3 +1179,100 @@ async fn after_a_conflict_over_one_block_the_surviving_phrase_keeps_its_anchor()
         (Some(note.as_uuid()), None, None)
     );
 }
+
+/// The same guarantee on the other path that takes an anchor away.
+///
+/// A block being *removed* and a phrase being *edited out* are two different
+/// statements in `write::body`, and only one of them was covered above. Both
+/// must leave a body edit able to land beside a relation that would otherwise
+/// be its duplicate, because migration one's sentence is about the outcome and
+/// not about which statement produced it.
+#[tokio::test]
+async fn losing_a_phrase_never_fails_beside_an_identical_unanchored_relation() {
+    let w = World::new().await;
+    let (note, blocks) = note_with_blocks(&w, "buy eggs on the way home\n").await;
+    let other = w.note(&w.one, "the other end").await;
+
+    w.submit(
+        &w.one,
+        create_relation(Uuid::new_v4(), relation_between(note, other)),
+    )
+    .await;
+    let phrase = relation_id(&anchored(&w, note, other, at(note, blocks[0], "eggs")).await);
+
+    // The words the anchor names are edited away, and the body edit must land.
+    let base = w.counter(note).await;
+    let ack = w
+        .submit(
+            &w.one,
+            edit_entity(
+                note,
+                base as u64,
+                v1::EntityContent {
+                    specific: Some(v1::entity_content::Specific::Note(v1::NoteContent {
+                        body: Some("buy bread on the way home\n".into()),
+                        cleared: Vec::new(),
+                    })),
+                    ..Default::default()
+                },
+            ),
+        )
+        .await;
+    applied(&ack);
+
+    assert_eq!(
+        w.relation_lifecycle(phrase).await.as_deref(),
+        Some("active")
+    );
+    assert_eq!(
+        anchor_of(&w, phrase).await,
+        (Some(note.as_uuid()), None, None)
+    );
+}
+
+/// **No body write can make a relation a duplicate, because no body write ever
+/// makes one fully unanchored.**
+///
+/// The reason migration one's collision cannot arise, stated as a property
+/// rather than left implicit in the two tests above: both paths that take an
+/// anchor away keep `anchor_entity_id`, and `is_duplicate` counts that as an
+/// anchor. Where the connection was formed outlives the words and the block.
+///
+/// This does not replace those tests. They assert the outcome the sentence
+/// requires — a body edit that lands — which stays true even if this property
+/// stops holding, because the body path consults no duplicate check at all.
+#[tokio::test]
+async fn no_body_write_leaves_a_relation_without_where_it_was_formed() {
+    let w = World::new().await;
+    let (note, blocks) = note_with_blocks(&w, "buy eggs today\n- milk\n").await;
+    let other = w.note(&w.one, "the other end").await;
+
+    let phrase = relation_id(&anchored(&w, note, other, at(note, blocks[0], "eggs")).await);
+    let block = relation_id(&anchored(&w, note, other, at(note, blocks[1], "")).await);
+
+    // One write that edits the phrase away and removes the other block outright.
+    let base = w.counter(note).await;
+    applied(
+        &w.submit(
+            &w.one,
+            edit_entity(
+                note,
+                base as u64,
+                v1::EntityContent {
+                    specific: Some(v1::entity_content::Specific::Note(v1::NoteContent {
+                        body: Some("buy bread today\n".into()),
+                        cleared: Vec::new(),
+                    })),
+                    ..Default::default()
+                },
+            ),
+        )
+        .await,
+    );
+
+    for id in [phrase, block] {
+        let (entity, b, p) = anchor_of(&w, id).await;
+        assert_eq!(entity, Some(note.as_uuid()), "where it was formed was lost");
+        assert_eq!((b, p), (None, None));
+    }
+}
