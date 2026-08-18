@@ -4,23 +4,27 @@
 //! change sequence's lock; see [`super::changes`] for why that ordering
 //! matters.
 //!
-//! # What this item writes, and what it leaves to 2.2
+//! # What this item writes, and where type content goes
 //!
 //! The shared model — title, dates, category and the position inside it,
-//! assignments, audience, bulk — is written here. **Type-specific content is
-//! not.** A create makes the side-table row with its defaults so nothing is
-//! ever half-formed, and the fields inside `content.specific` are left for
-//! Wave 2.2, which owns bodies, anchors, the ladder, and cycle prevention in
-//! nested containers.
+//! assignments, audience, bulk — is written here, one arm per part. **Type
+//! content is not**, and that is a boundary rather than an omission: every
+//! type-specific field goes through [`super::specific`], which dispatches to
+//! the module owning the type, and a body goes through [`super::body`], which
+//! divides it. Nothing about a campaign, a note, or a location is decided in
+//! this file, and a lane building a domain never has to open it.
 //!
-//! Two types are refused for reasons that expire, which is the honest answer
-//! rather than an omission:
+//! Types are refused for reasons that expire, which is the honest answer rather
+//! than an omission:
 //!
 //! - **A file**, until 2.3. The schema requires a file to name a body, and
 //!   there is no way to have uploaded one.
 //! - **A routine, a focus session, or a check-in**, until each domain is
 //!   designed. The schema deliberately creates no table for them, so there is
 //!   nothing to put a row in.
+//! - **Content the lane behind it has not filled in**, which refuses
+//!   distinguishably rather than accepting silently. See
+//!   [`super::specific::not_yet_built`].
 
 use chrono::{DateTime, Utc};
 use sqlx::Row;
@@ -32,9 +36,11 @@ use crate::store::ids::{EntityId, MemberId, MemberRef};
 use crate::store::{WriteScope, WriteTx};
 
 use super::changes::{self, EntityChange};
-use super::content::{Date, Malformed, PartWrite};
+use super::content::{Date, Malformed, PartWrite, Written};
 use super::outcome::{ConflictParts, Outcome};
-use super::provenance;
+use super::parts::Part;
+use super::specific;
+use super::{body, provenance};
 
 /// One intent's worth of context: the transaction, who is writing, and when.
 pub struct Ctx<'a> {
@@ -155,6 +161,9 @@ async fn current(ctx: &mut Ctx<'_>, row: &EntityRow, part: &PartWrite) -> Applie
                 .collect(),
         ),
         PartWrite::Bulk(_) => PartWrite::Bulk(Some(row.bulk)),
+        PartWrite::Specific(s) => {
+            PartWrite::Specific(specific::current(ctx, row.id, row.entity_type, s).await?)
+        }
     })
 }
 
@@ -168,19 +177,19 @@ async fn current(ctx: &mut Ctx<'_>, row: &EntityRow, part: &PartWrite) -> Applie
 async fn apply_part(
     ctx: &mut Ctx<'_>,
     entity: EntityId,
+    kind: EntityType,
     part: &PartWrite,
     placement: Option<&PartWrite>,
 ) -> Applied<()> {
     match part {
         PartWrite::Title(v) => {
-            // search_text is maintained by the write path from the title and
-            // whatever the type contributes, because those live in side tables
-            // and a generated column cannot reach them. Only the title
-            // contributes here; the type's share arrives with 2.2.
-            sqlx::query("UPDATE entity SET title = $2, search_text = $3 WHERE id = $1")
+            // `search_text` is not written here. It is the title plus whatever
+            // the type contributes, and the type's share needs a read of a side
+            // table, so it is refreshed once after every part has landed — see
+            // `refresh_search_text`.
+            sqlx::query("UPDATE entity SET title = $2 WHERE id = $1")
                 .bind(entity.as_uuid())
                 .bind(v.as_deref())
-                .bind(v.as_deref().unwrap_or(""))
                 .execute(ctx.tx.conn())
                 .await?;
         }
@@ -253,7 +262,39 @@ async fn apply_part(
                 .execute(ctx.tx.conn())
                 .await?;
         }
+        PartWrite::Specific(s) => {
+            // The companion, where there is one, is the type's own — a ladder
+            // position beside a ladder parent, an assertion time beside an
+            // amount — and is handed through so the module can write both in
+            // one statement, for the same reason a category and its position
+            // move together here.
+            let placement = placement.and_then(|p| match p {
+                PartWrite::Specific(s) => Some(s),
+                _ => None,
+            });
+            specific::apply(ctx, entity, kind, s, placement).await?;
+        }
     }
+    Ok(())
+}
+
+/// Rewrite `search_text` from the title and the type's share of it.
+///
+/// **Maintained by the write path, not by a generated column.** A type's
+/// content lives in a side table and a generated column cannot reach across
+/// one. Refreshed once per write rather than per part, because the two
+/// contributions land in different statements and a per-part refresh would
+/// write a string that is briefly missing one of them.
+///
+/// `concat_ws` drops a null, so a type contributing nothing leaves the title
+/// standing alone — which is the whole answer for every type today.
+async fn refresh_search_text(ctx: &mut Ctx<'_>, entity: EntityId, kind: EntityType) -> Applied<()> {
+    let share = specific::search_text(ctx, entity, kind).await?;
+    sqlx::query("UPDATE entity SET search_text = concat_ws(' ', title, $2) WHERE id = $1")
+        .bind(entity.as_uuid())
+        .bind(share)
+        .execute(ctx.tx.conn())
+        .await?;
     Ok(())
 }
 
@@ -264,10 +305,15 @@ async fn apply_part(
 /// when a category changed.
 async fn validate_and_place(
     ctx: &mut Ctx<'_>,
+    entity: EntityId,
+    kind: EntityType,
     entering: Option<EntityId>,
     part: &PartWrite,
 ) -> Applied<Option<PartWrite>> {
     match part {
+        PartWrite::Specific(s) => Ok(specific::validate_and_place(ctx, entity, kind, s)
+            .await?
+            .map(PartWrite::Specific)),
         PartWrite::Audience(ids) | PartWrite::Assignments(ids) => {
             if !memberships_exist(ctx.tx, ids).await? {
                 return Err(Refusal::NotAvailable.into());
@@ -310,17 +356,12 @@ async fn validate_and_place(
 /// The side-table row a type carries beyond the shared model, with its
 /// defaults.
 ///
-/// Note and shopping list have no table: a body is its blocks in order and
-/// there is nothing else, which is a result rather than an omission.
+/// Which table that is comes from [`specific::side_table`], which is also what
+/// erasure removes and what the column helpers write through, so a type gaining
+/// a table is one line in one place. `None` there means a note or a shopping
+/// list, whose content is a body and nothing else.
 async fn make_type_row(ctx: &mut Ctx<'_>, entity: EntityId, kind: EntityType) -> Applied<()> {
-    let table = match kind {
-        EntityType::Campaign => "campaign",
-        EntityType::Arc => "arc",
-        EntityType::Quest => "quest",
-        EntityType::Item => "item",
-        EntityType::Location => "location",
-        EntityType::Category => "category",
-        EntityType::Note | EntityType::ShoppingList => return Ok(()),
+    match kind {
         EntityType::File => {
             return Err(Refusal::Malformed(
                 "a file names a body that must be uploaded first, and PutBody is not served yet"
@@ -334,6 +375,10 @@ async fn make_type_row(ctx: &mut Ctx<'_>, entity: EntityId, kind: EntityType) ->
             )
             .into());
         }
+        _ => {}
+    }
+    let Some(table) = specific::side_table(kind) else {
+        return Ok(());
     };
     let sql = format!("INSERT INTO {table} (entity_id) VALUES ($1)");
     sqlx::query(sqlx::AssertSqlSafe(sql))
@@ -362,7 +407,7 @@ pub async fn create(
     id: EntityId,
     created_at: Option<DateTime<Utc>>,
     capture_method: &str,
-    parts: Vec<PartWrite>,
+    written: Written,
     kind: EntityType,
 ) -> Applied<Outcome> {
     // A create naming something that is already here is not a second entity.
@@ -398,8 +443,11 @@ pub async fn create(
     // Audience is private to the author unless the write says otherwise, or the
     // category it lands in states a creation default. The default acts once, at
     // creation, and an explicit audience outranks it.
-    let stated_audience = parts.iter().any(|p| matches!(p, PartWrite::Audience(_)));
-    let category = parts.iter().find_map(|p| match p {
+    let stated_audience = written
+        .parts
+        .iter()
+        .any(|p| matches!(p, PartWrite::Audience(_)));
+    let category = written.parts.iter().find_map(|p| match p {
         PartWrite::Category(Some(c)) => Some(*c),
         _ => None,
     });
@@ -426,14 +474,23 @@ pub async fn create(
 
     make_type_row(ctx, id, kind).await?;
 
-    let mut written = Vec::new();
-    for part in &parts {
-        let placement = validate_and_place(ctx, None, part).await?;
-        apply_part(ctx, id, part, placement.as_ref()).await?;
-        written.push(part.part());
+    let mut moved = Vec::new();
+    for part in &written.parts {
+        let placement = validate_and_place(ctx, id, kind, None, part).await?;
+        apply_part(ctx, id, kind, part, placement.as_ref()).await?;
+        moved.push(part.part());
         if let Some(placement) = &placement {
-            written.push(placement.part());
+            moved.push(placement.part());
         }
+    }
+
+    // A body is many parts and they are not known until it is divided against
+    // what is stored, which on a create is nothing.
+    let mut changed_blocks = Vec::new();
+    if let Some(text) = &written.body {
+        let touch = body::apply(ctx, id, kind, text).await?;
+        moved.extend(touch.written);
+        changed_blocks.extend(touch.changed);
     }
 
     if !stated_audience && let Some(category) = category {
@@ -443,12 +500,13 @@ pub async fn create(
                 return Err(Refusal::NotAvailable.into());
             }
             let part = PartWrite::Audience(default);
-            apply_part(ctx, id, &part, None).await?;
-            written.push(part.part());
+            apply_part(ctx, id, kind, &part, None).await?;
+            moved.push(part.part());
         }
     }
 
-    provenance::record(ctx.tx, id, &written, 1, ctx.member).await?;
+    refresh_search_text(ctx, id, kind).await?;
+    provenance::record(ctx.tx, id, &moved, 1, ctx.member).await?;
 
     let after = read_audience(ctx, id).await?;
     changes::entity_written(
@@ -463,7 +521,7 @@ pub async fn create(
             audience_after: Some(after),
             author_before: None,
             author_after: Some(ctx.author()),
-            changed_blocks: Vec::new(),
+            changed_blocks,
         },
     )
     .await?;
@@ -476,7 +534,10 @@ async fn read_audience(ctx: &mut Ctx<'_>, id: EntityId) -> Applied<Vec<MemberRef
     Ok(row.map(|r| r.audience).unwrap_or_default())
 }
 
-fn type_name(kind: EntityType) -> &'static str {
+/// The store's spelling of a type, which is also the one a refusal says out
+/// loud to a person reading a log.
+#[must_use]
+pub fn type_name(kind: EntityType) -> &'static str {
     match kind {
         EntityType::Campaign => "campaign",
         EntityType::Arc => "arc",
@@ -498,7 +559,7 @@ pub async fn edit(
     ctx: &mut Ctx<'_>,
     id: EntityId,
     base_counter: i64,
-    parts: Vec<PartWrite>,
+    written: Written,
     stated_type: Option<EntityType>,
 ) -> Applied<Outcome> {
     let row = available_for_write(ctx.tx, ctx.member, id, WriteScope::AnyIncludingErased)
@@ -514,27 +575,41 @@ pub async fn edit(
     }
 
     if row.lifecycle == LifecycleState::Erased {
-        return recreate(ctx, &row, parts).await;
+        return recreate(ctx, &row, written).await;
     }
 
-    let mut touching = Vec::new();
-    let mut written = Vec::new();
+    let kind = row.entity_type;
+    let mut touching: Vec<(Part, Option<String>, Option<String>)> = Vec::new();
+    let mut moved = Vec::new();
     let counter = row.counter + 1;
 
-    for part in &parts {
-        let placement = validate_and_place(ctx, row.category_id, part).await?;
+    for part in &written.parts {
+        let placement = validate_and_place(ctx, id, kind, row.category_id, part).await?;
         let stored = current(ctx, &row, part).await?;
         touching.push((part.part(), part.text(), stored.text()));
         if let Some(placement) = &placement {
             let stored = current(ctx, &row, placement).await?;
             touching.push((placement.part(), placement.text(), stored.text()));
         }
-        apply_part(ctx, id, part, placement.as_ref()).await?;
-        written.push(part.part());
+        apply_part(ctx, id, kind, part, placement.as_ref()).await?;
+        moved.push(part.part());
         if let Some(placement) = &placement {
-            written.push(placement.part());
+            moved.push(placement.part());
         }
     }
+
+    // A body reads what is stored and writes what changed in one step, because
+    // which blocks a body write touches is decided by the match between the two
+    // and cannot be asked before the write is prepared.
+    let mut changed_blocks = Vec::new();
+    if let Some(text) = &written.body {
+        let touch = body::apply(ctx, id, kind, text).await?;
+        touching.extend(touch.touching);
+        moved.extend(touch.written);
+        changed_blocks.extend(touch.changed);
+    }
+
+    refresh_search_text(ctx, id, kind).await?;
 
     // A stale base is never a rejection. What it can be is a conflict, and only
     // over the parts that actually overlap what moved since.
@@ -548,7 +623,7 @@ pub async fn edit(
         provenance::retain(ctx.tx, id, &retained, ctx.at).await?;
     }
 
-    provenance::record(ctx.tx, id, &written, counter, ctx.member).await?;
+    provenance::record(ctx.tx, id, &moved, counter, ctx.member).await?;
     sqlx::query("UPDATE entity SET counter = $2, updated_at = $3 WHERE id = $1")
         .bind(id.as_uuid())
         .bind(counter)
@@ -566,7 +641,7 @@ pub async fn edit(
             audience_after: Some(after),
             author_before: row.author,
             author_after: row.author,
-            changed_blocks: Vec::new(),
+            changed_blocks,
         },
     )
     .await?;
@@ -594,20 +669,19 @@ pub async fn edit(
 async fn recreate(
     ctx: &mut Ctx<'_>,
     tombstone: &EntityRow,
-    parts: Vec<PartWrite>,
+    mut written: Written,
 ) -> Applied<Outcome> {
     let new = EntityId::from_uuid(Uuid::new_v4());
-    let parts: Vec<PartWrite> = parts
-        .into_iter()
-        .filter(|p| !matches!(p, PartWrite::Audience(_)))
-        .collect();
+    written
+        .parts
+        .retain(|p| !matches!(p, PartWrite::Audience(_)));
 
     let outcome = create(
         ctx,
         new,
         Some(ctx.at),
         &tombstone.capture_method,
-        parts,
+        written,
         tombstone.entity_type,
     )
     .await?;
@@ -712,7 +786,7 @@ pub async fn restore(
         if let Some(category) = row.category_id {
             let next = crate::store::entity::next_category_position(ctx.tx, category).await?;
             let part = PartWrite::CategoryPosition(Some(next));
-            apply_part(ctx, row.id, &part, None).await?;
+            apply_part(ctx, row.id, row.entity_type, &part, None).await?;
             provenance::record(ctx.tx, row.id, &[part.part()], row.counter + 1, ctx.member).await?;
         }
 
@@ -811,7 +885,7 @@ pub async fn erase(ctx: &mut Ctx<'_>, ids: &[EntityId]) -> Applied<(Vec<EntityId
         // The side table, which holds what the type carries beyond the shared
         // model. Named by the row's own type rather than tried against all of
         // them, so a type gaining a table is one line here.
-        if let Some(table) = side_table(row.entity_type) {
+        if let Some(table) = specific::side_table(row.entity_type) {
             let sql = format!("DELETE FROM {table} WHERE entity_id = $1");
             sqlx::query(sqlx::AssertSqlSafe(sql))
                 .bind(id.as_uuid())
@@ -879,21 +953,4 @@ pub async fn erase(ctx: &mut Ctx<'_>, ids: &[EntityId]) -> Applied<(Vec<EntityId
     }
 
     Ok((erased, relations_gone))
-}
-
-fn side_table(kind: EntityType) -> Option<&'static str> {
-    match kind {
-        EntityType::Campaign => Some("campaign"),
-        EntityType::Arc => Some("arc"),
-        EntityType::Quest => Some("quest"),
-        EntityType::File => Some("file"),
-        EntityType::Item => Some("item"),
-        EntityType::Location => Some("location"),
-        EntityType::Category => Some("category"),
-        EntityType::Note
-        | EntityType::ShoppingList
-        | EntityType::Routine
-        | EntityType::FocusSession
-        | EntityType::CheckIn => None,
-    }
 }

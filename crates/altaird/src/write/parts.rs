@@ -46,15 +46,19 @@ pub enum Part {
     /// differs per type and the type is fixed at creation, so a number is
     /// unambiguous once the entity exists.
     ///
-    /// Wave 2.1 writes no type content — the plan gives that to 2.2 — so
-    /// nothing produces one of these yet. The variant is here because the
-    /// store shape, the wire shape, and the round-trip test all have to
-    /// account for it, and adding it later would mean revisiting all three.
+    /// **Which numbers a type has is not decided here.** Each type declares its
+    /// own fields in [`super::specific`], and a number valid for one type is
+    /// not valid for another — a campaign's field 1 is a state and a location's
+    /// is a parent. This module holds only the spelling the two tables key it
+    /// by, which is the same whatever type it came from.
     Specific(u32),
     /// A block of a body. Named by identity rather than by position, because
     /// position is what an edit to a neighbour changes.
     ///
-    /// Also 2.2's, for the same reason: blocks arrive with bodies.
+    /// Produced by [`super::body`], which is the only thing that can: a body
+    /// arrives as one field and becomes many parts, and which blocks those are
+    /// is decided by matching the arriving text against the blocks already
+    /// stored.
     Block(Uuid),
 }
 

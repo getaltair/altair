@@ -30,6 +30,7 @@
 //! same wait an unreachable instance produces, because to the person they are
 //! the same thing.
 
+pub mod body;
 pub mod changes;
 pub mod content;
 pub mod entity;
@@ -38,6 +39,7 @@ pub mod outcome;
 pub mod parts;
 pub mod provenance;
 pub mod relation;
+pub mod specific;
 
 use chrono::Utc;
 use sqlx::PgPool;
@@ -239,14 +241,14 @@ async fn act(ctx: &mut Ctx<'_>, intent: &v1::Intent) -> Result<Outcome, Failed> 
                     Refusal::Malformed("a create carries the content that says what it is".into())
                 })?;
                 let kind = entity_type(content)?;
-                let parts = parts_written(content)?;
+                let written = parts_written(content)?;
                 let id = EntityId::from_uuid(identifier(&e.entity_id)?);
                 // Absent is ordinary and means "the instance's clock". Present
                 // and unreadable is a malformed message, and it goes through the
                 // same parser a labelled date does — see `content::instant` for
                 // why the two used to disagree.
                 let created_at = e.created_at.as_ref().map(instant).transpose()?;
-                entity::create(ctx, id, created_at, &e.capture_method, parts, kind).await
+                entity::create(ctx, id, created_at, &e.capture_method, written, kind).await
             }
             Some(v1::create::Subject::Relation(r)) => {
                 let content = r.content.as_ref().ok_or_else(|| {
@@ -276,7 +278,7 @@ async fn act(ctx: &mut Ctx<'_>, intent: &v1::Intent) -> Result<Outcome, Failed> 
                     .as_ref()
                     .map(|_| entity_type(content))
                     .transpose()?;
-                let parts = parts_written(content)?;
+                let written = parts_written(content)?;
                 let id = EntityId::from_uuid(identifier(&e.entity_id)?);
                 // Clamping was worse than it looks. A base counter larger than
                 // any counter the store can hold reads as *current* against
@@ -289,7 +291,7 @@ async fn act(ctx: &mut Ctx<'_>, intent: &v1::Intent) -> Result<Outcome, Failed> 
                         "a base counter is a counter this instance could have issued".into(),
                     )
                 })?;
-                entity::edit(ctx, id, base, parts, stated).await
+                entity::edit(ctx, id, base, written, stated).await
             }
             Some(v1::edit::Subject::Relation(r)) => {
                 let content = r.content.as_ref().ok_or_else(|| {
