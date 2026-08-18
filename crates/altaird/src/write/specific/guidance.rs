@@ -1,40 +1,126 @@
 //! Guidance's type content: campaign, arc, quest.
 //!
-//! **LANE: Guidance owns this file.** Campaign's `state` is filled in as the
-//! spine's proof that a type-specific part reaches the store, conflicts, and
-//! comes back; arc and quest are declared and refused.
+//! **LANE: Guidance owns this file.** Three types, one state enum, and one
+//! container — the ladder — that the shared model does not cover.
+//!
+//! # The states, and why nothing here refuses a transition
+//!
+//! The shipped set is waiting, working, worked, and the PRD is explicit that a
+//! person may rename them but may not add, remove, reorder, or define their
+//! own. That is settled and the store's enum is the whole of it.
+//!
+//! **No transition is refused, and that is a decision rather than an omission.**
+//! The PRD's state diagram draws five movements between the three states and
+//! leaves worked → waiting undrawn. Read as a prohibition it would make one
+//! write a rejection, and three things say it is not:
+//!
+//! - **No prose forbids it.** The diagram's neighbouring prose constrains the
+//!   *set* of states and the one upward movement below; it says nothing about
+//!   which movements a person may make. A rule this file invented from an
+//!   undrawn arrow would be a rule nothing normative states.
+//! - **The substrate does not reject well-formed writes.** A device that was
+//!   away replays what the person did, and the only ways a write does not land
+//!   are that the content cannot be read or that the entity is not available.
+//!   "The person moved this the wrong way round" is neither.
+//! - **The spine already relies on it.** Clearing the state field sets it back
+//!   to waiting, because the column is `NOT NULL DEFAULT 'waiting'`; a worked
+//!   campaign whose state is cleared therefore performs exactly the undrawn
+//!   movement, and `tests/type_content.rs` has asserted since 2.2's spine that
+//!   it arrives at waiting.
+//!
+//! `tests/type_content_guidance.rs` walks every movement the diagram draws and
+//! names the undrawn one, so the reading is visible rather than inferred from
+//! an absence of code.
+//!
+//! # The one upward movement
+//!
+//! Starting a quest moves the containers above it from waiting to working, and
+//! it happens silently. [`propagate_start_upward`] is the whole of it, and each
+//! clause of the PRD's narrowing has its own test.
+//!
+//! # The ladder is a container, and Arrangement is where its rules come from
+//!
+//! **Two documents disagree about where the ladder's ordering rules live, and
+//! this file does not resolve it.** The substrate spec's *Arrangement* section
+//! says the ladder defines its own order "in the Guidance PRD"; the Guidance
+//! PRD says a campaign's mixed-kind order "needs nothing of its own" and then
+//! defines no rules. Something has to be implemented, so this file implements
+//! **Arrangement's**: entering a container appends at the end, leaving forgets
+//! the position, no container is unordered, and the order is total and stable.
+//! That is the reading that leaves nothing undefined, and it is what the PRD's
+//! "nothing of its own" most plausibly means — the ladder needs no ordering
+//! rules *because the substrate's already cover it*.
+//!
+//! **A campaign is one container over mixed kinds.** Arcs and quests beneath
+//! one campaign are ordered together, in one sequence spanning two tables,
+//! which is why the order cannot be a unique constraint and why
+//! [`next_ladder_position`] takes a maximum across both.
 //!
 //! # What is deliberately not here
 //!
-//! **The Guidance state machine.** Which transitions are legal, the silent
-//! upward `Waiting → Working` propagation when something beneath starts, and
-//! what a state means for the ladder are all the Guidance PRD's and the
-//! Guidance lane's. Nothing below checks a transition, and that is not an
-//! omission: the spine is proving that a value crosses the boundary intact, and
-//! a rule bolted on here would be a rule written by whoever was proving the
-//! plumbing.
+//! - **Explicit reordering.** Appending is what a container entry does; a
+//!   client stating a `ladder_position` is refused as malformed, in the
+//!   register of the three refusals Wave 2.1 makes that expire when a named
+//!   lane lands. See [`explicit_position_refusal`].
+//! - **Recurrence.** `quest.routine_id` is a column with no `routine` table
+//!   behind it, because the scope defers routines. The field is read and stored
+//!   and **nothing interprets it**; whatever builds recurrence owes the
+//!   reference check that no foreign key can make today. The PRD's clause that
+//!   *a recurrence is not a container for this* is therefore moot rather than
+//!   implemented: nothing here walks a routine, so nothing can propagate
+//!   through one.
+//! - **The prompts on a parent reaching the terminal state, and on deleting
+//!   one.** The PRD asks about the children and the person answers. That is a
+//!   client behaviour and there is no client until Wave 4, so this file neither
+//!   prompts nor cascades — a silent cascade would be the exact thing the PRD
+//!   rules out, and building half of it now would foreclose the question.
+//! - **Two open questions the PRD holds, which nothing here closes:** the exact
+//!   inflections of the state names, and the absence of any mechanism for
+//!   ordering one quest against another outside a container.
 //!
-//! What is settled, and is the plumbing's own answer rather than the domain's:
-//! **clearing a state sets it to waiting**, because the column is
+//! # What is settled by the plumbing rather than by the domain
+//!
+//! **Clearing a state sets it to waiting**, because the column is
 //! `NOT NULL DEFAULT 'waiting'` and there is no state a campaign is not in. Two
 //! members arriving at waiting — one by setting it, one by clearing it —
 //! therefore compare equal rather than conflict, which is the substrate's rule
 //! that writes producing the same value are not divergent.
 
+use sqlx::Row;
+use uuid::Uuid;
+
 use altair_proto::v1;
 
-use crate::store::entity::EntityType;
+use crate::store::WriteScope;
+use crate::store::entity::{EntityRow, EntityType, available_for_write};
 use crate::store::ids::EntityId;
 
-use super::super::content::{Malformed, Written};
-use super::super::entity::{Applied, Ctx, Refusal};
+use super::super::changes::{self, EntityChange};
+use super::super::content::{Malformed, Written, identifier, malformed};
+use super::super::entity::{Applied, Ctx, Refusal, type_name};
+use super::super::parts::Part;
+use super::super::provenance;
 use super::{
-    Field, GuidanceState, Held, Reader, SpecificPart, SpecificValue, not_yet_built, read_column,
-    unbuilt, write_column,
+    Field, GuidanceState, Held, Reader, SpecificPart, SpecificValue, read_column, write_column,
 };
 
+/// The state field. **The same number in all three messages**, which is what
+/// lets one propagation record a container's movement without asking which kind
+/// of container it reached.
+pub const STATE: u32 = 1;
+
 /// Campaign's field 1, its state. The only part a campaign carries.
-pub const CAMPAIGN_STATE: u32 = 1;
+pub const CAMPAIGN_STATE: u32 = STATE;
+
+/// An arc's campaign, and its position beneath it.
+const ARC_CAMPAIGN: u32 = 2;
+const ARC_POSITION: u32 = 3;
+
+/// A quest's two possible ladder parents, its routine, and its position.
+const QUEST_ARC: u32 = 2;
+const QUEST_CAMPAIGN: u32 = 3;
+const QUEST_ROUTINE: u32 = 4;
+const QUEST_POSITION: u32 = 5;
 
 pub const CAMPAIGN_FIELDS: &[Field] = &[Field {
     number: CAMPAIGN_STATE,
@@ -43,101 +129,429 @@ pub const CAMPAIGN_FIELDS: &[Field] = &[Field {
 
 pub const ARC_FIELDS: &[Field] = &[
     Field {
-        number: 1,
+        number: STATE,
         held: Held::Column("state"),
     },
     Field {
-        number: 2,
+        number: ARC_CAMPAIGN,
         held: Held::Column("campaign_id"),
     },
     Field {
-        number: 3,
+        number: ARC_POSITION,
         held: Held::Column("ladder_position"),
     },
 ];
 
 pub const QUEST_FIELDS: &[Field] = &[
     Field {
-        number: 1,
+        number: STATE,
         held: Held::Column("state"),
     },
     Field {
-        number: 2,
+        number: QUEST_ARC,
         held: Held::Column("arc_id"),
     },
     Field {
-        number: 3,
+        number: QUEST_CAMPAIGN,
         held: Held::Column("campaign_id"),
     },
     Field {
-        number: 4,
+        number: QUEST_ROUTINE,
         held: Held::Column("routine_id"),
     },
     Field {
-        number: 5,
+        number: QUEST_POSITION,
         held: Held::Column("ladder_position"),
     },
 ];
+
+// ---------------------------------------------------------------------------
+// Reading the three messages
+// ---------------------------------------------------------------------------
+
+/// The state a wire field names, resolving a clear to the column's default.
+fn state_value(v: Option<i32>) -> Result<SpecificValue, Malformed> {
+    Ok(SpecificValue::State(match v {
+        Some(number) => GuidanceState::from_wire(number)?,
+        None => GuidanceState::DEFAULT,
+    }))
+}
+
+/// An identifier a wire field names, or nothing where it was cleared.
+fn id_value(v: Option<&Vec<u8>>) -> Result<SpecificValue, Malformed> {
+    Ok(SpecificValue::Id(
+        v.map(|bytes| identifier(bytes)).transpose()?,
+    ))
+}
+
+/// A position a client stated, which is refused later and read here so that the
+/// refusal is about reordering rather than about the number's width.
+fn position_value(v: Option<u32>) -> Result<SpecificValue, Malformed> {
+    Ok(SpecificValue::Count(
+        v.map(|p| i32::try_from(p).map_err(|_| malformed("a position that large is not one")))
+            .transpose()?,
+    ))
+}
 
 /// A campaign's content, off the wire.
 pub fn campaign(c: &v1::CampaignContent) -> Result<Written, Malformed> {
     let read = Reader::new(EntityType::Campaign, &c.cleared)?;
     let mut parts = Vec::new();
-    read.singular(&mut parts, CAMPAIGN_STATE, c.state, |v| {
-        Ok(SpecificValue::State(match v {
-            Some(number) => GuidanceState::from_wire(number)?,
-            None => GuidanceState::DEFAULT,
-        }))
-    })?;
+    read.singular(&mut parts, CAMPAIGN_STATE, c.state, state_value)?;
     Ok(Written::from_specific(parts))
 }
 
 /// An arc's content, off the wire.
 ///
-/// **LANE: Guidance.** The campaign it hangs beneath and its position on the
-/// ladder are here, and the ladder is a container the shared model does not
-/// cover: entering one appends, exactly as entering a category does, which is
-/// why `campaign_id` and `ladder_position` must move in one statement — the
-/// table's `CHECK ((campaign_id IS NULL) = (ladder_position IS NULL))` refuses
-/// the state in between. [`validate_and_place`] is where that companion is
-/// produced.
+/// **The parent is read before the state, and the order is load-bearing.** A
+/// write applies parts in the order this list gives them, and the upward
+/// propagation a state can trigger asks the store which container the entity is
+/// beneath. Reading the state first would mean a quest created already started
+/// beneath a campaign moved nothing, because at the moment its state landed it
+/// would have had no parent yet. The same order is used here so that all three
+/// messages read the same way.
 pub fn arc(c: &v1::ArcContent) -> Result<Written, Malformed> {
-    unbuilt(
-        EntityType::Arc,
-        &c.cleared,
-        &[
-            (1, c.state.is_some()),
-            (2, c.campaign_id.is_some()),
-            (3, c.ladder_position.is_some()),
-        ],
-    )
+    let read = Reader::new(EntityType::Arc, &c.cleared)?;
+    let mut parts = Vec::new();
+    read.singular(&mut parts, ARC_CAMPAIGN, c.campaign_id.as_ref(), id_value)?;
+    read.singular(&mut parts, ARC_POSITION, c.ladder_position, position_value)?;
+    read.singular(&mut parts, STATE, c.state, state_value)?;
+    Ok(Written::from_specific(parts))
 }
 
 /// A quest's content, off the wire.
 ///
-/// **LANE: Guidance.** At most one ladder parent in total, an arc or a
-/// campaign, never both — the wire says so with a `oneof` and the table says so
-/// with `CHECK (num_nonnulls(arc_id, campaign_id) <= 1)`. Moving between them
-/// clears the other, and both move with `ladder_position`.
+/// **At most one ladder parent in total**, an arc or a campaign, never both:
+/// the wire says so with a `oneof` and the table says so with
+/// `CHECK (num_nonnulls(arc_id, campaign_id) <= 1)`. The `oneof` means one
+/// message can only ever *set* one of the two, so they are separate parts here
+/// and setting either clears the other where it is applied.
 pub fn quest(c: &v1::QuestContent) -> Result<Written, Malformed> {
-    unbuilt(
-        EntityType::Quest,
-        &c.cleared,
-        &[
-            (1, c.state.is_some()),
-            (
-                2,
-                matches!(c.parent, Some(v1::quest_content::Parent::ArcId(_))),
-            ),
-            (
-                3,
-                matches!(c.parent, Some(v1::quest_content::Parent::CampaignId(_))),
-            ),
-            (4, c.routine_id.is_some()),
-            (5, c.ladder_position.is_some()),
-        ],
+    use v1::quest_content::Parent;
+    let read = Reader::new(EntityType::Quest, &c.cleared)?;
+    let mut parts = Vec::new();
+    let arc_id = match &c.parent {
+        Some(Parent::ArcId(id)) => Some(id),
+        _ => None,
+    };
+    let campaign_id = match &c.parent {
+        Some(Parent::CampaignId(id)) => Some(id),
+        _ => None,
+    };
+    read.singular(&mut parts, QUEST_ARC, arc_id, id_value)?;
+    read.singular(&mut parts, QUEST_CAMPAIGN, campaign_id, id_value)?;
+    read.singular(&mut parts, QUEST_ROUTINE, c.routine_id.as_ref(), id_value)?;
+    read.singular(
+        &mut parts,
+        QUEST_POSITION,
+        c.ladder_position,
+        position_value,
+    )?;
+    read.singular(&mut parts, STATE, c.state, state_value)?;
+    Ok(Written::from_specific(parts))
+}
+
+// ---------------------------------------------------------------------------
+// The ladder
+// ---------------------------------------------------------------------------
+
+/// Where an entity sits on the ladder, as its own side table holds it.
+#[derive(Debug, Clone, Copy, Default)]
+struct Ladder {
+    arc: Option<Uuid>,
+    campaign: Option<Uuid>,
+    position: Option<i32>,
+}
+
+impl Ladder {
+    /// The parent to climb from, arc first because a quest beneath an arc is
+    /// beneath that arc's campaign only through the arc.
+    fn parent(self) -> Option<EntityId> {
+        self.arc.or(self.campaign).map(EntityId::from_uuid)
+    }
+}
+
+/// Read one entity's ladder placement.
+///
+/// A campaign has none — it is a container and never a child — so it answers
+/// with the empty placement rather than being refused.
+async fn ladder_of(ctx: &mut Ctx<'_>, entity: EntityId, kind: EntityType) -> Applied<Ladder> {
+    let sql = match kind {
+        EntityType::Arc => {
+            "SELECT NULL::uuid AS arc_id, campaign_id, ladder_position FROM arc WHERE entity_id = $1"
+        }
+        EntityType::Quest => {
+            "SELECT arc_id, campaign_id, ladder_position FROM quest WHERE entity_id = $1"
+        }
+        _ => return Ok(Ladder::default()),
+    };
+    let row = sqlx::query(sqlx::AssertSqlSafe(sql))
+        .bind(entity.as_uuid())
+        .fetch_optional(ctx.tx.conn())
+        .await?;
+    let Some(row) = row else {
+        return Ok(Ladder::default());
+    };
+    Ok(Ladder {
+        arc: row.try_get("arc_id")?,
+        campaign: row.try_get("campaign_id")?,
+        position: row.try_get("ladder_position")?,
+    })
+}
+
+/// The next position beneath a container, which is one past the last.
+///
+/// **A campaign's order spans two tables.** Arcs and quests beneath one
+/// campaign are one sequence, so the maximum is taken across both and the order
+/// cannot be a unique constraint. An arc holds only quests.
+///
+/// **Deliberately unscoped by audience**, for exactly the reason
+/// `store::entity::next_category_position` records: this produces an integer
+/// and no content, and a maximum taken over only the entities the writing
+/// member can see would hand out a position already held by one they cannot, so
+/// two entities would share a position and the order would stop being total.
+/// That is a correctness failure produced by applying an access rule to
+/// something that is not an access question.
+async fn next_ladder_position(
+    ctx: &mut Ctx<'_>,
+    container: EntityId,
+    kind: EntityType,
+) -> Applied<i32> {
+    let sql = match kind {
+        EntityType::Campaign => {
+            "SELECT coalesce(max(p), -1) + 1 AS next FROM ( \
+               SELECT ladder_position AS p FROM arc WHERE campaign_id = $1 \
+               UNION ALL \
+               SELECT ladder_position AS p FROM quest WHERE campaign_id = $1 \
+             ) AS beneath"
+        }
+        EntityType::Arc => {
+            "SELECT coalesce(max(ladder_position), -1) + 1 AS next FROM quest WHERE arc_id = $1"
+        }
+        // Nothing else is a ladder container, and the typed foreign keys refuse
+        // one. Reached only if this file grows a caller it should not have.
+        _ => return Err(Refusal::NotAvailable.into()),
+    };
+    let row = sqlx::query(sqlx::AssertSqlSafe(sql))
+        .bind(container.as_uuid())
+        .fetch_one(ctx.tx.conn())
+        .await?;
+    Ok(row.try_get("next")?)
+}
+
+/// The position field of the type whose parent is being written.
+fn position_field(kind: EntityType) -> u32 {
+    match kind {
+        EntityType::Arc => ARC_POSITION,
+        _ => QUEST_POSITION,
+    }
+}
+
+/// **An expiring refusal, in the register of the three Wave 2.1 makes.**
+///
+/// Wave 2.1 refuses an explicit `category_position` in the same words and for
+/// the same reason: appending is the only placement an entry performs, and
+/// reordering is a deliberate act on a surface with the container in front of
+/// the person. Neither exists until something reorders.
+fn explicit_position_refusal() -> Refusal {
+    Refusal::Malformed(
+        "a position on the ladder is assigned by the instance, which appends on entry to a \
+         container; explicit reordering is not served yet"
+            .into(),
     )
 }
+
+/// The ladder position a parent part carries with it.
+///
+/// **The parent and the position are one movement.** Both of the schema's
+/// checks tie them together — an arc's
+/// `CHECK ((campaign_id IS NULL) = (ladder_position IS NULL))` and a quest's
+/// `CHECK ((num_nonnulls(arc_id, campaign_id) = 0) = (ladder_position IS NULL))`
+/// — so writing them in sequence puts the row through a state the schema
+/// refuses, whichever order the sequence is in. This is the same shape
+/// `write::entity` solves for a category and its position, and the companion
+/// travels the same channel.
+async fn parent_placement(
+    ctx: &mut Ctx<'_>,
+    entity: EntityId,
+    kind: EntityType,
+    part: &SpecificPart,
+    container_kind: EntityType,
+) -> Applied<Option<SpecificPart>> {
+    let SpecificValue::Id(target) = part.value else {
+        return Err(Refusal::Malformed("a ladder parent is an identifier".into()).into());
+    };
+    let ladder = ladder_of(ctx, entity, kind).await?;
+    let position = |p: Option<i32>| {
+        Some(SpecificPart {
+            field: position_field(kind),
+            value: SpecificValue::Count(p),
+        })
+    };
+
+    let Some(target) = target else {
+        // Leaving a container forgets the position — unless the *other* parent
+        // column still holds one. Clearing an arc a quest never had must not
+        // strip the position its campaign gave it.
+        let other = match (kind, container_kind) {
+            (EntityType::Quest, EntityType::Arc) => ladder.campaign,
+            (EntityType::Quest, EntityType::Campaign) => ladder.arc,
+            _ => None,
+        };
+        return Ok(position(other.and(ladder.position)));
+    };
+
+    // The container has to be one this member can see, and it has to be the
+    // right kind of container. Both refusals are the same nothing, which is
+    // what makes refusal on audience indistinguishable from refusal on
+    // nonexistence.
+    let target = EntityId::from_uuid(target);
+    let found = available_for_write(ctx.tx, ctx.member, target, WriteScope::Active)
+        .await?
+        .ok_or(Refusal::NotAvailable)?;
+    if found.entity_type != container_kind {
+        return Err(Refusal::NotAvailable.into());
+    }
+    // A cycle is not reachable here and needs no check: a campaign has no
+    // parent, an arc's only parent is a campaign, and a quest is never a
+    // container. The typed foreign keys refuse anything else.
+
+    let already = match container_kind {
+        EntityType::Arc => ladder.arc,
+        _ => ladder.campaign,
+    };
+    if already == Some(target.as_uuid()) {
+        // Not an entry. The position stands, and is handed back anyway so the
+        // parent and the position still move in one statement.
+        return Ok(position(ladder.position));
+    }
+    let next = next_ladder_position(ctx, target, container_kind).await?;
+    Ok(position(Some(next)))
+}
+
+// ---------------------------------------------------------------------------
+// The one upward movement
+// ---------------------------------------------------------------------------
+
+/// Starting a quest moves the containers above it from waiting to working.
+///
+/// Every clause of the PRD's narrowing is a line of this function, and
+/// `tests/type_content_guidance.rs` has a test per clause:
+///
+/// - **Waiting to working only, and never in reverse.** [`start_container`]
+///   writes nothing unless it finds waiting.
+/// - **Upward only.** Nothing here reads a container's children.
+/// - **It never touches a parent already in the terminal state**, because a
+///   stray child would silently reopen something the person deliberately
+///   closed.
+/// - **It climbs the whole chain, skipping any container already working**, and
+///   a quest attached directly to a campaign moves that campaign because
+///   attachment need not be adjacent. The clauses are stated per parent, so a
+///   worked arc is left alone *and the climb continues past it*: nothing says a
+///   campaign's movement depends on the state of the arc below it.
+/// - **A recurrence is not a container for this.** Nothing here walks
+///   `routine_id`, so nothing can.
+///
+/// **Only a quest's own state triggers this.** The PRD names the trigger
+/// exactly once — *starting a quest moves the containers above it* — and every
+/// clause of the narrowing is written about a quest. An arc set to working by
+/// hand therefore moves nothing, and a working quest *moved into* a waiting
+/// container moves nothing either: neither is somebody starting work. Both are
+/// the drift the PRD accepts as this rule's cost, and closing them would be
+/// this file deciding something the PRD did not.
+///
+/// **The climb stops at a container this member cannot see.** The chain is
+/// followed through each container's own row, and moving a state on an entity
+/// the writer is not entitled to see would attribute a write — in provenance
+/// and in the change sequence — to a member who cannot see what they moved.
+///
+/// **A container this moves gets a counter and a change entry of its own.** The
+/// state is a part like any other: a part that does not record the counter it
+/// moved at is invisible to conflict detection, and a movement nothing records
+/// is one no client ever learns about.
+async fn propagate_start_upward(ctx: &mut Ctx<'_>, quest: EntityId) -> Applied<()> {
+    let mut next = ladder_of(ctx, quest, EntityType::Quest).await?.parent();
+    while let Some(id) = next {
+        let Some(row) = available_for_write(ctx.tx, ctx.member, id, WriteScope::Active).await?
+        else {
+            break;
+        };
+        next = match row.entity_type {
+            EntityType::Arc => {
+                start_container(ctx, &row).await?;
+                ladder_of(ctx, id, EntityType::Arc).await?.parent()
+            }
+            EntityType::Campaign => {
+                start_container(ctx, &row).await?;
+                None
+            }
+            // A ladder parent of any other type is not representable: both
+            // foreign keys carry the container's type.
+            _ => None,
+        };
+    }
+    Ok(())
+}
+
+/// Move one container from waiting to working, or leave it exactly as it is.
+async fn start_container(ctx: &mut Ctx<'_>, row: &EntityRow) -> Applied<()> {
+    let asking = SpecificPart {
+        field: STATE,
+        value: SpecificValue::State(GuidanceState::DEFAULT),
+    };
+    let current = read_column(ctx, row.id, row.entity_type, &asking).await?;
+    if current.value != SpecificValue::State(GuidanceState::Waiting) {
+        // Already working, so there is nothing to do; or already worked, which
+        // this movement never touches.
+        return Ok(());
+    }
+
+    let working = SpecificPart {
+        field: STATE,
+        value: SpecificValue::State(GuidanceState::Working),
+    };
+    write_column(ctx, row.id, row.entity_type, &working).await?;
+
+    // The counter advances because this is an accepted write to that entity,
+    // and a client holding the old one has to learn its state moved.
+    let counter = row.counter + 1;
+    sqlx::query("UPDATE entity SET counter = $2, updated_at = $3 WHERE id = $1")
+        .bind(row.id.as_uuid())
+        .bind(counter)
+        .bind(ctx.at)
+        .execute(ctx.tx.conn())
+        .await?;
+    provenance::record(
+        ctx.tx,
+        row.id,
+        &[Part::Specific(STATE)],
+        counter,
+        ctx.member,
+    )
+    .await?;
+
+    // Audience did not move, so both sides of the pair are what it already was.
+    // The entry still has to exist: to every member who can see this container,
+    // its state changed.
+    changes::entity_written(
+        ctx.tx,
+        ctx.at,
+        &EntityChange {
+            entity: row.id,
+            audience_before: Some(row.audience.clone()),
+            audience_after: Some(row.audience.clone()),
+            author_before: row.author,
+            author_after: row.author,
+            changed_blocks: Vec::new(),
+        },
+    )
+    .await?;
+    Ok(())
+}
+
+// ---------------------------------------------------------------------------
+// The seams the dispatch calls
+// ---------------------------------------------------------------------------
 
 pub async fn validate_and_place(
     ctx: &mut Ctx<'_>,
@@ -145,13 +559,27 @@ pub async fn validate_and_place(
     kind: EntityType,
     part: &SpecificPart,
 ) -> Applied<Option<SpecificPart>> {
-    let _ = (ctx, entity);
     match (kind, part.field) {
-        // A state owes nothing before it is written. Whether the transition is
-        // legal is the Guidance lane's question and is deliberately not asked
-        // here; see the note at the head of this module.
-        (EntityType::Campaign, CAMPAIGN_STATE) => Ok(None),
-        _ => Err(Refusal::Malformed(not_yet_built(kind).0).into()),
+        // A state owes nothing before it is written. No transition is refused;
+        // see the head of this module for why the diagram's undrawn arrow is
+        // not a prohibition.
+        (EntityType::Campaign | EntityType::Arc | EntityType::Quest, STATE) => Ok(None),
+        (EntityType::Arc, ARC_CAMPAIGN) => {
+            parent_placement(ctx, entity, kind, part, EntityType::Campaign).await
+        }
+        (EntityType::Quest, QUEST_ARC) => {
+            parent_placement(ctx, entity, kind, part, EntityType::Arc).await
+        }
+        (EntityType::Quest, QUEST_CAMPAIGN) => {
+            parent_placement(ctx, entity, kind, part, EntityType::Campaign).await
+        }
+        // Stored and never interpreted, because the routine it would name has
+        // no table to be checked against. See the head of this module.
+        (EntityType::Quest, QUEST_ROUTINE) => Ok(None),
+        (EntityType::Arc, ARC_POSITION) | (EntityType::Quest, QUEST_POSITION) => {
+            Err(explicit_position_refusal().into())
+        }
+        _ => Err(unknown_field(kind, part).into()),
     }
 }
 
@@ -161,9 +589,18 @@ pub async fn current(
     kind: EntityType,
     part: &SpecificPart,
 ) -> Applied<SpecificPart> {
+    // Every Guidance field is one column of the type's own side table, so the
+    // generic reader serves all of them — including the position, which a
+    // client may not address but which travels as a companion and needs its
+    // stored value read for the same conflict comparison as anything else.
     match (kind, part.field) {
-        (EntityType::Campaign, CAMPAIGN_STATE) => read_column(ctx, entity, kind, part).await,
-        _ => Err(Refusal::Malformed(not_yet_built(kind).0).into()),
+        (EntityType::Campaign, CAMPAIGN_STATE)
+        | (EntityType::Arc, STATE | ARC_CAMPAIGN | ARC_POSITION)
+        | (
+            EntityType::Quest,
+            STATE | QUEST_ARC | QUEST_CAMPAIGN | QUEST_ROUTINE | QUEST_POSITION,
+        ) => read_column(ctx, entity, kind, part).await,
+        _ => Err(unknown_field(kind, part).into()),
     }
 }
 
@@ -175,14 +612,115 @@ pub async fn apply(
     placement: Option<&SpecificPart>,
 ) -> Applied<()> {
     match (kind, part.field) {
-        (EntityType::Campaign, CAMPAIGN_STATE) => {
-            // A campaign has no companion part, so there is nothing to write
-            // alongside. An arc's or a quest's ladder position will be one.
+        (EntityType::Campaign | EntityType::Arc, STATE) => {
+            // Neither is a child of anything that starts, so neither has a
+            // companion and neither propagates.
             debug_assert!(placement.is_none());
             write_column(ctx, entity, kind, part).await
         }
-        _ => Err(Refusal::Malformed(not_yet_built(kind).0).into()),
+        (EntityType::Quest, STATE) => {
+            debug_assert!(placement.is_none());
+            write_column(ctx, entity, kind, part).await?;
+            if part.value == SpecificValue::State(GuidanceState::Working) {
+                propagate_start_upward(ctx, entity).await?;
+            }
+            Ok(())
+        }
+        (EntityType::Arc, ARC_CAMPAIGN) => {
+            write_parent(
+                ctx,
+                entity,
+                "UPDATE arc SET campaign_id = $2, ladder_position = $3 WHERE entity_id = $1",
+                part,
+                placement,
+            )
+            .await
+        }
+        (EntityType::Quest, QUEST_ARC) => {
+            // Setting one ladder parent clears the other, in the same statement
+            // and for the same reason the position moves in it: the row may
+            // never hold two. Clearing this one leaves the other alone, because
+            // clearing an arc a quest never had is not a request to detach it
+            // from its campaign.
+            write_parent(
+                ctx,
+                entity,
+                "UPDATE quest SET arc_id = $2, \
+                 campaign_id = CASE WHEN $2::uuid IS NULL THEN campaign_id ELSE NULL END, \
+                 ladder_position = $3 WHERE entity_id = $1",
+                part,
+                placement,
+            )
+            .await
+        }
+        (EntityType::Quest, QUEST_CAMPAIGN) => {
+            write_parent(
+                ctx,
+                entity,
+                "UPDATE quest SET campaign_id = $2, \
+                 arc_id = CASE WHEN $2::uuid IS NULL THEN arc_id ELSE NULL END, \
+                 ladder_position = $3 WHERE entity_id = $1",
+                part,
+                placement,
+            )
+            .await
+        }
+        (EntityType::Quest, QUEST_ROUTINE) => write_column(ctx, entity, kind, part).await,
+        // Unreachable: `validate_and_place` refuses a client-stated position
+        // before anything is applied, and the instance's own position arrives
+        // as the companion above rather than as a part of its own. Refused
+        // rather than written, so a future caller finds the rule instead of a
+        // silent second path into the column.
+        (EntityType::Arc, ARC_POSITION) | (EntityType::Quest, QUEST_POSITION) => {
+            Err(explicit_position_refusal().into())
+        }
+        _ => Err(unknown_field(kind, part).into()),
     }
+}
+
+/// Write a ladder parent and the position that belongs with it, in one
+/// statement.
+async fn write_parent(
+    ctx: &mut Ctx<'_>,
+    entity: EntityId,
+    sql: &'static str,
+    part: &SpecificPart,
+    placement: Option<&SpecificPart>,
+) -> Applied<()> {
+    let SpecificValue::Id(parent) = part.value else {
+        return Err(Refusal::Malformed("a ladder parent is an identifier".into()).into());
+    };
+    // The companion is produced by `parent_placement` for every parent part, so
+    // an absent one means this file has grown a second path into the column.
+    let position = match placement.map(|p| &p.value) {
+        Some(SpecificValue::Count(p)) => *p,
+        _ => {
+            return Err(Refusal::Malformed(
+                "a ladder parent moves with the position that belongs to it".into(),
+            )
+            .into());
+        }
+    };
+    sqlx::query(sqlx::AssertSqlSafe(sql))
+        .bind(entity.as_uuid())
+        .bind(parent)
+        .bind(position)
+        .execute(ctx.tx.conn())
+        .await?;
+    Ok(())
+}
+
+/// A number that names no field of this type.
+///
+/// [`Reader`] refuses a *cleared* number that names nothing before a part is
+/// ever built, so reaching this means a part was constructed inside the
+/// instance with a number its type does not have.
+fn unknown_field(kind: EntityType, part: &SpecificPart) -> Refusal {
+    Refusal::Malformed(format!(
+        "field {} is not a part of a {}",
+        part.field,
+        type_name(kind)
+    ))
 }
 
 /// Guidance contributes nothing to searchable text.
