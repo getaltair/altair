@@ -241,7 +241,12 @@ pub fn quest(c: &v1::QuestContent) -> Result<Written, Malformed> {
     read.singular(&mut parts, QUEST_ARC, arc_id, id_value)?;
     read.singular(&mut parts, QUEST_CAMPAIGN, campaign_id, id_value)?;
     read.singular(&mut parts, QUEST_ROUTINE, c.routine_id.as_ref(), id_value)?;
-    read.singular(&mut parts, QUEST_POSITION, c.ladder_position, position_value)?;
+    read.singular(
+        &mut parts,
+        QUEST_POSITION,
+        c.ladder_position,
+        position_value,
+    )?;
     read.singular(&mut parts, STATE, c.state, state_value)?;
     Ok(Written::from_specific(parts))
 }
@@ -516,7 +521,14 @@ async fn start_container(ctx: &mut Ctx<'_>, row: &EntityRow) -> Applied<()> {
         .bind(ctx.at)
         .execute(ctx.tx.conn())
         .await?;
-    provenance::record(ctx.tx, row.id, &[Part::Specific(STATE)], counter, ctx.member).await?;
+    provenance::record(
+        ctx.tx,
+        row.id,
+        &[Part::Specific(STATE)],
+        counter,
+        ctx.member,
+    )
+    .await?;
 
     // Audience did not move, so both sides of the pair are what it already was.
     // The entry still has to exist: to every member who can see this container,
