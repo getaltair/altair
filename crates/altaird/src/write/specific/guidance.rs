@@ -102,7 +102,7 @@ use super::super::parts::Part;
 use super::super::provenance;
 use super::{
     Detachment, Field, GuidanceState, Held, Reader, Released, SpecificPart, SpecificValue,
-    read_column, write_column,
+    part_held_in, read_column, write_column,
 };
 
 /// The state field. **The same number in all three messages**, which is what
@@ -931,27 +931,6 @@ pub async fn detach_contained(
         }
     }
     Ok(Detachment::Released(released))
-}
-
-/// The part of a type's message that a column holds.
-///
-/// One lookup over the type's own [`Field`] declarations, so a column and the
-/// field number that names it cannot disagree. `None` is impossible for the
-/// three columns [`detach_contained`] asks about — each is declared — and is a
-/// refusal rather than a panic because everything else in this file answers
-/// that way.
-fn part_held_in(kind: EntityType, column: &str) -> Applied<Part> {
-    super::fields(kind)
-        .iter()
-        .find(|f| matches!(f.held, Held::Column(c) if c == column))
-        .map(|f| Part::Specific(f.number))
-        .ok_or_else(|| {
-            Refusal::Malformed(format!(
-                "no field of a {} is held in {column}",
-                type_name(kind)
-            ))
-            .into()
-        })
 }
 
 /// Guidance contributes nothing to searchable text.
