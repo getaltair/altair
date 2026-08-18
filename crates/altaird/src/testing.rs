@@ -53,6 +53,29 @@ fn with_database(url: &str, name: &str) -> String {
     format!("{base}/{name}")
 }
 
+/// A short digest of the migrations this build carries.
+///
+/// **This is what makes reusing a template safe.** The template is created once
+/// and then left alone, so without something in its name tying it to the
+/// migrations it was built from, checking out a revision with a changed or added
+/// migration would go on cloning the *old* schema — and the tests would either
+/// fail for an absent column or, far worse, pass against obsolete constraints
+/// and report green for a revision they never exercised.
+///
+/// Taking it from `MIGRATOR` rather than from the files means it tracks what the
+/// binary will actually apply. A changed migration yields a new name and a new
+/// template; the old one lingers harmlessly until swept, which is the cheap
+/// direction for this to fail in.
+fn migrations_digest() -> String {
+    use std::hash::{Hash, Hasher};
+    let mut h = std::collections::hash_map::DefaultHasher::new();
+    for m in crate::store::MIGRATOR.iter() {
+        m.version.hash(&mut h);
+        m.checksum.hash(&mut h);
+    }
+    format!("{:016x}", h.finish())
+}
+
 /// The advisory-lock key for one prefix's template.
 ///
 /// Any stable mapping from the name to an `i64` does; collisions between two
@@ -93,7 +116,7 @@ fn template_lock_key(name: &str) -> i64 {
 /// Rebuilding it on every run to avoid that was paying a constant cost for a
 /// rare event, and the cost turned out to be the cluster.
 async fn ensure_template() -> String {
-    let name = format!("{}_template", prefix());
+    let name = format!("{}_template_{}", prefix(), migrations_digest());
     let admin = admin_url();
 
     let mut conn = PgConnection::connect(&admin).await.expect("connect");
