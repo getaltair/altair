@@ -494,88 +494,26 @@ async fn a_state_that_is_present_and_names_nothing_is_malformed() {
 }
 
 // ---------------------------------------------------------------------------
-// Everything unfilled refuses distinguishably
+// What the stub assertions used to hold, and who holds it now
 // ---------------------------------------------------------------------------
-
-/// One message per type that addresses at least one of its own fields.
-fn addressing_a_field() -> Vec<(&'static str, v1::entity_content::Specific)> {
-    use v1::entity_content::Specific;
-    vec![
-        (
-            "arc",
-            Specific::Arc(v1::ArcContent {
-                state: Some(v1::GuidanceState::Working as i32),
-                ..Default::default()
-            }),
-        ),
-        (
-            "quest",
-            Specific::Quest(v1::QuestContent {
-                state: Some(v1::GuidanceState::Working as i32),
-                ..Default::default()
-            }),
-        ),
-        (
-            "file",
-            Specific::File(v1::FileContent {
-                media_type: Some("image/png".into()),
-                ..Default::default()
-            }),
-        ),
-        (
-            "item",
-            Specific::Item(v1::ItemContent {
-                unit: Some("tins".into()),
-                ..Default::default()
-            }),
-        ),
-        (
-            "location",
-            Specific::Location(v1::LocationContent {
-                parent_location_id: Some(Uuid::new_v4().as_bytes().to_vec()),
-                ..Default::default()
-            }),
-        ),
-        (
-            "category",
-            Specific::Category(v1::CategoryContent {
-                parent_category_id: Some(Uuid::new_v4().as_bytes().to_vec()),
-                ..Default::default()
-            }),
-        ),
-    ]
-}
-
-/// **The whole point of the stubs.** An unfilled type says so rather than
-/// accepting and writing nothing, and it says so in words a person reading a
-/// log can act on.
-#[tokio::test]
-async fn a_type_whose_content_is_not_built_refuses_and_says_which() {
-    let world = World::new().await;
-    for (name, specific) in addressing_a_field() {
-        let detail = refusal_creating(&world, specific).await;
-        assert!(
-            detail.contains("not built yet") && detail.contains(name),
-            "{name}: {detail}"
-        );
-    }
-}
-
-/// A note's body is read for real; what is not built is the division behind it.
-/// The refusal has to say that rather than claiming the type is unknown.
-#[tokio::test]
-async fn a_body_refuses_because_division_is_not_wired_rather_than_because_a_note_is_unknown() {
-    let world = World::new().await;
-    let detail = refusal_creating(
-        &world,
-        v1::entity_content::Specific::Note(v1::NoteContent {
-            body: Some("one paragraph.".into()),
-            cleared: Vec::new(),
-        }),
-    )
-    .await;
-    assert!(detail.contains("divided into blocks"), "{detail}");
-}
+//
+// Until Wave 2.2's four lanes landed, this file asserted that every type whose
+// content was not yet built refused and said so, rather than accepting a write
+// and storing nothing. That assertion was written against a list of unbuilt
+// types, and each lane filling in its own type made its own entries false: a
+// file reaches 2.1's own refusal about a body, and a category naming a parent
+// that does not exist refuses as unavailable rather than as malformed, because
+// nonexistence and audience are the same nothing.
+//
+// **The list is gone rather than half-corrected**, because a list that is true
+// of some types and stale for others is worse than no list: it reads as
+// coverage. What it was really guarding is that no type silently accepts a
+// write and stores nothing, and that invariant is now carried where it can be
+// stated for real — each type's own round-trip tests in the lane test files,
+// which assert the stored value rather than the wording of a refusal.
+//
+// The same applies to the note body that used to refuse because division was
+// not wired: bodies are served now, so the refusal it asserted is gone.
 
 /// **A bare create of every type still works exactly as Wave 2.1 left it.** A
 /// message addressing nothing addresses nothing, whether or not the type's
