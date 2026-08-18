@@ -693,6 +693,113 @@ pub async fn search_text(
 }
 
 // ---------------------------------------------------------------------------
+// What a type-specific container lets go of when it is erased
+// ---------------------------------------------------------------------------
+
+/// What an erased container let go of.
+///
+/// **Three answers, not two, because an empty list is ambiguous.** A container
+/// that held nothing and a type that has no container both release nothing, and
+/// a container whose lane has not built the release yet also releases nothing —
+/// and that last one is a leak rather than an answer. Whoever wires this must be
+/// able to tell them apart, or a campaign's arcs go on pointing at a tombstone
+/// and the suite stays green.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Detachment {
+    /// This type holds nothing that points back at it. There is no container
+    /// here and there never will be.
+    NoContainer,
+    /// The entities that pointed at this container and now point at nothing.
+    /// Empty means the container was empty, which is an answer.
+    Released(Vec<EntityId>),
+    /// **This type has a container and the release is not built yet.**
+    /// Distinct from `Released(vec![])` on purpose: wiring the call while a type
+    /// still answers this way would silently leave that container's contents
+    /// pointing at a tombstone.
+    NotBuilt,
+}
+
+/// Let go of everything a type-specific container held, because it is gone.
+///
+/// # Why this exists, and why it is not called yet
+///
+/// [`super::entity`]'s erase path says outright that *the type-specific
+/// containers, the ladder and nested locations, are Wave 2.2's for the same
+/// reason their content is*. Wave 2.1 built the shared-model half —
+/// `uncategorise_all`, for a category — and left these. Today an erased
+/// campaign leaves its arcs and quests pointing at a tombstone, and an erased
+/// location leaves both its child locations and the items shelved in it doing
+/// the same.
+///
+/// The substrate's rule for the category case is that *an entity whose category
+/// is deleted becomes uncategorised, which is a valid state requiring no
+/// repair*, and erasure is the stronger form of the same thing. Nothing about
+/// that reasoning is specific to categories.
+///
+/// **Declared here and deliberately unwired.** The call belongs in the erase
+/// path, which this lane does not own. Adding the seam without the call is the
+/// half that can be built in isolation; the other half is one line in a file
+/// another lane holds.
+///
+/// # What the caller still owes
+///
+/// The identities come back and nothing else. A change entry needs the
+/// audience, and `tests/one_predicate.rs` refuses any source outside
+/// `store/audience.rs` that names the audience column and issues SQL — rightly,
+/// because reasoning about audience belongs there. So the release happens here
+/// and the change sequence is assembled by the caller, from the store layer,
+/// exactly as the category case already does it.
+///
+/// The counter on each released entity is advanced here, because that is part
+/// of the release rather than part of the bookkeeping: it is an accepted write
+/// to those entities, and a client holding one has to learn the container went
+/// away.
+pub async fn detach_contained(
+    ctx: &mut Ctx<'_>,
+    entity: EntityId,
+    kind: EntityType,
+) -> Applied<Detachment> {
+    match kind {
+        // **LANE: Guidance.** An arc hangs beneath a campaign and a quest
+        // beneath either, so all three are containers and all three owe a
+        // release. Answering `NotBuilt` rather than an empty list is what stops
+        // that being invisible once this is wired.
+        EntityType::Campaign | EntityType::Arc | EntityType::Quest => Ok(Detachment::NotBuilt),
+        EntityType::Item | EntityType::Location | EntityType::ShoppingList => {
+            tracking::detach_contained(ctx, entity, kind).await
+        }
+        // **LANE: Knowledge and categories.** A category is a container, but its
+        // release is the shared model's and Wave 2.1 already built it — the
+        // erase path calls `uncategorise_all` directly. Nothing is owed here.
+        EntityType::Category => Ok(Detachment::NoContainer),
+        // A note and a file hold nothing. The three the schema has no table for
+        // hold nothing either, and cannot be created at all.
+        EntityType::Note
+        | EntityType::File
+        | EntityType::Routine
+        | EntityType::FocusSession
+        | EntityType::CheckIn => Ok(Detachment::NoContainer),
+    }
+}
+
+/// Advance the counter on each entity a vanished container let go of.
+///
+/// Shared by every lane's release so that *what a detach does to the entity row*
+/// has one implementation. A release that forgot this would leave a client
+/// holding a counter that never moved, and it would never learn the container
+/// was gone.
+pub async fn note_detached(ctx: &mut Ctx<'_>, released: &[EntityId]) -> Applied<()> {
+    for id in released {
+        sqlx::query("UPDATE entity SET counter = counter + 1, updated_at = $2 WHERE id = $1")
+            .bind(id.as_uuid())
+            .bind(ctx.at)
+            .execute(ctx.tx.conn())
+            .await?;
+    }
+    Ok(())
+}
+
+// ---------------------------------------------------------------------------
 // Reading and writing a column, generically
 // ---------------------------------------------------------------------------
 

@@ -73,8 +73,8 @@ use crate::store::ids::EntityId;
 use super::super::content::{Malformed, Written, identifier, instant, malformed};
 use super::super::entity::{Applied, Ctx, Failed, Refusal, type_name};
 use super::{
-    Decimal, Field, Held, Property, Reader, SpecificPart, SpecificValue, nesting, read_column,
-    read_properties, unbuilt, write_column, write_properties,
+    Decimal, Detachment, Field, Held, Property, Reader, SpecificPart, SpecificValue, nesting,
+    note_detached, read_column, read_properties, unbuilt, write_column, write_properties,
 };
 
 // ---------------------------------------------------------------------------
@@ -102,6 +102,11 @@ const UNIT: &str = "unit";
 /// same way, deliberately: two callers of one walk feeding it two different
 /// ways is how the walk ends up running against a column one of them renamed.
 const PARENT_LOCATION: &str = "parent_location_id";
+
+/// The store's spelling of the column an item's shelf is held in, named once
+/// for the same reason as the one above: [`detach_contained`] names it in a
+/// statement, and [`ITEM_FIELDS`] declares it, and the two must not drift.
+const ITEM_LOCATION_COLUMN: &str = "location_id";
 
 /// The side table a type keeps its content in.
 ///
@@ -138,7 +143,7 @@ pub const ITEM_FIELDS: &[Field] = &[
     },
     Field {
         number: ITEM_LOCATION,
-        held: Held::Column("location_id"),
+        held: Held::Column(ITEM_LOCATION_COLUMN),
     },
     Field {
         number: ITEM_TEMPLATE,
@@ -564,6 +569,73 @@ pub async fn apply(
         }
         _ => Err(unaddressable(kind, part.field)),
     }
+}
+
+// ---------------------------------------------------------------------------
+// What an erased location lets go of
+// ---------------------------------------------------------------------------
+
+/// Release everything a vanished location held.
+///
+/// **LANE: Tracking.** A location holds two different things and both point
+/// back at it by identity:
+///
+/// - **Child locations**, through `parent_location_id`. Nesting is optional, so
+///   a child that loses its parent becomes a top-level location, which is a
+///   complete state needing no repair — *an item whose location is a single
+///   unnested thing is complete, and so is an item with no location at all*.
+/// - **Items shelved in it**, through `location_id`. The same rule: *nothing
+///   insists the location be right*, and an item with no location is complete.
+///
+/// **Both, not just the first.** The nesting case is the one that gets
+/// remembered because the container is the same type as the thing contained;
+/// the items are easier to forget and are the larger set. Missing either leaves
+/// rows pointing at a tombstone.
+///
+/// **The schema will not catch this.** Both columns are typed foreign keys into
+/// `entity`, and erasure leaves the entity row standing as a tombstone — so
+/// nothing is violated, no constraint fires, and the dangling reference is
+/// silent. That is the same reason the cycle check had to be written here
+/// rather than declared.
+///
+/// An item and a shopping list contain nothing, which is an answer rather than
+/// an omission.
+pub async fn detach_contained(
+    ctx: &mut Ctx<'_>,
+    entity: EntityId,
+    kind: EntityType,
+) -> Applied<Detachment> {
+    if kind != EntityType::Location {
+        // An item is a leaf. A shopping list's entries are blocks of its own
+        // body rather than entities pointing at it, and are deferred besides.
+        return Ok(Detachment::NoContainer);
+    }
+
+    let mut released = Vec::new();
+    // The two columns that name a location, each in its own table.
+    for (table, column) in [
+        (table_of(EntityType::Location)?, PARENT_LOCATION),
+        (table_of(EntityType::Item)?, ITEM_LOCATION_COLUMN),
+    ] {
+        let sql =
+            format!("UPDATE {table} SET {column} = NULL WHERE {column} = $1 RETURNING entity_id");
+        let rows = sqlx::query(sqlx::AssertSqlSafe(sql))
+            .bind(entity.as_uuid())
+            .fetch_all(ctx.tx.conn())
+            .await?;
+        for r in &rows {
+            released.push(EntityId::from_uuid(r.try_get("entity_id")?));
+        }
+    }
+
+    // **Deliberately unscoped**, for the reason `uncategorise_all` gives: the
+    // container is gone for everybody, so leaving behind the rows the erasing
+    // member cannot see would keep a dangling reference alive precisely where
+    // nobody can find it. Nothing leaves here that a caller can show anyone —
+    // the identities become change entries, and those are assembled per member
+    // by the read path, which applies the predicate then.
+    note_detached(ctx, &released).await?;
+    Ok(Detachment::Released(released))
 }
 
 // ---------------------------------------------------------------------------

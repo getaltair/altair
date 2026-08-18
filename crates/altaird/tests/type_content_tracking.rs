@@ -23,7 +23,12 @@
 mod common;
 
 use altair_proto::v1;
-use altaird::store::ids::EntityId;
+use altaird::store::begin_write;
+use altaird::store::entity::EntityType;
+use altaird::store::ids::{EntityId, MemberId};
+use altaird::write::entity::Ctx;
+use altaird::write::specific::{self, Detachment};
+use chrono::Utc;
 use common::*;
 use sqlx::Row;
 use uuid::Uuid;
@@ -1577,4 +1582,256 @@ async fn a_shopping_lists_entries_are_still_refused_with_the_reason() {
             },
         )
         .await;
+}
+
+// ---------------------------------------------------------------------------
+// What an erased location lets go of
+// ---------------------------------------------------------------------------
+//
+// **Reached directly, because nothing calls it yet.** The seam belongs to this
+// wave and the call belongs in the erase path, which this lane does not own —
+// the same split `type_content.rs` used for `would_cycle` before either
+// container had a caller. When the call is wired,
+// `an_erase_does_not_yet_release_what_a_location_held` below is the test that
+// has to be inverted, and it is written to say so.
+
+/// Run the release against a location, outside any write of its own.
+async fn detach(world: &World, container: EntityId, kind: EntityType) -> Detachment {
+    let mut tx = begin_write(&world.db.pool).await.expect("a transaction");
+    let mut ctx = Ctx {
+        tx: &mut tx,
+        member: MemberId::for_test(world.one.membership_id()),
+        at: Utc::now(),
+    };
+    let answer = specific::detach_contained(&mut ctx, container, kind)
+        .await
+        .unwrap_or_else(|_| panic!("the store was reachable"));
+    tx.commit().await.expect("commit");
+    answer
+}
+
+fn released(answer: &Detachment) -> Vec<EntityId> {
+    match answer {
+        Detachment::Released(ids) => {
+            let mut ids = ids.clone();
+            ids.sort_by_key(|i| i.as_uuid());
+            ids
+        }
+        other => panic!("expected a release, got {other:?}"),
+    }
+}
+
+/// **Both kinds of thing a location holds, not just the nested one.**
+///
+/// The child-location case is the one that gets remembered, because the
+/// container and the contained are the same type. The items shelved in it are
+/// easier to forget and are the larger set, and both point back by identity.
+#[tokio::test]
+async fn an_erased_location_releases_its_children_and_its_items() {
+    let world = World::new().await;
+    let cupboard = a_location(&world, &world.one, "the cupboard").await;
+    let shelf = a_location(&world, &world.one, "the shelf").await;
+    let elsewhere = a_location(&world, &world.one, "the garage").await;
+
+    assert!(matches!(
+        nest(&world, shelf, cupboard).await.outcome,
+        Some(v1::acknowledgement::Outcome::Applied(_))
+    ));
+
+    let tin = world
+        .create(
+            &world.one,
+            item(v1::ItemContent {
+                location_id: Some(id_bytes(cupboard)),
+                ..Default::default()
+            }),
+            v1::EntityContent::default(),
+        )
+        .await;
+    // An item somewhere else, which must be left exactly where it is.
+    let other_tin = world
+        .create(
+            &world.one,
+            item(v1::ItemContent {
+                location_id: Some(id_bytes(elsewhere)),
+                ..Default::default()
+            }),
+            v1::EntityContent::default(),
+        )
+        .await;
+
+    let answer = detach(&world, cupboard, EntityType::Location).await;
+    let mut expected = vec![shelf, tin];
+    expected.sort_by_key(|i| i.as_uuid());
+    assert_eq!(released(&answer), expected);
+
+    // The shelf is now a top-level location, which is a complete state.
+    assert_eq!(location_row(&world, shelf).await.0, None);
+    // The tin has no location, which is also complete.
+    assert_eq!(item_row(&world, tin).await.location, None);
+    // And nothing else moved.
+    assert_eq!(
+        item_row(&world, other_tin).await.location,
+        Some(elsewhere.as_uuid())
+    );
+}
+
+/// A released entity's counter advances, because losing a container is an
+/// accepted write to it. A client holding the old counter has to learn the
+/// container went away.
+#[tokio::test]
+async fn releasing_an_entity_advances_its_counter() {
+    let world = World::new().await;
+    let cupboard = a_location(&world, &world.one, "the cupboard").await;
+    let shelf = a_location(&world, &world.one, "the shelf").await;
+    nest(&world, shelf, cupboard).await;
+
+    let before = world.counter(shelf).await;
+    detach(&world, cupboard, EntityType::Location).await;
+    assert_eq!(world.counter(shelf).await, before + 1);
+}
+
+/// An empty container releases nothing, and that is an answer rather than an
+/// absence — which is why it is a different variant from the one a lane that
+/// has not built its release returns.
+#[tokio::test]
+async fn an_empty_location_releases_nothing_and_says_so() {
+    let world = World::new().await;
+    let empty = a_location(&world, &world.one, "the empty drawer").await;
+    assert_eq!(
+        detach(&world, empty, EntityType::Location).await,
+        Detachment::Released(Vec::new())
+    );
+}
+
+/// An item is a leaf, and a shopping list's entries are blocks of its own body
+/// rather than entities pointing at it.
+#[tokio::test]
+async fn a_type_that_contains_nothing_says_it_has_no_container() {
+    let world = World::new().await;
+    let tin = world
+        .create(
+            &world.one,
+            item(v1::ItemContent::default()),
+            v1::EntityContent::default(),
+        )
+        .await;
+    assert_eq!(
+        detach(&world, tin, EntityType::Item).await,
+        Detachment::NoContainer
+    );
+
+    let list = world
+        .create(
+            &world.one,
+            v1::entity_content::Specific::ShoppingList(v1::ShoppingListContent::default()),
+            v1::EntityContent::default(),
+        )
+        .await;
+    assert_eq!(
+        detach(&world, list, EntityType::ShoppingList).await,
+        Detachment::NoContainer
+    );
+}
+
+/// **The distinction the third variant exists for.** Guidance's three types are
+/// containers whose release is not built, and they must not answer the way an
+/// empty container answers — otherwise wiring the call would leave every arc and
+/// quest pointing at a tombstone with the suite green.
+///
+/// **LANE: Guidance.** When that lane builds the release, this test changes to
+/// assert a `Released`, and its failure here is the reminder.
+#[tokio::test]
+async fn guidances_containers_report_their_release_is_not_built() {
+    let world = World::new().await;
+    for (kind, specific) in [
+        (
+            EntityType::Campaign,
+            v1::entity_content::Specific::Campaign(v1::CampaignContent::default()),
+        ),
+        (
+            EntityType::Arc,
+            v1::entity_content::Specific::Arc(v1::ArcContent::default()),
+        ),
+        (
+            EntityType::Quest,
+            v1::entity_content::Specific::Quest(v1::QuestContent::default()),
+        ),
+    ] {
+        let id = world
+            .create(&world.one, specific, v1::EntityContent::default())
+            .await;
+        assert_eq!(
+            detach(&world, id, kind).await,
+            Detachment::NotBuilt,
+            "{kind:?} answered as though it held nothing"
+        );
+    }
+}
+
+/// A category's release is the shared model's and Wave 2.1 already built it —
+/// the erase path calls `uncategorise_all` directly, so nothing is owed on this
+/// seam. A note and a file hold nothing at all.
+#[tokio::test]
+async fn the_types_whose_release_is_not_this_seams_owe_it_nothing() {
+    let world = World::new().await;
+    let category = world
+        .create(
+            &world.one,
+            v1::entity_content::Specific::Category(v1::CategoryContent::default()),
+            v1::EntityContent::default(),
+        )
+        .await;
+    assert_eq!(
+        detach(&world, category, EntityType::Category).await,
+        Detachment::NoContainer
+    );
+
+    let note = world.note(&world.one, "holds nothing").await;
+    assert_eq!(
+        detach(&world, note, EntityType::Note).await,
+        Detachment::NoContainer
+    );
+}
+
+/// **The seam is declared and not wired, and this says so out loud.**
+///
+/// `write/entity.rs` erases the side-table row and calls `uncategorise_all` for
+/// a category, and nothing releases a type-specific container. So an erased
+/// location still leaves its children and its items pointing at the tombstone.
+///
+/// This is a characterisation test rather than an approval: it pins the current
+/// behaviour so that wiring the call is a visible, deliberate change rather than
+/// something that quietly alters what erasure does. **When the call is wired,
+/// invert this** — the assertions become `None`.
+#[tokio::test]
+async fn an_erase_does_not_yet_release_what_a_location_held() {
+    let world = World::new().await;
+    let cupboard = a_location(&world, &world.one, "the cupboard").await;
+    let shelf = a_location(&world, &world.one, "the shelf").await;
+    nest(&world, shelf, cupboard).await;
+    let tin = world
+        .create(
+            &world.one,
+            item(v1::ItemContent {
+                location_id: Some(id_bytes(cupboard)),
+                ..Default::default()
+            }),
+            v1::EntityContent::default(),
+        )
+        .await;
+
+    world.submit(&world.one, erase(&[cupboard])).await;
+    assert_eq!(world.lifecycle(cupboard).await, "erased");
+
+    assert_eq!(
+        location_row(&world, shelf).await.0,
+        Some(cupboard.as_uuid()),
+        "wired already? invert this test — the release is no longer pending"
+    );
+    assert_eq!(
+        item_row(&world, tin).await.location,
+        Some(cupboard.as_uuid()),
+        "wired already? invert this test — the release is no longer pending"
+    );
 }
