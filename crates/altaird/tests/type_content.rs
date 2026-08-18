@@ -493,6 +493,61 @@ async fn a_state_that_is_present_and_names_nothing_is_malformed() {
     assert!(detail.contains("guidance state"), "{detail}");
 }
 
+/// **A recreation is a whole entity of its type, not a bare shell.**
+///
+/// 2.2's done-when asks that an edit arriving for an erased entity produce a
+/// recreation rather than a create. 2.1 proved that for the shared model; what
+/// 2.2 adds underneath it is type content, and nothing exercised the two
+/// together. `recreate` hands the same `Written` to `create`, so the type's row
+/// is made with its defaults and the parts the edit addressed land on top —
+/// but that is a property of one call passing a value through, and a value
+/// passed through is exactly what a later refactor drops.
+///
+/// This is the one path where a create runs on content a client submitted as an
+/// edit, so it is the one place the two halves of the wave meet.
+#[tokio::test]
+async fn a_recreation_carries_the_type_content_the_edit_addressed() {
+    let world = World::new().await;
+    let id = world
+        .create(
+            &world.one,
+            campaign(Some(v1::GuidanceState::Working)),
+            v1::EntityContent::default(),
+        )
+        .await;
+    world.submit(&world.one, erase(&[id])).await;
+
+    let ack = world
+        .submit(
+            &world.one,
+            edit_entity(
+                id,
+                1,
+                v1::EntityContent {
+                    specific: Some(campaign(Some(v1::GuidanceState::Worked))),
+                    ..Default::default()
+                },
+            ),
+        )
+        .await;
+
+    let r = recreated(&ack);
+    let new = EntityId::from_uuid(Uuid::from_bytes(
+        r.new_entity_id.clone().try_into().expect("16 bytes"),
+    ));
+
+    // The side-table row exists at all, which is what "not a shell" means: the
+    // erased entity's row is gone with its tombstone and this is a new one.
+    // `state_of` fetches exactly one row and panics otherwise, so reaching the
+    // assertion is half the claim.
+    assert_eq!(
+        state_of(&world, new).await,
+        "worked",
+        "the state the edit carried reached the recreated entity's own row"
+    );
+    assert_ne!(new, id, "the identity is new");
+}
+
 // ---------------------------------------------------------------------------
 // What the stub assertions used to hold, and who holds it now
 // ---------------------------------------------------------------------------
