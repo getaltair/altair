@@ -56,7 +56,7 @@ flowchart TB
     end
 
     subgraph W2["Wave 2 · Write path"]
-        A1["Intent spine, counter, change sequence"]
+        A1["Intent spine, counter, change sequence,<br/>relations, the submission call"]
         A2["Type content, all three domains"]
         A3["File bodies and store ordering"]
         A4["Reclamation"]
@@ -141,6 +141,8 @@ flowchart TB
 
 **Two schema gaps close cheaply here:** the embedding dimension stays a placeholder in its own late migration (see [deferred decisions](#deferred-decisions-and-their-triggers)), and cycle prevention in nested locations and categories becomes a write-path check rather than a constraint.
 
+> ℹ️ **Neither closed in Wave 0, and neither needed to.** The dimension is a placeholder until Wave 5 chooses the model, which is its trigger, and writing the migration before then would fix a number against nothing. Cycle prevention guards nested locations and nested categories, both of which are type content, so it belongs to 2.2 and is named there. Recorded so that a reader comparing this section against the tree does not go looking for work that was correctly not done.
+
 **Done when:** a fresh checkout runs one command, gets a migrated database, and passes an empty test suite.
 
 ---
@@ -219,41 +221,55 @@ Do not parallelise the spine. Do parallelise what hangs off it.
 
 The schema file already contains this wave's test plan under *"Checks this file cannot make, which the write path owes."* Turn that list into the suite.
 
+**Re-planned at the Wave 1 boundary, 2026-08-17.** Three things were settled before any of this was written, and the scratchpad holds the alternatives so none of them is re-argued:
+
+- **Migration two, taken once at the start of 2.1.** It adds per-part write provenance, without which conflict detection cannot be computed at all: the change sequence carries block identities but no field list and no counter, an intent row carries the counter after a write but not what it wrote, and versions are Knowledge-only and declinable. It also gives a relation a lifecycle, because a removal may name one and the store had nowhere to hold it.
+- **2.1 stands up the submission call end to end**, with the other five answering unimplemented. Two of its requirements are observable only at the wire, so neither is testable from an internal function.
+- **Relations move out of 2.2 and into 2.1.** Their removal cannot be exercised without their creation, and the owed-checks list already put three relation obligations inside 2.1's done-when while the work itself sat in 2.2.
+
+**That list spans the whole wave, not 2.1 alone**, which the previous draft did not say: it also contains block recomputation and the horizon, and 2.1 owns neither. Each item below now names the lines it closes.
+
 ### 2.1 Intent spine
 
 Sequential. This is the load-bearing item in the whole project.
 
+- Migration two: per-part write provenance, and a lifecycle on a relation. Taken once, at the start, because everything below reads one or the other.
 - Intent identity, held acknowledgements, idempotent replay. A replayed intent returns the original acknowledgement rather than producing a second effect, and the intent row is written in the transaction it acknowledges.
-- Write counter, conditional application, conflict detection. **A stale base is never a rejection.** Reject-and-retry is the familiar pattern here and it is wrong.
-- Both values retained on a same-part conflict.
+- **One transaction per intent.** A bulk capture is explicitly not one unit, so this is forced rather than chosen, and it is worth stating because the reflex is to batch.
+- Write counter, conditional application, conflict detection over fields. **A stale base is never a rejection.** Reject-and-retry is the familiar pattern here and it is wrong.
+- Both values retained on a same-part conflict, with the part named once and the same way on the wire, in the store, and in the conflict row. Something has to hold that mapping and the schema records that it can drift.
 - Change sequence entry, allocated from the single position row, in the same transaction as the write. Writes serialise on that row; that is intended.
-- Audience enforced on the shared predicate.
-- Position assigned by the instance, appended on entry to a container.
+- Audience enforced on the shared predicate, and every member named in an audience answering to a real membership, which a foreign key cannot reach inside an array.
+- Position assigned by the instance, appended on entry to a container. Appending only; explicit reordering is not needed until something reorders.
+- Relations: create, remove, erase, restore, with canonical ordering for symmetric and untyped ones, duplicate refusal, and a property permitted only where its type declares it. **Relation types are declarations the system interprets, never hardcoded branches.** That is a build constraint from the relation types spec, cheap now and a rewrite later.
+- Lifecycle: removal grouped as one act, erasure stripping to a tombstone, restoration reaching the group. **Erasure removes every dependent row explicitly**, because the schema's cascades hang off a delete of the entity row and erasure does not perform one.
 - Batch submission returns a result per item. Never all or nothing.
-- Refusal on audience and refusal on nonexistence are indistinguishable from outside.
+- Refusal on audience and refusal on nonexistence are indistinguishable from outside, which DR-004 extends to the status code: a submission whose every intent is refused still answers success.
+- The submission call, served. The other five answer unimplemented, and a test says that is deliberate.
 
-**Done when:** `cross-model-review` passes on the diff, and the suite covers every line of the schema's owed-checks list.
+**Done when:** `cross-model-review` passes on the diff, and the suite covers the owed-checks list except the four lines this item does not own — block recomputation and identity matching, the graduation half of bulk state, ladder position, and the horizon.
 
 ### 2.2 Type content, all three domains
 
 Depends on 2.1 and on block division.
 
-Create, edit, remove, erase, restore across campaigns, arcs, quests, notes, files, items, locations, categories, shopping lists.
+**The content each type holds beyond the shared model**, across campaigns, arcs, quests, notes, files, items, locations, categories, shopping lists. The five verbs are 2.1's and apply to every type already; what lands here is what each type is made of. 2.1 creates each type's row with defaults so nothing is ever half-formed, and refuses the three types the schema has no table for.
 
-- Bodies: divide, match against held blocks, write only what changed.
-- Relations, with canonical ordering for symmetric and untyped ones. That is the write path's job because a constraint cannot see symmetry.
-- **Relation types as declarations the system interprets, never hardcoded branches.** This is a build constraint from the relation types spec and it is cheap now, a rewrite later.
-- Grouped deletion, remembered as one act, atomically with the entities it covers.
-- Erasure strips content and leaves a tombstone.
-- Bulk state transitions.
+- Bodies: divide, match against held blocks, write only what changed. Conflict detection reaches blocks here, on the provenance 2.1 laid down.
+- Anchors, and the relation properties a type declares. Both need a body or the type table, which is why they stayed behind when the rest of relations moved into 2.1.
+- Cycle prevention in nested locations and nested categories, as a write-path check rather than a constraint. Carried from Wave 0, where it was named and correctly not taken.
+- Ladder position, which is the container the shared model does not cover.
+- Bulk state graduation, which needs authored body content to graduate on.
 
 This lane can subdivide by domain once the shared entity write is in place. Guidance, Knowledge, and Tracking touch different side tables.
 
-**Done when:** every entity type round-trips, every state transition in the Guidance PRD holds, and an erased entity's edit produces a recreation rather than a create.
+**Done when:** every entity type round-trips, every state transition in the Guidance PRD holds, an erased entity's edit produces a recreation rather than a create, and the four owed-checks lines 2.1 left are closed.
 
 ### 2.3 File bodies
 
 Parallel with 2.2. Depends on 2.1 and the object store.
+
+**Until this lands, 2.1 refuses a file create**, because the schema requires a file to name a body and there is no way to have uploaded one. That is the honest answer rather than an omission, and it is the only type refused for a reason that expires.
 
 - `PutBody` streaming, idempotent on body identity.
 - **Bytes before the record, always.** An orphan is sweepable; a record pointing at nothing is a broken entity.
@@ -268,10 +284,13 @@ Small, and hangs directly off erasure rather than waiting for a later wave.
 - Erased bytes removed on a pass.
 - Unreferenced bytes swept via enumerate.
 - Change sequence trimmed below the horizon.
+- The holding window expiring, which now reaches relations as well as entities, since a removed relation holds on the same terms.
+
+**This is where the retention windows and the horizon are chosen**, which is the one deferred decision whose trigger falls inside this wave. Ship constants: the operator plane is not in v0, and the horizon is either null or longer than every other window, so a constant cannot drift into the middle. That last part is the owed-checks line 2.1 deliberately left.
 
 **It writes no change entries and does not use the write path.** Everything it removes is already gone by predicate.
 
-**Done when:** an erasure followed by a pass leaves no bytes, and a pass over a healthy store changes no answer to any query.
+**Done when:** an erasure followed by a pass leaves no bytes, a pass over a healthy store changes no answer to any query, and a test refuses a horizon set between two other retention windows.
 
 ---
 
