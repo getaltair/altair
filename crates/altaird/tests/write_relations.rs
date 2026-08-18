@@ -972,12 +972,12 @@ async fn an_anchored_relation_is_not_a_duplicate_of_an_unanchored_one() {
 /// fails. *"A body edit must never fail because a relation lost an anchor, and
 /// that outranks refusing a duplicate structurally."*
 ///
-/// Two things keep that true here, and the weaker one is the one to rely on.
-/// The relation does not become *fully* unanchored — where it was formed
-/// survives the block, so a residue remains and `is_duplicate` counts a residue
-/// as an anchor. But the guarantee does not rest on that: the removal path
-/// carries no duplicate check at all, so a later change to what counts as
-/// anchored cannot reintroduce the failure.
+/// The relation does become fully unanchored: all three columns go with the
+/// block, so it is now indistinguishable from the one already recorded between
+/// the same pair. Nothing catches that, and nothing is meant to — the removal
+/// path carries no duplicate check at all, which is where the guarantee rests.
+/// It does not rest on what `is_duplicate` happens to count as an anchor, so a
+/// later change to that cannot reintroduce the failure.
 #[tokio::test]
 async fn removing_a_block_never_fails_beside_an_identical_unanchored_relation() {
     let w = World::new().await;
@@ -1012,8 +1012,7 @@ async fn removing_a_block_never_fails_beside_an_identical_unanchored_relation() 
         .await;
     applied(&ack);
 
-    // Both relations are still here, and the second is now unanchored except
-    // for where it was formed.
+    // Both relations are still here, and the second is now fully unanchored.
     assert_eq!(
         w.relation_lifecycle(anchored_id).await.as_deref(),
         Some("active")
