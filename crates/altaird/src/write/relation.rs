@@ -256,6 +256,12 @@ async fn resolve(ctx: &mut Ctx<'_>, content: &v1::RelationContent) -> Applied<Re
 ///   into one of the two things this joins, and nothing else."*
 /// - **No block.** The substrate names two kinds of anchor, *"at a phrase
 ///   within a block or at the block itself"*, and an entity alone is neither.
+///   **Nothing on the other side produces that shape either** — every path that
+///   takes an anchor away takes all three columns — so this is not a client
+///   held to a stricter rule than the store keeps. It is a shape this system
+///   does not have, which is a stronger reason to refuse it than the one this
+///   refusal originally carried: that version left the store producing a shape
+///   its own write path would not accept back.
 ///
 /// One refusal that says nothing: **a block identifier this entity does not
 /// hold**, whether because nothing holds it or because something else does.
@@ -308,6 +314,12 @@ async fn anchor(
         )
         .into());
     }
+    // An entity with no block. Refused here, and produced by nothing anywhere —
+    // `write::body` takes all three columns whenever an anchor is lost, because
+    // the substrate says a relation is left *without* its anchor. Keep those two
+    // facts together: a refusal here without that would leave the store holding
+    // a shape its own write path will not accept back, which is what this used
+    // to do and what made an ordinary edit of such a relation refuse.
     if a.block_id.is_empty() {
         return Err(Refusal::Malformed(
             "an anchor attaches at a block, or at a phrase within one, and this names no \
