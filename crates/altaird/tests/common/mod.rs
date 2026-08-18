@@ -10,11 +10,13 @@ use std::sync::Arc;
 
 use altair_proto::v1;
 use altaird::auth::Member;
+use altaird::objects::FilesystemObjectStore;
 use altaird::store::ids::EntityId;
 use altaird::testing::TestDb;
 use altaird::write::WritePath;
 use chrono::{DateTime, Utc};
 use sqlx::Row;
+use tempfile::TempDir;
 use uuid::Uuid;
 
 /// A household with two members, and a write path over it.
@@ -24,6 +26,9 @@ pub struct World {
     pub one: Member,
     pub two: Member,
     pub write: WritePath,
+    /// Held for its lifetime: the object store's root, removed when this
+    /// drops. Nothing reads it directly — `write.objects()` is the interface.
+    pub object_root: TempDir,
 }
 
 impl World {
@@ -39,13 +44,18 @@ impl World {
 
         let one = seed_member(&db.pool, household, "one").await;
         let two = seed_member(&db.pool, household, "two").await;
-        let write = WritePath::new(db.pool.clone());
+        let object_root = TempDir::new().expect("temp object root");
+        let store = FilesystemObjectStore::open(object_root.path())
+            .await
+            .expect("open the object store");
+        let write = WritePath::new(db.pool.clone(), Arc::new(store));
         Self {
             db,
             household,
             one,
             two,
             write,
+            object_root,
         }
     }
 

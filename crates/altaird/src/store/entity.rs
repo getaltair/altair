@@ -141,6 +141,26 @@ pub async fn available_for_write(
     found.as_ref().map(row).transpose()
 }
 
+/// **The read path's shape, for a single identity.** The entity this member
+/// is entitled to see, or `None` — which covers both "no such entity" and
+/// "not visible to this member", exactly as [`available_for_write`] does not
+/// tell them apart.
+///
+/// For a read-only surface that needs one entity by its own identity rather
+/// than a candidate list — `GetBody`, which is keyed by entity because the
+/// body itself carries no notion of ownership.
+pub async fn available_for_read(
+    tx: &mut ReadTx,
+    member: MemberId,
+    id: EntityId,
+    lifecycle: ReadScope,
+) -> sqlx::Result<Option<EntityRow>> {
+    let q = CandidateQuery::new(member, lifecycle.into(), &columns())
+        .and_where("e.id = $?", [Bind::Uuid(id.as_uuid())]);
+    let found = q.build().fetch_optional(tx.conn()).await?;
+    found.as_ref().map(row).transpose()
+}
+
 /// **The read path's shape.** Candidates, with the predicate inside the query
 /// that produced them.
 ///

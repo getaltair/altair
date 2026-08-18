@@ -13,34 +13,45 @@
 //! Wave 2.2, which owns bodies, anchors, the ladder, and cycle prevention in
 //! nested containers.
 //!
-//! Two types are refused for reasons that expire, which is the honest answer
-//! rather than an omission:
+//! One type is still refused for a reason that expires, which is the honest
+//! answer rather than an omission:
 //!
-//! - **A file**, until 2.3. The schema requires a file to name a body, and
-//!   there is no way to have uploaded one.
 //! - **A routine, a focus session, or a check-in**, until each domain is
 //!   designed. The schema deliberately creates no table for them, so there is
 //!   nothing to put a row in.
+//!
+//! **A file is no longer one of them.** Wave 2.3 lands `PutBody`, and a file
+//! create now checks the named body exists — bytes before the record,
+//! always — before writing the row. `content.specific` stays otherwise
+//! unread here; the file's `body_id` is the one field read at creation, by
+//! [`super::content::file_reference`], because the schema cannot create the
+//! row without it. See that function's doc for why this is a narrow
+//! exception rather than a reversal of the rule above it.
+
+use std::sync::Arc;
 
 use chrono::{DateTime, Utc};
 use sqlx::Row;
 use uuid::Uuid;
 
+use crate::objects::{BodyId, ObjectStore};
 use crate::store::audience::AUDIENCE_COLUMN;
 use crate::store::entity::{EntityRow, EntityType, LifecycleState, available_for_write};
 use crate::store::ids::{EntityId, MemberId, MemberRef};
 use crate::store::{WriteScope, WriteTx};
 
 use super::changes::{self, EntityChange};
-use super::content::{Date, Malformed, PartWrite};
+use super::content::{Date, FileReference, Malformed, PartWrite};
 use super::outcome::{ConflictParts, Outcome};
 use super::provenance;
 
-/// One intent's worth of context: the transaction, who is writing, and when.
+/// One intent's worth of context: the transaction, who is writing, when, and
+/// the object store a file create has to check against.
 pub struct Ctx<'a> {
     pub tx: &'a mut WriteTx,
     pub member: MemberId,
     pub at: DateTime<Utc>,
+    pub store: Arc<dyn ObjectStore>,
 }
 
 impl Ctx<'_> {
@@ -65,14 +76,25 @@ impl From<Malformed> for Refusal {
 /// Either a refusal or a store fault. The two are kept apart all the way out:
 /// a refusal is an answer, a fault is the instance failing and produces no
 /// acknowledgement at all.
+///
+/// **Two fault variants**, because DR-003 keeps the structured store and the
+/// object store as separate failures with separate causes. Both still mean
+/// the same thing to the caller — nothing was acknowledged, the outbox holds.
 pub enum Failed {
     Refused(Refusal),
     Store(sqlx::Error),
+    Objects(crate::objects::Error),
 }
 
 impl From<sqlx::Error> for Failed {
     fn from(e: sqlx::Error) -> Self {
         Self::Store(e)
+    }
+}
+
+impl From<crate::objects::Error> for Failed {
+    fn from(e: crate::objects::Error) -> Self {
+        Self::Objects(e)
     }
 }
 
@@ -312,7 +334,12 @@ async fn validate_and_place(
 ///
 /// Note and shopping list have no table: a body is its blocks in order and
 /// there is nothing else, which is a result rather than an omission.
-async fn make_type_row(ctx: &mut Ctx<'_>, entity: EntityId, kind: EntityType) -> Applied<()> {
+async fn make_type_row(
+    ctx: &mut Ctx<'_>,
+    entity: EntityId,
+    kind: EntityType,
+    file: Option<FileReference>,
+) -> Applied<()> {
     let table = match kind {
         EntityType::Campaign => "campaign",
         EntityType::Arc => "arc",
@@ -321,13 +348,7 @@ async fn make_type_row(ctx: &mut Ctx<'_>, entity: EntityId, kind: EntityType) ->
         EntityType::Location => "location",
         EntityType::Category => "category",
         EntityType::Note | EntityType::ShoppingList => return Ok(()),
-        EntityType::File => {
-            return Err(Refusal::Malformed(
-                "a file names a body that must be uploaded first, and PutBody is not served yet"
-                    .into(),
-            )
-            .into());
-        }
+        EntityType::File => return create_file_row(ctx, entity, file).await,
         EntityType::Routine | EntityType::FocusSession | EntityType::CheckIn => {
             return Err(Refusal::Malformed(
                 "this type's content is not yet designed and the store has no table for it".into(),
@@ -340,6 +361,45 @@ async fn make_type_row(ctx: &mut Ctx<'_>, entity: EntityId, kind: EntityType) ->
         .bind(entity.as_uuid())
         .execute(ctx.tx.conn())
         .await?;
+    Ok(())
+}
+
+/// **Bytes before the record, always.** The body a file create names has to
+/// already be durable in the object store — confirmed here by asking for it
+/// and reading its length, never its bytes — before this transaction can
+/// insert a row that points at it. A kill between `PutBody` completing and
+/// this transaction committing leaves the bytes as collectable garbage
+/// (Wave 2.4's to sweep) and never a `file` row pointing at nothing.
+async fn create_file_row(
+    ctx: &mut Ctx<'_>,
+    entity: EntityId,
+    file: Option<FileReference>,
+) -> Applied<()> {
+    let file = file.ok_or_else(|| Refusal::Malformed("a file names no body".into()))?;
+
+    let body = match ctx.store.get(BodyId::from_uuid(file.body_id)).await {
+        Ok(body) => body,
+        // Never uploaded, or already swept — both read as "this create does
+        // not make sense" from the wire's perspective, not "something else
+        // is wrong".
+        Err(e) if e.is_no_such_body() => {
+            return Err(Refusal::Malformed(
+                "a file names a body that was never uploaded, or has already been swept".into(),
+            )
+            .into());
+        }
+        Err(e) => return Err(e.into()),
+    };
+
+    sqlx::query(
+        "INSERT INTO file (entity_id, body_id, media_type, byte_size) VALUES ($1, $2, $3, $4)",
+    )
+    .bind(entity.as_uuid())
+    .bind(file.body_id)
+    .bind(file.media_type)
+    .bind(i64::try_from(body.len).unwrap_or(i64::MAX))
+    .execute(ctx.tx.conn())
+    .await?;
     Ok(())
 }
 
@@ -364,6 +424,7 @@ pub async fn create(
     capture_method: &str,
     parts: Vec<PartWrite>,
     kind: EntityType,
+    file: Option<FileReference>,
 ) -> Applied<Outcome> {
     // A create naming something that is already here is not a second entity.
     // The outbox's idempotence is carried by intent identity, but the substrate
@@ -424,7 +485,7 @@ pub async fn create(
         return Err(Refusal::NotAvailable.into());
     }
 
-    make_type_row(ctx, id, kind).await?;
+    make_type_row(ctx, id, kind, file).await?;
 
     let mut written = Vec::new();
     for part in &parts {
@@ -591,6 +652,14 @@ pub async fn edit(
 /// recreating it with a household audience would re-expose the thing erasure
 /// exists to remove. Broadening is trivial and narrowing is unreliable, so the
 /// closed default is the safe one.
+///
+/// **A file cannot be recreated yet.** An edit never reads `content.specific`
+/// (see [`super::content::parts_written`]), so there is no `body_id` to carry
+/// into the recreated entity, and [`create_file_row`] refuses for the same
+/// reason a bare file create with no body does. Recreating an erased file is
+/// therefore refused until an edit can name one, which is 2.2's territory —
+/// not a regression, since every file create refused unconditionally before
+/// this wave.
 async fn recreate(
     ctx: &mut Ctx<'_>,
     tombstone: &EntityRow,
@@ -609,6 +678,7 @@ async fn recreate(
         &tombstone.capture_method,
         parts,
         tombstone.entity_type,
+        None,
     )
     .await?;
 

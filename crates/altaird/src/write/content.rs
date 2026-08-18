@@ -179,6 +179,41 @@ pub fn entity_type(content: &v1::EntityContent) -> Result<EntityType, Malformed>
     }
 }
 
+/// The body a file create names, read directly from `content.specific`.
+///
+/// **The one exception to `content.specific` being read for its tag alone.**
+/// Structurally the same move as [`entity_type`]: both read the
+/// discriminant, at creation time, before the part machinery ever sees the
+/// message. See [`parts_written`]'s doc for why this does not widen what an
+/// edit may touch.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FileReference {
+    pub body_id: Uuid,
+    pub media_type: Option<String>,
+}
+
+/// `content`'s file body, or `None` where the content names no file.
+///
+/// Refuses a file whose `content.specific` is present but names no
+/// `body_id` — the schema cannot create the row without one, and there is
+/// nothing to check the object store for otherwise.
+pub fn file_reference(content: &v1::EntityContent) -> Result<Option<FileReference>, Malformed> {
+    use v1::entity_content::Specific;
+    match content.specific.as_ref() {
+        Some(Specific::File(f)) => {
+            let body_id = f
+                .body_id
+                .as_deref()
+                .ok_or_else(|| malformed("a file names no body"))?;
+            Ok(Some(FileReference {
+                body_id: identifier(body_id)?,
+                media_type: f.media_type.clone(),
+            }))
+        }
+        _ => Ok(None),
+    }
+}
+
 /// Every part this content addresses, in the order the message declares them.
 ///
 /// # What it refuses
@@ -197,6 +232,14 @@ pub fn entity_type(content: &v1::EntityContent) -> Result<EntityType, Malformed>
 /// type-specific fields hold their defaults, and the fields themselves are not
 /// applied. That is the plan's division rather than an omission here, and it is
 /// invisible in v0 because no client exists before Wave 4.
+///
+/// **One narrow, deliberate exception.** [`file_reference`] reads a file's
+/// `body_id` directly out of `content.specific`, at creation time only,
+/// because the schema cannot create a `file` row without knowing what body it
+/// names. That is a fact about what the row requires to exist at all, not a
+/// widening of what a write may address — an edit still never reaches it, so
+/// a new `body_id` on an existing file is silently not applied, exactly as
+/// every other type-specific field is today.
 pub fn parts_written(content: &v1::EntityContent) -> Result<Vec<PartWrite>, Malformed> {
     let mut cleared = Vec::new();
     for number in &content.cleared {

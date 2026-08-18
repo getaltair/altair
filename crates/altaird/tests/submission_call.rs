@@ -15,7 +15,6 @@ use std::sync::Arc;
 use altair_proto::v1;
 use altaird::auth::{Authenticator, IssuerConfig, JwksSource, JwksUnavailable, KeyCache};
 use altaird::service::Instance;
-use altaird::write::WritePath;
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use common::*;
@@ -111,7 +110,7 @@ impl Served {
             world.db.pool.clone(),
         );
 
-        let instance = Instance::new(Arc::new(auth), WritePath::new(world.db.pool.clone()));
+        let instance = Instance::new(Arc::new(auth), world.write.clone());
 
         let listener = TcpListener::bind("127.0.0.1:0").await.expect("bind");
         let addr = listener.local_addr().expect("addr");
@@ -339,10 +338,10 @@ async fn an_expired_credential_and_a_forged_one_are_the_same_wait() {
     assert_eq!(statuses[0].0, Code::Unauthenticated);
 }
 
-// --- the five that are not served ----------------------------------------
+// --- the three that are still not served ----------------------------------
 
 #[tokio::test]
-async fn the_five_calls_this_build_does_not_serve_say_so_deliberately() {
+async fn the_three_calls_this_build_does_not_serve_say_so_deliberately() {
     let served = Served::new().await;
     let mut client = served.client().await;
     let token = served.token_for_one();
@@ -363,23 +362,38 @@ async fn the_five_calls_this_build_does_not_serve_say_so_deliberately() {
             .await
             .expect_err("health")
             .code(),
-        client
-            .put_body(served.request(
-                tokio_stream::iter(Vec::<v1::BodyChunk>::new()),
-                Some(&token),
-            ))
-            .await
-            .expect_err("put body")
-            .code(),
-        client
-            .get_body(served.request(v1::BodyRequest::default(), Some(&token)))
-            .await
-            .expect_err("get body")
-            .code(),
     ];
 
     assert!(
         codes.iter().all(|c| *c == Code::Unimplemented),
-        "the five are absent on purpose, and waiting will not clear it: {codes:?}"
+        "the three are absent on purpose, and waiting will not clear it: {codes:?}"
     );
+}
+
+/// `PutBody` and `GetBody` are served as of Wave 2.3 — `tests/file_bodies.rs`
+/// covers their behaviour. What is still worth asserting here is that a
+/// malformed call to either reaches real handling rather than falling through
+/// to the blanket `Unimplemented` the other three still answer with.
+#[tokio::test]
+async fn put_body_and_get_body_are_no_longer_among_the_unserved() {
+    let served = Served::new().await;
+    let mut client = served.client().await;
+    let token = served.token_for_one();
+
+    let put_body = client
+        .put_body(served.request(
+            tokio_stream::iter(Vec::<v1::BodyChunk>::new()),
+            Some(&token),
+        ))
+        .await
+        .expect_err("an empty upload is malformed, not unserved")
+        .code();
+    let get_body = client
+        .get_body(served.request(v1::BodyRequest::default(), Some(&token)))
+        .await
+        .expect_err("a default request names no entity")
+        .code();
+
+    assert_eq!(put_body, Code::InvalidArgument);
+    assert_eq!(get_body, Code::InvalidArgument);
 }
