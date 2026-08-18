@@ -1049,6 +1049,48 @@ async fn a_timestamp_that_cannot_be_read_is_refused_wherever_it_arrives() {
     assert_eq!(w.counter(id).await, 1);
 }
 
+/// **Zero is refused from the other end, and it is the reachable one.**
+///
+/// The upper bound below is refused because a garbled value reads as *current*
+/// and skips conflict detection. Zero fails the same test — the first counter an
+/// entity has is 1, from its own create — but it arrives by accident rather than
+/// by garbling: `base_counter` is a proto3 `uint64`, so a client that omits the
+/// field sends zero and cannot tell that apart from meaning it.
+///
+/// Accepting it manufactured conflicts. A create records the parts it applied
+/// without comparing them, because on a create there is nothing to compare
+/// against — so an entity created with its title explicitly cleared carries
+/// provenance for a title that never changed. An edit with base zero reads
+/// `0 < 1`, asks what moved since, finds that record, and retains a conflict
+/// over a part only the second write ever touched.
+///
+/// The boundary is the point: 1 is a counter this instance issues, and 0 is not.
+#[tokio::test]
+async fn a_base_counter_of_zero_is_refused_and_one_is_not() {
+    let w = World::new().await;
+    let id = w.note(&w.one, "start").await;
+    assert_eq!(w.counter(id).await, 1, "a create issues the first counter");
+
+    let ack = w
+        .submit(
+            &w.one,
+            edit_entity(id, 0, note_content("omitted the field")),
+        )
+        .await;
+    assert_eq!(refused(&ack).reason, v1::RefusalReason::Malformed as i32);
+    assert_eq!(
+        w.title(id).await.as_deref(),
+        Some("start"),
+        "and nothing was written"
+    );
+
+    // The very next value is ordinary, so the refusal is a boundary rather than
+    // a rejection of early edits.
+    w.submit(&w.one, edit_entity(id, 1, note_content("stated it")))
+        .await;
+    assert_eq!(w.title(id).await.as_deref(), Some("stated it"));
+}
+
 #[tokio::test]
 async fn a_base_counter_this_instance_could_not_have_issued_is_refused() {
     // Clamping it was worse than it looks. A base larger than any counter the

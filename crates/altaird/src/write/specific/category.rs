@@ -63,7 +63,11 @@ use crate::store::ids::EntityId;
 
 use super::super::content::{Malformed, Written, identifier};
 use super::super::entity::{Applied, Ctx, Refusal, memberships_exist};
-use super::{Field, Held, Reader, SpecificPart, SpecificValue, nesting, read_column, write_column};
+use super::super::parts::Part;
+use super::{
+    Detachment, Field, Held, Reader, Released, SpecificPart, SpecificValue, nesting, read_column,
+    write_column,
+};
 
 /// A category's field 1, the category it nests inside.
 pub const CATEGORY_PARENT: u32 = 1;
@@ -225,4 +229,64 @@ pub async fn apply(
 pub async fn search_text(ctx: &mut Ctx<'_>, entity: EntityId) -> Applied<Option<String>> {
     let _ = (ctx, entity);
     Ok(None)
+}
+
+/// Let go of the categories nested inside this one, because it is gone.
+///
+/// # A category is a container in two senses and only one of them is here
+///
+/// **Membership** is an entity filed *in* a category, held on the `entity` row
+/// as `category_id`, and released by `uncategorise_all` — the shared model's,
+/// built in Wave 2.1, and called in the same erase path a few lines further on.
+/// **Nesting** is a category sitting *under* another, held in this type's own
+/// side table as `parent_category_id`, and released by nobody until now. The
+/// erase path's comment names "the ladder and nested locations" and silently
+/// omits this third case, which is how it stayed missing.
+///
+/// The two sets are different and the two releases do not double-count. A
+/// category nested under the erased one is reached here, through
+/// `parent_category_id`. An entity filed in it is reached there, through
+/// `category_id`. A category that is *both* — nested under it and filed in it —
+/// is released once by each, of two different columns, and ends up with neither
+/// a parent nor a filing, which is exactly right. Nothing is written twice
+/// because nothing writes the same column twice.
+///
+/// # Parentless, not promoted
+///
+/// A child does not inherit its erased parent's parent. Guidance settled this
+/// for the ladder and the reasoning carries without change: promotion would be
+/// the system moving something into a container the person never put it in.
+/// Being parentless is a complete state — the substrate's rule that *an entity
+/// whose category is deleted becomes uncategorised, which is a valid state
+/// requiring no repair* is the same rule one level up.
+///
+/// # Erasure only, never removal
+///
+/// Removal is recoverable and grouped, and restoring the group is meant to put
+/// back what was there. A child detached on removal would come back parentless,
+/// so the release would quietly destroy what the deletion group exists to
+/// preserve. This is reached from the erase path alone.
+///
+/// # Unscoped
+///
+/// [`nesting::detach_children`] applies no audience predicate, and that is
+/// deliberate rather than overlooked — see its documentation for the reasoning,
+/// which is `uncategorise_all`'s and is no smaller here.
+pub async fn detach_contained(ctx: &mut Ctx<'_>, entity: EntityId) -> Applied<Detachment> {
+    let table = super::side_table(EntityType::Category)
+        .ok_or_else(|| Refusal::Malformed("a category has no table".into()))?;
+    let released = nesting::detach_children(ctx.tx, table, PARENT_COLUMN, entity).await?;
+    Ok(Detachment::Released(
+        released
+            .into_iter()
+            // The part that moved is this type's field 1. A release advances the
+            // released entity's counter, and a write that advances a counter
+            // owes provenance; which part moved is the type's knowledge, and a
+            // child category lost its parent rather than its shelf.
+            .map(|entity| Released {
+                entity,
+                part: Part::Specific(CATEGORY_PARENT),
+            })
+            .collect(),
+    ))
 }
