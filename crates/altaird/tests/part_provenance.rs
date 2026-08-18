@@ -52,6 +52,37 @@
 //! *stable*, because the only question asked of it is whether two readings of
 //! the same column differ.
 //!
+//! # Why the whole-set invariant is asserted on edits, not on creates
+//!
+//! **It does not hold on a create, and that is correct rather than a bug.**
+//! Measured, not assumed — a create that clears a title and states nothing else
+//! gives:
+//!
+//! ```text
+//! changed:  ["Content(Bulk)"]
+//! recorded: ["Content(Title)"]
+//! ```
+//!
+//! Both directions diverge, and each for a good reason. `bulk` changed because
+//! the row went from absent to the column's `false`, which nobody wrote — the
+//! entity came into existence, and recording provenance for every column that
+//! took a default would say a member edited things they never addressed.
+//! `title` was recorded because a create records what it applied without
+//! comparing, there being no prior value to compare against.
+//!
+//! Neither is reachable as a fault. Provenance written at counter 1 cannot
+//! produce a spurious conflict, because conflict detection runs only when an
+//! edit's base counter is *below* the entity's, and nothing can hold a base
+//! below the counter a create issues.
+//!
+//! So the whole-set invariant belongs to the edit path and to the consequential
+//! writes, where a prior value exists and provenance is actually read. **A
+//! create is not exempt from scrutiny** — it is asserted per part instead, where
+//! a specific claim is meaningful: see
+//! `a_companion_for_an_empty_sibling_is_not_recorded_on_creation`, which is the
+//! one path where a type handing back a companion it did not move reaches the
+//! store unfiltered.
+//!
 //! # Two guards on the suite itself
 //!
 //! - **Every exercise must write something.** A write path that refused
@@ -1054,10 +1085,19 @@ async fn a_ladder_parent_records_itself_and_the_position_it_moved() {
 /// `specific/guidance.rs`, which this lane does not own. The Guidance note that
 /// predicted this also names the trap in fixing it: hand the vacated parent back
 /// **only when the sibling column was actually non-null**, or the write records a
-/// part that did not move and a later unrelated edit reads it as an overlap. That
-/// direction of the invariant is covered by
-/// `a_write_addressing_a_part_without_changing_it_records_nothing`, so both
-/// mistakes are caught.
+/// part that did not move and a later unrelated edit reads it as an overlap.
+///
+/// That opposite direction is covered by
+/// `a_companion_for_an_empty_sibling_is_not_recorded_on_creation`, on the create
+/// path — which is the only path where it is observable, because the edit loop
+/// suppresses a phantom companion on its own. **An earlier version of this
+/// comment claimed the cover came from
+/// `a_write_addressing_a_part_without_changing_it_records_nothing`, and that was
+/// false**: that test rewrites an unchanged title, a content part, on the doubly
+/// guarded path. A cross-model review caught it with a mutation that escaped the
+/// whole suite. The claim is recorded here rather than quietly corrected,
+/// because a sentence asserting coverage that does not exist is worse than no
+/// sentence — it stops the next reader checking.
 ///
 /// **This test found the hole it now guards.** On its first run, against a tree
 /// where a quest moving from an arc to a campaign cleared `arc_id` in the same
@@ -1115,4 +1155,148 @@ async fn a_vacated_ladder_parent_records_that_it_moved() {
     watch
         .close(&world, "a quest moving from an arc to a campaign")
         .await;
+}
+
+/// **The other direction, on a companion: a part handed back that did not move.**
+///
+/// A quest with no parent at all gains an arc. `campaign_id` was already null
+/// and stays null, so it did not move and must not be recorded. A release or a
+/// placement that handed back the sibling unconditionally — clearing a column
+/// that was already clear — would write an `entity_part_counter` row claiming
+/// that part moved, and a later unrelated edit to the campaign would read it as
+/// an overlap. Nothing about the stored row would look wrong.
+///
+/// **On this path the invariant is protected twice**, and that is worth knowing
+/// rather than discovering. `write::entity`'s edit loop records a part only when
+/// its rendered value changed, so a phantom companion is suppressed here even if
+/// a type hands one back. This test therefore asserts a true thing that a
+/// mispaired companion alone cannot break — the create path is where that bites,
+/// and `a_companion_for_an_empty_sibling_is_not_recorded_on_creation` is the one
+/// that catches it.
+#[tokio::test]
+async fn a_companion_for_a_sibling_that_was_already_empty_is_not_recorded() {
+    let world = World::new().await;
+    let campaign_id = world
+        .create(&world.one, campaign(None), v1::EntityContent::default())
+        .await;
+    let arc = world
+        .create(
+            &world.one,
+            v1::entity_content::Specific::Arc(v1::ArcContent {
+                campaign_id: Some(id_bytes(campaign_id)),
+                ..Default::default()
+            }),
+            v1::EntityContent::default(),
+        )
+        .await;
+    // A quest hanging from nothing: both ladder parents are null.
+    let quest = world
+        .create(
+            &world.one,
+            v1::entity_content::Specific::Quest(v1::QuestContent::default()),
+            v1::EntityContent::default(),
+        )
+        .await;
+    let watch = Watch::open(&world, quest, EntityType::Quest).await;
+
+    world
+        .submit(
+            &world.one,
+            edit_entity(
+                quest,
+                watch.counter_before as u64,
+                v1::EntityContent {
+                    specific: Some(v1::entity_content::Specific::Quest(v1::QuestContent {
+                        parent: Some(v1::quest_content::Parent::ArcId(id_bytes(arc))),
+                        ..Default::default()
+                    })),
+                    ..Default::default()
+                },
+            ),
+        )
+        .await;
+
+    let moved = watch
+        .close(&world, "a parentless quest entering an arc")
+        .await;
+    assert!(moved.contains(&Part::Specific(2)), "the arc it entered");
+    assert!(moved.contains(&Part::Specific(5)), "the ladder position");
+    // `close` already asserts recorded == moved, so the campaign being absent
+    // from `moved` is what makes a phantom record fail. Stated too, because this
+    // is the whole point of the test rather than a detail of it.
+    assert!(
+        !moved.contains(&Part::Specific(3)),
+        "the campaign was already empty and did not move: {:?}",
+        listed(&moved)
+    );
+}
+
+/// **The same mistake on creation, which is where it is observable.**
+///
+/// `write::entity`'s *edit* loop records a part only when its rendered value
+/// changed, so a companion handed back for a sibling that did not move is
+/// suppressed there. Its *create* loop records every part it applies
+/// unconditionally — correctly, since on a create there is no prior value to
+/// compare against — so on that path **a type handing back a companion it did
+/// not move is the only thing standing between the store and a phantom
+/// `entity_part_counter` row**.
+///
+/// A quest created straight into an arc has never had a campaign. If the ladder
+/// handed back `campaign_id` regardless, the create would record `specific.3` as
+/// having moved, and a later unrelated edit to the campaign would read that as an
+/// overlap and retain two values for a part nobody touched twice.
+///
+/// # This is the mutation the cross-model review escaped
+///
+/// Dropping the `Some(_)` from the sibling guard in `guidance::parent_placement`
+/// makes the companion unconditional. Verified against this test: with the guard
+/// the create records `["Specific(2)", "Specific(5)"]`, and without it
+/// `["Specific(2)", "Specific(3)", "Specific(5)"]`.
+///
+/// It escaped because the only test asserting this direction did it on a
+/// **content** part — a title rewritten to itself, on the edit path, where the
+/// second guard makes it unfalsifiable for this fault. *The invariant is checked
+/// somewhere* is not the same claim as *the invariant is checked here*, and the
+/// suite exists to make it one claim.
+#[tokio::test]
+async fn a_companion_for_an_empty_sibling_is_not_recorded_on_creation() {
+    let world = World::new().await;
+    let campaign_id = world
+        .create(&world.one, campaign(None), v1::EntityContent::default())
+        .await;
+    let arc = world
+        .create(
+            &world.one,
+            v1::entity_content::Specific::Arc(v1::ArcContent {
+                campaign_id: Some(id_bytes(campaign_id)),
+                ..Default::default()
+            }),
+            v1::EntityContent::default(),
+        )
+        .await;
+
+    // Created straight into an arc: `campaign_id` is null and stays null.
+    let quest = world
+        .create(
+            &world.one,
+            v1::entity_content::Specific::Quest(v1::QuestContent {
+                parent: Some(v1::quest_content::Parent::ArcId(id_bytes(arc))),
+                ..Default::default()
+            }),
+            v1::EntityContent::default(),
+        )
+        .await;
+
+    let counter = counter_of(&world.db.pool, quest).await;
+    let recorded = recorded_at(&world.db.pool, quest, counter).await;
+
+    assert!(
+        !recorded.contains(&Part::Specific(3)),
+        "the quest never had a campaign, so nothing moved it: recorded {:?}",
+        listed(&recorded)
+    );
+    // And the parts that did move are still there, so this cannot pass by the
+    // create having recorded nothing at all.
+    assert!(recorded.contains(&Part::Specific(2)), "the arc it entered");
+    assert!(recorded.contains(&Part::Specific(5)), "the ladder position");
 }
