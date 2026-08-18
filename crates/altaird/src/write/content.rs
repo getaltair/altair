@@ -35,6 +35,7 @@ use crate::store::entity::EntityType;
 use crate::store::ids::EntityId;
 
 use super::parts::{ContentPart, Part};
+use super::specific::{self, SpecificPart};
 
 /// A labelled date, as the store holds one.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -58,6 +59,10 @@ pub enum PartWrite {
     Assignments(Vec<Uuid>),
     Audience(Vec<Uuid>),
     Bulk(Option<bool>),
+    /// A field of the type-specific message, carried by number because the set
+    /// differs per type. See [`super::specific`] for the vocabulary and the
+    /// dispatch.
+    Specific(SpecificPart),
 }
 
 impl PartWrite {
@@ -71,6 +76,9 @@ impl PartWrite {
             Self::Assignments(_) => ContentPart::Assignments,
             Self::Audience(_) => ContentPart::Audience,
             Self::Bulk(_) => ContentPart::Bulk,
+            // Not a content part at all, so it does not go through the branch
+            // above. The number is the type message's, not `EntityContent`'s.
+            Self::Specific(s) => return Part::Specific(s.field),
         })
     }
 
@@ -106,6 +114,41 @@ impl PartWrite {
                 ids.join(",")
             }),
             Self::Bulk(v) => v.map(|b| b.to_string()),
+            Self::Specific(s) => s.text(),
+        }
+    }
+}
+
+/// Everything one piece of content addresses: its parts, and at most one body.
+///
+/// **A body is separate because it is not one part.** Every other field a write
+/// carries is one part with one value; a body is one field on the wire and as
+/// many parts as it divides into, and which blocks those are is not knowable
+/// until the arriving text is matched against the blocks already stored. That
+/// needs the store, and reading the wire does not touch it. See
+/// [`super::body`].
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct Written {
+    pub parts: Vec<PartWrite>,
+    pub body: Option<BodyWrite>,
+}
+
+/// A body arriving whole: the text, or nothing where it was cleared.
+///
+/// A client never divides it. The instance recomputes the boundaries, matches
+/// them against the blocks it holds, and writes only what changed — DR-004, so
+/// the division rule has one implementation and devices cannot disagree about
+/// the units reconciliation is decided in.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct BodyWrite(pub Option<String>);
+
+impl Written {
+    /// The type-specific parts one message addressed, and no body.
+    #[must_use]
+    pub fn from_specific(parts: Vec<SpecificPart>) -> Self {
+        Self {
+            parts: parts.into_iter().map(PartWrite::Specific).collect(),
+            body: None,
         }
     }
 }
@@ -114,7 +157,7 @@ impl PartWrite {
 #[derive(Debug, Clone)]
 pub struct Malformed(pub String);
 
-fn malformed(what: impl Into<String>) -> Malformed {
+pub fn malformed(what: impl Into<String>) -> Malformed {
     Malformed(what.into())
 }
 
@@ -189,15 +232,19 @@ pub fn entity_type(content: &v1::EntityContent) -> Result<EntityType, Malformed>
 ///   one, or `cleared` itself. Silently ignoring it would let a client believe
 ///   it had cleared something.
 ///
-/// # What it does not do
+/// # Type content, one level down
 ///
-/// It does not reach `content.specific`. Type content is Wave 2.2's, and 2.1
-/// creates each type's row with defaults so nothing is ever half-formed. A
-/// create carrying type content therefore lands as an entity of that type whose
-/// type-specific fields hold their defaults, and the fields themselves are not
-/// applied. That is the plan's division rather than an omission here, and it is
-/// invisible in v0 because no client exists before Wave 4.
-pub fn parts_written(content: &v1::EntityContent) -> Result<Vec<PartWrite>, Malformed> {
+/// `content.specific` carries its own `cleared = 100` list, so the same rule
+/// and the same two refusals apply inside it — and the cleared numbers are
+/// validated against **the type message actually present**, because a number
+/// valid for one type is not valid for another. That reading is
+/// [`specific::parts_written`], which dispatches to the module owning the type.
+///
+/// A type whose content this build does not write yet refuses distinguishably
+/// rather than dropping the fields on the floor. Wave 2.1's behaviour — read
+/// the tag, ignore the fields — was correct while nothing could write them and
+/// would now be a client being told its content had landed when it had not.
+pub fn parts_written(content: &v1::EntityContent) -> Result<Written, Malformed> {
     let mut cleared = Vec::new();
     for number in &content.cleared {
         let part = ContentPart::from_field_number(*number).ok_or_else(|| {
@@ -304,5 +351,14 @@ pub fn parts_written(content: &v1::EntityContent) -> Result<Vec<PartWrite>, Malf
         written.push(PartWrite::Bulk(None));
     }
 
-    Ok(written)
+    let mut all = Written {
+        parts: written,
+        body: None,
+    };
+    if let Some(specific) = content.specific.as_ref() {
+        let from_type = specific::parts_written(specific)?;
+        all.parts.extend(from_type.parts);
+        all.body = from_type.body;
+    }
+    Ok(all)
 }
