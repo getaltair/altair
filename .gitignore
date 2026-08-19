@@ -6,6 +6,11 @@
 # hand to allow --no-verify and friends for a window; never committed.
 .claude/.hooks-unlock
 
+# Worktrees for parallel lanes, checked out inside the repository. Each is a
+# working copy of this same repository, so committing one commits the tree into
+# itself. Remove a finished one with `git worktree remove`, not `rm -rf`.
+.claude/worktrees/
+
 # Rust build output (includes protoc/tonic codegen written to OUT_DIR)
 /target
 **/target
