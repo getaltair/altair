@@ -53,7 +53,7 @@ use crate::auth::Member;
 use crate::objects::{self, Body, BodyId, ByteSource, ObjectStore};
 use crate::store::entity::{EntityType, available_for_read};
 use crate::store::ids::{EntityId, MemberId};
-use crate::store::{ReadScope, begin_read, begin_write};
+use crate::store::{ReadScope, begin_read, begin_write, search};
 
 use content::{entity_type, file_reference, identifier, instant, parts_written};
 use entity::{Ctx, Failed, Refusal};
@@ -176,6 +176,28 @@ impl WritePath {
             // to the caller, per DR-003: a wait, not a refusal.
             Err(_) => Ok(BodyLookup::Unavailable),
         }
+    }
+
+    /// The literal retrieval arm: candidates matching `text`, scoped and
+    /// ranked, on the same audience predicate every other read on this
+    /// instance goes through.
+    ///
+    /// # Errors
+    ///
+    /// Only [`Fault`], and only where the structured store itself could not
+    /// be reached.
+    pub async fn query(
+        &self,
+        member: &Member,
+        text: &str,
+        scope: &search::Scope,
+        limit: i64,
+    ) -> Result<Vec<search::LiteralResult>, Fault> {
+        let requester = MemberId::assert_participating(member.membership_id());
+        let mut tx = begin_read(&self.pool).await.map_err(Fault::Store)?;
+        search::literal(&mut tx, requester, text, scope, limit)
+            .await
+            .map_err(Fault::Store)
     }
 
     /// Apply a submission, one intent at a time.
