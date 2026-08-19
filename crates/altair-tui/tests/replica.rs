@@ -325,3 +325,68 @@ fn both_sides_of_a_retained_conflict_are_kept() {
          something to look at rather than something to fix before continuing"
     );
 }
+
+#[test]
+fn a_ladder_is_walked_down_from_what_sits_in_nothing() {
+    // The instance serves no way to list what a container holds, so this walk
+    // is the only way the ladder exists at all. `rooted` is where it starts.
+    let (_directory, mut store) = store();
+    let campaign = wire::fresh_id();
+    let (first, second) = (wire::fresh_id(), wire::fresh_id());
+    store
+        .take_changes(
+            &[
+                entity(
+                    &campaign,
+                    "Rebuild the rack",
+                    v1::entity_content::Specific::Campaign(v1::CampaignContent::default()),
+                ),
+                entity(&second, "second", quest(&campaign, 1)),
+                entity(&first, "first", quest(&campaign, 0)),
+            ],
+            3,
+        )
+        .expect("take");
+
+    let roots = store.rooted(&["campaign", "quest"]).expect("rooted");
+    assert_eq!(
+        roots.len(),
+        1,
+        "a campaign belongs to nothing and the quests belong to it, so there \
+         is one place to start"
+    );
+    assert_eq!(roots[0].entity_id, campaign);
+
+    let beneath: Vec<_> = store
+        .beneath(&campaign)
+        .expect("beneath")
+        .iter()
+        .map(|held| held.content.title.clone().unwrap_or_default())
+        .collect();
+    assert_eq!(
+        beneath,
+        ["first", "second"],
+        "in the order the container holds"
+    );
+}
+
+#[test]
+fn a_quest_belonging_to_nothing_is_its_own_root() {
+    // Guidance is not required to sit under anything. A quest on its own is
+    // ordinary, and a ladder that only started at campaigns would never show it.
+    let (_directory, mut store) = store();
+    let alone = wire::fresh_id();
+    store
+        .take_changes(
+            &[entity(
+                &alone,
+                "Swap the UPS battery",
+                v1::entity_content::Specific::Quest(v1::QuestContent::default()),
+            )],
+            1,
+        )
+        .expect("take");
+    let roots = store.rooted(&["campaign", "quest"]).expect("rooted");
+    assert_eq!(roots.len(), 1);
+    assert_eq!(roots[0].entity_id, alone);
+}

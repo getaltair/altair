@@ -172,12 +172,18 @@ impl App {
     }
 
     fn draw_list(&mut self, domain: &str, area: Rect, buffer: &mut ratatui::buffer::Buffer) {
-        // The ladder and the location tree are the same walk over different
-        // containers, and the replica already holds both orders.
-        let held = self.rows();
-        let shell = self.shell;
-        let rows: Vec<(usize, Held)> = held.into_iter().map(|held| (0, held)).collect();
+        // **The ladder and the location tree are the same walk over different
+        // containers**, and the replica already holds the orders both of them
+        // navigate by. Neither is something the instance can be asked for:
+        // there is no call that lists what a container holds, so this walk is
+        // the only way either screen exists.
         let ladder = self.at == Where::Ladder;
+        let rows = self.walk(if ladder {
+            &["campaign", "quest"]
+        } else {
+            &["location"]
+        });
+        let shell = self.shell;
         let rungs = compose::ladder(&rows, self.cursor);
         let kept = compose::tracking(&rows, self.cursor);
         shell.frame(
@@ -399,6 +405,39 @@ impl App {
             // passed. The file stays, and is offered back.
             Err(_) => self.signals.unrecognised(true),
         }
+    }
+
+    /// Walk down from whatever sits in no container, depth first.
+    ///
+    /// Bounded, because a cycle in the containers would otherwise walk for
+    /// ever. The instance refuses to write one — that check landed with type
+    /// content — but a client drawing a screen is not the place to find out it
+    /// was wrong about that.
+    fn walk(&self, kinds: &[&str]) -> Vec<(usize, Held)> {
+        let mut out = Vec::new();
+        let mut stack: Vec<(usize, Held)> = self
+            .store
+            .rooted(kinds)
+            .unwrap_or_default()
+            .into_iter()
+            .rev()
+            .map(|held| (0, held))
+            .collect();
+        while let Some((depth, held)) = stack.pop() {
+            if out.len() > 5_000 {
+                break;
+            }
+            let beneath = if depth < 32 {
+                self.store.beneath(&held.entity_id).unwrap_or_default()
+            } else {
+                Vec::new()
+            };
+            out.push((depth, held));
+            for child in beneath.into_iter().rev() {
+                stack.push((depth + 1, child));
+            }
+        }
+        out
     }
 
     fn go(&mut self, at: Where) {

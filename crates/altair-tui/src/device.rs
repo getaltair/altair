@@ -780,6 +780,32 @@ impl Store {
         self.all(&ids)
     }
 
+    /// What sits in no container of its own, of these kinds.
+    ///
+    /// **Where a tree starts.** A campaign belongs to nothing, and so does a
+    /// location at the top of a building; walking down from here with
+    /// [`Store::beneath`] is how the ladder and the location tree are built,
+    /// and neither of them is a thing the instance can be asked for.
+    ///
+    /// # Errors
+    ///
+    /// Fails when the store cannot be read.
+    pub fn rooted(&self, kinds: &[&str]) -> rusqlite::Result<Vec<Held>> {
+        let mut ids = Vec::new();
+        for kind in kinds {
+            let mut statement = self.connection.prepare(
+                "SELECT entity_id FROM placement
+                  WHERE kind = ?1 AND container_id IS NULL
+                  ORDER BY container_position IS NULL, container_position, entity_id",
+            )?;
+            let found: Vec<Vec<u8>> = statement
+                .query_map(params![kind], |row| row.get(0))?
+                .collect::<rusqlite::Result<_>>()?;
+            ids.extend(found);
+        }
+        self.all(&ids)
+    }
+
     /// Every relation touching `entity_id`, from either end.
     ///
     /// **There is no reverse row and there is not supposed to be.** One record
