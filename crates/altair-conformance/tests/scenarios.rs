@@ -1314,11 +1314,22 @@ scenario!(
             world.accept(&format!("W{index}"));
         }
 
-        let signals = world.showing();
+        // **Waited for, the way F4 waits for the very same claim.** What is
+        // synchronised on above is the *instance's* log, and the instance
+        // records a refusal before the answer carrying it has been serialised,
+        // let alone read — so a client that has not been told yet is not a
+        // client hiding a fault, it is a client that does not know. Asserting
+        // on the person's surface the instant the instance decided was asking
+        // it to be telepathic, and it failed about one run in four.
+        //
+        // Nothing this scenario is about has been relaxed. The forty are
+        // already captured when the wait begins, so the backlog is live for
+        // every assertion below it.
         assert!(
-            !signals.is_empty(),
+            until_showing(&mut world, SETTLE, |signals| !signals.is_empty()).await,
             "the refusals are still a fault, and a fault is signalled"
         );
+        let signals = world.showing();
         for signal in &signals {
             assert!(
                 matches!(signal.quantity, None | Some(3)),
