@@ -262,6 +262,15 @@ impl Shell {
         buffer: &mut Buffer,
         body: impl FnOnce(Rect, &mut Buffer),
     ) {
+        // **A terminal can be any size, including none.** A person dragging a
+        // window narrow, a multiplexer splitting a pane to nothing, a pty
+        // opened before anyone said how big it is — all of them arrive here as
+        // an area with no room in it, and the client's answer has to be to draw
+        // less rather than to fall over. Nothing below subtracts from a
+        // dimension without knowing there is something to subtract from.
+        if area.width == 0 || area.height == 0 {
+            return;
+        }
         let line = |y: u16| Rect {
             y,
             height: 1,
@@ -269,7 +278,11 @@ impl Shell {
         };
         self.ground(area, buffer);
         self.header(frame.domain, frame.meta, line(area.top()), buffer);
-        self.rule(line(area.top() + 1), buffer);
+        if area.height >= 2 {
+            self.rule(line(area.top() + 1), buffer);
+        }
+        // The chrome is two lines at the top and two at the bottom; the body is
+        // whatever is left, and there may be none.
         if area.height > 6 {
             body(
                 Rect {
@@ -280,14 +293,18 @@ impl Shell {
                 buffer,
             );
         }
-        self.status(
-            frame.modal,
-            frame.crumbs,
-            frame.position,
-            line(area.bottom() - 2),
-            buffer,
-        );
-        self.keys(frame.keys, line(area.bottom() - 1), buffer);
+        if area.height >= 4 {
+            self.status(
+                frame.modal,
+                frame.crumbs,
+                frame.position,
+                line(area.bottom() - 2),
+                buffer,
+            );
+        }
+        if area.height >= 3 {
+            self.keys(frame.keys, line(area.bottom() - 1), buffer);
+        }
     }
 
     /// The help surface, drawn.

@@ -22,7 +22,9 @@
 /// judges it. What it drives is not behind one.
 #[cfg(feature = "conformance")]
 pub mod adapter;
+pub mod app;
 pub mod capture;
+pub mod config;
 pub mod device;
 pub mod editor;
 pub mod replica;

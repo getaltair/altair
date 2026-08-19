@@ -51,6 +51,8 @@ version = "0.0.0"
 dependencies = [
  "altair-conformance",
  "altair-proto",
+ "chrono",
+ "crossterm",
  "proptest",
  "prost",
  "prost-types",

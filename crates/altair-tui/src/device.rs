@@ -67,6 +67,10 @@ pub struct Held {
     /// **A pending write is what makes the local view outrank the instance's**,
     /// and it is the only thing that does.
     pub pending: bool,
+    /// When it last moved, in seconds since the epoch. The instance's
+    /// `updated_at` where there is one, and otherwise when this device took
+    /// it. `None` for something nothing knows the age of.
+    pub at: Option<i64>,
 }
 
 impl Held {
@@ -112,6 +116,7 @@ impl Store {
         // the first statement is where an unwritable directory actually bites:
         // opening is lazy, and this is the call that has to create something.
         connection.execute_batch(SCHEMA)?;
+        migrate(&connection)?;
         Ok(Self { connection })
     }
 
@@ -173,8 +178,14 @@ impl Store {
             )?;
         }
         transaction.execute(
-            "INSERT INTO entity (entity_id, content, body_id) VALUES (?1, ?2, ?3)",
-            params![entity_id, content.encode_to_vec(), body.map(|(id, _)| id)],
+            "INSERT INTO entity (entity_id, content, body_id, created_at) \
+             VALUES (?1, ?2, ?3, ?4)",
+            params![
+                entity_id,
+                content.encode_to_vec(),
+                body.map(|(id, _)| id),
+                created_at_of(intent),
+            ],
         )?;
         transaction.execute(
             "INSERT INTO intent (intent_id, entity_id, message) VALUES (?1, ?2, ?3)",
@@ -222,12 +233,18 @@ impl Store {
     /// Fails when the store cannot be read.
     pub fn held(&self, entity_id: &[u8]) -> rusqlite::Result<Option<Held>> {
         let entity_id = self.current_identity(entity_id)?;
-        let local: Option<(Vec<u8>, Option<Vec<u8>>)> = self
+        let local: Option<Local> = self
             .connection
             .query_row(
-                "SELECT content, body_id FROM entity WHERE entity_id = ?1",
+                "SELECT content, body_id, created_at FROM entity WHERE entity_id = ?1",
                 params![entity_id],
-                |row| Ok((row.get(0)?, row.get(1)?)),
+                |row| {
+                    Ok(Local {
+                        content: row.get(0)?,
+                        body_id: row.get(1)?,
+                        created_at: row.get(2)?,
+                    })
+                },
             )
             .optional()?;
         let truth: Option<Vec<u8>> = self
@@ -252,12 +269,12 @@ impl Store {
         // except where somebody else moved the entity — and then the
         // instance's is the newer one and should win.
         let content = match (&local, &entity) {
-            (Some((held, _)), _) if pending => decode(held),
+            (Some(held), _) if pending => decode(&held.content),
             (_, Some(entity)) => entity.content.clone().unwrap_or_default(),
-            (Some((held, _)), None) => decode(held),
+            (Some(held), None) => decode(&held.content),
             (None, None) => unreachable!("one of the two is present"),
         };
-        let bytes = match local.as_ref().and_then(|(_, body_id)| body_id.clone()) {
+        let bytes = match local.as_ref().and_then(|held| held.body_id.clone()) {
             Some(id) => self
                 .connection
                 .query_row(
@@ -277,6 +294,11 @@ impl Store {
                 .and_then(|entity| v1::LifecycleState::try_from(entity.lifecycle).ok())
                 .unwrap_or(v1::LifecycleState::Active),
             pending,
+            at: entity
+                .as_ref()
+                .and_then(|entity| entity.updated_at.or(entity.created_at))
+                .map(|stamp| stamp.seconds)
+                .or_else(|| local.as_ref().and_then(|held| held.created_at)),
         }))
     }
 
@@ -681,7 +703,8 @@ impl Store {
         }))
     }
 
-    /// What the person has captured, most recent first.
+    /// What the person has captured, most recent first, and nothing it knows
+    /// nothing about the age of before them.
     ///
     /// **Assembled here because there is nowhere else it could be.** The
     /// instance serves no way to read an entity by identity and no way to list
@@ -713,6 +736,7 @@ impl Store {
                 }
             }
         }
+        out.sort_by(|a, b| b.at.cmp(&a.at).then_with(|| b.entity_id.cmp(&a.entity_id)));
         Ok(out)
     }
 
@@ -796,6 +820,27 @@ impl Store {
         Ok(out)
     }
 
+    /// What the instance would not take.
+    ///
+    /// **Refused, and not merely unsent.** Everything in the outbox that has
+    /// not gone yet is waiting, and waiting is silent; only what was actually
+    /// refused is a fault. A list built from "has an intent outstanding" would
+    /// put a person's whole backlog in front of them, which is the one thing
+    /// this client may never do.
+    ///
+    /// # Errors
+    ///
+    /// Fails when the store cannot be read.
+    pub fn refused_entities(&self) -> rusqlite::Result<Vec<Held>> {
+        let mut statement = self.connection.prepare(
+            "SELECT DISTINCT entity_id FROM intent WHERE refused = 1 ORDER BY entity_id",
+        )?;
+        let ids: Vec<Vec<u8>> = statement
+            .query_map([], |row| row.get(0))?
+            .collect::<rusqlite::Result<_>>()?;
+        self.all(&ids)
+    }
+
     /// The credential this device presents.
     ///
     /// # Errors
@@ -839,11 +884,12 @@ impl Store {
 /// The client's own schema. One statement per thing it holds.
 const SCHEMA: &str = "
 CREATE TABLE IF NOT EXISTS entity (
-  entity_id BLOB PRIMARY KEY,
-  content   BLOB NOT NULL,
-  body_id   BLOB,
-  counter   INTEGER NOT NULL DEFAULT 0,
-  blocked   INTEGER NOT NULL DEFAULT 0
+  entity_id  BLOB PRIMARY KEY,
+  content    BLOB NOT NULL,
+  body_id    BLOB,
+  counter    INTEGER NOT NULL DEFAULT 0,
+  blocked    INTEGER NOT NULL DEFAULT 0,
+  created_at INTEGER
 );
 
 CREATE TABLE IF NOT EXISTS intent (
@@ -916,6 +962,43 @@ CREATE TABLE IF NOT EXISTS binding (
   member_id BLOB NOT NULL
 );
 ";
+
+/// What this device wrote for an entity, as the row holds it.
+struct Local {
+    content: Vec<u8>,
+    body_id: Option<Vec<u8>>,
+    created_at: Option<i64>,
+}
+
+/// Bring an older store up to the shape this build expects.
+///
+/// **The device store gets migrations, and the reason is not symmetry with the
+/// instance.** `CREATE TABLE IF NOT EXISTS` builds a new store correctly and
+/// does exactly nothing to an existing one, so a store made by an earlier build
+/// keeps the older shape and every query naming a new column fails against it.
+/// On a device that would mean a person's unsent captures becoming unreadable
+/// because they updated the client, which is the one failure this whole crate
+/// exists to prevent.
+///
+/// Additive and forward only, which is all a store like this needs: what is
+/// here is either a person's outbox, which is never restructured, or a copy of
+/// the instance's, which can always be thrown away and read again.
+fn migrate(connection: &Connection) -> rusqlite::Result<()> {
+    let at: i64 = connection.query_row("PRAGMA user_version", [], |row| row.get(0))?;
+    if at < 1 {
+        // Added when the captures list needed to order by something. A store
+        // written before this has entities with no time; they sort last, which
+        // is the truthful answer for a row nothing knows the age of.
+        let already: bool = connection
+            .prepare("SELECT 1 FROM pragma_table_info('entity') WHERE name = 'created_at'")?
+            .exists([])?;
+        if !already {
+            connection.execute("ALTER TABLE entity ADD COLUMN created_at INTEGER", [])?;
+        }
+        connection.pragma_update(None, "user_version", 1)?;
+    }
+    Ok(())
+}
 
 fn decode(bytes: &[u8]) -> v1::EntityContent {
     v1::EntityContent::decode(bytes).expect("the store holds content this client encoded")
@@ -1012,4 +1095,14 @@ fn endpoints(relation: &v1::Relation) -> Vec<Vec<u8>> {
         .chain(content.to_entity_id.iter())
         .cloned()
         .collect()
+}
+
+/// When a create says the entity came into existence.
+fn created_at_of(intent: &v1::Intent) -> Option<i64> {
+    match intent.action.as_ref()? {
+        v1::intent::Action::Create(v1::Create {
+            subject: Some(v1::create::Subject::Entity(entity)),
+        }) => entity.created_at.map(|stamp| stamp.seconds),
+        _ => None,
+    }
 }

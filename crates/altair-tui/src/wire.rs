@@ -106,6 +106,36 @@ pub fn compose_title_edit(entity_id: &[u8], title: &str) -> (v1::EntityContent, 
     (content, intent)
 }
 
+/// Compose an edit to a note's body.
+///
+/// **The whole body, undivided, and with no relation markers in it.** The
+/// instance recomputes the block boundaries, matches them against what it
+/// holds, and writes only what changed. One implementation of the division
+/// rule, so two devices cannot disagree about the units reconciliation is
+/// decided in — which is why the client sends what the person typed and
+/// nothing more.
+#[must_use]
+pub fn compose_body_edit(entity_id: &[u8], body: &str) -> (v1::EntityContent, v1::Intent) {
+    let content = v1::EntityContent {
+        specific: Some(v1::entity_content::Specific::Note(v1::NoteContent {
+            body: Some(body.to_string()),
+            cleared: Vec::new(),
+        })),
+        ..Default::default()
+    };
+    let intent = v1::Intent {
+        intent_id: fresh_id(),
+        action: Some(v1::intent::Action::Edit(v1::Edit {
+            subject: Some(v1::edit::Subject::Entity(v1::EditEntity {
+                entity_id: entity_id.to_vec(),
+                base_counter: 0,
+                content: Some(content.clone()),
+            })),
+        })),
+    };
+    (content, intent)
+}
+
 /// Set the counter an edit declares it was based on. Does nothing to anything
 /// that is not an edit of an entity.
 pub fn set_base_counter(intent: &mut v1::Intent, counter: u64) {

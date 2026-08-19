@@ -157,3 +157,33 @@ fn the_help_surface() {
         shell.help_surface(area, buffer);
     });
 }
+
+#[test]
+fn a_terminal_with_no_room_in_it_is_drawn_and_not_crashed_into() {
+    // Found by running the client rather than by reading it: a pty opened
+    // before anything said how big it was reported nothing by nothing, and the
+    // first draw subtracted the chrome's four lines from a height of zero.
+    // Every snapshot in this file passes a comfortable area, so none of them
+    // could have caught it.
+    use altair_tui::ui::{Frame, Glyphs, Mode, Set, Shell, Theme};
+    use ratatui::buffer::Buffer;
+
+    let shell = Shell::new(Theme::of(Mode::Starfield), Glyphs::of(Set::Signature));
+    for (width, height) in [(0, 0), (1, 1), (0, 40), (40, 0), (3, 2), (8, 4), (200, 7)] {
+        let area = Rect::new(0, 0, width, height);
+        let mut buffer = Buffer::empty(area);
+        shell.frame(
+            &Frame {
+                domain: "captures",
+                meta: "monday",
+                modal: Modal::Browsing,
+                crumbs: &["captures", "something"],
+                position: "1 of 2",
+                keys: &[("↑↓", "move")],
+            },
+            area,
+            &mut buffer,
+            |body, buffer| shell.help_surface(body, buffer),
+        );
+    }
+}

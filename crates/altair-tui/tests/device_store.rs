@@ -281,3 +281,38 @@ fn a_body_is_held_until_it_reaches_the_instance() {
         "and the person still has their file"
     );
 }
+
+#[test]
+fn a_store_written_before_a_column_existed_still_opens() {
+    // `CREATE TABLE IF NOT EXISTS` builds a new store correctly and does
+    // nothing at all to an existing one, so without a migration a person who
+    // updated the client would find their unsent captures unreadable — which
+    // is the one failure this crate exists to prevent. This is that migration,
+    // run against a store shaped the way the first build shaped one.
+    let directory = tempfile::tempdir().expect("a temporary directory");
+    let path = directory.path().join("altair-device.sqlite3");
+    {
+        let old = rusqlite::Connection::open(&path).expect("open");
+        old.execute_batch(
+            "CREATE TABLE entity (
+               entity_id BLOB PRIMARY KEY,
+               content   BLOB NOT NULL,
+               body_id   BLOB,
+               counter   INTEGER NOT NULL DEFAULT 0,
+               blocked   INTEGER NOT NULL DEFAULT 0
+             );",
+        )
+        .expect("the shape the first build wrote");
+    }
+
+    let mut store = Store::open(directory.path()).expect("an older store still opens");
+    let entity_id = accept(&mut store, "written before the update");
+    let held = store.held(&entity_id).expect("read").expect("present");
+    assert_eq!(held.title(), Some("written before the update"));
+    assert_eq!(
+        store.next_to_send(10).expect("outbox").len(),
+        1,
+        "and the outbox still works, which is what a person actually loses if \
+         this goes wrong"
+    );
+}
