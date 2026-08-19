@@ -110,7 +110,7 @@ impl Served {
             world.db.pool.clone(),
         );
 
-        let instance = Instance::new(Arc::new(auth), world.write.clone());
+        let instance = Instance::new(Arc::new(auth), world.write.clone(), world.capacity.clone());
 
         let listener = TcpListener::bind("127.0.0.1:0").await.expect("bind");
         let addr = listener.local_addr().expect("addr");
@@ -338,42 +338,82 @@ async fn an_expired_credential_and_a_forged_one_are_the_same_wait() {
     assert_eq!(statuses[0].0, Code::Unauthenticated);
 }
 
-// --- the three that are still not served ----------------------------------
+// --- every call is now served -----------------------------------------------
+//
+// Wave 3.1 served `Query`, Wave 3.2 served `Changes`, Wave 3.3 served
+// `GetHealth`. Nothing on this service answers `Unimplemented` any longer, so
+// there is no "still not served" assertion left to make here — only that each
+// newly-served call reaches real handling rather than falling through to a
+// blanket refusal.
 
+/// `Query` is served as of Wave 3.1. What is worth asserting here is that it
+/// reaches real handling — a malformed `container_id` is refused as
+/// malformed, and an ordinary request answers rather than falling through to
+/// a blanket `Unimplemented`.
 #[tokio::test]
-async fn the_three_calls_this_build_does_not_serve_say_so_deliberately() {
+async fn query_is_no_longer_among_the_unserved() {
     let served = Served::new().await;
     let mut client = served.client().await;
     let token = served.token_for_one();
 
-    let codes = vec![
-        client
-            .query(served.request(v1::QueryRequest::default(), Some(&token)))
-            .await
-            .expect_err("query")
-            .code(),
-        client
-            .changes(served.request(v1::ChangesRequest::default(), Some(&token)))
-            .await
-            .expect_err("changes")
-            .code(),
-        client
-            .get_health(served.request(v1::HealthRequest::default(), Some(&token)))
-            .await
-            .expect_err("health")
-            .code(),
-    ];
+    let malformed = client
+        .query(served.request(
+            v1::QueryRequest {
+                container_id: Some(vec![1, 2, 3]),
+                ..Default::default()
+            },
+            Some(&token),
+        ))
+        .await
+        .expect_err("a container identity is 16 bytes")
+        .code();
+    assert_eq!(malformed, Code::InvalidArgument);
 
-    assert!(
-        codes.iter().all(|c| *c == Code::Unimplemented),
-        "the three are absent on purpose, and waiting will not clear it: {codes:?}"
+    let ok = client
+        .query(served.request(v1::QueryRequest::default(), Some(&token)))
+        .await
+        .expect("a default query answers rather than refusing");
+    assert_eq!(
+        ok.into_inner().results.len(),
+        0,
+        "empty text matches nothing, which is an ordinary empty answer"
     );
 }
 
-/// `PutBody` and `GetBody` are served as of Wave 2.3 — `tests/file_bodies.rs`
-/// covers their behaviour. What is still worth asserting here is that a
-/// malformed call to either reaches real handling rather than falling through
-/// to the blanket `Unimplemented` the other three still answer with.
+/// `Changes` is served as of Wave 3.2 — `tests/changes.rs` covers its
+/// per-member assembly. What is worth asserting here is the same thing
+/// `query_is_no_longer_among_the_unserved` asserts for `Query`: the call
+/// reaches real handling, not a blanket `Unimplemented`, and an
+/// unauthenticated caller still gets nowhere near it.
+#[tokio::test]
+async fn changes_is_no_longer_among_the_unserved() {
+    let served = Served::new().await;
+    let mut client = served.client().await;
+    let token = served.token_for_one();
+
+    let response = client
+        .changes(served.request(v1::ChangesRequest::default(), Some(&token)))
+        .await
+        .expect("a default request is answerable, not unimplemented")
+        .into_inner();
+    assert!(matches!(
+        response.outcome,
+        Some(v1::changes_response::Outcome::Changes(_))
+    ));
+
+    let unauthenticated = client
+        .changes(served.request(v1::ChangesRequest::default(), None))
+        .await
+        .expect_err("unauthenticated reaches no query surface")
+        .code();
+    assert_eq!(unauthenticated, Code::Unauthenticated);
+}
+
+/// `PutBody` and `GetBody` are served as of Wave 2.3, `GetHealth` as of Wave
+/// 3.3 — `tests/file_bodies.rs` and `tests/health.rs` cover their behaviour.
+/// What is still worth asserting here is that a malformed call to either of
+/// the first two reaches real handling rather than falling through to a
+/// blanket `Unimplemented`.
 #[tokio::test]
 async fn put_body_and_get_body_are_no_longer_among_the_unserved() {
     let served = Served::new().await;

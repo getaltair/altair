@@ -10,7 +10,7 @@ use std::sync::Arc;
 
 use altair_proto::v1;
 use altaird::auth::Member;
-use altaird::objects::FilesystemObjectStore;
+use altaird::objects::{FilesystemObjectStore, StorageCapacity};
 use altaird::store::ids::EntityId;
 use altaird::testing::TestDb;
 use altaird::write::WritePath;
@@ -26,6 +26,9 @@ pub struct World {
     pub one: Member,
     pub two: Member,
     pub write: WritePath,
+    /// The same object store `write` holds, as the capacity question rather
+    /// than the four operations — `GetHealth` needs both out of one store.
+    pub capacity: Arc<dyn StorageCapacity>,
     /// Held for its lifetime: the object store's root, removed when this
     /// drops. Nothing reads it directly — `write.objects()` is the interface.
     pub object_root: TempDir,
@@ -45,16 +48,20 @@ impl World {
         let one = seed_member(&db.pool, household, "one").await;
         let two = seed_member(&db.pool, household, "two").await;
         let object_root = TempDir::new().expect("temp object root");
-        let store = FilesystemObjectStore::open(object_root.path())
-            .await
-            .expect("open the object store");
-        let write = WritePath::new(db.pool.clone(), Arc::new(store));
+        let store: Arc<FilesystemObjectStore> = Arc::new(
+            FilesystemObjectStore::open(object_root.path())
+                .await
+                .expect("open the object store"),
+        );
+        let write = WritePath::new(db.pool.clone(), store.clone());
+        let capacity: Arc<dyn StorageCapacity> = store;
         Self {
             db,
             household,
             one,
             two,
             write,
+            capacity,
             object_root,
         }
     }

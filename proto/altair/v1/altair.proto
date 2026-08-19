@@ -705,10 +705,49 @@ message QueryRequest {
   string text = 1;
 
   // Scope belongs to the person asking. Breadth is available, never
-  // obligatory, and a narrow query is not a degraded one.
-  reserved 2 to 40;
+  // obligatory, and a narrow query is not a degraded one. The substrate names
+  // "everything, one domain, one campaign and what hangs off it" as ordinary
+  // queries; these three fields are the literal arm's first cut at that,
+  // provisional under DR-004 rather than a final scoping design.
+  optional Domain domain = 2;
+  optional EntityKind entity_kind = 3;
+
+  // An entity results must be filed under: itself, or a member of its
+  // category. Containment lives on the shared entity row, so this reaches
+  // across every domain the same way.
+  optional bytes container_id = 4;
+
+  reserved 5 to 40;
 
   uint32 limit = 41;
+}
+
+// Which of the three domains an entity belongs to. Unset (or UNSPECIFIED)
+// means every domain.
+enum Domain {
+  DOMAIN_UNSPECIFIED = 0;
+  DOMAIN_GUIDANCE = 1;
+  DOMAIN_KNOWLEDGE = 2;
+  DOMAIN_TRACKING = 3;
+}
+
+// The type an entity was created as, for scoping a query to exactly one.
+// Mirrors EntityContent's oneof tags, not restated there because that oneof
+// carries the type's content and this carries only its name.
+enum EntityKind {
+  ENTITY_KIND_UNSPECIFIED = 0;
+  ENTITY_KIND_CAMPAIGN = 1;
+  ENTITY_KIND_ARC = 2;
+  ENTITY_KIND_QUEST = 3;
+  ENTITY_KIND_ROUTINE = 4;
+  ENTITY_KIND_FOCUS_SESSION = 5;
+  ENTITY_KIND_CHECK_IN = 6;
+  ENTITY_KIND_NOTE = 7;
+  ENTITY_KIND_FILE = 8;
+  ENTITY_KIND_ITEM = 9;
+  ENTITY_KIND_LOCATION = 10;
+  ENTITY_KIND_SHOPPING_LIST = 11;
+  ENTITY_KIND_CATEGORY = 12;
 }
 
 message QueryResponse {
@@ -723,10 +762,13 @@ message QueryResponse {
 message Result {
   Entity entity = 1;
 
-  // Enough to tell why this is in front of you. Not an explanation of the
-  // order, and not a justification of it: the connection between a result and
-  // what was asked has to be recoverable rather than opaque.
-  reserved 2 to 20;
+  // The literal arm's combined match strength against the query text: full
+  // text rank plus trigram similarity. Not an explanation of the order, and
+  // not a justification of it: it is enough that the connection between a
+  // result and what was asked is recoverable rather than opaque.
+  double score = 2;
+
+  reserved 3 to 20;
 }
 
 message AnswerState {
