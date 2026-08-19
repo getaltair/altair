@@ -27,3 +27,9 @@
 
 # Local-only compose port override for parallel lanes; never committed.
 compose.override.yaml
+
+# Proptest regression seeds. Not checked in: the repository has used proptest
+# since Wave 1 and has never carried one, and a seed recorded while proving a
+# guard fires — by breaking the code on purpose — records a failure that never
+# shipped, which sends the next reader hunting for a bug that did not exist.
+*.proptest-regressions
