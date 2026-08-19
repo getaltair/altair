@@ -110,7 +110,7 @@ impl Served {
             world.db.pool.clone(),
         );
 
-        let instance = Instance::new(Arc::new(auth), world.write.clone());
+        let instance = Instance::new(Arc::new(auth), world.write.clone(), world.capacity.clone());
 
         let listener = TcpListener::bind("127.0.0.1:0").await.expect("bind");
         let addr = listener.local_addr().expect("addr");
@@ -338,10 +338,10 @@ async fn an_expired_credential_and_a_forged_one_are_the_same_wait() {
     assert_eq!(statuses[0].0, Code::Unauthenticated);
 }
 
-// --- the three that are still not served ----------------------------------
+// --- the two that are still not served -------------------------------------
 
 #[tokio::test]
-async fn the_three_calls_this_build_does_not_serve_say_so_deliberately() {
+async fn the_two_calls_this_build_does_not_serve_say_so_deliberately() {
     let served = Served::new().await;
     let mut client = served.client().await;
     let token = served.token_for_one();
@@ -357,23 +357,19 @@ async fn the_three_calls_this_build_does_not_serve_say_so_deliberately() {
             .await
             .expect_err("changes")
             .code(),
-        client
-            .get_health(served.request(v1::HealthRequest::default(), Some(&token)))
-            .await
-            .expect_err("health")
-            .code(),
     ];
 
     assert!(
         codes.iter().all(|c| *c == Code::Unimplemented),
-        "the three are absent on purpose, and waiting will not clear it: {codes:?}"
+        "the two are absent on purpose, and waiting will not clear it: {codes:?}"
     );
 }
 
-/// `PutBody` and `GetBody` are served as of Wave 2.3 — `tests/file_bodies.rs`
-/// covers their behaviour. What is still worth asserting here is that a
-/// malformed call to either reaches real handling rather than falling through
-/// to the blanket `Unimplemented` the other three still answer with.
+/// `PutBody` and `GetBody` are served as of Wave 2.3, `GetHealth` as of Wave
+/// 3.3 — `tests/file_bodies.rs` and `tests/health.rs` cover their behaviour.
+/// What is still worth asserting here is that a malformed call to either of
+/// the first two reaches real handling rather than falling through to the
+/// blanket `Unimplemented` the other two still answer with.
 #[tokio::test]
 async fn put_body_and_get_body_are_no_longer_among_the_unserved() {
     let served = Served::new().await;
