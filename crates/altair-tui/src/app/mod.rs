@@ -20,8 +20,13 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
+use crossterm::execute;
+use crossterm::terminal::{
+    EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode,
+};
+use ratatui::backend::CrosstermBackend;
 use ratatui::layout::Rect;
-use ratatui::{DefaultTerminal, Frame as Surface};
+use ratatui::{DefaultTerminal, Frame as Surface, Terminal};
 
 use crate::capture::Captured;
 use crate::config::Config;
@@ -98,7 +103,7 @@ impl App {
                 && let Event::Key(key) = event::read()?
                 && key.kind == KeyEventKind::Press
             {
-                self.key(key);
+                self.key(key, terminal);
             }
         }
         Ok(())
@@ -297,7 +302,7 @@ impl App {
         );
     }
 
-    fn key(&mut self, key: KeyEvent) {
+    fn key(&mut self, key: KeyEvent, terminal: &mut DefaultTerminal) {
         if self.at == Where::Capturing {
             self.typing(key);
             return;
@@ -319,7 +324,7 @@ impl App {
                     self.go(Where::Detail(held.entity_id.clone()));
                 }
             }
-            KeyCode::Char('e') => self.compose(),
+            KeyCode::Char('e') => self.compose(terminal),
             KeyCode::Esc => {
                 self.at = self.came_from.pop().unwrap_or(Where::Captures);
             }
@@ -376,7 +381,7 @@ impl App {
     ///
     /// The terminal has to be given back while they are in there, and taken
     /// again afterwards, because two programs cannot both own it.
-    fn compose(&mut self) {
+    fn compose(&mut self, terminal: &mut DefaultTerminal) {
         let Where::Detail(id) = self.at.clone() else {
             return;
         };
@@ -391,9 +396,17 @@ impl App {
             self.signals.unrecognised(true);
             return;
         };
-        ratatui::restore();
-        let written = self.editor.edit(&composition);
-        let _ = ratatui::try_init();
+
+        // **The terminal is handed over and taken back on the same handle the
+        // loop is drawing through.** An earlier version called
+        // `ratatui::restore()` and then `ratatui::try_init()`, which builds a
+        // *second* terminal and drops it — so the one the loop owns came back
+        // still believing the screen held what it had last drawn. Drawing is a
+        // diff against that belief, so the next frame repainted only the cells
+        // it thought had changed, over whatever the editor had left on screen:
+        // no header, no status line, and a body sitting in the middle of the
+        // editor's leavings.
+        let written = self.with_terminal_released(terminal, |editor| editor.edit(&composition));
         match written {
             Ok(body) => {
                 let (patch, intent) = wire::compose_body_edit(&id, &body);
@@ -438,6 +451,43 @@ impl App {
             }
         }
         out
+    }
+
+    /// Give the terminal back for as long as something else needs it, then
+    /// take it again.
+    ///
+    /// # Why the terminal is replaced rather than cleared
+    ///
+    /// **Drawing is a diff against what ratatui believes is on screen, and
+    /// after an editor has run that belief is wrong about every cell.** Left
+    /// alone, the first frame back repaints the handful of cells it thinks
+    /// changed and leaves the rest of somebody else's screen showing — which
+    /// is a client that looks broken rather than one that redrew.
+    ///
+    /// `Terminal::clear` is the obvious way to say so and is the wrong one
+    /// here: it begins by asking the terminal where the cursor is, which is a
+    /// question written to the terminal and answered on stdin. On anything
+    /// that does not answer — a pty nobody is driving, a terminal that has
+    /// just been through an editor's own setup — it fails, and the repaint it
+    /// was supposed to force never happens. Silently, because there is nothing
+    /// useful to do with the error.
+    ///
+    /// A fresh terminal has no beliefs at all, so the next frame is painted in
+    /// full. It costs one allocation on a path a person takes by hand.
+    fn with_terminal_released<T>(
+        &mut self,
+        terminal: &mut DefaultTerminal,
+        run: impl FnOnce(&Editor) -> T,
+    ) -> T {
+        let _ = disable_raw_mode();
+        let _ = execute!(terminal.backend_mut(), LeaveAlternateScreen);
+        let outcome = run(&self.editor);
+        let _ = enable_raw_mode();
+        let _ = execute!(terminal.backend_mut(), EnterAlternateScreen);
+        if let Ok(fresh) = Terminal::new(CrosstermBackend::new(io::stdout())) {
+            *terminal = fresh;
+        }
+        outcome
     }
 
     fn go(&mut self, at: Where) {

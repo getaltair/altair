@@ -40,4 +40,5 @@ uuid = { version = "1", features = ["v4"] }
 altair-conformance = { path = "../altair-conformance" }
 proptest = "1"
 rusqlite = "0.37"
+rustix = { version = "1.1", features = ["pty", "termios"] }
 tempfile = "3"

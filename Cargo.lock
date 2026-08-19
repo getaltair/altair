@@ -58,6 +58,7 @@ dependencies = [
  "prost-types",
  "ratatui",
  "rusqlite",
+ "rustix",
  "serde",
  "serde_json",
  "tempfile",
