@@ -469,3 +469,70 @@ async fn a_page_that_is_not_full_reports_the_sequences_own_latest_position() {
         })
     );
 }
+
+// --- the horizon check and the page read must agree ------------------------
+//
+// Both come out of one statement now (see read/changes.rs's own comment on
+// why), specifically so a concurrent write or reclamation cannot land
+// between "how far back can I answer" and "here is the page" and make the
+// two disagree. That is not something a test can force a race into without
+// controlling statement-level timing, which nothing here does — but the
+// invariant the bug would have broken is checkable directly: nothing this
+// function returns should ever claim to cover a change beyond its own
+// reported cursor.
+
+#[tokio::test]
+async fn the_reported_cursor_never_falls_behind_a_change_it_returned() {
+    let w = World::new().await;
+    // More than one page's worth, so `more` is true and the cursor comes
+    // from the boundary this page actually scanned rather than simply
+    // echoing the sequence's own latest position.
+    for i in 0..205 {
+        w.note(&w.one, &format!("note {i}")).await;
+    }
+
+    let set = answered(
+        changes::assemble(&w.db.pool, member_id(&w.one), None)
+            .await
+            .expect("assemble"),
+    );
+    assert!(set.more, "205 notes must not all fit in one page");
+    let cursor = set.position.expect("position").value;
+    for change in &set.changes {
+        let position = change.position.as_ref().expect("position").value;
+        assert!(
+            position <= cursor,
+            "a change at {position} was returned but the reported cursor was only {cursor} — \
+             a client resuming from that cursor would never see it"
+        );
+    }
+    assert!(
+        (cursor as i64) < global_latest(&w).await,
+        "more of the sequence exists past this page"
+    );
+}
+
+// --- a position outside anything this store could have issued --------------
+
+#[tokio::test]
+async fn a_position_that_does_not_fit_the_stores_own_representation_never_panics() {
+    let w = World::new().await;
+    w.note(&w.one, "one").await;
+
+    // The store's own sequence is `bigint` (`i64`); the wire's `Position` is
+    // a bare `uint64`. Nothing stops a client — buggy or otherwise — from
+    // sending a value this instance could never have issued, including
+    // exactly `i64::MAX`, which is the one value that overflows the `+ 1`
+    // the horizon check does internally.
+    for value in [u64::MAX, i64::MAX as u64 + 1, i64::MAX as u64] {
+        let outcome =
+            changes::assemble(&w.db.pool, member_id(&w.one), Some(v1::Position { value }))
+                .await
+                .expect("an out-of-range position is not a store fault");
+        let set = answered(outcome);
+        assert!(
+            set.changes.is_empty(),
+            "nothing real exists after a position beyond anything this store ever issued"
+        );
+    }
+}

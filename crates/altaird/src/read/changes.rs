@@ -64,45 +64,54 @@ pub async fn assemble(
     member: MemberId,
     since: Option<v1::Position>,
 ) -> sqlx::Result<Outcome> {
-    let since_value = since.map_or(0i64, |p| p.value as i64);
+    // The wire's `Position` is a bare `uint64`; nothing on the wire bounds it
+    // to what this store could ever have issued. Our own sequence is `bigint`
+    // (`i64`), so a value that does not fit is not a position this instance
+    // ever produced — saturating it to `i64::MAX` rather than truncating with
+    // `as` keeps it in the "nothing new, already ahead of everything real"
+    // shape instead of silently wrapping to a small or negative number and
+    // answering a completely different, wrong question.
+    let since_value = since.map_or(0i64, |p| i64::try_from(p.value).unwrap_or(i64::MAX));
 
     let mut tx = begin_read(pool).await?;
 
-    // The honest way to decide unanswerable: whether the earliest position
-    // the table still holds is after what the client asked for. Not derived
-    // from `instance_config.change_horizon_entries` — that is the *target*
-    // reclamation aims to keep, not a statement of what is actually still
-    // there at the moment of this query, and the two are not the same thing
-    // to compare against. `latest` is fetched here too, in the same
-    // read-only snapshot, for the "no more" cursor below.
-    let bounds = sqlx::query(
-        "SELECT (SELECT MIN(position) FROM change) AS earliest, \
-                (SELECT next_position - 1 FROM change_position) AS latest",
-    )
-    .fetch_one(tx.conn())
-    .await?;
-    let earliest: Option<i64> = bounds.try_get("earliest")?;
-    let latest: i64 = bounds.try_get("latest")?;
-
-    if let Some(earliest) = earliest
-        && since_value + 1 < earliest
-    {
-        return Ok(Outcome::Unanswerable);
-    }
-
+    // The horizon check and the page read must see one consistent snapshot
+    // of `change`, or a concurrent write or reclamation landing between two
+    // separate statements could make either wrong: a row deleted after the
+    // check but before the read makes an answerable request silently miss
+    // history instead of correctly answering `PositionUnanswerable`, and a
+    // row written after `latest` was captured but before the page read would
+    // make the reported "no more" cursor stale relative to what the response
+    // actually contains. One statement, not two: `bounds` and `page` are
+    // evaluated together, so both come from the same view of the table
+    // rather than from two queries a concurrent commit could land between.
+    //
+    // `LEFT JOIN` rather than a plain join because `bounds` is exactly one
+    // row and must survive even when `page` matches nothing — an empty
+    // result cannot be told apart from "nothing to report" otherwise.
     let rows = sqlx::query(
-        "SELECT position, kind::text AS kind, entity_id, relation_id, \
-                changed_block_ids \
-         FROM change \
-         WHERE position > $1 \
-           AND ( \
-                 (kind IN ('entity_written', 'entity_gone') \
-                  AND ( (author_before = $2 OR $2 = ANY(audience_before)) \
-                     OR (author_after  = $2 OR $2 = ANY(audience_after)) )) \
-              OR kind IN ('relation_written', 'relation_gone') \
-           ) \
-         ORDER BY position ASC \
-         LIMIT $3",
+        "WITH bounds AS ( \
+             SELECT (SELECT MIN(position) FROM change) AS earliest, \
+                    (SELECT next_position - 1 FROM change_position) AS latest \
+         ), \
+         page AS ( \
+             SELECT position, kind::text AS kind, entity_id, relation_id, \
+                    changed_block_ids \
+             FROM change \
+             WHERE position > $1 \
+               AND ( \
+                     (kind IN ('entity_written', 'entity_gone') \
+                      AND ( (author_before = $2 OR $2 = ANY(audience_before)) \
+                         OR (author_after  = $2 OR $2 = ANY(audience_after)) )) \
+                  OR kind IN ('relation_written', 'relation_gone') \
+               ) \
+             ORDER BY position ASC \
+             LIMIT $3 \
+         ) \
+         SELECT bounds.earliest, bounds.latest, page.position, page.kind, \
+                page.entity_id, page.relation_id, page.changed_block_ids \
+         FROM bounds LEFT JOIN page ON true \
+         ORDER BY page.position ASC NULLS FIRST",
     )
     .bind(since_value)
     .bind(member.as_uuid())
@@ -110,11 +119,42 @@ pub async fn assemble(
     .fetch_all(tx.conn())
     .await?;
 
-    let more = rows.len() as i64 > PAGE_SIZE;
+    // `bounds` is exactly one row, so this always has at least one element.
+    let earliest: Option<i64> = rows[0].try_get("earliest")?;
+    let latest: i64 = rows[0].try_get("latest")?;
+
+    // `since_value` is already clamped to `i64::MAX` above, so the one
+    // remaining overflow is `+ 1` when it lands exactly on that clamp.
+    // Nothing real is ever positioned there, so there is nothing this
+    // client could be missing — `checked_add` failing here means "already
+    // past anything the horizon check could name," which is answerable, not
+    // unanswerable, so `is_some_and` rather than `is_none_or`.
+    if let Some(earliest) = earliest
+        && since_value
+            .checked_add(1)
+            .is_some_and(|next| next < earliest)
+    {
+        return Ok(Outcome::Unanswerable);
+    }
+
+    // `page.position` is null on exactly one row: the placeholder `bounds`
+    // produces when nothing in `page` matched. Every other row is a real
+    // page row, and `ORDER BY ... NULLS FIRST` puts that placeholder first
+    // so it is never mistaken for the last of a full page below.
+    let mut first_page_row = rows.len();
+    for (i, row) in rows.iter().enumerate() {
+        if row.try_get::<Option<i64>, _>("position")?.is_some() {
+            first_page_row = i;
+            break;
+        }
+    }
+    let page: &[PgRow] = &rows[first_page_row..];
+
+    let more = page.len() as i64 > PAGE_SIZE;
     let page: &[PgRow] = if more {
-        &rows[..PAGE_SIZE as usize]
+        &page[..PAGE_SIZE as usize]
     } else {
-        &rows
+        page
     };
 
     let mut changes = Vec::with_capacity(page.len());
