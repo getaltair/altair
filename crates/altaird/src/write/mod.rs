@@ -125,6 +125,15 @@ impl WritePath {
         &self.store
     }
 
+    /// The connection pool, for a caller outside the intent pipeline that
+    /// needs its own transaction. `GetHealth`'s aggregate counts read nothing
+    /// an intent produced, so they have no business borrowing an intent's
+    /// query surface either.
+    #[must_use]
+    pub fn pool(&self) -> &PgPool {
+        &self.pool
+    }
+
     /// Store a body's bytes.
     ///
     /// # Errors
