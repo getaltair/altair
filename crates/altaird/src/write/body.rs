@@ -280,34 +280,89 @@ async fn graduate(ctx: &mut Ctx<'_>, entity: EntityId) -> Applied<()> {
     Ok(())
 }
 
-/// Let go of the phrases anchored into blocks this write is about to remove.
+/// Let go of the anchors into blocks this write is about to remove.
 ///
-/// **Without this, removing a block fails the body write.** The store detaches
-/// half an anchor by itself — `relation.anchor_block_id` is
-/// `ON DELETE SET NULL` — and the other half has no owner: `relation`'s
-/// `CHECK (anchor_phrase IS NULL OR anchor_block_id IS NOT NULL)` refuses the
-/// row the referential action produces, so the delete raises a constraint
-/// violation and the whole intent becomes a store fault. Confirmed against
-/// PostgreSQL 18 rather than reasoned about: the failure arrives as
-/// `relation_check3`, from inside the cascading `UPDATE`.
+/// **All three columns, and not by leaving any of it to the cascade.** The
+/// substrate says a removed block leaves the relation *"without its anchor"*,
+/// and migration one reasons from the same state in as many words: *"a relation
+/// that loses its anchor when its block is removed **becomes unanchored**"*.
+/// Unanchored is all three null.
 ///
-/// That is the exact failure migration one declines a unique index to avoid —
-/// *"a body edit must never fail because a relation lost an anchor, and that
-/// outranks refusing a duplicate structurally"* — reintroduced by another
-/// route. It is unreachable today only because `write::relation` still refuses
-/// an anchor; it becomes reachable the moment that refusal expires, which is
-/// the item that follows this lane.
+/// `relation.anchor_block_id` is `ON DELETE SET NULL`, so it is tempting to let
+/// the referential action do its share and clear only what it cannot reach.
+/// That was the first shape of this function and it was wrong twice over:
 ///
-/// Clearing the phrase is also what the substrate means rather than a way
-/// around a check: *"where the block itself is removed the relation survives
-/// without its anchor"*. A phrase locating into a block that is gone locates
-/// into nothing. `anchor_entity_id` stays, because where the relation was
-/// formed is still true.
+/// - **It fails the write.** The action nulls the block and `relation`'s
+///   `CHECK (anchor_phrase IS NULL OR anchor_block_id IS NOT NULL)` then refuses
+///   the row it just produced, so the delete raises `relation_check3` from
+///   inside the cascading `UPDATE` and the whole intent becomes a store fault.
+///   Confirmed on PostgreSQL 18 rather than reasoned about. That is the exact
+///   failure migration one declines a unique index to avoid, arriving by
+///   another route.
+/// - **It leaves `anchor_entity_id` standing**, because the action is
+///   column-scoped. That residue is not a decision anybody took — it is what
+///   happens when a referential action reaches one column of three — and it
+///   costs more than the one bit it holds: a shape no client can resubmit, an
+///   ordinary relation edit that erases it silently, and a duplicate refusal
+///   naming a connection the person never mentioned.
+///
+/// Doing the whole thing here means the cascade finds nothing left to do, so
+/// the check is never approached rather than sidestepped, and the state the two
+/// documents describe is the state the store holds.
 async fn detach_anchors(ctx: &mut Ctx<'_>, removed: &[Uuid]) -> Applied<()> {
-    sqlx::query("UPDATE relation SET anchor_phrase = NULL WHERE anchor_block_id = ANY($1)")
-        .bind(removed)
-        .execute(ctx.tx.conn())
-        .await?;
+    sqlx::query(
+        "UPDATE relation SET anchor_entity_id = NULL, anchor_block_id = NULL, \
+         anchor_phrase = NULL WHERE anchor_block_id = ANY($1)",
+    )
+    .bind(removed)
+    .execute(ctx.tx.conn())
+    .await?;
+    Ok(())
+}
+
+/// Let go of the phrases whose words this write took out of a block.
+///
+/// **The rule that separates the two kinds of anchor.** A block anchor holds
+/// while its block remains, through any rewording of it; a phrase anchor holds
+/// only while its words do. *"A relation anchored to a phrase survives such an
+/// edit and loses its anchor; one anchored to a block keeps its anchor while
+/// the block remains."*
+///
+/// Stated a second time for the case where two people edit one block and one
+/// version is chosen: *"an anchor whose text survives holds, and one whose text
+/// does not leaves the relation intact without an anchor."* So the test is
+/// whether the phrase is still in the block, not whether the block was touched.
+///
+/// **The block goes with the phrase, and so does the entity.** Both places the
+/// substrate states this say *without an anchor*, not "with a coarser one".
+/// Falling back to a block anchor would re-point somebody's connection from the
+/// words they chose at the whole paragraph — a place they never picked, which is
+/// the error [`crate::body::identity`] refuses to make with over-eager matching.
+/// Keeping the entity alone would be a smaller version of the same invention,
+/// and it is a shape no client can resubmit; see [`detach_anchors`], which lost
+/// it for the same reason.
+///
+/// All three columns move in one statement, which is also what keeps this clear
+/// of the check `detach_anchors` describes. Matched against the block's content
+/// rather than its verbatim slice, for the reason at the top of this module.
+///
+/// Only blocks whose content moved are considered. A phrase cannot stop
+/// occurring in text that did not change, so the others have nothing to lose.
+async fn lose_phrases_that_did_not_survive(
+    ctx: &mut Ctx<'_>,
+    block: Uuid,
+    text: &str,
+) -> Applied<()> {
+    sqlx::query(
+        "UPDATE relation SET anchor_entity_id = NULL, anchor_block_id = NULL, \
+         anchor_phrase = NULL \
+         WHERE anchor_block_id = $1 AND anchor_phrase IS NOT NULL \
+           AND position(anchor_phrase in $2) = 0",
+    )
+    .bind(block)
+    .bind(text)
+    .execute(ctx.tx.conn())
+    .await?;
     Ok(())
 }
 
@@ -408,6 +463,12 @@ pub async fn apply(
         authored = true;
         touch.written.push(Part::Block(block.id));
         touch.changed.push(block.id);
+
+        // The words moved, so any phrase anchored into them may not have
+        // survived. A created block cannot be anchored into yet, but the
+        // statement is harmless there and leaving it unconditional keeps this
+        // from acquiring a case to get wrong later.
+        lose_phrases_that_did_not_survive(ctx, block.id, arriving).await?;
 
         // Only a carried block can be one side of a disagreement. A created
         // block's identity was minted a few lines above and no earlier write
