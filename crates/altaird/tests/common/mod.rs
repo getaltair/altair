@@ -20,6 +20,8 @@ use tempfile::TempDir;
 use uuid::Uuid;
 
 /// A household with two members, and a write path over it.
+pub mod served;
+
 pub struct World {
     pub db: Arc<TestDb>,
     pub household: Uuid,
