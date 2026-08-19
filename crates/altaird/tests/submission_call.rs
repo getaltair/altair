@@ -110,7 +110,7 @@ impl Served {
             world.db.pool.clone(),
         );
 
-        let instance = Instance::new(Arc::new(auth), world.write.clone());
+        let instance = Instance::new(Arc::new(auth), world.write.clone(), world.db.pool.clone());
 
         let listener = TcpListener::bind("127.0.0.1:0").await.expect("bind");
         let addr = listener.local_addr().expect("addr");
@@ -338,10 +338,10 @@ async fn an_expired_credential_and_a_forged_one_are_the_same_wait() {
     assert_eq!(statuses[0].0, Code::Unauthenticated);
 }
 
-// --- the three that are still not served ----------------------------------
+// --- the two that are still not served --------------------------------------
 
 #[tokio::test]
-async fn the_three_calls_this_build_does_not_serve_say_so_deliberately() {
+async fn the_two_calls_this_build_does_not_serve_say_so_deliberately() {
     let served = Served::new().await;
     let mut client = served.client().await;
     let token = served.token_for_one();
@@ -353,11 +353,6 @@ async fn the_three_calls_this_build_does_not_serve_say_so_deliberately() {
             .expect_err("query")
             .code(),
         client
-            .changes(served.request(v1::ChangesRequest::default(), Some(&token)))
-            .await
-            .expect_err("changes")
-            .code(),
-        client
             .get_health(served.request(v1::HealthRequest::default(), Some(&token)))
             .await
             .expect_err("health")
@@ -366,14 +361,44 @@ async fn the_three_calls_this_build_does_not_serve_say_so_deliberately() {
 
     assert!(
         codes.iter().all(|c| *c == Code::Unimplemented),
-        "the three are absent on purpose, and waiting will not clear it: {codes:?}"
+        "the two are absent on purpose, and waiting will not clear it: {codes:?}"
     );
+}
+
+/// `Changes` is served as of Wave 3.2 — `tests/changes.rs` covers its
+/// per-member assembly. What is worth asserting here is the same thing
+/// `put_body_and_get_body_are_no_longer_among_the_unserved` asserts for those
+/// two: a call reaches real handling, not the blanket `Unimplemented` the
+/// remaining two still answer with, and an unauthenticated caller still gets
+/// nowhere near it.
+#[tokio::test]
+async fn changes_is_no_longer_among_the_unserved() {
+    let served = Served::new().await;
+    let mut client = served.client().await;
+    let token = served.token_for_one();
+
+    let response = client
+        .changes(served.request(v1::ChangesRequest::default(), Some(&token)))
+        .await
+        .expect("a default request is answerable, not unimplemented")
+        .into_inner();
+    assert!(matches!(
+        response.outcome,
+        Some(v1::changes_response::Outcome::Changes(_))
+    ));
+
+    let unauthenticated = client
+        .changes(served.request(v1::ChangesRequest::default(), None))
+        .await
+        .expect_err("unauthenticated reaches no query surface")
+        .code();
+    assert_eq!(unauthenticated, Code::Unauthenticated);
 }
 
 /// `PutBody` and `GetBody` are served as of Wave 2.3 — `tests/file_bodies.rs`
 /// covers their behaviour. What is still worth asserting here is that a
 /// malformed call to either reaches real handling rather than falling through
-/// to the blanket `Unimplemented` the other three still answer with.
+/// to the blanket `Unimplemented` `Query` and `GetHealth` still answer with.
 #[tokio::test]
 async fn put_body_and_get_body_are_no_longer_among_the_unserved() {
     let served = Served::new().await;

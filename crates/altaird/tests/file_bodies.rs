@@ -115,7 +115,7 @@ impl Served {
 
         // Reuses the world's own write path rather than building a second
         // one, so PutBody and Submit see the same object store.
-        let instance = Instance::new(Arc::new(auth), world.write.clone());
+        let instance = Instance::new(Arc::new(auth), world.write.clone(), world.db.pool.clone());
 
         let listener = TcpListener::bind("127.0.0.1:0").await.expect("bind");
         let addr = listener.local_addr().expect("addr");

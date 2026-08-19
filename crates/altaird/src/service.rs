@@ -1,12 +1,12 @@
 //! The public interface, served.
 //!
-//! # Three calls are served and three are not, on purpose
+//! # Four calls are served and two are not, on purpose
 //!
 //! Wave 2.1 stood up `Submit` end to end; Wave 2.3 adds `PutBody` and
-//! `GetBody`. `Query`, `Changes`, and `GetHealth` still answer `unimplemented`,
-//! and will until their own waves. Two of the write path's requirements are
-//! observable only through `Submit` and are not testable from an internal
-//! function:
+//! `GetBody`; Wave 3.2 adds `Changes`. `Query` and `GetHealth` still answer
+//! `unimplemented`, and will until their own waves. Two of the write path's
+//! requirements are observable only through `Submit` and are not testable
+//! from an internal function:
 //!
 //! - **A submission is never all or nothing.** The answer carries one
 //!   acknowledgement per intent, in the order submitted, and an intent that was
@@ -44,24 +44,34 @@ use std::pin::Pin;
 use std::sync::Arc;
 
 use futures::StreamExt;
+use sqlx::PgPool;
 use tonic::{Request, Response, Status};
 
 use altair_proto::v1;
 
 use crate::auth::{Authentication, Authenticator, Member, bearer_token};
 use crate::objects::{self, BodyId, ByteSource};
+use crate::read;
+use crate::store::ids::MemberId;
 use crate::write::{BodyLookup, WritePath, content};
 
 /// The instance, as callers reach it.
 pub struct Instance {
     auth: Arc<Authenticator>,
     write: WritePath,
+    /// The read path's own handle onto the structured store. Separate from
+    /// whatever `write` holds internally: the read path owes nothing to the
+    /// write path (see the standing constraint this crate's docs state), and
+    /// a read surface reaching the pool by way of the write path's struct
+    /// would blur a boundary this build is trying to keep visible, even
+    /// though the two happen to point at the same Postgres today.
+    pool: PgPool,
 }
 
 impl Instance {
     #[must_use]
-    pub fn new(auth: Arc<Authenticator>, write: WritePath) -> Self {
-        Self { auth, write }
+    pub fn new(auth: Arc<Authenticator>, write: WritePath, pool: PgPool) -> Self {
+        Self { auth, write, pool }
     }
 
     /// Resolve the credential on a request, or say nothing about why not.
@@ -82,10 +92,10 @@ impl Instance {
     }
 }
 
-/// The three calls this build does not serve: `Query`, `Changes`, `GetHealth`.
+/// The calls this build does not yet serve: `Query`, `GetHealth`.
 ///
-/// One message rather than three, because a caller has nothing to do
-/// differently for any of them and the difference would only invite one to
+/// One message rather than two, because a caller has nothing to do
+/// differently for either of them and the difference would only invite one to
 /// try.
 const NOT_YET: &str = "this call is not served by this build";
 
@@ -116,9 +126,26 @@ impl v1::altair_server::Altair for Instance {
 
     async fn changes(
         &self,
-        _request: Request<v1::ChangesRequest>,
+        request: Request<v1::ChangesRequest>,
     ) -> Result<Response<v1::ChangesResponse>, Status> {
-        Err(Status::unimplemented(NOT_YET))
+        let member = self.member(&request).await?;
+        let since = request.into_inner().since;
+        let requester = MemberId::assert_participating(member.membership_id());
+
+        match read::changes::assemble(&self.pool, requester, since).await {
+            Ok(read::changes::Outcome::Answered(changes)) => {
+                Ok(Response::new(v1::ChangesResponse {
+                    outcome: Some(v1::changes_response::Outcome::Changes(changes)),
+                }))
+            }
+            Ok(read::changes::Outcome::Unanswerable) => Ok(Response::new(v1::ChangesResponse {
+                outcome: Some(v1::changes_response::Outcome::Unanswerable(
+                    v1::PositionUnanswerable {},
+                )),
+            })),
+            // The store was unavailable. A wait, exactly as `submit`'s.
+            Err(_) => Err(Status::unavailable("")),
+        }
     }
 
     async fn get_health(
