@@ -59,6 +59,13 @@ pub async fn run() {
     // A store that will not open is not a reason not to run: the client still
     // has to answer, and what it has to answer is a refusal that states the
     // condition. Nothing sends, because nothing was accepted.
+    // **The replica is deliberately not started here.** These scenarios are
+    // about the outbox, and the fake instance they run against answers writes
+    // only — it says `Unimplemented` to `Changes`, which is a condition no
+    // client can classify as self clearing and would therefore, correctly, be
+    // signalled as a fault. Nine scenarios assert the client is showing the
+    // person nothing at all. The replica develops against a real instance,
+    // which is where it can be proved rather than mocked.
     let store = Store::open(&state_dir).map_err(|error| error.to_string());
     if store.is_ok() {
         match Sender::new(&state_dir, &instance_url, token, Arc::clone(&signals)) {

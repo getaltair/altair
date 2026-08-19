@@ -34,6 +34,12 @@ rustix = { version = "1.1.4", features = ["fs"] }
 
 [dev-dependencies]
 altaird = { path = ".", features = ["testing"] }
+# The client, for the end-to-end proof only. **A dev-dependency in this
+# direction and never the other one**: the terminal client depends on the
+# generated contract and not on the instance, which is what lets the structural
+# guards in this crate's tests say that a crate which cannot name the instance's
+# store cannot go round its audience predicate.
+altair-tui = { path = "../altair-tui" }
 proptest = "1.11.0"
 chrono = { version = "0.4.42", default-features = false, features = ["std", "clock"] }
 base64 = "0.22.1"

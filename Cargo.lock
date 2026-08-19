@@ -51,6 +51,7 @@ version = "0.0.0"
 dependencies = [
  "altair-conformance",
  "altair-proto",
+ "proptest",
  "prost",
  "prost-types",
  "rusqlite",
@@ -68,6 +69,7 @@ name = "altaird"
 version = "0.0.0"
 dependencies = [
  "altair-proto",
+ "altair-tui",
  "altaird",
  "anyhow",
  "async-trait",

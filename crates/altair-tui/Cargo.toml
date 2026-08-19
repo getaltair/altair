@@ -34,4 +34,5 @@ uuid = { version = "1", features = ["v4"] }
 
 [dev-dependencies]
 altair-conformance = { path = "../altair-conformance" }
+proptest = "1"
 tempfile = "3"

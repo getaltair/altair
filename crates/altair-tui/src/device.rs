@@ -59,6 +59,14 @@ pub struct Held {
     pub content: v1::EntityContent,
     /// The bytes of a captured file, where this is one.
     pub bytes: Option<Vec<u8>>,
+    /// Where the instance says this entity stands. Active for something the
+    /// instance has not answered about yet, because a capture is the person's
+    /// from the moment it is accepted.
+    pub lifecycle: v1::LifecycleState,
+    /// Whether anything about this entity is still on its way to the instance.
+    /// **A pending write is what makes the local view outrank the instance's**,
+    /// and it is the only thing that does.
+    pub pending: bool,
 }
 
 impl Held {
@@ -213,8 +221,8 @@ impl Store {
     ///
     /// Fails when the store cannot be read.
     pub fn held(&self, entity_id: &[u8]) -> rusqlite::Result<Option<Held>> {
-        let entity_id = &self.current_identity(entity_id)?;
-        let row: Option<(Vec<u8>, Option<Vec<u8>>)> = self
+        let entity_id = self.current_identity(entity_id)?;
+        let local: Option<(Vec<u8>, Option<Vec<u8>>)> = self
             .connection
             .query_row(
                 "SELECT content, body_id FROM entity WHERE entity_id = ?1",
@@ -222,10 +230,34 @@ impl Store {
                 |row| Ok((row.get(0)?, row.get(1)?)),
             )
             .optional()?;
-        let Some((content, body_id)) = row else {
+        let truth: Option<Vec<u8>> = self
+            .connection
+            .query_row(
+                "SELECT message FROM replica WHERE entity_id = ?1",
+                params![entity_id],
+                |row| row.get(0),
+            )
+            .optional()?;
+        if local.is_none() && truth.is_none() {
             return Ok(None);
+        }
+        let pending = self.pending_for(&entity_id)?;
+        let entity = truth.map(|bytes| {
+            v1::Entity::decode(bytes.as_slice()).expect("the replica holds what the instance sent")
+        });
+
+        // **The overlay, and the whole of it.** Instance truth is what the
+        // household agreed; the local view outranks it only while something
+        // local has not got there yet. Once nothing is pending the two agree,
+        // except where somebody else moved the entity — and then the
+        // instance's is the newer one and should win.
+        let content = match (&local, &entity) {
+            (Some((held, _)), _) if pending => decode(held),
+            (_, Some(entity)) => entity.content.clone().unwrap_or_default(),
+            (Some((held, _)), None) => decode(held),
+            (None, None) => unreachable!("one of the two is present"),
         };
-        let bytes = match body_id {
+        let bytes = match local.as_ref().and_then(|(_, body_id)| body_id.clone()) {
             Some(id) => self
                 .connection
                 .query_row(
@@ -237,10 +269,32 @@ impl Store {
             None => None,
         };
         Ok(Some(Held {
-            entity_id: entity_id.to_vec(),
-            content: decode(&content),
+            entity_id,
+            content,
             bytes,
+            lifecycle: entity
+                .as_ref()
+                .and_then(|entity| v1::LifecycleState::try_from(entity.lifecycle).ok())
+                .unwrap_or(v1::LifecycleState::Active),
+            pending,
         }))
+    }
+
+    /// Whether anything for this entity is still outstanding.
+    ///
+    /// A refused intent counts: it is still held, the person's work is still
+    /// theirs, and the instance has not taken it.
+    ///
+    /// # Errors
+    ///
+    /// Fails when the store cannot be read.
+    pub fn pending_for(&self, entity_id: &[u8]) -> rusqlite::Result<bool> {
+        let count: i64 = self.connection.query_row(
+            "SELECT COUNT(*) FROM intent WHERE entity_id = ?1",
+            params![entity_id],
+            |row| row.get(0),
+        )?;
+        Ok(count > 0)
     }
 
     /// Where an identity moved to, following a recreation. Answers what it
@@ -461,6 +515,287 @@ impl Store {
         Ok(count.unsigned_abs())
     }
 
+    /// Where in the instance's change sequence this device has read to.
+    ///
+    /// Zero is the beginning, and the beginning is always answerable while
+    /// nothing trims the sequence. A client may always rebuild.
+    ///
+    /// # Errors
+    ///
+    /// Fails when the store cannot be read.
+    pub fn position(&self) -> rusqlite::Result<u64> {
+        let value: Option<i64> = self
+            .connection
+            .query_row(
+                "SELECT value FROM replica_position WHERE only = 1",
+                [],
+                |row| row.get(0),
+            )
+            .optional()?;
+        Ok(value.unwrap_or(0).unsigned_abs())
+    }
+
+    /// Take a page of the member's change stream.
+    ///
+    /// **One transaction, position included.** The position is what says which
+    /// changes have been seen, so recording it apart from them would let a kill
+    /// in between either lose changes or replay them. Replaying is harmless —
+    /// every change here is a statement of what is, not a delta — but losing
+    /// them is not, and one commit costs nothing.
+    ///
+    /// A change carries what the *member* sees. An audience broadening arrives
+    /// as a creation and a narrowing as a disappearance, and neither has a
+    /// variant of its own, so there is nothing here to distinguish them with
+    /// and nothing that tries.
+    ///
+    /// # Errors
+    ///
+    /// Fails when the store cannot be written to.
+    pub fn take_changes(&mut self, changes: &[v1::Change], position: u64) -> rusqlite::Result<()> {
+        let transaction = self.write()?;
+        for change in changes {
+            match change.what.as_ref() {
+                Some(v1::change::What::Entity(entity)) => {
+                    transaction.execute(
+                        "INSERT OR REPLACE INTO replica (entity_id, message) VALUES (?1, ?2)",
+                        params![entity.entity_id, entity.encode_to_vec()],
+                    )?;
+                    let placed = Placement::of(entity);
+                    transaction.execute(
+                        "INSERT OR REPLACE INTO placement
+                           (entity_id, kind, container_id, container_position,
+                            category_id, category_position)
+                         VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+                        params![
+                            entity.entity_id,
+                            placed.kind,
+                            placed.container_id,
+                            placed.container_position,
+                            placed.category_id,
+                            placed.category_position,
+                        ],
+                    )?;
+                }
+                Some(v1::change::What::GoneEntityId(id)) => {
+                    transaction.execute("DELETE FROM replica WHERE entity_id = ?1", params![id])?;
+                    transaction
+                        .execute("DELETE FROM placement WHERE entity_id = ?1", params![id])?;
+                    // A relation reaches a member only when they can see both
+                    // of its endpoints, so an endpoint going takes the
+                    // relations touching it with it. The instance says so too;
+                    // not waiting to be told is what keeps a relation from
+                    // being briefly readable with one end missing.
+                    transaction.execute(
+                        "DELETE FROM replica_relation WHERE relation_id IN
+                           (SELECT relation_id FROM relation_end WHERE entity_id = ?1)",
+                        params![id],
+                    )?;
+                    transaction
+                        .execute("DELETE FROM relation_end WHERE entity_id = ?1", params![id])?;
+                }
+                Some(v1::change::What::Relation(relation)) => {
+                    transaction.execute(
+                        "INSERT OR REPLACE INTO replica_relation (relation_id, message) \
+                         VALUES (?1, ?2)",
+                        params![relation.relation_id, relation.encode_to_vec()],
+                    )?;
+                    // An edit can move an endpoint, so the ends are rewritten
+                    // rather than added to.
+                    transaction.execute(
+                        "DELETE FROM relation_end WHERE relation_id = ?1",
+                        params![relation.relation_id],
+                    )?;
+                    for end in endpoints(relation) {
+                        transaction.execute(
+                            "INSERT OR REPLACE INTO relation_end (relation_id, entity_id) \
+                             VALUES (?1, ?2)",
+                            params![relation.relation_id, end],
+                        )?;
+                    }
+                }
+                Some(v1::change::What::GoneRelationId(id)) => {
+                    transaction.execute(
+                        "DELETE FROM replica_relation WHERE relation_id = ?1",
+                        params![id],
+                    )?;
+                    transaction.execute(
+                        "DELETE FROM relation_end WHERE relation_id = ?1",
+                        params![id],
+                    )?;
+                }
+                None => {}
+            }
+        }
+        transaction.execute(
+            "INSERT OR REPLACE INTO replica_position (only, value) VALUES (1, ?1)",
+            params![i64::try_from(position).unwrap_or(i64::MAX)],
+        )?;
+        transaction.commit()
+    }
+
+    /// Throw the replica away and start again from the beginning.
+    ///
+    /// **What the instance holds is authoritative and what is here is a copy**,
+    /// so this costs time and never data. It is the whole of the client's
+    /// response to being told its position is past the horizon: rebuilding is
+    /// always available and always correct. Nothing local is touched — an
+    /// unsent capture is not the instance's to have an opinion about.
+    ///
+    /// # Errors
+    ///
+    /// Fails when the store cannot be written to.
+    pub fn rebuild(&mut self) -> rusqlite::Result<()> {
+        let transaction = self.write()?;
+        transaction.execute("DELETE FROM replica", [])?;
+        transaction.execute("DELETE FROM replica_relation", [])?;
+        transaction.execute("DELETE FROM placement", [])?;
+        transaction.execute("DELETE FROM relation_end", [])?;
+        transaction.execute("DELETE FROM replica_position", [])?;
+        transaction.commit()
+    }
+
+    /// The instance's own copy of an entity, where the change stream has
+    /// delivered one.
+    ///
+    /// **Everything the client does not write is here rather than in the
+    /// content**: who authored it, when it was last touched, the counter, the
+    /// lifecycle, the body's blocks and both sides of any retained conflict. A
+    /// detail screen wants all of it, and none of it can be inferred from what
+    /// this device sent.
+    ///
+    /// # Errors
+    ///
+    /// Fails when the store cannot be read.
+    pub fn instance_copy(&self, entity_id: &[u8]) -> rusqlite::Result<Option<v1::Entity>> {
+        let entity_id = self.current_identity(entity_id)?;
+        let message: Option<Vec<u8>> = self
+            .connection
+            .query_row(
+                "SELECT message FROM replica WHERE entity_id = ?1",
+                params![entity_id],
+                |row| row.get(0),
+            )
+            .optional()?;
+        Ok(message.map(|bytes| {
+            v1::Entity::decode(bytes.as_slice()).expect("the replica holds what the instance sent")
+        }))
+    }
+
+    /// What the person has captured, most recent first.
+    ///
+    /// **Assembled here because there is nowhere else it could be.** The
+    /// instance serves no way to read an entity by identity and no way to list
+    /// what a container holds; `Query` is the literal arm and cannot enumerate.
+    /// Every screen that is not search is built from what the change stream
+    /// delivered, laid under what this device has not sent yet.
+    ///
+    /// # Errors
+    ///
+    /// Fails when the store cannot be read.
+    pub fn captures(&self) -> rusqlite::Result<Vec<Held>> {
+        let mut statement = self.connection.prepare(
+            "SELECT entity_id FROM replica
+             UNION
+             SELECT entity_id FROM entity",
+        )?;
+        let ids: Vec<Vec<u8>> = statement
+            .query_map([], |row| row.get(0))?
+            .collect::<rusqlite::Result<_>>()?;
+        let mut out = Vec::new();
+        for id in ids {
+            if let Some(held) = self.held(&id)? {
+                // Removal is reversible and the removed list is its own screen.
+                // The captures list is what is here now.
+                if held.lifecycle != v1::LifecycleState::Deleted
+                    && held.lifecycle != v1::LifecycleState::Erased
+                {
+                    out.push(held);
+                }
+            }
+        }
+        Ok(out)
+    }
+
+    /// What sits directly beneath `container`, in the order it sits there.
+    ///
+    /// **One question, three screens.** A campaign's arcs and quests, a quest's
+    /// place beneath its arc, and a location's contents are the same shape —
+    /// something beneath something else, in an order that belongs to the
+    /// container rather than to the thing. The wire spells the parent field
+    /// differently for each type, and [`Placement`] is where that ends.
+    ///
+    /// # Errors
+    ///
+    /// Fails when the store cannot be read.
+    pub fn beneath(&self, container: &[u8]) -> rusqlite::Result<Vec<Held>> {
+        let mut statement = self.connection.prepare(
+            "SELECT entity_id FROM placement
+              WHERE container_id = ?1
+              ORDER BY container_position IS NULL, container_position, entity_id",
+        )?;
+        let ids: Vec<Vec<u8>> = statement
+            .query_map(params![container], |row| row.get(0))?
+            .collect::<rusqlite::Result<_>>()?;
+        self.all(&ids)
+    }
+
+    /// What sits directly in `category`, in the order it sits there.
+    ///
+    /// # Errors
+    ///
+    /// Fails when the store cannot be read.
+    pub fn within(&self, category: &[u8]) -> rusqlite::Result<Vec<Held>> {
+        let mut statement = self.connection.prepare(
+            "SELECT entity_id FROM placement
+              WHERE category_id = ?1
+              ORDER BY category_position IS NULL, category_position, entity_id",
+        )?;
+        let ids: Vec<Vec<u8>> = statement
+            .query_map(params![category], |row| row.get(0))?
+            .collect::<rusqlite::Result<_>>()?;
+        self.all(&ids)
+    }
+
+    /// Every relation touching `entity_id`, from either end.
+    ///
+    /// **There is no reverse row and there is not supposed to be.** One record
+    /// joins two entities and direction is a property of that record, so
+    /// "what points at this" and "what this points at" are the same lookup
+    /// asked from different sides.
+    ///
+    /// # Errors
+    ///
+    /// Fails when the store cannot be read.
+    pub fn relations_touching(&self, entity_id: &[u8]) -> rusqlite::Result<Vec<v1::Relation>> {
+        let entity_id = self.current_identity(entity_id)?;
+        let mut statement = self.connection.prepare(
+            "SELECT r.message FROM replica_relation r
+               JOIN relation_end e ON e.relation_id = r.relation_id
+              WHERE e.entity_id = ?1
+              ORDER BY r.relation_id",
+        )?;
+        let rows: Vec<Vec<u8>> = statement
+            .query_map(params![entity_id], |row| row.get(0))?
+            .collect::<rusqlite::Result<_>>()?;
+        Ok(rows
+            .iter()
+            .map(|bytes| {
+                v1::Relation::decode(bytes.as_slice())
+                    .expect("the replica holds what the instance sent")
+            })
+            .collect())
+    }
+
+    fn all(&self, ids: &[Vec<u8>]) -> rusqlite::Result<Vec<Held>> {
+        let mut out = Vec::new();
+        for id in ids {
+            if let Some(held) = self.held(id)? {
+                out.push(held);
+            }
+        }
+        Ok(out)
+    }
+
     /// Bind this device to a household as `member_id`.
     ///
     /// # Errors
@@ -493,6 +828,46 @@ CREATE TABLE IF NOT EXISTS intent (
   refused   INTEGER NOT NULL DEFAULT 0
 );
 CREATE INDEX IF NOT EXISTS intent_by_entity ON intent (entity_id, seq);
+
+CREATE TABLE IF NOT EXISTS replica (
+  entity_id BLOB PRIMARY KEY,
+  message   BLOB NOT NULL
+);
+
+-- Where each entity sits, and where in it. Derived from the messages beside
+-- it and rebuildable from them; nothing here is authoritative.
+CREATE TABLE IF NOT EXISTS placement (
+  entity_id          BLOB PRIMARY KEY,
+  kind               TEXT NOT NULL,
+  container_id       BLOB,
+  container_position INTEGER,
+  category_id        BLOB,
+  category_position  INTEGER
+);
+CREATE INDEX IF NOT EXISTS placement_by_container
+  ON placement (container_id, container_position);
+CREATE INDEX IF NOT EXISTS placement_by_category
+  ON placement (category_id, category_position);
+
+-- Both ends of every relation. The wire has one record per connection and no
+-- reverse row, because direction is a property of the record and is read from
+-- either end. Reading from either end cheaply is what this is for.
+CREATE TABLE IF NOT EXISTS relation_end (
+  relation_id BLOB NOT NULL,
+  entity_id   BLOB NOT NULL,
+  PRIMARY KEY (relation_id, entity_id)
+);
+CREATE INDEX IF NOT EXISTS relation_end_by_entity ON relation_end (entity_id);
+
+CREATE TABLE IF NOT EXISTS replica_relation (
+  relation_id BLOB PRIMARY KEY,
+  message     BLOB NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS replica_position (
+  only  INTEGER PRIMARY KEY CHECK (only = 1),
+  value INTEGER NOT NULL
+);
 
 CREATE TABLE IF NOT EXISTS renamed (
   was BLOB PRIMARY KEY,
@@ -532,4 +907,78 @@ fn merge(held: &mut v1::EntityContent, patch: &v1::EntityContent) {
     {
         note.body.clone_from(&edited.body);
     }
+}
+
+/// Where an entity sits, read out of the message once so the screens do not
+/// each have to know which field their type spells it in.
+///
+/// **Derived, and therefore never authoritative.** Everything here can be
+/// recomputed from the messages beside it, which is what makes a rebuild a
+/// truncate and a replay rather than a reconciliation.
+struct Placement {
+    kind: &'static str,
+    container_id: Option<Vec<u8>>,
+    container_position: Option<i64>,
+    category_id: Option<Vec<u8>>,
+    category_position: Option<i64>,
+}
+
+impl Placement {
+    fn of(entity: &v1::Entity) -> Self {
+        let content = entity.content.clone().unwrap_or_default();
+        let position = |value: Option<u32>| value.map(i64::from);
+        let (kind, container_id, container_position) = match content.specific.as_ref() {
+            Some(v1::entity_content::Specific::Campaign(_)) => ("campaign", None, None),
+            Some(v1::entity_content::Specific::Arc(arc)) => (
+                "arc",
+                arc.campaign_id.clone(),
+                position(arc.ladder_position),
+            ),
+            // At most one ladder parent in total, an arc or a campaign, never
+            // both — so this reads as one field however it was spelled.
+            Some(v1::entity_content::Specific::Quest(quest)) => (
+                "quest",
+                match quest.parent.as_ref() {
+                    Some(v1::quest_content::Parent::ArcId(id)) => Some(id.clone()),
+                    Some(v1::quest_content::Parent::CampaignId(id)) => Some(id.clone()),
+                    None => None,
+                },
+                position(quest.ladder_position),
+            ),
+            Some(v1::entity_content::Specific::Location(location)) => {
+                ("location", location.parent_location_id.clone(), None)
+            }
+            Some(v1::entity_content::Specific::Routine(_)) => ("routine", None, None),
+            Some(v1::entity_content::Specific::FocusSession(_)) => ("focus_session", None, None),
+            Some(v1::entity_content::Specific::CheckIn(_)) => ("check_in", None, None),
+            Some(v1::entity_content::Specific::Note(_)) => ("note", None, None),
+            Some(v1::entity_content::Specific::File(_)) => ("file", None, None),
+            Some(v1::entity_content::Specific::Item(_)) => ("item", None, None),
+            Some(v1::entity_content::Specific::ShoppingList(_)) => ("shopping_list", None, None),
+            Some(v1::entity_content::Specific::Category(_)) => ("category", None, None),
+            // The type is the tag of content.specific, so an entity without one
+            // has no type. It is still the person's and still listed.
+            None => ("untyped", None, None),
+        };
+        Self {
+            kind,
+            container_id,
+            container_position,
+            category_id: content.category_id.clone(),
+            category_position: position(content.category_position),
+        }
+    }
+}
+
+/// Both ends of a relation, where it has them.
+fn endpoints(relation: &v1::Relation) -> Vec<Vec<u8>> {
+    let Some(content) = relation.content.as_ref() else {
+        return Vec::new();
+    };
+    content
+        .from_entity_id
+        .iter()
+        .chain(content.to_entity_id.iter())
+        .cloned()
+        .collect()
 }
