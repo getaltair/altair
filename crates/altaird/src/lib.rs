@@ -1,6 +1,7 @@
 pub mod auth;
 pub mod body;
 pub mod objects;
+pub mod read;
 pub mod service;
 pub mod store;
 pub mod write;
