@@ -50,7 +50,7 @@ pub struct EntityRow {
     pub category_position: Option<i32>,
 }
 
-// `EntityRow::into_wire` lives in `entity_wire.rs`, a file this one does not
+// `EntityRow::into_wire` lives in `wire.rs`, a file this one does not
 // even import. Its wire message carries a field spelled identically to
 // `AUDIENCE_COLUMN`, by design, and `tests/one_predicate.rs` refuses any
 // source that both issues SQL and spells that field out — this file issues
