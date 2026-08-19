@@ -1,12 +1,12 @@
 //! The public interface, served.
 //!
-//! # Four calls are served and two are not, on purpose
+//! # Every call is served
 //!
 //! Wave 2.1 stood up `Submit` end to end; Wave 2.3 added `PutBody` and
-//! `GetBody`; Wave 3.1 adds `Query`, the literal retrieval arm, and Wave 3.3
-//! adds `GetHealth`. `Changes` still answers `unimplemented`, and will until
-//! its own wave lands. Two of the write path's requirements are observable
-//! only through `Submit` and are not testable from an internal function:
+//! `GetBody`; Wave 3.1 added `Query`, the literal retrieval arm; Wave 3.2
+//! added `Changes`, the per-member change stream; Wave 3.3 added `GetHealth`.
+//! Two of the write path's requirements are observable only through `Submit`
+//! and are not testable from an internal function:
 //!
 //! - **A submission is never all or nothing.** The answer carries one
 //!   acknowledgement per intent, in the order submitted, and an intent that was
@@ -16,10 +16,9 @@
 //!   refusals inside it. Any other status would say, at the transport, the
 //!   thing the single refusal reason exists to avoid saying.
 //!
-//! `tests/submission_call.rs` asserts both, and asserts that the one
-//! remaining call is deliberately absent rather than forgotten.
-//! `tests/file_bodies.rs` covers `PutBody` and `GetBody`; `tests/health.rs`
-//! covers `GetHealth`.
+//! `tests/submission_call.rs` asserts both. `tests/file_bodies.rs` covers
+//! `PutBody` and `GetBody`; `tests/health.rs` covers `GetHealth`;
+//! `tests/changes.rs` covers `Changes`.
 //!
 //! # What a status means here
 //!
@@ -39,8 +38,6 @@
 //! - `InvalidArgument` — a fault, on `Query` only so far. A malformed
 //!   `container_id` — not 16 bytes — cannot be answered, and waiting will not
 //!   fix a request that names no valid identity.
-//! - `Unimplemented` — a fault. Waiting will not clear it. That is the honest
-//!   answer for the one call this item does not serve.
 //!
 //! **An intent being refused is none of these.** It is `Ok`, inside the
 //! response, which is what makes a batch partial.
@@ -55,9 +52,10 @@ use altair_proto::v1;
 
 use crate::auth::{Authentication, Authenticator, Member, bearer_token};
 use crate::objects::{self, BodyId, ByteSource, StorageCapacity};
+use crate::read;
 use crate::store;
 use crate::store::entity::EntityType;
-use crate::store::ids::EntityId;
+use crate::store::ids::{EntityId, MemberId};
 use crate::store::search::{self, Domain, Scope};
 use crate::write::{BodyLookup, WritePath, content};
 
@@ -109,13 +107,6 @@ impl Instance {
         }
     }
 }
-
-/// The one call this build does not serve: `Changes`.
-///
-/// Its own message, even though nothing distinguishes it from a second
-/// absent call in what a caller does about it — Wave 3.2 closes it next, and
-/// there is no other candidate for this constant to keep naming.
-const NOT_YET: &str = "this call is not served by this build";
 
 #[tonic::async_trait]
 impl v1::altair_server::Altair for Instance {
@@ -197,9 +188,26 @@ impl v1::altair_server::Altair for Instance {
 
     async fn changes(
         &self,
-        _request: Request<v1::ChangesRequest>,
+        request: Request<v1::ChangesRequest>,
     ) -> Result<Response<v1::ChangesResponse>, Status> {
-        Err(Status::unimplemented(NOT_YET))
+        let member = self.member(&request).await?;
+        let since = request.into_inner().since;
+        let requester = MemberId::assert_participating(member.membership_id());
+
+        match read::changes::assemble(self.write.pool(), requester, since).await {
+            Ok(read::changes::Outcome::Answered(changes)) => {
+                Ok(Response::new(v1::ChangesResponse {
+                    outcome: Some(v1::changes_response::Outcome::Changes(changes)),
+                }))
+            }
+            Ok(read::changes::Outcome::Unanswerable) => Ok(Response::new(v1::ChangesResponse {
+                outcome: Some(v1::changes_response::Outcome::Unanswerable(
+                    v1::PositionUnanswerable {},
+                )),
+            })),
+            // The store was unavailable. A wait, exactly as `submit`'s.
+            Err(_) => Err(Status::unavailable("")),
+        }
     }
 
     /// Served without a member.

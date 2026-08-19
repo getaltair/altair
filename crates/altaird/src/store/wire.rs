@@ -1,4 +1,4 @@
-//! `EntityRow` in the shape the wire's `Entity` carries it.
+//! [`EntityRow`] to the wire, and nothing else.
 //!
 //! **Deliberately not in `entity.rs`, and that placement is load-bearing
 //! rather than tidiness.** This file issues no SQL at all, which is what lets
@@ -8,11 +8,12 @@
 //! `store/audience.rs` that both names the audience column and issues SQL,
 //! on the reasoning that a file able to run a query and able to spell the
 //! column is exactly the shape a paraphrased predicate takes. Building this
-//! `EntityContent` in `entity.rs` would have named that same wire field
-//! textually and tripped the guard on a collision with an unrelated wire
-//! field name — not a second predicate. Splitting the conversion out of the
-//! query surface is what keeps the guard meaningful rather than papering
-//! over the coincidence with an exemption.
+//! conversion in `entity.rs` would have named that same wire field textually
+//! and tripped the guard on a collision with an unrelated wire field name —
+//! not a second predicate. Splitting the conversion out of the query surface
+//! is what keeps the guard meaningful rather than papering over the
+//! coincidence with an exemption. See `write::content`, which already relies
+//! on the same distinction to read this field off an incoming message.
 
 use chrono::{DateTime, Utc};
 
@@ -23,11 +24,14 @@ use super::entity::{EntityRow, LifecycleState};
 impl EntityRow {
     /// The shared fields, in the shape the wire's `Entity` carries them.
     ///
-    /// Only what this row holds: blocks, type-specific content, dates and
-    /// assignments live in other tables and are not part of it, so a caller
-    /// that needs them fetches those separately and fills them in. Shared
-    /// between the read path's `Query` and `Changes`, which is why it lives
-    /// here rather than beside either.
+    /// **Type-specific content and blocks are not here.** Both need a join
+    /// this row does not carry — the type's own side table, and `block` —
+    /// and nothing on the read path needs them yet: Wave 3.1's literal arm
+    /// and Wave 3.2's change stream both need no more than the shared fields
+    /// to do their own job. A caller that needs `content.specific` or
+    /// `blocks` fills them in afterwards; this conversion leaves both empty
+    /// rather than guessing at a join its caller may not want paid for.
+    #[must_use]
     pub fn into_wire(self) -> v1::Entity {
         let audience = self
             .audience
@@ -56,10 +60,10 @@ impl EntityRow {
             capture_method: self.capture_method,
             counter: self.counter as u64,
             lifecycle: match self.lifecycle {
-                LifecycleState::Active => v1::LifecycleState::Active as i32,
-                LifecycleState::Deleted => v1::LifecycleState::Deleted as i32,
-                LifecycleState::Erased => v1::LifecycleState::Erased as i32,
-            },
+                LifecycleState::Active => v1::LifecycleState::Active,
+                LifecycleState::Deleted => v1::LifecycleState::Deleted,
+                LifecycleState::Erased => v1::LifecycleState::Erased,
+            } as i32,
             blocks: Vec::new(),
             conflicts: Vec::new(),
         }
