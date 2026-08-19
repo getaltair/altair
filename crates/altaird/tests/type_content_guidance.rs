@@ -1694,6 +1694,7 @@ async fn release_from(world: &World, container: EntityId, kind: EntityType) -> V
         tx: &mut tx,
         member: MemberId::for_test(world.one.membership_id()),
         at: Utc::now(),
+        store: world.write.objects().clone(),
     };
     let answer = match specific::guidance::detach_contained(&mut ctx, container, kind).await {
         Ok(answer) => answer,
@@ -1859,6 +1860,7 @@ async fn a_quest_is_not_a_container() {
         tx: &mut tx,
         member: MemberId::for_test(world.one.membership_id()),
         at: Utc::now(),
+        store: world.write.objects().clone(),
     };
     let answer = specific::guidance::detach_contained(&mut ctx, q, EntityType::Quest).await;
     let answer = match answer {
@@ -1934,6 +1936,7 @@ async fn the_dispatch_reaches_the_ladders_release() {
         tx: &mut tx,
         member: MemberId::for_test(world.one.membership_id()),
         at: Utc::now(),
+        store: world.write.objects().clone(),
     };
     // **Once, not twice.** While the arm was unpointed this called the dispatch
     // and then the module, because the dispatch was a no-op and the module could

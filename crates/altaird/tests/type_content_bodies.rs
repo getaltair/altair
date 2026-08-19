@@ -1049,6 +1049,7 @@ async fn a_body_on_a_type_that_carries_none_is_refused_by_the_write_path() {
         tx: &mut tx,
         member: MemberId::for_test(world.one.membership_id()),
         at: Utc::now(),
+        store: world.write.objects().clone(),
     };
     let outcome = body::apply(
         &mut ctx,
@@ -1062,6 +1063,9 @@ async fn a_body_on_a_type_that_carries_none_is_refused_by_the_write_path() {
         Err(Failed::Refused(Refusal::Malformed(detail))) => detail,
         Err(Failed::Refused(Refusal::NotAvailable)) => panic!("refused as unavailable"),
         Err(Failed::Store(e)) => panic!("the store answered instead of the write path: {e}"),
+        Err(Failed::Objects(e)) => {
+            panic!("the object store answered instead of the write path: {e}")
+        }
         Ok(_) => panic!("a campaign was given a body"),
     };
     assert!(

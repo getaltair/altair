@@ -1800,6 +1800,7 @@ async fn detach(world: &World, container: EntityId, kind: EntityType) -> Detachm
         tx: &mut tx,
         member: MemberId::for_test(world.one.membership_id()),
         at: Utc::now(),
+        store: world.write.objects().clone(),
     };
     // Either a store fault or a refusal. A release refuses when a column it
     // clears is declared by no field of the type, which is a mispairing rather

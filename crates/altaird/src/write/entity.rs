@@ -17,36 +17,47 @@
 //! Types are refused for reasons that expire, which is the honest answer rather
 //! than an omission:
 //!
-//! - **A file**, until 2.3. The schema requires a file to name a body, and
-//!   there is no way to have uploaded one.
 //! - **A routine, a focus session, or a check-in**, until each domain is
 //!   designed. The schema deliberately creates no table for them, so there is
 //!   nothing to put a row in.
 //! - **Content the lane behind it has not filled in**, which refuses
 //!   distinguishably rather than accepting silently. See
 //!   [`super::specific::not_yet_built`].
+//!
+//! **A file is no longer one of them.** Wave 2.3 lands `PutBody`, and a file
+//! create now checks the named body exists — bytes before the record,
+//! always — before writing the row. `content.specific` stays otherwise
+//! unread here; the file's `body_id` is the one field read at creation, by
+//! [`super::content::file_reference`], because the schema cannot create the
+//! row without it. See that function's doc for why this is a narrow
+//! exception rather than a reversal of the rule above it.
+
+use std::sync::Arc;
 
 use chrono::{DateTime, Utc};
 use sqlx::Row;
 use uuid::Uuid;
 
+use crate::objects::{BodyId, ObjectStore};
 use crate::store::audience::AUDIENCE_COLUMN;
 use crate::store::entity::{EntityRow, EntityType, LifecycleState, available_for_write};
 use crate::store::ids::{EntityId, MemberId, MemberRef};
 use crate::store::{WriteScope, WriteTx};
 
 use super::changes::{self, EntityChange};
-use super::content::{Date, Malformed, PartWrite, Written};
+use super::content::{Date, FileReference, Malformed, PartWrite, Written};
 use super::outcome::{ConflictParts, Outcome};
 use super::parts::{ContentPart, Part};
 use super::specific::{self, SpecificPart};
 use super::{body, provenance};
 
-/// One intent's worth of context: the transaction, who is writing, and when.
+/// One intent's worth of context: the transaction, who is writing, when, and
+/// the object store a file create has to check against.
 pub struct Ctx<'a> {
     pub tx: &'a mut WriteTx,
     pub member: MemberId,
     pub at: DateTime<Utc>,
+    pub store: Arc<dyn ObjectStore>,
 }
 
 impl Ctx<'_> {
@@ -71,14 +82,25 @@ impl From<Malformed> for Refusal {
 /// Either a refusal or a store fault. The two are kept apart all the way out:
 /// a refusal is an answer, a fault is the instance failing and produces no
 /// acknowledgement at all.
+///
+/// **Two fault variants**, because DR-003 keeps the structured store and the
+/// object store as separate failures with separate causes. Both still mean
+/// the same thing to the caller — nothing was acknowledged, the outbox holds.
 pub enum Failed {
     Refused(Refusal),
     Store(sqlx::Error),
+    Objects(crate::objects::Error),
 }
 
 impl From<sqlx::Error> for Failed {
     fn from(e: sqlx::Error) -> Self {
         Self::Store(e)
+    }
+}
+
+impl From<crate::objects::Error> for Failed {
+    fn from(e: crate::objects::Error) -> Self {
+        Self::Objects(e)
     }
 }
 
@@ -394,15 +416,20 @@ fn addressed_specifics(written: &Written) -> Vec<SpecificPart> {
 /// erasure removes and what the column helpers write through, so a type gaining
 /// a table is one line in one place. `None` there means a note or a shopping
 /// list, whose content is a body and nothing else.
-async fn make_type_row(ctx: &mut Ctx<'_>, entity: EntityId, kind: EntityType) -> Applied<()> {
+///
+/// **A file is the one type this does not insert a bare default row for.**
+/// [`create_file_row`] inserts it instead, because the row cannot exist
+/// without a `body_id` and nothing here has one; `media_type` still lands
+/// through the ordinary parts loop below, exactly as every other type's
+/// columns do.
+async fn make_type_row(
+    ctx: &mut Ctx<'_>,
+    entity: EntityId,
+    kind: EntityType,
+    file: Option<FileReference>,
+) -> Applied<()> {
     match kind {
-        EntityType::File => {
-            return Err(Refusal::Malformed(
-                "a file names a body that must be uploaded first, and PutBody is not served yet"
-                    .into(),
-            )
-            .into());
-        }
+        EntityType::File => return create_file_row(ctx, entity, file).await,
         EntityType::Routine | EntityType::FocusSession | EntityType::CheckIn => {
             return Err(Refusal::Malformed(
                 "this type's content is not yet designed and the store has no table for it".into(),
@@ -417,6 +444,57 @@ async fn make_type_row(ctx: &mut Ctx<'_>, entity: EntityId, kind: EntityType) ->
     let sql = format!("INSERT INTO {table} (entity_id) VALUES ($1)");
     sqlx::query(sqlx::AssertSqlSafe(sql))
         .bind(entity.as_uuid())
+        .execute(ctx.tx.conn())
+        .await?;
+    Ok(())
+}
+
+/// **Bytes before the record, always.** The body a file create names has to
+/// already be durable in the object store — confirmed here by asking for it
+/// and reading its length, never its bytes — before this transaction can
+/// insert a row that points at it. A kill between `PutBody` completing and
+/// this transaction committing leaves the bytes as collectable garbage
+/// (Wave 2.4's to sweep) and never a `file` row pointing at nothing.
+///
+/// **`media_type` is not written here.** It is an ordinary column of this
+/// same row, served through [`super::specific::knowledge`] like any other
+/// type-specific field, and the parts loop in [`create`] applies it right
+/// after this row exists. Writing it twice would mean nothing wrong — both
+/// writes carry the same value, read from the same message — but it would
+/// mean this function reaching past what only it can decide: whether the
+/// named body exists and how large it is.
+async fn create_file_row(
+    ctx: &mut Ctx<'_>,
+    entity: EntityId,
+    file: Option<FileReference>,
+) -> Applied<()> {
+    let file = file.ok_or_else(|| Refusal::Malformed("a file names no body".into()))?;
+
+    let body = match ctx.store.get(BodyId::from_uuid(file.body_id)).await {
+        Ok(body) => body,
+        // Never uploaded, or already swept — both read as "this create does
+        // not make sense" from the wire's perspective, not "something else
+        // is wrong".
+        Err(e) if e.is_no_such_body() => {
+            return Err(Refusal::Malformed(
+                "a file names a body that was never uploaded, or has already been swept".into(),
+            )
+            .into());
+        }
+        Err(e) => return Err(e.into()),
+    };
+
+    // A length no `bigint` column can hold is not a size any real body has —
+    // clamping it would silently record a wrong number, so it is refused
+    // instead of guessed at.
+    let byte_size = i64::try_from(body.len).map_err(|_| {
+        Refusal::Malformed("a file names a body too large for this store to record".into())
+    })?;
+
+    sqlx::query("INSERT INTO file (entity_id, body_id, byte_size) VALUES ($1, $2, $3)")
+        .bind(entity.as_uuid())
+        .bind(file.body_id)
+        .bind(byte_size)
         .execute(ctx.tx.conn())
         .await?;
     Ok(())
@@ -443,6 +521,7 @@ pub async fn create(
     capture_method: &str,
     written: Written,
     kind: EntityType,
+    file: Option<FileReference>,
 ) -> Applied<Outcome> {
     // A create naming something that is already here is not a second entity.
     // The outbox's idempotence is carried by intent identity, but the substrate
@@ -506,7 +585,7 @@ pub async fn create(
         return Err(Refusal::NotAvailable.into());
     }
 
-    make_type_row(ctx, id, kind).await?;
+    make_type_row(ctx, id, kind, file).await?;
 
     let addressed = addressed_specifics(&written);
     let mut moved = Vec::new();
@@ -740,6 +819,14 @@ pub async fn edit(
 /// recreating it with a household audience would re-expose the thing erasure
 /// exists to remove. Broadening is trivial and narrowing is unreliable, so the
 /// closed default is the safe one.
+///
+/// **A file cannot be recreated yet.** `body_id` is the one field
+/// `content::parts_written` never reaches, on either arm — see its doc — so an
+/// edit's `written` never carries one, however the message named. There is
+/// therefore no `body_id` to carry into the recreated entity, and
+/// [`create_file_row`] refuses for the same reason a bare file create with no
+/// body does. Not a regression: every file create refused unconditionally
+/// before this wave.
 async fn recreate(
     ctx: &mut Ctx<'_>,
     tombstone: &EntityRow,
@@ -757,6 +844,7 @@ async fn recreate(
         &tombstone.capture_method,
         written,
         tombstone.entity_type,
+        None,
     )
     .await?;
 

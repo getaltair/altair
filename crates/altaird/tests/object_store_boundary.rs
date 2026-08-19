@@ -58,6 +58,11 @@ const ALLOWED: &[&str] = &[
     // Its own tests, which create the roots they hand to `open`, and check
     // that a failed upload left nothing on disk.
     "altaird/tests/object_store.rs",
+    // Shared write-path test scaffolding. `World` opens a real
+    // `FilesystemObjectStore` over a `TempDir` it holds for its own
+    // lifetime, exactly as `object_store.rs` does, so every test built on
+    // `World` exercises a real object store rather than reaching around it.
+    "altaird/tests/common/",
     //
     // Source-scanning tests. Each reads this repository's own `.rs` files as
     // text to assert a structural rule, and none of them opens anything under

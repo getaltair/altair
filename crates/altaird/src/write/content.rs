@@ -222,6 +222,43 @@ pub fn entity_type(content: &v1::EntityContent) -> Result<EntityType, Malformed>
     }
 }
 
+/// The body a file create names, read directly from `content.specific`.
+///
+/// **The one exception to `content.specific` going through
+/// [`specific::parts_written`] like every other field.** `body_id` never
+/// becomes a [`super::specific::SpecificPart`] — see
+/// [`super::specific::knowledge`]'s doc for why — because the schema cannot
+/// create a `file` row without knowing what body it names, and *that* is a
+/// fact about what the row requires to exist at all, checked against the
+/// object store before the row is inserted. Reading it here, at creation time,
+/// is what lets [`super::entity::create_file_row`] check the object store
+/// before the row exists rather than after.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FileReference {
+    pub body_id: Uuid,
+}
+
+/// `content`'s file body, or `None` where the content names no file.
+///
+/// Refuses a file whose `content.specific` is present but names no
+/// `body_id` — the schema cannot create the row without one, and there is
+/// nothing to check the object store for otherwise.
+pub fn file_reference(content: &v1::EntityContent) -> Result<Option<FileReference>, Malformed> {
+    use v1::entity_content::Specific;
+    match content.specific.as_ref() {
+        Some(Specific::File(f)) => {
+            let body_id = f
+                .body_id
+                .as_deref()
+                .ok_or_else(|| malformed("a file names no body"))?;
+            Ok(Some(FileReference {
+                body_id: identifier(body_id)?,
+            }))
+        }
+        _ => Ok(None),
+    }
+}
+
 /// Every part this content addresses, in the order the message declares them.
 ///
 /// # What it refuses
@@ -244,6 +281,11 @@ pub fn entity_type(content: &v1::EntityContent) -> Result<EntityType, Malformed>
 /// rather than dropping the fields on the floor. Wave 2.1's behaviour — read
 /// the tag, ignore the fields — was correct while nothing could write them and
 /// would now be a client being told its content had landed when it had not.
+///
+/// **`body_id` is the one field this never reaches**, on either arm. A create
+/// reads it separately through [`file_reference`], and an edit never reaches
+/// it at all — see [`super::specific::knowledge`] for why a file's body is a
+/// creation-time fact rather than an editable field.
 pub fn parts_written(content: &v1::EntityContent) -> Result<Written, Malformed> {
     let mut cleared = Vec::new();
     for number in &content.cleared {

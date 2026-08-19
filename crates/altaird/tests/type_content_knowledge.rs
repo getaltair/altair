@@ -690,11 +690,11 @@ async fn nothing_in_this_lane_writes_a_block() {
 
 /// A file entity, made by hand.
 ///
-/// **Scaffolding standing in for Wave 2.3.** A file cannot be created through
-/// the public path — the create refuses one, because the schema requires a body
-/// and `PutBody` is not served — so the only way to have a file to edit is to
-/// put one there. The rows are the minimum the schema demands; 2.3 replaces
-/// this with an upload.
+/// **Scaffolding, for tests that only need an existing file to edit.** A real
+/// create goes through `PutBody` first — `tests/file_bodies.rs` covers that
+/// path end to end — and these tests are about `media_type` and
+/// `extracted_text` on a file that already exists, not about creation, so a
+/// row put here directly is the minimum the schema demands and nothing more.
 async fn a_file(world: &World) -> EntityId {
     let id = Uuid::new_v4();
     sqlx::query(
@@ -955,13 +955,28 @@ async fn a_media_type_does_not_reach_search_text() {
     assert_eq!(text, "the receipt");
 }
 
-/// **Bytes before the record.** There is no identity to name until `PutBody`
-/// is served, and the refusal says which lane a client is waiting on rather
-/// than that its message was wrong.
+async fn body_id_of(world: &World, id: EntityId) -> Uuid {
+    sqlx::query("SELECT body_id AS b FROM file WHERE entity_id = $1")
+        .bind(id.as_uuid())
+        .fetch_one(&world.db.pool)
+        .await
+        .expect("file row")
+        .try_get("b")
+        .expect("body_id")
+}
+
+/// **`body_id` is addressed for the wire's own rules and never applied.** It
+/// is read once, at creation, by `content::file_reference` — see that
+/// function's doc, and `tests/file_bodies.rs` for the path where naming one
+/// actually does something. This module's `Reader` only checks the shape
+/// around it, so a new one named by an edit is silently not applied, exactly
+/// as every other type-specific field was before this lane began.
 #[tokio::test]
-async fn a_files_body_id_is_refused_because_put_body_is_not_served() {
+async fn a_files_body_id_named_by_an_edit_is_silently_not_applied() {
     let world = World::new().await;
     let id = a_file(&world).await;
+    let before = body_id_of(&world, id).await;
+
     let ack = edit_file(
         &world,
         id,
@@ -971,9 +986,38 @@ async fn a_files_body_id_is_refused_because_put_body_is_not_served() {
         }),
     )
     .await;
+    assert!(
+        matches!(ack.outcome, Some(v1::acknowledgement::Outcome::Applied(_))),
+        "{:?}",
+        ack.outcome
+    );
+    assert_eq!(
+        body_id_of(&world, id).await,
+        before,
+        "a body named by an edit is silently untouched"
+    );
+}
+
+/// The column is `NOT NULL`, so clearing it is not a thing an edit can do —
+/// refused rather than silently doing nothing with an explicit clear, unlike
+/// naming a new one.
+#[tokio::test]
+async fn a_files_body_id_cannot_be_cleared() {
+    let world = World::new().await;
+    let id = a_file(&world).await;
+
+    let ack = edit_file(
+        &world,
+        id,
+        v1::entity_content::Specific::File(v1::FileContent {
+            cleared: vec![1],
+            ..Default::default()
+        }),
+    )
+    .await;
     let refused = refused(&ack);
     assert_eq!(refused.reason, v1::RefusalReason::Malformed as i32);
-    assert!(refused.detail.contains("PutBody"), "{}", refused.detail);
+    assert!(refused.detail.contains("cleared"), "{}", refused.detail);
 }
 
 /// `altair-v0-scope.md` defers text extraction from files, and it governs the
@@ -1001,11 +1045,12 @@ async fn a_files_extracted_text_is_refused_because_extraction_is_deferred() {
     );
 }
 
-/// And the create still refuses, which is 2.1's refusal and 2.3's to expire.
-/// Serving `media_type` does not make a file creatable, and quietly making one
-/// would put a record in front of its bytes.
+/// A create still needs a body named — serving `media_type` does not make a
+/// file creatable on its own, and quietly making one would put a record in
+/// front of its bytes. Naming one that was actually uploaded through
+/// `PutBody` first is `tests/file_bodies.rs`'s, end to end.
 #[tokio::test]
-async fn a_file_still_cannot_be_created() {
+async fn a_create_naming_no_body_is_refused() {
     let world = World::new().await;
     let ack = world
         .submit(
@@ -1021,7 +1066,7 @@ async fn a_file_still_cannot_be_created() {
         .await;
     let refused = refused(&ack);
     assert_eq!(refused.reason, v1::RefusalReason::Malformed as i32);
-    assert!(refused.detail.contains("PutBody"), "{}", refused.detail);
+    assert!(refused.detail.contains("no body"), "{}", refused.detail);
 }
 
 // ---------------------------------------------------------------------------
@@ -1049,6 +1094,7 @@ async fn detach(world: &World, container: EntityId) -> Detachment {
         tx: &mut tx,
         member: MemberId::for_test(world.one.membership_id()),
         at: Utc::now(),
+        store: world.write.objects().clone(),
     };
     let answer = specific::category::detach_contained(&mut ctx, container)
         .await
@@ -1225,6 +1271,7 @@ async fn the_dispatch_reaches_the_release() {
         tx: &mut tx,
         member: MemberId::for_test(world.one.membership_id()),
         at: Utc::now(),
+        store: world.write.objects().clone(),
     };
     let answer = specific::detach_contained(&mut ctx, parent, EntityType::Category)
         .await

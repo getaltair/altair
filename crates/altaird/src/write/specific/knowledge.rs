@@ -22,11 +22,16 @@
 //!
 //! Of the three fields the wire gives a file, one is served here:
 //!
-//! - `body_id` is **Wave 2.3's**. The bytes come first — the standing constraint
-//!   is *bytes before the record on creation* — and there is no way to have
-//!   uploaded any, because `PutBody` is not served. So the field refuses with
-//!   that reason, and [`super::super::entity`]'s create refuses a file outright
-//!   for the same one.
+//! - `body_id` is **Wave 2.3's, and it never reaches this module as a part**.
+//!   The bytes come first — the standing constraint is *bytes before the
+//!   record on creation* — so [`super::super::content::file_reference`] reads
+//!   it straight out of `content.specific`, at creation, and checks it against
+//!   the object store before [`super::super::entity::create_file_row`] inserts
+//!   the row. [`file`] below still addresses field 1 through the ordinary
+//!   [`Reader`], so the wire's own refusals apply to it — present and cleared
+//!   at once, or a clear naming nothing — but the value itself is read
+//!   elsewhere and an edit naming a new one is silently not applied, exactly
+//!   as every other type-specific field was before this lane began.
 //! - `extracted_text` is **deferred by `altair-v0-scope.md`**, which governs the
 //!   implementation plan where the two disagree. A person's correction to
 //!   extracted text has nothing to correct while extraction does not exist.
@@ -36,8 +41,8 @@
 //!
 //! `file.byte_size` exists in the store and **the wire has no field for it**, on
 //! purpose: it is what the object store measured rather than what a client
-//! claimed. Nothing in this module can set it, and 2.3 writes it beside the
-//! bytes.
+//! claimed. Nothing in this module can set it; `create_file_row` writes it
+//! beside the bytes, at creation, alongside `body_id`.
 
 use altair_proto::v1;
 use sqlx::Row;
@@ -45,7 +50,7 @@ use sqlx::Row;
 use crate::store::entity::EntityType;
 use crate::store::ids::EntityId;
 
-use super::super::content::{BodyWrite, Malformed, Written};
+use super::super::content::{BodyWrite, Malformed, Written, malformed};
 use super::super::entity::{Applied, Ctx, Refusal};
 use super::{
     Addressed, Field, Held, Reader, SpecificPart, SpecificValue, read_column, write_column,
@@ -63,19 +68,15 @@ pub const NOTE_FIELDS: &[Field] = &[Field {
 pub const FILE_MEDIA_TYPE: u32 = 2;
 
 pub const FILE_FIELDS: &[Field] = &[
-    // **LANE: 2.3, file bodies.** `body_id` names bytes already uploaded
-    // through `PutBody`; until that call is served there is no identity to
-    // name, which is why the create path refuses a file outright. The column is
-    // `NOT NULL`, so clearing it is not a thing an edit can do either, and
-    // saying so here is better than letting the store raise a fault.
-    //
-    // 2.3 turns this back into `Held::Column("body_id")`; the column already
-    // exists and `tests/type_content.rs` will check it again the moment it does.
+    // **LANE: 2.3, file bodies.** Declared as a column so `Reader::new` accepts
+    // a `cleared` list naming it and [`file`] can enforce the wire's own rules
+    // over it, but nothing here ever writes through this declaration:
+    // `body_id` is read by `content::file_reference` and written by
+    // `entity::create_file_row`, both outside this module, because setting it
+    // means checking the object store first — not a plain column write.
     Field {
         number: 1,
-        held: Held::NotServed(
-            "a file names a body that must be uploaded first, and PutBody is not served yet",
-        ),
+        held: Held::Column("body_id"),
     },
     Field {
         number: FILE_MEDIA_TYPE,
@@ -118,16 +119,24 @@ pub fn note(c: &v1::NoteContent) -> Result<Written, Malformed> {
 
 /// A file's content, off the wire.
 ///
-/// Only the media type is read. The other two refuse with their own reasons,
-/// through the declaration above rather than through a branch here, so a client
-/// is told what it is waiting on rather than that its message was wrong.
+/// Only the media type becomes a part here. `extracted_text` refuses with its
+/// own reason, through the declaration above rather than a branch here, so a
+/// client is told what it is waiting on rather than that its message was
+/// wrong. `body_id` is addressed but never turned into a part — see the doc at
+/// the head of this module for where it actually goes.
 pub fn file(c: &v1::FileContent) -> Result<Written, Malformed> {
     let read = Reader::new(EntityType::File, &c.cleared)?;
     let mut parts = Vec::new();
-    // The two unserved fields are addressed so their refusals are reached.
-    // Asking for them and using nothing but the answer is the point: leaving
-    // them out would accept a write that named them and silently drop it.
-    read.addressed(1, c.body_id.is_some())?;
+    // Addressed for the wire's own two refusals — present and cleared at
+    // once, or a clear naming nothing — and then discarded. `Set` is
+    // consumed elsewhere, at creation, by `content::file_reference`.
+    // `Cleared` names a `NOT NULL` column: nothing a write can clear, so it
+    // refuses rather than silently doing nothing with an explicit clear.
+    if read.addressed(1, c.body_id.is_some())? == Addressed::Cleared {
+        return Err(malformed(
+            "a file's body cannot be cleared; every file names one",
+        ));
+    }
     read.addressed(3, c.extracted_text.is_some())?;
     read.singular(&mut parts, FILE_MEDIA_TYPE, c.media_type.clone(), |v| {
         Ok(SpecificValue::Text(v))
