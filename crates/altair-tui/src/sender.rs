@@ -245,9 +245,16 @@ impl Sender {
         }
     }
 
+    /// Attach the credential.
+    ///
+    /// **The `Bearer` scheme is not decoration.** The instance reads the header
+    /// through `bearer_token`, which requires it and answers nothing at all
+    /// without it. The conformance suite cannot catch a bare token — its fake
+    /// instance records the header and never reads it — so this is asserted in
+    /// `tests/sending.rs` instead.
     fn authorised<T>(&self, message: T) -> tonic::Request<T> {
         let mut request = tonic::Request::new(message);
-        if let Ok(value) = self.token.parse() {
+        if let Ok(value) = format!("Bearer {}", self.token).parse() {
             request.metadata_mut().insert("authorization", value);
         }
         request
