@@ -35,6 +35,7 @@ use crate::store::entity::EntityType;
 use crate::store::ids::EntityId;
 
 use super::parts::{ContentPart, Part};
+use super::specific::{self, SpecificPart};
 
 /// A labelled date, as the store holds one.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -58,6 +59,10 @@ pub enum PartWrite {
     Assignments(Vec<Uuid>),
     Audience(Vec<Uuid>),
     Bulk(Option<bool>),
+    /// A field of the type-specific message, carried by number because the set
+    /// differs per type. See [`super::specific`] for the vocabulary and the
+    /// dispatch.
+    Specific(SpecificPart),
 }
 
 impl PartWrite {
@@ -71,6 +76,9 @@ impl PartWrite {
             Self::Assignments(_) => ContentPart::Assignments,
             Self::Audience(_) => ContentPart::Audience,
             Self::Bulk(_) => ContentPart::Bulk,
+            // Not a content part at all, so it does not go through the branch
+            // above. The number is the type message's, not `EntityContent`'s.
+            Self::Specific(s) => return Part::Specific(s.field),
         })
     }
 
@@ -106,6 +114,41 @@ impl PartWrite {
                 ids.join(",")
             }),
             Self::Bulk(v) => v.map(|b| b.to_string()),
+            Self::Specific(s) => s.text(),
+        }
+    }
+}
+
+/// Everything one piece of content addresses: its parts, and at most one body.
+///
+/// **A body is separate because it is not one part.** Every other field a write
+/// carries is one part with one value; a body is one field on the wire and as
+/// many parts as it divides into, and which blocks those are is not knowable
+/// until the arriving text is matched against the blocks already stored. That
+/// needs the store, and reading the wire does not touch it. See
+/// [`super::body`].
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct Written {
+    pub parts: Vec<PartWrite>,
+    pub body: Option<BodyWrite>,
+}
+
+/// A body arriving whole: the text, or nothing where it was cleared.
+///
+/// A client never divides it. The instance recomputes the boundaries, matches
+/// them against the blocks it holds, and writes only what changed — DR-004, so
+/// the division rule has one implementation and devices cannot disagree about
+/// the units reconciliation is decided in.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct BodyWrite(pub Option<String>);
+
+impl Written {
+    /// The type-specific parts one message addressed, and no body.
+    #[must_use]
+    pub fn from_specific(parts: Vec<SpecificPart>) -> Self {
+        Self {
+            parts: parts.into_iter().map(PartWrite::Specific).collect(),
+            body: None,
         }
     }
 }
@@ -114,7 +157,7 @@ impl PartWrite {
 #[derive(Debug, Clone)]
 pub struct Malformed(pub String);
 
-fn malformed(what: impl Into<String>) -> Malformed {
+pub fn malformed(what: impl Into<String>) -> Malformed {
     Malformed(what.into())
 }
 
@@ -181,15 +224,18 @@ pub fn entity_type(content: &v1::EntityContent) -> Result<EntityType, Malformed>
 
 /// The body a file create names, read directly from `content.specific`.
 ///
-/// **The one exception to `content.specific` being read for its tag alone.**
-/// Structurally the same move as [`entity_type`]: both read the
-/// discriminant, at creation time, before the part machinery ever sees the
-/// message. See [`parts_written`]'s doc for why this does not widen what an
-/// edit may touch.
+/// **The one exception to `content.specific` going through
+/// [`specific::parts_written`] like every other field.** `body_id` never
+/// becomes a [`super::specific::SpecificPart`] — see
+/// [`super::specific::knowledge`]'s doc for why — because the schema cannot
+/// create a `file` row without knowing what body it names, and *that* is a
+/// fact about what the row requires to exist at all, checked against the
+/// object store before the row is inserted. Reading it here, at creation time,
+/// is what lets [`super::entity::create_file_row`] check the object store
+/// before the row exists rather than after.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FileReference {
     pub body_id: Uuid,
-    pub media_type: Option<String>,
 }
 
 /// `content`'s file body, or `None` where the content names no file.
@@ -207,7 +253,6 @@ pub fn file_reference(content: &v1::EntityContent) -> Result<Option<FileReferenc
                 .ok_or_else(|| malformed("a file names no body"))?;
             Ok(Some(FileReference {
                 body_id: identifier(body_id)?,
-                media_type: f.media_type.clone(),
             }))
         }
         _ => Ok(None),
@@ -224,23 +269,24 @@ pub fn file_reference(content: &v1::EntityContent) -> Result<Option<FileReferenc
 ///   one, or `cleared` itself. Silently ignoring it would let a client believe
 ///   it had cleared something.
 ///
-/// # What it does not do
+/// # Type content, one level down
 ///
-/// It does not reach `content.specific`. Type content is Wave 2.2's, and 2.1
-/// creates each type's row with defaults so nothing is ever half-formed. A
-/// create carrying type content therefore lands as an entity of that type whose
-/// type-specific fields hold their defaults, and the fields themselves are not
-/// applied. That is the plan's division rather than an omission here, and it is
-/// invisible in v0 because no client exists before Wave 4.
+/// `content.specific` carries its own `cleared = 100` list, so the same rule
+/// and the same two refusals apply inside it — and the cleared numbers are
+/// validated against **the type message actually present**, because a number
+/// valid for one type is not valid for another. That reading is
+/// [`specific::parts_written`], which dispatches to the module owning the type.
 ///
-/// **One narrow, deliberate exception.** [`file_reference`] reads a file's
-/// `body_id` directly out of `content.specific`, at creation time only,
-/// because the schema cannot create a `file` row without knowing what body it
-/// names. That is a fact about what the row requires to exist at all, not a
-/// widening of what a write may address — an edit still never reaches it, so
-/// a new `body_id` on an existing file is silently not applied, exactly as
-/// every other type-specific field is today.
-pub fn parts_written(content: &v1::EntityContent) -> Result<Vec<PartWrite>, Malformed> {
+/// A type whose content this build does not write yet refuses distinguishably
+/// rather than dropping the fields on the floor. Wave 2.1's behaviour — read
+/// the tag, ignore the fields — was correct while nothing could write them and
+/// would now be a client being told its content had landed when it had not.
+///
+/// **`body_id` is the one field this never reaches**, on either arm. A create
+/// reads it separately through [`file_reference`], and an edit never reaches
+/// it at all — see [`super::specific::knowledge`] for why a file's body is a
+/// creation-time fact rather than an editable field.
+pub fn parts_written(content: &v1::EntityContent) -> Result<Written, Malformed> {
     let mut cleared = Vec::new();
     for number in &content.cleared {
         let part = ContentPart::from_field_number(*number).ok_or_else(|| {
@@ -347,5 +393,14 @@ pub fn parts_written(content: &v1::EntityContent) -> Result<Vec<PartWrite>, Malf
         written.push(PartWrite::Bulk(None));
     }
 
-    Ok(written)
+    let mut all = Written {
+        parts: written,
+        body: None,
+    };
+    if let Some(specific) = content.specific.as_ref() {
+        let from_type = specific::parts_written(specific)?;
+        all.parts.extend(from_type.parts);
+        all.body = from_type.body;
+    }
+    Ok(all)
 }

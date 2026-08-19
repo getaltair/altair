@@ -19,3 +19,6 @@
 .vscode/
 .idea/
 .DS_Store
+
+# Local-only compose port override for parallel lanes; never committed.
+compose.override.yaml

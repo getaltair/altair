@@ -30,6 +30,7 @@
 //! same wait an unreachable instance produces, because to the person they are
 //! the same thing.
 
+pub mod body;
 pub mod changes;
 pub mod content;
 pub mod entity;
@@ -38,6 +39,7 @@ pub mod outcome;
 pub mod parts;
 pub mod provenance;
 pub mod relation;
+pub mod specific;
 
 use std::sync::Arc;
 
@@ -339,7 +341,7 @@ async fn act(ctx: &mut Ctx<'_>, intent: &v1::Intent) -> Result<Outcome, Failed> 
                     Refusal::Malformed("a create carries the content that says what it is".into())
                 })?;
                 let kind = entity_type(content)?;
-                let parts = parts_written(content)?;
+                let written = parts_written(content)?;
                 let file = file_reference(content)?;
                 let id = EntityId::from_uuid(identifier(&e.entity_id)?);
                 // Absent is ordinary and means "the instance's clock". Present
@@ -347,7 +349,7 @@ async fn act(ctx: &mut Ctx<'_>, intent: &v1::Intent) -> Result<Outcome, Failed> 
                 // same parser a labelled date does — see `content::instant` for
                 // why the two used to disagree.
                 let created_at = e.created_at.as_ref().map(instant).transpose()?;
-                entity::create(ctx, id, created_at, &e.capture_method, parts, kind, file).await
+                entity::create(ctx, id, created_at, &e.capture_method, written, kind, file).await
             }
             Some(v1::create::Subject::Relation(r)) => {
                 let content = r.content.as_ref().ok_or_else(|| {
@@ -377,7 +379,7 @@ async fn act(ctx: &mut Ctx<'_>, intent: &v1::Intent) -> Result<Outcome, Failed> 
                     .as_ref()
                     .map(|_| entity_type(content))
                     .transpose()?;
-                let parts = parts_written(content)?;
+                let written = parts_written(content)?;
                 let id = EntityId::from_uuid(identifier(&e.entity_id)?);
                 // Clamping was worse than it looks. A base counter larger than
                 // any counter the store can hold reads as *current* against
@@ -385,12 +387,36 @@ async fn act(ctx: &mut Ctx<'_>, intent: &v1::Intent) -> Result<Outcome, Failed> 
                 // detection entirely — the one mechanism this item exists to
                 // build — rather than being refused as the unreadable message
                 // it is.
+                //
+                // **Zero is refused for the same reason, from the other end.**
+                // The first counter an entity has is 1, issued by its own
+                // create, so zero is not a counter this instance could have
+                // issued either — and it is the value the wire produces when a
+                // client omits the field, because `base_counter` is a proto3
+                // `uint64` whose default is indistinguishable from unset.
+                //
+                // Accepting it was not harmless. A create records the parts it
+                // applied without comparing them, because on a create there is
+                // no prior value to compare against; so an entity created with
+                // its title explicitly cleared carries provenance for a title
+                // that never changed. An edit arriving with base zero reads
+                // `0 < 1`, asks what moved since, finds that record, and retains
+                // a conflict over a part only the second write ever touched.
+                // The client that hits this is one that forgot a field, not one
+                // doing anything exotic.
+                if e.base_counter == 0 {
+                    return Err(Refusal::Malformed(
+                        "a base counter is a counter this instance could have issued,                          and the first one is 1"
+                            .into(),
+                    )
+                    .into());
+                }
                 let base = i64::try_from(e.base_counter).map_err(|_| {
                     Refusal::Malformed(
                         "a base counter is a counter this instance could have issued".into(),
                     )
                 })?;
-                entity::edit(ctx, id, base, parts, stated).await
+                entity::edit(ctx, id, base, written, stated).await
             }
             Some(v1::edit::Subject::Relation(r)) => {
                 let content = r.content.as_ref().ok_or_else(|| {

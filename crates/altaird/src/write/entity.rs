@@ -4,21 +4,25 @@
 //! change sequence's lock; see [`super::changes`] for why that ordering
 //! matters.
 //!
-//! # What this item writes, and what it leaves to 2.2
+//! # What this item writes, and where type content goes
 //!
 //! The shared model — title, dates, category and the position inside it,
-//! assignments, audience, bulk — is written here. **Type-specific content is
-//! not.** A create makes the side-table row with its defaults so nothing is
-//! ever half-formed, and the fields inside `content.specific` are left for
-//! Wave 2.2, which owns bodies, anchors, the ladder, and cycle prevention in
-//! nested containers.
+//! assignments, audience, bulk — is written here, one arm per part. **Type
+//! content is not**, and that is a boundary rather than an omission: every
+//! type-specific field goes through [`super::specific`], which dispatches to
+//! the module owning the type, and a body goes through [`super::body`], which
+//! divides it. Nothing about a campaign, a note, or a location is decided in
+//! this file, and a lane building a domain never has to open it.
 //!
-//! One type is still refused for a reason that expires, which is the honest
-//! answer rather than an omission:
+//! Types are refused for reasons that expire, which is the honest answer rather
+//! than an omission:
 //!
 //! - **A routine, a focus session, or a check-in**, until each domain is
 //!   designed. The schema deliberately creates no table for them, so there is
 //!   nothing to put a row in.
+//! - **Content the lane behind it has not filled in**, which refuses
+//!   distinguishably rather than accepting silently. See
+//!   [`super::specific::not_yet_built`].
 //!
 //! **A file is no longer one of them.** Wave 2.3 lands `PutBody`, and a file
 //! create now checks the named body exists — bytes before the record,
@@ -41,9 +45,11 @@ use crate::store::ids::{EntityId, MemberId, MemberRef};
 use crate::store::{WriteScope, WriteTx};
 
 use super::changes::{self, EntityChange};
-use super::content::{Date, FileReference, Malformed, PartWrite};
+use super::content::{Date, FileReference, Malformed, PartWrite, Written};
 use super::outcome::{ConflictParts, Outcome};
-use super::provenance;
+use super::parts::{ContentPart, Part};
+use super::specific::{self, SpecificPart};
+use super::{body, provenance};
 
 /// One intent's worth of context: the transaction, who is writing, when, and
 /// the object store a file create has to check against.
@@ -177,32 +183,40 @@ async fn current(ctx: &mut Ctx<'_>, row: &EntityRow, part: &PartWrite) -> Applie
                 .collect(),
         ),
         PartWrite::Bulk(_) => PartWrite::Bulk(Some(row.bulk)),
+        PartWrite::Specific(s) => {
+            PartWrite::Specific(specific::current(ctx, row.id, row.entity_type, s).await?)
+        }
     })
 }
 
 /// Apply one part to the store. Assumes it has already been validated.
 ///
-/// `placement` is the position the instance assigned as a consequence, which is
-/// only ever set alongside a category. **The two move in one statement**,
-/// because the store's own check says a category and a position are either both
-/// there or both absent: writing them in sequence puts the row through a state
-/// the schema refuses, whichever order the sequence is in.
+/// `placements` are the parts the instance moved as a consequence. The shared
+/// model produces at most one — the position assigned alongside a category, and
+/// **the two move in one statement**, because the store's own check says a
+/// category and a position are either both there or both absent: writing them in
+/// sequence puts the row through a state the schema refuses, whichever order the
+/// sequence is in.
+///
+/// A type's content may produce more than one, so this takes a slice. **Each
+/// arm finds what it needs by kind rather than by position**, because the order
+/// a lane returns companions in is that lane's business.
 async fn apply_part(
     ctx: &mut Ctx<'_>,
     entity: EntityId,
+    kind: EntityType,
     part: &PartWrite,
-    placement: Option<&PartWrite>,
+    placements: &[PartWrite],
 ) -> Applied<()> {
     match part {
         PartWrite::Title(v) => {
-            // search_text is maintained by the write path from the title and
-            // whatever the type contributes, because those live in side tables
-            // and a generated column cannot reach them. Only the title
-            // contributes here; the type's share arrives with 2.2.
-            sqlx::query("UPDATE entity SET title = $2, search_text = $3 WHERE id = $1")
+            // `search_text` is not written here. It is the title plus whatever
+            // the type contributes, and the type's share needs a read of a side
+            // table, so it is refreshed once after every part has landed — see
+            // `refresh_search_text`.
+            sqlx::query("UPDATE entity SET title = $2 WHERE id = $1")
                 .bind(entity.as_uuid())
                 .bind(v.as_deref())
-                .bind(v.as_deref().unwrap_or(""))
                 .execute(ctx.tx.conn())
                 .await?;
         }
@@ -226,10 +240,11 @@ async fn apply_part(
             }
         }
         PartWrite::Category(v) => {
-            let position = match placement {
-                Some(PartWrite::CategoryPosition(p)) => *p,
+            let position = placements.iter().find_map(|p| match p {
+                PartWrite::CategoryPosition(v) => Some(*v),
                 _ => None,
-            };
+            });
+            let position = position.flatten();
             sqlx::query("UPDATE entity SET category_id = $2, category_position = $3 WHERE id = $1")
                 .bind(entity.as_uuid())
                 .bind(v.map(EntityId::as_uuid))
@@ -275,26 +290,76 @@ async fn apply_part(
                 .execute(ctx.tx.conn())
                 .await?;
         }
+        PartWrite::Specific(s) => {
+            // The companion, where there is one, is the type's own — a ladder
+            // position beside a ladder parent, an assertion time beside an
+            // amount — and is handed through so the module can write both in
+            // one statement, for the same reason a category and its position
+            // move together here.
+            let companions: Vec<SpecificPart> = placements
+                .iter()
+                .filter_map(|p| match p {
+                    PartWrite::Specific(s) => Some(s.clone()),
+                    _ => None,
+                })
+                .collect();
+            specific::apply(ctx, entity, kind, s, &companions).await?;
+        }
     }
     Ok(())
 }
 
-/// Checks a part owes before it is applied, and the placement the instance
+/// Rewrite `search_text` from the title and the type's share of it.
+///
+/// **Maintained by the write path, not by a generated column.** A type's
+/// content lives in a side table and a generated column cannot reach across
+/// one. Refreshed once per write rather than per part, because the two
+/// contributions land in different statements and a per-part refresh would
+/// write a string that is briefly missing one of them.
+///
+/// `concat_ws` drops a null, so a type contributing nothing leaves the title
+/// standing alone — which is the whole answer for every type today.
+async fn refresh_search_text(ctx: &mut Ctx<'_>, entity: EntityId, kind: EntityType) -> Applied<()> {
+    let share = specific::search_text(ctx, entity, kind).await?;
+    sqlx::query("UPDATE entity SET search_text = concat_ws(' ', title, $2) WHERE id = $1")
+        .bind(entity.as_uuid())
+        .bind(share)
+        .execute(ctx.tx.conn())
+        .await?;
+    Ok(())
+}
+
+/// Checks a part owes before it is applied, and the placements the instance
 /// makes rather than the client.
 ///
-/// Returns any extra part the instance moved as a consequence — a position,
-/// when a category changed.
+/// Returns every extra part the instance moved as a consequence — a position,
+/// when a category changed, and whatever a type's content moved beside the part
+/// the write named.
+///
+/// `addressed` is every type-specific part this same message writes, handed
+/// down because a type sometimes cannot decide one part without seeing another.
+/// See [`specific::validate_and_place`] for the two cases that need it.
 async fn validate_and_place(
     ctx: &mut Ctx<'_>,
+    entity: EntityId,
+    kind: EntityType,
     entering: Option<EntityId>,
     part: &PartWrite,
-) -> Applied<Option<PartWrite>> {
+    addressed: &[SpecificPart],
+) -> Applied<Vec<PartWrite>> {
     match part {
+        PartWrite::Specific(s) => Ok(
+            specific::validate_and_place(ctx, entity, kind, s, addressed)
+                .await?
+                .into_iter()
+                .map(PartWrite::Specific)
+                .collect(),
+        ),
         PartWrite::Audience(ids) | PartWrite::Assignments(ids) => {
             if !memberships_exist(ctx.tx, ids).await? {
                 return Err(Refusal::NotAvailable.into());
             }
-            Ok(None)
+            Ok(Vec::new())
         }
         PartWrite::CategoryPosition(_) => Err(Refusal::Malformed(
             "position is assigned by the instance, which appends on entry to a container; \
@@ -318,36 +383,52 @@ async fn validate_and_place(
             let entering_this = entering != Some(*category);
             if entering_this {
                 let next = crate::store::entity::next_category_position(ctx.tx, *category).await?;
-                return Ok(Some(PartWrite::CategoryPosition(Some(next))));
+                return Ok(vec![PartWrite::CategoryPosition(Some(next))]);
             }
-            Ok(None)
+            Ok(Vec::new())
         }
         // Leaving a container forgets the position. Nothing is carried and
         // nothing needs repair.
-        PartWrite::Category(None) => Ok(Some(PartWrite::CategoryPosition(None))),
-        _ => Ok(None),
+        PartWrite::Category(None) => Ok(vec![PartWrite::CategoryPosition(None)]),
+        _ => Ok(Vec::new()),
     }
+}
+
+/// Every type-specific part one message writes.
+///
+/// Built once per write rather than per part: it is the same set for every part
+/// in the loop, and a type asking about a sibling field is asking about this.
+fn addressed_specifics(written: &Written) -> Vec<SpecificPart> {
+    written
+        .parts
+        .iter()
+        .filter_map(|p| match p {
+            PartWrite::Specific(s) => Some(s.clone()),
+            _ => None,
+        })
+        .collect()
 }
 
 /// The side-table row a type carries beyond the shared model, with its
 /// defaults.
 ///
-/// Note and shopping list have no table: a body is its blocks in order and
-/// there is nothing else, which is a result rather than an omission.
+/// Which table that is comes from [`specific::side_table`], which is also what
+/// erasure removes and what the column helpers write through, so a type gaining
+/// a table is one line in one place. `None` there means a note or a shopping
+/// list, whose content is a body and nothing else.
+///
+/// **A file is the one type this does not insert a bare default row for.**
+/// [`create_file_row`] inserts it instead, because the row cannot exist
+/// without a `body_id` and nothing here has one; `media_type` still lands
+/// through the ordinary parts loop below, exactly as every other type's
+/// columns do.
 async fn make_type_row(
     ctx: &mut Ctx<'_>,
     entity: EntityId,
     kind: EntityType,
     file: Option<FileReference>,
 ) -> Applied<()> {
-    let table = match kind {
-        EntityType::Campaign => "campaign",
-        EntityType::Arc => "arc",
-        EntityType::Quest => "quest",
-        EntityType::Item => "item",
-        EntityType::Location => "location",
-        EntityType::Category => "category",
-        EntityType::Note | EntityType::ShoppingList => return Ok(()),
+    match kind {
         EntityType::File => return create_file_row(ctx, entity, file).await,
         EntityType::Routine | EntityType::FocusSession | EntityType::CheckIn => {
             return Err(Refusal::Malformed(
@@ -355,6 +436,10 @@ async fn make_type_row(
             )
             .into());
         }
+        _ => {}
+    }
+    let Some(table) = specific::side_table(kind) else {
+        return Ok(());
     };
     let sql = format!("INSERT INTO {table} (entity_id) VALUES ($1)");
     sqlx::query(sqlx::AssertSqlSafe(sql))
@@ -370,6 +455,14 @@ async fn make_type_row(
 /// insert a row that points at it. A kill between `PutBody` completing and
 /// this transaction committing leaves the bytes as collectable garbage
 /// (Wave 2.4's to sweep) and never a `file` row pointing at nothing.
+///
+/// **`media_type` is not written here.** It is an ordinary column of this
+/// same row, served through [`super::specific::knowledge`] like any other
+/// type-specific field, and the parts loop in [`create`] applies it right
+/// after this row exists. Writing it twice would mean nothing wrong — both
+/// writes carry the same value, read from the same message — but it would
+/// mean this function reaching past what only it can decide: whether the
+/// named body exists and how large it is.
 async fn create_file_row(
     ctx: &mut Ctx<'_>,
     entity: EntityId,
@@ -398,15 +491,12 @@ async fn create_file_row(
         Refusal::Malformed("a file names a body too large for this store to record".into())
     })?;
 
-    sqlx::query(
-        "INSERT INTO file (entity_id, body_id, media_type, byte_size) VALUES ($1, $2, $3, $4)",
-    )
-    .bind(entity.as_uuid())
-    .bind(file.body_id)
-    .bind(file.media_type)
-    .bind(byte_size)
-    .execute(ctx.tx.conn())
-    .await?;
+    sqlx::query("INSERT INTO file (entity_id, body_id, byte_size) VALUES ($1, $2, $3)")
+        .bind(entity.as_uuid())
+        .bind(file.body_id)
+        .bind(byte_size)
+        .execute(ctx.tx.conn())
+        .await?;
     Ok(())
 }
 
@@ -429,7 +519,7 @@ pub async fn create(
     id: EntityId,
     created_at: Option<DateTime<Utc>>,
     capture_method: &str,
-    parts: Vec<PartWrite>,
+    written: Written,
     kind: EntityType,
     file: Option<FileReference>,
 ) -> Applied<Outcome> {
@@ -466,8 +556,11 @@ pub async fn create(
     // Audience is private to the author unless the write says otherwise, or the
     // category it lands in states a creation default. The default acts once, at
     // creation, and an explicit audience outranks it.
-    let stated_audience = parts.iter().any(|p| matches!(p, PartWrite::Audience(_)));
-    let category = parts.iter().find_map(|p| match p {
+    let stated_audience = written
+        .parts
+        .iter()
+        .any(|p| matches!(p, PartWrite::Audience(_)));
+    let category = written.parts.iter().find_map(|p| match p {
         PartWrite::Category(Some(c)) => Some(*c),
         _ => None,
     });
@@ -494,14 +587,29 @@ pub async fn create(
 
     make_type_row(ctx, id, kind, file).await?;
 
-    let mut written = Vec::new();
-    for part in &parts {
-        let placement = validate_and_place(ctx, None, part).await?;
-        apply_part(ctx, id, part, placement.as_ref()).await?;
-        written.push(part.part());
-        if let Some(placement) = &placement {
-            written.push(placement.part());
+    let addressed = addressed_specifics(&written);
+    let mut moved = Vec::new();
+    for part in &written.parts {
+        let placements = validate_and_place(ctx, id, kind, None, part, &addressed).await?;
+        apply_part(ctx, id, kind, part, &placements).await?;
+        moved.push(part.part());
+        for placement in &placements {
+            moved.push(placement.part());
         }
+    }
+
+    // A body is many parts and they are not known until it is divided against
+    // what is stored, which on a create is nothing.
+    //
+    // `Creating` is what withholds bulk graduation: a body arriving with a
+    // creation was captured rather than authored, and nothing readable from
+    // inside `body::apply` distinguishes the two. See `body::Occasion`, which
+    // records why each of the obvious in-file signals is silently wrong.
+    let mut changed_blocks = Vec::new();
+    if let Some(text) = &written.body {
+        let touch = body::apply(ctx, id, kind, text, body::Occasion::Creating).await?;
+        moved.extend(touch.written);
+        changed_blocks.extend(touch.changed);
     }
 
     if !stated_audience && let Some(category) = category {
@@ -511,12 +619,13 @@ pub async fn create(
                 return Err(Refusal::NotAvailable.into());
             }
             let part = PartWrite::Audience(default);
-            apply_part(ctx, id, &part, None).await?;
-            written.push(part.part());
+            apply_part(ctx, id, kind, &part, &[]).await?;
+            moved.push(part.part());
         }
     }
 
-    provenance::record(ctx.tx, id, &written, 1, ctx.member).await?;
+    refresh_search_text(ctx, id, kind).await?;
+    provenance::record(ctx.tx, id, &moved, 1, ctx.member).await?;
 
     let after = read_audience(ctx, id).await?;
     changes::entity_written(
@@ -531,7 +640,7 @@ pub async fn create(
             audience_after: Some(after),
             author_before: None,
             author_after: Some(ctx.author()),
-            changed_blocks: Vec::new(),
+            changed_blocks,
         },
     )
     .await?;
@@ -544,7 +653,10 @@ async fn read_audience(ctx: &mut Ctx<'_>, id: EntityId) -> Applied<Vec<MemberRef
     Ok(row.map(|r| r.audience).unwrap_or_default())
 }
 
-fn type_name(kind: EntityType) -> &'static str {
+/// The store's spelling of a type, which is also the one a refusal says out
+/// loud to a person reading a log.
+#[must_use]
+pub fn type_name(kind: EntityType) -> &'static str {
     match kind {
         EntityType::Campaign => "campaign",
         EntityType::Arc => "arc",
@@ -566,7 +678,7 @@ pub async fn edit(
     ctx: &mut Ctx<'_>,
     id: EntityId,
     base_counter: i64,
-    parts: Vec<PartWrite>,
+    written: Written,
     stated_type: Option<EntityType>,
 ) -> Applied<Outcome> {
     let row = available_for_write(ctx.tx, ctx.member, id, WriteScope::AnyIncludingErased)
@@ -582,27 +694,75 @@ pub async fn edit(
     }
 
     if row.lifecycle == LifecycleState::Erased {
-        return recreate(ctx, &row, parts).await;
+        return recreate(ctx, &row, written).await;
     }
 
-    let mut touching = Vec::new();
-    let mut written = Vec::new();
+    let kind = row.entity_type;
+    let mut touching: Vec<(Part, Option<String>, Option<String>)> = Vec::new();
+    let mut moved = Vec::new();
     let counter = row.counter + 1;
 
-    for part in &parts {
-        let placement = validate_and_place(ctx, row.category_id, part).await?;
+    let addressed = addressed_specifics(&written);
+    for part in &written.parts {
+        let placements =
+            validate_and_place(ctx, id, kind, row.category_id, part, &addressed).await?;
         let stored = current(ctx, &row, part).await?;
         touching.push((part.part(), part.text(), stored.text()));
-        if let Some(placement) = &placement {
+        // **A write that changed nothing did not move the part.** The same
+        // comparison that decides a conflict decides this, and it has to: a
+        // part's provenance row carries *who* last moved it, so recording a
+        // no-op would hand ownership to a member who wrote nothing and erase the
+        // one who did. A later conflict would then name the wrong person, and
+        // `conflict.theirs_member_id` is stored and crosses the wire — the
+        // substrate requires that whose edit each value was is known and may be
+        // shown, and after a same-value write it would be known and wrong.
+        //
+        // The entity's own counter still advances below, which is what tells a
+        // client there was a write at all. Only the per-part record is withheld,
+        // and a part a write does not address already goes unrecorded — so this
+        // is the existing shape rather than a new rule.
+        //
+        // `specific::guidance` already does this in the upward climb, reading the
+        // current state and returning before recording when nothing moves. The
+        // general edit path now agrees with it.
+        let mut record = |part: &PartWrite, stored: &PartWrite| {
+            if part.text() != stored.text() {
+                moved.push(part.part());
+            }
+        };
+        record(part, &stored);
+        // Each companion is compared like any other part, and against what the
+        // store holds *now* — which is why this runs before the write below.
+        for placement in &placements {
             let stored = current(ctx, &row, placement).await?;
             touching.push((placement.part(), placement.text(), stored.text()));
+            record(placement, &stored);
         }
-        apply_part(ctx, id, part, placement.as_ref()).await?;
-        written.push(part.part());
-        if let Some(placement) = &placement {
-            written.push(placement.part());
-        }
+        apply_part(ctx, id, kind, part, &placements).await?;
     }
+
+    // A body reads what is stored and writes what changed in one step, because
+    // which blocks a body write touches is decided by the match between the two
+    // and cannot be asked before the write is prepared.
+    //
+    // A write that states `bulk` withholds graduation, because the person said
+    // what they wanted and a derived value does not outrank an authored one.
+    // The parts above have already been applied, so without this the statement
+    // would be overwritten a few lines later by a rule meant to guess at it.
+    let states_bulk = written
+        .parts
+        .iter()
+        .any(|p| matches!(p, PartWrite::Bulk(_)));
+    let mut changed_blocks = Vec::new();
+    if let Some(text) = &written.body {
+        let touch =
+            body::apply(ctx, id, kind, text, body::Occasion::Editing { states_bulk }).await?;
+        touching.extend(touch.touching);
+        moved.extend(touch.written);
+        changed_blocks.extend(touch.changed);
+    }
+
+    refresh_search_text(ctx, id, kind).await?;
 
     // A stale base is never a rejection. What it can be is a conflict, and only
     // over the parts that actually overlap what moved since.
@@ -616,7 +776,7 @@ pub async fn edit(
         provenance::retain(ctx.tx, id, &retained, ctx.at).await?;
     }
 
-    provenance::record(ctx.tx, id, &written, counter, ctx.member).await?;
+    provenance::record(ctx.tx, id, &moved, counter, ctx.member).await?;
     sqlx::query("UPDATE entity SET counter = $2, updated_at = $3 WHERE id = $1")
         .bind(id.as_uuid())
         .bind(counter)
@@ -634,7 +794,7 @@ pub async fn edit(
             audience_after: Some(after),
             author_before: row.author,
             author_after: row.author,
-            changed_blocks: Vec::new(),
+            changed_blocks,
         },
     )
     .await?;
@@ -660,30 +820,29 @@ pub async fn edit(
 /// exists to remove. Broadening is trivial and narrowing is unreliable, so the
 /// closed default is the safe one.
 ///
-/// **A file cannot be recreated yet.** An edit never reads `content.specific`
-/// (see [`super::content::parts_written`]), so there is no `body_id` to carry
-/// into the recreated entity, and [`create_file_row`] refuses for the same
-/// reason a bare file create with no body does. Recreating an erased file is
-/// therefore refused until an edit can name one, which is 2.2's territory —
-/// not a regression, since every file create refused unconditionally before
-/// this wave.
+/// **A file cannot be recreated yet.** `body_id` is the one field
+/// `content::parts_written` never reaches, on either arm — see its doc — so an
+/// edit's `written` never carries one, however the message named. There is
+/// therefore no `body_id` to carry into the recreated entity, and
+/// [`create_file_row`] refuses for the same reason a bare file create with no
+/// body does. Not a regression: every file create refused unconditionally
+/// before this wave.
 async fn recreate(
     ctx: &mut Ctx<'_>,
     tombstone: &EntityRow,
-    parts: Vec<PartWrite>,
+    mut written: Written,
 ) -> Applied<Outcome> {
     let new = EntityId::from_uuid(Uuid::new_v4());
-    let parts: Vec<PartWrite> = parts
-        .into_iter()
-        .filter(|p| !matches!(p, PartWrite::Audience(_)))
-        .collect();
+    written
+        .parts
+        .retain(|p| !matches!(p, PartWrite::Audience(_)));
 
     let outcome = create(
         ctx,
         new,
         Some(ctx.at),
         &tombstone.capture_method,
-        parts,
+        written,
         tombstone.entity_type,
         None,
     )
@@ -789,7 +948,7 @@ pub async fn restore(
         if let Some(category) = row.category_id {
             let next = crate::store::entity::next_category_position(ctx.tx, category).await?;
             let part = PartWrite::CategoryPosition(Some(next));
-            apply_part(ctx, row.id, &part, None).await?;
+            apply_part(ctx, row.id, row.entity_type, &part, &[]).await?;
             provenance::record(ctx.tx, row.id, &[part.part()], row.counter + 1, ctx.member).await?;
         }
 
@@ -888,7 +1047,7 @@ pub async fn erase(ctx: &mut Ctx<'_>, ids: &[EntityId]) -> Applied<(Vec<EntityId
         // The side table, which holds what the type carries beyond the shared
         // model. Named by the row's own type rather than tried against all of
         // them, so a type gaining a table is one line here.
-        if let Some(table) = side_table(row.entity_type) {
+        if let Some(table) = specific::side_table(row.entity_type) {
             let sql = format!("DELETE FROM {table} WHERE entity_id = $1");
             sqlx::query(sqlx::AssertSqlSafe(sql))
                 .bind(id.as_uuid())
@@ -902,10 +1061,92 @@ pub async fn erase(ctx: &mut Ctx<'_>, ids: &[EntityId]) -> Applied<(Vec<EntityId
         // fortiori to an erased one, and leaving the reference would point
         // every member of the category at a tombstone.
         //
-        // The type-specific containers, the ladder and nested locations, are
-        // Wave 2.2's for the same reason their content is.
+        // **That is category *membership*, and it is only half of what a
+        // category holds.** The other half is category *nesting* —
+        // `category.parent_category_id` — and `uncategorise_all` does not touch
+        // it. An earlier version of this comment named "the ladder and nested
+        // locations" and omitted the third case, which is where the blind spot
+        // started; it is spelled out here so the next reader does not inherit
+        // it.
+        //
+        // The type-specific containers — the ladder, nested locations, and
+        // nested categories — release through the type-content seam, because
+        // the column that points at the container is a column of the type's own
+        // side table. The seam hands back identities and which part of each
+        // moved; the counter and the audience a change entry needs come from the
+        // store layer, which is the only place entitled to read that column. See
+        // `specific::detach_contained`.
+        //
+        // **A type that has not built its release must not look like an empty
+        // one.** `Detachment::NotBuilt` is a distinct answer for exactly that
+        // reason, and it is stepped over here rather than treated as nothing to
+        // do. Two types still answer that way and both are visible rather than
+        // silent: Guidance's arcs and quests, and a nested category.
+        let contained = match specific::detach_contained(ctx, *id, row.entity_type).await? {
+            specific::Detachment::Released(released) => released,
+            specific::Detachment::NoContainer | specific::Detachment::NotBuilt => Vec::new(),
+        };
+        let ids: Vec<EntityId> = contained.iter().map(|r| r.entity).collect();
+        for orphan in crate::store::entity::detached_from_container(ctx.tx, &ids, ctx.at).await? {
+            // **A release is a write, so it owes provenance.** The counter
+            // advanced, and a part that moves a counter without recording which
+            // part moved is invisible to conflict detection: a later stale edit
+            // to the same field would merge silently, losing the fact that the
+            // container went away underneath it. `restore` already records the
+            // position it moves as a consequence of something else; this is the
+            // same shape and now gets the same treatment.
+            //
+            // Attributed to the member who erased the container, because that is
+            // who caused it.
+            for r in contained.iter().filter(|r| r.entity == orphan.id) {
+                provenance::record(
+                    ctx.tx,
+                    orphan.id,
+                    std::slice::from_ref(&r.part),
+                    orphan.counter,
+                    ctx.member,
+                )
+                .await?;
+            }
+            changes::entity_written(
+                ctx.tx,
+                ctx.at,
+                &EntityChange {
+                    entity: orphan.id,
+                    audience_before: Some(orphan.audience.clone()),
+                    audience_after: Some(orphan.audience),
+                    author_before: orphan.author,
+                    author_after: orphan.author,
+                    changed_blocks: Vec::new(),
+                },
+            )
+            .await?;
+        }
+
         if row.entity_type == EntityType::Category {
             for orphan in crate::store::entity::uncategorise_all(ctx.tx, *id, ctx.at).await? {
+                // The same reasoning, for the membership half. Two parts move —
+                // the category and the position within it — and both are
+                // recorded, because the counter advanced and something has to be
+                // able to say what changed.
+                //
+                // **The alternative reading was considered and rejected**: that
+                // uncategorising is a consequence rather than an authored
+                // placement and so should not conflict. It cannot be had for
+                // free — the counter already advances here, and a write that
+                // moves a counter and records nothing is the silent case. Either
+                // it is a write to this entity or it is not; it is, so it pays.
+                provenance::record(
+                    ctx.tx,
+                    orphan.id,
+                    &[
+                        Part::Content(ContentPart::Category),
+                        Part::Content(ContentPart::CategoryPosition),
+                    ],
+                    orphan.counter,
+                    ctx.member,
+                )
+                .await?;
                 changes::entity_written(
                     ctx.tx,
                     ctx.at,
@@ -956,21 +1197,4 @@ pub async fn erase(ctx: &mut Ctx<'_>, ids: &[EntityId]) -> Applied<(Vec<EntityId
     }
 
     Ok((erased, relations_gone))
-}
-
-fn side_table(kind: EntityType) -> Option<&'static str> {
-    match kind {
-        EntityType::Campaign => Some("campaign"),
-        EntityType::Arc => Some("arc"),
-        EntityType::Quest => Some("quest"),
-        EntityType::File => Some("file"),
-        EntityType::Item => Some("item"),
-        EntityType::Location => Some("location"),
-        EntityType::Category => Some("category"),
-        EntityType::Note
-        | EntityType::ShoppingList
-        | EntityType::Routine
-        | EntityType::FocusSession
-        | EntityType::CheckIn => None,
-    }
 }

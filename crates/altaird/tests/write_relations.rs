@@ -363,34 +363,6 @@ async fn an_unknown_relation_type_is_nothing() {
     assert!(is_not_available(&ack));
 }
 
-#[tokio::test]
-async fn an_anchor_is_refused_for_a_reason_that_expires() {
-    let w = World::new().await;
-    let (a, b) = two_notes(&w).await;
-    let ack = w
-        .submit(
-            &w.one,
-            create_relation(
-                Uuid::new_v4(),
-                v1::RelationContent {
-                    anchor: Some(v1::Anchor {
-                        entity_id: a.as_uuid().as_bytes().to_vec(),
-                        block_id: Uuid::new_v4().as_bytes().to_vec(),
-                        phrase: String::new(),
-                    }),
-                    ..relation_between(a, b)
-                },
-            ),
-        )
-        .await;
-    assert_eq!(refused(&ack).reason, v1::RefusalReason::Malformed as i32);
-    assert!(
-        !refused(&ack).detail.is_empty(),
-        "silently discarding where somebody formed a connection is loss an \
-         acknowledgement should never hide"
-    );
-}
-
 // --- editing -------------------------------------------------------------
 
 #[tokio::test]
@@ -691,4 +663,679 @@ async fn a_relation_create_naming_an_invisible_identity_is_refused_and_never_fau
         .await
         .expect("an identifier somebody else holds is an answer, not a fault");
     assert!(is_not_available(&acks[0]));
+}
+
+// --- anchors -------------------------------------------------------------
+//
+// An anchor records where a relation was formed. It belongs to the relation and
+// not to the body, so the body stays plain text and removing the relation
+// rewrites nothing. It is not a type-declared property and needs no type.
+//
+// One sentence of the substrate decides most of what follows: *"Removing a
+// person's connection as a side effect of them editing a sentence is not
+// something the system does."* The anchor is the weakest thing a relation
+// carries, so wherever something has to give, the anchor gives and the relation
+// does not.
+
+/// A note whose body is one entry per line, and the identities of its blocks.
+async fn note_with_blocks(w: &World, body: &str) -> (EntityId, Vec<Uuid>) {
+    let id = w
+        .create(
+            &w.one,
+            v1::entity_content::Specific::Note(v1::NoteContent {
+                body: Some(body.into()),
+                cleared: Vec::new(),
+            }),
+            v1::EntityContent {
+                audience_member_ids: vec![
+                    w.one.membership_id().as_bytes().to_vec(),
+                    w.two.membership_id().as_bytes().to_vec(),
+                ],
+                ..Default::default()
+            },
+        )
+        .await;
+    let blocks = sqlx::query("SELECT id FROM block WHERE entity_id = $1 ORDER BY position")
+        .bind(id.as_uuid())
+        .fetch_all(&w.db.pool)
+        .await
+        .expect("blocks")
+        .iter()
+        .map(|r| r.try_get("id").unwrap())
+        .collect();
+    (id, blocks)
+}
+
+fn at(entity: EntityId, block: Uuid, phrase: &str) -> v1::Anchor {
+    v1::Anchor {
+        entity_id: entity.as_uuid().as_bytes().to_vec(),
+        block_id: block.as_bytes().to_vec(),
+        phrase: phrase.into(),
+    }
+}
+
+/// The three columns an anchor lives in.
+async fn anchor_of(w: &World, relation: Uuid) -> (Option<Uuid>, Option<Uuid>, Option<String>) {
+    let r = sqlx::query(
+        "SELECT anchor_entity_id, anchor_block_id, anchor_phrase FROM relation WHERE id = $1",
+    )
+    .bind(relation)
+    .fetch_one(&w.db.pool)
+    .await
+    .expect("relation");
+    (
+        r.try_get("anchor_entity_id").unwrap(),
+        r.try_get("anchor_block_id").unwrap(),
+        r.try_get("anchor_phrase").unwrap(),
+    )
+}
+
+async fn anchored(
+    w: &World,
+    from: EntityId,
+    to: EntityId,
+    anchor: v1::Anchor,
+) -> v1::Acknowledgement {
+    w.submit(
+        &w.one,
+        create_relation(
+            Uuid::new_v4(),
+            v1::RelationContent {
+                anchor: Some(anchor),
+                ..relation_between(from, to)
+            },
+        ),
+    )
+    .await
+}
+
+/// An anchor at the block itself. An empty phrase is what the wire says that
+/// is, and it is stored as null rather than as an empty string — a phrase
+/// nobody wrote is not a phrase.
+#[tokio::test]
+async fn an_anchor_at_a_block_records_the_block_and_no_phrase() {
+    let w = World::new().await;
+    let (note, blocks) = note_with_blocks(&w, "- eggs\n- milk\n").await;
+    let other = w.note(&w.one, "the other end").await;
+
+    let ack = anchored(&w, note, other, at(note, blocks[0], "")).await;
+    let id = relation_id(&ack);
+
+    assert_eq!(
+        anchor_of(&w, id).await,
+        (Some(note.as_uuid()), Some(blocks[0]), None)
+    );
+}
+
+/// An anchor at a phrase within a block records the phrase as well.
+///
+/// **No type is involved.** An anchor is not a type-declared property and does
+/// not require a type, which is the one place the anchor rules and the
+/// properties rules differ.
+#[tokio::test]
+async fn an_anchor_at_a_phrase_records_it_and_needs_no_type() {
+    let w = World::new().await;
+    let (note, blocks) = note_with_blocks(&w, "buy eggs on the way home\n").await;
+    let other = w.note(&w.one, "the other end").await;
+
+    let ack = anchored(&w, note, other, at(note, blocks[0], "eggs")).await;
+    let id = relation_id(&ack);
+
+    assert_eq!(
+        anchor_of(&w, id).await,
+        (Some(note.as_uuid()), Some(blocks[0]), Some("eggs".into()))
+    );
+    // Untyped, and none the worse for it.
+    let typed: Option<Uuid> =
+        sqlx::query("SELECT relation_type_id AS t FROM relation WHERE id = $1")
+            .bind(id)
+            .fetch_one(&w.db.pool)
+            .await
+            .expect("relation")
+            .try_get("t")
+            .unwrap();
+    assert!(typed.is_none());
+}
+
+/// An anchor locates into one of the two entities the relation joins.
+///
+/// Malformed with a detail, because it is a statement about the message: the
+/// client already holds both endpoint identifiers, so saying so tells it
+/// nothing it did not send.
+#[tokio::test]
+async fn an_anchor_into_an_entity_the_relation_does_not_join_is_malformed() {
+    let w = World::new().await;
+    let (elsewhere, blocks) = note_with_blocks(&w, "- eggs\n").await;
+    let (a, b) = two_notes(&w).await;
+
+    let ack = anchored(&w, a, b, at(elsewhere, blocks[0], "")).await;
+    let detail = &refused(&ack).detail;
+    assert_eq!(refused(&ack).reason, v1::RefusalReason::Malformed as i32);
+    assert!(detail.contains("one of the two entities"), "{detail}");
+}
+
+/// An anchor attaches at a block or at a phrase within one. An entity alone is
+/// neither, and is refused rather than admitted as a third kind.
+///
+/// The store *holds* that shape, because it is the residue a removed block
+/// leaves. Produced by the instance, never submitted by a client.
+#[tokio::test]
+async fn an_anchor_naming_no_block_is_malformed() {
+    let w = World::new().await;
+    let (a, b) = two_notes(&w).await;
+
+    let ack = anchored(
+        &w,
+        a,
+        b,
+        v1::Anchor {
+            entity_id: a.as_uuid().as_bytes().to_vec(),
+            block_id: Vec::new(),
+            phrase: String::new(),
+        },
+    )
+    .await;
+    let detail = &refused(&ack).detail;
+    assert_eq!(refused(&ack).reason, v1::RefusalReason::Malformed as i32);
+    assert!(detail.contains("names no block"), "{detail}");
+}
+
+/// **A block of something else and a block of nothing are one answer.**
+///
+/// A block belongs to an entity, so an acknowledgement that distinguished the
+/// two would confirm that an entity exists — the disclosure the single refusal
+/// reason exists to prevent, arriving through a field nobody thinks of as
+/// naming an entity.
+#[tokio::test]
+async fn a_block_of_something_else_is_the_same_nothing_as_a_block_of_nothing() {
+    let w = World::new().await;
+    let (a, b) = two_notes(&w).await;
+    let (elsewhere, elsewhere_blocks) = note_with_blocks(&w, "- eggs\n").await;
+    let _ = elsewhere;
+
+    let nothing = anchored(&w, a, b, at(a, Uuid::new_v4(), "")).await;
+    let elsewhere = anchored(&w, a, b, at(a, elsewhere_blocks[0], "")).await;
+
+    assert!(is_not_available(&nothing));
+    assert!(is_not_available(&elsewhere));
+    assert_eq!(
+        refused(&nothing).detail,
+        refused(&elsewhere).detail,
+        "the two answers differ, and the difference is an oracle"
+    );
+    assert!(refused(&nothing).detail.is_empty());
+}
+
+/// **The decision worth reading twice: a phrase that is no longer there does
+/// not refuse the connection away.**
+///
+/// A client submits an anchor against the body it last saw. Somebody reworded
+/// that sentence meanwhile. Refusing would destroy the whole connection
+/// permanently — a refusal is an answer and the outbox holds no retry for it —
+/// because somebody else edited a sentence, which is a worse version of the
+/// thing the substrate prohibits. So the anchor gives way and the relation is
+/// formed without one.
+#[tokio::test]
+async fn a_phrase_that_is_no_longer_there_forms_the_relation_without_an_anchor() {
+    let w = World::new().await;
+    let (note, blocks) = note_with_blocks(&w, "buy eggs on the way home\n").await;
+    let other = w.note(&w.one, "the other end").await;
+
+    // Somebody else rewords the sentence the anchor was formed against.
+    let base = w.counter(note).await;
+    w.submit(
+        &w.two,
+        edit_entity(
+            note,
+            base as u64,
+            v1::EntityContent {
+                specific: Some(v1::entity_content::Specific::Note(v1::NoteContent {
+                    body: Some("buy bread on the way home\n".into()),
+                    cleared: Vec::new(),
+                })),
+                ..Default::default()
+            },
+        ),
+    )
+    .await;
+
+    let ack = anchored(&w, note, other, at(note, blocks[0], "eggs")).await;
+    let id = relation_id(&ack);
+
+    // Formed, not refused...
+    assert_eq!(w.relation_lifecycle(id).await.as_deref(), Some("active"));
+    // ...and the block goes with the phrase rather than the anchor falling back
+    // to it. Where it was formed is still true and stays.
+    assert_eq!(anchor_of(&w, id).await, (None, None, None));
+}
+
+/// An edit carries an anchor, and an edit that does not carry one clears it.
+///
+/// A relation's content has no untouched state: there is no base counter to
+/// scope a write against and no part machinery over a relation, so an edit is
+/// the whole record. That was already true of the type and of a quantity, and
+/// the anchor joins them rather than acquiring a rule of its own.
+#[tokio::test]
+async fn an_edit_carries_the_anchor_and_an_edit_without_one_clears_it() {
+    let w = World::new().await;
+    let (note, blocks) = note_with_blocks(&w, "- eggs\n- milk\n").await;
+    let other = w.note(&w.one, "the other end").await;
+
+    let id = relation_id(&anchored(&w, note, other, at(note, blocks[0], "")).await);
+
+    // Moved to the second entry.
+    w.submit(
+        &w.one,
+        edit_relation(
+            id,
+            v1::RelationContent {
+                anchor: Some(at(note, blocks[1], "milk")),
+                ..relation_between(note, other)
+            },
+        ),
+    )
+    .await;
+    assert_eq!(
+        anchor_of(&w, id).await,
+        (Some(note.as_uuid()), Some(blocks[1]), Some("milk".into()))
+    );
+
+    // And an edit carrying no anchor is an edit to a relation with no anchor.
+    w.submit(&w.one, edit_relation(id, relation_between(note, other)))
+        .await;
+    assert_eq!(anchor_of(&w, id).await, (None, None, None));
+}
+
+/// An anchored relation is not a duplicate of an unanchored one. Where a
+/// connection was formed is part of what distinguishes it.
+#[tokio::test]
+async fn an_anchored_relation_is_not_a_duplicate_of_an_unanchored_one() {
+    let w = World::new().await;
+    let (note, blocks) = note_with_blocks(&w, "- eggs\n").await;
+    let other = w.note(&w.one, "the other end").await;
+
+    w.submit(
+        &w.one,
+        create_relation(Uuid::new_v4(), relation_between(note, other)),
+    )
+    .await;
+    let ack = anchored(&w, note, other, at(note, blocks[0], "")).await;
+    applied(&ack);
+}
+
+/// **Removing a block never fails a body write, beside an otherwise identical
+/// unanchored relation.**
+///
+/// Migration one declines a unique index over the unanchored pair for exactly
+/// this shape: a relation that loses its anchor becomes unanchored, collides
+/// with one already recorded between the same pair, and the block removal
+/// fails. *"A body edit must never fail because a relation lost an anchor, and
+/// that outranks refusing a duplicate structurally."*
+///
+/// The relation does become fully unanchored: all three columns go with the
+/// block, so it is now indistinguishable from the one already recorded between
+/// the same pair. Nothing catches that, and nothing is meant to — the removal
+/// path carries no duplicate check at all, which is where the guarantee rests.
+/// It does not rest on what `is_duplicate` happens to count as an anchor, so a
+/// later change to that cannot reintroduce the failure.
+#[tokio::test]
+async fn removing_a_block_never_fails_beside_an_identical_unanchored_relation() {
+    let w = World::new().await;
+    let (note, blocks) = note_with_blocks(&w, "- eggs\n- milk\n").await;
+    let other = w.note(&w.one, "the other end").await;
+
+    // The unanchored one it will collide with, and the anchored one.
+    w.submit(
+        &w.one,
+        create_relation(Uuid::new_v4(), relation_between(note, other)),
+    )
+    .await;
+    let anchored_id = relation_id(&anchored(&w, note, other, at(note, blocks[0], "")).await);
+
+    // Remove the block the second is anchored to.
+    let base = w.counter(note).await;
+    let ack = w
+        .submit(
+            &w.one,
+            edit_entity(
+                note,
+                base as u64,
+                v1::EntityContent {
+                    specific: Some(v1::entity_content::Specific::Note(v1::NoteContent {
+                        body: Some("- milk\n".into()),
+                        cleared: Vec::new(),
+                    })),
+                    ..Default::default()
+                },
+            ),
+        )
+        .await;
+    applied(&ack);
+
+    // Both relations are still here, and the second is now fully unanchored.
+    assert_eq!(
+        w.relation_lifecycle(anchored_id).await.as_deref(),
+        Some("active")
+    );
+    assert_eq!(anchor_of(&w, anchored_id).await, (None, None, None));
+}
+
+/// A block anchor holds while its block remains, including through edits to
+/// the block's own text. This is the half of block identity that anchors rely
+/// on: rewording an entry does not detach a relation anchored to the entry.
+#[tokio::test]
+async fn a_block_anchor_holds_through_a_rewording_of_its_block() {
+    let w = World::new().await;
+    let (note, blocks) = note_with_blocks(&w, "- eggs\n- milk\n").await;
+    let other = w.note(&w.one, "the other end").await;
+    let id = relation_id(&anchored(&w, note, other, at(note, blocks[0], "")).await);
+
+    let base = w.counter(note).await;
+    w.submit(
+        &w.one,
+        edit_entity(
+            note,
+            base as u64,
+            v1::EntityContent {
+                specific: Some(v1::entity_content::Specific::Note(v1::NoteContent {
+                    body: Some("- half a dozen eggs\n- milk\n".into()),
+                    cleared: Vec::new(),
+                })),
+                ..Default::default()
+            },
+        ),
+    )
+    .await;
+
+    assert_eq!(
+        anchor_of(&w, id).await,
+        (Some(note.as_uuid()), Some(blocks[0]), None),
+        "rewording an entry detached a relation anchored to the entry itself"
+    );
+}
+
+/// **A phrase anchor is lost when its text is edited, and the relation
+/// survives without an anchor.**
+///
+/// The counterpart of the test above, and the one that separates the two kinds:
+/// the same edit that a block anchor rides out takes a phrase anchor with it,
+/// because the words the person pointed at are no longer there. The block goes
+/// with the phrase rather than the anchor falling back to it — both places the
+/// substrate states this say *without an anchor*, and re-pointing somebody's
+/// connection at the whole paragraph would be choosing a place they never did.
+#[tokio::test]
+async fn a_phrase_anchor_is_lost_when_its_text_is_edited() {
+    let w = World::new().await;
+    let (note, blocks) = note_with_blocks(&w, "buy eggs on the way home\n").await;
+    let other = w.note(&w.one, "the other end").await;
+    let id = relation_id(&anchored(&w, note, other, at(note, blocks[0], "eggs")).await);
+
+    let base = w.counter(note).await;
+    w.submit(
+        &w.one,
+        edit_entity(
+            note,
+            base as u64,
+            v1::EntityContent {
+                specific: Some(v1::entity_content::Specific::Note(v1::NoteContent {
+                    body: Some("buy bread on the way home\n".into()),
+                    cleared: Vec::new(),
+                })),
+                ..Default::default()
+            },
+        ),
+    )
+    .await;
+
+    assert_eq!(w.relation_lifecycle(id).await.as_deref(), Some("active"));
+    assert_eq!(anchor_of(&w, id).await, (None, None, None));
+}
+
+/// An edit that leaves the phrase standing leaves the anchor standing. The rule
+/// is that the anchor's *text* survives, not that the block was untouched.
+#[tokio::test]
+async fn a_phrase_anchor_survives_an_edit_that_leaves_its_words_alone() {
+    let w = World::new().await;
+    let (note, blocks) = note_with_blocks(&w, "buy eggs on the way home\n").await;
+    let other = w.note(&w.one, "the other end").await;
+    let id = relation_id(&anchored(&w, note, other, at(note, blocks[0], "eggs")).await);
+
+    let base = w.counter(note).await;
+    w.submit(
+        &w.one,
+        edit_entity(
+            note,
+            base as u64,
+            v1::EntityContent {
+                specific: Some(v1::entity_content::Specific::Note(v1::NoteContent {
+                    body: Some("buy eggs on the way back\n".into()),
+                    cleared: Vec::new(),
+                })),
+                ..Default::default()
+            },
+        ),
+    )
+    .await;
+
+    assert_eq!(
+        anchor_of(&w, id).await,
+        (Some(note.as_uuid()), Some(blocks[0]), Some("eggs".into())),
+        "an edit elsewhere in the sentence took a phrase anchor with it"
+    );
+}
+
+/// **Where two people edit one block and both values are retained, anchors are
+/// judged against the version that landed.**
+///
+/// *"Where they edit the same block and one version is chosen, an anchor whose
+/// text survives holds, and one whose text does not leaves the relation intact
+/// without an anchor."* Both halves in one write: the phrase that is still in
+/// the stored text keeps its anchor, the phrase that is not loses it, and the
+/// conflict over the block is recorded either way.
+#[tokio::test]
+async fn after_a_conflict_over_one_block_the_surviving_phrase_keeps_its_anchor() {
+    let w = World::new().await;
+    let (note, blocks) = note_with_blocks(&w, "buy eggs and bread today\n").await;
+    let other = w.note(&w.one, "the other end").await;
+
+    let eggs = relation_id(&anchored(&w, note, other, at(note, blocks[0], "eggs")).await);
+    let today = relation_id(&anchored(&w, note, other, at(note, blocks[0], "today")).await);
+    let base = w.counter(note).await;
+
+    let reword = |body: &str| {
+        edit_entity(
+            note,
+            base as u64,
+            v1::EntityContent {
+                specific: Some(v1::entity_content::Specific::Note(v1::NoteContent {
+                    body: Some(body.into()),
+                    cleared: Vec::new(),
+                })),
+                ..Default::default()
+            },
+        )
+    };
+
+    w.submit(&w.one, reword("buy eggs and milk today\n")).await;
+    let ack = w.submit(&w.two, reword("buy bread and milk today\n")).await;
+
+    // A conflict over the block, both values retained.
+    let conflict = applied(&ack).conflict.as_ref().expect("a conflict");
+    assert_eq!(conflict.block_ids, vec![blocks[0].as_bytes().to_vec()]);
+
+    // "today" is in the version that landed and keeps its anchor.
+    assert_eq!(
+        anchor_of(&w, today).await,
+        (Some(note.as_uuid()), Some(blocks[0]), Some("today".into()))
+    );
+    // "eggs" is not, and its relation survives without an anchor.
+    assert_eq!(w.relation_lifecycle(eggs).await.as_deref(), Some("active"));
+    assert_eq!(anchor_of(&w, eggs).await, (None, None, None));
+}
+
+/// The same guarantee on the other path that takes an anchor away.
+///
+/// A block being *removed* and a phrase being *edited out* are two different
+/// statements in `write::body`, and only one of them was covered above. Both
+/// must leave a body edit able to land beside a relation that would otherwise
+/// be its duplicate, because migration one's sentence is about the outcome and
+/// not about which statement produced it.
+#[tokio::test]
+async fn losing_a_phrase_never_fails_beside_an_identical_unanchored_relation() {
+    let w = World::new().await;
+    let (note, blocks) = note_with_blocks(&w, "buy eggs on the way home\n").await;
+    let other = w.note(&w.one, "the other end").await;
+
+    w.submit(
+        &w.one,
+        create_relation(Uuid::new_v4(), relation_between(note, other)),
+    )
+    .await;
+    let phrase = relation_id(&anchored(&w, note, other, at(note, blocks[0], "eggs")).await);
+
+    // The words the anchor names are edited away, and the body edit must land.
+    let base = w.counter(note).await;
+    let ack = w
+        .submit(
+            &w.one,
+            edit_entity(
+                note,
+                base as u64,
+                v1::EntityContent {
+                    specific: Some(v1::entity_content::Specific::Note(v1::NoteContent {
+                        body: Some("buy bread on the way home\n".into()),
+                        cleared: Vec::new(),
+                    })),
+                    ..Default::default()
+                },
+            ),
+        )
+        .await;
+    applied(&ack);
+
+    assert_eq!(
+        w.relation_lifecycle(phrase).await.as_deref(),
+        Some("active")
+    );
+    assert_eq!(anchor_of(&w, phrase).await, (None, None, None));
+}
+
+/// **A relation that loses its anchor becomes a duplicate of one already
+/// recorded, and both stay.**
+///
+/// The case migration one names, reachable at last. It was not, while a lost
+/// anchor left an entity behind: `is_duplicate` counted that residue and the
+/// collision could not form. Removing the residue restores the state the schema
+/// comment reasons about, so the outcome it requires can finally be observed
+/// rather than argued.
+///
+/// *"A relation that loses its anchor when its block is removed becomes
+/// unanchored, collides with an existing relation between the same pair, and
+/// the block removal fails. A body edit must never fail because a relation lost
+/// an anchor, and that outranks refusing a duplicate structurally."* So the
+/// body edit lands, two identical untyped unanchored relations coexist, and
+/// nothing tries to reconcile them.
+#[tokio::test]
+async fn a_relation_that_loses_its_anchor_becomes_a_duplicate_and_both_stay() {
+    let w = World::new().await;
+    let (note, blocks) = note_with_blocks(&w, "buy eggs today\n- milk\n").await;
+    let other = w.note(&w.one, "the other end").await;
+
+    let plain = relation_id(
+        &w.submit(
+            &w.one,
+            create_relation(Uuid::new_v4(), relation_between(note, other)),
+        )
+        .await,
+    );
+    let was_anchored = relation_id(&anchored(&w, note, other, at(note, blocks[1], "")).await);
+
+    let base = w.counter(note).await;
+    applied(
+        &w.submit(
+            &w.one,
+            edit_entity(
+                note,
+                base as u64,
+                v1::EntityContent {
+                    specific: Some(v1::entity_content::Specific::Note(v1::NoteContent {
+                        body: Some("buy eggs today\n".into()),
+                        cleared: Vec::new(),
+                    })),
+                    ..Default::default()
+                },
+            ),
+        )
+        .await,
+    );
+
+    // Two records of one connection, both active, neither reconciled.
+    for id in [plain, was_anchored] {
+        assert_eq!(w.relation_lifecycle(id).await.as_deref(), Some("active"));
+    }
+    assert_eq!(anchor_of(&w, was_anchored).await, (None, None, None));
+
+    // And the one that lost its anchor is now an ordinary unanchored relation,
+    // so forming a third is refused exactly as it would have been all along.
+    let ack = w
+        .submit(
+            &w.one,
+            create_relation(Uuid::new_v4(), relation_between(note, other)),
+        )
+        .await;
+    assert_eq!(refused(&ack).reason, v1::RefusalReason::Malformed as i32);
+}
+
+/// **A relation that lost its anchor is editable like any other.**
+///
+/// The defect that decided the residue's fate, kept as the test that would
+/// catch it coming back. While a lost anchor left an entity standing, an
+/// ordinary edit to such a relation had two bad outcomes and no good one: it
+/// erased that entity in silence, or — beside an identical unanchored relation
+/// — it was refused as *this connection is already recorded*, naming a
+/// connection the person had not mentioned. Neither needed a read path; the
+/// client only needs the identifier it minted itself.
+#[tokio::test]
+async fn a_relation_that_lost_its_anchor_can_still_be_edited() {
+    let w = World::new().await;
+    let (note, blocks) = note_with_blocks(&w, "buy eggs today\n").await;
+    let other = w.note(&w.one, "the other end").await;
+    let mentions = w.declare_type("mentions", true, false).await;
+
+    let id = relation_id(&anchored(&w, note, other, at(note, blocks[0], "")).await);
+
+    let base = w.counter(note).await;
+    applied(
+        &w.submit(
+            &w.one,
+            edit_entity(
+                note,
+                base as u64,
+                v1::EntityContent {
+                    specific: Some(v1::entity_content::Specific::Note(v1::NoteContent {
+                        body: Some("- milk\n".into()),
+                        cleared: Vec::new(),
+                    })),
+                    ..Default::default()
+                },
+            ),
+        )
+        .await,
+    );
+
+    // An ordinary edit, carrying no anchor because the relation has none.
+    let ack = w
+        .submit(
+            &w.one,
+            edit_relation(
+                id,
+                v1::RelationContent {
+                    relation_type_id: Some(mentions.as_bytes().to_vec()),
+                    ..relation_between(note, other)
+                },
+            ),
+        )
+        .await;
+    applied(&ack);
+    assert_eq!(anchor_of(&w, id).await, (None, None, None));
 }

@@ -275,6 +275,81 @@ pub async fn uncategorise_all(
         .collect()
 }
 
+/// Finish detaching entities a vanished type-specific container let go of.
+///
+/// # Why this is here and not in the type's own module
+///
+/// The release itself is the type's: an arc's `campaign_id`, a location's
+/// `parent_location_id`, an item's `location_id`. Each is a column of that
+/// type's own side table and belongs in that type's module, which is the whole
+/// point of the type-content seam.
+///
+/// What cannot live there is this half. A change entry per orphan needs the
+/// audience, and `tests/one_predicate.rs` refuses any source outside
+/// `store/audience.rs` that names the audience column and issues SQL — rightly,
+/// because a paraphrased predicate is a second implementation whatever it is
+/// spelled like. [`uncategorise_all`] gets to write `RETURNING … audience`
+/// precisely because it lives here. So the split is: the type module clears its
+/// own column and hands back identities, and this reads what the change sequence
+/// needs.
+///
+/// One helper rather than one per container, because the ladder and nested
+/// locations owe exactly the same thing and two implementations of *what a
+/// detach does to the entity row* is two chances to forget the counter.
+///
+/// # Deliberately unscoped
+///
+/// The same reason [`uncategorise_all`] gives, and it is not a smaller reason
+/// here: **the container is gone for everybody.** Leaving the entities a writing
+/// member cannot see still pointing at it would keep a dangling reference alive
+/// precisely where nobody can find it. Nothing leaves this function that a
+/// caller can show anyone — the identities become change entries, and those are
+/// assembled per member by the read path, which applies the predicate then.
+///
+/// Do not add a predicate here. A later reader who "fixes" this will produce
+/// orphans that only the invisible members keep.
+///
+/// The counter advances on each, because losing a container is an accepted write
+/// to the entity that lost it, and a client holding the old counter has to learn
+/// it happened.
+pub async fn detached_from_container(
+    tx: &mut WriteTx,
+    released: &[EntityId],
+    at: DateTime<Utc>,
+) -> sqlx::Result<Vec<Uncategorised>> {
+    if released.is_empty() {
+        return Ok(Vec::new());
+    }
+    let ids: Vec<uuid::Uuid> = released.iter().map(|e| e.as_uuid()).collect();
+    let sql = format!(
+        "UPDATE entity SET counter = counter + 1, updated_at = $2 \
+         WHERE id = ANY($1) \
+         RETURNING id, {AUDIENCE_COLUMN} AS audience, author_member_id, counter"
+    );
+    let rows = sqlx::query(sqlx::AssertSqlSafe(sql))
+        .bind(&ids)
+        .bind(at)
+        .fetch_all(tx.conn())
+        .await?;
+
+    rows.iter()
+        .map(|r| {
+            Ok(Uncategorised {
+                id: r.try_get("id")?,
+                audience: r
+                    .try_get::<Vec<uuid::Uuid>, _>("audience")?
+                    .into_iter()
+                    .map(MemberRef::from_uuid)
+                    .collect(),
+                author: r
+                    .try_get::<Option<uuid::Uuid>, _>("author_member_id")?
+                    .map(MemberRef::from_uuid),
+                counter: r.try_get("counter")?,
+            })
+        })
+        .collect()
+}
+
 /// The entities a single removal act put into holding, as this member can see
 /// them.
 ///
