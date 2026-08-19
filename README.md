@@ -5,7 +5,7 @@
 [![Licence: AGPL-3.0-or-later](https://img.shields.io/badge/licence-AGPL--3.0--or--later-blue)](LICENSE)
 
 [![Status: pre-alpha](https://img.shields.io/badge/status-pre--alpha-orange)](#status)
-[![Waves 0 to 3 complete](https://img.shields.io/badge/waves-0%20to%203%20complete-yellowgreen)](docs/altair-v0-implementation-plan.md)
+[![Waves 0 to 4 complete](https://img.shields.io/badge/waves-0%20to%204%20complete-yellowgreen)](docs/altair-v0-implementation-plan.md)
 [![Rust edition 2024](https://img.shields.io/badge/rust-edition%202024-dea584)](Cargo.toml)
 [![PostgreSQL 18 with pgvector](https://img.shields.io/badge/postgresql-18%20with%20pgvector-336791)](docs/DR-002-postgresql-structured-store.md)
 
@@ -28,7 +28,7 @@ One instance serves one household. Nobody else can raise the price, change the t
 | Wave 1 · foundations | Landed. Store bootstrap and the audience predicate, block division, the object store, token validation, and the outbox conformance suite |
 | Wave 2 · write path | 2.1 the intent spine, 2.2 type content across all three domains, and 2.3 file bodies have landed. **2.4, reclamation, was skipped and is still outstanding** — there is no retention window, no horizon value, and nothing sweeps |
 | Wave 3 · read path | Landed. Literal retrieval, the per-member change stream, and health. All six calls in the interface are now served |
-| Wave 4 · terminal client | 4.1, the device store and the outbox, has landed and the conformance suite is green. 4.2, the replica face and the screens, is next. The first useful day is the end of it |
+| Wave 4 · terminal client | Landed, all six stages. The device store and the outbox (conformance green), the canary against a real instance, the replica, the shell in two themes, thirteen screens, and a client that runs. **The first useful day** |
 | Waves 5 and 6 | Semantic retrieval, then the message bridge and operations |
 
 The outbox conformance suite **was deliberately red** until Wave 4.1 wrote the outbox it judges. It is a real gate now: thirty-four scenarios pass and one is skipped for a reason recorded in [`crates/altair-conformance/README.md`](crates/altair-conformance/README.md). Read that before touching it.
@@ -143,7 +143,8 @@ crates/
     migrations/            0001_initial.sql is migration one, and is not re-derived
   altair-proto/            Generated contract types (protox + tonic, no protoc needed)
   altair-conformance/      The conformance harness, and the fake instance the client develops against
-  altair-tui/              The terminal client: the device store, the outbox, and the conformance adapter
+  altair-tui/              The terminal client: the device store, the outbox, the replica,
+                           the shell and screens, and the conformance adapter
 compose.yaml               PostgreSQL 18 with pgvector, for tests
 mise.toml                  Toolchain and task definitions
 ```
@@ -163,6 +164,20 @@ mise run test                # brings up Postgres, then cargo test --workspace
 `mise run test` is the whole loop: it runs `docker compose up -d --wait` and then the workspace suite. The harness stands up a **real PostgreSQL**, not a mock, because the audience predicate, both indexes, and `SKIP LOCKED` are Postgres behaviour. Migrations are applied once into a template database and each test branches it with `CREATE DATABASE … TEMPLATE`, so per-test isolation costs about a connection.
 
 Where several worktrees run lanes in parallel against one Postgres, set `ALTAIR_TEST_PREFIX` per worktree so they do not fight over the template name.
+
+To run the client:
+
+```bash
+cargo run -p altair-tui --bin altair
+```
+
+It needs nothing to start. Without `ALTAIR_INSTANCE` it captures locally and
+holds everything, which is the same thing it does when the instance is
+unreachable — acceptance is local, and neither connectivity nor credentials
+participate in it. Four variables are read, all optional: `ALTAIR_INSTANCE`,
+`ALTAIR_STATE_DIR`, `ALTAIR_THEME` (`starfield` or `daylight`), and
+`ALTAIR_GLYPHS` (`narrow` for terminals that render `◆` and its family two
+cells wide).
 
 To run the outbox conformance suite:
 

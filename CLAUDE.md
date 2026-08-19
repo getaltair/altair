@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this repository is right now
 
-**Design documents, the instance's write and read paths, and the client's device store and outbox.** Everything in `docs/` specifies a self-hosted personal system ("Altair"); `crates/` is the instance and, now, the terminal client. Wave 0, all five Wave 1 lanes, Waves 2.1 through 2.3, all three Wave 3 lanes and Wave 4.1 have landed — store bootstrap and the audience predicate, block division, the object store, token validation, the outbox conformance suite, the intent spine, type content across all three domains, file bodies, literal retrieval, the change stream, health, and the client's device store and outbox. **Wave 2.4 — reclamation, the retention windows, the horizon value — was skipped and is still outstanding**, and Waves 3 and 4 proceeded without it. All six calls in the interface are served. **The client has no replica face and no screens: 4.2 is next.**
+**Design documents, the instance's write and read paths, and a terminal client that runs.** Everything in `docs/` specifies a self-hosted personal system ("Altair"); `crates/` is the instance and the terminal client. Wave 0, all five Wave 1 lanes, Waves 2.1 through 2.3, all three Wave 3 lanes and all six stages of Wave 4 have landed — store bootstrap and the audience predicate, block division, the object store, token validation, the outbox conformance suite, the intent spine, type content across all three domains, file bodies, literal retrieval, the change stream, health, and the client's device store, outbox, replica, shell and thirteen screens. **Wave 2.4 — reclamation, the retention windows, the horizon value — was skipped and is still outstanding**, and Waves 3 and 4 proceeded without it. All six calls in the interface are served, and `altair` runs. **Wave 5, semantic retrieval, is next, and is re-planned at this boundary before anything is built.**
 
 Consequences for working here:
 
@@ -101,8 +101,11 @@ crates/altaird/            the instance: store/ (audience, tx, entity, relation,
 crates/altaird/migrations/ 0001_initial.sql and 0002_write_provenance.sql, not re-derived
 crates/altair-proto/       generated contract types (protox + tonic)
 crates/altair-conformance/ the outbox harness, the fake instance, and a null client stub
-crates/altair-tui/         the terminal client: device.rs (SQLite), wire.rs, sender.rs (the
-                           outbox), signals.rs, adapter.rs (the conformance mode), bin `altair`
+crates/altair-tui/         the terminal client: device.rs (SQLite, migrated), wire.rs,
+                           sender.rs (the outbox), replica.rs, session.rs, signals.rs,
+                           editor.rs, config.rs, ui/ (theme, glyphs, chrome, help, view,
+                           screens/), app/ (the loop and compose), adapter.rs (the
+                           conformance mode), bin `altair`
 ```
 
 **The conformance suite was red on purpose and is now a real gate.** Wave 4.1 wrote the outbox it judges; thirty-four scenarios pass, A3 is skipped for a recorded reason, and its CI job is no longer `continue-on-error`. It still sits behind the `run-conformance` feature, because it launches a client process per scenario and drives it for seconds at a time. Read `crates/altair-conformance/README.md` before touching it — in particular before deciding a skip is a gap.
@@ -115,7 +118,7 @@ Seven waves. Waves 1–3 are planned against reality; Wave 5 onward names outcom
 | 1 · Foundations | 1.1 store bootstrap · 1.2 block division · 1.3 object store · 1.4 token validation · 1.5 outbox conformance suite | Five genuinely independent lanes, one worktree each. 1.5's deliverable is a **red suite** — every scenario runs and fails. |
 | 2 · Write path | 2.1 intent spine, **including relations and the served submission call** — landed · 2.2 type content, all three domains — landed · 2.3 file bodies — landed · 2.4 reclamation — **not started** | 2.1 is sequential and load-bearing; do not parallelise the spine, do parallelise what hangs off it. Re-planned at the Wave 1 boundary: **migration two** opens 2.1, adding per-part write provenance and a lifecycle on a relation. |
 | 3 · Read path | 3.1 literal retrieval arm · 3.2 change stream and horizon · 3.3 health — all landed | Literal only. The six served calls include **no way to fetch an entity by identity and no way to list what a container holds**: `Query` is the literal arm, it cannot enumerate, and it answers with entities and never relations. The change stream is the only source of either. |
-| 4 · Terminal client | 4.1 Rust outbox — **landed**, the suite is green · 4.2 replica face and ratatui client — **not started** | **First useful day**, at the end of 4.2. The TUI carries the whole editing surface; there is no browser and no second client. `altair-wave-4-plan.md` sequences it in six stages; 4.1 is stages one and two. |
+| 4 · Terminal client | **Landed, all six stages.** 4.1 the device store and outbox (the suite is green) · 4.2 the canary, the replica, the shell, thirteen screens, and a running client | **The first useful day.** The TUI carries the whole editing surface; there is no browser and no second client. `altair-wave-4-plan.md` sequenced it in six stages; 4.1 is stages one and two. |
 | 5 · Semantic | derivation worker · inference boundary and bi-encoder · semantic arm and fusion | The embedding model is chosen **here**, against a real corpus, and fixes the schema dimension. |
 | 6 · Second client and ops | message bridge · packaging · backup/restore/upgrade | The bridge is the first test of whether the interface carries the obligations rather than the TUI's code. |
 
@@ -154,6 +157,16 @@ Observations from building the device store and the outbox that 4.2, and the Kot
 - **A3 is skipped and it is not a gap.** Its condition is a device that has never been signed in, and every client the harness launches is handed a token in its environment; the terminal client binds from that token, so the condition cannot arise. A client whose binding is a separate act — the Android one — declares `unbound_capture` and runs it. Deciding a skip is a gap and "fixing" it is how a green suite stops meaning anything.
 - **The suite finds the client binary by path.** Cargo only sets `CARGO_BIN_EXE_*` for binaries of the package under test, and the client is deliberately a different package — it depends on the generated contract and not on the harness. `mise run conformance` builds it first; a scenario failing on a missing binary means that step was skipped.
 - **The conformance adapter is a mode of `altair`, behind the `conformance` feature.** The feature exists so the shipped client does not link the harness that judges it. What it drives — the store, the sender, the signals — is not behind a feature and is exactly what the screens will use.
+
+## What Wave 4.2 settled, for the waves that follow
+
+- **A terminal is a surface nobody can review from a diff**, so a snapshot records three things: the palette, the grid, and a colour key naming the token behind every run. Each catches what the others cannot — the grid alone goes green on a theme rendered entirely in one colour, and the key alone goes green when a token keeps its name and changes its value, which is what editing a palette does. Both failure modes were induced and watched before the snapshots were trusted.
+- **Snapshots cannot see what running it sees.** Three defects came out of driving the real binary in a pty and none of them could have failed a snapshot: framing a screen subtracted the chrome's four lines from a terminal of height zero and panicked; the faults screen listed everything unsent under a heading counting it, inverting *waiting is silent* and printing the one forbidden number; and every row wore a "not sent" marker, which is an indication of how many as soon as there is more than one. **Run it before believing it.**
+- **The device store has migrations and the instance's reasoning does not apply.** `CREATE TABLE IF NOT EXISTS` builds a new store correctly and does nothing to an existing one, so a person who updated the client would find their unsent captures unreadable. Additive and forward only is enough: what is on a device is either an outbox, which is never restructured, or a copy of the instance's, which can be thrown away and read again.
+- **The overlay is one rule and it is worth stating exactly.** The local view outranks the instance's *only* while something local has not got there yet. With nothing pending the instance's copy is the newer one and wins, which is what makes somebody else's edit arrive at all.
+- **The convergence property test catches paging-sensitivity and nothing else.** Both sides run the same code, so an order-independent bug passes it — and its first version passed over two index tables that were never written, because the edit meant to maintain them silently did not apply. The projection tests are the other half.
+- **Two glyph sets, and the hazard is checked mechanically.** A character is Ambiguous when `width` and `width_cjk` disagree, which is the definition and therefore the test. One check asserts the *signature* set still carries the hazard: the day it does not, the narrow-safe set has stopped earning its place and should go rather than linger.
+- **The help surface is an assembled document.** It decides nothing and is checked for the shapes that would make it a lie — a number it may not state, a promise the client does not keep. It no longer claims to keep a buffer as the person types, because composition is a handoff now.
 
 ## Branching and pull requests
 
