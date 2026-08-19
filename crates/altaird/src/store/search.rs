@@ -110,7 +110,7 @@ pub async fn literal(
     let mut q = CandidateQuery::new(member, LifecycleScope::Active, &entity::columns())
         .select_also(
             "(ts_rank(e.search_vector, plainto_tsquery('english', $?)) \
-             + similarity(e.search_text, $?)) AS altair_score",
+             + similarity(e.search_text, $?))::float8 AS altair_score",
             [Bind::Text(text.to_owned()), Bind::Text(text.to_owned())],
         )
         .select_also(

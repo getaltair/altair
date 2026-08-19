@@ -228,7 +228,7 @@ impl v1::altair_server::Altair for Instance {
         // doesn't already tell us for free.
         let object_store_reachable = !matches!(
             self.write.objects().enumerate().next().await,
-            Some(Err(objects::Error::Unavailable(_)))
+            Some(Err(e)) if e.is_currently_unavailable()
         );
 
         // Independent of the structured store, so a database outage does not
