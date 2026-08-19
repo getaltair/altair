@@ -3,10 +3,10 @@
 //! # Four calls are served and two are not, on purpose
 //!
 //! Wave 2.1 stood up `Submit` end to end; Wave 2.3 added `PutBody` and
-//! `GetBody`; Wave 3.3 adds `GetHealth`. `Query` and `Changes` still answer
-//! `unimplemented`, and will until their own waves. Two of the write path's
-//! requirements are observable only through `Submit` and are not testable
-//! from an internal function:
+//! `GetBody`; Wave 3.1 adds `Query`, the literal retrieval arm, and Wave 3.3
+//! adds `GetHealth`. `Changes` still answers `unimplemented`, and will until
+//! its own wave lands. Two of the write path's requirements are observable
+//! only through `Submit` and are not testable from an internal function:
 //!
 //! - **A submission is never all or nothing.** The answer carries one
 //!   acknowledgement per intent, in the order submitted, and an intent that was
@@ -16,9 +16,10 @@
 //!   refusals inside it. Any other status would say, at the transport, the
 //!   thing the single refusal reason exists to avoid saying.
 //!
-//! `tests/submission_call.rs` asserts both, and asserts that the remaining
-//! two are deliberately absent rather than forgotten. `tests/file_bodies.rs`
-//! covers `PutBody` and `GetBody`; `tests/health.rs` covers `GetHealth`.
+//! `tests/submission_call.rs` asserts both, and asserts that the one
+//! remaining call is deliberately absent rather than forgotten.
+//! `tests/file_bodies.rs` covers `PutBody` and `GetBody`; `tests/health.rs`
+//! covers `GetHealth`.
 //!
 //! # What a status means here
 //!
@@ -29,13 +30,17 @@
 //!   credential all produce it, indistinguishably, and DR-005 says the client
 //!   holds silently. It is not a fault and must not be signalled as one.
 //! - `Unavailable` — a wait. The store could not be reached, nothing was
-//!   acknowledged, and the outbox holds. To the person this is the same as the
-//!   instance being unreachable, which is why it is the same outcome.
+//!   acknowledged (or, on `Query`, nothing was answered), and the outbox
+//!   holds where one applies. To the person this is the same as the instance
+//!   being unreachable, which is why it is the same outcome.
 //! - `NotFound` — a wait, on `GetBody` only. Indistinguishable from an
 //!   entity outside the requester's audience, for the same reason a refusal
 //!   never says which of "does not exist" and "not yours to see" is true.
+//! - `InvalidArgument` — a fault, on `Query` only so far. A malformed
+//!   `container_id` — not 16 bytes — cannot be answered, and waiting will not
+//!   fix a request that names no valid identity.
 //! - `Unimplemented` — a fault. Waiting will not clear it. That is the honest
-//!   answer for the two calls this item does not serve.
+//!   answer for the one call this item does not serve.
 //!
 //! **An intent being refused is none of these.** It is `Ok`, inside the
 //! response, which is what makes a batch partial.
@@ -51,7 +56,16 @@ use altair_proto::v1;
 use crate::auth::{Authentication, Authenticator, Member, bearer_token};
 use crate::objects::{self, BodyId, ByteSource, StorageCapacity};
 use crate::store;
+use crate::store::entity::EntityType;
+use crate::store::ids::EntityId;
+use crate::store::search::{self, Domain, Scope};
 use crate::write::{BodyLookup, WritePath, content};
+
+/// A `Query` with no stated limit falls back to this rather than answering
+/// nothing. `limit` has no proto3 presence — zero and unset are the same
+/// value on the wire — so a caller who never set it gets an ordinary answer
+/// instead of an empty one.
+const DEFAULT_QUERY_LIMIT: i64 = 50;
 
 /// The instance, as callers reach it.
 pub struct Instance {
@@ -96,11 +110,11 @@ impl Instance {
     }
 }
 
-/// The two calls this build does not serve: `Query`, `Changes`.
+/// The one call this build does not serve: `Changes`.
 ///
-/// One message rather than two, because a caller has nothing to do
-/// differently for either of them and the difference would only invite one to
-/// try.
+/// Its own message, even though nothing distinguishes it from a second
+/// absent call in what a caller does about it — Wave 3.2 closes it next, and
+/// there is no other candidate for this constant to keep naming.
 const NOT_YET: &str = "this call is not served by this build";
 
 #[tonic::async_trait]
@@ -123,9 +137,62 @@ impl v1::altair_server::Altair for Instance {
 
     async fn query(
         &self,
-        _request: Request<v1::QueryRequest>,
+        request: Request<v1::QueryRequest>,
     ) -> Result<Response<v1::QueryResponse>, Status> {
-        Err(Status::unimplemented(NOT_YET))
+        let member = self.member(&request).await?;
+        let req = request.into_inner();
+
+        let container = req
+            .container_id
+            .as_deref()
+            .map(content::identifier)
+            .transpose()
+            .map_err(|_| Status::invalid_argument("an entity identity is 16 bytes"))?
+            .map(EntityId::from_uuid);
+
+        let scope = Scope {
+            domain: req
+                .domain
+                .and_then(|d| v1::Domain::try_from(d).ok())
+                .and_then(domain_from_wire),
+            entity_type: req
+                .entity_kind
+                .and_then(|k| v1::EntityKind::try_from(k).ok())
+                .and_then(entity_kind_from_wire),
+            container,
+        };
+        let limit = if req.limit == 0 {
+            DEFAULT_QUERY_LIMIT
+        } else {
+            i64::from(req.limit)
+        };
+
+        match self.write.query(&member, &req.text, &scope, limit).await {
+            Ok(results) => {
+                let derivation_outstanding = search::derivation_outstanding(&results);
+                let results = results
+                    .into_iter()
+                    .map(|r| v1::Result {
+                        entity: Some(r.entity.into_wire()),
+                        score: r.score,
+                    })
+                    .collect();
+                Ok(Response::new(v1::QueryResponse {
+                    results,
+                    state: Some(v1::AnswerState {
+                        // Wave 5 chooses the embedding model and stands up the
+                        // semantic arm; until then this is honestly false
+                        // rather than a placeholder standing in for it.
+                        semantic_available: false,
+                        derivation_outstanding,
+                    }),
+                }))
+            }
+            // The instance failed, so nothing was answered. Silent, the same
+            // way a submission's own store fault is: the detail would
+            // describe the store to somebody who cannot act on it.
+            Err(_) => Err(Status::unavailable("")),
+        }
     }
 
     async fn changes(
@@ -256,6 +323,37 @@ impl v1::altair_server::Altair for Instance {
             }
             Err(_) => Err(Status::unavailable("")),
         }
+    }
+}
+
+/// `Domain::Unspecified` is "every domain", which [`Scope`] spells as `None`
+/// rather than as a variant of its own.
+fn domain_from_wire(d: v1::Domain) -> Option<Domain> {
+    match d {
+        v1::Domain::Unspecified => None,
+        v1::Domain::Guidance => Some(Domain::Guidance),
+        v1::Domain::Knowledge => Some(Domain::Knowledge),
+        v1::Domain::Tracking => Some(Domain::Tracking),
+    }
+}
+
+/// `EntityKind::Unspecified` is "every type", the same way
+/// [`domain_from_wire`]'s unspecified is "every domain".
+fn entity_kind_from_wire(k: v1::EntityKind) -> Option<EntityType> {
+    match k {
+        v1::EntityKind::Unspecified => None,
+        v1::EntityKind::Campaign => Some(EntityType::Campaign),
+        v1::EntityKind::Arc => Some(EntityType::Arc),
+        v1::EntityKind::Quest => Some(EntityType::Quest),
+        v1::EntityKind::Routine => Some(EntityType::Routine),
+        v1::EntityKind::FocusSession => Some(EntityType::FocusSession),
+        v1::EntityKind::CheckIn => Some(EntityType::CheckIn),
+        v1::EntityKind::Note => Some(EntityType::Note),
+        v1::EntityKind::File => Some(EntityType::File),
+        v1::EntityKind::Item => Some(EntityType::Item),
+        v1::EntityKind::Location => Some(EntityType::Location),
+        v1::EntityKind::ShoppingList => Some(EntityType::ShoppingList),
+        v1::EntityKind::Category => Some(EntityType::Category),
     }
 }
 

@@ -203,9 +203,10 @@ pub enum Bind {
 /// A query over `entity` that carries the audience predicate by construction.
 ///
 /// The constructor emits `FROM entity e WHERE <audience predicate> AND
-/// <lifecycle>`. Everything a caller adds is conjoined onto that, so there is
-/// no sequence of calls on this type that produces a query over `entity`
-/// without the predicate in it.
+/// <lifecycle>`. Everything a caller adds — a further condition, a further
+/// projected column, trailing `ORDER BY`/`LIMIT` — is conjoined or appended
+/// onto that, so there is no sequence of calls on this type that produces a
+/// query over `entity` without the predicate in it.
 ///
 /// The select list and any added fragment are caller-supplied SQL, so the
 /// obvious escape is a second, unscoped reference to `entity` — a `UNION ALL
@@ -219,7 +220,9 @@ pub enum Bind {
 /// determined; these stop the mistake, which is the thing that actually
 /// happens.
 pub struct CandidateQuery {
-    sql: String,
+    select_list: String,
+    condition: String,
+    tail: String,
     member: Uuid,
     binds: Vec<Bind>,
 }
@@ -231,15 +234,35 @@ impl CandidateQuery {
         // `entity` fits.
         Self::refuse_raw_placeholders(select_list);
         Self::refuse_a_second_entity_reference(select_list);
-        let sql = format!(
-            "SELECT {select_list} FROM entity e WHERE {AUDIENCE_PREDICATE} AND {}",
-            lifecycle.sql()
-        );
         Self {
-            sql,
+            select_list: select_list.to_owned(),
+            condition: format!("{AUDIENCE_PREDICATE} AND {}", lifecycle.sql()),
+            tail: String::new(),
             member: member.as_uuid(),
             binds: Vec::new(),
         }
+    }
+
+    /// Adds another expression to the projection, with the same `$?`
+    /// convention as [`CandidateQuery::and_where`].
+    ///
+    /// The projection [`CandidateQuery::new`] takes cannot itself carry a
+    /// bind — nothing renders `$?` inside it, so a caller-supplied value there
+    /// would reach Postgres as the literal text `$?` and fail to parse. This
+    /// exists for exactly the case that forces one: a per-request value, such
+    /// as the literal arm's match rank against caller-supplied text, that has
+    /// to be part of what is selected rather than only how rows are filtered
+    /// or ordered.
+    ///
+    /// # Panics
+    ///
+    /// As [`CandidateQuery::and_where`].
+    pub fn select_also(mut self, expr: &str, binds: impl IntoIterator<Item = Bind>) -> Self {
+        let (rendered, binds) = self.render(expr, binds);
+        self.select_list.push_str(", ");
+        self.select_list.push_str(&rendered);
+        self.binds.extend(binds);
+        self
     }
 
     /// Conjoins another condition. Write `$?` for each bound value; positions
@@ -254,8 +277,8 @@ impl CandidateQuery {
     /// error far from its cause.
     pub fn and_where(mut self, condition: &str, binds: impl IntoIterator<Item = Bind>) -> Self {
         let (rendered, binds) = self.render(condition, binds);
-        self.sql.push_str(" AND ");
-        self.sql.push_str(&rendered);
+        self.condition.push_str(" AND ");
+        self.condition.push_str(&rendered);
         self.binds.extend(binds);
         self
     }
@@ -335,15 +358,18 @@ impl CandidateQuery {
     /// As [`CandidateQuery::and_where`].
     pub fn tail(mut self, sql: &str, binds: impl IntoIterator<Item = Bind>) -> Self {
         let (rendered, binds) = self.render(sql, binds);
-        self.sql.push(' ');
-        self.sql.push_str(&rendered);
+        self.tail.push(' ');
+        self.tail.push_str(&rendered);
         self.binds.extend(binds);
         self
     }
 
     /// The assembled SQL. For diagnostics and for tests.
-    pub fn sql(&self) -> &str {
-        &self.sql
+    pub fn sql(&self) -> String {
+        format!(
+            "SELECT {} FROM entity e WHERE {}{}",
+            self.select_list, self.condition, self.tail
+        )
     }
 
     /// The query, with the member bound as `$1` and everything else after it.
@@ -352,7 +378,7 @@ impl CandidateQuery {
         // string is either a constant in this file or a fragment a caller
         // wrote as a literal. No value reaches it — values are bound, and
         // `$?` is substituted for a position, never for content.
-        let mut q = sqlx::query(AssertSqlSafe(self.sql.clone())).bind(self.member);
+        let mut q = sqlx::query(AssertSqlSafe(self.sql())).bind(self.member);
         for b in &self.binds {
             q = match b {
                 Bind::Uuid(v) => q.bind(*v),
