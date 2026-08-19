@@ -19,7 +19,10 @@ use tokio::fs;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use uuid::Uuid;
 
-use super::{Body, BodyId, BodyListing, BodyStream, ByteSource, Error, ObjectStore, StoredBody};
+use super::{
+    Body, BodyId, BodyListing, BodyStream, ByteSource, Error, ObjectStore, StorageCapacity,
+    StoredBody,
+};
 
 /// Read and written in 64 KiB pieces. Large enough that syscall overhead
 /// disappears against the copy, small enough that a body of any size costs
@@ -296,4 +299,23 @@ impl ObjectStore for FilesystemObjectStore {
 enum Walk {
     Start(PathBuf),
     Walking(Vec<fs::ReadDir>),
+}
+
+#[async_trait::async_trait]
+impl StorageCapacity for FilesystemObjectStore {
+    /// `statvfs` is a syscall, run on a blocking thread for the same reason
+    /// every other operation here keeps the executor off blocking I/O — even
+    /// though this one is a single stat rather than a stream of them.
+    async fn bytes_free(&self) -> Result<u64, Error> {
+        let root = self.root.clone();
+        tokio::task::spawn_blocking(move || {
+            let stat = rustix::fs::statvfs(&root).map_err(|e| Error::Unavailable(e.into()))?;
+            // Available to an unprivileged process, not merely unallocated —
+            // many filesystems reserve a slice of free blocks for root, and
+            // that slice is never real headroom for a household's files.
+            Ok(stat.f_bavail * stat.f_frsize)
+        })
+        .await
+        .map_err(|e| Error::Unavailable(io::Error::other(e)))?
+    }
 }
