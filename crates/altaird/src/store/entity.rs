@@ -77,7 +77,10 @@ pub enum LifecycleState {
 
 /// The projection every read here uses. Built through [`AUDIENCE_COLUMN`] so
 /// that the audience column is named in exactly one file.
-fn columns() -> String {
+///
+/// `pub(crate)` so [`super::search`] can build on it rather than duplicating
+/// the column list for the literal arm's own candidate query.
+pub(crate) fn columns() -> String {
     format!(
         "e.id, e.type AS entity_type, e.title, e.author_member_id, \
          e.{AUDIENCE_COLUMN} AS audience, e.lifecycle, e.deleted_at, \
@@ -86,7 +89,10 @@ fn columns() -> String {
     )
 }
 
-fn row(r: &PgRow) -> sqlx::Result<EntityRow> {
+/// `pub(crate)` for the same reason as [`columns`]: [`super::search`] fetches
+/// through a projection that starts with these columns and adds its own, and
+/// needs the same parse rather than a second copy of it.
+pub(crate) fn row(r: &PgRow) -> sqlx::Result<EntityRow> {
     Ok(EntityRow {
         id: r.try_get("id")?,
         entity_type: r.try_get("entity_type")?,
