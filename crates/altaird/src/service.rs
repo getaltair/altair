@@ -1,12 +1,12 @@
 //! The public interface, served.
 //!
-//! # Three calls are served and three are not, on purpose
+//! # Four calls are served and two are not, on purpose
 //!
-//! Wave 2.1 stood up `Submit` end to end; Wave 2.3 adds `PutBody` and
-//! `GetBody`. `Query`, `Changes`, and `GetHealth` still answer `unimplemented`,
-//! and will until their own waves. Two of the write path's requirements are
-//! observable only through `Submit` and are not testable from an internal
-//! function:
+//! Wave 2.1 stood up `Submit` end to end; Wave 2.3 added `PutBody` and
+//! `GetBody`; Wave 3.3 adds `GetHealth`. `Query` and `Changes` still answer
+//! `unimplemented`, and will until their own waves. Two of the write path's
+//! requirements are observable only through `Submit` and are not testable
+//! from an internal function:
 //!
 //! - **A submission is never all or nothing.** The answer carries one
 //!   acknowledgement per intent, in the order submitted, and an intent that was
@@ -17,8 +17,8 @@
 //!   thing the single refusal reason exists to avoid saying.
 //!
 //! `tests/submission_call.rs` asserts both, and asserts that the remaining
-//! three are deliberately absent rather than forgotten. `tests/file_bodies.rs`
-//! covers `PutBody` and `GetBody`.
+//! two are deliberately absent rather than forgotten. `tests/file_bodies.rs`
+//! covers `PutBody` and `GetBody`; `tests/health.rs` covers `GetHealth`.
 //!
 //! # What a status means here
 //!
@@ -35,7 +35,7 @@
 //!   entity outside the requester's audience, for the same reason a refusal
 //!   never says which of "does not exist" and "not yours to see" is true.
 //! - `Unimplemented` — a fault. Waiting will not clear it. That is the honest
-//!   answer for the three calls this item does not serve.
+//!   answer for the two calls this item does not serve.
 //!
 //! **An intent being refused is none of these.** It is `Ok`, inside the
 //! response, which is what makes a batch partial.
@@ -49,19 +49,33 @@ use tonic::{Request, Response, Status};
 use altair_proto::v1;
 
 use crate::auth::{Authentication, Authenticator, Member, bearer_token};
-use crate::objects::{self, BodyId, ByteSource};
+use crate::objects::{self, BodyId, ByteSource, StorageCapacity};
+use crate::store;
 use crate::write::{BodyLookup, WritePath, content};
 
 /// The instance, as callers reach it.
 pub struct Instance {
     auth: Arc<Authenticator>,
     write: WritePath,
+    /// Headroom on the object store's filesystem, for `GetHealth` only.
+    /// Separate from `write`'s `Arc<dyn ObjectStore>` because DR-003 fixes
+    /// that trait at exactly four operations and this is a fifth question,
+    /// not a fifth operation — see `objects::capacity`.
+    capacity: Arc<dyn StorageCapacity>,
 }
 
 impl Instance {
     #[must_use]
-    pub fn new(auth: Arc<Authenticator>, write: WritePath) -> Self {
-        Self { auth, write }
+    pub fn new(
+        auth: Arc<Authenticator>,
+        write: WritePath,
+        capacity: Arc<dyn StorageCapacity>,
+    ) -> Self {
+        Self {
+            auth,
+            write,
+            capacity,
+        }
     }
 
     /// Resolve the credential on a request, or say nothing about why not.
@@ -82,10 +96,10 @@ impl Instance {
     }
 }
 
-/// The three calls this build does not serve: `Query`, `Changes`, `GetHealth`.
+/// The two calls this build does not serve: `Query`, `Changes`.
 ///
-/// One message rather than three, because a caller has nothing to do
-/// differently for any of them and the difference would only invite one to
+/// One message rather than two, because a caller has nothing to do
+/// differently for either of them and the difference would only invite one to
 /// try.
 const NOT_YET: &str = "this call is not served by this build";
 
@@ -121,11 +135,53 @@ impl v1::altair_server::Altair for Instance {
         Err(Status::unimplemented(NOT_YET))
     }
 
+    /// Served without a member.
+    ///
+    /// Every other call on this service resolves one first, through
+    /// [`Instance::member`]. This is the deliberate exception: an infra probe
+    /// — a load balancer, a container healthcheck — cannot carry a bearer
+    /// token, and it is exactly the kind of caller this exists for. Nothing
+    /// answered here is a person's data; it is the instance describing
+    /// itself.
     async fn get_health(
         &self,
         _request: Request<v1::HealthRequest>,
     ) -> Result<Response<v1::HealthResponse>, Status> {
-        Err(Status::unimplemented(NOT_YET))
+        // The cheapest of the four operations that actually reaches the
+        // store rather than only validating a caller's arguments. A fifth,
+        // dedicated to reachability alone, would answer nothing `enumerate`
+        // doesn't already tell us for free.
+        let object_store_reachable = !matches!(
+            self.write.objects().enumerate().next().await,
+            Some(Err(objects::Error::Unavailable(_)))
+        );
+
+        // Independent of the structured store, so a database outage does not
+        // erase what this can still say about the filesystem.
+        let storage_bytes_free = self.capacity.bytes_free().await.unwrap_or(0);
+
+        let mut tx = store::begin_read(self.write.pool())
+            .await
+            .map_err(|_| Status::unavailable(""))?;
+        let derivation_outstanding = store::health::derivation_outstanding(&mut tx)
+            .await
+            .map_err(|_| Status::unavailable(""))?;
+        let intents_refused = store::health::intents_refused(&mut tx)
+            .await
+            .map_err(|_| Status::unavailable(""))?;
+
+        Ok(Response::new(v1::HealthResponse {
+            object_store_reachable,
+            // Wave 5 territory: no inference boundary exists yet in this
+            // codebase. An instance without a cross-encoder is conforming,
+            // not degraded, and reporting both absent is that fact rather
+            // than an apology for it.
+            bi_encoder_present: false,
+            cross_encoder_present: false,
+            derivation_outstanding,
+            intents_refused,
+            storage_bytes_free,
+        }))
     }
 
     async fn put_body(

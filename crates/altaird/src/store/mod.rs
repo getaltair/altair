@@ -6,6 +6,7 @@
 
 pub mod audience;
 pub mod entity;
+pub mod health;
 pub mod ids;
 pub mod tx;
 
