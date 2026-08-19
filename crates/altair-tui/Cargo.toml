@@ -1,0 +1,37 @@
+[package]
+name = "altair-tui"
+version = "0.0.0"
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[[bin]]
+name = "altair"
+path = "src/main.rs"
+
+[features]
+# The conformance adapter, which is a mode of this binary rather than a second
+# implementation of local acceptance. It is behind a feature only so the
+# shipped client does not link the harness that judges it; the store and the
+# outbox it drives are the ones the person's screens use.
+conformance = ["dep:altair-conformance"]
+
+[dependencies]
+altair-conformance = { path = "../altair-conformance", optional = true }
+altair-proto = { path = "../altair-proto" }
+prost = "0.14"
+prost-types = "0.14"
+# Pinned below the latest on purpose: `sqlx-sqlite` is in the workspace's
+# resolve graph through `altaird`, and only one package may link `sqlite3`.
+# Later rusqlite wants a `libsqlite3-sys` newer than sqlx will accept.
+rusqlite = { version = "0.37", features = ["bundled"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "time", "sync"] }
+tokio-stream = "0.1"
+tonic = "0.14"
+uuid = { version = "1", features = ["v4"] }
+
+[dev-dependencies]
+altair-conformance = { path = "../altair-conformance" }
+tempfile = "3"

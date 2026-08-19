@@ -89,6 +89,75 @@ fn sources(root: &Path) -> Vec<PathBuf> {
     out
 }
 
+/// Whether a source belongs to a crate that could reach the instance's
+/// structured store at all.
+///
+/// **The rule this scopes is about one table in one database**: the `entity`
+/// table in the instance's PostgreSQL, where a candidate set that reached it
+/// without the audience predicate would be a leak. A crate that does not link
+/// `altaird` cannot name that store, so "this went round the predicate" is a
+/// sentence that cannot be said about it — Cargo forbids the dependency cycle
+/// that would let it.
+///
+/// **`altair-tui` is the live example and the reason this scope is written
+/// down.** The terminal client keeps a SQLite file on a device holding what
+/// that member has already been shown, and it has an `entity` table because
+/// that is what the thing is called. A substring scan reads its `FROM entity`
+/// as an instance query going round the predicate, and the only ways to
+/// silence that without this scope are to rename a client's table for the
+/// instance's benefit or to move client code into the instance's store layer.
+/// Both are worse than the check being narrower.
+///
+/// **What this deliberately gives up.** A crate that never links `altaird` and
+/// talks to the same PostgreSQL anyway — a reporting tool handed
+/// `DATABASE_URL` — is not scanned. That is a different mistake from the one
+/// this guards, and a harder one to make by accident: such a tool has to be
+/// given the connection string, and being given it is itself the reviewable
+/// moment.
+///
+/// The first check in this file, the predicate's own SQL counted across the
+/// whole tree, is deliberately **not** scoped this way. A literal paste is a
+/// literal paste wherever it lands.
+fn could_reach_the_instances_store(root: &Path, path: &Path) -> bool {
+    let Ok(relative) = path.strip_prefix(root) else {
+        return true;
+    };
+    let mut parts = relative
+        .components()
+        .map(|c| c.as_os_str().to_string_lossy());
+    if parts.next().as_deref() != Some("crates") {
+        // Not in a crate at all, so nothing is known about it. Scanned.
+        return true;
+    }
+    let Some(name) = parts.next() else {
+        return true;
+    };
+    if name == "altaird" {
+        return true;
+    }
+    let Ok(manifest) = std::fs::read_to_string(root.join("crates").join(&*name).join("Cargo.toml"))
+    else {
+        return true;
+    };
+    declares_the_instance(&manifest)
+}
+
+/// Whether a manifest declares a dependency on the instance, in any of the
+/// three tables.
+///
+/// **A bare mention is not enough, and finding that out cost a run.** The
+/// terminal client's manifest carries a comment naming `altaird` — it explains
+/// why `rusqlite` is pinned below the latest, which is a `links = "sqlite3"`
+/// conflict with the `sqlx-sqlite` that `altaird` drags into the resolve graph.
+/// A substring scan reads that comment as a dependency. The same shape is in
+/// `object_store_boundary.rs::links_instance`, for the same reason.
+fn declares_the_instance(manifest: &str) -> bool {
+    manifest.lines().map(str::trim).any(|line| {
+        (line.starts_with("altaird") && line.contains('='))
+            || (line.starts_with('[') && line.contains("altaird"))
+    })
+}
+
 #[test]
 fn the_predicate_sql_exists_once_in_the_tree() {
     let needle = altaird::store::audience::predicate_sql();
@@ -203,7 +272,10 @@ fn nothing_outside_the_store_layer_queries_the_entity_table() {
     let root = repo_root();
     let mut offenders: Vec<String> = Vec::new();
     for path in sources(&root) {
-        if path.to_string_lossy().contains(&store) || is_test_source(&path) {
+        if path.to_string_lossy().contains(&store)
+            || is_test_source(&path)
+            || !could_reach_the_instances_store(&root, &path)
+        {
             continue;
         }
         let Ok(text) = std::fs::read_to_string(&path) else {

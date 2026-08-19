@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this repository is right now
 
-**Design documents plus the instance's write and read paths.** Everything in `docs/` specifies a self-hosted personal system ("Altair"); `crates/` is the instance. Wave 0, all five Wave 1 lanes, Waves 2.1 through 2.3 and all three Wave 3 lanes have landed — store bootstrap and the audience predicate, block division, the object store, token validation, the outbox conformance suite, the intent spine, type content across all three domains, file bodies, literal retrieval, the change stream, and health. **Wave 2.4 — reclamation, the retention windows, the horizon value — was skipped and is still outstanding**, and Wave 3 proceeded without it. All six calls in the interface are served. There is no client.
+**Design documents, the instance's write and read paths, and the client's device store and outbox.** Everything in `docs/` specifies a self-hosted personal system ("Altair"); `crates/` is the instance and, now, the terminal client. Wave 0, all five Wave 1 lanes, Waves 2.1 through 2.3, all three Wave 3 lanes and Wave 4.1 have landed — store bootstrap and the audience predicate, block division, the object store, token validation, the outbox conformance suite, the intent spine, type content across all three domains, file bodies, literal retrieval, the change stream, health, and the client's device store and outbox. **Wave 2.4 — reclamation, the retention windows, the horizon value — was skipped and is still outstanding**, and Waves 3 and 4 proceeded without it. All six calls in the interface are served. **The client has no replica face and no screens: 4.2 is next.**
 
 Consequences for working here:
 
@@ -18,7 +18,7 @@ Consequences for working here:
 mise install                 # toolchain: rust, prek, mado. Docker is the only other prerequisite
 cp .env.example .env         # DATABASE_URL, read by the test harness only
 mise run test                # docker compose up -d --wait, then cargo test --workspace
-mise run conformance         # the outbox scenarios — RED ON PURPOSE, see below
+mise run conformance         # the outbox scenarios, against the real client — a real gate now
 prek run --all-files         # rustfmt, clippy -D warnings, mado, hygiene. CI runs these same hooks
 ```
 
@@ -100,10 +100,12 @@ crates/altaird/            the instance: store/ (audience, tx, entity, relation,
                            specific/ one module per domain), service.rs (all six calls served)
 crates/altaird/migrations/ 0001_initial.sql and 0002_write_provenance.sql, not re-derived
 crates/altair-proto/       generated contract types (protox + tonic)
-crates/altair-conformance/ the outbox harness and a null client stub
+crates/altair-conformance/ the outbox harness, the fake instance, and a null client stub
+crates/altair-tui/         the terminal client: device.rs (SQLite), wire.rs, sender.rs (the
+                           outbox), signals.rs, adapter.rs (the conformance mode), bin `altair`
 ```
 
-**The conformance suite is red on purpose and must stay that way until Wave 4.1.** It sits behind the `run-conformance` feature so `cargo test --workspace` stays green and `main` stays mergeable, and its CI job is `continue-on-error`. Scenarios turn green one at a time as the outbox lands; anything that makes one pass without an outbox behind it destroys the deliverable. Read `crates/altair-conformance/README.md` before touching it.
+**The conformance suite was red on purpose and is now a real gate.** Wave 4.1 wrote the outbox it judges; thirty-four scenarios pass, A3 is skipped for a recorded reason, and its CI job is no longer `continue-on-error`. It still sits behind the `run-conformance` feature, because it launches a client process per scenario and drives it for seconds at a time. Read `crates/altair-conformance/README.md` before touching it — in particular before deciding a skip is a gap.
 
 Seven waves. Waves 1–3 are planned against reality; Wave 5 onward names outcomes and deliberately leaves shape open. **Re-plan at each wave boundary, and only the next wave.**
 
@@ -113,7 +115,7 @@ Seven waves. Waves 1–3 are planned against reality; Wave 5 onward names outcom
 | 1 · Foundations | 1.1 store bootstrap · 1.2 block division · 1.3 object store · 1.4 token validation · 1.5 outbox conformance suite | Five genuinely independent lanes, one worktree each. 1.5's deliverable is a **red suite** — every scenario runs and fails. |
 | 2 · Write path | 2.1 intent spine, **including relations and the served submission call** — landed · 2.2 type content, all three domains — landed · 2.3 file bodies — landed · 2.4 reclamation — **not started** | 2.1 is sequential and load-bearing; do not parallelise the spine, do parallelise what hangs off it. Re-planned at the Wave 1 boundary: **migration two** opens 2.1, adding per-part write provenance and a lifecycle on a relation. |
 | 3 · Read path | 3.1 literal retrieval arm · 3.2 change stream and horizon · 3.3 health — all landed | Literal only. The six served calls include **no way to fetch an entity by identity and no way to list what a container holds**: `Query` is the literal arm, it cannot enumerate, and it answers with entities and never relations. The change stream is the only source of either. |
-| 4 · Terminal client | 4.1 Rust outbox (turns 1.5 green) · 4.2 ratatui client | **First useful day.** The TUI carries the whole editing surface; there is no browser and no second client. |
+| 4 · Terminal client | 4.1 Rust outbox — **landed**, the suite is green · 4.2 replica face and ratatui client — **not started** | **First useful day**, at the end of 4.2. The TUI carries the whole editing surface; there is no browser and no second client. `altair-wave-4-plan.md` sequences it in six stages; 4.1 is stages one and two. |
 | 5 · Semantic | derivation worker · inference boundary and bi-encoder · semantic arm and fusion | The embedding model is chosen **here**, against a real corpus, and fixes the schema dimension. |
 | 6 · Second client and ops | message bridge · packaging · backup/restore/upgrade | The bridge is the first test of whether the interface carries the obligations rather than the TUI's code. |
 
@@ -140,6 +142,18 @@ Specifics worth knowing before touching the relevant lane:
 Built with Claude Code + hyperskills. The plan maps situations to skills: `plan` at a wave boundary (next wave only), `orchestrate` with one worktree per lane for a wave with 3+ parallel lanes, `cross-model-review` before merging anything touching the write path, conflict detection, or audience, `brainstorm` then `research` when a deferred decision hits its trigger, `implement` for everything else.
 
 At every wave boundary ask: what did this wave teach that the next wave's plan does not know, which deferred decision just hit its trigger, and has the shape drifted from the component model? The third catches sprawl that green tests do not.
+
+## What Wave 4.1 settled, for the lanes that follow
+
+Observations from building the device store and the outbox that 4.2, and the Kotlin outbox after it, would otherwise re-derive.
+
+- **The client's write transactions are `IMMEDIATE`, and that word is load bearing.** The sender and the person's surface hold a SQLite connection each. A deferred transaction that reads and then writes cannot take its write lock under a write-ahead log if another connection wrote in between — SQLite answers `SQLITE_BUSY` *without* honouring the busy timeout, because waiting could not help. It showed up as a capture refused for "database is locked" while the sender happened to be recording an acknowledgement, which is acceptance failing for a reason acceptance is not allowed to fail for. `Store::write` is the one place a write begins.
+- **A wait is told from a fault by `Status::source()`, and this was measured rather than reasoned.** A connection torn down mid-call and an answer the client cannot classify both arrive as gRPC code `Unknown`, so the code cannot be the discriminator. A status tonic synthesised from a transport failure carries the underlying error as its source; one the instance actually sent carries none. That is a property of a library, not of the contract, and nothing would fail loudly if it changed — so `crates/altair-tui/tests/wire_conditions.rs` asserts it against the fake instance.
+- **Taking at most one outstanding intent per entity per pass is what makes the ordering rules hold**, and there is no other sequencing anywhere. A create reaches the instance before its own edits, an edit carries the counter the write before it was acknowledged with, and nothing is required about where an unrelated entity's intents fall — all three fall out of that one choice in `Store::next_to_send`.
+- **The one number the client states is counted from the store, not held in memory.** How many the instance refused is a fact about what is in the outbox, so it survives a restart and cannot drift from it. Nothing anywhere counts what is waiting.
+- **A3 is skipped and it is not a gap.** Its condition is a device that has never been signed in, and every client the harness launches is handed a token in its environment; the terminal client binds from that token, so the condition cannot arise. A client whose binding is a separate act — the Android one — declares `unbound_capture` and runs it. Deciding a skip is a gap and "fixing" it is how a green suite stops meaning anything.
+- **The suite finds the client binary by path.** Cargo only sets `CARGO_BIN_EXE_*` for binaries of the package under test, and the client is deliberately a different package — it depends on the generated contract and not on the harness. `mise run conformance` builds it first; a scenario failing on a missing binary means that step was skipped.
+- **The conformance adapter is a mode of `altair`, behind the `conformance` feature.** The feature exists so the shipped client does not link the harness that judges it. What it drives — the store, the sender, the signals — is not behind a feature and is exactly what the screens will use.
 
 ## Branching and pull requests
 

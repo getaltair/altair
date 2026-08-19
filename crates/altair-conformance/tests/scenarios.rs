@@ -16,18 +16,89 @@ use std::collections::HashSet;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
+use std::path::PathBuf;
+
 use altair_conformance::client::{
-    Action, CaptureContent, ClientUnderTest, Reply, Signal, SignalKind,
+    Action, CaptureContent, ClientEnvironment, ClientError, ClientProcess, ClientUnderTest, Offers,
+    Reply, Signal, SignalKind,
 };
 use altair_conformance::instance::{self, Behaviour};
-use altair_conformance::null::NullClient;
+use altair_conformance::process::ChildClient;
 use altair_conformance::world::{QUIET, SETTLE, Seen, World, assert_accepted, expect_entity};
 use altair_conformance::{Outcome, scenario, skip_unless};
 
-/// **The one line Wave 4.1 changes.** Swap the null client for the terminal
-/// client's adapter and the suite starts going green, one scenario at a time.
+/// **The line Wave 4.1 changed.** It used to name `NullClient`, a stub that
+/// implemented nothing, and every scenario failed on the behaviour it was
+/// about. It now names the terminal client's own binary, in its adapter mode.
 fn client_under_test() -> Arc<dyn ClientUnderTest> {
-    Arc::new(NullClient::at(env!("CARGO_BIN_EXE_altair-null-client")))
+    Arc::new(TerminalClient)
+}
+
+/// The terminal client, run as the harness runs any client: its own process,
+/// speaking the channel on stdin and stdout.
+///
+/// **The adapter is a mode of that binary and not a lookalike.** A separate
+/// adapter would be a second implementation of local acceptance and this suite
+/// would be judging something shaped like the client rather than the client.
+struct TerminalClient;
+
+impl ClientUnderTest for TerminalClient {
+    fn name(&self) -> &str {
+        "altair terminal client (adapter mode)"
+    }
+
+    fn offers(&self) -> Offers {
+        Offers {
+            // **The one thing above the floor this client does not offer, and
+            // the reason is the harness rather than the client.** A3's
+            // condition is a device that has never been signed in, and every
+            // client this harness launches is handed a token in its
+            // environment. There is no launch this client could read as "never
+            // bound", so the scenario cannot arise here and is skipped rather
+            // than faked. A client whose binding is a separate act — the
+            // Android one will be — offers it and runs it.
+            unbound_capture: false,
+            offline_edit: true,
+            file_capture: true,
+        }
+    }
+
+    fn launch(
+        &self,
+        environment: &ClientEnvironment,
+    ) -> Result<Box<dyn ClientProcess>, ClientError> {
+        let child = ChildClient::spawn(
+            &client_binary(),
+            &["--conformance-adapter".to_string()],
+            environment,
+        )?;
+        Ok(Box::new(child))
+    }
+}
+
+/// Where the client binary is.
+///
+/// Cargo only sets `CARGO_BIN_EXE_*` for binaries of the package under test,
+/// and the client is deliberately a different package — it depends on the
+/// generated contract and not on this crate. So the path is derived from this
+/// test binary's own: `target/<profile>/deps/scenarios-<hash>` sits two levels
+/// under the directory the client is built into. `mise run conformance` builds
+/// it first; a missing file here means that step was skipped.
+fn client_binary() -> PathBuf {
+    let mut directory = std::env::current_exe().expect("this test binary has a path");
+    directory.pop();
+    if directory.ends_with("deps") {
+        directory.pop();
+    }
+    let binary = directory.join(format!("altair{}", std::env::consts::EXE_SUFFIX));
+    assert!(
+        binary.exists(),
+        "the client binary is not at {}. Build it first: \n  \
+         cargo build -p altair-tui --features conformance --bin altair\n\
+         or run the whole thing with `mise run conformance`.",
+        binary.display()
+    );
+    binary
 }
 
 async fn world() -> World {
@@ -192,7 +263,10 @@ scenario!(
     {
         let mut world = world().await;
         world.instance.set_behaviour(Behaviour::Unreachable);
-        world.make_state_unwritable();
+        skip_unless!(
+            world.make_state_unwritable(),
+            "this platform's harness cannot make the state directory unwritable"
+        );
         world.launch();
 
         let reply = world.capture("A");
@@ -1159,7 +1233,10 @@ scenario!(
     {
         let mut world = world().await;
         world.instance.set_behaviour(Behaviour::Accept);
-        world.make_state_unwritable();
+        skip_unless!(
+            world.make_state_unwritable(),
+            "this platform's harness cannot make the state directory unwritable"
+        );
         world.launch();
 
         // The moment of the attempt: the answer to the capture itself, not

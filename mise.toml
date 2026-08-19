@@ -8,9 +8,9 @@ rust-analyzer = "latest"
 description = "Bring up Postgres and run the workspace test suite"
 run = "docker compose up -d --wait && cargo test --workspace"
 
-# Expected to fail, on purpose, until Wave 4.1 writes the outbox. The scenarios
-# are gated off in the default suite so `main` stays mergeable; this is how the
-# red is looked at. See crates/altair-conformance/README.md.
+# The scenarios are gated off in the default suite, because they launch a real
+# client process and drive it for several seconds each. See
+# crates/altair-conformance/README.md.
 #
 # --nocapture so a skipped scenario is visible rather than silently green, and
 # --test-threads=1 because several scenarios measure how long the client took
@@ -21,8 +21,14 @@ run = "docker compose up -d --wait && cargo test --workspace"
 # apart: every scenario that did not fail writes a line to it saying which it
 # was, and the summary at the end is printed whatever the exit status.
 [tasks.conformance]
-description = "Run the outbox conformance scenarios (red until Wave 4.1)"
+description = "Run the outbox conformance scenarios against the terminal client"
 run = """
+# The suite launches the client as a separate process, so the binary has to
+# exist before the tests run. Cargo will not build it for us: it belongs to
+# another package, which is why the suite finds it by path rather than through
+# CARGO_BIN_EXE_*.
+cargo build -p altair-tui --features conformance --bin altair
+
 # Absolute: cargo runs an integration test with the package directory as its
 # working directory, not the workspace root.
 ledger="$PWD/target/conformance-outcomes.tsv"

@@ -44,19 +44,17 @@ jobs:
       # side, and both sides are wrong.
       - run: cargo test --workspace --locked
 
-  # The outbox conformance scenarios, which are SUPPOSED to fail.
+  # The outbox conformance scenarios.
   #
-  # `conformance/scenarios.md` specifies an outbox that Wave 4.1 writes; Wave
-  # 1.5 wrote the suite that judges it. Until the outbox exists every scenario
-  # runs against a stub client and fails, and that red is the deliverable. It is
-  # `continue-on-error` so it never blocks a merge, and it is here rather than
-  # nowhere so the red stays visible on every pull request and the count is
-  # watched as it comes down. Do not "fix" it by deleting it — see
-  # crates/altair-conformance/README.md.
+  # `conformance/scenarios.md` specifies the outbox; Wave 1.5 wrote the suite
+  # that judges it and Wave 4.1 wrote the outbox. It was `continue-on-error`
+  # while the client did not exist and the red was the deliverable; it is a real
+  # gate now, and a scenario going red is a client that stopped conforming.
+  #
+  # It stays a separate job because it launches a client process per scenario
+  # and drives it for seconds at a time, and because it needs no database.
   conformance:
-    name: conformance (red until Wave 4.1)
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       # See the note in the test job.
@@ -73,6 +71,50 @@ jobs:
       # No database, no Authentik, no real instance: the suite stands up its own
       # fake instance on a local port and needs nothing else.
       - run: mise run conformance
+
+  # The client on Windows, from the first commit rather than as a late
+  # verification pass.
+  #
+  # **The Windows surface is almost entirely in what Wave 4.1 built**, which is
+  # why this job exists before there is a screen to look at: the bundled SQLite
+  # build is a toolchain question, an unwarned kill is `TerminateProcess`
+  # rather than a signal and section B is entirely about surviving one, the
+  # adapter's newline-delimited channel is where a carriage return breaks
+  # something quietly, and the harness hands the client a durable directory and
+  # an ephemeral one, which are names for concepts Windows does not have.
+  # Finding those at the end of the wave means finding them as flakiness.
+  #
+  # The instance stays Linux-only and deliberately so: `altaird` is a
+  # self-hosted server, DR-002 pins PostgreSQL, and the deployment story has
+  # never been anything else. So this job runs the client's own tests and the
+  # conformance suite, and no part of the workspace that needs a database.
+  #
+  # Run directly rather than through `mise run conformance`, because that task
+  # is a shell script and this is the one runner without the shell it assumes.
+  client-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/AppData/Local/mise
+            ~/.rustup
+          key: toolchain-${{ runner.os }}-${{ hashFiles('mise.toml') }}
+      - uses: jdx/mise-action@v2
+        with:
+          cache: false
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo test -p altair-tui --all-features --locked
+      # The suite launches the client as a separate process, so the binary has
+      # to exist first; it belongs to another package, which is why cargo will
+      # not build it as a side effect of building the tests.
+      - run: cargo build -p altair-tui --features conformance --bin altair --locked
+      # --nocapture so a scenario the client legitimately skips prints its
+      # ledger line rather than being reported "ok" beside one that passed, and
+      # --test-threads=1 because several scenarios measure how long the client
+      # took to answer.
+      - run: cargo test -p altair-conformance --features run-conformance --test scenarios --locked -- --nocapture --test-threads=1
 
   lint:
     runs-on: ubuntu-latest

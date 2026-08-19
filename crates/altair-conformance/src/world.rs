@@ -115,19 +115,35 @@ impl World {
         self.launch();
     }
 
-    /// A4: local storage the client cannot write to.
+    /// A4 and F5: local storage the client cannot write to.
+    ///
+    /// **Answers whether the harness could impose the condition**, rather than
+    /// assuming it can. On unix it is a mode bit. On Windows there is no mode
+    /// bit and the equivalent is a deny entry in the directory's access control
+    /// list, which this harness does not yet write — so it says no there and
+    /// the two scenarios that need it skip, which is a visible line in the
+    /// ledger rather than a silent pass.
     ///
     /// # Panics
     ///
-    /// Panics if the permissions cannot be changed.
-    #[cfg(unix)]
-    pub fn make_state_unwritable(&self) {
-        use std::os::unix::fs::PermissionsExt;
-        std::fs::set_permissions(
-            &self.environment.state_dir,
-            std::fs::Permissions::from_mode(0o500),
-        )
-        .expect("make the state dir unwritable");
+    /// Panics if the permissions cannot be changed on a platform that has
+    /// them, which is a broken harness rather than a verdict.
+    #[must_use]
+    pub fn make_state_unwritable(&self) -> bool {
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            std::fs::set_permissions(
+                &self.environment.state_dir,
+                std::fs::Permissions::from_mode(0o500),
+            )
+            .expect("make the state dir unwritable");
+            true
+        }
+        #[cfg(not(unix))]
+        {
+            false
+        }
     }
 
     #[cfg(unix)]

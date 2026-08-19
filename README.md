@@ -1,7 +1,7 @@
 # Altair
 
 [![CI](https://github.com/getaltair/altair/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/getaltair/altair/actions/workflows/ci.yml)
-[![Conformance: red until Wave 4.1](https://img.shields.io/badge/conformance-red%20until%20wave%204.1-red)](crates/altair-conformance/README.md)
+[![Conformance: 34 of 35, 1 skipped](https://img.shields.io/badge/conformance-34%20of%2035%2C%201%20skipped-brightgreen)](crates/altair-conformance/README.md)
 [![Licence: AGPL-3.0-or-later](https://img.shields.io/badge/licence-AGPL--3.0--or--later-blue)](LICENSE)
 
 [![Status: pre-alpha](https://img.shields.io/badge/status-pre--alpha-orange)](#status)
@@ -28,10 +28,10 @@ One instance serves one household. Nobody else can raise the price, change the t
 | Wave 1 · foundations | Landed. Store bootstrap and the audience predicate, block division, the object store, token validation, and the outbox conformance suite |
 | Wave 2 · write path | 2.1 the intent spine, 2.2 type content across all three domains, and 2.3 file bodies have landed. **2.4, reclamation, was skipped and is still outstanding** — there is no retention window, no horizon value, and nothing sweeps |
 | Wave 3 · read path | Landed. Literal retrieval, the per-member change stream, and health. All six calls in the interface are now served |
-| Wave 4 · terminal client | The first useful day. Nothing before it is usable software |
+| Wave 4 · terminal client | 4.1, the device store and the outbox, has landed and the conformance suite is green. 4.2, the replica face and the screens, is next. The first useful day is the end of it |
 | Waves 5 and 6 | Semantic retrieval, then the message bridge and operations |
 
-The outbox conformance suite is **deliberately red** and will stay red until Wave 4.1 writes the outbox it judges. See [`crates/altair-conformance/README.md`](crates/altair-conformance/README.md) before touching it.
+The outbox conformance suite **was deliberately red** until Wave 4.1 wrote the outbox it judges. It is a real gate now: thirty-four scenarios pass and one is skipped for a reason recorded in [`crates/altair-conformance/README.md`](crates/altair-conformance/README.md). Read that before touching it.
 
 ---
 
@@ -142,7 +142,8 @@ crates/
   altaird/                 The instance: store, block division, object store, token validation, write path
     migrations/            0001_initial.sql is migration one, and is not re-derived
   altair-proto/            Generated contract types (protox + tonic, no protoc needed)
-  altair-conformance/      The conformance harness. Red on purpose until Wave 4.1
+  altair-conformance/      The conformance harness, and the fake instance the client develops against
+  altair-tui/              The terminal client: the device store, the outbox, and the conformance adapter
 compose.yaml               PostgreSQL 18 with pgvector, for tests
 mise.toml                  Toolchain and task definitions
 ```
@@ -163,10 +164,10 @@ mise run test                # brings up Postgres, then cargo test --workspace
 
 Where several worktrees run lanes in parallel against one Postgres, set `ALTAIR_TEST_PREFIX` per worktree so they do not fight over the template name.
 
-To look at the red conformance suite:
+To run the outbox conformance suite:
 
 ```bash
-mise run conformance         # expected to fail until Wave 4.1
+mise run conformance         # builds the client, then drives it through all 35 scenarios
 ```
 
 It needs no database, no Authentik, and no real instance: the suite stands up its own fake instance on a local port. It prints a ledger at the end, because libtest has no third verdict and a scenario a client legitimately skips would otherwise read as a pass.
