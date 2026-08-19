@@ -35,6 +35,7 @@ use altair_proto::v1;
 use tonic::transport::Channel;
 
 use crate::device::{Pending, Store};
+use crate::session::Session;
 use crate::signals::Signals;
 use crate::wire::{self, Condition};
 
@@ -70,7 +71,6 @@ enum Pass {
 pub struct Sender {
     store: Store,
     client: v1::altair_client::AltairClient<Channel>,
-    token: String,
     signals: Arc<Signals>,
 }
 
@@ -86,7 +86,6 @@ impl Sender {
     pub fn new(
         state_dir: &Path,
         instance_url: &str,
-        token: String,
         signals: Arc<Signals>,
     ) -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
         let store = Store::reopen(state_dir)?;
@@ -95,7 +94,6 @@ impl Sender {
         Ok(Self {
             store,
             client: v1::altair_client::AltairClient::new(channel),
-            token,
             signals,
         })
     }
@@ -247,14 +245,20 @@ impl Sender {
 
     /// Attach the credential.
     ///
-    /// **The `Bearer` scheme is not decoration.** The instance reads the header
-    /// through `bearer_token`, which requires it and answers nothing at all
-    /// without it. The conformance suite cannot catch a bare token — its fake
-    /// instance records the header and never reads it — so this is asserted in
-    /// `tests/sending.rs` instead.
+    /// **Read from the store on every attempt, not held.** A credential
+    /// refreshed by anything else is picked up on the next pass, with no
+    /// person and no restart — which is what DR-005 means by refresh happening
+    /// without a person.
+    ///
+    /// A device with no credential at all still sends. The instance answers
+    /// unauthenticated, which is a wait, and the outbox holds. There is no
+    /// state of this client in which a capture is blocked on a credential.
     fn authorised<T>(&self, message: T) -> tonic::Request<T> {
         let mut request = tonic::Request::new(message);
-        if let Ok(value) = format!("Bearer {}", self.token).parse() {
+        if let Some(value) = Session::new(&self.store)
+            .authorization()
+            .and_then(|header| header.parse().ok())
+        {
             request.metadata_mut().insert("authorization", value);
         }
         request

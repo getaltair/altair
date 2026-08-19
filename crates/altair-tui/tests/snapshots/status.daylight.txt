@@ -1,0 +1,37 @@
+palette
+  ground: #f4f1e9
+  body: #3f3b33
+  bright: #201e19
+  mid: #6d685c
+  dim: #8d8878
+  faint: #a39d8c
+  rule: #ddd6c6
+  rule-faint: #e4ddcd
+  selected: #e8e3d5
+  identity: #3c5f9c
+  attention: #a8562f
+  worked: #4d7548
+  refused: #a33224
+  table-head: #eae5d8
+  keycap: #eae5d8
+  keycap-border: #d3ccbc
+  sheet: #ece7da
+
+| B R O W S I N G  ... › airflow and thermals › wire the t-encoder            4 of 11|
+| W R I T I N G  rebuild the rack › airflow and thermals › wire the t-encoder 4 of 11|
+| C A P T U R I N G  ... › airflow and thermals › wire the t-encoder          4 of 11|
+| A S S E R T I N G  ... › airflow and thermals › wire the t-encoder          4 of 11|
+| C O N F I R M I N G  ... › airflow and thermals › wire the t-encoder        4 of 11|
+| E R A S I N G  rebuild the rack › airflow and thermals › wire the t-encoder 4 of 11|
+| F A U L T S  rebuild the rack › airflow and thermals › wire the t-encoder   4 of 11|
+| H E L P  rebuild the rack › airflow and thermals › wire the t-encoder       4 of 11|
+
+colours
+  0: 0..17 ground/identity  17..18 -/ground  18..24 faint/ground  24..44 dim/ground  44..47 faint/ground  47..65 body/ground  65..77 -/ground  77..84 faint/ground
+  1: 0..15 ground/identity  15..16 -/ground  16..32 dim/ground  32..35 faint/ground  35..55 dim/ground  55..58 faint/ground  58..76 body/ground  76..77 -/ground  77..84 faint/ground
+  2: 0..19 ground/identity  19..20 -/ground  20..26 faint/ground  26..46 dim/ground  46..49 faint/ground  49..67 body/ground  67..77 -/ground  77..84 faint/ground
+  3: 0..19 ground/identity  19..20 -/ground  20..26 faint/ground  26..46 dim/ground  46..49 faint/ground  49..67 body/ground  67..77 -/ground  77..84 faint/ground
+  4: 0..21 ground/attention  21..22 -/ground  22..28 faint/ground  28..48 dim/ground  48..51 faint/ground  51..69 body/ground  69..77 -/ground  77..84 faint/ground
+  5: 0..15 ground/refused  15..16 -/ground  16..32 dim/ground  32..35 faint/ground  35..55 dim/ground  55..58 faint/ground  58..76 body/ground  76..77 -/ground  77..84 faint/ground
+  6: 0..13 ground/refused  13..14 -/ground  14..30 dim/ground  30..33 faint/ground  33..53 dim/ground  53..56 faint/ground  56..74 body/ground  74..77 -/ground  77..84 faint/ground
+  7: 0..9 ground/identity  9..10 -/ground  10..26 dim/ground  26..29 faint/ground  29..49 dim/ground  49..52 faint/ground  52..70 body/ground  70..77 -/ground  77..84 faint/ground

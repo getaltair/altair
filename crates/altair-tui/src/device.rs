@@ -796,6 +796,32 @@ impl Store {
         Ok(out)
     }
 
+    /// The credential this device presents.
+    ///
+    /// # Errors
+    ///
+    /// Fails when the store cannot be read.
+    pub fn credential(&self) -> rusqlite::Result<Option<String>> {
+        self.connection
+            .query_row("SELECT token FROM credential WHERE only = 1", [], |row| {
+                row.get(0)
+            })
+            .optional()
+    }
+
+    /// Put a credential where this device will find it again.
+    ///
+    /// # Errors
+    ///
+    /// Fails when the store cannot be written to.
+    pub fn set_credential(&mut self, token: &str) -> rusqlite::Result<()> {
+        self.connection.execute(
+            "INSERT OR REPLACE INTO credential (only, token) VALUES (1, ?1)",
+            params![token],
+        )?;
+        Ok(())
+    }
+
     /// Bind this device to a household as `member_id`.
     ///
     /// # Errors
@@ -878,6 +904,11 @@ CREATE TABLE IF NOT EXISTS body (
   body_id BLOB PRIMARY KEY,
   bytes   BLOB NOT NULL,
   sent    INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS credential (
+  only  INTEGER PRIMARY KEY CHECK (only = 1),
+  token TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS binding (

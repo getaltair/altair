@@ -59,6 +59,9 @@ async fn one_capture_reaches_the_instance_and_comes_back() {
     // before the person is told, and neither credentials nor connectivity
     // participate — so this is the whole of it.
     let mut store = Store::open(device.path()).expect("open the device store");
+    // However a platform's flow puts a credential on a device, this is where it
+    // lands. The sender reads it fresh on every attempt rather than holding it.
+    store.set_credential(&token).expect("a credential");
     let composed = wire::compose_creation(&Captured::Note {
         title: "the canary".to_string(),
         body: "captured before anything was reachable".to_string(),
@@ -83,15 +86,9 @@ async fn one_capture_reaches_the_instance_and_comes_back() {
 
     // --- the instance appears ---------------------------------------------
     let signals = Arc::new(Signals::new());
-    let sender = Sender::new(
-        device.path(),
-        &served.url(),
-        token.clone(),
-        Arc::clone(&signals),
-    )
-    .expect("a sender");
+    let sender = Sender::new(device.path(), &served.url(), Arc::clone(&signals)).expect("a sender");
     let replica =
-        Replica::new(device.path(), &served.url(), token, Arc::clone(&signals)).expect("a replica");
+        Replica::new(device.path(), &served.url(), Arc::clone(&signals)).expect("a replica");
     let sending = tokio::spawn(sender.run());
     let reading = tokio::spawn(replica.run());
 

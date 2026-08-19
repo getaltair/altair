@@ -1,0 +1,33 @@
+palette
+  ground: #0c0f18
+  body: #c6cfdf
+  bright: #f0f4fb
+  mid: #99a3b8
+  dim: #656f85
+  faint: #4d566b
+  rule: #1e2534
+  rule-faint: #161d2a
+  selected: #161d2c
+  identity: #7fb2f0
+  attention: #d9a45f
+  worked: #7fc0a2
+  refused: #d98570
+  table-head: #141a27
+  keycap: #1a2130
+  keycap-border: #262f42
+  sheet: #111725
+
+|      ┌─ E R A S E F O R E V E R Y O N E ─────────────────────────                  |
+|      │                                                          │                  |
+|      │                                                          │                  |
+|      │                                                          │                  |
+|      │                                                          │                  |
+|      └──────────────────────────────────────────────────────────┘                  |
+
+colours
+  0: 0..6 -/ground  6..8 keycap-border/sheet  8..41 mid/sheet  41..66 keycap-border/sheet  66..84 -/ground
+  1: 0..6 -/ground  6..7 keycap-border/sheet  7..65 body/sheet  65..66 keycap-border/sheet  66..84 -/ground
+  2: 0..6 -/ground  6..7 keycap-border/sheet  7..65 body/sheet  65..66 keycap-border/sheet  66..84 -/ground
+  3: 0..6 -/ground  6..7 keycap-border/sheet  7..65 body/sheet  65..66 keycap-border/sheet  66..84 -/ground
+  4: 0..6 -/ground  6..7 keycap-border/sheet  7..65 body/sheet  65..66 keycap-border/sheet  66..84 -/ground
+  5: 0..6 -/ground  6..66 keycap-border/sheet  66..84 -/ground

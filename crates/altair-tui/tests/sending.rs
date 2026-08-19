@@ -18,6 +18,7 @@ use altair_tui::wire;
 fn a_store_with_one_capture() -> tempfile::TempDir {
     let directory = tempfile::tempdir().expect("a temporary directory");
     let mut store = Store::open(directory.path()).expect("open");
+    store.set_credential("a-token").expect("credential");
     let composed = wire::compose_creation(&Captured::Note {
         title: "A".to_string(),
         body: String::new(),
@@ -39,13 +40,8 @@ async fn the_credential_carries_the_bearer_scheme() {
     instance.set_behaviour(Behaviour::Accept);
     let directory = a_store_with_one_capture();
 
-    let sender = Sender::new(
-        directory.path(),
-        &instance.url(),
-        "a-token".to_string(),
-        Arc::new(Signals::new()),
-    )
-    .expect("sender");
+    let sender =
+        Sender::new(directory.path(), &instance.url(), Arc::new(Signals::new())).expect("sender");
     let running = tokio::spawn(sender.run());
 
     assert!(

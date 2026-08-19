@@ -1,0 +1,23 @@
+palette
+  ground: #f4f1e9
+  body: #3f3b33
+  bright: #201e19
+  mid: #6d685c
+  dim: #8d8878
+  faint: #a39d8c
+  rule: #ddd6c6
+  rule-faint: #e4ddcd
+  selected: #e8e3d5
+  identity: #3c5f9c
+  attention: #a8562f
+  worked: #4d7548
+  refused: #a33224
+  table-head: #eae5d8
+  keycap: #eae5d8
+  keycap-border: #d3ccbc
+  sheet: #ece7da
+
+| ↑↓  move    ↵  open where it lives    c  capture                                   |
+
+colours
+  0: 0..4 body/table-head  4..5 -/ground  5..9 dim/ground  9..12 -/ground  12..15 body/table-head  15..16 -/ground  16..35 dim/ground  35..38 -/ground  38..41 body/table-head  41..42 -/ground  42..49 dim/ground  49..84 -/ground

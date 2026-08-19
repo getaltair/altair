@@ -24,7 +24,10 @@
 pub mod adapter;
 pub mod capture;
 pub mod device;
+pub mod editor;
 pub mod replica;
 pub mod sender;
+pub mod session;
 pub mod signals;
+pub mod ui;
 pub mod wire;

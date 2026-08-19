@@ -66,9 +66,15 @@ pub async fn run() {
     // signalled as a fault. Nine scenarios assert the client is showing the
     // person nothing at all. The replica develops against a real instance,
     // which is where it can be proved rather than mocked.
-    let store = Store::open(&state_dir).map_err(|error| error.to_string());
+    let mut store = Store::open(&state_dir).map_err(|error| error.to_string());
+    // The harness hands the client a credential the way a platform's own flow
+    // would; from here it lives in the store and is read fresh on every
+    // attempt.
+    if let Ok(store) = store.as_mut() {
+        let _ = store.set_credential(&token);
+    }
     if store.is_ok() {
-        match Sender::new(&state_dir, &instance_url, token, Arc::clone(&signals)) {
+        match Sender::new(&state_dir, &instance_url, Arc::clone(&signals)) {
             Ok(sender) => {
                 tokio::spawn(sender.run());
             }

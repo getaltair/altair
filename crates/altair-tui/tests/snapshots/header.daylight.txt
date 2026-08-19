@@ -1,0 +1,25 @@
+palette
+  ground: #f4f1e9
+  body: #3f3b33
+  bright: #201e19
+  mid: #6d685c
+  dim: #8d8878
+  faint: #a39d8c
+  rule: #ddd6c6
+  rule-faint: #e4ddcd
+  selected: #e8e3d5
+  identity: #3c5f9c
+  attention: #a8562f
+  worked: #4d7548
+  refused: #a33224
+  table-head: #eae5d8
+  keycap: #eae5d8
+  keycap-border: #d3ccbc
+  sheet: #ece7da
+
+|✦ A L T A I R   G U I D A N C E · L A D D E R                        showing working|
+|────────────────────────────────────────────────────────────────────────────────────|
+
+colours
+  0: 0..1 identity/ground  1..2 -/ground  2..13 bright/ground+BOLD  13..15 -/ground  15..46 identity/selected  46..69 -/ground  69..84 dim/ground
+  1: 0..84 rule/ground

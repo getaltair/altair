@@ -35,6 +35,7 @@ use altair_proto::v1;
 use tonic::transport::Channel;
 
 use crate::device::Store;
+use crate::session::Session;
 use crate::signals::Signals;
 use crate::wire::{self, Condition};
 
@@ -51,7 +52,6 @@ const PATIENCE: Duration = Duration::from_secs(30);
 pub struct Replica {
     store: Store,
     client: v1::altair_client::AltairClient<Channel>,
-    token: String,
     signals: Arc<Signals>,
 }
 
@@ -65,7 +65,6 @@ impl Replica {
     pub fn new(
         state_dir: &Path,
         instance_url: &str,
-        token: String,
         signals: Arc<Signals>,
     ) -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
         let store = Store::reopen(state_dir)?;
@@ -74,7 +73,6 @@ impl Replica {
         Ok(Self {
             store,
             client: v1::altair_client::AltairClient::new(channel),
-            token,
             signals,
         })
     }
@@ -124,9 +122,14 @@ impl Replica {
         false
     }
 
+    /// Read from the store on every attempt, for the reason on
+    /// [`crate::sender::Sender::authorised`].
     fn authorised<T>(&self, message: T) -> tonic::Request<T> {
         let mut request = tonic::Request::new(message);
-        if let Ok(value) = format!("Bearer {}", self.token).parse() {
+        if let Some(value) = Session::new(&self.store)
+            .authorization()
+            .and_then(|header| header.parse().ok())
+        {
             request.metadata_mut().insert("authorization", value);
         }
         request
