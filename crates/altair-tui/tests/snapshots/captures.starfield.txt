@@ -1,0 +1,65 @@
+palette
+  ground: #0c0f18
+  body: #c6cfdf
+  bright: #f0f4fb
+  mid: #99a3b8
+  dim: #656f85
+  faint: #4d566b
+  rule: #1e2534
+  rule-faint: #161d2a
+  selected: #161d2c
+  identity: #7fb2f0
+  attention: #d9a45f
+  worked: #7fc0a2
+  refused: #d98570
+  table-head: #141a27
+  keycap: #1a2130
+  keycap-border: #262f42
+  sheet: #111725
+
+|✦ A L T A I R   C A P T U R E S                                                     monday 17 august|
+|────────────────────────────────────────────────────────────────────────────────────────────────────|
+|                                                                                                    |
+|W H A T   Y O U   T O U C H E D ──────────────────────────────  C O M I N G   F O R W A R D ────────|
+|▸ 21:38   Fan curve, second pass    note        edited          today    Wire the T-Encoder         |
+|  20:02   Dupont jumpers            item                                 start                      |
+|  18:51   rack-front.jpg            file        bridge          wed 19   Label everything           |
+|  14:07   Swap the UPS battery      quest       new                      every wed                  |
+|                                                                                                    |
+|S U N D A Y   1 6 ────────────────────────────────────────────                                      |
+|  23:11   the shroud lip is 3mm ... note        bridge                                              |
+|  15:58   Measure idle draw         quest       working                                             |
+|                                                                                                    |
+|                                                                                                    |
+|                                                                                                    |
+|                                                                                                    |
+|                                                                                                    |
+|                                                                                                    |
+|                                                                                                    |
+|                                                                                                    |
+| B R O W S I N G  captures › fan curve, second pass                                                 |
+| ↑↓  move    ↵  open where it lives    c  capture    /  search                                      |
+
+colours
+  0: 0..1 identity/ground  1..2 -/ground  2..13 bright/ground+BOLD  13..15 -/ground  15..32 identity/selected  32..84 -/ground  84..100 dim/ground
+  1: 0..100 rule/ground
+  2: 0..100 -/ground
+  3: 0..31 dim/ground  31..32 -/ground  32..62 rule/ground  62..64 -/ground  64..91 dim/ground  91..92 -/ground  92..100 rule/ground
+  4: 0..2 identity/selected  2..10 mid/selected  10..36 bright/selected+BOLD  36..62 mid/selected  62..64 -/ground  64..73 attention/ground  73..91 body/ground  91..100 -/ground
+  5: 0..2 identity/ground  2..10 dim/ground  10..36 body/ground  36..62 dim/ground  62..73 -/ground  73..78 faint/ground  78..100 -/ground
+  6: 0..2 identity/ground  2..10 dim/ground  10..36 body/ground  36..62 dim/ground  62..64 -/ground  64..73 dim/ground  73..89 body/ground  89..100 -/ground
+  7: 0..2 identity/ground  2..10 dim/ground  10..36 body/ground  36..62 dim/ground  62..73 -/ground  73..82 faint/ground  82..100 -/ground
+  8: 0..100 -/ground
+  9: 0..17 faint/ground  17..18 -/ground  18..62 rule-faint/ground  62..100 -/ground
+  10: 0..2 identity/ground  2..10 faint/ground  10..36 mid/ground  36..62 faint/ground  62..100 -/ground
+  11: 0..2 identity/ground  2..10 faint/ground  10..36 mid/ground  36..62 faint/ground  62..100 -/ground
+  12: 0..100 -/ground
+  13: 0..100 -/ground
+  14: 0..100 -/ground
+  15: 0..100 -/ground
+  16: 0..100 -/ground
+  17: 0..100 -/ground
+  18: 0..100 -/ground
+  19: 0..100 -/ground
+  20: 0..17 ground/identity  17..18 -/ground  18..26 dim/ground  26..29 faint/ground  29..51 body/ground  51..100 -/ground
+  21: 0..4 body/keycap  4..5 -/ground  5..9 dim/ground  9..12 -/ground  12..15 body/keycap  15..16 -/ground  16..35 dim/ground  35..38 -/ground  38..41 body/keycap  41..42 -/ground  42..49 dim/ground  49..52 -/ground  52..55 body/keycap  55..56 -/ground  56..62 dim/ground  62..100 -/ground

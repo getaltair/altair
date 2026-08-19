@@ -1,0 +1,49 @@
+palette
+  ground: #0c0f18
+  body: #c6cfdf
+  bright: #f0f4fb
+  mid: #99a3b8
+  dim: #656f85
+  faint: #4d566b
+  rule: #1e2534
+  rule-faint: #161d2a
+  selected: #161d2c
+  identity: #7fb2f0
+  attention: #d9a45f
+  worked: #7fc0a2
+  refused: #d98570
+  table-head: #141a27
+  keycap: #1a2130
+  keycap-border: #262f42
+  sheet: #111725
+
+|✦ A L T A I R   T R A C K I N G   ·   N E W   I T E M                                               |
+|────────────────────────────────────────────────────────────────────────────────────────────────────|
+|                                                                                                    |
+|A   N E W   I T E M ────────────────────────────────────────────────────────────────────────────────|
+|                                                                                                    |
+|what            Intake filter foam                                                                  |
+|how much        2 sheets                                                                            |
+|where           nowhere in particular                                                               |
+|                                                                                                    |
+|                                                                                                    |
+|                                                                                                    |
+|                                                                                                    |
+| C A P T U R I N G  workshop › new item                                                             |
+| tab  next    ↵  keep it    esc  never mind                                                         |
+
+colours
+  0: 0..1 identity/ground  1..2 -/ground  2..13 bright/ground+BOLD  13..15 -/ground  15..54 identity/selected  54..100 -/ground
+  1: 0..100 rule/ground
+  2: 0..100 -/ground
+  3: 0..19 dim/ground  19..20 -/ground  20..100 rule/ground
+  4: 0..100 -/ground
+  5: 0..16 dim/ground  16..34 body/ground  34..100 -/ground
+  6: 0..16 dim/selected  16..24 bright/selected+BOLD  24..100 -/selected
+  7: 0..16 dim/ground  16..37 faint/ground  37..100 -/ground
+  8: 0..100 -/ground
+  9: 0..100 -/ground
+  10: 0..100 -/ground
+  11: 0..100 -/ground
+  12: 0..19 ground/identity  19..20 -/ground  20..28 dim/ground  28..31 faint/ground  31..39 body/ground  39..100 -/ground
+  13: 0..5 body/keycap  5..6 -/ground  6..10 dim/ground  10..13 -/ground  13..16 body/keycap  16..17 -/ground  17..24 dim/ground  24..27 -/ground  27..32 body/keycap  32..33 -/ground  33..43 dim/ground  43..100 -/ground

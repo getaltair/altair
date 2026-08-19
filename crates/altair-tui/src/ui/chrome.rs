@@ -54,6 +54,23 @@ impl Modal {
     }
 }
 
+/// Everything the chrome of one screen says.
+///
+/// One value rather than six arguments, because it is one thing: what this
+/// screen is, where the person is in it, and what they can do next.
+pub struct Frame<'a> {
+    /// The domain pill: which of the three this screen belongs to.
+    pub domain: &'a str,
+    /// Quiet meta on the right of the header. **Never a backlog.**
+    pub meta: &'a str,
+    pub modal: Modal,
+    /// The trail, outermost first. The last one is where the person is.
+    pub crumbs: &'a [&'a str],
+    /// Quiet meta on the right of the status line. Also never a backlog.
+    pub position: &'a str,
+    pub keys: &'a [(&'a str, &'a str)],
+}
+
 /// The theme and the glyph set, together, because nothing draws without both.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct Shell {
@@ -231,6 +248,48 @@ impl Shell {
         Line::from(spans).render(area, buffer);
     }
 
+    /// Draw a whole screen: the chrome, then whatever goes between it.
+    ///
+    /// **Every screen is framed the same way and none of them draws its own
+    /// chrome.** The header, the status line and the keys are the design's
+    /// signature, and a screen that assembled its own would be where the
+    /// signature starts to drift — one screen at a time, each change
+    /// defensible on its own.
+    pub fn frame(
+        &self,
+        frame: &Frame<'_>,
+        area: Rect,
+        buffer: &mut Buffer,
+        body: impl FnOnce(Rect, &mut Buffer),
+    ) {
+        let line = |y: u16| Rect {
+            y,
+            height: 1,
+            ..area
+        };
+        self.ground(area, buffer);
+        self.header(frame.domain, frame.meta, line(area.top()), buffer);
+        self.rule(line(area.top() + 1), buffer);
+        if area.height > 6 {
+            body(
+                Rect {
+                    y: area.top() + 3,
+                    height: area.height - 6,
+                    ..area
+                },
+                buffer,
+            );
+        }
+        self.status(
+            frame.modal,
+            frame.crumbs,
+            frame.position,
+            line(area.bottom() - 2),
+            buffer,
+        );
+        self.keys(frame.keys, line(area.bottom() - 1), buffer);
+    }
+
     /// The help surface, drawn.
     ///
     /// **The promises come first and the keys come second**, because a person
@@ -383,15 +442,24 @@ fn fit(width: usize, used: usize, meta: &str) -> (usize, String) {
 
 /// A space between characters, which is what letterspacing is in a grid.
 ///
-/// Runs of spaces are left alone, so a label with a gap in it does not grow a
-/// three-space chasm.
+/// **A word gap has to grow too.** Tracking widens the space between letters
+/// and the space between words by the same proportion; in a grid, where a
+/// letter gap becomes one column, a word gap that stays one column is
+/// indistinguishable from a letter gap and the label reads as one long word.
+/// So a word gap becomes three.
 #[must_use]
 pub fn letterspaced(text: &str) -> String {
     let mut out = String::new();
+    let mut following_space = false;
     for (index, character) in text.chars().enumerate() {
-        if index > 0 && character != ' ' && !out.ends_with(' ') {
-            out.push(' ');
+        if character == ' ' {
+            following_space = true;
+            continue;
         }
+        if index > 0 {
+            out.push_str(if following_space { "   " } else { " " });
+        }
+        following_space = false;
         out.push(character);
     }
     out

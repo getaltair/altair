@@ -17,85 +17,85 @@ palette
   keycap-border: #262f42
   sheet: #111725
 
-|W H A T T H I S C L I E N T P R O M I S E S ────────────────────────────────────────|
-|                                                                                    |
-|What you capture is yours the moment you capture it.                                |
-|  It is written to this device and confirmed before you are told. Nothing about the |
-|  network or your session is involved, and turning the machine off straight         |
-|  afterwards does not lose it.                                                      |
-|                                                                                    |
-|Nothing is ever waiting on you to press send.                                       |
-|  Your captures go to your instance on their own, whenever it is reachable. There is|
-|  nothing to flush and nothing to retry by hand.                                    |
-|                                                                                    |
-|Quiet means fine.                                                                   |
-|  An instance you cannot reach and a session that has run out are the same thing: a |
-|  wait that clears itself. Neither is shown, and neither will ever ask you to sign  |
-|  in again mid-sentence.                                                            |
-|                                                                                    |
-|Anything you are told about is something that will not fix itself.                  |
-|  If your instance refuses something, you are told, and it stays exactly where it is|
-|  until you deal with it. Nothing is dropped and nothing is quietly discarded.      |
-|                                                                                    |
-|You write in your own editor, and the file is ours to keep.                         |
-|  Composing opens $EDITOR on a file this client owns. If anything dies while you are|
-|  in there — the editor, this client, the machine — the file is still on disk and is|
-|  offered back to you next time.                                                    |
-|                                                                                    |
-|Two people editing the same thing keeps both.                                       |
-|  Nothing is overwritten and nothing is handed back to you to redo. Where two edits |
-|  touched the same part, both values are kept and shown, and the thing stays        |
-|  readable throughout.                                                              |
-|                                                                                    |
-|G E T T I N G A R O U N D ──────────────────────────────────────────────────────────|
-| ↑ ↓  move                                                                          |
-| ← →  fold and unfold                                                               |
-| ↵  open where it lives                                                             |
-| esc  back out                                                                      |
-|                                                                                    |
-|M A K I N G S O M E T H I N G ──────────────────────────────────────────────────────|
-| c  capture                                                                         |
-| o  new quest here                                                                  |
-| e  edit in your editor                                                             |
+|W H A T   T H I S   C L I E N T   P R O M I S E S ──────────────────────────────────────────────────|
+|                                                                                                    |
+|What you capture is yours the moment you capture it.                                                |
+|  It is written to this device and confirmed before you are told. Nothing about the network or your |
+|  session is involved, and turning the machine off straight afterwards does not lose it.            |
+|                                                                                                    |
+|Nothing is ever waiting on you to press send.                                                       |
+|  Your captures go to your instance on their own, whenever it is reachable. There is nothing to     |
+|  flush and nothing to retry by hand.                                                               |
+|                                                                                                    |
+|Quiet means fine.                                                                                   |
+|  An instance you cannot reach and a session that has run out are the same thing: a wait that clears|
+|  itself. Neither is shown, and neither will ever ask you to sign in again mid-sentence.            |
+|                                                                                                    |
+|Anything you are told about is something that will not fix itself.                                  |
+|  If your instance refuses something, you are told, and it stays exactly where it is until you deal |
+|  with it. Nothing is dropped and nothing is quietly discarded.                                     |
+|                                                                                                    |
+|You write in your own editor, and the file is ours to keep.                                         |
+|  Composing opens $EDITOR on a file this client owns. If anything dies while you are in there — the |
+|  editor, this client, the machine — the file is still on disk and is offered back to you next time.|
+|                                                                                                    |
+|Two people editing the same thing keeps both.                                                       |
+|  Nothing is overwritten and nothing is handed back to you to redo. Where two edits touched the same|
+|  part, both values are kept and shown, and the thing stays readable throughout.                    |
+|                                                                                                    |
+|G E T T I N G   A R O U N D ────────────────────────────────────────────────────────────────────────|
+| ↑ ↓  move                                                                                          |
+| ← →  fold and unfold                                                                               |
+| ↵  open where it lives                                                                             |
+| esc  back out                                                                                      |
+|                                                                                                    |
+|M A K I N G   S O M E T H I N G ────────────────────────────────────────────────────────────────────|
+| c  capture                                                                                         |
+| o  new quest here                                                                                  |
+| e  edit in your editor                                                                             |
+| space  next state                                                                                  |
+|                                                                                                    |
+|F I N D I N G   S O M E T H I N G ──────────────────────────────────────────────────────────────────|
+| /  search                                                                                          |
 
 colours
-  0: 0..43 dim/ground  43..44 -/ground  44..84 rule/ground
-  1: 0..84 -/ground
-  2: 0..52 bright/ground  52..84 -/ground
-  3: 0..2 -/ground  2..83 mid/ground  83..84 -/ground
-  4: 0..2 -/ground  2..75 mid/ground  75..84 -/ground
-  5: 0..2 -/ground  2..30 mid/ground  30..84 -/ground
-  6: 0..84 -/ground
-  7: 0..45 bright/ground  45..84 -/ground
-  8: 0..2 -/ground  2..84 mid/ground
-  9: 0..2 -/ground  2..48 mid/ground  48..84 -/ground
-  10: 0..84 -/ground
-  11: 0..17 bright/ground  17..84 -/ground
-  12: 0..2 -/ground  2..83 mid/ground  83..84 -/ground
-  13: 0..2 -/ground  2..82 mid/ground  82..84 -/ground
-  14: 0..2 -/ground  2..24 mid/ground  24..84 -/ground
-  15: 0..84 -/ground
-  16: 0..66 bright/ground  66..84 -/ground
-  17: 0..2 -/ground  2..84 mid/ground
-  18: 0..2 -/ground  2..78 mid/ground  78..84 -/ground
-  19: 0..84 -/ground
-  20: 0..59 bright/ground  59..84 -/ground
-  21: 0..2 -/ground  2..84 mid/ground
-  22: 0..2 -/ground  2..84 mid/ground
-  23: 0..2 -/ground  2..32 mid/ground  32..84 -/ground
-  24: 0..84 -/ground
-  25: 0..45 bright/ground  45..84 -/ground
-  26: 0..2 -/ground  2..83 mid/ground  83..84 -/ground
-  27: 0..2 -/ground  2..76 mid/ground  76..84 -/ground
-  28: 0..2 -/ground  2..22 mid/ground  22..84 -/ground
-  29: 0..84 -/ground
-  30: 0..25 faint/ground  25..26 -/ground  26..84 rule-faint/ground
-  31: 0..5 body/keycap  5..6 -/ground  6..10 dim/ground  10..84 -/ground
-  32: 0..5 body/keycap  5..6 -/ground  6..21 dim/ground  21..84 -/ground
-  33: 0..3 body/keycap  3..4 -/ground  4..23 dim/ground  23..84 -/ground
-  34: 0..5 body/keycap  5..6 -/ground  6..14 dim/ground  14..84 -/ground
-  35: 0..84 -/ground
-  36: 0..29 faint/ground  29..30 -/ground  30..84 rule-faint/ground
-  37: 0..3 body/keycap  3..4 -/ground  4..11 dim/ground  11..84 -/ground
-  38: 0..3 body/keycap  3..4 -/ground  4..18 dim/ground  18..84 -/ground
-  39: 0..3 body/keycap  3..4 -/ground  4..23 dim/ground  23..84 -/ground
+  0: 0..49 dim/ground  49..50 -/ground  50..100 rule/ground
+  1: 0..100 -/ground
+  2: 0..52 bright/ground  52..100 -/ground
+  3: 0..2 -/ground  2..99 mid/ground  99..100 -/ground
+  4: 0..2 -/ground  2..88 mid/ground  88..100 -/ground
+  5: 0..100 -/ground
+  6: 0..45 bright/ground  45..100 -/ground
+  7: 0..2 -/ground  2..95 mid/ground  95..100 -/ground
+  8: 0..2 -/ground  2..37 mid/ground  37..100 -/ground
+  9: 0..100 -/ground
+  10: 0..17 bright/ground  17..100 -/ground
+  11: 0..2 -/ground  2..100 mid/ground
+  12: 0..2 -/ground  2..88 mid/ground  88..100 -/ground
+  13: 0..100 -/ground
+  14: 0..66 bright/ground  66..100 -/ground
+  15: 0..2 -/ground  2..99 mid/ground  99..100 -/ground
+  16: 0..2 -/ground  2..63 mid/ground  63..100 -/ground
+  17: 0..100 -/ground
+  18: 0..59 bright/ground  59..100 -/ground
+  19: 0..2 -/ground  2..99 mid/ground  99..100 -/ground
+  20: 0..2 -/ground  2..100 mid/ground
+  21: 0..100 -/ground
+  22: 0..45 bright/ground  45..100 -/ground
+  23: 0..2 -/ground  2..100 mid/ground
+  24: 0..2 -/ground  2..80 mid/ground  80..100 -/ground
+  25: 0..100 -/ground
+  26: 0..27 faint/ground  27..28 -/ground  28..100 rule-faint/ground
+  27: 0..5 body/keycap  5..6 -/ground  6..10 dim/ground  10..100 -/ground
+  28: 0..5 body/keycap  5..6 -/ground  6..21 dim/ground  21..100 -/ground
+  29: 0..3 body/keycap  3..4 -/ground  4..23 dim/ground  23..100 -/ground
+  30: 0..5 body/keycap  5..6 -/ground  6..14 dim/ground  14..100 -/ground
+  31: 0..100 -/ground
+  32: 0..31 faint/ground  31..32 -/ground  32..100 rule-faint/ground
+  33: 0..3 body/keycap  3..4 -/ground  4..11 dim/ground  11..100 -/ground
+  34: 0..3 body/keycap  3..4 -/ground  4..18 dim/ground  18..100 -/ground
+  35: 0..3 body/keycap  3..4 -/ground  4..23 dim/ground  23..100 -/ground
+  36: 0..7 body/keycap  7..8 -/ground  8..18 dim/ground  18..100 -/ground
+  37: 0..100 -/ground
+  38: 0..33 faint/ground  33..34 -/ground  34..100 rule-faint/ground
+  39: 0..3 body/keycap  3..4 -/ground  4..10 dim/ground  10..100 -/ground

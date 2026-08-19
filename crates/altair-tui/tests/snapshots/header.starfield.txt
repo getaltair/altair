@@ -17,9 +17,9 @@ palette
   keycap-border: #262f42
   sheet: #111725
 
-|✦ A L T A I R   G U I D A N C E · L A D D E R                        showing working|
-|────────────────────────────────────────────────────────────────────────────────────|
+|✦ A L T A I R   G U I D A N C E   ·   L A D D E R                                    showing working|
+|────────────────────────────────────────────────────────────────────────────────────────────────────|
 
 colours
-  0: 0..1 identity/ground  1..2 -/ground  2..13 bright/ground+BOLD  13..15 -/ground  15..46 identity/selected  46..69 -/ground  69..84 dim/ground
-  1: 0..84 rule/ground
+  0: 0..1 identity/ground  1..2 -/ground  2..13 bright/ground+BOLD  13..15 -/ground  15..50 identity/selected  50..85 -/ground  85..100 dim/ground
+  1: 0..100 rule/ground

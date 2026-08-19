@@ -1,0 +1,53 @@
+palette
+  ground: #f4f1e9
+  body: #3f3b33
+  bright: #201e19
+  mid: #6d685c
+  dim: #8d8878
+  faint: #a39d8c
+  rule: #ddd6c6
+  rule-faint: #e4ddcd
+  selected: #e8e3d5
+  identity: #3c5f9c
+  attention: #a8562f
+  worked: #4d7548
+  refused: #a33224
+  table-head: #eae5d8
+  keycap: #eae5d8
+  keycap-border: #d3ccbc
+  sheet: #ece7da
+
+|✦ A L T A I R   G U I D A N C E   ·   L A D D E R                                    showing working|
+|────────────────────────────────────────────────────────────────────────────────────────────────────|
+|                                                                                                    |
+|◈ Rebuild the rack                                               campaign    working  7 quests      |
+|▏  ◈ Airflow and thermals                                        arc         working                |
+|▏  ▏  ◆ Bench-test the fan controller                            quest       worked   aug 12        |
+|▏  ▏  ◈ Wire the T-Encoder                                       quest       working  uses ×4       |
+|▏  ▏  ◇ Cut the intake shroud                                    quest       waiting  blocked above |
+|▏  ◇ Cable management                                            arc         waiting                |
+|                                                                                                    |
+|                                                                                                    |
+|                                                                                                    |
+|                                                                                                    |
+|                                                                                                    |
+| B R O W S I N G  rebuild the rack › airflow and thermals › wire the t-encoder               4 of 11|
+| ↑↓  move    ←→  fold    space  next state    o  new quest                                          |
+
+colours
+  0: 0..1 identity/ground  1..2 -/ground  2..13 bright/ground+BOLD  13..15 -/ground  15..50 identity/selected  50..85 -/ground  85..100 dim/ground
+  1: 0..100 rule/ground
+  2: 0..100 -/ground
+  3: 0..2 attention/ground  2..65 body/ground  65..77 dim/ground  77..86 attention/ground  86..100 dim/ground
+  4: 0..1 rule/ground  1..3 -/ground  3..5 attention/ground  5..65 body/ground  65..77 dim/ground  77..86 attention/ground  86..100 dim/ground
+  5: 0..1 rule/ground  1..3 -/ground  3..4 rule/ground  4..6 -/ground  6..8 worked/ground  8..65 mid/ground  65..77 faint/ground  77..86 worked/ground  86..100 dim/ground
+  6: 0..1 rule/selected  1..3 -/selected  3..4 rule/selected  4..6 -/selected  6..8 attention/selected  8..65 bright/selected+BOLD  65..77 mid/selected  77..86 attention/selected  86..100 dim/selected
+  7: 0..1 rule/ground  1..3 -/ground  3..4 rule/ground  4..6 -/ground  6..8 faint/ground  8..65 body/ground  65..77 dim/ground  77..86 faint/ground  86..100 refused/ground
+  8: 0..1 rule/ground  1..3 -/ground  3..5 faint/ground  5..65 body/ground  65..77 dim/ground  77..86 faint/ground  86..100 dim/ground
+  9: 0..100 -/ground
+  10: 0..100 -/ground
+  11: 0..100 -/ground
+  12: 0..100 -/ground
+  13: 0..100 -/ground
+  14: 0..17 ground/identity  17..18 -/ground  18..34 dim/ground  34..37 faint/ground  37..57 dim/ground  57..60 faint/ground  60..78 body/ground  78..93 -/ground  93..100 faint/ground
+  15: 0..4 body/table-head  4..5 -/ground  5..9 dim/ground  9..12 -/ground  12..16 body/table-head  16..17 -/ground  17..21 dim/ground  21..24 -/ground  24..31 body/table-head  31..32 -/ground  32..42 dim/ground  42..45 -/ground  45..48 body/table-head  48..49 -/ground  49..58 dim/ground  58..100 -/ground

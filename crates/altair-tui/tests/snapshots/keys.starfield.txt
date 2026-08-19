@@ -17,7 +17,7 @@ palette
   keycap-border: #262f42
   sheet: #111725
 
-| ↑↓  move    ↵  open where it lives    c  capture                                   |
+| ↑↓  move    ↵  open where it lives    c  capture                                                   |
 
 colours
-  0: 0..4 body/keycap  4..5 -/ground  5..9 dim/ground  9..12 -/ground  12..15 body/keycap  15..16 -/ground  16..35 dim/ground  35..38 -/ground  38..41 body/keycap  41..42 -/ground  42..49 dim/ground  49..84 -/ground
+  0: 0..4 body/keycap  4..5 -/ground  5..9 dim/ground  9..12 -/ground  12..15 body/keycap  15..16 -/ground  16..35 dim/ground  35..38 -/ground  38..41 body/keycap  41..42 -/ground  42..49 dim/ground  49..100 -/ground

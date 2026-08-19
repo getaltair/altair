@@ -1,0 +1,45 @@
+palette
+  ground: #0c0f18
+  body: #c6cfdf
+  bright: #f0f4fb
+  mid: #99a3b8
+  dim: #656f85
+  faint: #4d566b
+  rule: #1e2534
+  rule-faint: #161d2a
+  selected: #161d2c
+  identity: #7fb2f0
+  attention: #d9a45f
+  worked: #7fc0a2
+  refused: #d98570
+  table-head: #141a27
+  keycap: #1a2130
+  keycap-border: #262f42
+  sheet: #111725
+
+|✦ A L T A I R   K N O W L E D G E   ·   N O T E                                                     |
+|────────────────────────────────────────────────────────────────────────────────────────────────────|
+|                                                                                                    |
+|W R I T I N G ──────────────────────────────────────────────────────────────────────────────────────|
+|                                                                                                    |
+|in        nvim                                                                                      |
+|the file  ~/.local/state/altair/compositions/…md                                                    |
+|                                                                                                    |
+|the file is ours and stays on disk; if anything dies in there it is offered back next time          |
+|                                                                                                    |
+| W R I T I N G  fan curve, second pass                                                              |
+|   waiting for your editor                                                                          |
+
+colours
+  0: 0..1 identity/ground  1..2 -/ground  2..13 bright/ground+BOLD  13..15 -/ground  15..48 identity/selected  48..100 -/ground
+  1: 0..100 rule/ground
+  2: 0..100 -/ground
+  3: 0..13 dim/ground  13..14 -/ground  14..100 rule/ground
+  4: 0..100 -/ground
+  5: 0..10 dim/ground  10..14 bright/ground  14..100 -/ground
+  6: 0..10 dim/ground  10..48 identity/ground  48..100 -/ground
+  7: 0..100 -/ground
+  8: 0..90 mid/ground  90..100 -/ground
+  9: 0..100 -/ground
+  10: 0..15 ground/identity  15..16 -/ground  16..38 body/ground  38..100 -/ground
+  11: 0..2 body/keycap  2..3 -/ground  3..26 dim/ground  26..100 -/ground

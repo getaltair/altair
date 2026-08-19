@@ -1,0 +1,53 @@
+palette
+  ground: #f4f1e9
+  body: #3f3b33
+  bright: #201e19
+  mid: #6d685c
+  dim: #8d8878
+  faint: #a39d8c
+  rule: #ddd6c6
+  rule-faint: #e4ddcd
+  selected: #e8e3d5
+  identity: #3c5f9c
+  attention: #a8562f
+  worked: #4d7548
+  refused: #a33224
+  table-head: #eae5d8
+  keycap: #eae5d8
+  keycap-border: #d3ccbc
+  sheet: #ece7da
+
+|✦ A L T A I R   T R A C K I N G                                                             workshop|
+|────────────────────────────────────────────────────────────────────────────────────────────────────|
+|                                                                                                    |
+|Workshop                                                                                            |
+|▏  Intake shelf                                                                                     |
+|▏  ▏  M3×8 socket cap                                             a handful                         |
+|▏  ▏  Dupont jumpers                                              18              4 committed       |
+|▏  Parts bin                                                                                        |
+|▏  ▏  Intake filter foam                                          2 sheets                          |
+|                                                                                                    |
+|                                                                                                    |
+|                                                                                                    |
+|                                                                                                    |
+|                                                                                                    |
+| B R O W S I N G  workshop › intake shelf › m3×8 socket cap                                         |
+| ↑↓  move    a  say what is there    ↵  detail                                                      |
+
+colours
+  0: 0..1 identity/ground  1..2 -/ground  2..13 bright/ground+BOLD  13..15 -/ground  15..32 identity/selected  32..92 -/ground  92..100 dim/ground
+  1: 0..100 rule/ground
+  2: 0..100 -/ground
+  3: 0..82 body/ground  82..100 -/ground
+  4: 0..1 rule/ground  1..3 -/ground  3..82 body/ground  82..100 -/ground
+  5: 0..1 rule/selected  1..3 -/selected  3..4 rule/selected  4..6 -/selected  6..66 bright/selected+BOLD  66..82 body/selected  82..100 -/selected
+  6: 0..1 rule/ground  1..3 -/ground  3..4 rule/ground  4..6 -/ground  6..82 body/ground  82..93 identity/ground  93..100 -/ground
+  7: 0..1 rule/ground  1..3 -/ground  3..82 body/ground  82..100 -/ground
+  8: 0..1 rule/ground  1..3 -/ground  3..4 rule/ground  4..6 -/ground  6..82 body/ground  82..100 -/ground
+  9: 0..100 -/ground
+  10: 0..100 -/ground
+  11: 0..100 -/ground
+  12: 0..100 -/ground
+  13: 0..100 -/ground
+  14: 0..17 ground/identity  17..18 -/ground  18..26 dim/ground  26..29 faint/ground  29..41 dim/ground  41..44 faint/ground  44..59 body/ground  59..100 -/ground
+  15: 0..4 body/table-head  4..5 -/ground  5..9 dim/ground  9..12 -/ground  12..15 body/table-head  15..16 -/ground  16..33 dim/ground  33..36 -/ground  36..39 body/table-head  39..40 -/ground  40..46 dim/ground  46..100 -/ground

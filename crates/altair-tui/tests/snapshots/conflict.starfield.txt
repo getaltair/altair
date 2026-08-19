@@ -1,0 +1,53 @@
+palette
+  ground: #0c0f18
+  body: #c6cfdf
+  bright: #f0f4fb
+  mid: #99a3b8
+  dim: #656f85
+  faint: #4d566b
+  rule: #1e2534
+  rule-faint: #161d2a
+  selected: #161d2c
+  identity: #7fb2f0
+  attention: #d9a45f
+  worked: #7fc0a2
+  refused: #d98570
+  table-head: #141a27
+  keycap: #1a2130
+  keycap-border: #262f42
+  sheet: #111725
+
+|✦ A L T A I R   G U I D A N C E   ·   Q U E S T                                                     |
+|────────────────────────────────────────────────────────────────────────────────────────────────────|
+|                                                                                                    |
+|Wire the T-Encoder to the header                                                                    |
+|you and somebody else wrote this at the same time. both are kept.                                   |
+|                                                                                                    |
+|T I T L E ──────────────────────────────────────────────────────────────────────────────────────────|
+|yours       Wire the T-Encoder to the header                                                        |
+|sam         Wire the T-Encoder (header is keyed backwards)                                          |
+|                                                                                                    |
+|                                                                                                    |
+|                                                                                                    |
+|                                                                                                    |
+|                                                                                                    |
+| B R O W S I N G  rebuild the rack › wire the t-encoder                                             |
+| ↵  keep reading    e  write it the way you want it                                                 |
+
+colours
+  0: 0..1 identity/ground  1..2 -/ground  2..13 bright/ground+BOLD  13..15 -/ground  15..48 identity/selected  48..100 -/ground
+  1: 0..100 rule/ground
+  2: 0..100 -/ground
+  3: 0..32 bright/ground+BOLD  32..100 -/ground
+  4: 0..65 mid/ground  65..100 -/ground
+  5: 0..100 -/ground
+  6: 0..9 faint/ground  9..10 -/ground  10..100 rule-faint/ground
+  7: 0..12 dim/ground  12..44 body/ground  44..100 -/ground
+  8: 0..12 dim/ground  12..58 body/ground  58..100 -/ground
+  9: 0..100 -/ground
+  10: 0..100 -/ground
+  11: 0..100 -/ground
+  12: 0..100 -/ground
+  13: 0..100 -/ground
+  14: 0..17 ground/identity  17..18 -/ground  18..34 dim/ground  34..37 faint/ground  37..55 body/ground  55..100 -/ground
+  15: 0..3 body/keycap  3..4 -/ground  4..16 dim/ground  16..19 -/ground  19..22 body/keycap  22..23 -/ground  23..51 dim/ground  51..100 -/ground

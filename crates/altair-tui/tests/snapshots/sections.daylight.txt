@@ -17,11 +17,11 @@ palette
   keycap-border: #d3ccbc
   sheet: #ece7da
 
-|W H A T Y O U T O U C H E D ────────────────────────────────────────────────────────|
-|                                                                                    |
-|S U N D A Y 1 6 ────────────────────────────────────────────────────────────────────|
+|W H A T   Y O U   T O U C H E D ────────────────────────────────────────────────────────────────────|
+|                                                                                                    |
+|S U N D A Y   1 6 ──────────────────────────────────────────────────────────────────────────────────|
 
 colours
-  0: 0..27 dim/ground  27..28 -/ground  28..84 rule/ground
-  1: 0..84 -/ground
-  2: 0..15 faint/ground  15..16 -/ground  16..84 rule-faint/ground
+  0: 0..31 dim/ground  31..32 -/ground  32..100 rule/ground
+  1: 0..100 -/ground
+  2: 0..17 faint/ground  17..18 -/ground  18..100 rule-faint/ground

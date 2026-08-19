@@ -1,0 +1,49 @@
+palette
+  ground: #f4f1e9
+  body: #3f3b33
+  bright: #201e19
+  mid: #6d685c
+  dim: #8d8878
+  faint: #a39d8c
+  rule: #ddd6c6
+  rule-faint: #e4ddcd
+  selected: #e8e3d5
+  identity: #3c5f9c
+  attention: #a8562f
+  worked: #4d7548
+  refused: #a33224
+  table-head: #eae5d8
+  keycap: #eae5d8
+  keycap-border: #d3ccbc
+  sheet: #ece7da
+
+|✦ A L T A I R   G U I D A N C E                                                                     |
+|────────────────────────────────────────────────────────────────────────────────────────────────────|
+|                                                                                                    |
+|erase Airflow and thermals                                                                          |
+|                                                                                                    |
+|for everyone, and for good. this is not removing: nothing brings it back, and nothing keeps a copy. |
+|                                                                                                    |
+|if you only want it out of your way, remove it instead                                              |
+|                                                                                                    |
+|                                                                                                    |
+|                                                                                                    |
+|                                                                                                    |
+| E R A S I N G  rebuild the rack › airflow and thermals                                             |
+| type erase  to mean it    esc  never mind                                                          |
+
+colours
+  0: 0..1 identity/ground  1..2 -/ground  2..13 bright/ground+BOLD  13..15 -/ground  15..32 identity/selected  32..100 -/ground
+  1: 0..100 rule/ground
+  2: 0..100 -/ground
+  3: 0..6 refused/ground  6..26 bright/ground+BOLD  26..100 -/ground
+  4: 0..100 -/ground
+  5: 0..99 refused/ground  99..100 -/ground
+  6: 0..100 -/ground
+  7: 0..54 mid/ground  54..100 -/ground
+  8: 0..100 -/ground
+  9: 0..100 -/ground
+  10: 0..100 -/ground
+  11: 0..100 -/ground
+  12: 0..15 ground/refused  15..16 -/ground  16..32 dim/ground  32..35 faint/ground  35..55 body/ground  55..100 -/ground
+  13: 0..12 body/table-head  12..13 -/ground  13..23 dim/ground  23..26 -/ground  26..31 body/table-head  31..32 -/ground  32..42 dim/ground  42..100 -/ground

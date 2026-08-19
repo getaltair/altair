@@ -17,13 +17,13 @@ palette
   keycap-border: #d3ccbc
   sheet: #ece7da
 
-|◈ Rebuild the rack  working                                                         |
-|▏  ◈ Airflow and thermals  working                                                  |
-|▏  ▏  ◆ Bench-test the fan controller  worked                                       |
-|▏  ▏  ▏  ◇ Cut the intake shroud  waiting                                           |
+|◈ Rebuild the rack  working                                                                         |
+|▏  ◈ Airflow and thermals  working                                                                  |
+|▏  ▏  ◆ Bench-test the fan controller  worked                                                       |
+|▏  ▏  ▏  ◇ Cut the intake shroud  waiting                                                           |
 
 colours
-  0: 0..2 attention/ground  2..18 body/ground  18..27 dim/ground  27..84 -/ground
-  1: 0..1 rule/ground  1..3 -/ground  3..5 attention/ground  5..25 body/ground  25..34 dim/ground  34..84 -/ground
-  2: 0..1 rule/ground  1..3 -/ground  3..4 rule/ground  4..6 -/ground  6..8 worked/ground  8..37 body/ground  37..45 dim/ground  45..84 -/ground
-  3: 0..1 rule/ground  1..3 -/ground  3..4 rule/ground  4..6 -/ground  6..7 rule/ground  7..9 -/ground  9..11 faint/ground  11..32 body/ground  32..41 dim/ground  41..84 -/ground
+  0: 0..2 attention/ground  2..18 body/ground  18..27 dim/ground  27..100 -/ground
+  1: 0..1 rule/ground  1..3 -/ground  3..5 attention/ground  5..25 body/ground  25..34 dim/ground  34..100 -/ground
+  2: 0..1 rule/ground  1..3 -/ground  3..4 rule/ground  4..6 -/ground  6..8 worked/ground  8..37 body/ground  37..45 dim/ground  45..100 -/ground
+  3: 0..1 rule/ground  1..3 -/ground  3..4 rule/ground  4..6 -/ground  6..7 rule/ground  7..9 -/ground  9..11 faint/ground  11..32 body/ground  32..41 dim/ground  41..100 -/ground

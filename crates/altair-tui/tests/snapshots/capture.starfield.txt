@@ -1,0 +1,45 @@
+palette
+  ground: #0c0f18
+  body: #c6cfdf
+  bright: #f0f4fb
+  mid: #99a3b8
+  dim: #656f85
+  faint: #4d566b
+  rule: #1e2534
+  rule-faint: #161d2a
+  selected: #161d2c
+  identity: #7fb2f0
+  attention: #d9a45f
+  worked: #7fc0a2
+  refused: #d98570
+  table-head: #141a27
+  keycap: #1a2130
+  keycap-border: #262f42
+  sheet: #111725
+
+|✦ A L T A I R   C A P T U R E S                                                                     |
+|────────────────────────────────────────────────────────────────────────────────────────────────────|
+|                                                                                                    |
+|C A P T U R E ──────────────────────────────────────────────────────────────────────────────────────|
+|                                                                                                    |
+|> check whether 30ppi is too coarse                                                                 |
+|                                                                                                    |
+|it is yours as soon as you press return; nothing else is needed                                     |
+|                                                                                                    |
+|                                                                                                    |
+| C A P T U R I N G  captures                                                                        |
+| ↵  keep it    esc  never mind                                                                      |
+
+colours
+  0: 0..1 identity/ground  1..2 -/ground  2..13 bright/ground+BOLD  13..15 -/ground  15..32 identity/selected  32..100 -/ground
+  1: 0..100 rule/ground
+  2: 0..100 -/ground
+  3: 0..13 dim/ground  13..14 -/ground  14..100 rule/ground
+  4: 0..100 -/ground
+  5: 0..2 identity/ground  2..35 bright/ground  35..36 -/body  36..100 -/ground
+  6: 0..100 -/ground
+  7: 0..63 dim/ground  63..100 -/ground
+  8: 0..100 -/ground
+  9: 0..100 -/ground
+  10: 0..19 ground/identity  19..20 -/ground  20..28 body/ground  28..100 -/ground
+  11: 0..3 body/keycap  3..4 -/ground  4..11 dim/ground  11..14 -/ground  14..19 body/keycap  19..20 -/ground  20..30 dim/ground  30..100 -/ground

@@ -1,0 +1,57 @@
+palette
+  ground: #0c0f18
+  body: #c6cfdf
+  bright: #f0f4fb
+  mid: #99a3b8
+  dim: #656f85
+  faint: #4d566b
+  rule: #1e2534
+  rule-faint: #161d2a
+  selected: #161d2c
+  identity: #7fb2f0
+  attention: #d9a45f
+  worked: #7fc0a2
+  refused: #d98570
+  table-head: #141a27
+  keycap: #1a2130
+  keycap-border: #262f42
+  sheet: #111725
+
+|✦ A L T A I R   G U I D A N C E   ·   Q U E S T                                       created aug 14|
+|────────────────────────────────────────────────────────────────────────────────────────────────────|
+|                                                                                                    |
+|Wire the T-Encoder to the header                                                                    |
+|                                                                                                    |
+|The header is keyed the other way round from the diagram, so                                        |
+|the ribbon has to come off the back of the board.                                                   |
+|                                                                                                    |
+|J O I N E D   T O ──────────────────────────────────────────────────────────────────────────────────|
+|→ uses            M3×8 socket cap ×4                                  at “four of the short ones”   |
+|› untyped         Fan curve, second pass                                                            |
+|                                                                                                    |
+|                                                                                                    |
+|                                                                                                    |
+|                                                                                                    |
+|                                                                                                    |
+| B R O W S I N G  rebuild the rack › wire the t-encoder                                             |
+| e  edit in your editor    r  join to something    esc  back out                                    |
+
+colours
+  0: 0..1 identity/ground  1..2 -/ground  2..13 bright/ground+BOLD  13..15 -/ground  15..48 identity/selected  48..86 -/ground  86..100 dim/ground
+  1: 0..100 rule/ground
+  2: 0..100 -/ground
+  3: 0..32 bright/ground+BOLD  32..100 -/ground
+  4: 0..100 -/ground
+  5: 0..60 body/ground  60..100 -/ground
+  6: 0..49 body/ground  49..100 -/ground
+  7: 0..100 -/ground
+  8: 0..17 dim/ground  17..18 -/ground  18..100 rule/ground
+  9: 0..18 identity/ground  18..70 body/ground  70..100 faint/ground
+  10: 0..18 identity/ground  18..70 body/ground  70..100 faint/ground
+  11: 0..100 -/ground
+  12: 0..100 -/ground
+  13: 0..100 -/ground
+  14: 0..100 -/ground
+  15: 0..100 -/ground
+  16: 0..17 ground/identity  17..18 -/ground  18..34 dim/ground  34..37 faint/ground  37..55 body/ground  55..100 -/ground
+  17: 0..3 body/keycap  3..4 -/ground  4..23 dim/ground  23..26 -/ground  26..29 body/keycap  29..30 -/ground  30..47 dim/ground  47..50 -/ground  50..55 body/keycap  55..56 -/ground  56..64 dim/ground  64..100 -/ground

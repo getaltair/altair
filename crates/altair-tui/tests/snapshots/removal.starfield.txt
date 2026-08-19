@@ -1,0 +1,49 @@
+palette
+  ground: #0c0f18
+  body: #c6cfdf
+  bright: #f0f4fb
+  mid: #99a3b8
+  dim: #656f85
+  faint: #4d566b
+  rule: #1e2534
+  rule-faint: #161d2a
+  selected: #161d2c
+  identity: #7fb2f0
+  attention: #d9a45f
+  worked: #7fc0a2
+  refused: #d98570
+  table-head: #141a27
+  keycap: #1a2130
+  keycap-border: #262f42
+  sheet: #111725
+
+|✦ A L T A I R   G U I D A N C E                                                                     |
+|────────────────────────────────────────────────────────────────────────────────────────────────────|
+|                                                                                                    |
+|remove Airflow and thermals                                                                         |
+|                                                                                                    |
+|and what it holds, as one act:                                                                      |
+|  Bench-test the fan controller                                                                     |
+|  Wire the T-Encoder                                                                                |
+|  Cut the intake shroud                                                                             |
+|                                                                                                    |
+|you can bring this back, and bringing back any of it can bring back the rest                        |
+|                                                                                                    |
+| C O N F I R M I N G  rebuild the rack › airflow and thermals                                       |
+| ↵  remove it    esc  never mind                                                                    |
+
+colours
+  0: 0..1 identity/ground  1..2 -/ground  2..13 bright/ground+BOLD  13..15 -/ground  15..32 identity/selected  32..100 -/ground
+  1: 0..100 rule/ground
+  2: 0..100 -/ground
+  3: 0..7 body/ground  7..27 bright/ground+BOLD  27..100 -/ground
+  4: 0..100 -/ground
+  5: 0..30 mid/ground  30..100 -/ground
+  6: 0..2 -/ground  2..31 body/ground  31..100 -/ground
+  7: 0..2 -/ground  2..20 body/ground  20..100 -/ground
+  8: 0..2 -/ground  2..23 body/ground  23..100 -/ground
+  9: 0..100 -/ground
+  10: 0..76 attention/ground  76..100 -/ground
+  11: 0..100 -/ground
+  12: 0..21 ground/attention  21..22 -/ground  22..38 dim/ground  38..41 faint/ground  41..61 body/ground  61..100 -/ground
+  13: 0..3 body/keycap  3..4 -/ground  4..13 dim/ground  13..16 -/ground  16..21 body/keycap  21..22 -/ground  22..32 dim/ground  32..100 -/ground
