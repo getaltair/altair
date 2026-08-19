@@ -5,7 +5,7 @@
 [![Licence: AGPL-3.0-or-later](https://img.shields.io/badge/licence-AGPL--3.0--or--later-blue)](LICENSE)
 
 [![Status: pre-alpha](https://img.shields.io/badge/status-pre--alpha-orange)](#status)
-[![Waves 0 and 1 complete](https://img.shields.io/badge/waves-0%20and%201%20complete-yellowgreen)](docs/altair-v0-implementation-plan.md)
+[![Waves 0 to 3 complete](https://img.shields.io/badge/waves-0%20to%203%20complete-yellowgreen)](docs/altair-v0-implementation-plan.md)
 [![Rust edition 2024](https://img.shields.io/badge/rust-edition%202024-dea584)](Cargo.toml)
 [![PostgreSQL 18 with pgvector](https://img.shields.io/badge/postgresql-18%20with%20pgvector-336791)](docs/DR-002-postgresql-structured-store.md)
 
@@ -17,7 +17,7 @@ One instance serves one household. Nobody else can raise the price, change the t
 
 ## Status
 
-**Early construction.** The design is written and the first code has landed; there is no running instance yet and nothing to install.
+**Early construction.** The design is written and the instance answers every call in its interface; there is no client yet and nothing to install.
 
 | Part | State |
 |---|---|
@@ -26,8 +26,8 @@ One instance serves one household. Nobody else can raise the price, change the t
 | Structured store schema (`crates/altaird/migrations/`) | `0001_initial.sql` is migration one, applied and exercised on PostgreSQL 18.6 with pgvector 0.8.6. `0002_write_provenance.sql` adds per-part write provenance and a lifecycle on a relation |
 | Wave 0 · plumbing | Landed. Workspace, proto codegen, migration runner, a real-Postgres test harness, CI |
 | Wave 1 · foundations | Landed. Store bootstrap and the audience predicate, block division, the object store, token validation, and the outbox conformance suite |
-| Wave 2 · write path | 2.1, the intent spine, has landed: identity and idempotent replay, the counter and conflict detection, the change sequence, relations, lifecycle, and the served submission call. Type content, file bodies, and reclamation are next |
-| Wave 3 · read path | Literal retrieval, the change stream and its horizon, health |
+| Wave 2 · write path | 2.1 the intent spine, 2.2 type content across all three domains, and 2.3 file bodies have landed. **2.4, reclamation, was skipped and is still outstanding** — there is no retention window, no horizon value, and nothing sweeps |
+| Wave 3 · read path | Landed. Literal retrieval, the per-member change stream, and health. All six calls in the interface are now served |
 | Wave 4 · terminal client | The first useful day. Nothing before it is usable software |
 | Waves 5 and 6 | Semantic retrieval, then the message bridge and operations |
 

@@ -68,9 +68,9 @@ flowchart TB
         R3["Health"]
     end
 
-    subgraph W4["Wave 4 · The terminal client"]
-        C1["Rust outbox"]
-        C2["Terminal client"]
+    subgraph W4["Wave 4 · The terminal client, one lane"]
+        C1["Device store, outbox face:<br/>the conformance suite goes green"]
+        C2["Device store, replica face,<br/>and the terminal client"]
     end
 
     subgraph W5["Wave 5 · Semantic"]
@@ -107,6 +107,7 @@ flowchart TB
     A1 --> C1
     C1 --> C2
     R1 --> C2
+    R2 --> C2
 
     A2 --> S1
     S1 --> S2
@@ -292,6 +293,8 @@ Small, and hangs directly off erasure rather than waiting for a later wave.
 
 **Done when:** an erasure followed by a pass leaves no bytes, a pass over a healthy store changes no answer to any query, and a test refuses a horizon set between two other retention windows.
 
+> ⚠️ **This did not land, and Wave 3 proceeded without it.** The tree goes 2.1, 2.2, 2.3, Wave 3; there is no retention constant and no horizon value anywhere in the instance, and `Changes` derives its horizon implicitly from the earliest surviving change row. Two consequences, and the second is the one that matters. Nothing expires out of the deleted holding state, so a surface drawing an expiry date is drawing a promise the instance does not keep. And because nothing trims the change sequence, `Changes(since=0)` still replays the whole history — which is the only reason a client can rebuild at all. **Whoever picks this up owes clients a rebuild path before the first row is trimmed**, since trimming without one turns every client's rebuild into `PositionUnanswerable` with nowhere to go. That is a stronger obligation than this item was written with.
+
 ---
 
 ## Wave 3 · Read path, literal only
@@ -317,6 +320,8 @@ Three lanes, parallel with each other.
 
 The architecture explicitly permits a client that always fetches current state and never uses the change stream, and calls it conforming. Omitting the instance side is one-way; omitting the client side is not.
 
+> ℹ️ **The instance half was right and the sentence about the client was wrong.** "Always fetches current state" names no call, and the served interface has none. `Query` is the literal arm, whose predicate matches nothing when the text is empty, so it cannot enumerate; its `Result` carries an entity and never a relation, so backlinks, `uses` commitments and the ladder graph are unreachable through it. `Changes` is the only surface that yields a relation at all, which makes it the only source of client state, and a rebuild from nothing **is** `Changes(since=0)`. The conforming client that never touches the change stream is not currently constructible, and Wave 4 is where that is discovered. Recorded rather than deleted, because the reasoning was sound against the architecture and wrong against the wire, and that gap is worth being able to see.
+
 - Per-member change set assembly, filtered at the source rather than late.
 - Position past the horizon returns `PositionUnanswerable`, which is an outcome and not an error.
 - The horizon is null, or longer than every other retention window. **A middle value is a bug**, not a tuning choice.
@@ -337,32 +342,56 @@ Outstanding derivation is computed from provenance in the store, never from the 
 
 **Where the project becomes something you use rather than something you test.**
 
-### 4.1 Rust outbox
+**Re-planned at the Wave 3 boundary, 2026-08-19.** Two things were settled before any of this was written, and both came out of reading the served interface rather than the documents:
+
+- **The terminal client is a replica client, and this is not a choice.** The instance offers no way to read an entity by identity and no way to list what a container holds. `Query` is the literal arm and cannot enumerate; it answers with entities and never with relations. Every screen that is not search — the ladder, the tracking tree, a detail with its derived backlinks — is assembled on the device from what `Changes` delivered. §3.2 carries the correction.
+- **4.1 and 4.2 are one lane, because they are one store.** They were planned as separable and are not. The outbox owes durable local acceptance and has to answer what the person captured while the instance is unreachable; the replica owes the same store the instance's version of the same entities. Two stores would put "what do I show" in neither of them.
+
+### 4.1 The device store, outbox face
 
 The conformance suite from 1.5 goes green.
 
 Durable, ordered per entity, idempotent, non-blocking, silent while waiting and never silent while failing. The suite defines it; do not add behaviour it does not require.
 
+**This face lands first, before anything is drawn.** Thirty-five scenarios turning green one at a time is the deliverable Wave 1.5 was built to produce, and it is only legible if nothing else is moving at the same time.
+
 **Done when:** every scenario in sections A through G passes.
 
-### 4.2 Terminal client
+### 4.2 The device store, replica face, and the terminal client
 
-ratatui. The deliberate surface: where bodies are written and where the work that is not capture happens.
+ratatui over crossterm, so Linux and Windows are both served. The deliberate surface: where bodies are written and where the work that is not capture happens.
 
 **It carries the whole editing surface**, because there is no second client to fall back to and no browser. Everything the instance can do is reachable here or is not reachable at all in v0.
+
+The replica half: seeded by `Changes(since=0)`, kept current by polling, and holding pending local writes in the same store as the instance's truth.
+
+**The invariant this wave exists to keep:** what the person sees is instance truth overlaid with pending local writes, and a pending write never becomes invisible because the instance is unreachable. Its other half is already a standing constraint — no surface ever *counts* what is pending. The suite permits exactly one number anywhere in the client, and it is how many the instance refused.
 
 Scope:
 
 - **Capture**, on the fast path, never stopping to ask.
 - **Ladder work**: campaigns, arcs, quests, states, moving between them.
-- **Body composition**: markdown, with the writing surface as the place relations are formed at the point the thought occurred.
+- **Body composition**, handed to the person's own editor rather than written here.
 - **Relations**, typed and untyped, including the create-from-reference gesture where nothing matches.
 - **Tracking**: items, locations, asserting amounts, "just mark it lower."
 - **Retrieval**, across all three domains in one pass, with the answer's state visible.
 - **Fault signalling and silence.** Depth is never shown. A refusal is.
 - **Token flow.** Device flow unless something argues otherwise.
 
+**A body is written in `$EDITOR`; the fast path never leaves the client.** The client suspends, the child inherits the terminal, and the text that comes back is submitted whole. A single line is never worth that, so capture, a field, a search and the word typed to confirm an erasure all stay here — capture that stops to ask is not on the fast path. Resolution is `$ALTAIR_EDITOR`, then `$VISUAL`, then `$EDITOR`, then whatever `nvim` is on the path; having none of them is a **fault** rather than a wait, because no amount of waiting produces an editor.
+
+**This costs less than it appears, because the relation gesture was never inside the editor.** The wire says a body is plain text with no relation markers in it, and that a client never divides one, so a block identity does not exist until the instance has divided and answered. An anchor names a block. Forming a relation from a selection was therefore always a gesture over blocks that came back, whoever wrote the text — the editor holds prose, and what Altair relates against is the division. What is genuinely given up is the promise that the buffer is kept as the person types: the client owns the file the editor writes into, so what survives a crash is that file, recovered on the next launch, and the help surface says that rather than the older, now untrue thing.
+
+**What the surface does not reach in v0**, decided against the mock-ups rather than discovered while building them. Each is refused for a reason that expires, in the same way 2.1 refused a file create:
+
+- **Versions.** Deferred in v0, so nothing writes a version row and there is nothing for a restore to put back. The screen is a view over an empty table.
+- **The holding window's expiry.** A deleted thing shows that it is deleted and not when it stops being so, because [2.4](#24-reclamation) did not land and nothing expires.
+- **A conflict, reached for real.** Both retained sides render, driven by a fixture. Reaching one needs a second writer, which arrives with the bridge at 6.1.
+- **Templates as a gesture**, and creating one thing from the shape of another. The tables exist; the plan already defers the gestures.
+
 **Nothing about this client may become the definition of a client.** DR-006's obligation: a second client arriving must not discover that the first one's habits were load-bearing.
+
+**The visual language is settled and lives outside this repository**, in a Claude Design project holding the screens in both themes. It is deliberately not a terminal convention: no box-drawing frames, no tree glyphs, no gutter, no modal block. Two things in it do not survive contact with a terminal and are the client's to fix rather than the design's. Its state family, its arrows and its hairline indent are all East-Asian-Width *ambiguous*, so terminals disagree about how many cells each occupies and columns drift on somebody else's; the mark, the disclosure triangles and the return and delete keycaps are neutral and safe. And one screen binds a key that does not exist off a Mac.
 
 **Done when:** you capture into it daily and stop reaching for Lattice.
 
