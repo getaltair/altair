@@ -1,0 +1,109 @@
+palette
+  ground: #0c0f18
+  body: #c6cfdf
+  bright: #f0f4fb
+  mid: #99a3b8
+  dim: #656f85
+  faint: #4d566b
+  rule: #1e2534
+  rule-faint: #161d2a
+  selected: #161d2c
+  identity: #7fb2f0
+  attention: #d9a45f
+  worked: #7fc0a2
+  refused: #d98570
+  table-head: #141a27
+  keycap: #1a2130
+  keycap-border: #262f42
+  sheet: #111725
+
+|Fan curve, second pass                                                      |
+|                                                                            |
+|The first curve was tuned against an empty rack, which is why it ramps late.|
+|With the shelves loaded the intake reads 6°C warmer at idle, so the whole   |
+|curve moves left rather than getting steeper.                               |
+|                                                                            |
+|Measured at the top intake sensor, 40 min after boot, using the short loom  |
+|and a borrowed meter.                                                       |
+|                                                                            |
+|▏  The lip is 3mm proud of the shroud. Everything downstream of this assumes|
+|▏  it is flush, which it is not.                                            |
+|                                                                            |
+| rpm   intake  exhaust                                                      |
+| 600   31      38                                                           |
+| 1200  27      34                                                           |
+|                                                                            |
+|What is left:                                                               |
+|                                                                            |
+|- Re-cut the shroud                                                         |
+|  - measure twice, the acrylic is expensive                                 |
+|  - deburr the edge                                                         |
+|[ ] order more filter foam                                                  |
+|[x] bench-test the controller                                               |
+|                                                                            |
+| fan_curve = [(600, 31), (1200, 27)]                                        |
+| # no highlighting here, on purpose                                         |
+|                                                                            |
+|An unbreakable_identifier_that_is_far_too_long_for_any_sensible_column_width|
+|ends it.                                                                    |
+|                                                                            |
+|                                                                            |
+|                                                                            |
+|                                                                            |
+|                                                                            |
+|                                                                            |
+|                                                                            |
+|                                                                            |
+|                                                                            |
+|                                                                            |
+|                                                                            |
+|                                                                            |
+|                                                                            |
+|                                                                            |
+|                                                                            |
+
+colours
+  0: 0..22 bright/ground+BOLD  22..76 -/ground
+  1: 0..76 -/ground
+  2: 0..76 body/ground
+  3: 0..74 body/ground  74..76 -/ground
+  4: 0..37 body/ground  37..44 body/ground+ITALIC  44..45 body/ground  45..76 -/ground
+  5: 0..76 -/ground
+  6: 0..16 body/ground  16..33 identity/ground+UNDERLINED  33..60 body/ground  60..74 body/ground+BOLD  74..75 body/ground  75..76 -/ground
+  7: 0..6 body/ground  6..20 body/ground+UNDERLINED  20..21 body/ground  21..76 -/ground
+  8: 0..76 -/ground
+  9: 0..3 rule/ground  3..76 mid/ground
+  10: 0..3 rule/ground  3..32 mid/ground  32..76 -/ground
+  11: 0..76 -/ground
+  12: 0..1 mid/table-head  1..4 body/table-head  4..7 mid/table-head  7..13 body/table-head  13..15 mid/table-head  15..22 body/table-head  22..23 mid/table-head  23..76 -/ground
+  13: 0..1 -/ground  1..4 body/ground  4..7 -/ground  7..9 body/ground  9..15 -/ground  15..17 body/ground  17..76 -/ground
+  14: 0..1 -/ground  1..5 body/ground  5..7 -/ground  7..9 body/ground  9..15 -/ground  15..17 body/ground  17..76 -/ground
+  15: 0..76 -/ground
+  16: 0..13 body/ground  13..76 -/ground
+  17: 0..76 -/ground
+  18: 0..2 dim/ground  2..19 body/ground  19..76 -/ground
+  19: 0..2 -/ground  2..4 dim/ground  4..43 body/ground  43..76 -/ground
+  20: 0..2 -/ground  2..4 dim/ground  4..19 body/ground  19..76 -/ground
+  21: 0..4 dim/ground  4..26 body/ground  26..76 -/ground
+  22: 0..4 worked/ground  4..29 body/ground  29..76 -/ground
+  23: 0..76 -/ground
+  24: 0..76 body/keycap
+  25: 0..76 body/keycap
+  26: 0..76 -/ground
+  27: 0..76 body/ground
+  28: 0..8 body/ground  8..76 -/ground
+  29: 0..76 -/ground
+  30: 0..76 -/ground
+  31: 0..76 -/ground
+  32: 0..76 -/ground
+  33: 0..76 -/ground
+  34: 0..76 -/ground
+  35: 0..76 -/ground
+  36: 0..76 -/ground
+  37: 0..76 -/ground
+  38: 0..76 -/ground
+  39: 0..76 -/ground
+  40: 0..76 -/ground
+  41: 0..76 -/ground
+  42: 0..76 -/ground
+  43: 0..76 -/ground

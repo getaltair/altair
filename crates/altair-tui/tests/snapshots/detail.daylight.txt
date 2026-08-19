@@ -22,8 +22,8 @@ palette
 |                                                                                                    |
 |Wire the T-Encoder to the header                                                                    |
 |                                                                                                    |
-|The header is keyed the other way round from the diagram, so                                        |
-|the ribbon has to come off the back of the board.                                                   |
+|The header is keyed the other way round from the diagram, so the ribbon has to come off the back of |
+|the board.                                                                                          |
 |                                                                                                    |
 |J O I N E D   T O ──────────────────────────────────────────────────────────────────────────────────|
 |→ uses            M3×8 socket cap ×4                                  at “four of the short ones”   |
@@ -42,8 +42,8 @@ colours
   2: 0..100 -/ground
   3: 0..32 bright/ground+BOLD  32..100 -/ground
   4: 0..100 -/ground
-  5: 0..60 body/ground  60..100 -/ground
-  6: 0..49 body/ground  49..100 -/ground
+  5: 0..92 body/ground  92..96 body/ground+BOLD  96..100 body/ground
+  6: 0..10 body/ground  10..100 -/ground
   7: 0..100 -/ground
   8: 0..17 dim/ground  17..18 -/ground  18..100 rule/ground
   9: 0..18 identity/ground  18..70 body/ground  70..100 faint/ground

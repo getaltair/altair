@@ -9,9 +9,9 @@
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::style::Style;
-use ratatui::text::Span;
+use ratatui::text::{Line, Span};
 
-use super::rows::{KIND, NOTE, Rows, STATE, WHEN, cell, clip, inks, weight};
+use super::rows::{KIND, NOTE, Rows, STATE, WHEN, cell, inks, weight};
 use crate::ui::chrome::Shell;
 use crate::ui::glyphs::State;
 use crate::ui::view::{Answered, Group, Kept, Link, Row, Rung};
@@ -230,7 +230,7 @@ pub fn tracking(shell: &Shell, kept: &[Kept], area: Rect, buffer: &mut Buffer) {
 pub fn detail(
     shell: &Shell,
     title: &str,
-    body: &[&str],
+    body: &[Line<'static>],
     links: &[Link],
     area: Rect,
     buffer: &mut Buffer,
@@ -247,14 +247,8 @@ pub fn detail(
         )],
     );
     list.skip();
-    for paragraph in body {
-        list.draw(
-            t.ground,
-            vec![Span::styled(
-                clip(paragraph, usize::from(area.width)),
-                Style::new().fg(t.body),
-            )],
-        );
+    for line in body {
+        list.draw(t.ground, line.spans.clone());
     }
     list.skip();
     list.section("joined to", false);

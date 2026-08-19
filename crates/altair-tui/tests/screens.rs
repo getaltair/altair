@@ -11,6 +11,7 @@
 mod snapshot;
 
 use altair_tui::ui::glyphs::State;
+use altair_tui::ui::markdown;
 use altair_tui::ui::screens::{browse, sideways, write};
 use altair_tui::ui::view::{Answered, Group, Kept, Link, Retained, Row, Rung};
 use altair_tui::ui::{Frame, Modal};
@@ -290,13 +291,18 @@ fn an_entity_detail() {
             area,
             buffer,
             |body, buffer| {
+                // Drawn through the markdown renderer, as the client draws it.
+                let prose = markdown::render(
+                    shell,
+                    "The header is keyed the other way round from the diagram, so the \
+                     ribbon has to come off the **back** of the board.",
+                    &[],
+                    body.width,
+                );
                 browse::detail(
                     shell,
                     "Wire the T-Encoder to the header",
-                    &[
-                        "The header is keyed the other way round from the diagram, so",
-                        "the ribbon has to come off the back of the board.",
-                    ],
+                    &prose,
                     &links,
                     body,
                     buffer,

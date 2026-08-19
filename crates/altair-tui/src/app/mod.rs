@@ -33,6 +33,7 @@ use crate::config::Config;
 use crate::device::{Held, Store};
 use crate::editor::Editor;
 use crate::signals::Signals;
+use crate::ui::markdown;
 use crate::ui::screens::{browse, sideways, write};
 use crate::ui::view::Row;
 use crate::ui::{Frame, Glyphs, Modal, Shell, Theme};
@@ -225,15 +226,24 @@ impl App {
                 .unwrap_or_default()
         });
         let title = held.as_ref().map(compose::what_of).unwrap_or_default();
-        let body: Vec<String> = held
+        let shell = self.shell;
+        let source = held
             .as_ref()
             .and_then(|held| held.body().map(str::to_string))
-            .unwrap_or_default()
-            .lines()
-            .map(str::to_string)
-            .collect();
-        let lines: Vec<&str> = body.iter().map(String::as_str).collect();
-        let shell = self.shell;
+            .unwrap_or_default();
+        // Where the person formed relations in the prose, so those runs can be
+        // drawn as what they are. The blocks come from the instance; a body
+        // this device has not sent has none, and the prose simply draws
+        // unmarked until it comes back.
+        let blocks = self
+            .store
+            .instance_copy(id)
+            .ok()
+            .flatten()
+            .map(|entity| entity.blocks)
+            .unwrap_or_default();
+        let formed = markdown::formed_at(&source, &blocks, &relations);
+        let lines = markdown::render(&shell, &source, &formed, area.width.saturating_sub(2));
         shell.frame(
             &Frame {
                 domain: "",

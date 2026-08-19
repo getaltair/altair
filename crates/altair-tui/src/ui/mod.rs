@@ -7,6 +7,7 @@
 pub mod chrome;
 pub mod glyphs;
 pub mod help;
+pub mod markdown;
 pub mod screens;
 pub mod theme;
 pub mod view;

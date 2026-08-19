@@ -74,6 +74,11 @@ const ALLOWED: &[&str] = &[
     // place. Same technique as this file, for the same reason, on a different
     // rule.
     "altaird/tests/one_predicate.rs",
+    // Reads `divide.rs` to pin the parser options a body divides under. The
+    // terminal client parses under the same set in order to draw a body and
+    // deliberately does not link this crate, so there is no way to compare the
+    // two except by reading one of them as text.
+    "altaird/tests/body_division.rs",
 ];
 
 /// Reaching the bytes needs one of these. Naming a path is enough on its own:

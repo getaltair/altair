@@ -362,3 +362,44 @@ proptest! {
         prop_assert_eq!(last.map(|b| b.content().to_owned()), Some(fence.trim_end().to_owned()));
     }
 }
+
+/// The parser options division is computed under, read out of the source.
+///
+/// **Pinned from this side because the client cannot see it from the other.**
+/// The terminal client parses a body under the same option set in order to draw
+/// it, and it does not — must not — link this crate. Two sets that drifted apart
+/// would show a person a table as a paragraph of pipes while their household
+/// held it as a table, or the reverse: a display quietly disagreeing with how
+/// the body was actually cut up.
+///
+/// Changing this set is a decision with a migration attached, and the other
+/// place to change is `crates/altair-tui/src/ui/markdown.rs`.
+#[test]
+fn the_option_set_is_the_one_the_client_also_parses_under() {
+    let source = std::fs::read_to_string(
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src/body/divide.rs"),
+    )
+    .expect("divide.rs");
+
+    // The lines that actually insert one, rather than the doc comment above
+    // them explaining why each is there.
+    let mut inserted: Vec<String> = source
+        .lines()
+        .filter_map(|line| {
+            let line = line.trim();
+            let rest = line.strip_prefix("options.insert(Options::")?;
+            Some(rest.trim_end_matches(");").to_string())
+        })
+        .collect();
+    inserted.sort();
+
+    assert_eq!(
+        inserted,
+        ["ENABLE_FOOTNOTES", "ENABLE_TABLES", "ENABLE_TASKLISTS"],
+        "the options a body divides under have changed. The terminal client \
+         parses under the same set to draw a body and cannot see this one, so \
+         crates/altair-tui/src/ui/markdown.rs has to change with it — and \
+         existing bodies divide differently now, which is the migration this \
+         set's own documentation warns about."
+    );
+}
