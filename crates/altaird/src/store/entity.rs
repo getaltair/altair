@@ -50,6 +50,15 @@ pub struct EntityRow {
     pub category_position: Option<i32>,
 }
 
+// `EntityRow::into_wire` lives in `entity_wire.rs`, a file this one does not
+// even import. Its wire message carries a field spelled identically to
+// `AUDIENCE_COLUMN`, by design, and `tests/one_predicate.rs` refuses any
+// source that both issues SQL and spells that field out — this file issues
+// SQL on every other line. Keeping the conversion here would make the guard
+// flag a legitimate transcription as a second predicate; `write::content`
+// already established the pattern of naming that field in a file with no SQL
+// in it at all, and `into_wire` follows it.
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, sqlx::Type)]
 #[sqlx(type_name = "entity_type", rename_all = "snake_case")]
 pub enum EntityType {

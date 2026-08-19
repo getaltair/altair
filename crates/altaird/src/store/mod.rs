@@ -6,7 +6,9 @@
 
 pub mod audience;
 pub mod entity;
+mod entity_wire;
 pub mod ids;
+pub mod relation;
 pub mod tx;
 
 pub use audience::{Bind, CandidateQuery, LifecycleScope, ReadScope, WriteScope};
