@@ -15,6 +15,8 @@ use std::sync::Arc;
 
 use altair_proto::v1;
 use altaird::auth::{Authenticator, IssuerConfig, JwksSource, JwksUnavailable, KeyCache};
+use altaird::daemon::serve::serve;
+use altaird::daemon::tasks::Tasks;
 use altaird::service::Instance;
 use common::*;
 use jsonwebtoken::jwk::JwkSet;
@@ -44,6 +46,10 @@ impl JwksSource for EmptyKeys {
 struct Served {
     world: World,
     addr: SocketAddr,
+    /// Held rather than used. Dropping it drops the shutdown signal's sender,
+    /// which is exactly how the daemon stops — so a `Served` that let go of it
+    /// would stop serving on the spot.
+    _tasks: Tasks,
 }
 
 impl Served {
@@ -59,19 +65,20 @@ impl Served {
             world.db.pool.clone(),
         );
 
-        let instance = Instance::new(Arc::new(auth), world.write.clone(), world.capacity.clone());
+        let instance = Instance::new(world.write.clone(), world.capacity.clone());
 
         let listener = TcpListener::bind("127.0.0.1:0").await.expect("bind");
         let addr = listener.local_addr().expect("addr");
-        tokio::spawn(async move {
-            tonic::transport::Server::builder()
-                .add_service(v1::altair_server::AltairServer::new(instance))
-                .serve_with_incoming(tokio_stream::wrappers::TcpListenerStream::new(listener))
-                .await
-                .ok();
-        });
+        // The composition the daemon itself runs, credential layer included,
+        // rather than a second one assembled here that could drift from it.
+        let tasks = Tasks::new();
+        tokio::spawn(serve(listener, Arc::new(auth), instance, tasks.signal()));
 
-        Self { world, addr }
+        Self {
+            world,
+            addr,
+            _tasks: tasks,
+        }
     }
 
     async fn client(&self) -> v1::altair_client::AltairClient<tonic::transport::Channel> {

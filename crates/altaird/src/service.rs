@@ -25,6 +25,16 @@
 //! The substrate divides conditions into a **wait**, which the ordinary path
 //! clears by continuing to run, and a **fault**, which it does not.
 //!
+//! **A status code carries transport only. Everything the protocol has a name
+//! for travels in the message.** An intent that was refused is `Ok` with a
+//! `Refused` inside it; a position the instance can no longer answer from is
+//! `Ok` with `PositionUnanswerable` inside it. If either were flattened into a
+//! `Status` — `internal`, or anything else — a client could no longer tell a
+//! refusal, which signals, from a wait, which is silent, and section E of the
+//! outbox conformance scenarios would become unsatisfiable. The statuses below
+//! are the complete list of what this service ever returns, and every one of
+//! them is either a wait or a malformed request.
+//!
 //! - `Unauthenticated` — a wait. An absent, expired, forged, or unknown
 //!   credential all produce it, indistinguishably, and DR-005 says the client
 //!   holds silently. It is not a fault and must not be signalled as one.
@@ -50,7 +60,7 @@ use tonic::{Request, Response, Status};
 
 use altair_proto::v1;
 
-use crate::auth::{Authentication, Authenticator, Member, bearer_token};
+use crate::auth::{Identity, Member};
 use crate::objects::{self, BodyId, ByteSource, StorageCapacity};
 use crate::read;
 use crate::store;
@@ -66,8 +76,13 @@ use crate::write::{BodyLookup, WritePath, content};
 const DEFAULT_QUERY_LIMIT: i64 = 50;
 
 /// The instance, as callers reach it.
+///
+/// **Holds no authenticator.** Credentials are resolved once at the edge by
+/// [`crate::auth::Identify`], which puts an [`Identity`] in the request's
+/// extensions and removes the header. By the time anything here runs there is
+/// no token in the request to read, and nothing in this file could read one if
+/// there were.
 pub struct Instance {
-    auth: Arc<Authenticator>,
     write: WritePath,
     /// Headroom on the object store's filesystem, for `GetHealth` only.
     /// Separate from `write`'s `Arc<dyn ObjectStore>` because DR-003 fixes
@@ -78,32 +93,28 @@ pub struct Instance {
 
 impl Instance {
     #[must_use]
-    pub fn new(
-        auth: Arc<Authenticator>,
-        write: WritePath,
-        capacity: Arc<dyn StorageCapacity>,
-    ) -> Self {
-        Self {
-            auth,
-            write,
-            capacity,
-        }
+    pub fn new(write: WritePath, capacity: Arc<dyn StorageCapacity>) -> Self {
+        Self { write, capacity }
     }
 
-    /// Resolve the credential on a request, or say nothing about why not.
+    /// The identity the edge resolved, or the status that stands for its
+    /// absence.
     ///
     /// Unauthenticated reaches no query surface: a caller of this has a
     /// `Member` or has a `Status`, and there is no third thing to hold.
-    async fn member<T>(&self, request: &Request<T>) -> Result<Member, Status> {
-        let header = request
-            .metadata()
-            .get("authorization")
-            .and_then(|v| v.to_str().ok());
-        match self.auth.authenticate(bearer_token(header)).await {
+    ///
+    /// **An absent extension is treated as unauthenticated**, which is the
+    /// safe direction: it means this service was mounted without
+    /// [`crate::auth::Identify`] in front of it, and answering every request
+    /// with a wait is the failure that discloses nothing. `serve` is the only
+    /// thing that mounts it and always installs the layer, so this is a
+    /// belt on top of that rather than a case anyone should meet.
+    fn member<T>(request: &Request<T>) -> Result<Member, Status> {
+        match request.extensions().get::<Identity>() {
+            Some(Identity::Member(member)) => Ok(member.clone()),
+            Some(Identity::Unauthenticated) | None => Err(Status::unauthenticated("")),
             // The store was unavailable while resolving a membership. A wait.
-            Err(_) => Err(Status::unavailable("")),
-            Ok(Authentication::Unauthenticated) => Err(Status::unauthenticated("")),
-            Ok(Authentication::Member(m)) => Ok(m),
+            Some(Identity::Unavailable) => Err(Status::unavailable("")),
         }
     }
 }
@@ -114,7 +125,7 @@ impl v1::altair_server::Altair for Instance {
         &self,
         request: Request<v1::SubmitRequest>,
     ) -> Result<Response<v1::SubmitResponse>, Status> {
-        let member = self.member(&request).await?;
+        let member = Self::member(&request)?;
         let intents = request.into_inner().intents;
 
         match self.write.submit(&member, &intents).await {
@@ -130,7 +141,7 @@ impl v1::altair_server::Altair for Instance {
         &self,
         request: Request<v1::QueryRequest>,
     ) -> Result<Response<v1::QueryResponse>, Status> {
-        let member = self.member(&request).await?;
+        let member = Self::member(&request)?;
         let req = request.into_inner();
 
         let container = req
@@ -190,7 +201,7 @@ impl v1::altair_server::Altair for Instance {
         &self,
         request: Request<v1::ChangesRequest>,
     ) -> Result<Response<v1::ChangesResponse>, Status> {
-        let member = self.member(&request).await?;
+        let member = Self::member(&request)?;
         let since = request.into_inner().since;
         let requester = MemberId::assert_participating(member.membership_id());
 
@@ -267,7 +278,7 @@ impl v1::altair_server::Altair for Instance {
         // *which* member is recorded anywhere in the object store — it has no
         // notion of ownership, which lives entirely in the entity that later
         // names the body.
-        let _member = self.member(&request).await?;
+        let _member = Self::member(&request)?;
         let mut stream = request.into_inner();
 
         let Some(first) = stream.message().await? else {
@@ -304,7 +315,7 @@ impl v1::altair_server::Altair for Instance {
         &self,
         request: Request<v1::BodyRequest>,
     ) -> Result<Response<Self::GetBodyStream>, Status> {
-        let member = self.member(&request).await?;
+        let member = Self::member(&request)?;
         let entity_id = content::identifier(&request.into_inner().entity_id)
             .map_err(|_| Status::invalid_argument("an entity identity is 16 bytes"))?;
 

@@ -63,6 +63,7 @@
 //! So "a forged token produces nothing" means exactly that: no membership, no
 //! reason, no information — the same value an expired one produces.
 
+mod identify;
 mod jwks;
 
 use std::sync::Arc;
@@ -73,6 +74,7 @@ use serde::Deserialize;
 use sqlx::{PgPool, Row};
 use uuid::Uuid;
 
+pub use identify::{Identify, Identity};
 pub use jwks::{HttpJwks, JwksSource, JwksUnavailable, KeyCache};
 
 /// Signature algorithms this instance will consider.
