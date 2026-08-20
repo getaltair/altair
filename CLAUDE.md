@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this repository is right now
 
-**Design documents plus the instance's write and read paths.** Everything in `docs/` specifies a self-hosted personal system ("Altair"); `crates/` is the instance. Wave 0, all five Wave 1 lanes, Waves 2.1 through 2.3 and all three Wave 3 lanes have landed — store bootstrap and the audience predicate, block division, the object store, token validation, the outbox conformance suite, the intent spine, type content across all three domains, file bodies, literal retrieval, the change stream, and health. **Wave 2.4 — reclamation, the retention windows, the horizon value — was skipped and is still outstanding**, and Wave 3 proceeded without it. All six calls in the interface are served. There is no client.
+**Design documents, the instance's write and read paths, and a daemon that serves them.** Everything in `docs/` specifies a self-hosted personal system ("Altair"); `crates/` is the instance. Wave 0, all five Wave 1 lanes, Waves 2.1 through 2.3, all three Wave 3 lanes and Wave 3.5 have landed — store bootstrap and the audience predicate, block division, the object store, token validation, the outbox conformance suite, the intent spine, type content across all three domains, file bodies, literal retrieval, the change stream, health, and the process that composes all of it and speaks gRPC on a socket. **Wave 2.4 — reclamation, the retention windows, the horizon value — was skipped and is still outstanding**, and Waves 3 and 3.5 proceeded without it. All six calls in the interface are served, and `altaird` runs. There is no client.
 
 Consequences for working here:
 
@@ -16,8 +16,9 @@ Consequences for working here:
 
 ```bash
 mise install                 # toolchain: rust, prek, mado. Docker is the only other prerequisite
-cp .env.example .env         # DATABASE_URL, read by the test harness only
+cp .env.example .env         # DATABASE_URL for the harness; ALTAIR_* for the daemon
 mise run test                # docker compose up -d --wait, then cargo test --workspace
+cargo run -p altaird         # the instance itself; refuses to start unless all six ALTAIR_* are set
 mise run conformance         # the outbox scenarios — RED ON PURPOSE, see below
 prek run --all-files         # rustfmt, clippy -D warnings, mado, hygiene. CI runs these same hooks
 ```
@@ -95,9 +96,11 @@ What has actually been built so far, which is observation rather than a settled 
 
 ```text
 crates/altaird/            the instance: store/ (audience, tx, entity, relation, search, health,
-                           ids), body/, objects/, auth/, read/ (changes),
+                           preflight, ids), body/, objects/, auth/ (jwks, identify — the
+                           credential edge), read/ (changes),
                            write/ (parts, provenance, changes, intent, entity, relation, body,
-                           specific/ one module per domain), service.rs (all six calls served)
+                           specific/ one module per domain), service.rs (all six calls served),
+                           daemon/ (config, preflight, logging, serve, tasks) and the `altaird` bin
 crates/altaird/migrations/ 0001_initial.sql and 0002_write_provenance.sql, not re-derived
 crates/altair-proto/       generated contract types (protox + tonic)
 crates/altair-conformance/ the outbox harness and a null client stub
@@ -113,6 +116,7 @@ Seven waves. Waves 1–3 are planned against reality; Wave 5 onward names outcom
 | 1 · Foundations | 1.1 store bootstrap · 1.2 block division · 1.3 object store · 1.4 token validation · 1.5 outbox conformance suite | Five genuinely independent lanes, one worktree each. 1.5's deliverable is a **red suite** — every scenario runs and fails. |
 | 2 · Write path | 2.1 intent spine, **including relations and the served submission call** — landed · 2.2 type content, all three domains — landed · 2.3 file bodies — landed · 2.4 reclamation — **not started** | 2.1 is sequential and load-bearing; do not parallelise the spine, do parallelise what hangs off it. Re-planned at the Wave 1 boundary: **migration two** opens 2.1, adding per-part write provenance and a lifecycle on a relation. |
 | 3 · Read path | 3.1 literal retrieval arm · 3.2 change stream and horizon · 3.3 health — all landed | Literal only. The six served calls include **no way to fetch an entity by identity and no way to list what a container holds**: `Query` is the literal arm, it cannot enumerate, and it answers with entities and never relations. The change stream is the only source of either. |
+| 3.5 · The daemon | **Landed.** Configuration and startup, the tonic server on a socket, the credential edge, outcome mapping, the shape background work will attach to, graceful shutdown | Composition, not capability: no new domain behaviour. Waves 1–3 produced libraries and `run()` was a stub. Single lane by construction — everything in it converges on one process. |
 | 4 · Terminal client | 4.1 Rust outbox (turns 1.5 green) · 4.2 ratatui client | **First useful day.** The TUI carries the whole editing surface; there is no browser and no second client. |
 | 5 · Semantic | derivation worker · inference boundary and bi-encoder · semantic arm and fusion | The embedding model is chosen **here**, against a real corpus, and fixes the schema dimension. |
 | 6 · Second client and ops | message bridge · packaging · backup/restore/upgrade | The bridge is the first test of whether the interface carries the obligations rather than the TUI's code. |
@@ -181,6 +185,21 @@ Match the existing register — these documents have a deliberate and consistent
 - Decisions are marked **one-way** (reversing it means rewriting dependants) or **reversible** (changeable behind a boundary). Where something is common industry practice rather than a judgement call, it says so.
 - Documents end with "Deliberately not decided" and "Open questions". Move something out of "Open questions" only when it has actually been decided somewhere normative.
 - Decision records are `DR-NNN-kebab-title.md` with Context / Decision / Alternatives considered / Consequences / Deliberately not decided here.
+
+## What Wave 3.5 settled, for the lanes that follow
+
+Observations from turning the libraries into a process. The first three are the ones Wave 4.2 needs and would otherwise reconstruct.
+
+- **A wait is told from a fault by the status, and by `Status::source()`.** Every status the instance sends is listed in `service.rs`'s module docs, and each one is a wait except `InvalidArgument`. A refusal is never a status: it travels inside an `Ok` response, which is what makes a batch partial and what keeps section E of the conformance scenarios satisfiable. The one thing a code alone cannot decide is a transport failure — tonic synthesises one carrying the underlying error as its `source`, and a status the instance sent carries none. That is a property of a library rather than of the contract, so `tests/daemon.rs` pins it.
+- **Membership resolution happens once, at the edge, and nothing below it sees a token.** `auth/identify.rs` is a tower layer: it reads the header, resolves it, **removes the header**, and puts an `Identity` in the request's extensions. `Instance` holds no `Authenticator` and `service.rs` cannot name a credential — `tests/one_credential.rs` fails on the line that tries. The layer resolves and records; it never refuses, because `GetHealth` is served without a member on purpose and because what an absent identity means is the call's to say.
+- **The token flow, both halves.** The instance is given an issuer, an audience and a JWKS URI, and **contacts none of them at startup**. Keys are fetched lazily by the first request that needs one; a provider that is still booting is a wait that clears, so an instance that refused to start until Authentik answered would turn a wait into an outage at the moment recovery was already under way. A client's half is unchanged: present a bearer token, and every way of failing to — absent, forged, expired, unknown subject, departed member — comes back as one indistinguishable `Unauthenticated` with an empty message.
+- **The logging policy is a decision, and a library default breaks it silently.** sqlx logs every statement, and at `WARN` with the whole SQL attached once one crosses a second — which a write waiting on the change sequence row does routinely. `store::connect` disables it *at the source*, which is the guarantee; the subscriber filter silences the same target, which is only a belt. `tests/logging.rs` installs with the belt removed and holds a write past the threshold on purpose, because with the default filter in place the check passed whether or not the guarantee existed. That was watched happening.
+- **The rule is "the read path and the served surface log nothing at all"**, not "log carefully there". A line saying who asked is a record of who, which the read path is as forbidden to keep as a record of what. `tests/logging.rs` scans both for a logging macro; the write path is deliberately not covered, because the instance describing its own failure is a different thing.
+- **Preconditions are checked through the interfaces, not around them.** The object store's writability is proved by putting a probe body, reading it back, comparing it and deleting it — the four operations and nothing else. A directory that exists and is writable is a weaker question than the one that matters, and asking it would mean naming a path outside `objects/`.
+- **`store::connect` puts its own deadline round reaching the store.** sqlx's acquire timeout is thirty seconds and applies to every acquisition; shortening it would shorten a busy instance's patience with its own pool. Startup gets ten seconds, migrating is deliberately outside the deadline, and a wrong URL says so promptly instead of after half a minute of silence.
+- **There is one composition of the service, in `daemon::serve`, and the tests use it.** The credential layer is not a parameter of it. A test that stood up its own `Server::builder()` would be testing something the daemon does not run, and would have opted out of the layer that makes the token invariant true.
+- **Background work has a shape and runs nothing.** `daemon::tasks` decides where tasks attach (beside the server), how they are cancelled (one signal, shared with the server, selected on rather than aborted — reclamation deleting bytes must choose where it is safe to stop), and how shutdown waits (one deadline over all of them, then the names of any that overran). Wave 2.4 and Wave 5 attach here. `tests/daemon.rs` exercises the shape, including a task that ignores the signal.
+- **The connection pool is eight and that is not a tuning knob.** Every write serialises on one row by design; a bigger pool lengthens the queue rather than shortening it. Contention there is the design working.
 
 ## What Wave 2.1 settled, for the lanes that follow
 

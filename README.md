@@ -17,7 +17,7 @@ One instance serves one household. Nobody else can raise the price, change the t
 
 ## Status
 
-**Early construction.** The design is written and the instance answers every call in its interface; there is no client yet and nothing to install.
+**Early construction.** The design is written, the instance answers every call in its interface, and `altaird` is now a process that serves them over a socket. There is no client yet.
 
 | Part | State |
 |---|---|
@@ -28,6 +28,7 @@ One instance serves one household. Nobody else can raise the price, change the t
 | Wave 1 · foundations | Landed. Store bootstrap and the audience predicate, block division, the object store, token validation, and the outbox conformance suite |
 | Wave 2 · write path | 2.1 the intent spine, 2.2 type content across all three domains, and 2.3 file bodies have landed. **2.4, reclamation, was skipped and is still outstanding** — there is no retention window, no horizon value, and nothing sweeps |
 | Wave 3 · read path | Landed. Literal retrieval, the per-member change stream, and health. All six calls in the interface are now served |
+| Wave 3.5 · the daemon | Landed. `altaird` starts, refuses to start when a precondition is missing, resolves a credential once at the edge, serves gRPC on a socket, and shuts down without losing an acknowledged intent |
 | Wave 4 · terminal client | The first useful day. Nothing before it is usable software |
 | Waves 5 and 6 | Semantic retrieval, then the message bridge and operations |
 
@@ -139,7 +140,8 @@ docs/                      Design documents. The authority the implementation is
 proto/altair/v1/           The public interface. Field numbers are permanent
 conformance/scenarios.md   The outbox specification, made executable, run against every implementation
 crates/
-  altaird/                 The instance: store, block division, object store, token validation, write path
+  altaird/                 The instance: store, block division, object store, token validation,
+                           write path, read path, and the daemon that composes them into a process
     migrations/            0001_initial.sql is migration one, and is not re-derived
   altair-proto/            Generated contract types (protox + tonic, no protoc needed)
   altair-conformance/      The conformance harness. Red on purpose until Wave 4.1
@@ -177,6 +179,42 @@ Before committing:
 prek install                 # once, to wire the hooks
 prek run --all-files         # rustfmt, clippy with -D warnings, mado, hygiene
 ```
+
+---
+
+## Running the instance
+
+`altaird` reads six values from the environment and **refuses to start if any of
+them is missing**, naming all of them at once rather than one restart at a time.
+`.env.example` lists them with what each is for. Nothing has a default: a
+guessed database URL points at somebody else's database, and a guessed listen
+address puts a household's data on every interface the machine has.
+
+```bash
+cargo run -p altaird
+```
+
+Startup binds the socket, connects and migrates the structured store, checks
+that the extensions the schema depends on are actually present, and proves the
+object store will take a body and give it back — in that order, refusing rather
+than starting degraded on any of them. It **does not contact the identity
+provider**: a provider that is briefly away is a wait that clears by the
+ordinary path continuing to run, and a household restarting its instance and its
+provider together is the ordinary case rather than a strange one.
+
+There is no client yet, so the useful thing to point at it today is a gRPC
+client of your own. `GetHealth` is the one call served without a credential,
+because an infra probe cannot carry one.
+
+`SIGTERM` and `SIGINT` both shut it down the same way: it stops accepting,
+finishes what is in flight, and closes the pool last. An intent that was
+acknowledged is durable, because the acknowledgement and the write it
+acknowledges commit in one transaction.
+
+**What the instance logs is a decision, not a setting.** It records its own
+lifecycle and its own faults, and nothing about a request — not the query text,
+not who asked, not how long it took. `RUST_LOG` can raise the level and cannot
+undo that.
 
 CI runs the same hooks, so the local path and CI cannot drift apart.
 
