@@ -63,6 +63,23 @@ Cut from the substrate spec as mechanism. The observation still holds: which mem
 
 Keeping binding separate from credentials means credential loss blocks transmission without blocking capture. It does not help after a full storage wipe, which clears everything.
 
+### Whether a client is told which member it is
+
+**Status:** open
+**Destination:** the wire contract, or a note in the next client's plan that it never needs to be
+
+Raised at Wave 3.5, when the credential edge was built and the question could be asked precisely. **No call answers it.** A client presents a token, the instance resolves a membership, and nothing on the wire hands that identity back.
+
+For conflicts this is already solved and solved well: `Conflict` carries `mine` and `theirs`, so the instance answers the perspective question rather than handing over an identifier to compare. That looks deliberate, and it is what DR-007 would want — a client comparing UUIDs to decide whether something is its own *is* reading an identifier.
+
+The unresolved part is everything else shaped like it. `assigned_member_ids` and `audience_member_ids` cross as raw lists, and a surface that wants to say *assigned to you* or *only you can see this* has to compare against something it has not been given. Three ways out, and they are not equally good:
+
+1. The instance answers the perspective question wherever one arises, as `Conflict` already does. Consistent with DR-007, and it means one more derived field per place the question comes up.
+2. The client is told its membership identity once and compares. Simple, and it is the option that quietly makes identifiers meaningful to a client, which is the thing DR-007 exists to prevent.
+3. The surface never asks. Possible, and worth testing against real screens before assuming it.
+
+Not urgent, and deliberately not decided here: the terminal client will meet it first, and the honest order is to find out which screens actually ask before adding a field to a permanent contract.
+
 ## Capture guarantees and erasure
 
 Worked through 2026-08-06 while opening the foundational architecture questions. All of it is behaviour, so it landed in the substrate spec rather than in an architecture document.

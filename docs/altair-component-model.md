@@ -88,8 +88,12 @@ flowchart TB
 
 **It attaches at the client boundary of the instance, and nowhere else.** Everything a client can cause the instance to do crosses there, in both directions:
 
-- **Inbound.** Intents: create, edit, remove, erase, restore. Queries, with their scope. A request for what changed since a stated position. A request for current instance health.
+- **Inbound.** A credential, on everything but the health request. Intents: create, edit, remove, erase, restore. Queries, with their scope. A request for what changed since a stated position. A request for current instance health.
 - **Outbound.** Acknowledgement of an accepted intent. Results, each carrying enough to be accounted for. A change set assembled for one member. A statement that a stated position can no longer be answered. Health, read only.
+
+**The credential is resolved where it crosses, and does not travel further.** Per DR-005 the instance validates a signature and reads a member claim; what continues inbound from that point is a member identity, and nothing behind this boundary is given a credential to interpret. Health is the stated exception to carrying one at all, because an infra probe cannot and because nothing it answers is a person's data.
+
+**The token issuer is the other side of this boundary, and its absence is a wait.** It is the operator's, in the same way the notification transport is, so it is not a component this system carries — see *What is not a component*. What the instance owes when it is away is decided in DR-005 and restated here because it is an absence obligation and this is the document that collects them: cached keys stay usable, a failed refresh changes nothing, **the instance's own start does not depend on the issuer answering**, and every unresolvable credential is one indistinguishable wait rather than a reason a caller is told.
 
 **Naming the boundary is what makes deferring the interface definition safe.** Defining it later is describing a boundary that already exists and is already fully enumerated, not choosing where to put one. What would foreclose it is a capability that reaches the instance by some other route, and there is none: the operator plane is the only other inbound boundary and it is discussed under its own heading.
 
@@ -269,6 +273,8 @@ flowchart TB
 **Conflict state, versions, and the change sequence.** Data in the structured store. They appear here only as what crosses a boundary.
 
 **The household.** One per instance, so there is no component that arbitrates between households and no cross-household surface to get wrong.
+
+**The token issuer.** The operator's, like the notification transport, and outside the system rather than inside it — the product ships no identity system and owns no user list, which is the commitment DR-005 exists to keep. It appears here as a boundary of the public interface, with what the instance owes when it is absent, and not as a box the system is responsible for. **It is listed rather than merely omitted**, because a reader who knows an OIDC provider is in the deployment will otherwise take its absence from the map for an oversight and add one.
 
 ---
 
