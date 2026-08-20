@@ -74,6 +74,13 @@ const ALLOWED: &[&str] = &[
     // place. Same technique as this file, for the same reason, on a different
     // rule.
     "altaird/tests/one_predicate.rs",
+    // Walks the instance's sources asserting a credential is read in exactly
+    // one place. Same technique again, third rule.
+    "altaird/tests/one_credential.rs",
+    // Reads the read path's and the served surface's sources to assert neither
+    // can log anything. The rest of that file drives a daemon and greps what
+    // it wrote; none of it opens a body.
+    "altaird/tests/logging.rs",
 ];
 
 /// Reaching the bytes needs one of these. Naming a path is enough on its own:

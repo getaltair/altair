@@ -6,6 +6,13 @@
 
 #![allow(dead_code)]
 
+/// A provider that exists only in this process, for the tests that need a
+/// credential rather than a `Member` handed to them directly.
+pub mod issuer;
+/// A whole daemon on a socket, for the tests that could not be written against
+/// a function call.
+pub mod running;
+
 use std::sync::Arc;
 
 use altair_proto::v1;

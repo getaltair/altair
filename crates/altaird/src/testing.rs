@@ -190,6 +190,18 @@ impl TestDb {
 
         Arc::new(Self { pool, name })
     }
+
+    /// This database's own URL.
+    ///
+    /// **For a test that stands up the daemon**, which is configured with a
+    /// URL and connects its own pool rather than being handed one. Everything
+    /// else should use [`TestDb::pool`](Self::pool): two pools over one
+    /// database is what the daemon and its test genuinely are, and is
+    /// needless anywhere else.
+    #[must_use]
+    pub fn url(&self) -> String {
+        with_database(&admin_url(), &self.name)
+    }
 }
 
 impl Drop for TestDb {
