@@ -45,8 +45,14 @@ pub const MARKER_CELL: u16 = 2;
 pub enum Set {
     /// The locked design's own glyphs. The default.
     Signature,
-    /// For terminals that render Ambiguous characters as two cells. Every
-    /// substitution is a character no terminal disagrees about.
+    /// For a terminal the default does not suit.
+    ///
+    /// **Two hazards, not one.** It was made for terminals that render
+    /// Ambiguous characters as two cells, and it also answers the terminal with
+    /// no emoji font, where the signature set's link mark is a missing glyph.
+    /// Both are the same request — this terminal is less capable than the
+    /// design assumed — so they share a switch rather than growing a second
+    /// one.
     NarrowSafe,
 }
 
@@ -88,6 +94,14 @@ pub struct Glyphs {
 
     /// The hairline that holds an indent. Never a glyph tree.
     pub hairline: &'static str,
+
+    /// A link out of a body.
+    ///
+    /// **An underline alone does not say a link is a link.** It reads as
+    /// emphasis, or as nothing, and the one colour that would say it plainly is
+    /// spoken for — blue means a relation, and a hyperlink borrowing it would
+    /// stop blue meaning one.
+    pub link: &'static str,
 }
 
 impl Glyphs {
@@ -120,6 +134,12 @@ impl Glyphs {
             enter: "↵",
             backspace: "⌫",
             hairline: "▏",
+            // Two cells, and terminals agree that it is two — it is Wide
+            // rather than Ambiguous, so it does not carry the drift hazard the
+            // diamonds do. What it does carry is its own colour: a colour
+            // emoji ignores the theme, which is the one place this design lets
+            // something else choose.
+            link: "🔗",
         }
     }
 
@@ -151,6 +171,9 @@ impl Glyphs {
             enter: "↵",
             backspace: "⌫",
             hairline: "|",
+            // Monochrome, one cell, and it takes the theme's ink like
+            // everything else.
+            link: "⧉",
         }
     }
 
@@ -166,7 +189,7 @@ impl Glyphs {
 
     /// Every glyph in this set, for the check that they fit their cells.
     #[must_use]
-    pub const fn all(&self) -> [&'static str; 16] {
+    pub const fn all(&self) -> [&'static str; 17] {
         [
             self.mark,
             self.waiting,
@@ -184,6 +207,7 @@ impl Glyphs {
             self.enter,
             self.backspace,
             self.hairline,
+            self.link,
         ]
     }
 }

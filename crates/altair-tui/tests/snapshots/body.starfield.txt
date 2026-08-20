@@ -24,7 +24,7 @@ palette
 |curve moves left rather than getting steeper.                               |
 |                                                                            |
 |Measured at the top intake sensor, 40 min after boot, using the short loom  |
-|and a borrowed meter.                                                       |
+|and a 🔗  borrowed meter.                                                    |
 |                                                                            |
 |▏  The lip is 3mm proud of the shroud. Everything downstream of this assumes|
 |▏  it is flush, which it is not.                                            |
@@ -70,7 +70,7 @@ colours
   4: 0..37 body/ground  37..44 body/ground+ITALIC  44..45 body/ground  45..76 -/ground
   5: 0..76 -/ground
   6: 0..16 body/ground  16..33 identity/ground+UNDERLINED  33..60 body/ground  60..74 body/ground+BOLD  74..75 body/ground  75..76 -/ground
-  7: 0..6 body/ground  6..20 body/ground+UNDERLINED  20..21 body/ground  21..76 -/ground
+  7: 0..6 body/ground  6..7 dim/ground  7..8 -/-  8..9 dim/ground  9..23 body/ground+UNDERLINED  23..24 body/ground  24..76 -/ground
   8: 0..76 -/ground
   9: 0..3 rule/ground  3..76 mid/ground
   10: 0..3 rule/ground  3..32 mid/ground  32..76 -/ground

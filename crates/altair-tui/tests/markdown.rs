@@ -149,6 +149,35 @@ fn the_link_is_still_marked_just_not_in_that_colour() {
 }
 
 #[test]
+fn a_link_is_marked_as_well_as_underlined() {
+    // An underline on its own reads as emphasis, or as nothing. The mark is
+    // what says the words go somewhere — and it has to be a mark rather than a
+    // colour, because the colour that would say it is spoken for.
+    use altair_tui::ui::{Glyphs, Mode, Set, Shell, Theme};
+    for set in [Set::Signature, Set::NarrowSafe] {
+        let shell = Shell::new(Theme::of(Mode::Starfield), Glyphs::of(set));
+        let drawn: String = markdown::render(&shell, BODY, &formed(), 76)
+            .iter()
+            .flat_map(|line| &line.spans)
+            .map(|span| span.content.as_ref())
+            .collect();
+        assert!(
+            drawn.contains(shell.glyphs.link),
+            "{set:?} draws no link mark, so a person reading this body has an \
+             underline and no way to know it is a link"
+        );
+        // Once, for the one link in the body. A mark on every emphasis would
+        // be noise, and a mark on a relation would say the wrong thing about
+        // where it goes.
+        assert_eq!(
+            drawn.matches(shell.glyphs.link).count(),
+            1,
+            "{set:?} marked something that is not the link"
+        );
+    }
+}
+
+#[test]
 fn nothing_runs_past_the_width_it_was_given() {
     use altair_tui::ui::{Glyphs, Mode, Set, Shell, Theme};
     use unicode_width::UnicodeWidthStr;

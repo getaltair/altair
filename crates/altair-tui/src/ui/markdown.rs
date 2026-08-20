@@ -316,9 +316,18 @@ impl Drawing<'_> {
             Tag::Emphasis => self.push(self.style().add_modifier(Modifier::ITALIC)),
             Tag::Strong => self.push(self.style().add_modifier(Modifier::BOLD)),
             Tag::Strikethrough => self.push(self.style().add_modifier(Modifier::CROSSED_OUT)),
-            // Underlined and otherwise ordinary. Blue would make it look like a
-            // relation, and then blue would stop meaning one.
-            Tag::Link { .. } => self.push(self.style().add_modifier(Modifier::UNDERLINED)),
+            Tag::Link { .. } => {
+                // **Marked, and then underlined.** An underline on its own
+                // reads as emphasis; the mark is what says the words go
+                // somewhere. It is its own span so the underline does not run
+                // under it, and it is dim so it announces the link without
+                // competing with it.
+                self.inline.push(Span::styled(
+                    format!("{} ", self.shell.glyphs.link),
+                    Style::new().fg(theme.dim),
+                ));
+                self.push(self.style().add_modifier(Modifier::UNDERLINED));
+            }
             Tag::Image { .. } => {
                 self.push(Style::new().fg(theme.faint));
                 self.inline
