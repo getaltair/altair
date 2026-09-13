@@ -1,0 +1,9 @@
+workflow_mode: solo-git
+project_cycle:
+  current_phase: 1
+  phase_name: discover
+  completed_phases: []
+  mode: standard
+handoff:
+  next_skill: survey-context
+  open_decisions: []
