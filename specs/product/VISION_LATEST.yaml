@@ -1,0 +1,26 @@
+type: product-vision
+context: altair-v0.1
+product: Altair
+target_release: v0.1
+vision: >-
+  Give one person a durable, web-first workspace where projects, tasks,
+  knowledge, and resources remain distinct but can be recalled and linked in
+  the context of current work.
+primary_user: >-
+  One user managing personal work and information from Linux, managed Windows,
+  and Android browsers.
+problem: >-
+  Relevant work, knowledge, and resources are fragmented across tools and are
+  difficult to recover while creating or editing related material.
+core_outcomes:
+  - Provide domain-specific project/task, knowledge, and resource workspaces.
+  - Preserve shared records through stable identities and explicit relationships.
+  - Surface text and semantic recall from current, potentially unsaved input.
+  - Keep every suggested link, edit, quantity change, and status change under user control.
+  - Preserve drafts and report saves only after server acknowledgement.
+principles:
+  - Capture must not require classification or complete metadata.
+  - Recall must support work without becoming an autonomous agent.
+  - Retrieval failure must not block editing, saving, search, or direct relationships.
+  - Authoritative content must remain portable and recoverable.
+source_of_truth: docs/initial-build.md

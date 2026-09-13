@@ -1,0 +1,100 @@
+type: implementation-tasks
+context: portability
+story_id: e07s03
+title: Export backup and restore integrity
+status: failing
+bcps: 3
+risk: P1
+tasks:
+  - id: 1
+    description: "RED: Add failing e07s03 tests for canonical Markdown and versioned workspace manifest serialization."
+    verify: "! just test e07s03"
+    risk: P1
+    status: failing
+    allure:
+      severity: high
+      categories: [portability, unit, export]
+  - id: 2
+    description: "GREEN: Implement canonical Markdown and versioned workspace manifest serialization."
+    verify: "just test e07s03"
+    risk: P1
+    status: failing
+    allure:
+      severity: high
+      categories: [portability, unit, export]
+  - id: 3
+    description: Implement authenticated streaming export with safe filenames and non-cacheable responses, with no new security findings in affected paths.
+    verify: just test && just preflight
+    risk: P0
+    security: high
+    status: failing
+    allure:
+      severity: critical
+      categories: [portability, integration, Security Review]
+  - id: 4
+    description: Implement manifest validation before restore publication, with no new security findings in affected paths.
+    verify: just test && just preflight
+    risk: P0
+    security: high
+    status: failing
+    allure:
+      severity: critical
+      categories: [portability, restore, Security Review]
+  - id: 5
+    description: Implement repeatable PostgreSQL and Garage backup/restore orchestration, with no new security findings in affected paths.
+    verify: just test && just preflight
+    risk: P0
+    security: high
+    status: failing
+    allure:
+      severity: critical
+      categories: [backup, restore, integration, Security Review]
+  - id: 6
+    description: Implement explicit temporary export and backup-staging retention, cleanup leases, retries, and post-cleanup verification, with no new security findings in affected paths.
+    verify: just test && just preflight
+    risk: P0
+    security: high
+    status: failing
+    allure:
+      severity: critical
+      categories: [portability, retention, cleanup, Security Review]
+  - id: 7
+    description: Add accessible note and workspace export progress, expiry, and recovery UI.
+    verify: just test
+    risk: P1
+    status: failing
+    allure:
+      severity: high
+      categories: [portability, component, accessibility]
+  - id: 8
+    description: Test manifest tampering, full-workspace round trips, backup restore, retrieval rebuild, retention boundaries, leases, and cleanup.
+    verify: just test
+    risk: P0
+    status: failing
+    allure:
+      severity: critical
+      categories: [portability, backup, restore, integration]
+  - id: 9
+    description: Lint export, backup, restore, and retention source and configuration.
+    verify: just lint
+    risk: P1
+    status: failing
+    allure:
+      severity: high
+      categories: [portability, lint, configuration]
+  - id: 10
+    description: Assemble the production export and operational recovery artifacts.
+    verify: just build
+    risk: P1
+    status: failing
+    allure:
+      severity: high
+      categories: [portability, end-to-end, release]
+  - id: 11
+    description: Run final preflight after all portability implementation and verification tasks.
+    verify: just preflight
+    risk: P1
+    status: failing
+    allure:
+      severity: high
+      categories: [portability, preflight, release]

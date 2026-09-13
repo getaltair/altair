@@ -1,0 +1,57 @@
+type: implementation-tasks
+context: infrastructure
+story_id: e01s01
+title: Application scaffold and health path
+status: failing
+bcps: 3
+risk: P1
+tasks:
+  - id: 1
+    description: Create the Justfile with stable dev, test, lint, build, and preflight recipes before any task invokes just.
+    verify: just --summary
+    risk: P1
+    status: failing
+    allure:
+      severity: high
+      categories: [tooling, quality-gate]
+  - id: 2
+    description: RED - Add targeted failing behavior tests for the minimal responsive Vue shell and typed GET /api/health boundary before implementing either application path.
+    verify: "! just test e01s01"
+    risk: P1
+    status: failing
+    allure:
+      severity: high
+      categories: [frontend, scaffold]
+  - id: 3
+    description: GREEN - Scaffold the minimum Bun-managed Vue 3 TypeScript client and Rust Axum server needed to satisfy the targeted shell and health-path tests.
+    verify: just test e01s01
+    risk: P1
+    status: failing
+    allure:
+      severity: high
+      categories: [server, integration]
+  - id: 4
+    description: Configure and verify client and server lint checks.
+    verify: just lint
+    risk: P1
+    status: failing
+    allure:
+      severity: high
+      categories: [lint, configuration]
+  - id: 5
+    description: Assemble the client and server production artifacts through the stable build recipe.
+    verify: just build
+    risk: P1
+    status: failing
+    allure:
+      severity: high
+      categories: [production, build]
+  - id: 6
+    description: Run the full preflight gate and check that there are no new security findings in the affected scaffold and health paths.
+    verify: just preflight
+    risk: P1
+    security: medium
+    status: failing
+    allure:
+      severity: high
+      categories: [preflight, Security Review]

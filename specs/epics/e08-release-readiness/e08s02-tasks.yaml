@@ -1,0 +1,109 @@
+type: implementation-tasks
+context: release-readiness
+story_id: e08s02
+title: End-to-end release readiness
+status: failing
+bcps: 5
+risk: P0
+tasks:
+  - id: 1
+    description: "RED: Add failing e08s02 tests for bounded trusted-HTTPS deployment configuration and declared-only dependency routing."
+    verify: "! just test e08s02"
+    risk: P0
+    status: failing
+    allure:
+      severity: critical
+      categories: [release, deployment, configuration]
+  - id: 2
+    description: "GREEN: Implement bounded trusted-HTTPS deployment configuration and declared-only dependency routing."
+    verify: "just test e08s02"
+    risk: P0
+    status: failing
+    allure:
+      severity: critical
+      categories: [release, deployment, configuration]
+  - id: 3
+    description: Integrate production-like configuration for Authentik, PostgreSQL, Garage, and exactly one inference endpoint, rejecting undeclared fallback with no new security findings in affected paths.
+    verify: just test && just preflight
+    risk: P0
+    security: high
+    status: failing
+    allure:
+      severity: critical
+      categories: [release, deployment, configuration, Security Review]
+  - id: 4
+    description: Build the synthetic cross-domain release fixture and accepted-scenario trace matrix.
+    verify: just test
+    risk: P0
+    status: failing
+    allure:
+      severity: critical
+      categories: [release, fixture, traceability]
+  - id: 5
+    description: Automate all five accepted desktop and Android-sized user scenarios.
+    verify: just test
+    risk: P0
+    status: failing
+    allure:
+      severity: critical
+      categories: [release, acceptance, browser]
+  - id: 6
+    description: Implement and prove repeatable authenticated HTTPS startup, login, restart, dependency-specific readiness, and degradation outcomes, with no new security findings in affected paths.
+    verify: just test && just preflight
+    risk: P0
+    security: high
+    status: failing
+    allure:
+      severity: critical
+      categories: [release, degradation, Security Review]
+  - id: 7
+    description: Rehearse clean migration, complete backup restore, and retrieval rebuild integrity, with no new security findings in affected paths.
+    verify: just test && just preflight
+    risk: P0
+    security: high
+    status: failing
+    allure:
+      severity: critical
+      categories: [release, backup, restore, Security Review]
+  - id: 8
+    description: Generate redacted inference privacy evidence for declared-only routing, payload-safe logs, retention policy, no fallback, and no-store responses, with no new security findings in affected paths.
+    verify: just test && just preflight
+    risk: P0
+    security: high
+    status: failing
+    allure:
+      severity: critical
+      categories: [release, inference-privacy, Security Review]
+  - id: 9
+    description: Run the complete release, degradation, concurrency, accessibility, and backup/restore test suites.
+    verify: just test
+    risk: P0
+    status: failing
+    allure:
+      severity: critical
+      categories: [release, test, acceptance]
+  - id: 10
+    description: Lint source, deployment configuration, and release-gate configuration.
+    verify: just lint
+    risk: P0
+    status: failing
+    allure:
+      severity: critical
+      categories: [release, configuration, lint]
+  - id: 11
+    description: Assemble the final application and repeatable HTTPS deployment artifacts for release acceptance.
+    verify: just build
+    risk: P0
+    status: failing
+    allure:
+      severity: critical
+      categories: [release, build, acceptance]
+  - id: 12
+    description: Run final preflight and confirm no new security findings in affected paths.
+    verify: just test && just preflight
+    risk: P0
+    security: high
+    status: failing
+    allure:
+      severity: critical
+      categories: [release, preflight, Security Review]

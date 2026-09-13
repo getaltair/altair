@@ -1,0 +1,89 @@
+type: implementation-tasks
+context: responsive-ui
+story_id: e08s01
+title: Touch-usable responsive workflows
+status: failing
+bcps: 3
+risk: P1
+tasks:
+  - id: 1
+    description: "RED: Add failing e08s01 tests for measurable viewport, overflow, touch-target, separation, and focus behavior."
+    verify: "! just test e08s01"
+    risk: P1
+    status: failing
+    allure:
+      severity: high
+      categories: [responsive, accessibility, end-to-end]
+  - id: 2
+    description: "GREEN: Implement measurable viewport, overflow, touch-target, separation, and focus test helpers and responsive behavior."
+    verify: "just test e08s01"
+    risk: P1
+    status: failing
+    allure:
+      severity: high
+      categories: [responsive, accessibility, end-to-end]
+  - id: 3
+    description: Adapt navigation and project/task workflows for touch and minimum mobile width.
+    verify: just test
+    risk: P1
+    status: failing
+    allure:
+      severity: high
+      categories: [responsive, projects, tasks]
+  - id: 4
+    description: Adapt note, resource, recall, relationship, and attachment workflows for mobile continuity.
+    verify: just test
+    risk: P1
+    status: failing
+    allure:
+      severity: high
+      categories: [responsive, notes, resources, recall]
+  - id: 5
+    description: Test mobile conflict recovery, degraded state, archive/restore, export, and breakpoint continuity.
+    verify: just test
+    risk: P1
+    status: failing
+    allure:
+      severity: high
+      categories: [responsive, recovery, degradation]
+  - id: 6
+    description: Test keyboard navigation, zoom/reflow, reduced motion, responsive focus, touch targets, and overflow.
+    verify: just test
+    risk: P1
+    status: failing
+    allure:
+      severity: high
+      categories: [responsive, accessibility, keyboard]
+  - id: 7
+    description: Verify responsive authentication boundaries, hidden-content focus exclusion, explicit destructive actions, and managed-device recovery controls, with no new security findings in affected paths.
+    verify: just test e08s01 && just preflight
+    risk: P0
+    security: high
+    status: failing
+    allure:
+      severity: critical
+      categories: [responsive, security, Security Review]
+  - id: 8
+    description: Lint responsive source and viewport-test configuration.
+    verify: just lint
+    risk: P1
+    status: failing
+    allure:
+      severity: high
+      categories: [responsive, accessibility, lint]
+  - id: 9
+    description: Assemble all responsive workflows into the production client artifact.
+    verify: just build
+    risk: P1
+    status: failing
+    allure:
+      severity: high
+      categories: [responsive, release, build]
+  - id: 10
+    description: Run final preflight after all responsive implementation and verification tasks.
+    verify: just preflight
+    risk: P1
+    status: failing
+    allure:
+      severity: high
+      categories: [responsive, preflight, release]

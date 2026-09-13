@@ -1,0 +1,73 @@
+type: implementation-tasks
+context: projects-tasks-domain
+story_id: e02s02
+title: Change shared task board status
+status: failing
+bcps: 3
+risk: P1
+tasks:
+  - id: 1
+    description: "RED: Add failing domain and concurrency tests for one shared status, all transitions, expected revisions, and idempotent operation replay"
+    verify: "! just test e02s02"
+    risk: P1
+    status: failing
+    allure:
+      severity: high
+      categories: ["Task Status", "unit", "concurrency"]
+  - id: 2
+    description: "GREEN: Implement the revision-checked task-status command and authenticated CSRF-protected API boundary using e01s03 typed conflicts, with no new security findings in affected paths"
+    verify: "just test e02s02 && just preflight"
+    risk: P1
+    security: medium
+    status: failing
+    allure:
+      severity: high
+      categories: ["Task Status", "API", "Security Review"]
+  - id: 3
+    description: "Add stable-identity client updates, acknowledged placement, rollback, retry, and e01s03 conflict presentation across loaded boards"
+    verify: "just test e02s02"
+    risk: P1
+    status: failing
+    allure:
+      severity: high
+      categories: ["Task Status", "component", "state"]
+  - id: 4
+    description: "Add accessible drag, keyboard, and touch status controls with focus retention and live announcements"
+    verify: "just test e02s02"
+    risk: P1
+    status: failing
+    allure:
+      severity: high
+      categories: ["Task Status", "accessibility", "responsive"]
+  - id: 5
+    description: "Add browser coverage proving one shared task status across two boards and explicit stale-revision resolution"
+    verify: "just test e02s02"
+    risk: P1
+    status: failing
+    allure:
+      severity: high
+      categories: ["Task Status", "browser", "concurrency"]
+  - id: 6
+    description: "Lint task-status source and configuration"
+    verify: "just lint"
+    risk: P1
+    status: failing
+    allure:
+      severity: high
+      categories: ["Task Status", "lint"]
+  - id: 7
+    description: "Assemble the shared task-status slice for production"
+    verify: "just build"
+    risk: P1
+    status: failing
+    allure:
+      severity: high
+      categories: ["Task Status", "build"]
+  - id: 8
+    description: "Run the final security gate and confirm no new security findings in affected e02s02 paths"
+    verify: "just preflight"
+    risk: P1
+    status: failing
+    allure:
+      severity: high
+      categories: ["Task Status", "Security Review", "preflight"]

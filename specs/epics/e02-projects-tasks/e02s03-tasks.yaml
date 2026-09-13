@@ -1,0 +1,73 @@
+type: implementation-tasks
+context: projects-tasks-domain
+story_id: e02s03
+title: Archive project with explicit exclusive-task choice
+status: failing
+bcps: 5
+risk: P0
+tasks:
+  - id: 1
+    description: "RED: Add failing domain tests for project-only default, transaction-time exclusivity, shared-task exclusion, preserved associations, and no automatic restore"
+    verify: "! just test e02s03"
+    risk: P0
+    status: failing
+    allure:
+      severity: critical
+      categories: ["Project Archive", "unit", "lifecycle"]
+  - id: 2
+    description: "GREEN: Implement project-only and exclusive-task cascade coordination using e01s03 generic individual archive commands and the shared task-row lock discipline"
+    verify: "just test e02s03"
+    risk: P0
+    status: failing
+    allure:
+      severity: critical
+      categories: ["Project Archive", "persistence", "concurrency"]
+  - id: 3
+    description: "Add real-database race tests for add/remove association versus cascade coordination, stable lock order, rollback, serializable retry, and retry exhaustion"
+    verify: "just test e02s03"
+    risk: P0
+    status: failing
+    allure:
+      severity: critical
+      categories: ["Project Archive", "integration", "concurrency"]
+  - id: 4
+    description: "Add the authenticated CSRF-protected project archive coordinator with revision checks and idempotent operation handling; do not define individual archive/restore commands; confirm no new security findings in affected paths"
+    verify: "just test e02s03 && just preflight"
+    risk: P0
+    security: high
+    status: failing
+    allure:
+      severity: critical
+      categories: ["Project Archive", "API", "Security Review"]
+  - id: 5
+    description: "Add accessible archive choices, acknowledged results, active filtering, and browser proof that individual restore remains e01s03-owned"
+    verify: "just test e02s03"
+    risk: P0
+    status: failing
+    allure:
+      severity: critical
+      categories: ["Project Archive", "browser", "accessibility"]
+  - id: 6
+    description: "Lint project archive coordination source and configuration"
+    verify: "just lint"
+    risk: P0
+    status: failing
+    allure:
+      severity: critical
+      categories: ["Project Archive", "lint"]
+  - id: 7
+    description: "Assemble the project archive coordination slice for production"
+    verify: "just build"
+    risk: P0
+    status: failing
+    allure:
+      severity: critical
+      categories: ["Project Archive", "build"]
+  - id: 8
+    description: "Run the final security gate and confirm no new security findings in affected e02s03 paths"
+    verify: "just preflight"
+    risk: P0
+    status: failing
+    allure:
+      severity: critical
+      categories: ["Project Archive", "Security Review", "preflight"]

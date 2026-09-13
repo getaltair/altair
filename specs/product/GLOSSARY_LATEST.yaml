@@ -1,0 +1,32 @@
+type: ubiquitous-language
+context: altair-v0.1
+terms:
+  record: A persisted Project, Task, Note, or Resource with a stable identity.
+  project: A continuing activity that groups work and supporting material.
+  task: A standalone or project-associated action with one authoritative status.
+  note: Canonical authored Markdown, including unfinished and untitled knowledge.
+  resource: A tangible or intangible thing recorded with flexible optional details.
+  project_association: A task-to-project relationship that controls board membership.
+  related_link: A user-created bidirectional connection that does not change domain behavior.
+  draft: Current local input that may differ from acknowledged saved state.
+  acknowledged_state: The latest record revision confirmed by the server.
+  conflict: Competing local and server revisions requiring an explicit user choice.
+  quick_capture: Creation of an ordinary note without prior classification.
+  quantity_unknown: A resource quantity that is missing and must not be treated as zero or one.
+  recall_context: Current potentially unsaved input and explicit surrounding record context.
+  recall_candidate: A saved record returned for user inspection without mutation authority.
+  dismissal: Context-scoped suppression of one recall candidate.
+  operation_id: A stable command identifier used to replay one acknowledgement without repeating a mutation.
+  attachment_state: The acknowledged upload and deletion lifecycle of attachment metadata and stored bytes.
+  indexing_work: A durable request to rebuild derived retrieval data for one content revision.
+  recall_coverage: The retrieval channels used or unavailable for one recall result batch.
+  suggestion_breadth: The user-selected range from focused to exploratory candidate retrieval.
+  presentation_control: A setting governing automatic recall refresh, visibility, and displayed amount without changing breadth.
+  archive: Reversible removal from default active views, search, and recall.
+  purge: Explicit irreversible application deletion of an archived record.
+  retrieval_index: Rebuildable derived search data that is never authoritative content.
+aliases_to_avoid:
+  object: Use record for domain data; stored object only for Garage bytes.
+  link: Use project association or related link when the distinction matters.
+  saved_draft: Use draft or acknowledged state; they are not interchangeable.
+  inventory: Use resources unless referring to excluded stock-ledger behavior.

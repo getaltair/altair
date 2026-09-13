@@ -1,0 +1,41 @@
+type: epic
+context: altair-v0.1-projects-tasks
+id: e02
+title: Projects And Tasks
+status: todo
+wsjf: 4.5
+total_bcps: 13
+outcome: >-
+  The user can create, edit, and organize standalone and project-associated
+  work, change one authoritative task status from any board, and archive
+  projects without accidentally archiving shared tasks.
+stories:
+  - id: e02s01
+    title: Create browse and edit projects and tasks
+    status: todo
+    bcps: 5
+    risk: P0
+    type: feat
+    context: domain
+    spec: e02s01-create-browse-projects-tasks.md
+    tasks: e02s01-tasks.yaml
+  - id: e02s02
+    title: Change shared task board status
+    status: todo
+    bcps: 3
+    risk: P1
+    type: feat
+    context: domain
+    spec: e02s02-change-shared-task-board-status.md
+    tasks: e02s02-tasks.yaml
+  - id: e02s03
+    title: Archive project with explicit exclusive-task choice
+    status: todo
+    bcps: 5
+    risk: P0
+    type: feat
+    context: domain
+    spec: e02s03-archive-project-exclusive-task-choice.md
+    tasks: e02s03-tasks.yaml
+dependencies:
+  - e01

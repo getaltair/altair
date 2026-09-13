@@ -1,9 +1,63 @@
 workflow_mode: solo-git
+active_flow: build_epic
+active_epic_id: e01
+active_story_id: e01s01
 project_cycle:
-  current_phase: 1
-  phase_name: discover
-  completed_phases: []
+  current_phase: 4
+  phase_name: build
+  completed_phases:
+    - 1
+    - 2
+    - 3
   mode: standard
 handoff:
+  last_step_completed: security-review
   next_skill: survey-context
   open_decisions: []
+  required_reading:
+    - docs/initial-build.md
+    - specs/product/VISION_LATEST.yaml
+    - specs/product/SCOPE_LATEST.yaml
+    - specs/product/PRIOR_ART_LATEST.md
+    - specs/tech-architecture/tech-stack.md
+    - specs/tech-architecture/DESIGN_PLAN_LATEST.md
+    - specs/adr/0001-latest-only-contextual-recall.md
+    - specs/planning-status.yaml
+phase_2_review_gate:
+  phase: 2
+  iteration: 5
+  maximum_iterations: 5
+  status: human_adjudicated
+  reviewer_a_score: 89
+  reviewer_b_score: 91
+  blockers:
+    - Complete attachment upload, replacement, cancellation, and deletion lifecycle transitions.
+    - Define deterministic draft conflict transitions and command precedence.
+    - Freeze the displayed recall target through every interaction-time state transition.
+  adjudication:
+    decided_on: 2026-09-13
+    decision: Defer implementation-level transition detail to Phase 3 epic plans.
+    rationale: >-
+      Phase 2 locks architecture boundaries and invariants; executable state
+      tables and race tests belong to story-level planning.
+planning_obligations:
+  - obligation: Define and test attachment upload, replacement, cancellation, and deletion transitions.
+    planned_in: e07s01
+  - obligation: Define and test commands and precedence while a draft conflict is active.
+    planned_in: e01s03
+  - obligation: Define and test display freezing for every interaction-time recall transition.
+    planned_in: e06s04
+review_gate:
+  phase: 3
+  iteration: 5
+  maximum_iterations: 5
+  status: passed
+  reviewer_a_score: 98
+  reviewer_b_score: 98
+  must_fix_findings: 0
+epic_cycle:
+  current_step: 1
+  completed_steps:
+    - 0
+  story_bcps: 3
+  security_risk: HIGH

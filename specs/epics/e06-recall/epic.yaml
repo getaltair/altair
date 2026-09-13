@@ -1,0 +1,57 @@
+type: epic
+context: altair-v0.1-recall
+id: e06
+title: Search And Contextual Recall
+status: todo
+wsjf: 3.5
+total_bcps: 21
+outcome: Global search and live cross-domain text and semantic recall.
+stories:
+  - id: e06s01
+    title: Global cross-domain lexical search
+    status: todo
+    bcps: 3
+    type: feat
+    context: recall-domain
+    risk: P1
+    spec: e06s01-global-lexical-search.md
+    tasks: e06s01-tasks.yaml
+  - id: e06s02
+    title: Durable embedding indexing and provenance
+    status: todo
+    bcps: 5
+    type: feat
+    context: recall-infrastructure
+    risk: P0
+    spec: e06s02-embedding-indexing-provenance.md
+    tasks: e06s02-tasks.yaml
+  - id: e06s03
+    title: Latest-only live contextual recall
+    status: todo
+    bcps: 8
+    type: feat
+    context: recall-domain
+    risk: P0
+    spec: e06s03-latest-only-live-recall.md
+    tasks: e06s03-tasks.yaml
+  - id: e06s04
+    title: Preview link and dismiss suggestions
+    status: todo
+    bcps: 5
+    type: feat
+    context: recall-interactions
+    risk: P0
+    spec: e06s04-preview-link-dismiss.md
+    tasks: e06s04-tasks.yaml
+dependencies:
+  - e01
+  - e02
+  - e03
+  - e04
+  - e05
+references:
+  - docs/initial-build.md
+  - specs/product/SCOPE_LATEST.yaml
+  - specs/tech-architecture/tech-stack.md
+  - specs/tech-architecture/DESIGN_PLAN_LATEST.md
+  - specs/adr/0001-latest-only-contextual-recall.md

@@ -1,0 +1,91 @@
+type: implementation-tasks
+context: attachments
+story_id: e07s01
+title: Attachment upload and replacement safety
+status: failing
+bcps: 5
+risk: P0
+tasks:
+  - id: 1
+    description: "RED: Add failing e07s01 tests for file and structured URL attachment lifecycle transitions."
+    verify: "! just test e07s01"
+    risk: P0
+    status: failing
+    allure:
+      severity: critical
+      categories: [attachments, unit, recovery]
+  - id: 2
+    description: "GREEN: Implement file and structured URL attachment models with exhaustive lifecycle transition behavior."
+    verify: "just test e07s01"
+    risk: P0
+    status: failing
+    allure:
+      severity: critical
+      categories: [attachments, unit, recovery]
+  - id: 3
+    description: Implement idempotent completion, cancellation, and atomic initial record-plus-attachment and replacement persistence across all domains, with no new security findings in affected paths.
+    verify: just test && just preflight
+    risk: P0
+    security: high
+    status: failing
+    allure:
+      severity: critical
+      categories: [attachments, integration, Security Review]
+  - id: 4
+    description: Implement shared-reference attach, unlink, replacement, abandoned-upload selection, and retryable Garage cleanup, with no new security findings in affected paths.
+    verify: just test && just preflight
+    risk: P0
+    security: high
+    status: failing
+    allure:
+      severity: critical
+      categories: [attachments, storage, Security Review]
+  - id: 5
+    description: Integrate acknowledged attachment metadata and names with existing global lexical search/recall extension contracts and provide attachment adapters for post-e07 responsive and release workflows.
+    verify: just test
+    risk: P0
+    status: failing
+    allure:
+      severity: critical
+      categories: [attachments, search, integration]
+  - id: 6
+    description: Add accessible file and structured URL flows for existing records, quick capture, attachment-only resources, and project/task creation and editing, with no new security findings in affected paths.
+    verify: just test && just preflight
+    risk: P1
+    security: medium
+    status: failing
+    allure:
+      severity: high
+      categories: [attachments, component, accessibility, Security Review]
+  - id: 7
+    description: Test initial creation, cancellation, replacement, abandoned cleanup, attachment-name search, reference purge, and worker races.
+    verify: just test
+    risk: P0
+    status: failing
+    allure:
+      severity: critical
+      categories: [attachments, concurrency, integration]
+  - id: 8
+    description: Lint attachment source and configuration.
+    verify: just lint
+    risk: P0
+    status: failing
+    allure:
+      severity: critical
+      categories: [attachments, lint, configuration]
+  - id: 9
+    description: Assemble production client and server artifacts containing all attachment integrations.
+    verify: just build
+    risk: P0
+    status: failing
+    allure:
+      severity: critical
+      categories: [attachments, end-to-end, release]
+  - id: 10
+    description: Run final preflight after all attachment implementation and verification tasks.
+    verify: just preflight
+    risk: P0
+    status: failing
+    allure:
+      severity: critical
+      categories: [attachments, preflight, release]

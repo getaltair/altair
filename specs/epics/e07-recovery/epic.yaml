@@ -1,0 +1,50 @@
+id: e07
+title: Recovery And Portability
+type: epic
+context: recovery
+status: todo
+outcome: >-
+  Attachments and records remain recoverable through ordinary mistakes, and the
+  complete workspace can be exported, backed up, and restored without losing
+  stable identities, relationships, or attachment references.
+wsjf: 3.0
+total_bcps: 13
+stories:
+  - id: e07s01
+    title: Attachment upload and replacement safety
+    type: feat
+    context: attachments
+    status: todo
+    bcps: 5
+    risk: P0
+    spec: e07s01-attachment-upload-and-replacement-safety.md
+    tasks: e07s01-tasks.yaml
+  - id: e07s02
+    title: Archive restore and manual purge
+    type: feat
+    context: recovery
+    status: todo
+    bcps: 5
+    risk: P0
+    spec: e07s02-archive-restore-and-manual-purge.md
+    tasks: e07s02-tasks.yaml
+  - id: e07s03
+    title: Export backup and restore integrity
+    type: feat
+    context: portability
+    status: todo
+    bcps: 3
+    risk: P1
+    spec: e07s03-export-backup-and-restore-integrity.md
+    tasks: e07s03-tasks.yaml
+dependencies:
+  - e01
+  - e02
+  - e03
+  - e04
+  - e05
+  - e06
+references:
+  - docs/initial-build.md
+  - specs/product/SCOPE_LATEST.yaml
+  - specs/tech-architecture/tech-stack.md

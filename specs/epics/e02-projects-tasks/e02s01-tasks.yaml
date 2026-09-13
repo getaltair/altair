@@ -1,0 +1,73 @@
+type: implementation-tasks
+context: projects-tasks-domain
+story_id: e02s01
+title: Create browse and edit projects and tasks
+status: failing
+bcps: 5
+risk: P0
+tasks:
+  - id: 1
+    description: "RED: Add failing domain and persistence tests for project/task validity, stable identities, default status, revision-checked edits, and unique associations"
+    verify: "! just test e02s01"
+    risk: P0
+    status: failing
+    allure:
+      severity: critical
+      categories: ["Projects Tasks", "unit", "integration"]
+  - id: 2
+    description: "GREEN: Add explicit migrations and domain-independent persistence for projects, tasks, and transactional project associations"
+    verify: "just test e02s01"
+    risk: P0
+    status: failing
+    allure:
+      severity: critical
+      categories: ["Projects Tasks", "persistence"]
+  - id: 3
+    description: "Add authenticated typed project/task create, update, list, detail, and board API contracts with CSRF-protected mutations, with no new security findings in affected paths"
+    verify: "just test e02s01 && just preflight"
+    risk: P0
+    security: medium
+    status: failing
+    allure:
+      severity: critical
+      categories: ["Projects Tasks", "API", "Security Review"]
+  - id: 4
+    description: "Adapt responsive project/task editors to the e01s03 DraftSaveCoordinator, then add lists, details, boards, configurable local recovery, and later e06 recall-input handoff"
+    verify: "just test e02s01"
+    risk: P0
+    status: failing
+    allure:
+      severity: critical
+      categories: ["Projects Tasks", "component", "accessibility"]
+  - id: 5
+    description: "Add desktop and Android-width browser coverage for associated, standalone, description-only, create, edit, shared-coordinator conflict, failure, and local-recovery workflows"
+    verify: "just test e02s01"
+    risk: P0
+    status: failing
+    allure:
+      severity: critical
+      categories: ["Projects Tasks", "browser", "responsive"]
+  - id: 6
+    description: "Lint project/task source and configuration"
+    verify: "just lint"
+    risk: P0
+    status: failing
+    allure:
+      severity: critical
+      categories: ["Projects Tasks", "lint"]
+  - id: 7
+    description: "Assemble the complete project/task creation and browsing slice for production"
+    verify: "just build"
+    risk: P0
+    status: failing
+    allure:
+      severity: critical
+      categories: ["Projects Tasks", "build"]
+  - id: 8
+    description: "Run the final security gate and confirm no new security findings in affected e02s01 paths"
+    verify: "just preflight"
+    risk: P0
+    status: failing
+    allure:
+      severity: critical
+      categories: ["Projects Tasks", "Security Review", "preflight"]

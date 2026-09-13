@@ -1,0 +1,43 @@
+type: epic
+context: notes-domain
+id: e03
+title: Knowledge And Quick Capture
+status: todo
+wsjf: 4.8
+total_bcps: 13
+outcome: Markdown notes, quick capture, import, preview, and draft-safe editing.
+stories:
+  - id: e03s01
+    type: feat
+    context: notes-domain
+    title: Draft-safe Markdown note editing
+    status: todo
+    bcps: 5
+    risk: P0
+    spec: e03s01-draft-safe-markdown-editing.md
+    tasks: e03s01-tasks.yaml
+  - id: e03s02
+    type: feat
+    context: notes-domain
+    title: Quick capture and Markdown import
+    status: todo
+    bcps: 3
+    risk: P1
+    spec: e03s02-quick-capture-import.md
+    tasks: e03s02-tasks.yaml
+  - id: e03s03
+    type: feat
+    context: notes-domain
+    title: Preview compare and return path
+    status: todo
+    bcps: 5
+    risk: P0
+    spec: e03s03-preview-compare-return.md
+    tasks: e03s03-tasks.yaml
+dependencies:
+  - e01
+references:
+  - docs/initial-build.md
+  - specs/product/SCOPE_LATEST.yaml
+  - specs/tech-architecture/tech-stack.md
+  - specs/state.yaml

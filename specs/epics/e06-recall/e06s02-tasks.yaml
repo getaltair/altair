@@ -1,0 +1,101 @@
+type: implementation-tasks
+context: recall-infrastructure
+story_id: e06s02
+title: Durable embedding indexing and provenance
+status: failing
+bcps: 5
+risk: P0
+tasks:
+  - id: 1
+    description: "RED: Add failing tests for deterministic content extraction, complete provenance, compatibility, and retry classification."
+    type: test
+    context: domain
+    risk: P0
+    status: failing
+    verify: "! just test e06s02"
+    allure:
+      severity: critical
+      categories: [recall, inference, unit]
+  - id: 2
+    description: "GREEN: Add transactional durable indexing work, vector provenance, lease, uniqueness, and obsolescence migrations."
+    type: feat
+    context: database
+    risk: P0
+    status: failing
+    verify: "just test e06s02"
+    allure:
+      severity: critical
+      categories: [recall, data-safety, integration]
+  - id: 3
+    description: Implement and contract-test the bounded configured-provider-only OpenAI-compatible embeddings adapter; verify no new security findings in affected inference adapter paths.
+    type: feat
+    context: infrastructure
+    risk: P0
+    security: high
+    status: failing
+    verify: just test && just preflight
+    allure:
+      severity: critical
+      categories: [recall, inference, contract]
+  - id: 4
+    description: Process durable work with lease recovery, bounded retry, current-revision publication, and archive/purge safety without owning DraftSaveCoordinator state.
+    type: feat
+    context: server
+    risk: P0
+    status: failing
+    verify: just test
+    allure:
+      severity: critical
+      categories: [recall, concurrency, failure-recovery]
+  - id: 5
+    description: Add rebuild and operational backlog checks without exposing content, vectors, or credentials; verify no new security findings in affected operational paths.
+    type: feat
+    context: operations
+    risk: P0
+    security: high
+    status: failing
+    verify: just test && just preflight
+    allure:
+      severity: critical
+      categories: [recall, operations, privacy]
+  - id: 6
+    description: Test all acceptance scenarios, save independence through the e01s03 contract, restart, malformed response, provenance mismatch, privacy, and rebuild convergence.
+    type: test
+    context: verification
+    risk: P0
+    status: failing
+    verify: just test
+    allure:
+      severity: critical
+      categories: [recall, inference, failure-recovery]
+  - id: 7
+    description: Lint embedding indexing source and configuration.
+    type: test
+    context: lint
+    risk: P0
+    status: failing
+    verify: just lint
+    allure:
+      severity: critical
+      categories: [recall, inference, lint]
+  - id: 8
+    description: Assemble the embedding indexing slice for production.
+    type: test
+    context: build
+    risk: P0
+    status: failing
+    verify: just build
+    allure:
+      severity: critical
+      categories: [recall, inference, build]
+  - id: 9
+    description: Run preflight and verify it reports no new security findings in affected indexing, inference, and operational paths.
+    type: test
+    context: security
+    risk: P0
+    security: high
+    status: failing
+    verify: just test && just preflight
+    allure:
+      severity: critical
+      categories: [recall, inference, security-review, preflight]

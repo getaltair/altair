@@ -1,0 +1,111 @@
+type: implementation-tasks
+context: recall-domain
+story_id: e06s03
+title: Latest-only live contextual recall
+status: failing
+bcps: 8
+risk: P0
+tasks:
+  - id: 1
+    description: "RED: Add failing tests for typed domain snapshots, deterministic context keys, immutable candidates, channel coverage, and boundary behavior."
+    type: test
+    context: domain
+    risk: P0
+    status: failing
+    verify: "! just test e06s03"
+    allure:
+      severity: critical
+      categories: [recall, contracts, unit]
+  - id: 2
+    description: "GREEN: Implement the latest-only coordinator state machine with fake-timer tests for every state/event pair."
+    type: feat
+    context: client
+    risk: P0
+    status: failing
+    verify: "just test e06s03"
+    allure:
+      severity: critical
+      categories: [recall, concurrency, unit]
+  - id: 3
+    description: Exhaustively test revision and dispatch permutations, failed cancellation, empty input, retry, pause/resume, and disposal.
+    type: test
+    context: client
+    risk: P0
+    status: failing
+    verify: just test
+    allure:
+      severity: critical
+      categories: [recall, cancellation, lifecycle]
+  - id: 4
+    description: Implement stateless authenticated recall combining e06s01 global lexical results, e04s03 real duplicate candidates, relationships, and semantic results with honest degradation; verify no new security findings in affected recall server paths.
+    type: feat
+    context: server
+    risk: P0
+    security: high
+    status: failing
+    verify: just test && just preflight
+    allure:
+      severity: critical
+      categories: [recall, integration, degradation]
+  - id: 5
+    description: Connect all project, task, note, and resource create/edit surfaces using immutable snapshots, e01s03 DraftSaveCoordinator state isolation, and separate breadth/presentation controls.
+    type: feat
+    context: client
+    risk: P0
+    status: failing
+    verify: just test
+    allure:
+      severity: critical
+      categories: [recall, editors, accessibility]
+  - id: 6
+    description: Test semantic timeout, incompatible provenance, total outage, no-store, no fallback, safe logs, and DraftSaveCoordinator save/conflict continuity; verify no new security findings in affected recall integration paths.
+    type: test
+    context: integration
+    risk: P0
+    security: high
+    status: failing
+    verify: just test && just preflight
+    allure:
+      severity: critical
+      categories: [recall, degraded-mode, privacy]
+  - id: 7
+    description: Test all acceptance scenarios and browser workflows across all eight create/edit surfaces, e04s03 candidates, focus stability, controls, and Android hide/resume lifecycle.
+    type: test
+    context: verification
+    risk: P0
+    status: failing
+    verify: just test
+    allure:
+      severity: critical
+      categories: [recall, browser, accessibility]
+  - id: 8
+    description: Lint latest-only recall source and configuration.
+    type: test
+    context: lint
+    risk: P0
+    status: failing
+    verify: just lint
+    allure:
+      severity: critical
+      categories: [recall, lint]
+  - id: 9
+    description: Assemble the complete latest-only recall slice for production.
+    type: test
+    context: build
+    risk: P0
+    status: failing
+    verify: just build
+    allure:
+      severity: critical
+      categories: [recall, build]
+  - id: 10
+    description: Run preflight and verify it reports no new security findings in affected recall, editor-integration, and inference paths.
+    type: test
+    context: security
+    risk: P0
+    security: high
+    status: failing
+    verify: just test && just preflight
+    allure:
+      severity: critical
+      categories: [recall, security-review, preflight]

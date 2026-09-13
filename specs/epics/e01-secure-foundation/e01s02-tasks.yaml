@@ -1,0 +1,76 @@
+type: implementation-tasks
+context: infrastructure
+story_id: e01s02
+title: Authentik session boundary
+status: failing
+bcps: 5
+risk: P0
+tasks:
+  - id: 1
+    description: RED - Add targeted failing contract tests for server-owned session persistence, expiry, revocation, and atomic lifecycle behavior.
+    verify: "! just test e01s02"
+    risk: P0
+    status: failing
+    allure:
+      severity: critical
+      categories: [authentication, Security Review]
+  - id: 2
+    description: GREEN - Implement the minimum server-owned session persistence and lifecycle behavior needed to satisfy the targeted contract tests.
+    verify: just test e01s02
+    risk: P0
+    status: failing
+    allure:
+      severity: critical
+      categories: [authentication, session]
+  - id: 3
+    description: Implement and test OIDC login start and callback validation with state, nonce, and PKCE, with no new security findings in the affected OIDC paths.
+    verify: just test && just preflight
+    risk: P0
+    security: high
+    status: failing
+    allure:
+      severity: critical
+      categories: [oidc, Security Review]
+  - id: 4
+    description: Enforce opaque cookie sessions and CSRF protection on protected and state-changing routes, with no new security findings in the affected session and CSRF paths.
+    verify: just test && just preflight
+    risk: P0
+    security: high
+    status: failing
+    allure:
+      severity: critical
+      categories: [session, Security Review]
+  - id: 5
+    description: Add behavior tests for accessible login, authentication-failure, expiry, and logout client states without browser token storage, with no new security findings in the affected client authentication paths.
+    verify: just test && just preflight
+    risk: P0
+    security: high
+    status: failing
+    allure:
+      severity: critical
+      categories: [frontend, Security Review]
+  - id: 6
+    description: Configure and verify lint rules for the authentication server and client paths.
+    verify: just lint
+    risk: P0
+    status: failing
+    allure:
+      severity: critical
+      categories: [lint, configuration]
+  - id: 7
+    description: Assemble the authenticated client and server production artifacts.
+    verify: just build
+    risk: P0
+    status: failing
+    allure:
+      severity: critical
+      categories: [production, build]
+  - id: 8
+    description: Run the full preflight gate and check that there are no new security findings in the affected authentication and session paths.
+    verify: just test && just preflight
+    risk: P0
+    security: high
+    status: failing
+    allure:
+      severity: critical
+      categories: [preflight, Security Review]

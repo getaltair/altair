@@ -1,0 +1,73 @@
+type: implementation-tasks
+context: resources-domain
+story_id: e04s02
+title: Optional quantity set increment and clear
+status: failing
+bcps: 3
+risk: P1
+tasks:
+  - id: 1
+    description: "RED: Add failing domain tests for nullable unknown, known zero, set, increment, clear, unit behavior, decimal bounds, and quantity-recorded time"
+    verify: "! just test e04s02"
+    risk: P1
+    status: failing
+    allure:
+      severity: high
+      categories: ["Resource Quantity", "unit", "property"]
+  - id: 2
+    description: "GREEN: Implement separate authenticated CSRF-protected set, increment, and clear commands with typed validation and e01s03 conflict results, with no new security findings in affected paths"
+    verify: "just test e04s02 && just preflight"
+    risk: P1
+    security: medium
+    status: failing
+    allure:
+      severity: high
+      categories: ["Resource Quantity", "API", "Security Review"]
+  - id: 3
+    description: "Add persistence and concurrency tests for atomic revisions, conflicting increments, operation replay, and quantity-specific timestamps"
+    verify: "just test e04s02"
+    risk: P1
+    status: failing
+    allure:
+      severity: high
+      categories: ["Resource Quantity", "integration", "concurrency"]
+  - id: 4
+    description: "Adapt quantity input to e01s03 DraftSaveCoordinator and add accessible set, add, clear, unknown-guidance, retry, and conflict interfaces"
+    verify: "just test e04s02"
+    risk: P1
+    status: failing
+    allure:
+      severity: high
+      categories: ["Resource Quantity", "component", "accessibility"]
+  - id: 5
+    description: "Add browser coverage for known zero, set-add-clear, unknown increment rejection, and safe lost-acknowledgement retry"
+    verify: "just test e04s02"
+    risk: P1
+    status: failing
+    allure:
+      severity: high
+      categories: ["Resource Quantity", "browser", "concurrency"]
+  - id: 6
+    description: "Lint resource quantity source and configuration"
+    verify: "just lint"
+    risk: P1
+    status: failing
+    allure:
+      severity: high
+      categories: ["Resource Quantity", "lint"]
+  - id: 7
+    description: "Assemble the optional resource quantity slice for production"
+    verify: "just build"
+    risk: P1
+    status: failing
+    allure:
+      severity: high
+      categories: ["Resource Quantity", "build"]
+  - id: 8
+    description: "Run the final security gate and confirm no new security findings in affected e04s02 paths"
+    verify: "just preflight"
+    risk: P1
+    status: failing
+    allure:
+      severity: high
+      categories: ["Resource Quantity", "Security Review", "preflight"]

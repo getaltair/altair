@@ -1,0 +1,85 @@
+type: implementation-tasks
+context: notes-domain
+story_id: e03s01
+title: Draft-safe Markdown note editing
+status: failing
+bcps: 5
+risk: P0
+tasks:
+  - id: 1
+    description: RED - Add targeted failing note-adapter contract tests that reference e01s03 Section 15 rules C01-C12 and prove title/Markdown snapshots preserve their edit, autosave, retry, conflict-command, and pending-save precedence.
+    verify: "! just test e03s01"
+    risk: P0
+    status: failing
+    allure:
+      severity: critical
+      categories: [draft-safety, state-machine]
+  - id: 2
+    description: GREEN - Integrate e01s03's domain-independent DraftSaveCoordinator through the minimum thin note title/Markdown adapter needed to satisfy the targeted contract tests without redefining its states or commands.
+    verify: just test e03s01
+    risk: P0
+    security: medium
+    status: failing
+    allure:
+      severity: critical
+      categories: [api, concurrency, Security Review]
+  - id: 3
+    description: Add note persistence and API integration tests for e01s03 revision-checked saves, durable idempotent replay, and note-specific conflict snapshots, with no new security findings in the affected persistence and API paths.
+    verify: just test && just preflight
+    security: medium
+    risk: P0
+    status: failing
+    allure:
+      severity: critical
+      categories: [api, concurrency, Security Review]
+  - id: 4
+    description: Integrate CodeMirror 6 canonical Markdown editing, inline Markdown presentation, and disableable Vim behavior with component tests.
+    verify: just test
+    risk: P0
+    status: failing
+    allure:
+      severity: critical
+      categories: [editor, autosave]
+  - id: 5
+    description: Implement and test note autosave effects plus accessible mappings from shared coordinator output to Saved, Saving, Error, and explicit conflict controls, with no new security findings in the affected autosave and recovery paths.
+    verify: just test && just preflight
+    risk: P0
+    security: medium
+    status: failing
+    allure:
+      severity: critical
+      categories: [recovery, accessibility, Security Review]
+  - id: 6
+    description: Test persistent local draft recovery enabled by default, with disable-and-clear controls for managed or shared devices and no new security findings in the affected local recovery paths.
+    verify: just test && just preflight
+    risk: P0
+    security: medium
+    status: failing
+    allure:
+      severity: critical
+      categories: [recovery, browser, Security Review]
+  - id: 7
+    description: Configure and verify lint rules for the note editor and recovery paths.
+    verify: just lint
+    risk: P0
+    status: failing
+    allure:
+      severity: critical
+      categories: [lint, configuration]
+  - id: 8
+    description: Assemble the draft-safe Markdown editor in the production client and server artifacts.
+    verify: just build
+    risk: P0
+    status: failing
+    allure:
+      severity: critical
+      categories: [production, build]
+  - id: 9
+    description: Run the full preflight gate and check that there are no new security findings in the affected note editor, adapter, and recovery paths.
+    verify: just test && just preflight
+    risk: P0
+    security: medium
+    status: failing
+    allure:
+      severity: critical
+      categories: [preflight, Security Review]

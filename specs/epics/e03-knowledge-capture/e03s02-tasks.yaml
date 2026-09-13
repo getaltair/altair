@@ -1,0 +1,76 @@
+type: implementation-tasks
+context: notes-domain
+story_id: e03s02
+title: Quick capture and Markdown import
+status: failing
+bcps: 3
+risk: P1
+tasks:
+  - id: 1
+    description: RED - Add targeted failing behavior tests for idempotent ordinary-note creation from classification-free text and URL captures.
+    verify: "! just test e03s02"
+    risk: P1
+    status: failing
+    allure:
+      severity: high
+      categories: [quick-capture, api]
+  - id: 2
+    description: GREEN - Implement the minimum classification-free text and URL capture path needed to satisfy the targeted ordinary-note creation tests.
+    verify: just test e03s02
+    risk: P1
+    status: failing
+    allure:
+      severity: high
+      categories: [quick-capture, api]
+  - id: 3
+    description: Define and test deterministic Markdown file extension, encoding, size, newline, and display-label rules, with no new security findings in the affected import validation paths.
+    verify: just test && just preflight
+    risk: P1
+    security: medium
+    status: failing
+    allure:
+      severity: high
+      categories: [import, Security Review]
+  - id: 4
+    description: Implement and test accessible global text/URL quick capture and review-before-save Markdown import while retaining failed input, with no new security findings in the affected capture and import paths.
+    verify: just test && just preflight
+    risk: P1
+    security: medium
+    status: failing
+    allure:
+      severity: high
+      categories: [frontend, accessibility, Security Review]
+  - id: 5
+    description: Integrate quick-capture drafts with the e01s03 shared DraftSaveCoordinator and test device-local recovery after accidental navigation plus disable-and-clear behavior on managed/shared devices, with no new security findings in the affected local recovery paths.
+    verify: just test && just preflight
+    risk: P1
+    security: medium
+    status: failing
+    allure:
+      severity: high
+      categories: [quick-capture, recovery, Security Review]
+  - id: 6
+    description: Configure and verify lint rules for capture and import boundaries.
+    verify: just lint
+    risk: P1
+    status: failing
+    allure:
+      severity: high
+      categories: [lint, configuration]
+  - id: 7
+    description: Assemble text/URL quick capture and Markdown import in the production client and server artifacts.
+    verify: just build
+    risk: P1
+    status: failing
+    allure:
+      severity: high
+      categories: [production, build]
+  - id: 8
+    description: Run the full preflight gate and check that there are no new security findings in the affected capture, import, and local recovery paths.
+    verify: just test && just preflight
+    risk: P1
+    security: medium
+    status: failing
+    allure:
+      severity: high
+      categories: [preflight, Security Review]

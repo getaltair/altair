@@ -1,0 +1,111 @@
+type: implementation-tasks
+context: recall-interactions
+story_id: e06s04
+title: Preview link and dismiss suggestions
+status: failing
+bcps: 5
+risk: P0
+tasks:
+  - id: 1
+    description: "RED: Add failing fixture tests for the e06s04-owned displayed-target freeze binding and deterministic context-key serialization."
+    type: test
+    context: domain
+    risk: P0
+    status: failing
+    verify: "! just test e06s04"
+    allure:
+      severity: critical
+      categories: [recall, dismissal, unit]
+  - id: 2
+    description: "GREEN: Implement coordinator-owned interaction holds and newest-only deferred publication."
+    type: feat
+    context: client
+    risk: P0
+    status: failing
+    verify: "just test e06s04"
+    allure:
+      severity: critical
+      categories: [recall, concurrency, interactions]
+  - id: 3
+    description: Exhaustively test pointer, pen, touch, synthetic-click, Enter, Space, blur, cancellation, hide, and disposal transitions.
+    type: test
+    context: client
+    risk: P0
+    status: failing
+    verify: just test
+    allure:
+      severity: critical
+      categories: [recall, input-modalities, accessibility]
+  - id: 4
+    description: Add authoritative preview and e01s03 DraftSaveCoordinator-compatible draft-safe return paths for desktop and compact layouts; verify no new security findings in affected preview and editor-integration paths.
+    type: feat
+    context: client
+    risk: P0
+    security: medium
+    status: failing
+    verify: just test && just preflight
+    allure:
+      severity: critical
+      categories: [recall, preview, draft-safety]
+  - id: 5
+    description: Connect explicit link actions to revision/archive/relationship-revalidated commands and route editor conflicts through the e01s03 DraftSaveCoordinator; verify no new security findings in affected relationship-integration server paths.
+    type: feat
+    context: server
+    risk: P0
+    security: high
+    status: failing
+    verify: just test && just preflight
+    allure:
+      severity: critical
+      categories: [recall, relationships, integration]
+  - id: 6
+    description: Implement context-scoped dismissal and test unchanged normalization, changed identifiers, sorted anchors, and cross-draft scope.
+    type: feat
+    context: client
+    risk: P0
+    status: failing
+    verify: just test
+    allure:
+      severity: critical
+      categories: [recall, dismissal, state]
+  - id: 7
+    description: Test all acceptance scenarios and browser workflows for stable targets, focus, announcements, draft return, DraftSaveCoordinator conflicts, and responsive input modalities.
+    type: test
+    context: verification
+    risk: P0
+    status: failing
+    verify: just test
+    allure:
+      severity: critical
+      categories: [recall, browser, accessibility]
+  - id: 8
+    description: Lint preview, link, dismissal, and displayed-target freeze source and configuration.
+    type: test
+    context: lint
+    risk: P0
+    status: failing
+    verify: just lint
+    allure:
+      severity: critical
+      categories: [recall, lint]
+  - id: 9
+    description: Assemble the complete preview, link, dismissal, and displayed-target freeze slice for production.
+    type: test
+    context: build
+    risk: P0
+    status: failing
+    verify: just build
+    allure:
+      severity: critical
+      categories: [recall, build]
+  - id: 10
+    description: Run preflight and verify it reports no new security findings in affected recall-interaction and relationship-integration paths.
+    type: test
+    context: security
+    risk: P0
+    security: high
+    status: failing
+    verify: just test && just preflight
+    allure:
+      severity: critical
+      categories: [recall, relationships, security-review, preflight]

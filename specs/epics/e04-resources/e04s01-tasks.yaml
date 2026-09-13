@@ -1,0 +1,73 @@
+type: implementation-tasks
+context: resources-domain
+story_id: e04s01
+title: Create browse and edit flexible resources
+status: failing
+bcps: 5
+risk: P0
+tasks:
+  - id: 1
+    description: "RED: Add failing domain tests for name-or-description minimum input, flexible optional fields, fallback labels, honest recorded state, and revision conflicts"
+    verify: "! just test e04s01"
+    risk: P0
+    status: failing
+    allure:
+      severity: critical
+      categories: ["Resources", "unit", "editing"]
+  - id: 2
+    description: "GREEN: Add explicit migrations and persistence tests for stable resource identities, active filtering, searchable fields and identifiers, revisions, and idempotent operations"
+    verify: "just test e04s01"
+    risk: P0
+    status: failing
+    allure:
+      severity: critical
+      categories: ["Resources", "persistence", "integration"]
+  - id: 3
+    description: "Add authenticated typed create, browse/search, detail, and update APIs with CSRF-protected mutations and name-or-description validation, with no new security findings in affected paths"
+    verify: "just test e04s01 && just preflight"
+    risk: P0
+    security: medium
+    status: failing
+    allure:
+      severity: critical
+      categories: ["Resources", "API", "Security Review"]
+  - id: 4
+    description: "Adapt responsive resource create/edit surfaces to e01s03 DraftSaveCoordinator, then add list/card, search, detail, draft-copy, and configurable local-recovery interfaces"
+    verify: "just test e04s01"
+    risk: P0
+    status: failing
+    allure:
+      severity: critical
+      categories: ["Resources", "component", "accessibility"]
+  - id: 5
+    description: "Add desktop and Android-width browser coverage for name-only, description-only, edit, failure, shared-coordinator conflict, and local-recovery workflows"
+    verify: "just test e04s01"
+    risk: P0
+    status: failing
+    allure:
+      severity: critical
+      categories: ["Resources", "browser", "responsive"]
+  - id: 6
+    description: "Lint resource record source and configuration"
+    verify: "just lint"
+    risk: P0
+    status: failing
+    allure:
+      severity: critical
+      categories: ["Resources", "lint"]
+  - id: 7
+    description: "Assemble the flexible resource record slice for production"
+    verify: "just build"
+    risk: P0
+    status: failing
+    allure:
+      severity: critical
+      categories: ["Resources", "build"]
+  - id: 8
+    description: "Run the final security gate and confirm no new security findings in affected e04s01 paths"
+    verify: "just preflight"
+    risk: P0
+    status: failing
+    allure:
+      severity: critical
+      categories: ["Resources", "Security Review", "preflight"]

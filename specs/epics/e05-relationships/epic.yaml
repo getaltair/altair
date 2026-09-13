@@ -1,0 +1,36 @@
+type: epic
+context: altair-v0.1-relationships
+id: e05
+title: Cross-Domain Relationships
+status: todo
+wsjf: 3.8
+total_bcps: 8
+outcome: Stable bidirectional relationships across all domain records.
+stories:
+  - id: e05s01
+    title: Link and unlink records bidirectionally
+    status: todo
+    bcps: 3
+    type: feat
+    context: relationships-domain
+    risk: P1
+    spec: e05s01-link-unlink-records.md
+    tasks: e05s01-tasks.yaml
+  - id: e05s02
+    title: Convert notes and persist new record links safely
+    status: todo
+    bcps: 5
+    type: feat
+    context: relationships-domain
+    risk: P0
+    spec: e05s02-persist-record-link-safely.md
+    tasks: e05s02-tasks.yaml
+dependencies:
+  - e01
+  - e02
+  - e03
+  - e04
+references:
+  - docs/initial-build.md
+  - specs/product/SCOPE_LATEST.yaml
+  - specs/tech-architecture/tech-stack.md

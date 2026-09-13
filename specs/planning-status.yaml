@@ -1,0 +1,25 @@
+context_capsule: null
+workflows:
+  survey-context:
+    required: true
+    status: done
+  scope-work:
+    required: true
+    status: done
+  research-first:
+    required: false
+    status: done
+    note: Bun, Naive UI, and XIcons verified against their published documentation.
+  elaborate-spec:
+    required: false
+    status: skipped
+    note: docs/initial-build.md is accepted and already resolves product behavior.
+  plan-release:
+    required: true
+    status: done
+  slice-tasks:
+    required: true
+    status: done
+  plan-work:
+    required: true
+    status: done

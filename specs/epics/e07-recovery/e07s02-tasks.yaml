@@ -1,0 +1,82 @@
+type: implementation-tasks
+context: recovery
+story_id: e07s02
+title: Archive restore and manual purge
+status: failing
+bcps: 5
+risk: P0
+tasks:
+  - id: 1
+    description: "RED: Add failing e07s02 tests for the common domain-filterable archived-record projection and default exclusion integration."
+    verify: "! just test e07s02"
+    risk: P0
+    status: failing
+    allure:
+      severity: critical
+      categories: [recovery, lifecycle, archived-view]
+  - id: 2
+    description: "GREEN: Implement the common domain-filterable archived-record projection and default exclusion integration."
+    verify: "just test e07s02"
+    risk: P0
+    status: failing
+    allure:
+      severity: critical
+      categories: [recovery, lifecycle, archived-view]
+  - id: 3
+    description: Integrate e01s03 generic archive/restore acknowledgements and e02s03 project cascade outcomes into archived views without duplicating their commands or concurrency logic.
+    verify: just test
+    risk: P0
+    status: failing
+    allure:
+      severity: critical
+      categories: [recovery, projects, integration]
+  - id: 4
+    description: Implement idempotent final purge with relationship, attachment-reference, and derived-index cleanup, with no new security findings in affected paths.
+    verify: just test && just preflight
+    risk: P0
+    security: high
+    status: failing
+    allure:
+      severity: critical
+      categories: [recovery, purge, Security Review]
+  - id: 5
+    description: Add accessible archived views, domain filters, e01s03 restore actions, purge confirmation, and e02s03 project cascade integration, with no new security findings in affected paths.
+    verify: just test && just preflight
+    risk: P1
+    security: medium
+    status: failing
+    allure:
+      severity: high
+      categories: [recovery, component, accessibility, Security Review]
+  - id: 6
+    description: Run unit, integration, and end-to-end tests for archived projections, dependency acknowledgements, default exclusion, final purge, and deterministic restore-purge and attachment-reference cleanup races.
+    verify: just test
+    risk: P0
+    status: failing
+    allure:
+      severity: critical
+      categories: [recovery, concurrency, integration]
+  - id: 7
+    description: Lint archived-view and final-purge source and configuration.
+    verify: just lint
+    risk: P0
+    status: failing
+    allure:
+      severity: critical
+      categories: [recovery, lint, configuration]
+  - id: 8
+    description: Assemble the production archived-view and final-purge integrations.
+    verify: just build
+    risk: P0
+    status: failing
+    allure:
+      severity: critical
+      categories: [recovery, end-to-end, release]
+  - id: 9
+    description: Run final preflight after all recovery implementation and verification tasks.
+    verify: just preflight
+    risk: P0
+    status: failing
+    allure:
+      severity: critical
+      categories: [recovery, preflight, release]

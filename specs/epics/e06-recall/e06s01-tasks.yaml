@@ -1,0 +1,100 @@
+type: implementation-tasks
+context: recall-domain
+story_id: e06s01
+title: Global cross-domain lexical search
+status: failing
+bcps: 3
+risk: P1
+tasks:
+  - id: 1
+    description: "RED: Add failing tests for searchable authored-field extraction, relationship-aware expansion, recall candidate data, stable-identity deduplication, and deterministic ranking."
+    type: test
+    context: domain
+    risk: P1
+    status: failing
+    verify: "! just test e06s01"
+    allure:
+      severity: high
+      categories: [recall, search, unit]
+  - id: 2
+    description: "GREEN: Add PostgreSQL full-text, trigram, domain-identifier, and archive-filtered search without attachment-name or duplicate-resource query implementation."
+    type: feat
+    context: database
+    risk: P1
+    status: failing
+    verify: "just test e06s01"
+    allure:
+      severity: high
+      categories: [recall, search, integration]
+  - id: 3
+    description: Expand lexical seeds through one hop of active explicit relationships, return relationship evidence, deduplicate against direct matches, and preserve deterministic ranking and domain filters.
+    type: feat
+    context: database
+    risk: P1
+    status: failing
+    verify: just test e06s01
+    allure:
+      severity: high
+      categories: [recall, search, relationships, integration]
+  - id: 4
+    description: Expose authenticated bounded search with domain filters, explicit lexical coverage, no-store, and safe logging; verify no new security findings in affected search API paths.
+    type: feat
+    context: server
+    risk: P1
+    security: medium
+    status: failing
+    verify: just test && just preflight
+    allure:
+      severity: high
+      categories: [recall, search, api]
+  - id: 5
+    description: Build accessible global search results, filtering, empty/error states, and return navigation that preserves e01s03 DraftSaveCoordinator state.
+    type: feat
+    context: client
+    risk: P1
+    status: failing
+    verify: just test
+    allure:
+      severity: high
+      categories: [recall, search, accessibility]
+  - id: 6
+    description: Test all acceptance scenarios, all domains, direct and relationship-derived results, late-query responses, deterministic pagination, and desktop/mobile workflows; assert attachment names await e07s01 and duplicates remain e04s03-owned.
+    type: test
+    context: verification
+    risk: P1
+    status: failing
+    verify: just test
+    allure:
+      severity: high
+      categories: [recall, search, browser]
+  - id: 7
+    description: Lint global search source and configuration.
+    type: test
+    context: lint
+    risk: P1
+    status: failing
+    verify: just lint
+    allure:
+      severity: high
+      categories: [recall, search, lint]
+  - id: 8
+    description: Assemble the global lexical search slice for production.
+    type: test
+    context: build
+    risk: P1
+    status: failing
+    verify: just build
+    allure:
+      severity: high
+      categories: [recall, search, build]
+  - id: 9
+    description: Run preflight and verify it reports no new security findings in affected search paths.
+    type: test
+    context: security
+    risk: P1
+    security: medium
+    status: failing
+    verify: just test && just preflight
+    allure:
+      severity: high
+      categories: [recall, search, security-review, preflight]

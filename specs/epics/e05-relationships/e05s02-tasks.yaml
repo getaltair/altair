@@ -1,0 +1,91 @@
+type: implementation-tasks
+context: relationships-domain
+story_id: e05s02
+title: Convert notes and persist new record links safely
+status: failing
+bcps: 5
+risk: P0
+tasks:
+  - id: 1
+    description: "RED: Add failing create-and-link, note conversion, source retention, fingerprinting, replay, and conflict tests against the e01s03 DraftSaveCoordinator contract."
+    type: test
+    context: domain
+    risk: P0
+    status: failing
+    verify: "! just test e05s02"
+    allure:
+      severity: critical
+      categories: [relationships, data-safety, unit]
+  - id: 2
+    description: "GREEN: Persist new-record or converted task/resource creation, canonical source/target link, and operation acknowledgement in one transaction without mutating the source note."
+    type: feat
+    context: database
+    risk: P0
+    status: failing
+    verify: "just test e05s02"
+    allure:
+      severity: critical
+      categories: [relationships, atomicity, integration]
+  - id: 3
+    description: Expose the authenticated create-and-link API with target revision revalidation and typed errors; verify no new security findings in affected relationship API paths.
+    type: feat
+    context: server
+    risk: P0
+    security: high
+    status: failing
+    verify: just test && just preflight
+    allure:
+      severity: critical
+      categories: [relationships, api]
+  - id: 4
+    description: Integrate create-and-link and note conversion UI with the e01s03 DraftSaveCoordinator while preserving the full draft, selected target, and source note; verify no new security findings in affected relationship and editor-integration paths.
+    type: feat
+    context: client
+    risk: P0
+    security: medium
+    status: failing
+    verify: just test && just preflight
+    allure:
+      severity: critical
+      categories: [relationships, draft-safety, component]
+  - id: 5
+    description: Test every acceptance scenario and write boundary, including replay, target archive, relationship races, both conversion paths, and DraftSaveCoordinator save/conflict transitions.
+    type: test
+    context: verification
+    risk: P0
+    status: failing
+    verify: just test
+    allure:
+      severity: critical
+      categories: [relationships, concurrency, failure-recovery]
+  - id: 6
+    description: Lint relationship conversion source and configuration.
+    type: test
+    context: lint
+    risk: P0
+    status: failing
+    verify: just lint
+    allure:
+      severity: critical
+      categories: [relationships, lint]
+  - id: 7
+    description: Assemble the complete atomic conversion and create-and-link slice for production.
+    type: test
+    context: build
+    risk: P0
+    status: failing
+    verify: just build
+    allure:
+      severity: critical
+      categories: [relationships, build]
+  - id: 8
+    description: Run preflight and verify it reports no new security findings in affected relationship and editor-integration paths.
+    type: test
+    context: security
+    risk: P0
+    security: high
+    status: failing
+    verify: just test && just preflight
+    allure:
+      severity: critical
+      categories: [relationships, security-review, preflight]

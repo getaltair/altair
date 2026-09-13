@@ -1,0 +1,41 @@
+type: epic
+context: infrastructure
+id: e01
+title: Secure Application Foundation
+status: todo
+wsjf: 5.0
+total_bcps: 13
+outcome: Secure application foundation, persistence, and single-user sessions.
+stories:
+  - id: e01s01
+    type: feat
+    context: infrastructure
+    title: Application scaffold and health path
+    status: todo
+    bcps: 3
+    risk: P1
+    spec: e01s01-application-scaffold-health.md
+    tasks: e01s01-tasks.yaml
+  - id: e01s02
+    type: feat
+    context: infrastructure
+    title: Authentik session boundary
+    status: todo
+    bcps: 5
+    risk: P0
+    spec: e01s02-authentik-session-boundary.md
+    tasks: e01s02-tasks.yaml
+  - id: e01s03
+    type: feat
+    context: domain
+    title: Shared record lifecycle and draft coordination
+    status: todo
+    bcps: 5
+    risk: P0
+    spec: e01s03-record-identity-revision.md
+    tasks: e01s03-tasks.yaml
+dependencies: []
+references:
+  - docs/initial-build.md
+  - specs/product/SCOPE_LATEST.yaml
+  - specs/tech-architecture/tech-stack.md

@@ -1,0 +1,70 @@
+type: product-scope
+context: altair-v0.1
+initiative: Altair v0.1 initial build
+core_value: >-
+  Connect personal work, knowledge, and resources through contextual recall
+  without forcing classification or surrendering control of data changes.
+summary: >-
+  Build one authenticated, responsive browser application for a single user.
+  It provides distinct project/task, knowledge, and resource experiences over
+  shared persistent records and explicit relationships. Contextual recall uses
+  current input across every domain while preserving drafts and ordinary work
+  when semantic inference is unavailable.
+accepted_scope_decisions:
+  - decision: >-
+      Project archive prompts for project-only or project-plus-exclusive-tasks;
+      shared tasks never cascade.
+    accepted_on: 2026-09-13
+    source: User confirmation during Phase 2 domain modeling.
+in_scope:
+  - id: e01
+    outcome: Secure application foundation, persistence, and single-user sessions.
+  - id: e02
+    outcome: Projects, standalone tasks, project boards, task status changes, and explicit project-archive choices.
+  - id: e03
+    outcome: Markdown notes, quick capture, import, preview, and draft-safe editing.
+  - id: e04
+    outcome: Resource browsing and editing with optional quantities and duplicate suggestions.
+  - id: e05
+    outcome: Stable bidirectional relationships across all domain records.
+  - id: e06
+    outcome: Global search and live cross-domain text and semantic recall.
+  - id: e07
+    outcome: Attachments, reversible removal, export, backup, and restore.
+  - id: e08
+    outcome: Responsive supported-browser workflows and repeatable authenticated HTTPS release readiness.
+out_of_scope:
+  - item: Autonomous agents, automatic linking, and automatic content mutation.
+    reason: User-controlled suggestions are the accepted v0.1 interaction.
+  - item: Collaboration, teams, roles, and real-time co-editing.
+    reason: v0.1 is a single-user personal workspace.
+  - item: Native applications, full offline-first synchronization, and peer-to-peer sync.
+    reason: The accepted access model is an online-first responsive web application.
+  - item: Calendar sync, reminders, recurrence, dependencies, and scheduling engines.
+    reason: Basic tasks and optional due dates satisfy the initial work-tracking scope.
+  - item: OCR, web crawling, and arbitrary attachment-content extraction.
+    reason: Initial retrieval covers authored fields, identifiers, attachment names, and relationships.
+  - item: Procurement, reservations, stock ledgers, and automatic inventory reconciliation.
+    reason: Resources record flexible, user-authored state rather than operating an inventory system.
+constraints:
+  user_model: One user and one personal workspace.
+  access: Central HTTPS with authentication before personal data is remotely exposed.
+  continuity: Online-first, with local draft recovery and explicit conflict handling.
+  local_recovery: Persistent device-local draft recovery can be disabled on managed or shared devices.
+  authority: PostgreSQL and Garage hold authoritative data; indexes and vectors are rebuildable.
+  inference: No undeclared provider or hidden cloud fallback.
+success_criteria:
+  - While creating project work, prior notes, tasks, projects, and resources can be recalled and explicitly linked without losing the draft.
+  - While writing a note, an earlier relevant draft can be compared or continued while preserving both texts.
+  - A possible duplicate resource supports use, update, explicit quantity adjustment, or deliberate separation without automatic merging.
+  - An unclassified capture becomes searchable and eligible for recall without inbox processing.
+  - Saved records and links work across supported browsers, while failures and conflicts never masquerade as successful saves.
+  - Attachment metadata and stored objects remain consistent through replacement, archive, export, backup, and restore.
+  - Archived records are hidden by default, can be restored, and can be purged only through an explicit destructive action.
+  - Project archival defaults to the project alone, can atomically include exclusive tasks, never cascades to shared tasks, and restores each record independently.
+  - Markdown import preserves authored content, and workspace export can restore stable records, relationships, and attachments.
+  - Android layouts provide touch-sized creation, status, preview, recall, and recovery actions without shrinking the desktop layout.
+references:
+  - docs/initial-build.md
+  - specs/product/VISION_LATEST.yaml
+  - specs/tech-architecture/tech-stack.md

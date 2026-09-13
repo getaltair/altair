@@ -1,0 +1,41 @@
+type: epic
+context: altair-v0.1-resources
+id: e04
+title: Resource Records
+status: todo
+wsjf: 4.0
+total_bcps: 13
+outcome: >-
+  The user can record and browse flexible resources, manage optional quantities
+  without inventing values, and resolve possible duplicates through explicit
+  draft-preserving choices.
+stories:
+  - id: e04s01
+    title: Create browse and edit flexible resources
+    status: todo
+    bcps: 5
+    risk: P0
+    type: feat
+    context: domain
+    spec: e04s01-create-browse-edit-flexible-resources.md
+    tasks: e04s01-tasks.yaml
+  - id: e04s02
+    title: Optional quantity set increment and clear
+    status: todo
+    bcps: 3
+    risk: P1
+    type: feat
+    context: domain
+    spec: e04s02-optional-quantity-commands.md
+    tasks: e04s02-tasks.yaml
+  - id: e04s03
+    title: Duplicate suggestion choices preserve draft
+    status: todo
+    bcps: 5
+    risk: P0
+    type: feat
+    context: domain
+    spec: e04s03-duplicate-suggestion-choices-preserve-draft.md
+    tasks: e04s03-tasks.yaml
+dependencies:
+  - e01

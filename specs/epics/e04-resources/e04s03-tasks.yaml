@@ -1,0 +1,73 @@
+type: implementation-tasks
+context: resources-domain
+story_id: e04s03
+title: Duplicate suggestion choices preserve draft
+status: failing
+bcps: 5
+risk: P0
+tasks:
+  - id: 1
+    description: "RED: Add failing domain tests proving advisory suggestions map only to explicit create, update, set, increment, use, or no-op choices"
+    verify: "! just test e04s03"
+    risk: P0
+    status: failing
+    allure:
+      severity: critical
+      categories: ["Resource Duplicates", "unit", "draft-safety"]
+  - id: 2
+    description: "GREEN: Implement resource-owned persisted lexical/identifier candidate retrieval with SQLx tests for matches, archived exclusion, stable-ID deduplication, and no fabricated fallback"
+    verify: "just test e04s03"
+    risk: P0
+    status: failing
+    allure:
+      severity: critical
+      categories: ["Resource Duplicates", "integration", "retrieval"]
+  - id: 3
+    description: "Integrate candidate revalidation with ordinary resource and quantity commands, including revisions, lifecycle, ownership, idempotency, unknown quantity, and stable submitted candidate identities without e06 coordination, with no new security findings in affected paths"
+    verify: "just test e04s03 && just preflight"
+    risk: P0
+    security: high
+    status: failing
+    allure:
+      severity: critical
+      categories: ["Resource Duplicates", "API", "Security Review"]
+  - id: 4
+    description: "Adapt duplicate decisions to e01s03 DraftSaveCoordinator and add draft-safe preview, return, retry, conflict, separate-create, and explicit retain/discard interfaces"
+    verify: "just test e04s03"
+    risk: P0
+    status: failing
+    allure:
+      severity: critical
+      categories: ["Resource Duplicates", "component", "draft-safety"]
+  - id: 5
+    description: "Add accessible desktop and Android browser coverage for every choice, candidate refresh, candidate changes, and text/identifier/detail draft preservation"
+    verify: "just test e04s03"
+    risk: P0
+    status: failing
+    allure:
+      severity: critical
+      categories: ["Resource Duplicates", "browser", "accessibility"]
+  - id: 6
+    description: "Lint resource duplicate retrieval and decision source and configuration"
+    verify: "just lint"
+    risk: P0
+    status: failing
+    allure:
+      severity: critical
+      categories: ["Resource Duplicates", "lint"]
+  - id: 7
+    description: "Assemble the resource duplicate retrieval and draft-safe decision slice for production"
+    verify: "just build"
+    risk: P0
+    status: failing
+    allure:
+      severity: critical
+      categories: ["Resource Duplicates", "build"]
+  - id: 8
+    description: "Run the final security gate and confirm no new security findings in affected e04s03 paths"
+    verify: "just preflight"
+    risk: P0
+    status: failing
+    allure:
+      severity: critical
+      categories: ["Resource Duplicates", "Security Review", "preflight"]

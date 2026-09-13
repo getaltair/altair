@@ -1,0 +1,90 @@
+type: implementation-tasks
+context: domain
+story_id: e01s03
+title: Shared record lifecycle and draft coordination
+status: failing
+bcps: 5
+risk: P0
+tasks:
+  - id: 1
+    description: RED - Add targeted failing table-driven tests for every DraftSaveCoordinator state/event and competing-command precedence rule C01-C12 defined in Section 15 of the story specification.
+    verify: "! just test e01s03"
+    risk: P0
+    status: failing
+    allure:
+      severity: critical
+      categories: [domain, unit]
+  - id: 2
+    description: GREEN - Implement framework-independent record types and the singular DraftSaveCoordinator transition table exactly as specified by Section 15 rules C01-C12, including edit, autosave, retry, reload, replace, manual merge, pending-save, and competing-command behavior.
+    verify: just test e01s03
+    risk: P0
+    status: failing
+    allure:
+      severity: critical
+      categories: [draft-safety, state-machine]
+  - id: 3
+    description: Add explicit SQLx migrations for owner-scoped base record identity, timestamps, lifecycle, revision, and durable idempotency records.
+    verify: just test
+    risk: P0
+    status: failing
+    allure:
+      severity: critical
+      categories: [database, migration]
+  - id: 4
+    description: Implement atomic expected-revision and durable idempotency persistence with replay and operation-ID fingerprint mismatch tests.
+    verify: just test
+    risk: P0
+    status: failing
+    allure:
+      severity: critical
+      categories: [database, idempotency, concurrency]
+  - id: 5
+    description: Implement generic revision-checked active/archive/restore lifecycle commands with parameterized note, resource, task, and project behavior tests; preserve final purge for e07.
+    verify: just test
+    risk: P0
+    status: failing
+    allure:
+      severity: critical
+      categories: [lifecycle, archive, restore]
+  - id: 6
+    description: Define and validate typed save, archive, restore, metadata, acknowledgement, and conflict boundaries without cross-owner disclosure, with no new security findings in the affected API boundary paths.
+    verify: just test && just preflight
+    risk: P0
+    security: medium
+    status: failing
+    allure:
+      severity: critical
+      categories: [api, Security Review]
+  - id: 7
+    description: Add real-database idempotency and concurrency races among save, archive, restore, and replay for every record kind.
+    verify: just test
+    risk: P0
+    status: failing
+    allure:
+      severity: critical
+      categories: [database, concurrency, lifecycle]
+  - id: 8
+    description: Configure and verify lint rules for strict shared domain, coordinator, and boundary types.
+    verify: just lint
+    risk: P0
+    status: failing
+    allure:
+      severity: critical
+      categories: [lint, configuration]
+  - id: 9
+    description: Assemble the shared record lifecycle and draft coordination foundation in the client and server production artifacts.
+    verify: just build
+    risk: P0
+    status: failing
+    allure:
+      severity: critical
+      categories: [production, build]
+  - id: 10
+    description: Run the full preflight gate and check that there are no new security findings in the affected shared record, coordinator, and lifecycle paths.
+    verify: just test && just preflight
+    risk: P0
+    security: medium
+    status: failing
+    allure:
+      severity: critical
+      categories: [preflight, Security Review]

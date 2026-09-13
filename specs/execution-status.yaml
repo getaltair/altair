@@ -1,0 +1,26 @@
+stories:
+  e01s01:
+    status: in_progress
+    started_at: "2026-09-13T09:41:40-05:00"
+  e01s02: { status: todo }
+  e01s03: { status: todo }
+  e02s01: { status: todo }
+  e02s02: { status: todo }
+  e02s03: { status: todo }
+  e03s01: { status: todo }
+  e03s02: { status: todo }
+  e03s03: { status: todo }
+  e04s01: { status: todo }
+  e04s02: { status: todo }
+  e04s03: { status: todo }
+  e05s01: { status: todo }
+  e05s02: { status: todo }
+  e06s01: { status: todo }
+  e06s02: { status: todo }
+  e06s03: { status: todo }
+  e06s04: { status: todo }
+  e07s01: { status: todo }
+  e07s02: { status: todo }
+  e07s03: { status: todo }
+  e08s01: { status: todo }
+  e08s02: { status: todo }

@@ -1,0 +1,90 @@
+type: implementation-tasks
+context: relationships-domain
+story_id: e05s01
+title: Link and unlink records bidirectionally
+status: failing
+bcps: 3
+risk: P1
+tasks:
+  - id: 1
+    description: "RED: Add failing tests for typed record identities, canonical endpoint ordering, self-link rejection, and bidirectional relationship behavior."
+    type: test
+    context: domain
+    risk: P1
+    status: failing
+    verify: "! just test e05s01"
+    allure:
+      severity: high
+      categories: [relationships, unit]
+  - id: 2
+    description: "GREEN: Add the relationship migration with canonical uniqueness, self-link checks, and bidirectional repository queries."
+    type: feat
+    context: database
+    risk: P1
+    status: failing
+    verify: "just test e05s01"
+    allure:
+      severity: high
+      categories: [relationships, integration]
+  - id: 3
+    description: Expose authenticated idempotent link and unlink commands with typed boundary errors; verify no new security findings in affected relationship API paths.
+    type: feat
+    context: server
+    risk: P1
+    security: medium
+    status: failing
+    verify: just test && just preflight
+    allure:
+      severity: high
+      categories: [relationships, api]
+  - id: 4
+    description: Add accessible record-detail link and unlink controls with project associations kept distinct.
+    type: feat
+    context: client
+    risk: P1
+    status: failing
+    verify: just test
+    allure:
+      severity: high
+      categories: [relationships, component, accessibility]
+  - id: 5
+    description: Test acceptance scenarios, reversed-create and archive races, opposite-endpoint unlink, PostgreSQL constraints, and responsive browser behavior.
+    type: test
+    context: verification
+    risk: P1
+    status: failing
+    verify: just test
+    allure:
+      severity: high
+      categories: [relationships, concurrency, browser]
+  - id: 6
+    description: Lint relationship source and configuration.
+    type: test
+    context: lint
+    risk: P1
+    status: failing
+    verify: just lint
+    allure:
+      severity: high
+      categories: [relationships, lint]
+  - id: 7
+    description: Assemble the complete relationship slice for production.
+    type: test
+    context: build
+    risk: P1
+    status: failing
+    verify: just build
+    allure:
+      severity: high
+      categories: [relationships, build]
+  - id: 8
+    description: Run preflight and verify it reports no new security findings in affected relationship paths.
+    type: test
+    context: security
+    risk: P1
+    security: medium
+    status: failing
+    verify: just test && just preflight
+    allure:
+      severity: high
+      categories: [relationships, security-review, preflight]

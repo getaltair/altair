@@ -1,0 +1,43 @@
+id: e08
+title: Cross-Device Release Readiness
+type: epic
+context: release-readiness
+status: todo
+outcome: >-
+  Altair's accepted workflows are usable in supported desktop and Android
+  browsers and are proven release-ready under normal operation, interruption,
+  and declared infrastructure degradation.
+wsjf: 2.5
+total_bcps: 8
+stories:
+  - id: e08s01
+    title: Touch-usable responsive workflows
+    type: feat
+    context: responsive-ui
+    status: todo
+    bcps: 3
+    risk: P1
+    spec: e08s01-touch-usable-responsive-workflows.md
+    tasks: e08s01-tasks.yaml
+  - id: e08s02
+    title: End-to-end release readiness
+    type: feat
+    context: release-readiness
+    status: todo
+    bcps: 5
+    risk: P0
+    spec: e08s02-end-to-end-release-readiness.md
+    tasks: e08s02-tasks.yaml
+dependencies:
+  - e01
+  - e02
+  - e03
+  - e04
+  - e05
+  - e06
+  - e07
+references:
+  - docs/initial-build.md
+  - specs/product/SCOPE_LATEST.yaml
+  - specs/tech-architecture/tech-stack.md
+  - specs/tech-architecture/DESIGN_PLAN_LATEST.md

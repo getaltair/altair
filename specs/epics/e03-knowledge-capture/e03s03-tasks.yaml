@@ -1,0 +1,74 @@
+type: implementation-tasks
+context: notes-domain
+story_id: e03s03
+title: Preview compare and return path
+status: failing
+bcps: 5
+risk: P0
+tasks:
+  - id: 1
+    description: RED - Add targeted failing origin-draft return tests for draft, cursor, scroll, focus, and route restoration.
+    verify: "! just test e03s03"
+    risk: P0
+    status: failing
+    allure:
+      severity: critical
+      categories: [draft-safety, navigation]
+  - id: 2
+    description: GREEN - Implement the minimum origin-draft return context needed to satisfy the targeted restoration tests.
+    verify: just test e03s03
+    risk: P0
+    status: failing
+    allure:
+      severity: critical
+      categories: [draft-safety, navigation]
+  - id: 3
+    description: Add owner-scoped read API use and secure Markdown preview rendering tests with executable HTML and unsafe schemes blocked, with no new security findings in the affected read API and preview paths.
+    verify: just test && just preflight
+    security: high
+    risk: P0
+    status: failing
+    allure:
+      severity: critical
+      categories: [preview, Security Review]
+  - id: 4
+    description: Implement and test responsive read-only compare, explicit copy/open/back actions, and stable preview refresh behavior.
+    verify: just test
+    risk: P0
+    status: failing
+    allure:
+      severity: critical
+      categories: [compare, responsive]
+  - id: 5
+    description: Cover desktop and Android return workflows, focus restoration, preview failure, and clipboard denial.
+    verify: just test
+    risk: P0
+    status: failing
+    allure:
+      severity: critical
+      categories: [browser, accessibility]
+  - id: 6
+    description: Configure and verify lint rules for preview and navigation paths.
+    verify: just lint
+    risk: P0
+    status: failing
+    allure:
+      severity: critical
+      categories: [lint, configuration]
+  - id: 7
+    description: Assemble preview, compare, and return behavior in the production client and server artifacts.
+    verify: just build
+    risk: P0
+    status: failing
+    allure:
+      severity: critical
+      categories: [production, build]
+  - id: 8
+    description: Run the full preflight gate and check that there are no new security findings in the affected preview and navigation paths.
+    verify: just test && just preflight
+    risk: P0
+    security: high
+    status: failing
+    allure:
+      severity: critical
+      categories: [preflight, Security Review]
